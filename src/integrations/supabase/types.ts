@@ -14,7 +14,321 @@ export type Database = {
   }
   public: {
     Tables: {
-      [_ in never]: never
+      driver_locations: {
+        Row: {
+          driver_id: string
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          speed: number | null
+          updated_at: string
+        }
+        Insert: {
+          driver_id: string
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          speed?: number | null
+          updated_at?: string
+        }
+        Update: {
+          driver_id?: string
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      earnings: {
+        Row: {
+          base_pay: number
+          bonus: number | null
+          created_at: string
+          driver_id: string
+          id: string
+          order_id: string | null
+          tip: number | null
+          total: number | null
+        }
+        Insert: {
+          base_pay?: number
+          bonus?: number | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          order_id?: string | null
+          tip?: number | null
+          total?: number | null
+        }
+        Update: {
+          base_pay?: number
+          bonus?: number | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          order_id?: string | null
+          tip?: number | null
+          total?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "earnings_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      menu_items: {
+        Row: {
+          category: string | null
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          is_available: boolean | null
+          is_snoozed: boolean | null
+          name: string
+          price: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          is_snoozed?: boolean | null
+          name: string
+          price: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          is_available?: boolean | null
+          is_snoozed?: boolean | null
+          name?: string
+          price?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_items_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string | null
+          name: string
+          order_id: string
+          quantity: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          name: string
+          order_id: string
+          quantity?: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          name?: string
+          order_id?: string
+          quantity?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_id: string | null
+          delivery_address: string | null
+          delivery_fee: number | null
+          delivery_latitude: number | null
+          delivery_longitude: number | null
+          driver_id: string | null
+          estimated_prep_time: number | null
+          id: string
+          notes: string | null
+          photo_verification_url: string | null
+          pickup_checklist: Json | null
+          status: Database["public"]["Enums"]["order_status"]
+          store_id: string
+          tip_amount: number | null
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_id?: string | null
+          delivery_address?: string | null
+          delivery_fee?: number | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          driver_id?: string | null
+          estimated_prep_time?: number | null
+          id?: string
+          notes?: string | null
+          photo_verification_url?: string | null
+          pickup_checklist?: Json | null
+          status?: Database["public"]["Enums"]["order_status"]
+          store_id: string
+          tip_amount?: number | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_id?: string | null
+          delivery_address?: string | null
+          delivery_fee?: number | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          driver_id?: string | null
+          estimated_prep_time?: number | null
+          id?: string
+          notes?: string | null
+          photo_verification_url?: string | null
+          pickup_checklist?: Json | null
+          status?: Database["public"]["Enums"]["order_status"]
+          store_id?: string
+          tip_amount?: number | null
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "orders_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          avatar_url: string | null
+          created_at: string
+          full_name: string | null
+          id: string
+          phone: string | null
+          role: Database["public"]["Enums"]["app_role"]
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          avatar_url?: string | null
+          created_at?: string
+          full_name?: string | null
+          id?: string
+          phone?: string | null
+          role?: Database["public"]["Enums"]["app_role"]
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      stores: {
+        Row: {
+          address: string
+          busy_mode: boolean | null
+          created_at: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          latitude: number | null
+          longitude: number | null
+          name: string
+          owner_id: string
+          phone: string | null
+          prep_buffer_minutes: number | null
+          updated_at: string
+        }
+        Insert: {
+          address: string
+          busy_mode?: boolean | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name: string
+          owner_id: string
+          phone?: string | null
+          prep_buffer_minutes?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string
+          busy_mode?: boolean | null
+          created_at?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          latitude?: number | null
+          longitude?: number | null
+          name?: string
+          owner_id?: string
+          phone?: string | null
+          prep_buffer_minutes?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
@@ -23,7 +337,16 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
-      [_ in never]: never
+      app_role: "driver" | "store" | "customer"
+      order_status:
+        | "pending"
+        | "placed"
+        | "accepted"
+        | "preparing"
+        | "ready"
+        | "picked_up"
+        | "delivered"
+        | "cancelled"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -150,6 +473,18 @@ export type CompositeTypes<
 
 export const Constants = {
   public: {
-    Enums: {},
+    Enums: {
+      app_role: ["driver", "store", "customer"],
+      order_status: [
+        "pending",
+        "placed",
+        "accepted",
+        "preparing",
+        "ready",
+        "picked_up",
+        "delivered",
+        "cancelled",
+      ],
+    },
   },
 } as const
