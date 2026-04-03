@@ -88,6 +88,7 @@ export default function OrderTrackingPage() {
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [storeName, setStoreName] = useState('');
   const [driverName, setDriverName] = useState<string | null>(null);
+  const [driverPhone, setDriverPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [hasReviewed, setHasReviewed] = useState(false);
