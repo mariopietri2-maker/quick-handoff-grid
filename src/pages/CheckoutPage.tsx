@@ -134,7 +134,7 @@ export default function CheckoutPage() {
           status: 'placed' as any,
           total_amount: Math.max(0, total - discount),
           delivery_fee: deliveryFee,
-          tip_amount: tip,
+          tip_amount: tipAmount,
           delivery_address: address,
           notes: notes || null,
         })
