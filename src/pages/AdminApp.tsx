@@ -1,14 +1,14 @@
-import { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -27,11 +27,10 @@ const statusColors: Record<string, string> = {
 
 export default function AdminApp() {
   const { signOut } = useAuth();
-  const { orders, stores, profiles, earnings, reviews } = useAdminData();
+  const { orders, stores, profiles, earnings, reviews, userRoles } = useAdminData();
   const queryClient = useQueryClient();
 
   const totalRevenue = orders.data?.reduce((sum, o) => sum + Number(o.total_amount), 0) ?? 0;
-  const totalEarnings = earnings.data?.reduce((sum, e) => sum + Number(e.total ?? 0), 0) ?? 0;
   const avgRating = reviews.data?.length
     ? (reviews.data.reduce((sum, r) => sum + r.rating, 0) / reviews.data.length).toFixed(1)
     : '—';
@@ -41,32 +40,77 @@ export default function AdminApp() {
       .from('orders')
       .update({ status: status as any })
       .eq('id', orderId);
-    if (error) {
-      toast.error('Failed to update order');
-    } else {
+    if (error) toast.error('Failed to update order');
+    else {
       toast.success('Order status updated');
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     }
   };
 
+  const handleToggleStoreActive = async (storeId: string, currentActive: boolean | null) => {
+    const { error } = await supabase
+      .from('stores')
+      .update({ is_active: !currentActive })
+      .eq('id', storeId);
+    if (error) toast.error('Failed to update store');
+    else {
+      toast.success(`Store ${currentActive ? 'deactivated' : 'activated'}`);
+      queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
+    }
+  };
+
+  const handleChangeRole = async (userId: string, newRole: string) => {
+    const { error } = await supabase
+      .from('profiles')
+      .update({ role: newRole as any })
+      .eq('user_id', userId);
+    if (error) toast.error('Failed to update role');
+    else {
+      toast.success('User role updated');
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    }
+  };
+
+  const handleToggleAdmin = async (userId: string, isCurrentlyAdmin: boolean) => {
+    if (isCurrentlyAdmin) {
+      const { error } = await supabase
+        .from('user_roles')
+        .delete()
+        .eq('user_id', userId)
+        .eq('role', 'admin');
+      if (error) toast.error('Failed to remove admin');
+      else {
+        toast.success('Admin role removed');
+        queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
+      }
+    } else {
+      const { error } = await supabase
+        .from('user_roles')
+        .insert({ user_id: userId, role: 'admin' as any });
+      if (error) toast.error('Failed to grant admin');
+      else {
+        toast.success('Admin role granted');
+        queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
+      }
+    }
+  };
+
+  const adminUserIds = new Set(
+    userRoles.data?.filter((r) => r.role === 'admin').map((r) => r.user_id) ?? []
+  );
+
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="gradient-dark text-primary-foreground px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <Link to="/">
-            <ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" />
-          </Link>
+          <Link to="/"><ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" /></Link>
           <Shield className="h-5 w-5" />
           <h1 className="font-heading font-bold text-lg">Admin Dashboard</h1>
         </div>
-        <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground">
-          Sign Out
-        </Button>
+        <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground">Sign Out</Button>
       </header>
 
       <div className="max-w-6xl mx-auto p-4 space-y-6">
-        {/* Stats */}
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
           <StatCard icon={ShoppingBag} label="Orders" value={orders.data?.length ?? 0} />
           <StatCard icon={DollarSign} label="Revenue" value={`$${totalRevenue.toFixed(2)}`} />
@@ -75,7 +119,6 @@ export default function AdminApp() {
           <StatCard icon={Star} label="Avg Rating" value={avgRating} />
         </div>
 
-        {/* Tabs */}
         <Tabs defaultValue="orders">
           <TabsList className="w-full grid grid-cols-4">
             <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
@@ -84,6 +127,7 @@ export default function AdminApp() {
             <TabsTrigger value="reviews" className="font-heading">Reviews</TabsTrigger>
           </TabsList>
 
+          {/* Orders Tab */}
           <TabsContent value="orders" className="mt-4">
             <Card>
               <CardHeader><CardTitle className="font-heading">All Orders</CardTitle></CardHeader>
@@ -103,22 +147,13 @@ export default function AdminApp() {
                     {orders.data?.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}…</TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className={statusColors[order.status] ?? ''}>
-                            {order.status}
-                          </Badge>
-                        </TableCell>
+                        <TableCell><Badge variant="outline" className={statusColors[order.status] ?? ''}>{order.status}</Badge></TableCell>
                         <TableCell>${Number(order.total_amount).toFixed(2)}</TableCell>
                         <TableCell>{order.order_items?.length ?? 0}</TableCell>
                         <TableCell className="text-xs">{format(new Date(order.created_at), 'MMM d, HH:mm')}</TableCell>
                         <TableCell>
-                          <Select
-                            value={order.status}
-                            onValueChange={(val) => handleUpdateOrderStatus(order.id, val)}
-                          >
-                            <SelectTrigger className="w-32 h-8 text-xs">
-                              <SelectValue />
-                            </SelectTrigger>
+                          <Select value={order.status} onValueChange={(val) => handleUpdateOrderStatus(order.id, val)}>
+                            <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {['pending', 'placed', 'accepted', 'preparing', 'ready', 'picked_up', 'delivered', 'cancelled'].map((s) => (
                                 <SelectItem key={s} value={s}>{s}</SelectItem>
@@ -137,6 +172,7 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
+          {/* Stores Tab */}
           <TabsContent value="stores" className="mt-4">
             <Card>
               <CardHeader><CardTitle className="font-heading">All Stores</CardTitle></CardHeader>
@@ -157,14 +193,16 @@ export default function AdminApp() {
                         <TableCell className="font-semibold">{store.name}</TableCell>
                         <TableCell className="text-sm">{store.address}</TableCell>
                         <TableCell>
-                          <Badge variant={store.is_active ? 'default' : 'secondary'}>
-                            {store.is_active ? 'Active' : 'Inactive'}
-                          </Badge>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={!!store.is_active}
+                              onCheckedChange={() => handleToggleStoreActive(store.id, store.is_active)}
+                            />
+                            <span className="text-xs text-muted-foreground">{store.is_active ? 'Active' : 'Inactive'}</span>
+                          </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={store.busy_mode ? 'destructive' : 'outline'}>
-                            {store.busy_mode ? 'Busy' : 'Normal'}
-                          </Badge>
+                          <Badge variant={store.busy_mode ? 'destructive' : 'outline'}>{store.busy_mode ? 'Busy' : 'Normal'}</Badge>
                         </TableCell>
                         <TableCell className="text-xs">{format(new Date(store.created_at), 'MMM d, yyyy')}</TableCell>
                       </TableRow>
@@ -178,6 +216,7 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
+          {/* Users Tab */}
           <TabsContent value="users" className="mt-4">
             <Card>
               <CardHeader><CardTitle className="font-heading">All Users</CardTitle></CardHeader>
@@ -187,6 +226,7 @@ export default function AdminApp() {
                     <TableRow>
                       <TableHead>Name</TableHead>
                       <TableHead>Role</TableHead>
+                      <TableHead>Admin</TableHead>
                       <TableHead>Phone</TableHead>
                       <TableHead>Joined</TableHead>
                     </TableRow>
@@ -196,14 +236,34 @@ export default function AdminApp() {
                       <TableRow key={profile.id}>
                         <TableCell className="font-semibold">{profile.full_name || '—'}</TableCell>
                         <TableCell>
-                          <Badge variant="outline">{profile.role}</Badge>
+                          <Select value={profile.role} onValueChange={(val) => handleChangeRole(profile.user_id, val)}>
+                            <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
+                            <SelectContent>
+                              {['customer', 'driver', 'store'].map((r) => (
+                                <SelectItem key={r} value={r}>{r}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <Switch
+                              checked={adminUserIds.has(profile.user_id)}
+                              onCheckedChange={() => handleToggleAdmin(profile.user_id, adminUserIds.has(profile.user_id))}
+                            />
+                            {adminUserIds.has(profile.user_id) && (
+                              <Badge className="bg-primary/10 text-primary border-primary/20" variant="outline">
+                                <Shield className="h-3 w-3 mr-1" />Admin
+                              </Badge>
+                            )}
+                          </div>
                         </TableCell>
                         <TableCell className="text-sm">{profile.phone || '—'}</TableCell>
                         <TableCell className="text-xs">{format(new Date(profile.created_at), 'MMM d, yyyy')}</TableCell>
                       </TableRow>
                     ))}
                     {!profiles.data?.length && (
-                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No users yet</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users yet</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -211,6 +271,7 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
+          {/* Reviews Tab */}
           <TabsContent value="reviews" className="mt-4">
             <Card>
               <CardHeader><CardTitle className="font-heading">All Reviews</CardTitle></CardHeader>
