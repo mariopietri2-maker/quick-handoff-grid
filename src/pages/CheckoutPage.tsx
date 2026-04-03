@@ -269,6 +269,59 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
+        {/* Tip Selection */}
+        <Card className="shadow-[var(--shadow-md)]">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">💰</span>
+              <h2 className="font-heading font-semibold text-foreground">Tip your driver</h2>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[10, 15, 20, 'custom' as const].map(opt => {
+                const isSelected = tipOption === opt;
+                return (
+                  <button
+                    key={String(opt)}
+                    onClick={() => setTipOption(opt)}
+                    className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
+                      isSelected
+                        ? 'gradient-primary text-primary-foreground shadow-primary'
+                        : 'bg-muted text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    {opt === 'custom' ? 'Custom' : `${opt}%`}
+                  </button>
+                );
+              })}
+            </div>
+            {tipOption !== 'custom' && tipAmount > 0 && (
+              <p className="text-sm text-muted-foreground text-center">
+                ${tipAmount.toFixed(2)} tip
+              </p>
+            )}
+            {tipOption === 'custom' && (
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-heading">$</span>
+                <Input
+                  type="number"
+                  value={customTip}
+                  onChange={e => setCustomTip(e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.50"
+                  className="pl-7 font-heading"
+                />
+              </div>
+            )}
+            <button
+              onClick={() => { setTipOption('custom'); setCustomTip('0'); }}
+              className="text-xs text-muted-foreground underline underline-offset-2"
+            >
+              No tip
+            </button>
+          </CardContent>
+        </Card>
+
         {/* Promo Code */}
         <Card className={`shadow-[var(--shadow-md)] ${appliedPromo ? 'border-success/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
