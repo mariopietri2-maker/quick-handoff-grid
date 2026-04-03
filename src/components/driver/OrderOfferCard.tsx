@@ -1,4 +1,5 @@
-import { MapPin, DollarSign, Clock, Package, Navigation } from 'lucide-react';
+import { useState, useEffect, useCallback } from 'react';
+import { MapPin, DollarSign, Clock, Package, Navigation, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 
@@ -19,14 +20,42 @@ interface OrderOfferCardProps {
   onDecline: (id: string) => void;
 }
 
+const OFFER_TIMEOUT_SECONDS = 60;
+
 export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardProps) {
+  const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMEOUT_SECONDS);
+
+  useEffect(() => {
+    if (secondsLeft <= 0) {
+      onDecline(offer.id);
+      return;
+    }
+    const timer = setTimeout(() => setSecondsLeft(s => s - 1), 1000);
+    return () => clearTimeout(timer);
+  }, [secondsLeft, offer.id, onDecline]);
+
+  const progress = (secondsLeft / OFFER_TIMEOUT_SECONDS) * 100;
+  const isUrgent = secondsLeft <= 15;
+
   return (
     <Card className="border-2 border-border overflow-hidden shadow-[var(--shadow-md)] animate-in slide-in-from-bottom-4">
+      {/* Countdown bar */}
+      <div className="h-1.5 bg-muted w-full">
+        <div
+          className={`h-full transition-all duration-1000 ease-linear rounded-r-full ${isUrgent ? 'bg-destructive' : 'bg-primary'}`}
+          style={{ width: `${progress}%` }}
+        />
+      </div>
       <div className="gradient-primary px-4 py-3 flex items-center justify-between">
         <span className="text-primary-foreground font-heading font-bold text-2xl">
           ${offer.estimatedPayout.toFixed(2)}
         </span>
         <div className="flex items-center gap-2 text-primary-foreground/80 text-sm">
+          <Timer className={`h-4 w-4 ${isUrgent ? 'animate-pulse' : ''}`} />
+          <span className={`font-mono font-bold ${isUrgent ? 'text-primary-foreground' : ''}`}>
+            0:{String(secondsLeft).padStart(2, '0')}
+          </span>
+          <span className="mx-1">•</span>
           <Navigation className="h-4 w-4" />
           <span>{offer.totalDistance} mi</span>
           <Clock className="h-4 w-4 ml-2" />
