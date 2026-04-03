@@ -15,7 +15,7 @@ type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
 export default function RestaurantPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
-  const { addItem, items, itemCount, total, storeId: cartStoreId } = useCart();
+  const { addItem, items, updateQuantity, itemCount, total, storeId: cartStoreId } = useCart();
   const [store, setStore] = useState<StoreRow | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemRow[]>([]);
   const [loading, setLoading] = useState(true);
