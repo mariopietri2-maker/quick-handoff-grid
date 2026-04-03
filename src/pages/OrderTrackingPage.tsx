@@ -272,6 +272,23 @@ export default function OrderTrackingPage() {
           </Card>
         )}
 
+        {/* Review Form - only for delivered orders */}
+        {isDelivered && !hasReviewed && (
+          <ReviewForm
+            orderId={order.id}
+            storeId={order.store_id}
+            onSubmitted={() => setHasReviewed(true)}
+          />
+        )}
+        {isDelivered && hasReviewed && (
+          <Card className="shadow-[var(--shadow-sm)] bg-success/5 border-success/20">
+            <CardContent className="p-4 text-center">
+              <Star className="h-6 w-6 fill-warning text-warning mx-auto mb-1" />
+              <p className="font-heading text-sm text-foreground">Thanks for your review!</p>
+            </CardContent>
+          </Card>
+        )}
+
         <Button
           onClick={() => navigate('/orders')}
           variant="outline"
