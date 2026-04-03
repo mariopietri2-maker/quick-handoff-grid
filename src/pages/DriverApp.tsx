@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Car, DollarSign, Radio, User } from 'lucide-react';
+import { Car, DollarSign, Radio } from 'lucide-react';
+import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
@@ -53,16 +54,19 @@ export default function DriverApp() {
           <Car className="h-6 w-6" />
           <h1 className="font-heading font-bold text-lg">DashDrive</h1>
         </div>
-        <button
-          onClick={() => setIsOnline(!isOnline)}
-          className={`px-4 py-1.5 rounded-full text-sm font-heading font-semibold transition-all ${
-            isOnline 
-              ? 'gradient-success text-success-foreground' 
-              : 'bg-muted/20 text-muted-foreground'
-          }`}
-        >
-          {isOnline ? '● Online' : '○ Offline'}
-        </button>
+        <div className="flex items-center gap-2">
+          <button
+            onClick={() => setIsOnline(!isOnline)}
+            className={`px-4 py-1.5 rounded-full text-sm font-heading font-semibold transition-all ${
+              isOnline 
+                ? 'gradient-success text-success-foreground' 
+                : 'bg-muted/20 text-muted-foreground'
+            }`}
+          >
+            {isOnline ? '● Online' : '○ Offline'}
+          </button>
+          <UserMenu />
+        </div>
       </header>
 
       <div className="p-4 max-w-lg mx-auto">

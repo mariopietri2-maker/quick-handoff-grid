@@ -1,0 +1,35 @@
+import { Navigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+
+interface ProtectedRouteProps {
+  children: React.ReactNode;
+  allowedRoles?: string[];
+}
+
+export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+  const { user, loading, profile } = useAuth();
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="text-center">
+          <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          <p className="text-muted-foreground font-heading">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return <Navigate to="/auth" replace />;
+  }
+
+  if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
+    // Redirect to correct app based on role
+    if (profile.role === 'driver') return <Navigate to="/driver" replace />;
+    if (profile.role === 'store') return <Navigate to="/store" replace />;
+    return <Navigate to="/" replace />;
+  }
+
+  return <>{children}</>;
+}

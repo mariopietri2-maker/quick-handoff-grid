@@ -3,7 +3,10 @@ import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { AuthProvider } from "@/hooks/useAuth";
+import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
+import AuthPage from "./pages/AuthPage.tsx";
 import DriverApp from "./pages/DriverApp.tsx";
 import StoreApp from "./pages/StoreApp.tsx";
 import NotFound from "./pages/NotFound.tsx";
@@ -16,12 +19,23 @@ const App = () => (
       <Toaster />
       <Sonner />
       <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Index />} />
-          <Route path="/driver" element={<DriverApp />} />
-          <Route path="/store" element={<StoreApp />} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+        <AuthProvider>
+          <Routes>
+            <Route path="/" element={<Index />} />
+            <Route path="/auth" element={<AuthPage />} />
+            <Route path="/driver" element={
+              <ProtectedRoute allowedRoles={['driver']}>
+                <DriverApp />
+              </ProtectedRoute>
+            } />
+            <Route path="/store" element={
+              <ProtectedRoute allowedRoles={['store']}>
+                <StoreApp />
+              </ProtectedRoute>
+            } />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>
   </QueryClientProvider>
