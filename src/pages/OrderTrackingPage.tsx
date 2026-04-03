@@ -106,8 +106,11 @@ export default function OrderTrackingPage() {
         if (store) setStoreName(store.name);
         // Fetch driver name if assigned
         if (orderRes.data.driver_id) {
-          const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', orderRes.data.driver_id).single();
-          if (profile) setDriverName(profile.full_name);
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', orderRes.data.driver_id).single();
+          if (profile) {
+            setDriverName(profile.full_name);
+            setDriverPhone(profile.phone);
+          }
         }
       }
       setItems(itemsRes.data ?? []);
