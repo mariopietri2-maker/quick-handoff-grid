@@ -266,6 +266,16 @@ export default function OrderTrackingPage() {
           </Card>
         )}
 
+        {/* Live Driver Map */}
+        {order.driver_id && !isDelivered && !isCancelled && (
+          <DriverLiveMap
+            driverId={order.driver_id}
+            deliveryLat={order.delivery_latitude}
+            deliveryLng={order.delivery_longitude}
+            deliveryAddress={order.delivery_address}
+          />
+        )}
+
         {/* Status Timeline */}
         {!isCancelled && (
           <Card className="shadow-[var(--shadow-md)]">
