@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Circle, Clock, Package, Car, MapPin } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Clock, Package, Car, MapPin, Phone, User, Utensils } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -10,34 +11,57 @@ type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
 
 const statusSteps = [
-  { key: 'placed', label: 'Order Placed', icon: Package },
-  { key: 'accepted', label: 'Accepted', icon: CheckCircle2 },
-  { key: 'preparing', label: 'Preparing', icon: Clock },
-  { key: 'ready', label: 'Ready for Pickup', icon: Package },
-  { key: 'picked_up', label: 'On the Way', icon: Car },
-  { key: 'delivered', label: 'Delivered', icon: MapPin },
+  { key: 'placed', label: 'Order Placed', icon: Package, description: 'Your order has been sent to the restaurant' },
+  { key: 'accepted', label: 'Accepted', icon: CheckCircle2, description: 'Restaurant confirmed your order' },
+  { key: 'preparing', label: 'Preparing', icon: Utensils, description: 'Your food is being prepared' },
+  { key: 'ready', label: 'Ready for Pickup', icon: Package, description: 'Waiting for a driver to pick up' },
+  { key: 'picked_up', label: 'On the Way', icon: Car, description: 'Driver is heading to you' },
+  { key: 'delivered', label: 'Delivered', icon: MapPin, description: 'Order has been delivered' },
 ];
+
+const statusMessages: Record<string, { emoji: string; title: string; subtitle: string }> = {
+  placed: { emoji: '📋', title: 'Order Sent!', subtitle: 'Waiting for restaurant to accept' },
+  accepted: { emoji: '👨‍🍳', title: 'Restaurant Accepted!', subtitle: 'They\'re getting started on your order' },
+  preparing: { emoji: '🔥', title: 'Cooking in Progress', subtitle: 'Your food is being freshly prepared' },
+  ready: { emoji: '✅', title: 'Ready for Pickup!', subtitle: 'A driver will grab your order soon' },
+  picked_up: { emoji: '🚗', title: 'On the Way!', subtitle: 'Your driver is heading to you now' },
+  delivered: { emoji: '🎉', title: 'Delivered!', subtitle: 'Enjoy your meal' },
+  cancelled: { emoji: '❌', title: 'Cancelled', subtitle: 'This order has been cancelled' },
+};
 
 export default function OrderTrackingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<OrderItemRow[]>([]);
+  const [storeName, setStoreName] = useState('');
+  const [driverName, setDriverName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
 
   useEffect(() => {
     if (!id) return;
     Promise.all([
       supabase.from('orders').select('*').eq('id', id).single(),
       supabase.from('order_items').select('*').eq('order_id', id),
-    ]).then(([orderRes, itemsRes]) => {
-      setOrder(orderRes.data);
+    ]).then(async ([orderRes, itemsRes]) => {
+      if (orderRes.data) {
+        setOrder(orderRes.data);
+        // Fetch store name
+        const { data: store } = await supabase.from('stores').select('name').eq('id', orderRes.data.store_id).single();
+        if (store) setStoreName(store.name);
+        // Fetch driver name if assigned
+        if (orderRes.data.driver_id) {
+          const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', orderRes.data.driver_id).single();
+          if (profile) setDriverName(profile.full_name);
+        }
+      }
       setItems(itemsRes.data ?? []);
       setLoading(false);
     });
   }, [id]);
 
-  // Real-time subscription for order status
+  // Real-time subscription
   useEffect(() => {
     if (!id) return;
     const channel = supabase
@@ -47,13 +71,20 @@ export default function OrderTrackingPage() {
         schema: 'public',
         table: 'orders',
         filter: `id=eq.${id}`,
-      }, (payload) => {
-        setOrder(prev => prev ? { ...prev, ...(payload.new as OrderRow) } : prev);
+      }, async (payload) => {
+        const updated = payload.new as OrderRow;
+        setOrder(prev => prev ? { ...prev, ...updated } : prev);
+        setLastUpdate(new Date());
+        // Fetch driver name if newly assigned
+        if (updated.driver_id && !driverName) {
+          const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', updated.driver_id).single();
+          if (profile) setDriverName(profile.full_name);
+        }
       })
       .subscribe();
 
     return () => { supabase.removeChannel(channel); };
-  }, [id]);
+  }, [id, driverName]);
 
   if (loading) {
     return (
@@ -74,40 +105,94 @@ export default function OrderTrackingPage() {
   const currentIndex = statusSteps.findIndex(s => s.key === order.status);
   const isDelivered = order.status === 'delivered';
   const isCancelled = order.status === 'cancelled';
+  const currentMessage = statusMessages[order.status ?? 'placed'];
+  const progressPercent = isCancelled ? 0 : isDelivered ? 100 : Math.max(5, ((currentIndex + 1) / statusSteps.length) * 100);
 
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate('/order')} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+        <button onClick={() => navigate('/orders')} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <div>
-          <h1 className="font-heading font-bold text-lg text-foreground">Order Status</h1>
+        <div className="flex-1">
+          <h1 className="font-heading font-bold text-lg text-foreground">Track Order</h1>
           <p className="text-xs text-muted-foreground font-mono">#{order.id.slice(0, 8)}</p>
         </div>
+        <Badge variant={isCancelled ? 'destructive' : 'default'} className="font-heading">
+          {isCancelled ? 'Cancelled' : isDelivered ? 'Complete' : 'Live'}
+        </Badge>
       </header>
 
       <div className="max-w-lg mx-auto p-4 space-y-4">
-        {isCancelled ? (
-          <Card className="border-destructive/30 bg-destructive/5 shadow-[var(--shadow-md)]">
-            <CardContent className="p-6 text-center">
-              <p className="font-heading font-bold text-xl text-destructive">Order Cancelled</p>
-              <p className="text-sm text-muted-foreground mt-1">This order has been cancelled</p>
+        {/* Hero Status Card */}
+        <Card className={`shadow-[var(--shadow-lg)] overflow-hidden ${isCancelled ? 'border-destructive/30' : ''}`}>
+          <div className={`p-6 text-center ${isCancelled ? 'bg-destructive/5' : isDelivered ? 'bg-success/5' : 'bg-primary/5'}`}>
+            <span className="text-4xl block mb-2">{currentMessage.emoji}</span>
+            <h2 className="font-heading font-bold text-xl text-foreground">{currentMessage.title}</h2>
+            <p className="text-sm text-muted-foreground mt-1">{currentMessage.subtitle}</p>
+            {!isCancelled && !isDelivered && (
+              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
+                <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                Live updates • Last: {lastUpdate.toLocaleTimeString()}
+              </div>
+            )}
+          </div>
+
+          {/* Progress Bar */}
+          {!isCancelled && (
+            <div className="px-6 pb-4 pt-3">
+              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
+                <span>Order placed</span>
+                <span>Delivered</span>
+              </div>
+              <div className="h-2 bg-muted rounded-full overflow-hidden">
+                <div
+                  className={`h-full rounded-full transition-all duration-1000 ease-out ${isDelivered ? 'bg-success' : 'gradient-primary'}`}
+                  style={{ width: `${progressPercent}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </Card>
+
+        {/* Restaurant Info */}
+        {storeName && (
+          <Card className="shadow-[var(--shadow-md)]">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+                <Utensils className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <p className="font-heading font-semibold text-foreground text-sm">Restaurant</p>
+                <p className="text-muted-foreground text-sm">{storeName}</p>
+              </div>
             </CardContent>
           </Card>
-        ) : (
-          /* Status Timeline */
+        )}
+
+        {/* Driver Info */}
+        {order.driver_id && (
+          <Card className="shadow-[var(--shadow-md)] border-primary/20">
+            <CardContent className="p-4 flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full gradient-primary flex items-center justify-center">
+                <User className="h-6 w-6 text-primary-foreground" />
+              </div>
+              <div className="flex-1">
+                <p className="font-heading font-semibold text-foreground">{driverName || 'Driver'}</p>
+                <p className="text-xs text-muted-foreground">Your delivery driver</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
+                <Phone className="h-5 w-5 text-success" />
+              </div>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Status Timeline */}
+        {!isCancelled && (
           <Card className="shadow-[var(--shadow-md)]">
             <CardContent className="p-6">
-              {isDelivered && (
-                <div className="text-center mb-6">
-                  <div className="h-16 w-16 rounded-full gradient-success flex items-center justify-center mx-auto mb-3">
-                    <CheckCircle2 className="h-8 w-8 text-success-foreground" />
-                  </div>
-                  <p className="font-heading font-bold text-xl text-foreground">Delivered!</p>
-                  <p className="text-sm text-muted-foreground">Enjoy your meal 🎉</p>
-                </div>
-              )}
+              <h3 className="font-heading font-semibold text-foreground mb-4">Order Progress</h3>
               <div className="space-y-0">
                 {statusSteps.map((step, i) => {
                   const Icon = step.icon;
@@ -116,13 +201,13 @@ export default function OrderTrackingPage() {
                   return (
                     <div key={step.key} className="flex items-start gap-3">
                       <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 ${
+                        <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
                           isComplete ? 'gradient-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                        } ${isCurrent ? 'ring-4 ring-primary/20' : ''}`}>
+                        } ${isCurrent && !isDelivered ? 'ring-4 ring-primary/20 scale-110' : ''}`}>
                           <Icon className="h-4 w-4" />
                         </div>
                         {i < statusSteps.length - 1 && (
-                          <div className={`w-0.5 h-8 ${i < currentIndex ? 'bg-primary' : 'bg-muted'}`} />
+                          <div className={`w-0.5 h-8 transition-colors duration-500 ${i < currentIndex ? 'bg-primary' : 'bg-muted'}`} />
                         )}
                       </div>
                       <div className="pb-6">
@@ -130,7 +215,10 @@ export default function OrderTrackingPage() {
                           {step.label}
                         </p>
                         {isCurrent && !isDelivered && (
-                          <p className="text-xs text-primary font-heading mt-0.5 animate-pulse">Current status</p>
+                          <p className="text-xs text-primary font-heading mt-0.5 animate-pulse">{step.description}</p>
+                        )}
+                        {isComplete && !isCurrent && (
+                          <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
                         )}
                       </div>
                     </div>
@@ -144,7 +232,7 @@ export default function OrderTrackingPage() {
         {/* Order Items */}
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4">
-            <h2 className="font-heading font-semibold text-foreground mb-3">Order Details</h2>
+            <h3 className="font-heading font-semibold text-foreground mb-3">Order Details</h3>
             {items.map(item => (
               <div key={item.id} className="flex justify-between py-2 border-b border-border last:border-0 text-sm">
                 <span className="text-foreground">{item.quantity}x {item.name}</span>
@@ -164,12 +252,25 @@ export default function OrderTrackingPage() {
           </CardContent>
         </Card>
 
+        {/* Estimated Time */}
+        {!isDelivered && !isCancelled && order.estimated_prep_time && (
+          <Card className="shadow-[var(--shadow-md)]">
+            <CardContent className="p-4 flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-5 w-5 text-primary" />
+                <span className="text-sm font-heading text-foreground">Estimated Time</span>
+              </div>
+              <span className="font-heading font-bold text-foreground">{order.estimated_prep_time} min</span>
+            </CardContent>
+          </Card>
+        )}
+
         <Button
-          onClick={() => navigate('/order')}
+          onClick={() => navigate('/orders')}
           variant="outline"
           className="w-full font-heading"
         >
-          Back to Restaurants
+          My Orders
         </Button>
       </div>
     </div>
