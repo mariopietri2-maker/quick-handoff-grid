@@ -6,7 +6,6 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
-const { updateQuantity: cartUpdateQuantity } = {} as any; // placeholder
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
