@@ -93,10 +93,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     await supabase.auth.signOut();
     setProfile(null);
+    setIsAdmin(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, isAdmin, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
