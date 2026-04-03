@@ -6,10 +6,60 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { ReviewForm } from '@/components/ReviewForm';
+import { Progress } from '@/components/ui/progress';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
+
+// Delivery time estimate: prep time + 15 min delivery buffer
+const DELIVERY_BUFFER_MIN = 15;
+
+function DeliveryCountdown({ order }: { order: OrderRow }) {
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const interval = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const prepMin = order.estimated_prep_time ?? 30;
+  const totalMin = prepMin + DELIVERY_BUFFER_MIN;
+
+  // Use the time when order moved past 'placed' (updated_at approximates acceptance)
+  // Fall back to created_at + a small buffer
+  const startTime = new Date(order.created_at).getTime();
+  const endTime = startTime + totalMin * 60 * 1000;
+  const elapsed = now - startTime;
+  const remaining = Math.max(0, endTime - now);
+  const progress = Math.min(100, (elapsed / (totalMin * 60 * 1000)) * 100);
+
+  const remainingMin = Math.floor(remaining / 60000);
+  const remainingSec = Math.floor((remaining % 60000) / 1000);
+  const isOverdue = remaining === 0;
+
+  return (
+    <Card className={`shadow-[var(--shadow-md)] ${isOverdue ? 'border-warning/30' : 'border-primary/20'}`}>
+      <CardContent className="p-4 space-y-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Clock className={`h-5 w-5 ${isOverdue ? 'text-warning' : 'text-primary'}`} />
+            <span className="text-sm font-heading text-foreground">
+              {isOverdue ? 'Taking a bit longer' : 'Estimated delivery'}
+            </span>
+          </div>
+          <span className={`font-heading font-bold text-xl tabular-nums ${isOverdue ? 'text-warning' : 'text-foreground'}`}>
+            {isOverdue ? 'Soon' : `${remainingMin}:${String(remainingSec).padStart(2, '0')}`}
+          </span>
+        </div>
+        <Progress value={progress} className="h-2" />
+        <div className="flex justify-between text-xs text-muted-foreground">
+          <span>Prep ~{prepMin} min</span>
+          <span>Delivery ~{DELIVERY_BUFFER_MIN} min</span>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
 
 const statusSteps = [
   { key: 'placed', label: 'Order Placed', icon: Package, description: 'Your order has been sent to the restaurant' },
