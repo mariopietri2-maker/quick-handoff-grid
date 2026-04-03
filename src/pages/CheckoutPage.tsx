@@ -40,6 +40,67 @@ export default function CheckoutPage() {
     : 0;
   const grandTotal = Math.max(0, total - discount) + deliveryFee + tip;
 
+  const handleApplyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) return;
+    setPromoLoading(true);
+
+    const { data, error } = await supabase
+      .from('promo_codes')
+      .select('*')
+      .ilike('code', code)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error || !data) {
+      toast.error('Invalid promo code');
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate expiry
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      toast.error('This promo code has expired');
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate max uses
+    if (data.max_uses !== null && data.current_uses >= data.max_uses) {
+      toast.error('This promo code has reached its usage limit');
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate min order amount
+    if (total < Number(data.min_order_amount)) {
+      toast.error(`Minimum order of $${Number(data.min_order_amount).toFixed(2)} required`);
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate store-specific promo
+    if (data.store_id && data.store_id !== storeId) {
+      toast.error('This code is not valid for this restaurant');
+      setPromoLoading(false);
+      return;
+    }
+
+    setAppliedPromo({
+      id: data.id,
+      code: data.code,
+      discount_type: data.discount_type as 'percentage' | 'fixed',
+      discount_value: Number(data.discount_value),
+    });
+    toast.success('Promo code applied! 🎉');
+    setPromoLoading(false);
+  };
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+  };
+
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error('Please sign in to place an order');
