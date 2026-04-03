@@ -130,6 +130,10 @@ export default function StoreApp() {
                 <UtensilsCrossed className="h-4 w-4 mr-1.5" />
                 Menu
               </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex-1 font-heading">
+                <BarChart3 className="h-4 w-4 mr-1.5" />
+                Analytics
+              </TabsTrigger>
               <TabsTrigger value="settings" className="flex-1 font-heading">
                 <Settings className="h-4 w-4 mr-1.5" />
                 Settings
