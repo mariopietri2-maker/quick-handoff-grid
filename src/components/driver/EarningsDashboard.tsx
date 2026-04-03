@@ -1,11 +1,20 @@
-import { DollarSign, Clock, Car, TrendingUp } from 'lucide-react';
+import { Clock, Car } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { mockEarnings } from '@/lib/mock-data';
+import { useEarnings } from '@/hooks/useEarnings';
 
 export function EarningsDashboard() {
-  const { today, week, breakdown } = mockEarnings;
+  const { today, week, weekBreakdown, loading } = useEarnings();
+
+  if (loading) {
+    return (
+      <div className="text-center py-16">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-muted-foreground font-heading">Loading earnings...</p>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-4">
@@ -24,8 +33,11 @@ export function EarningsDashboard() {
           </Card>
           <div className="grid grid-cols-2 gap-3">
             <StatCard icon={Car} label="Trips" value={today.trips.toString()} />
-            <StatCard icon={Clock} label="Active Hours" value={`${today.hours}h`} />
+            <StatCard icon={Clock} label="Base Pay" value={`$${today.basePay.toFixed(2)}`} />
           </div>
+          {today.trips === 0 && (
+            <p className="text-center text-sm text-muted-foreground">No deliveries completed today yet</p>
+          )}
         </TabsContent>
 
         <TabsContent value="week" className="space-y-4 mt-4">
@@ -37,7 +49,7 @@ export function EarningsDashboard() {
           </Card>
           <div className="grid grid-cols-2 gap-3">
             <StatCard icon={Car} label="Trips" value={week.trips.toString()} />
-            <StatCard icon={Clock} label="Active Hours" value={`${week.hours}h`} />
+            <StatCard icon={Clock} label="Base Pay" value={`$${week.basePay.toFixed(2)}`} />
           </div>
 
           <Card className="shadow-[var(--shadow-md)]">
@@ -47,7 +59,7 @@ export function EarningsDashboard() {
             <CardContent>
               <div className="h-52">
                 <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={breakdown}>
+                  <BarChart data={weekBreakdown}>
                     <XAxis dataKey="day" tick={{ fontSize: 12 }} />
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip />
