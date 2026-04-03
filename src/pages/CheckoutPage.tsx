@@ -250,11 +250,12 @@ export default function CheckoutPage() {
               <MapPin className="h-5 w-5 text-primary" />
               <h2 className="font-heading font-semibold text-foreground">Delivery Address</h2>
             </div>
-            <Input
-              placeholder="Enter your delivery address"
+            <AddressAutocomplete
               value={address}
-              onChange={e => setAddress(e.target.value)}
-              maxLength={200}
+              onChange={(addr, lat, lon) => {
+                setAddress(addr);
+                if (lat && lon) setDeliveryCoords({ lat, lon });
+              }}
             />
           </CardContent>
         </Card>
