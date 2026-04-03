@@ -59,6 +59,11 @@ export default function OrderTrackingPage() {
         }
       }
       setItems(itemsRes.data ?? []);
+      // Check if already reviewed
+      if (orderRes.data) {
+        const { data: existingReview } = await supabase.from('reviews').select('id').eq('order_id', orderRes.data.id).maybeSingle();
+        if (existingReview) setHasReviewed(true);
+      }
       setLoading(false);
     });
   }, [id]);
