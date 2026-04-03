@@ -8,6 +8,7 @@ import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
+import { requestNotificationPermission } from '@/lib/notifications';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();

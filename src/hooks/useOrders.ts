@@ -154,6 +154,9 @@ export function useDriverOrders() {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             fetchOrders();
             if (payload.eventType === 'INSERT') {
+              playDeliverySound();
+              const newOrder = payload.new as OrderRow;
+              showDeliveryNotification(Number(newOrder.delivery_fee ?? 0) + Number(newOrder.tip_amount ?? 0));
               toast('📦 New delivery available!', { duration: 4000 });
             }
           }
