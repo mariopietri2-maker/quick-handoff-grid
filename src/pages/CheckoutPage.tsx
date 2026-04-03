@@ -387,6 +387,10 @@ export default function CheckoutPage() {
               <span className="text-muted-foreground">Delivery Fee</span>
               <span className="text-foreground">${deliveryFee.toFixed(2)}</span>
             </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Driver Tip</span>
+              <span className="text-foreground">${tipAmount.toFixed(2)}</span>
+            </div>
             <div className="flex justify-between font-heading font-bold pt-2 border-t border-border">
               <span className="text-foreground">Total</span>
               <span className="text-foreground">${grandTotal.toFixed(2)}</span>
