@@ -138,6 +138,8 @@ export default function CheckoutPage() {
           delivery_fee: deliveryFee,
           tip_amount: tipAmount,
           delivery_address: address,
+          delivery_latitude: deliveryCoords?.lat ?? null,
+          delivery_longitude: deliveryCoords?.lon ?? null,
           notes: notes || null,
         })
         .select()
