@@ -5,50 +5,19 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
-import { mockOrderOffers, mockActiveDelivery } from '@/lib/mock-data';
 import { Badge } from '@/components/ui/badge';
-import { toast } from 'sonner';
+import { useDriverOrders } from '@/hooks/useOrders';
 
 export default function DriverApp() {
-  const [offers, setOffers] = useState(mockOrderOffers);
-  const [activeDelivery, setActiveDelivery] = useState<typeof mockActiveDelivery | null>(null);
+  const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
 
-  const handleAccept = (id: string) => {
-    const offer = offers.find(o => o.id === id);
-    if (offer) {
-      setActiveDelivery({
-        ...mockActiveDelivery,
-        id: offer.id,
-        storeName: offer.storeName,
-        storeAddress: offer.storeAddress,
-        deliveryAddress: offer.deliveryAddress,
-        estimatedPayout: offer.estimatedPayout,
-        status: 'accepted',
-      });
-      setOffers(prev => prev.filter(o => o.id !== id));
-      toast.success('Order accepted!');
-    }
-  };
-
-  const handleDecline = (id: string) => {
-    setOffers(prev => prev.filter(o => o.id !== id));
-    toast('Order declined');
-  };
-
-  const handleStatusUpdate = (status: string) => {
-    if (status === 'delivered') {
-      toast.success('Delivery completed! 🎉');
-      setActiveDelivery(null);
-    } else if (activeDelivery) {
-      setActiveDelivery({ ...activeDelivery, status: status as any });
-      toast.success(`Status updated: ${status.replace('_', ' ')}`);
-    }
+  const handleDecline = (_id: string) => {
+    // In production, this would mark the offer as declined for this driver
   };
 
   return (
     <div className="min-h-screen bg-background">
-      {/* Header */}
       <header className="gradient-dark text-primary-foreground px-4 py-3 flex items-center justify-between sticky top-0 z-50">
         <div className="flex items-center gap-2">
           <Car className="h-6 w-6" />
@@ -98,18 +67,36 @@ export default function DriverApp() {
                 <p className="text-muted-foreground font-heading">You're offline</p>
                 <p className="text-sm text-muted-foreground mt-1">Go online to receive delivery offers</p>
               </div>
+            ) : loading ? (
+              <div className="text-center py-16">
+                <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                <p className="text-muted-foreground font-heading">Loading offers...</p>
+              </div>
             ) : offers.length === 0 ? (
               <div className="text-center py-16">
                 <Radio className="h-12 w-12 text-muted-foreground mx-auto mb-4 animate-pulse" />
                 <p className="font-heading text-foreground">Waiting for orders...</p>
-                <p className="text-sm text-muted-foreground mt-1">New offers will appear here</p>
+                <p className="text-sm text-muted-foreground mt-1">New offers will appear here in real-time</p>
+                <div className="mt-4 flex items-center justify-center gap-2 text-sm text-success">
+                  <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+                  Listening...
+                </div>
               </div>
             ) : (
               offers.map(offer => (
                 <OrderOfferCard
                   key={offer.id}
-                  offer={offer}
-                  onAccept={handleAccept}
+                  offer={{
+                    id: offer.id,
+                    storeName: 'Pickup',
+                    storeAddress: offer.delivery_address || 'Store location',
+                    deliveryAddress: offer.delivery_address || 'Customer location',
+                    estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
+                    totalDistance: 0,
+                    estimatedTime: offer.estimated_prep_time ?? 20,
+                    itemCount: offer.order_items?.length ?? 0,
+                  }}
+                  onAccept={acceptOrder}
                   onDecline={handleDecline}
                 />
               ))
@@ -119,8 +106,21 @@ export default function DriverApp() {
           <TabsContent value="active">
             {activeDelivery ? (
               <ActiveDelivery
-                delivery={activeDelivery}
-                onStatusUpdate={handleStatusUpdate}
+                delivery={{
+                  id: activeDelivery.id,
+                  storeName: 'Pickup Location',
+                  storeAddress: 'Store address',
+                  deliveryAddress: activeDelivery.delivery_address || 'Customer address',
+                  customerName: 'Customer',
+                  status: activeDelivery.status ?? 'accepted',
+                  items: activeDelivery.order_items?.map(i => ({
+                    name: i.name,
+                    quantity: i.quantity,
+                  })) ?? [],
+                  estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
+                  pickupChecklist: ['All items verified', 'Drinks included', 'Utensils added'],
+                }}
+                onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
               />
             ) : (
               <div className="text-center py-16">
