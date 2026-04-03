@@ -63,5 +63,16 @@ export function useAdminData() {
     },
   });
 
-  return { orders, stores, profiles, earnings, reviews };
+  const userRoles = useQuery({
+    queryKey: ['admin-user-roles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('user_roles')
+        .select('*');
+      if (error) throw error;
+      return data;
+    },
+  });
+
+  return { orders, stores, profiles, earnings, reviews, userRoles };
 }
