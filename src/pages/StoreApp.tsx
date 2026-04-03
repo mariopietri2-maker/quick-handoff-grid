@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Store, ClipboardList, UtensilsCrossed, Settings } from 'lucide-react';
+import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
 import { MenuControl } from '@/components/store/MenuControl';
