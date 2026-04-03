@@ -23,7 +23,17 @@ export const mockOrderOffers = [
   },
 ];
 
-export const mockActiveDelivery = {
+export const mockActiveDelivery: {
+  id: string;
+  storeName: string;
+  storeAddress: string;
+  deliveryAddress: string;
+  customerName: string;
+  status: string;
+  items: { name: string; quantity: number }[];
+  estimatedPayout: number;
+  pickupChecklist: string[];
+} = {
   id: '3',
   storeName: 'Sushi Heaven',
   storeAddress: '555 Broadway',
