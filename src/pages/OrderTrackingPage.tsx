@@ -259,18 +259,8 @@ export default function OrderTrackingPage() {
           </CardContent>
         </Card>
 
-        {/* Estimated Time */}
-        {!isDelivered && !isCancelled && order.estimated_prep_time && (
-          <Card className="shadow-[var(--shadow-md)]">
-            <CardContent className="p-4 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Clock className="h-5 w-5 text-primary" />
-                <span className="text-sm font-heading text-foreground">Estimated Time</span>
-              </div>
-              <span className="font-heading font-bold text-foreground">{order.estimated_prep_time} min</span>
-            </CardContent>
-          </Card>
-        )}
+        {/* Countdown Timer */}
+        {!isDelivered && !isCancelled && <DeliveryCountdown order={order} />}
 
         {/* Review Form - only for delivered orders */}
         {isDelivered && !hasReviewed && (
