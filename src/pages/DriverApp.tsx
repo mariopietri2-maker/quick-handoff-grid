@@ -132,23 +132,37 @@ export default function DriverApp() {
 
           <TabsContent value="active">
             {activeDelivery ? (
-              <ActiveDelivery
-                delivery={{
-                  id: activeDelivery.id,
-                  storeName: 'Pickup Location',
-                  storeAddress: 'Store address',
-                  deliveryAddress: activeDelivery.delivery_address || 'Customer address',
-                  customerName: 'Customer',
-                  status: activeDelivery.status ?? 'accepted',
-                  items: activeDelivery.order_items?.map(i => ({
-                    name: i.name,
-                    quantity: i.quantity,
-                  })) ?? [],
-                  estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
-                  pickupChecklist: ['All items verified', 'Drinks included', 'Utensils added'],
-                }}
-                onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
-              />
+              <>
+                {tracking && (
+                  <div className="mb-3 flex items-center gap-2 p-2.5 rounded-lg bg-success/10 border border-success/20">
+                    <Navigation className="h-4 w-4 text-success animate-pulse" />
+                    <span className="text-xs font-heading text-success">Sharing live location with customer</span>
+                  </div>
+                )}
+                {locError && (
+                  <div className="mb-3 flex items-center gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/20">
+                    <Navigation className="h-4 w-4 text-warning" />
+                    <span className="text-xs font-heading text-warning">GPS unavailable: {locError}</span>
+                  </div>
+                )}
+                <ActiveDelivery
+                  delivery={{
+                    id: activeDelivery.id,
+                    storeName: 'Pickup Location',
+                    storeAddress: 'Store address',
+                    deliveryAddress: activeDelivery.delivery_address || 'Customer address',
+                    customerName: 'Customer',
+                    status: activeDelivery.status ?? 'accepted',
+                    items: activeDelivery.order_items?.map(i => ({
+                      name: i.name,
+                      quantity: i.quantity,
+                    })) ?? [],
+                    estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
+                    pickupChecklist: ['All items verified', 'Drinks included', 'Utensils added'],
+                  }}
+                  onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
+                />
+              </>
             ) : (
               <div className="text-center py-16">
                 <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
