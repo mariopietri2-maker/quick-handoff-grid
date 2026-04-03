@@ -57,6 +57,18 @@ const Index = () => {
               Store App
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
+            {isAdmin && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 px-8 text-lg font-heading border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
+                onClick={() => navigate('/admin')}
+              >
+                <Shield className="mr-2 h-5 w-5" />
+                Admin
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            )}
           </div>
         </div>
       </div>
