@@ -12,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
+import AssignmentSettings from '@/components/admin/AssignmentSettings';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
