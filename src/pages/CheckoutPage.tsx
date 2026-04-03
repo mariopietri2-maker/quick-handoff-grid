@@ -29,8 +29,19 @@ export default function CheckoutPage() {
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
 
+  const [tipOption, setTipOption] = useState<number | 'custom'>(15);
+  const [customTip, setCustomTip] = useState('');
+
   const deliveryFee = 0.99;
-  const tip = 0;
+  const subtotalAfterDiscount = Math.max(0, total - (appliedPromo
+    ? appliedPromo.discount_type === 'percentage'
+      ? Math.min(total, total * (appliedPromo.discount_value / 100))
+      : Math.min(total, appliedPromo.discount_value)
+    : 0));
+
+  const tipAmount = tipOption === 'custom'
+    ? Math.max(0, parseFloat(customTip) || 0)
+    : subtotalAfterDiscount * (tipOption / 100);
 
   // Calculate discount
   const discount = appliedPromo
