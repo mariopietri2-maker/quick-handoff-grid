@@ -88,6 +88,7 @@ export default function OrderTrackingPage() {
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [storeName, setStoreName] = useState('');
   const [driverName, setDriverName] = useState<string | null>(null);
+  const [driverPhone, setDriverPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [hasReviewed, setHasReviewed] = useState(false);
@@ -105,8 +106,11 @@ export default function OrderTrackingPage() {
         if (store) setStoreName(store.name);
         // Fetch driver name if assigned
         if (orderRes.data.driver_id) {
-          const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', orderRes.data.driver_id).single();
-          if (profile) setDriverName(profile.full_name);
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', orderRes.data.driver_id).single();
+          if (profile) {
+            setDriverName(profile.full_name);
+            setDriverPhone(profile.phone);
+          }
         }
       }
       setItems(itemsRes.data ?? []);
@@ -135,8 +139,11 @@ export default function OrderTrackingPage() {
         setLastUpdate(new Date());
         // Fetch driver name if newly assigned
         if (updated.driver_id && !driverName) {
-          const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', updated.driver_id).single();
-          if (profile) setDriverName(profile.full_name);
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', updated.driver_id).single();
+          if (profile) {
+            setDriverName(profile.full_name);
+            setDriverPhone(profile.phone);
+          }
         }
       })
       .subscribe();
@@ -232,16 +239,28 @@ export default function OrderTrackingPage() {
         {order.driver_id && (
           <Card className="shadow-[var(--shadow-md)] border-primary/20">
             <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full gradient-primary flex items-center justify-center">
+              <div className="h-12 w-12 rounded-full gradient-primary flex items-center justify-center shrink-0">
                 <User className="h-6 w-6 text-primary-foreground" />
               </div>
-              <div className="flex-1">
+              <div className="flex-1 min-w-0">
                 <p className="font-heading font-semibold text-foreground">{driverName || 'Driver'}</p>
                 <p className="text-xs text-muted-foreground">Your delivery driver</p>
+                {driverPhone && (
+                  <a href={`tel:${driverPhone}`} className="text-xs text-primary font-heading flex items-center gap-1 mt-0.5">
+                    <Phone className="h-3 w-3" /> {driverPhone}
+                  </a>
+                )}
               </div>
-              <div className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center">
-                <Phone className="h-5 w-5 text-success" />
-              </div>
+              {driverPhone && (
+                <a href={`tel:${driverPhone}`} className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
+                  <Phone className="h-5 w-5 text-success" />
+                </a>
+              )}
+              {!driverPhone && (
+                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
+                  <Phone className="h-5 w-5 text-muted-foreground" />
+                </div>
+              )}
             </CardContent>
           </Card>
         )}
