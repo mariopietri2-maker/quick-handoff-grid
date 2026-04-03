@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { ReviewList, RatingBadge } from '@/components/ReviewList';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
