@@ -4,11 +4,17 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
+import { CartProvider } from "@/hooks/useCart";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import DriverApp from "./pages/DriverApp.tsx";
 import StoreApp from "./pages/StoreApp.tsx";
+import CustomerApp from "./pages/CustomerApp.tsx";
+import RestaurantPage from "./pages/RestaurantPage.tsx";
+import CheckoutPage from "./pages/CheckoutPage.tsx";
+import OrderTrackingPage from "./pages/OrderTrackingPage.tsx";
+import MyOrdersPage from "./pages/MyOrdersPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
 
 const queryClient = new QueryClient();
@@ -20,21 +26,28 @@ const App = () => (
       <Sonner />
       <BrowserRouter>
         <AuthProvider>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/driver" element={
-              <ProtectedRoute allowedRoles={['driver']}>
-                <DriverApp />
-              </ProtectedRoute>
-            } />
-            <Route path="/store" element={
-              <ProtectedRoute allowedRoles={['store']}>
-                <StoreApp />
-              </ProtectedRoute>
-            } />
-            <Route path="*" element={<NotFound />} />
-          </Routes>
+          <CartProvider>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/order" element={<CustomerApp />} />
+              <Route path="/restaurant/:id" element={<RestaurantPage />} />
+              <Route path="/checkout" element={<CheckoutPage />} />
+              <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
+              <Route path="/orders" element={<MyOrdersPage />} />
+              <Route path="/driver" element={
+                <ProtectedRoute allowedRoles={['driver']}>
+                  <DriverApp />
+                </ProtectedRoute>
+              } />
+              <Route path="/store" element={
+                <ProtectedRoute allowedRoles={['store']}>
+                  <StoreApp />
+                </ProtectedRoute>
+              } />
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </CartProvider>
         </AuthProvider>
       </BrowserRouter>
     </TooltipProvider>

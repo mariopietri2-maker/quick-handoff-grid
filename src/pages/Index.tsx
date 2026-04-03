@@ -1,4 +1,4 @@
-import { Car, Store, ArrowRight, Zap, Shield, BarChart3 } from 'lucide-react';
+import { Car, Store, ArrowRight, Zap, Shield, BarChart3, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
@@ -31,6 +31,16 @@ const Index = () => {
             <Button
               size="lg"
               className="h-14 px-8 text-lg font-heading gradient-primary shadow-primary text-primary-foreground"
+              onClick={() => navigate('/order')}
+            >
+              <ShoppingBag className="mr-2 h-5 w-5" />
+              Order Food
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+            <Button
+              size="lg"
+              variant="outline"
+              className="h-14 px-8 text-lg font-heading border-primary-foreground/20 text-primary-foreground hover:bg-primary-foreground/10"
               onClick={() => handleNav('driver')}
             >
               <Car className="mr-2 h-5 w-5" />
