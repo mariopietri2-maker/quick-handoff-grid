@@ -2,9 +2,19 @@ import { Car, Store, ArrowRight, Zap, Shield, BarChart3 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const navigate = useNavigate();
+  const { user, profile } = useAuth();
+
+  const handleNav = (target: 'driver' | 'store') => {
+    if (user && profile?.role === target) {
+      navigate(`/${target}`);
+    } else {
+      navigate('/auth');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-background">
