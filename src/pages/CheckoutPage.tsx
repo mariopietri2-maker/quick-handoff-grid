@@ -29,16 +29,26 @@ export default function CheckoutPage() {
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
 
-  const deliveryFee = 0.99;
-  const tip = 0;
+  const [tipOption, setTipOption] = useState<number | 'custom'>(15);
+  const [customTip, setCustomTip] = useState('');
 
-  // Calculate discount
+  const deliveryFee = 0.99;
+  const subtotalAfterDiscount = Math.max(0, total - (appliedPromo
+    ? appliedPromo.discount_type === 'percentage'
+      ? Math.min(total, total * (appliedPromo.discount_value / 100))
+      : Math.min(total, appliedPromo.discount_value)
+    : 0));
+
+  const tipAmount = tipOption === 'custom'
+    ? Math.max(0, parseFloat(customTip) || 0)
+    : subtotalAfterDiscount * (tipOption / 100);
+
   const discount = appliedPromo
     ? appliedPromo.discount_type === 'percentage'
       ? Math.min(total, total * (appliedPromo.discount_value / 100))
       : Math.min(total, appliedPromo.discount_value)
     : 0;
-  const grandTotal = Math.max(0, total - discount) + deliveryFee + tip;
+  const grandTotal = subtotalAfterDiscount + deliveryFee + tipAmount;
 
   const handleApplyPromo = async () => {
     const code = promoCode.trim();
@@ -124,7 +134,7 @@ export default function CheckoutPage() {
           status: 'placed' as any,
           total_amount: Math.max(0, total - discount),
           delivery_fee: deliveryFee,
-          tip_amount: tip,
+          tip_amount: tipAmount,
           delivery_address: address,
           notes: notes || null,
         })
@@ -259,6 +269,59 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
+        {/* Tip Selection */}
+        <Card className="shadow-[var(--shadow-md)]">
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-lg">💰</span>
+              <h2 className="font-heading font-semibold text-foreground">Tip your driver</h2>
+            </div>
+            <div className="grid grid-cols-4 gap-2">
+              {[10, 15, 20, 'custom' as const].map(opt => {
+                const isSelected = tipOption === opt;
+                return (
+                  <button
+                    key={String(opt)}
+                    onClick={() => setTipOption(opt)}
+                    className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
+                      isSelected
+                        ? 'gradient-primary text-primary-foreground shadow-primary'
+                        : 'bg-muted text-foreground hover:bg-accent'
+                    }`}
+                  >
+                    {opt === 'custom' ? 'Custom' : `${opt}%`}
+                  </button>
+                );
+              })}
+            </div>
+            {tipOption !== 'custom' && tipAmount > 0 && (
+              <p className="text-sm text-muted-foreground text-center">
+                ${tipAmount.toFixed(2)} tip
+              </p>
+            )}
+            {tipOption === 'custom' && (
+              <div className="relative">
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-heading">$</span>
+                <Input
+                  type="number"
+                  value={customTip}
+                  onChange={e => setCustomTip(e.target.value)}
+                  placeholder="0.00"
+                  min="0"
+                  step="0.50"
+                  className="pl-7 font-heading"
+                />
+              </div>
+            )}
+            <button
+              onClick={() => { setTipOption('custom'); setCustomTip('0'); }}
+              className="text-xs text-muted-foreground underline underline-offset-2"
+            >
+              No tip
+            </button>
+          </CardContent>
+        </Card>
+
         {/* Promo Code */}
         <Card className={`shadow-[var(--shadow-md)] ${appliedPromo ? 'border-success/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
@@ -323,6 +386,10 @@ export default function CheckoutPage() {
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Delivery Fee</span>
               <span className="text-foreground">${deliveryFee.toFixed(2)}</span>
+            </div>
+            <div className="flex justify-between text-sm">
+              <span className="text-muted-foreground">Driver Tip</span>
+              <span className="text-foreground">${tipAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between font-heading font-bold pt-2 border-t border-border">
               <span className="text-foreground">Total</span>
