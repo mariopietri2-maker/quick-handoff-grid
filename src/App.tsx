@@ -46,6 +46,11 @@ const App = () => (
                   <StoreApp />
                 </ProtectedRoute>
               } />
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminApp />
+                </ProtectedRoute>
+              } />
               <Route path="*" element={<NotFound />} />
             </Routes>
           </CartProvider>
