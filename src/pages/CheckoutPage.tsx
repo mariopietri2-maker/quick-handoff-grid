@@ -43,13 +43,12 @@ export default function CheckoutPage() {
     ? Math.max(0, parseFloat(customTip) || 0)
     : subtotalAfterDiscount * (tipOption / 100);
 
-  // Calculate discount
   const discount = appliedPromo
     ? appliedPromo.discount_type === 'percentage'
       ? Math.min(total, total * (appliedPromo.discount_value / 100))
       : Math.min(total, appliedPromo.discount_value)
     : 0;
-  const grandTotal = Math.max(0, total - discount) + deliveryFee + tip;
+  const grandTotal = subtotalAfterDiscount + deliveryFee + tipAmount;
 
   const handleApplyPromo = async () => {
     const code = promoCode.trim();
