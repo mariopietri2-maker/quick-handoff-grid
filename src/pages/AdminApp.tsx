@@ -51,6 +51,26 @@ export default function AdminApp() {
     }
   };
 
+  const drivers = profiles.data?.filter(p => p.role === 'driver') ?? [];
+
+  const handleAssignDriver = async (orderId: string, driverId: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ driver_id: driverId === 'unassign' ? null : driverId })
+      .eq('id', orderId);
+    if (error) toast.error('Failed to assign driver');
+    else {
+      toast.success('Driver assigned');
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    }
+  };
+
+  const getDriverName = (driverId: string | null) => {
+    if (!driverId) return null;
+    const driver = profiles.data?.find(p => p.user_id === driverId);
+    return driver?.full_name || driverId.slice(0, 8);
+  };
+
   const handleToggleStoreActive = async (storeId: string, currentActive: boolean | null) => {
     const { error } = await supabase
       .from('stores')
