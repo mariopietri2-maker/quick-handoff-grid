@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { Progress } from '@/components/ui/progress';
 import { ReviewForm } from '@/components/ReviewForm';
+import DriverLiveMap from '@/components/DriverLiveMap';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -263,6 +264,16 @@ export default function OrderTrackingPage() {
               )}
             </CardContent>
           </Card>
+        )}
+
+        {/* Live Driver Map */}
+        {order.driver_id && !isDelivered && !isCancelled && (
+          <DriverLiveMap
+            driverId={order.driver_id}
+            deliveryLat={order.delivery_latitude}
+            deliveryLng={order.delivery_longitude}
+            deliveryAddress={order.delivery_address}
+          />
         )}
 
         {/* Status Timeline */}
