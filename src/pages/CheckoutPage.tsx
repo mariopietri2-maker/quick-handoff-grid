@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface AppliedPromo {
+  id: string;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, storeId, storeName, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
@@ -18,10 +25,81 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
 
   const deliveryFee = 0.99;
   const tip = 0;
-  const grandTotal = total + deliveryFee + tip;
+
+  // Calculate discount
+  const discount = appliedPromo
+    ? appliedPromo.discount_type === 'percentage'
+      ? Math.min(total, total * (appliedPromo.discount_value / 100))
+      : Math.min(total, appliedPromo.discount_value)
+    : 0;
+  const grandTotal = Math.max(0, total - discount) + deliveryFee + tip;
+
+  const handleApplyPromo = async () => {
+    const code = promoCode.trim();
+    if (!code) return;
+    setPromoLoading(true);
+
+    const { data, error } = await supabase
+      .from('promo_codes')
+      .select('*')
+      .ilike('code', code)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (error || !data) {
+      toast.error('Invalid promo code');
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate expiry
+    if (data.expires_at && new Date(data.expires_at) < new Date()) {
+      toast.error('This promo code has expired');
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate max uses
+    if (data.max_uses !== null && data.current_uses >= data.max_uses) {
+      toast.error('This promo code has reached its usage limit');
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate min order amount
+    if (total < Number(data.min_order_amount)) {
+      toast.error(`Minimum order of $${Number(data.min_order_amount).toFixed(2)} required`);
+      setPromoLoading(false);
+      return;
+    }
+
+    // Validate store-specific promo
+    if (data.store_id && data.store_id !== storeId) {
+      toast.error('This code is not valid for this restaurant');
+      setPromoLoading(false);
+      return;
+    }
+
+    setAppliedPromo({
+      id: data.id,
+      code: data.code,
+      discount_type: data.discount_type as 'percentage' | 'fixed',
+      discount_value: Number(data.discount_value),
+    });
+    toast.success('Promo code applied! 🎉');
+    setPromoLoading(false);
+  };
+
+  const removePromo = () => {
+    setAppliedPromo(null);
+    setPromoCode('');
+  };
 
   const handlePlaceOrder = async () => {
     if (!user) {
@@ -44,7 +122,7 @@ export default function CheckoutPage() {
           customer_id: user.id,
           store_id: storeId,
           status: 'placed' as any,
-          total_amount: total,
+          total_amount: Math.max(0, total - discount),
           delivery_fee: deliveryFee,
           tip_amount: tip,
           delivery_address: address,
@@ -181,6 +259,53 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
+        {/* Promo Code */}
+        <Card className={`shadow-[var(--shadow-md)] ${appliedPromo ? 'border-success/30' : ''}`}>
+          <CardContent className="p-4 space-y-3">
+            <div className="flex items-center gap-2">
+              <Tag className="h-5 w-5 text-primary" />
+              <h2 className="font-heading font-semibold text-foreground">Promo Code</h2>
+            </div>
+            {appliedPromo ? (
+              <div className="flex items-center justify-between bg-success/5 rounded-lg p-3">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-5 w-5 text-success" />
+                  <div>
+                    <p className="font-heading font-semibold text-foreground text-sm">{appliedPromo.code}</p>
+                    <p className="text-xs text-success">
+                      {appliedPromo.discount_type === 'percentage'
+                        ? `${appliedPromo.discount_value}% off`
+                        : `$${appliedPromo.discount_value.toFixed(2)} off`}
+                    </p>
+                  </div>
+                </div>
+                <button onClick={removePromo} className="h-7 w-7 rounded-full bg-muted flex items-center justify-center">
+                  <X className="h-4 w-4 text-muted-foreground" />
+                </button>
+              </div>
+            ) : (
+              <div className="flex gap-2">
+                <Input
+                  placeholder="Enter code"
+                  value={promoCode}
+                  onChange={e => setPromoCode(e.target.value.toUpperCase())}
+                  maxLength={30}
+                  className="font-mono uppercase"
+                  onKeyDown={e => e.key === 'Enter' && handleApplyPromo()}
+                />
+                <Button
+                  onClick={handleApplyPromo}
+                  disabled={!promoCode.trim() || promoLoading}
+                  variant="outline"
+                  className="font-heading shrink-0"
+                >
+                  {promoLoading ? '...' : 'Apply'}
+                </Button>
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
         {/* Order Summary */}
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4 space-y-2">
@@ -189,6 +314,12 @@ export default function CheckoutPage() {
               <span className="text-muted-foreground">Subtotal</span>
               <span className="text-foreground">${total.toFixed(2)}</span>
             </div>
+            {discount > 0 && (
+              <div className="flex justify-between text-sm">
+                <span className="text-success">Discount</span>
+                <span className="text-success">-${discount.toFixed(2)}</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Delivery Fee</span>
               <span className="text-foreground">${deliveryFee.toFixed(2)}</span>
