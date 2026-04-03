@@ -121,12 +121,20 @@ export default function AdminApp() {
         </div>
 
         <Tabs defaultValue="orders">
-          <TabsList className="w-full grid grid-cols-4">
+          <TabsList className="w-full grid grid-cols-5">
+            <TabsTrigger value="analytics" className="font-heading">Analytics</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Stores</TabsTrigger>
             <TabsTrigger value="users" className="font-heading">Users</TabsTrigger>
             <TabsTrigger value="reviews" className="font-heading">Reviews</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="analytics" className="mt-4">
+            <PlatformAnalytics
+              orders={(orders.data ?? []) as any}
+              profiles={(profiles.data ?? []) as any}
+            />
+          </TabsContent>
 
           {/* Orders Tab */}
           <TabsContent value="orders" className="mt-4">
