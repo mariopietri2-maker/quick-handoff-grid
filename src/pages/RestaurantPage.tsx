@@ -138,9 +138,9 @@ export default function RestaurantPage() {
                         {qty > 0 ? (
                           <div className="flex items-center gap-2">
                             <button
-                              onClick={() => {
-                                const { updateQuantity } = useCart as any;
-                              }}
+                              onClick={() => updateQuantity(item.id, qty - 1)}
+                              className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"
+                            >
                               className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"
                             >
                               <Minus className="h-4 w-4 text-foreground" />
