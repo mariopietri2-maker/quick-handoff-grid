@@ -1,16 +1,26 @@
 import { useState } from 'react';
-import { Car, DollarSign, Radio } from 'lucide-react';
+import { Car, DollarSign, Radio, Bell } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
+import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
+import { requestNotificationPermission } from '@/lib/notifications';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
+  );
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotifPermission(granted ? 'granted' : 'denied');
+  };
 
   const handleDecline = (_id: string) => {
     // In production, this would mark the offer as declined for this driver
@@ -39,6 +49,18 @@ export default function DriverApp() {
       </header>
 
       <div className="p-4 max-w-lg mx-auto">
+        {notifPermission === 'default' && (
+          <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
+            <Bell className="h-5 w-5 text-info flex-shrink-0" />
+            <div className="flex-1">
+              <p className="text-sm font-heading font-semibold text-foreground">Enable notifications</p>
+              <p className="text-xs text-muted-foreground">Get alerts when new deliveries are available</p>
+            </div>
+            <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading">
+              Enable
+            </Button>
+          </div>
+        )}
         <Tabs defaultValue="offers">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="offers" className="flex-1 font-heading relative">
