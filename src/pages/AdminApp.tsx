@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { supabase } from '@/integrations/supabase/client';
@@ -11,6 +12,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
+import AssignmentSettings from '@/components/admin/AssignmentSettings';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -47,6 +49,26 @@ export default function AdminApp() {
       toast.success('Order status updated');
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     }
+  };
+
+  const drivers = profiles.data?.filter(p => p.role === 'driver') ?? [];
+
+  const handleAssignDriver = async (orderId: string, driverId: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ driver_id: driverId === 'unassign' ? null : driverId })
+      .eq('id', orderId);
+    if (error) toast.error('Failed to assign driver');
+    else {
+      toast.success('Driver assigned');
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    }
+  };
+
+  const getDriverName = (driverId: string | null) => {
+    if (!driverId) return null;
+    const driver = profiles.data?.find(p => p.user_id === driverId);
+    return driver?.full_name || driverId.slice(0, 8);
   };
 
   const handleToggleStoreActive = async (storeId: string, currentActive: boolean | null) => {
@@ -143,7 +165,8 @@ export default function AdminApp() {
           </TabsContent>
 
           {/* Orders Tab */}
-          <TabsContent value="orders" className="mt-4">
+          <TabsContent value="orders" className="mt-4 space-y-4">
+            <AssignmentSettings />
             <Card>
               <CardHeader><CardTitle className="font-heading">All Orders</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
@@ -152,8 +175,8 @@ export default function AdminApp() {
                     <TableRow>
                       <TableHead>ID</TableHead>
                       <TableHead>Status</TableHead>
+                      <TableHead>Driver</TableHead>
                       <TableHead>Total</TableHead>
-                      <TableHead>Items</TableHead>
                       <TableHead>Created</TableHead>
                       <TableHead>Actions</TableHead>
                     </TableRow>
@@ -163,8 +186,23 @@ export default function AdminApp() {
                       <TableRow key={order.id}>
                         <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}…</TableCell>
                         <TableCell><Badge variant="outline" className={statusColors[order.status] ?? ''}>{order.status}</Badge></TableCell>
+                        <TableCell>
+                          <Select value={order.driver_id || 'unassigned'} onValueChange={(val) => handleAssignDriver(order.id, val)}>
+                            <SelectTrigger className="w-36 h-8 text-xs">
+                              <SelectValue placeholder="Unassigned" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="unassigned" disabled>Unassigned</SelectItem>
+                              <SelectItem value="unassign">✕ Remove driver</SelectItem>
+                              {drivers.map((d) => (
+                                <SelectItem key={d.user_id} value={d.user_id}>
+                                  {d.full_name || d.user_id.slice(0, 8)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                         <TableCell>${Number(order.total_amount).toFixed(2)}</TableCell>
-                        <TableCell>{order.order_items?.length ?? 0}</TableCell>
                         <TableCell className="text-xs">{format(new Date(order.created_at), 'MMM d, HH:mm')}</TableCell>
                         <TableCell>
                           <Select value={order.status} onValueChange={(val) => handleUpdateOrderStatus(order.id, val)}>
