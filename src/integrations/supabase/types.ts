@@ -275,6 +275,24 @@ export type Database = {
           },
         ]
       }
+      platform_settings: {
+        Row: {
+          assignment_mode: string
+          id: number
+          updated_at: string
+        }
+        Insert: {
+          assignment_mode?: string
+          id?: number
+          updated_at?: string
+        }
+        Update: {
+          assignment_mode?: string
+          id?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
