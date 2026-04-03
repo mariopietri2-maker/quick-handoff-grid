@@ -1,18 +1,33 @@
-import { Store, ClipboardList, UtensilsCrossed, Settings } from 'lucide-react';
+import { useState } from 'react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
 import { MenuControl } from '@/components/store/MenuControl';
 import { StoreSettings } from '@/components/store/StoreSettings';
 import { Badge } from '@/components/ui/badge';
-import { useStoreOrders, useUserStore } from '@/hooks/useOrders';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { useStoreOrders } from '@/hooks/useOrders';
+import { useStore } from '@/hooks/useStore';
 
 export default function StoreApp() {
-  const { storeId, loading: storeLoading } = useUserStore();
-  const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(storeId);
+  const { store, loading: storeLoading, createStore } = useStore();
+  const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(store?.id ?? null);
+  const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
+  const [creating, setCreating] = useState(false);
 
   const newOrders = orders.filter(o => o.status === 'placed').length;
   const loading = storeLoading || ordersLoading;
+
+  const handleCreateStore = async () => {
+    if (!newStore.name || !newStore.address) return;
+    setCreating(true);
+    await createStore(newStore);
+    setCreating(false);
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -22,9 +37,11 @@ export default function StoreApp() {
           <h1 className="font-heading font-bold text-lg text-foreground">DashStore</h1>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="font-heading text-success border-success/30">
-            ● Open
-          </Badge>
+          {store && (
+            <Badge variant="outline" className={`font-heading ${store.is_active ? 'text-success border-success/30' : 'text-muted-foreground border-border'}`}>
+              {store.is_active ? '● Open' : '○ Closed'}
+            </Badge>
+          )}
           {newOrders > 0 && (
             <Badge className="gradient-primary text-primary-foreground font-heading">
               {newOrders} new
@@ -35,13 +52,44 @@ export default function StoreApp() {
       </header>
 
       <div className="p-4 max-w-2xl mx-auto">
-        {!storeId && !storeLoading ? (
+        {storeLoading ? (
           <div className="text-center py-16">
-            <Store className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="font-heading text-foreground">No store found</p>
-            <p className="text-sm text-muted-foreground mt-1">
-              Create a store to start receiving orders
-            </p>
+            <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-muted-foreground font-heading">Loading...</p>
+          </div>
+        ) : !store ? (
+          /* Store Creation Form */
+          <div className="max-w-md mx-auto py-8">
+            <Card className="shadow-[var(--shadow-lg)]">
+              <CardContent className="p-6 space-y-4">
+                <div className="text-center mb-4">
+                  <div className="h-16 w-16 rounded-2xl gradient-primary shadow-primary flex items-center justify-center mx-auto mb-3">
+                    <Plus className="h-8 w-8 text-primary-foreground" />
+                  </div>
+                  <h2 className="font-heading font-bold text-xl text-foreground">Set Up Your Store</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Create your restaurant profile to start receiving orders</p>
+                </div>
+                <div>
+                  <Label className="font-heading">Store Name</Label>
+                  <Input value={newStore.name} onChange={e => setNewStore(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Mario's Pizza" maxLength={100} />
+                </div>
+                <div>
+                  <Label className="font-heading">Address</Label>
+                  <Input value={newStore.address} onChange={e => setNewStore(p => ({ ...p, address: e.target.value }))} placeholder="123 Main St, City" maxLength={200} />
+                </div>
+                <div>
+                  <Label className="font-heading">Phone (optional)</Label>
+                  <Input value={newStore.phone} onChange={e => setNewStore(p => ({ ...p, phone: e.target.value }))} placeholder="(555) 123-4567" maxLength={20} />
+                </div>
+                <Button
+                  onClick={handleCreateStore}
+                  className="w-full h-12 font-heading text-lg gradient-primary shadow-primary text-primary-foreground"
+                  disabled={!newStore.name || !newStore.address || creating}
+                >
+                  {creating ? 'Creating...' : 'Create Store'}
+                </Button>
+              </CardContent>
+            </Card>
           </div>
         ) : (
           <Tabs defaultValue="orders">
@@ -89,11 +137,11 @@ export default function StoreApp() {
             </TabsContent>
 
             <TabsContent value="menu">
-              <MenuControl />
+              <MenuControl storeId={store.id} />
             </TabsContent>
 
             <TabsContent value="settings">
-              <StoreSettings />
+              <StoreSettings storeId={store.id} />
             </TabsContent>
           </Tabs>
         )}
