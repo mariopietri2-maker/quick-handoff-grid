@@ -24,6 +24,7 @@ export default function CheckoutPage() {
   const { items, storeId, storeName, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
   const { user } = useAuth();
   const [address, setAddress] = useState('');
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState('');
