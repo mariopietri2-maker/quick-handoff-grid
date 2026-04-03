@@ -9,6 +9,7 @@ import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
 import { requestNotificationPermission } from '@/lib/notifications';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
@@ -61,6 +62,7 @@ export default function DriverApp() {
             </Button>
           </div>
         )}
+        <AnnouncementsBanner audience="drivers" />
         <Tabs defaultValue="offers">
           <TabsList className="w-full mb-4">
             <TabsTrigger value="offers" className="flex-1 font-heading relative">

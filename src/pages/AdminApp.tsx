@@ -8,8 +8,9 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3 } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
+import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -121,12 +122,13 @@ export default function AdminApp() {
         </div>
 
         <Tabs defaultValue="analytics">
-          <TabsList className="w-full grid grid-cols-5">
+          <TabsList className="w-full grid grid-cols-6">
             <TabsTrigger value="analytics" className="font-heading">Analytics</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Stores</TabsTrigger>
             <TabsTrigger value="users" className="font-heading">Users</TabsTrigger>
             <TabsTrigger value="reviews" className="font-heading">Reviews</TabsTrigger>
+            <TabsTrigger value="announcements" className="font-heading">Announce</TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="mt-4">
@@ -134,6 +136,10 @@ export default function AdminApp() {
               orders={(orders.data ?? []) as any}
               profiles={(profiles.data ?? []) as any}
             />
+          </TabsContent>
+
+          <TabsContent value="announcements" className="mt-4">
+            <AnnouncementsManager />
           </TabsContent>
 
           {/* Orders Tab */}

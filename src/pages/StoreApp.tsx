@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission } from '@/lib/notifications';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
 export default function StoreApp() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
@@ -116,6 +117,7 @@ export default function StoreApp() {
                 </Button>
               </div>
             )}
+            <AnnouncementsBanner audience="store_owners" />
             <Tabs defaultValue="orders">
             <TabsList className="w-full mb-4">
               <TabsTrigger value="orders" className="flex-1 font-heading relative">
