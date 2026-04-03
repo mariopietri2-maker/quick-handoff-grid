@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { SavedAddresses } from '@/components/SavedAddresses';
 
 interface AppliedPromo {
   id: string;
@@ -25,6 +26,25 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const [address, setAddress] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
+
+  // Auto-fill default saved address
+  useEffect(() => {
+    if (!user) return;
+    supabase
+      .from('saved_addresses')
+      .select('address, latitude, longitude')
+      .eq('user_id', user.id)
+      .eq('is_default', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (data && !address) {
+          setAddress((data as any).address);
+          if ((data as any).latitude && (data as any).longitude) {
+            setDeliveryCoords({ lat: (data as any).latitude, lon: (data as any).longitude });
+          }
+        }
+      });
+  }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -255,6 +275,13 @@ export default function CheckoutPage() {
               onChange={(addr, lat, lon) => {
                 setAddress(addr);
                 if (lat && lon) setDeliveryCoords({ lat, lon });
+              }}
+            />
+            <SavedAddresses
+              currentAddress={address}
+              onSelect={(addr, lat, lon) => {
+                setAddress(addr);
+                setDeliveryCoords(lat && lon ? { lat, lon } : null);
               }}
             />
           </CardContent>
