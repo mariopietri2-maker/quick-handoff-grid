@@ -1,10 +1,11 @@
 import { useState, useEffect } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell } from 'lucide-react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
 import { MenuControl } from '@/components/store/MenuControl';
 import { StoreSettings } from '@/components/store/StoreSettings';
+import { StoreAnalyticsDashboard } from '@/components/store/StoreAnalyticsDashboard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -129,6 +130,10 @@ export default function StoreApp() {
                 <UtensilsCrossed className="h-4 w-4 mr-1.5" />
                 Menu
               </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex-1 font-heading">
+                <BarChart3 className="h-4 w-4 mr-1.5" />
+                Analytics
+              </TabsTrigger>
               <TabsTrigger value="settings" className="flex-1 font-heading">
                 <Settings className="h-4 w-4 mr-1.5" />
                 Settings
@@ -160,6 +165,10 @@ export default function StoreApp() {
 
             <TabsContent value="menu">
               <MenuControl storeId={store.id} />
+            </TabsContent>
+
+            <TabsContent value="analytics">
+              <StoreAnalyticsDashboard storeId={store.id} />
             </TabsContent>
 
             <TabsContent value="settings">
