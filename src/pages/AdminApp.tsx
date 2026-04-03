@@ -120,7 +120,7 @@ export default function AdminApp() {
           <StatCard icon={Star} label="Avg Rating" value={avgRating} />
         </div>
 
-        <Tabs defaultValue="orders">
+        <Tabs defaultValue="analytics">
           <TabsList className="w-full grid grid-cols-5">
             <TabsTrigger value="analytics" className="font-heading">Analytics</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
