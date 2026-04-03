@@ -2,34 +2,18 @@ import { Clock, User, Car, ChevronRight, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-
-interface OrderItem {
-  name: string;
-  quantity: number;
-  price: number;
-}
-
-interface StoreOrder {
-  id: string;
-  customerName: string;
-  status: 'placed' | 'preparing' | 'ready';
-  items: OrderItem[];
-  total: number;
-  placedAt: string;
-  estimatedPrepTime: number;
-  driverName: string | null;
-  driverEta: number | null;
-}
+import type { OrderWithItems } from '@/hooks/useOrders';
 
 interface OrderQueueProps {
-  orders: StoreOrder[];
+  orders: OrderWithItems[];
   onStatusUpdate: (orderId: string, newStatus: string) => void;
 }
 
-const statusConfig = {
-  placed: { label: 'New', variant: 'destructive' as const, bg: 'bg-primary/10 border-primary/30' },
-  preparing: { label: 'In Progress', variant: 'default' as const, bg: 'bg-warning/10 border-warning/30' },
-  ready: { label: 'Ready', variant: 'secondary' as const, bg: 'bg-success/10 border-success/30' },
+const statusConfig: Record<string, { label: string; variant: 'destructive' | 'default' | 'secondary'; bg: string }> = {
+  placed: { label: 'New', variant: 'destructive', bg: 'bg-primary/10 border-primary/30' },
+  accepted: { label: 'Accepted', variant: 'default', bg: 'bg-info/10 border-info/30' },
+  preparing: { label: 'In Progress', variant: 'default', bg: 'bg-warning/10 border-warning/30' },
+  ready: { label: 'Ready', variant: 'secondary', bg: 'bg-success/10 border-success/30' },
 };
 
 export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
@@ -40,7 +24,8 @@ export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
 
   const getNextAction = (status: string) => {
     switch (status) {
-      case 'placed': return { label: 'Start Preparing', next: 'preparing' };
+      case 'placed': return { label: 'Accept & Start Preparing', next: 'preparing' };
+      case 'accepted': return { label: 'Start Preparing', next: 'preparing' };
       case 'preparing': return { label: 'Mark Ready', next: 'ready' };
       case 'ready': return null;
       default: return null;
@@ -50,8 +35,9 @@ export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
   return (
     <div className="space-y-3">
       {orders.map(order => {
-        const config = statusConfig[order.status];
+        const config = statusConfig[order.status] || statusConfig.placed;
         const nextAction = getNextAction(order.status);
+        const items = order.order_items || [];
 
         return (
           <Card key={order.id} className={`border-2 ${config.bg} shadow-[var(--shadow-md)] overflow-hidden`}>
@@ -61,50 +47,46 @@ export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
                   <Badge variant={config.variant} className="font-heading font-semibold">
                     {config.label}
                   </Badge>
-                  <span className="text-sm font-mono text-muted-foreground">#{order.id}</span>
+                  <span className="text-sm font-mono text-muted-foreground">#{order.id.slice(0, 6)}</span>
                 </div>
                 <span className="text-sm text-muted-foreground flex items-center gap-1">
                   <Clock className="h-3.5 w-3.5" />
-                  {getTimeSince(order.placedAt)}
+                  {getTimeSince(order.created_at)}
                 </span>
               </div>
 
-              <div className="flex items-center gap-2 mb-3">
-                <User className="h-4 w-4 text-muted-foreground" />
-                <span className="font-heading font-semibold text-foreground">{order.customerName}</span>
-              </div>
-
               <div className="space-y-1 mb-3">
-                {order.items.map((item, i) => (
+                {items.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-foreground">{item.quantity}x {item.name}</span>
-                    <span className="text-muted-foreground">${item.price.toFixed(2)}</span>
+                    <span className="text-muted-foreground">${Number(item.unit_price).toFixed(2)}</span>
                   </div>
                 ))}
                 <div className="flex justify-between font-heading font-semibold pt-2 border-t border-border">
                   <span className="text-foreground">Total</span>
-                  <span className="text-foreground">${order.total.toFixed(2)}</span>
+                  <span className="text-foreground">${Number(order.total_amount).toFixed(2)}</span>
                 </div>
               </div>
 
               {/* Driver Info */}
-              {order.driverName && (
+              {order.driver_id && (
                 <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-card mb-3">
                   <Car className="h-4 w-4 text-info" />
-                  <span className="text-sm text-foreground">{order.driverName}</span>
-                  {order.driverEta !== null && (
-                    <Badge variant="outline" className="ml-auto text-info border-info/30">
-                      ETA {order.driverEta}m
-                    </Badge>
-                  )}
+                  <span className="text-sm text-foreground">Driver assigned</span>
                 </div>
               )}
 
               {/* Prep Time */}
-              {order.status === 'preparing' && order.estimatedPrepTime > 0 && (
+              {order.status === 'preparing' && order.estimated_prep_time && order.estimated_prep_time > 0 && (
                 <div className="flex items-center gap-2 text-sm text-warning mb-3">
                   <Timer className="h-4 w-4" />
-                  <span>~{order.estimatedPrepTime} min remaining</span>
+                  <span>~{order.estimated_prep_time} min remaining</span>
+                </div>
+              )}
+
+              {order.notes && (
+                <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-2 mb-3">
+                  📝 {order.notes}
                 </div>
               )}
 
