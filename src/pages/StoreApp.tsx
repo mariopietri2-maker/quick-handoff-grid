@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus } from 'lucide-react';
+import { useState, useEffect } from 'react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
@@ -12,8 +12,17 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
+import { requestNotificationPermission } from '@/lib/notifications';
 
 export default function StoreApp() {
+  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
+  );
+
+  const handleEnableNotifications = async () => {
+    const granted = await requestNotificationPermission();
+    setNotifPermission(granted ? 'granted' : 'denied');
+  };
   const { store, loading: storeLoading, createStore } = useStore();
   const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(store?.id ?? null);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
