@@ -15,6 +15,8 @@ import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
+  const hasActiveDelivery = !!activeDelivery;
+  const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
   );
