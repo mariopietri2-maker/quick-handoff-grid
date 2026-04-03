@@ -15,7 +15,7 @@ interface ActiveDeliveryData {
   storeAddress: string;
   deliveryAddress: string;
   customerName: string;
-  status: 'accepted' | 'arrived' | 'picked_up' | 'delivering';
+  status: string;
   items: DeliveryItem[];
   estimatedPayout: number;
   pickupChecklist: string[];
