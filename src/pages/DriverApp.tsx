@@ -54,6 +54,7 @@ export default function DriverApp() {
           <Car className="h-6 w-6" />
           <h1 className="font-heading font-bold text-lg">DashDrive</h1>
         </div>
+        <div className="flex items-center gap-2">
         <button
           onClick={() => setIsOnline(!isOnline)}
           className={`px-4 py-1.5 rounded-full text-sm font-heading font-semibold transition-all ${
