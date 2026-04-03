@@ -122,7 +122,7 @@ export default function CheckoutPage() {
           customer_id: user.id,
           store_id: storeId,
           status: 'placed' as any,
-          total_amount: total,
+          total_amount: Math.max(0, total - discount),
           delivery_fee: deliveryFee,
           tip_amount: tip,
           delivery_address: address,
