@@ -41,12 +41,23 @@ interface DriverLiveMapProps {
   deliveryAddress?: string | null;
 }
 
+function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const R = 6371;
+  const dLat = ((lat2 - lat1) * Math.PI) / 180;
+  const dLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos((lat1 * Math.PI) / 180) * Math.cos((lat2 * Math.PI) / 180) * Math.sin(dLon / 2) ** 2;
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
+
+const AVG_SPEED_KMH = 30; // average city driving speed
+
 export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deliveryAddress }: DriverLiveMapProps) {
   const [driverLat, setDriverLat] = useState<number | null>(null);
   const [driverLng, setDriverLng] = useState<number | null>(null);
 
   useEffect(() => {
-    // Fetch initial location
     supabase
       .from('driver_locations')
       .select('latitude, longitude')
@@ -61,7 +72,6 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
         }
       });
 
-    // Subscribe to realtime updates
     const channel = supabase
       .channel(`driver-loc-${driverId}`)
       .on('postgres_changes', {
@@ -81,9 +91,17 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
     return () => { supabase.removeChannel(channel); };
   }, [driverId]);
 
-  // Need at least driver or delivery location to render
   const centerLat = driverLat ?? deliveryLat;
   const centerLng = driverLng ?? deliveryLng;
+
+  // Calculate ETA
+  const eta = (driverLat != null && driverLng != null && deliveryLat != null && deliveryLng != null)
+    ? (() => {
+        const distKm = haversineKm(driverLat, driverLng, deliveryLat, deliveryLng);
+        const minutes = Math.round((distKm / AVG_SPEED_KMH) * 60);
+        return { distKm, minutes };
+      })()
+    : null;
 
   if (centerLat == null || centerLng == null) {
     return (
@@ -95,6 +113,22 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
 
   return (
     <div className="rounded-xl overflow-hidden border border-border shadow-[var(--shadow-md)]">
+      {eta && (
+        <div className="bg-card px-4 py-2.5 flex items-center justify-between border-b border-border">
+          <div className="flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
+            <span className="text-sm font-heading text-foreground">ETA</span>
+          </div>
+          <div className="text-right">
+            <span className="font-heading font-bold text-foreground">
+              {eta.minutes < 1 ? '< 1' : eta.minutes} min
+            </span>
+            <span className="text-xs text-muted-foreground ml-2">
+              ({eta.distKm < 1 ? `${Math.round(eta.distKm * 1000)}m` : `${eta.distKm.toFixed(1)}km`})
+            </span>
+          </div>
+        </div>
+      )}
       <MapContainer
         center={[centerLat, centerLng]}
         zoom={14}
