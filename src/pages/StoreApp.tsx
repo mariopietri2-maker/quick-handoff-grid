@@ -166,6 +166,7 @@ export default function StoreApp() {
               <StoreSettings storeId={store.id} />
             </TabsContent>
           </Tabs>
+          </>
         )}
       </div>
     </div>
