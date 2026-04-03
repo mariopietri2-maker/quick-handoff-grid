@@ -171,6 +171,12 @@ export default function RestaurantPage() {
             </div>
           ))
         )}
+
+        {/* Reviews Section */}
+        <div>
+          <h2 className="font-heading font-bold text-lg text-foreground mb-3">Reviews</h2>
+          <ReviewList storeId={store.id} />
+        </div>
       </div>
 
       {/* Floating Cart Bar */}
