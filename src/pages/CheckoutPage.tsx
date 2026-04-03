@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -11,6 +11,13 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
+interface AppliedPromo {
+  id: string;
+  code: string;
+  discount_type: 'percentage' | 'fixed';
+  discount_value: number;
+}
+
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, storeId, storeName, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
@@ -18,10 +25,20 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('');
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
+  const [promoCode, setPromoCode] = useState('');
+  const [promoLoading, setPromoLoading] = useState(false);
+  const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
 
   const deliveryFee = 0.99;
   const tip = 0;
-  const grandTotal = total + deliveryFee + tip;
+
+  // Calculate discount
+  const discount = appliedPromo
+    ? appliedPromo.discount_type === 'percentage'
+      ? Math.min(total, total * (appliedPromo.discount_value / 100))
+      : Math.min(total, appliedPromo.discount_value)
+    : 0;
+  const grandTotal = Math.max(0, total - discount) + deliveryFee + tip;
 
   const handlePlaceOrder = async () => {
     if (!user) {
