@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Plus, Minus, ShoppingBag, MapPin, Clock } from 'lucide-react';
+import { ArrowLeft, Plus, Minus, ShoppingBag, MapPin, Clock, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { ReviewList, RatingBadge } from '@/components/ReviewList';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
@@ -97,6 +98,7 @@ export default function RestaurantPage() {
               {store.address}
             </p>
             <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+              <RatingBadge storeId={store.id} />
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} min
@@ -169,6 +171,12 @@ export default function RestaurantPage() {
             </div>
           ))
         )}
+
+        {/* Reviews Section */}
+        <div>
+          <h2 className="font-heading font-bold text-lg text-foreground mb-3">Reviews</h2>
+          <ReviewList storeId={store.id} />
+        </div>
       </div>
 
       {/* Floating Cart Bar */}

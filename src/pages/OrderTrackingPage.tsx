@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Circle, Clock, Package, Car, MapPin, Phone, User, Utensils } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Circle, Clock, Package, Car, MapPin, Phone, User, Utensils, Star } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
+import { ReviewForm } from '@/components/ReviewForm';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -38,6 +39,7 @@ export default function OrderTrackingPage() {
   const [driverName, setDriverName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -57,6 +59,11 @@ export default function OrderTrackingPage() {
         }
       }
       setItems(itemsRes.data ?? []);
+      // Check if already reviewed
+      if (orderRes.data) {
+        const { data: existingReview } = await supabase.from('reviews').select('id').eq('order_id', orderRes.data.id).maybeSingle();
+        if (existingReview) setHasReviewed(true);
+      }
       setLoading(false);
     });
   }, [id]);
@@ -261,6 +268,23 @@ export default function OrderTrackingPage() {
                 <span className="text-sm font-heading text-foreground">Estimated Time</span>
               </div>
               <span className="font-heading font-bold text-foreground">{order.estimated_prep_time} min</span>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Review Form - only for delivered orders */}
+        {isDelivered && !hasReviewed && (
+          <ReviewForm
+            orderId={order.id}
+            storeId={order.store_id}
+            onSubmitted={() => setHasReviewed(true)}
+          />
+        )}
+        {isDelivered && hasReviewed && (
+          <Card className="shadow-[var(--shadow-sm)] bg-success/5 border-success/20">
+            <CardContent className="p-4 text-center">
+              <Star className="h-6 w-6 fill-warning text-warning mx-auto mb-1" />
+              <p className="font-heading text-sm text-foreground">Thanks for your review!</p>
             </CardContent>
           </Card>
         )}
