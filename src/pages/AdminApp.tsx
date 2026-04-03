@@ -8,7 +8,8 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3 } from 'lucide-react';
+import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -119,13 +120,21 @@ export default function AdminApp() {
           <StatCard icon={Star} label="Avg Rating" value={avgRating} />
         </div>
 
-        <Tabs defaultValue="orders">
-          <TabsList className="w-full grid grid-cols-4">
+        <Tabs defaultValue="analytics">
+          <TabsList className="w-full grid grid-cols-5">
+            <TabsTrigger value="analytics" className="font-heading">Analytics</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Stores</TabsTrigger>
             <TabsTrigger value="users" className="font-heading">Users</TabsTrigger>
             <TabsTrigger value="reviews" className="font-heading">Reviews</TabsTrigger>
           </TabsList>
+
+          <TabsContent value="analytics" className="mt-4">
+            <PlatformAnalytics
+              orders={(orders.data ?? []) as any}
+              profiles={(profiles.data ?? []) as any}
+            />
+          </TabsContent>
 
           {/* Orders Tab */}
           <TabsContent value="orders" className="mt-4">
