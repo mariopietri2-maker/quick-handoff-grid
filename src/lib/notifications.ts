@@ -78,3 +78,54 @@ export function showOrderNotification(orderId: string, itemCount: number) {
   // Auto-close after 30 seconds
   setTimeout(() => notification.close(), 30000);
 }
+
+/**
+ * Play a driver delivery alert — two quick low tones.
+ */
+export function playDeliverySound() {
+  try {
+    const ctx = getAudioContext();
+    const now = ctx.currentTime;
+
+    const frequencies = [440, 554.37]; // A4, C#5
+    const duration = 0.18;
+    const gap = 0.1;
+
+    frequencies.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0, now + i * (duration + gap));
+      gain.gain.linearRampToValueAtTime(0.35, now + i * (duration + gap) + 0.02);
+      gain.gain.exponentialRampToValueAtTime(0.001, now + i * (duration + gap) + duration);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(now + i * (duration + gap));
+      osc.stop(now + i * (duration + gap) + duration + 0.05);
+    });
+  } catch (e) {
+    console.warn('Could not play delivery sound:', e);
+  }
+}
+
+/**
+ * Show a browser notification for a new delivery offer.
+ */
+export function showDeliveryNotification(estimatedPayout: number) {
+  if (!('Notification' in window) || Notification.permission !== 'granted') return;
+
+  const notification = new Notification('📦 New Delivery Offer!', {
+    body: `Estimated payout: $${estimatedPayout.toFixed(2)} — Tap to view`,
+    icon: '/placeholder.svg',
+    tag: `delivery-${Date.now()}`,
+    requireInteraction: true,
+  });
+
+  notification.onclick = () => {
+    window.focus();
+    notification.close();
+  };
+
+  setTimeout(() => notification.close(), 20000);
+}
