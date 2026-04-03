@@ -9,6 +9,7 @@ import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
 import { requestNotificationPermission } from '@/lib/notifications';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
