@@ -15,6 +15,7 @@ import { Label } from '@/components/ui/label';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission } from '@/lib/notifications';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
 export default function StoreApp() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
