@@ -39,6 +39,7 @@ export default function OrderTrackingPage() {
   const [driverName, setDriverName] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [hasReviewed, setHasReviewed] = useState(false);
 
   useEffect(() => {
     if (!id) return;
