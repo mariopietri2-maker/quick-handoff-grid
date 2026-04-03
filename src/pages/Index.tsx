@@ -1,4 +1,4 @@
-import { Car, Store, ArrowRight, Zap, Shield, BarChart3 } from 'lucide-react';
+import { Car, Store, ArrowRight, Zap, Shield, BarChart3, ShoppingBag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { useNavigate } from 'react-router-dom';
