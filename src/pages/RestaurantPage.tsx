@@ -141,8 +141,6 @@ export default function RestaurantPage() {
                               onClick={() => updateQuantity(item.id, qty - 1)}
                               className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"
                             >
-                              className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"
-                            >
                               <Minus className="h-4 w-4 text-foreground" />
                             </button>
                             <span className="font-heading font-bold text-foreground w-6 text-center">{qty}</span>
