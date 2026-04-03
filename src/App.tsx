@@ -10,6 +10,7 @@ import Index from "./pages/Index.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import DriverApp from "./pages/DriverApp.tsx";
 import StoreApp from "./pages/StoreApp.tsx";
+import AdminApp from "./pages/AdminApp.tsx";
 import CustomerApp from "./pages/CustomerApp.tsx";
 import RestaurantPage from "./pages/RestaurantPage.tsx";
 import CheckoutPage from "./pages/CheckoutPage.tsx";
@@ -43,6 +44,11 @@ const App = () => (
               <Route path="/store" element={
                 <ProtectedRoute allowedRoles={['store']}>
                   <StoreApp />
+                </ProtectedRoute>
+              } />
+              <Route path="/admin" element={
+                <ProtectedRoute allowedRoles={['admin']}>
+                  <AdminApp />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
