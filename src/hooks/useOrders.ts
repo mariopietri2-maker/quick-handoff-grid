@@ -2,6 +2,7 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import { playOrderSound, showOrderNotification } from '@/lib/notifications';
 import type { Database } from '@/integrations/supabase/types';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -51,8 +52,10 @@ export function useStoreOrders(storeId: string | null) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            // Fetch the full order with items
             fetchOrders();
+            playOrderSound();
+            const newOrder = payload.new as OrderRow;
+            showOrderNotification(newOrder.id, 0);
             toast('🔔 New order received!', { duration: 5000 });
           } else if (payload.eventType === 'UPDATE') {
             setOrders(prev =>
