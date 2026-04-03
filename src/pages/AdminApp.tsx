@@ -1,0 +1,270 @@
+import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { useAdminData } from '@/hooks/useAdminData';
+import { supabase } from '@/integrations/supabase/client';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, TrendingUp } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { toast } from 'sonner';
+import { format } from 'date-fns';
+import { useQueryClient } from '@tanstack/react-query';
+
+const statusColors: Record<string, string> = {
+  pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
+  placed: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
+  accepted: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
+  preparing: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
+  ready: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
+  picked_up: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
+  delivered: 'bg-green-500/10 text-green-600 border-green-500/20',
+  cancelled: 'bg-red-500/10 text-red-600 border-red-500/20',
+};
+
+export default function AdminApp() {
+  const { signOut } = useAuth();
+  const { orders, stores, profiles, earnings, reviews } = useAdminData();
+  const queryClient = useQueryClient();
+
+  const totalRevenue = orders.data?.reduce((sum, o) => sum + Number(o.total_amount), 0) ?? 0;
+  const totalEarnings = earnings.data?.reduce((sum, e) => sum + Number(e.total ?? 0), 0) ?? 0;
+  const avgRating = reviews.data?.length
+    ? (reviews.data.reduce((sum, r) => sum + r.rating, 0) / reviews.data.length).toFixed(1)
+    : '—';
+
+  const handleUpdateOrderStatus = async (orderId: string, status: string) => {
+    const { error } = await supabase
+      .from('orders')
+      .update({ status: status as any })
+      .eq('id', orderId);
+    if (error) {
+      toast.error('Failed to update order');
+    } else {
+      toast.success('Order status updated');
+      queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-background">
+      {/* Header */}
+      <header className="gradient-dark text-primary-foreground px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <Link to="/">
+            <ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" />
+          </Link>
+          <Shield className="h-5 w-5" />
+          <h1 className="font-heading font-bold text-lg">Admin Dashboard</h1>
+        </div>
+        <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground">
+          Sign Out
+        </Button>
+      </header>
+
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        {/* Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
+          <StatCard icon={ShoppingBag} label="Orders" value={orders.data?.length ?? 0} />
+          <StatCard icon={DollarSign} label="Revenue" value={`$${totalRevenue.toFixed(2)}`} />
+          <StatCard icon={Store} label="Stores" value={stores.data?.length ?? 0} />
+          <StatCard icon={Users} label="Users" value={profiles.data?.length ?? 0} />
+          <StatCard icon={Star} label="Avg Rating" value={avgRating} />
+        </div>
+
+        {/* Tabs */}
+        <Tabs defaultValue="orders">
+          <TabsList className="w-full grid grid-cols-4">
+            <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
+            <TabsTrigger value="stores" className="font-heading">Stores</TabsTrigger>
+            <TabsTrigger value="users" className="font-heading">Users</TabsTrigger>
+            <TabsTrigger value="reviews" className="font-heading">Reviews</TabsTrigger>
+          </TabsList>
+
+          <TabsContent value="orders" className="mt-4">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">All Orders</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>ID</TableHead>
+                      <TableHead>Status</TableHead>
+                      <TableHead>Total</TableHead>
+                      <TableHead>Items</TableHead>
+                      <TableHead>Created</TableHead>
+                      <TableHead>Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {orders.data?.map((order) => (
+                      <TableRow key={order.id}>
+                        <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}…</TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className={statusColors[order.status] ?? ''}>
+                            {order.status}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>${Number(order.total_amount).toFixed(2)}</TableCell>
+                        <TableCell>{order.order_items?.length ?? 0}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(order.created_at), 'MMM d, HH:mm')}</TableCell>
+                        <TableCell>
+                          <Select
+                            value={order.status}
+                            onValueChange={(val) => handleUpdateOrderStatus(order.id, val)}
+                          >
+                            <SelectTrigger className="w-32 h-8 text-xs">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              {['pending', 'placed', 'accepted', 'preparing', 'ready', 'picked_up', 'delivered', 'cancelled'].map((s) => (
+                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                    {!orders.data?.length && (
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No orders yet</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="stores" className="mt-4">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">All Stores</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Address</TableHead>
+                      <TableHead>Active</TableHead>
+                      <TableHead>Busy</TableHead>
+                      <TableHead>Created</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {stores.data?.map((store) => (
+                      <TableRow key={store.id}>
+                        <TableCell className="font-semibold">{store.name}</TableCell>
+                        <TableCell className="text-sm">{store.address}</TableCell>
+                        <TableCell>
+                          <Badge variant={store.is_active ? 'default' : 'secondary'}>
+                            {store.is_active ? 'Active' : 'Inactive'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant={store.busy_mode ? 'destructive' : 'outline'}>
+                            {store.busy_mode ? 'Busy' : 'Normal'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs">{format(new Date(store.created_at), 'MMM d, yyyy')}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!stores.data?.length && (
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No stores yet</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="users" className="mt-4">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">All Users</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Phone</TableHead>
+                      <TableHead>Joined</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {profiles.data?.map((profile) => (
+                      <TableRow key={profile.id}>
+                        <TableCell className="font-semibold">{profile.full_name || '—'}</TableCell>
+                        <TableCell>
+                          <Badge variant="outline">{profile.role}</Badge>
+                        </TableCell>
+                        <TableCell className="text-sm">{profile.phone || '—'}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(profile.created_at), 'MMM d, yyyy')}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!profiles.data?.length && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No users yet</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="reviews" className="mt-4">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">All Reviews</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rating</TableHead>
+                      <TableHead>Comment</TableHead>
+                      <TableHead>Order</TableHead>
+                      <TableHead>Date</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {reviews.data?.map((review) => (
+                      <TableRow key={review.id}>
+                        <TableCell>
+                          <div className="flex gap-0.5">
+                            {Array.from({ length: 5 }, (_, i) => (
+                              <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />
+                            ))}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm max-w-xs truncate">{review.comment || '—'}</TableCell>
+                        <TableCell className="font-mono text-xs">{review.order_id.slice(0, 8)}…</TableCell>
+                        <TableCell className="text-xs">{format(new Date(review.created_at), 'MMM d, yyyy')}</TableCell>
+                      </TableRow>
+                    ))}
+                    {!reviews.data?.length && (
+                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No reviews yet</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </div>
+  );
+}
+
+function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
+  return (
+    <Card className="shadow-[var(--shadow-md)]">
+      <CardContent className="p-4 flex items-center gap-3">
+        <div className="h-10 w-10 rounded-lg gradient-primary shadow-primary flex items-center justify-center shrink-0">
+          <Icon className="h-5 w-5 text-primary-foreground" />
+        </div>
+        <div>
+          <p className="text-xs text-muted-foreground font-heading">{label}</p>
+          <p className="font-heading font-bold text-lg">{value}</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
