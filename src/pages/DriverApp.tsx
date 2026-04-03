@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { Car, DollarSign, Radio, Bell } from 'lucide-react';
+import { Car, DollarSign, Radio, Bell, Navigation } from 'lucide-react';
+import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { UserMenu } from '@/components/UserMenu';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
