@@ -52,8 +52,10 @@ export function useStoreOrders(storeId: string | null) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            // Fetch the full order with items
             fetchOrders();
+            playOrderSound();
+            const newOrder = payload.new as OrderRow;
+            showOrderNotification(newOrder.id, 0);
             toast('🔔 New order received!', { duration: 5000 });
           } else if (payload.eventType === 'UPDATE') {
             setOrders(prev =>
