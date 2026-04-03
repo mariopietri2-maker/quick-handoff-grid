@@ -133,7 +133,11 @@ export default function StoreApp() {
               </TabsTrigger>
               <TabsTrigger value="analytics" className="flex-1 font-heading">
                 <BarChart3 className="h-4 w-4 mr-1.5" />
-                Analytics
+                Stats
+              </TabsTrigger>
+              <TabsTrigger value="promos" className="flex-1 font-heading">
+                <Tag className="h-4 w-4 mr-1.5" />
+                Promos
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex-1 font-heading">
                 <Settings className="h-4 w-4 mr-1.5" />
