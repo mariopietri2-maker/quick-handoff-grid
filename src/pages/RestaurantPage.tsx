@@ -98,6 +98,7 @@ export default function RestaurantPage() {
               {store.address}
             </p>
             <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
+              <RatingBadge storeId={store.id} />
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
                 {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} min
