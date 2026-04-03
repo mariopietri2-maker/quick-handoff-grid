@@ -176,6 +176,10 @@ export default function StoreApp() {
               <StoreAnalyticsDashboard storeId={store.id} />
             </TabsContent>
 
+            <TabsContent value="promos">
+              <PromoManager storeId={store.id} />
+            </TabsContent>
+
             <TabsContent value="settings">
               <StoreSettings storeId={store.id} />
             </TabsContent>
