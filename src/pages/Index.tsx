@@ -31,7 +31,7 @@ const Index = () => {
             <Button
               size="lg"
               className="h-14 px-8 text-lg font-heading gradient-primary shadow-primary text-primary-foreground"
-              onClick={() => navigate('/driver')}
+              onClick={() => handleNav('driver')}
             >
               <Car className="mr-2 h-5 w-5" />
               Driver App
