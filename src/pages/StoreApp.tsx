@@ -167,6 +167,10 @@ export default function StoreApp() {
               <MenuControl storeId={store.id} />
             </TabsContent>
 
+            <TabsContent value="analytics">
+              <StoreAnalyticsDashboard storeId={store.id} />
+            </TabsContent>
+
             <TabsContent value="settings">
               <StoreSettings storeId={store.id} />
             </TabsContent>
