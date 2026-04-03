@@ -55,16 +55,18 @@ export default function DriverApp() {
           <h1 className="font-heading font-bold text-lg">DashDrive</h1>
         </div>
         <div className="flex items-center gap-2">
-        <button
-          onClick={() => setIsOnline(!isOnline)}
-          className={`px-4 py-1.5 rounded-full text-sm font-heading font-semibold transition-all ${
-            isOnline 
-              ? 'gradient-success text-success-foreground' 
-              : 'bg-muted/20 text-muted-foreground'
-          }`}
-        >
-          {isOnline ? '● Online' : '○ Offline'}
-        </button>
+          <button
+            onClick={() => setIsOnline(!isOnline)}
+            className={`px-4 py-1.5 rounded-full text-sm font-heading font-semibold transition-all ${
+              isOnline 
+                ? 'gradient-success text-success-foreground' 
+                : 'bg-muted/20 text-muted-foreground'
+            }`}
+          >
+            {isOnline ? '● Online' : '○ Offline'}
+          </button>
+          <UserMenu />
+        </div>
       </header>
 
       <div className="p-4 max-w-lg mx-auto">

@@ -31,9 +31,12 @@ export default function StoreApp() {
           <Store className="h-6 w-6 text-primary" />
           <h1 className="font-heading font-bold text-lg text-foreground">DashStore</h1>
         </div>
-        <Badge variant="outline" className="font-heading text-success border-success/30">
-          ● Open
-        </Badge>
+        <div className="flex items-center gap-2">
+          <Badge variant="outline" className="font-heading text-success border-success/30">
+            ● Open
+          </Badge>
+          <UserMenu />
+        </div>
       </header>
 
       <div className="p-4 max-w-2xl mx-auto">
