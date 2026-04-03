@@ -139,8 +139,11 @@ export default function OrderTrackingPage() {
         setLastUpdate(new Date());
         // Fetch driver name if newly assigned
         if (updated.driver_id && !driverName) {
-          const { data: profile } = await supabase.from('profiles').select('full_name').eq('user_id', updated.driver_id).single();
-          if (profile) setDriverName(profile.full_name);
+          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', updated.driver_id).single();
+          if (profile) {
+            setDriverName(profile.full_name);
+            setDriverPhone(profile.phone);
+          }
         }
       })
       .subscribe();
