@@ -122,12 +122,13 @@ export default function AdminApp() {
         </div>
 
         <Tabs defaultValue="analytics">
-          <TabsList className="w-full grid grid-cols-5">
+          <TabsList className="w-full grid grid-cols-6">
             <TabsTrigger value="analytics" className="font-heading">Analytics</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Stores</TabsTrigger>
             <TabsTrigger value="users" className="font-heading">Users</TabsTrigger>
             <TabsTrigger value="reviews" className="font-heading">Reviews</TabsTrigger>
+            <TabsTrigger value="announcements" className="font-heading">Announce</TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="mt-4">
@@ -135,6 +136,10 @@ export default function AdminApp() {
               orders={(orders.data ?? []) as any}
               profiles={(profiles.data ?? []) as any}
             />
+          </TabsContent>
+
+          <TabsContent value="announcements" className="mt-4">
+            <AnnouncementsManager />
           </TabsContent>
 
           {/* Orders Tab */}
