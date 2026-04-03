@@ -101,7 +101,20 @@ export default function StoreApp() {
             </Card>
           </div>
         ) : (
-          <Tabs defaultValue="orders">
+          <>
+            {notifPermission === 'default' && (
+              <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
+                <Bell className="h-5 w-5 text-info flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="text-sm font-heading font-semibold text-foreground">Enable notifications</p>
+                  <p className="text-xs text-muted-foreground">Get sound + browser alerts when new orders arrive</p>
+                </div>
+                <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading">
+                  Enable
+                </Button>
+              </div>
+            )}
+            <Tabs defaultValue="orders">
             <TabsList className="w-full mb-4">
               <TabsTrigger value="orders" className="flex-1 font-heading relative">
                 <ClipboardList className="h-4 w-4 mr-1.5" />
