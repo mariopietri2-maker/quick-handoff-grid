@@ -6,7 +6,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, profile } = useAuth();
+  const { user, profile, isAdmin } = useAuth();
 
   const handleNav = (target: 'driver' | 'store') => {
     if (user && profile?.role === target) {
