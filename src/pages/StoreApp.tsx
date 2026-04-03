@@ -117,6 +117,7 @@ export default function StoreApp() {
                 </Button>
               </div>
             )}
+            <AnnouncementsBanner audience="store_owners" />
             <Tabs defaultValue="orders">
             <TabsList className="w-full mb-4">
               <TabsTrigger value="orders" className="flex-1 font-heading relative">
