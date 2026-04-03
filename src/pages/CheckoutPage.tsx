@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 
 interface AppliedPromo {
   id: string;
@@ -23,6 +24,7 @@ export default function CheckoutPage() {
   const { items, storeId, storeName, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
   const { user } = useAuth();
   const [address, setAddress] = useState('');
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [notes, setNotes] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState('');
@@ -136,6 +138,8 @@ export default function CheckoutPage() {
           delivery_fee: deliveryFee,
           tip_amount: tipAmount,
           delivery_address: address,
+          delivery_latitude: deliveryCoords?.lat ?? null,
+          delivery_longitude: deliveryCoords?.lon ?? null,
           notes: notes || null,
         })
         .select()
@@ -246,11 +250,12 @@ export default function CheckoutPage() {
               <MapPin className="h-5 w-5 text-primary" />
               <h2 className="font-heading font-semibold text-foreground">Delivery Address</h2>
             </div>
-            <Input
-              placeholder="Enter your delivery address"
+            <AddressAutocomplete
               value={address}
-              onChange={e => setAddress(e.target.value)}
-              maxLength={200}
+              onChange={(addr, lat, lon) => {
+                setAddress(addr);
+                if (lat && lon) setDeliveryCoords({ lat, lon });
+              }}
             />
           </CardContent>
         </Card>
