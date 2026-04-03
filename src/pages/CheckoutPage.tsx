@@ -258,6 +258,13 @@ export default function CheckoutPage() {
                 if (lat && lon) setDeliveryCoords({ lat, lon });
               }}
             />
+            <SavedAddresses
+              currentAddress={address}
+              onSelect={(addr, lat, lon) => {
+                setAddress(addr);
+                setDeliveryCoords(lat && lon ? { lat, lon } : null);
+              }}
+            />
           </CardContent>
         </Card>
 
