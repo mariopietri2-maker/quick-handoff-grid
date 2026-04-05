@@ -168,10 +168,12 @@ export default function DriverApp() {
                 <ActiveDelivery
                   delivery={{
                     id: activeDelivery.id,
-                    storeName: 'Pickup Location',
-                    storeAddress: 'Store address',
+                    storeName: storeInfo?.name || 'Pickup Location',
+                    storeAddress: storeInfo?.address || 'Store address',
+                    storePhone: storeInfo?.phone || null,
                     deliveryAddress: activeDelivery.delivery_address || 'Customer address',
-                    customerName: 'Customer',
+                    customerName: customerInfo?.name || 'Customer',
+                    customerPhone: customerInfo?.phone || null,
                     status: activeDelivery.status ?? 'accepted',
                     items: activeDelivery.order_items?.map(i => ({
                       name: i.name,
