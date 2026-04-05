@@ -29,9 +29,26 @@ export default function DriverApp() {
     setNotifPermission(granted ? 'granted' : 'denied');
   };
 
-  const handleDecline = (_id: string) => {
-    // In production, this would mark the offer as declined for this driver
-  };
+  const handleDecline = (_id: string) => {};
+
+  // Fetch store & customer info for active delivery
+  useEffect(() => {
+    if (!activeDelivery) {
+      setStoreInfo(null);
+      setCustomerInfo(null);
+      return;
+    }
+    supabase.from('stores').select('name, address, phone').eq('id', activeDelivery.store_id).single()
+      .then(({ data }) => {
+        if (data) setStoreInfo({ name: data.name, address: data.address, phone: data.phone });
+      });
+    if (activeDelivery.customer_id) {
+      supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
+        .then(({ data }) => {
+          if (data) setCustomerInfo({ name: data.full_name || 'Customer', phone: data.phone });
+        });
+    }
+  }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id]);
 
   return (
     <div className="min-h-screen bg-background">
