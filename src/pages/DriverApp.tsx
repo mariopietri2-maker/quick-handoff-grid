@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Car, DollarSign, Radio, Bell, Navigation } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { UserMenu } from '@/components/UserMenu';
@@ -11,12 +11,15 @@ import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
 import { requestNotificationPermission } from '@/lib/notifications';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
   const hasActiveDelivery = !!activeDelivery;
   const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
+  const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null } | null>(null);
+  const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
   );
@@ -26,9 +29,26 @@ export default function DriverApp() {
     setNotifPermission(granted ? 'granted' : 'denied');
   };
 
-  const handleDecline = (_id: string) => {
-    // In production, this would mark the offer as declined for this driver
-  };
+  const handleDecline = (_id: string) => {};
+
+  // Fetch store & customer info for active delivery
+  useEffect(() => {
+    if (!activeDelivery) {
+      setStoreInfo(null);
+      setCustomerInfo(null);
+      return;
+    }
+    supabase.from('stores').select('name, address, phone').eq('id', activeDelivery.store_id).single()
+      .then(({ data }) => {
+        if (data) setStoreInfo({ name: data.name, address: data.address, phone: data.phone });
+      });
+    if (activeDelivery.customer_id) {
+      supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
+        .then(({ data }) => {
+          if (data) setCustomerInfo({ name: data.full_name || 'Customer', phone: data.phone });
+        });
+    }
+  }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -148,10 +168,12 @@ export default function DriverApp() {
                 <ActiveDelivery
                   delivery={{
                     id: activeDelivery.id,
-                    storeName: 'Pickup Location',
-                    storeAddress: 'Store address',
+                    storeName: storeInfo?.name || 'Pickup Location',
+                    storeAddress: storeInfo?.address || 'Store address',
+                    storePhone: storeInfo?.phone || null,
                     deliveryAddress: activeDelivery.delivery_address || 'Customer address',
-                    customerName: 'Customer',
+                    customerName: customerInfo?.name || 'Customer',
+                    customerPhone: customerInfo?.phone || null,
                     status: activeDelivery.status ?? 'accepted',
                     items: activeDelivery.order_items?.map(i => ({
                       name: i.name,

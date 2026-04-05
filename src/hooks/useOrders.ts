@@ -107,7 +107,7 @@ export function useDriverOrders() {
       .from('orders')
       .select('*, order_items(*)')
       .eq('driver_id', user.id)
-      .in('status', ['accepted', 'preparing', 'ready', 'picked_up'])
+      .in('status', ['accepted', 'preparing', 'ready', 'arrived', 'picked_up'])
       .limit(1)
       .single();
 
