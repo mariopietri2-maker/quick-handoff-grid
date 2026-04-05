@@ -68,6 +68,7 @@ const statusSteps = [
   { key: 'accepted', label: 'Accepted', icon: CheckCircle2, description: 'Restaurant confirmed your order' },
   { key: 'preparing', label: 'Preparing', icon: Utensils, description: 'Your food is being prepared' },
   { key: 'ready', label: 'Ready for Pickup', icon: Package, description: 'Waiting for a driver to pick up' },
+  { key: 'arrived', label: 'Driver at Store', icon: Car, description: 'Driver arrived at the restaurant' },
   { key: 'picked_up', label: 'On the Way', icon: Car, description: 'Driver is heading to you' },
   { key: 'delivered', label: 'Delivered', icon: MapPin, description: 'Order has been delivered' },
 ];
@@ -77,6 +78,7 @@ const statusMessages: Record<string, { emoji: string; title: string; subtitle: s
   accepted: { emoji: '👨‍🍳', title: 'Restaurant Accepted!', subtitle: 'They\'re getting started on your order' },
   preparing: { emoji: '🔥', title: 'Cooking in Progress', subtitle: 'Your food is being freshly prepared' },
   ready: { emoji: '✅', title: 'Ready for Pickup!', subtitle: 'A driver will grab your order soon' },
+  arrived: { emoji: '🏪', title: 'Driver at Store', subtitle: 'Your driver is at the restaurant picking up your order' },
   picked_up: { emoji: '🚗', title: 'On the Way!', subtitle: 'Your driver is heading to you now' },
   delivered: { emoji: '🎉', title: 'Delivered!', subtitle: 'Enjoy your meal' },
   cancelled: { emoji: '❌', title: 'Cancelled', subtitle: 'This order has been cancelled' },
