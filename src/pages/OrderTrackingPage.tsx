@@ -68,6 +68,7 @@ const statusSteps = [
   { key: 'accepted', label: 'Accepted', icon: CheckCircle2, description: 'Restaurant confirmed your order' },
   { key: 'preparing', label: 'Preparing', icon: Utensils, description: 'Your food is being prepared' },
   { key: 'ready', label: 'Ready for Pickup', icon: Package, description: 'Waiting for a driver to pick up' },
+  { key: 'arrived', label: 'Driver at Store', icon: Car, description: 'Driver arrived at the restaurant' },
   { key: 'picked_up', label: 'On the Way', icon: Car, description: 'Driver is heading to you' },
   { key: 'delivered', label: 'Delivered', icon: MapPin, description: 'Order has been delivered' },
 ];
