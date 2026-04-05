@@ -18,6 +18,8 @@ export default function DriverApp() {
   const [isOnline, setIsOnline] = useState(true);
   const hasActiveDelivery = !!activeDelivery;
   const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
+  const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null } | null>(null);
+  const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
   );
