@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Car, DollarSign, Radio, Bell, Navigation } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { UserMenu } from '@/components/UserMenu';
@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
 import { requestNotificationPermission } from '@/lib/notifications';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
+import { supabase } from '@/integrations/supabase/client';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
