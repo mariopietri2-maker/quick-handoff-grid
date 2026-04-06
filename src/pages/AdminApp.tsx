@@ -95,6 +95,18 @@ export default function AdminApp() {
     }
   };
 
+  const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
+    const { error } = await supabase
+      .from('driver_profiles')
+      .update({ is_active: !currentActive } as any)
+      .eq('user_id', userId);
+    if (error) toast.error('Αποτυχία ενημέρωσης οδηγού');
+    else {
+      toast.success(`Οδηγός ${currentActive ? 'απενεργοποιήθηκε' : 'ενεργοποιήθηκε'}`);
+      queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] });
+    }
+  };
+
   const handleChangeRole = async (userId: string, newRole: string) => {
     const { error } = await supabase
       .from('profiles')
