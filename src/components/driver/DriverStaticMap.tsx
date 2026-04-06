@@ -191,8 +191,30 @@ export default function DriverStaticMap({
         
         {pos && (
           <>
+            {/* Accuracy circle */}
+            {pos.accuracy && pos.accuracy < 500 && (
+              <Circle
+                center={[pos.lat, pos.lng]}
+                radius={pos.accuracy}
+                pathOptions={{ color: 'hsl(217, 91%, 60%)', fillColor: 'hsl(217, 91%, 60%)', fillOpacity: 0.1, weight: 1 }}
+              />
+            )}
             <Marker position={[pos.lat, pos.lng]} icon={driverDot}>
-              <Popup>Εσύ</Popup>
+              <Popup>
+                <div className="text-center">
+                  <strong>Η τοποθεσία σου</strong>
+                  <br />
+                  <span className="text-xs">
+                    {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}
+                  </span>
+                  {pos.accuracy && (
+                    <>
+                      <br />
+                      <span className="text-xs">Ακρίβεια: ±{Math.round(pos.accuracy)}μ</span>
+                    </>
+                  )}
+                </div>
+              </Popup>
             </Marker>
             <LiveTracker lat={pos.lat} lng={pos.lng} />
           </>
