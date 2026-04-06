@@ -106,6 +106,26 @@ export default function CustomerApp() {
         </div>
       </header>
 
+      {/* Promo Banner */}
+      <div className="max-w-2xl mx-auto px-4 pt-3">
+        <div className="relative overflow-hidden rounded-xl bg-gradient-to-r from-primary to-primary/70 p-4 shadow-md">
+          <div className="absolute -right-4 -top-4 h-24 w-24 rounded-full bg-primary-foreground/10" />
+          <div className="absolute -right-2 bottom-0 h-16 w-16 rounded-full bg-primary-foreground/5" />
+          <div className="relative">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-lg">🔥</span>
+              <span className="text-xs font-bold uppercase tracking-wider text-primary-foreground/80">Προσφορά</span>
+            </div>
+            <h3 className="font-heading font-bold text-primary-foreground text-base leading-tight">
+              Δωρεάν Παράδοση στην πρώτη σου παραγγελία!
+            </h3>
+            <p className="text-primary-foreground/70 text-xs mt-1">
+              Χρησιμοποίησε τον κωδικό <span className="font-bold text-primary-foreground bg-primary-foreground/15 px-1.5 py-0.5 rounded">WELCOME</span> στο checkout
+            </p>
+          </div>
+        </div>
+      </div>
+
       {/* Category Filters */}
       <div className="max-w-2xl mx-auto px-4 pt-3 pb-1">
         <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
