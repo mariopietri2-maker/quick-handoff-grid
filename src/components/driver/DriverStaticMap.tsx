@@ -59,21 +59,6 @@ function FitBounds({ points }: { points: [number, number][] }) {
 
 const IOANNINA_CENTER: [number, number] = [39.6650, 20.8537];
 
-function CenterIoanninaButton() {
-  const map = useMap();
-  const handleCenter = useCallback(() => {
-    map.flyTo(IOANNINA_CENTER, 14, { duration: 1 });
-  }, [map]);
-  return (
-    <button
-      onClick={handleCenter}
-      className="absolute right-3 top-1/2 -translate-y-1/2 z-[1000] h-11 w-11 rounded-xl bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
-      title="Κέντρο Ιωαννίνων"
-    >
-      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
-    </button>
-  );
-}
 
 
 /** Fetch a driving route from OSRM (free, no API key) */
