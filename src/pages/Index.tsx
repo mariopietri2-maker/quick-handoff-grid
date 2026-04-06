@@ -45,7 +45,6 @@ const Index = () => {
             >
               <Car className="mr-2 h-5 w-5" />
               Driver App
-              <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
               size="lg"
