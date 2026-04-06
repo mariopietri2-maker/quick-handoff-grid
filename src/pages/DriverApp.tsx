@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Car, DollarSign, Radio, Bell, Navigation, Menu } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
+import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
