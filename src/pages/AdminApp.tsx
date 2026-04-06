@@ -306,7 +306,21 @@ export default function AdminApp() {
 
           <TabsContent value="drivers" className="mt-4">
             <Card>
-              <CardHeader><CardTitle className="font-heading">Όλοι οι Οδηγοί</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="font-heading">Όλοι οι Οδηγοί</CardTitle>
+                <div className="flex gap-2">
+                  {(['all', 'active', 'inactive'] as const).map(f => (
+                    <Button
+                      key={f}
+                      size="sm"
+                      variant={driverFilter === f ? 'default' : 'outline'}
+                      onClick={() => setDriverFilter(f)}
+                    >
+                      {f === 'all' ? `Όλοι (${allDrivers.length})` : f === 'active' ? `Ενεργοί (${allDrivers.filter(d => driverProfiles.data?.find(dp => dp.user_id === d.user_id)?.is_active !== false).length})` : `Ανενεργοί (${allDrivers.filter(d => driverProfiles.data?.find(dp => dp.user_id === d.user_id)?.is_active === false).length})`}
+                    </Button>
+                  ))}
+                </div>
+              </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
