@@ -116,6 +116,17 @@ export default function DriverApp() {
           </button>
         </div>
         <div className="flex items-center gap-2">
+          {activeDelivery?.delivery_latitude && activeDelivery?.delivery_longitude && (
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${activeDelivery.delivery_latitude},${activeDelivery.delivery_longitude}&travelmode=driving`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-lg flex items-center justify-center hover:bg-card transition-colors"
+              title="Πλοήγηση Google Maps"
+            >
+              <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Google Maps" className="h-6 w-6" />
+            </a>
+          )}
         </div>
       </header>
 
