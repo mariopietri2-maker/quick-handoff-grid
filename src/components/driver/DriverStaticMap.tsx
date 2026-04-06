@@ -76,38 +76,6 @@ function CenterIoanninaButton() {
   );
 }
 
-function CompassWidget() {
-  const map = useMap();
-  const [bearing, setBearing] = useState(0);
-
-  useEffect(() => {
-    const onRotate = () => setBearing(-((map as any).getBearing?.() || 0));
-    // Standard Leaflet doesn't rotate, so bearing is always 0 (north up)
-    // We just show a static compass. If map rotation plugin is added, this auto-updates.
-    setBearing(0);
-    map.on('rotate', onRotate);
-    return () => { map.off('rotate', onRotate); };
-  }, [map]);
-
-  return (
-    <div className="absolute right-3 top-1/2 -translate-y-1/2 z-[1000]">
-      <div
-        className="w-11 h-11 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-lg flex items-center justify-center"
-        style={{ transform: `rotate(${bearing}deg)` }}
-        title="Πυξίδα — Ο Βορράς είναι πάνω"
-      >
-        <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
-          {/* North arrow (red) */}
-          <polygon points="14,3 17,14 14,12 11,14" fill="hsl(0, 84%, 60%)" />
-          {/* South arrow (muted) */}
-          <polygon points="14,25 17,14 14,16 11,14" fill="hsl(215, 20%, 65%)" />
-          {/* N label */}
-          <text x="14" y="2" textAnchor="middle" fontSize="6" fontWeight="bold" fill="hsl(0, 84%, 60%)" fontFamily="sans-serif">N</text>
-        </svg>
-      </div>
-    </div>
-  );
-}
 
 /** Fetch a driving route from OSRM (free, no API key) */
 async function fetchRoute(waypoints: [number, number][]): Promise<[number, number][]> {
@@ -266,7 +234,7 @@ export default function DriverStaticMap({
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <CenterIoanninaButton />
-        <CompassWidget />
+        
         {pos && (
           <>
             {/* Accuracy circle */}
