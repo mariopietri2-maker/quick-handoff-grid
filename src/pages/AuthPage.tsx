@@ -30,12 +30,11 @@ export default function AuthPage() {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Welcome back!');
-          // Navigation handled by App.tsx based on role
+          toast.success('Καλώς ήρθατε ξανά!');
         }
       } else {
         if (!fullName.trim()) {
-          toast.error('Please enter your name');
+          toast.error('Παρακαλώ εισάγετε το όνομά σας');
           setSubmitting(false);
           return;
         }
@@ -43,7 +42,7 @@ export default function AuthPage() {
         if (error) {
           toast.error(error.message);
         } else {
-          toast.success('Account created! Please check your email to verify.');
+          toast.success('Ο λογαριασμός δημιουργήθηκε! Ελέγξτε το email σας για επιβεβαίωση.');
         }
       }
     } finally {
@@ -61,10 +60,10 @@ export default function AuthPage() {
         <Card className="w-full max-w-md shadow-[var(--shadow-lg)]">
           <CardHeader className="text-center pb-2">
             <CardTitle className="font-heading text-2xl">
-              {isLogin ? 'Welcome Back' : 'Create Account'}
+              {isLogin ? 'Καλώς Ήρθατε' : 'Δημιουργία Λογαριασμού'}
             </CardTitle>
             <p className="text-sm text-muted-foreground mt-1">
-              {isLogin ? 'Sign in to continue' : 'Join as a driver or store owner'}
+              {isLogin ? 'Συνδεθείτε για να συνεχίσετε' : 'Εγγραφείτε ως οδηγός ή ιδιοκτήτης καταστήματος'}
             </p>
           </CardHeader>
           <CardContent>
@@ -73,7 +72,7 @@ export default function AuthPage() {
                 <>
                   {/* Role Selection */}
                   <div className="space-y-2">
-                    <Label className="font-heading">I am a...</Label>
+                    <Label className="font-heading">Είμαι...</Label>
                     <div className="grid grid-cols-2 gap-3">
                       <button
                         type="button"
@@ -86,7 +85,7 @@ export default function AuthPage() {
                       >
                         <Car className={`h-8 w-8 mx-auto mb-2 ${role === 'driver' ? 'text-primary' : 'text-muted-foreground'}`} />
                         <span className={`font-heading font-semibold text-sm ${role === 'driver' ? 'text-primary' : 'text-foreground'}`}>
-                          Driver
+                          Οδηγός
                         </span>
                       </button>
                       <button
@@ -100,7 +99,7 @@ export default function AuthPage() {
                       >
                         <Store className={`h-8 w-8 mx-auto mb-2 ${role === 'store' ? 'text-primary' : 'text-muted-foreground'}`} />
                         <span className={`font-heading font-semibold text-sm ${role === 'store' ? 'text-primary' : 'text-foreground'}`}>
-                          Store Owner
+                          Κατάστημα
                         </span>
                       </button>
                     </div>
@@ -108,12 +107,12 @@ export default function AuthPage() {
 
                   {/* Full Name */}
                   <div className="space-y-2">
-                    <Label htmlFor="fullName" className="font-heading">Full Name</Label>
+                    <Label htmlFor="fullName" className="font-heading">Ονοματεπώνυμο</Label>
                     <div className="relative">
                       <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                       <Input
                         id="fullName"
-                        placeholder="Your full name"
+                        placeholder="Το ονοματεπώνυμό σας"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
                         className="pl-10"
@@ -144,7 +143,7 @@ export default function AuthPage() {
 
               {/* Password */}
               <div className="space-y-2">
-                <Label htmlFor="password" className="font-heading">Password</Label>
+                <Label htmlFor="password" className="font-heading">Κωδικός</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                   <Input
@@ -165,7 +164,7 @@ export default function AuthPage() {
                 className="w-full h-12 font-heading text-lg gradient-primary shadow-primary text-primary-foreground"
                 disabled={submitting}
               >
-                {submitting ? 'Please wait...' : isLogin ? 'Sign In' : 'Create Account'}
+                {submitting ? 'Παρακαλώ περιμένετε...' : isLogin ? 'Σύνδεση' : 'Δημιουργία Λογαριασμού'}
               </Button>
             </form>
 
@@ -174,7 +173,7 @@ export default function AuthPage() {
                 onClick={() => setIsLogin(!isLogin)}
                 className="text-sm text-primary hover:underline font-heading"
               >
-                {isLogin ? "Don't have an account? Sign up" : 'Already have an account? Sign in'}
+                {isLogin ? 'Δεν έχετε λογαριασμό; Εγγραφή' : 'Έχετε ήδη λογαριασμό; Σύνδεση'}
               </button>
             </div>
           </CardContent>

@@ -11,7 +11,7 @@ export function EarningsDashboard() {
     return (
       <div className="text-center py-16">
         <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-muted-foreground font-heading">Loading earnings...</p>
+        <p className="text-muted-foreground font-heading">Φόρτωση κερδών...</p>
       </div>
     );
   }
@@ -20,41 +20,41 @@ export function EarningsDashboard() {
     <div className="space-y-4">
       <Tabs defaultValue="today">
         <TabsList className="w-full">
-          <TabsTrigger value="today" className="flex-1 font-heading">Today</TabsTrigger>
-          <TabsTrigger value="week" className="flex-1 font-heading">This Week</TabsTrigger>
+          <TabsTrigger value="today" className="flex-1 font-heading">Σήμερα</TabsTrigger>
+          <TabsTrigger value="week" className="flex-1 font-heading">Αυτή η Εβδομάδα</TabsTrigger>
         </TabsList>
 
         <TabsContent value="today" className="space-y-4 mt-4">
           <Card className="gradient-primary text-primary-foreground shadow-primary">
             <CardContent className="p-6 text-center">
-              <p className="text-primary-foreground/80 text-sm">Today's Earnings</p>
-              <p className="font-heading font-bold text-4xl mt-1">${today.total.toFixed(2)}</p>
+              <p className="text-primary-foreground/80 text-sm">Σημερινά Κέρδη</p>
+              <p className="font-heading font-bold text-4xl mt-1">{today.total.toFixed(2)}€</p>
             </CardContent>
           </Card>
           <div className="grid grid-cols-2 gap-3">
-            <StatCard icon={Car} label="Trips" value={today.trips.toString()} />
-            <StatCard icon={Clock} label="Base Pay" value={`$${today.basePay.toFixed(2)}`} />
+            <StatCard icon={Car} label="Διαδρομές" value={today.trips.toString()} />
+            <StatCard icon={Clock} label="Βασική Αμοιβή" value={`${today.basePay.toFixed(2)}€`} />
           </div>
           {today.trips === 0 && (
-            <p className="text-center text-sm text-muted-foreground">No deliveries completed today yet</p>
+            <p className="text-center text-sm text-muted-foreground">Δεν έχουν ολοκληρωθεί παραδόσεις σήμερα</p>
           )}
         </TabsContent>
 
         <TabsContent value="week" className="space-y-4 mt-4">
           <Card className="gradient-primary text-primary-foreground shadow-primary">
             <CardContent className="p-6 text-center">
-              <p className="text-primary-foreground/80 text-sm">This Week</p>
-              <p className="font-heading font-bold text-4xl mt-1">${week.total.toFixed(2)}</p>
+              <p className="text-primary-foreground/80 text-sm">Αυτή η Εβδομάδα</p>
+              <p className="font-heading font-bold text-4xl mt-1">{week.total.toFixed(2)}€</p>
             </CardContent>
           </Card>
           <div className="grid grid-cols-2 gap-3">
-            <StatCard icon={Car} label="Trips" value={week.trips.toString()} />
-            <StatCard icon={Clock} label="Base Pay" value={`$${week.basePay.toFixed(2)}`} />
+            <StatCard icon={Car} label="Διαδρομές" value={week.trips.toString()} />
+            <StatCard icon={Clock} label="Βασική Αμοιβή" value={`${week.basePay.toFixed(2)}€`} />
           </div>
 
           <Card className="shadow-[var(--shadow-md)]">
             <CardHeader className="pb-2">
-              <CardTitle className="font-heading text-lg">Weekly Breakdown</CardTitle>
+              <CardTitle className="font-heading text-lg">Εβδομαδιαία Ανάλυση</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="h-52">
@@ -64,9 +64,9 @@ export function EarningsDashboard() {
                     <YAxis tick={{ fontSize: 12 }} />
                     <Tooltip />
                     <Legend />
-                    <Bar dataKey="base" name="Base" stackId="a" fill="hsl(0 85% 50%)" radius={[0,0,0,0]} />
-                    <Bar dataKey="tips" name="Tips" stackId="a" fill="hsl(142 71% 45%)" radius={[0,0,0,0]} />
-                    <Bar dataKey="bonus" name="Bonus" stackId="a" fill="hsl(38 92% 50%)" radius={[4,4,0,0]} />
+                    <Bar dataKey="base" name="Βασικά" stackId="a" fill="hsl(0 85% 50%)" radius={[0,0,0,0]} />
+                    <Bar dataKey="tips" name="Φιλοδωρήματα" stackId="a" fill="hsl(142 71% 45%)" radius={[0,0,0,0]} />
+                    <Bar dataKey="bonus" name="Μπόνους" stackId="a" fill="hsl(38 92% 50%)" radius={[4,4,0,0]} />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
