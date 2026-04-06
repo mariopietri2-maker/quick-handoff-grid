@@ -74,5 +74,16 @@ export function useAdminData() {
     },
   });
 
-  return { orders, stores, profiles, earnings, reviews, userRoles };
+  const driverProfiles = useQuery({
+    queryKey: ['admin-driver-profiles'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('driver_profiles')
+        .select('user_id, driver_code' as any);
+      if (error) throw error;
+      return data as unknown as { user_id: string; driver_code: string | null }[];
+    },
+  });
+
+  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles };
 }
