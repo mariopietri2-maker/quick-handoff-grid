@@ -67,11 +67,10 @@ function CenterIoanninaButton() {
   return (
     <button
       onClick={handleCenter}
-      className="absolute bottom-4 left-4 z-[1000] bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-full px-3 py-2 flex items-center gap-2 hover:bg-card transition-colors"
+      className="absolute bottom-4 left-4 z-[1000] h-11 w-11 rounded-xl bg-primary text-primary-foreground shadow-lg flex items-center justify-center hover:bg-primary/90 active:scale-95 transition-all"
       title="Κέντρο Ιωαννίνων"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="16"/><line x1="8" y1="12" x2="16" y2="12"/></svg>
-      <span className="text-xs font-heading font-semibold text-foreground">Ιωάννινα</span>
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/></svg>
     </button>
   );
 }
