@@ -106,7 +106,7 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
   if (centerLat == null || centerLng == null) {
     return (
       <div className="h-[250px] rounded-xl bg-muted flex items-center justify-center">
-        <p className="text-sm text-muted-foreground">Waiting for driver location...</p>
+        <p className="text-sm text-muted-foreground">Αναμονή τοποθεσίας οδηγού...</p>
       </div>
     );
   }
@@ -117,14 +117,14 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
         <div className="bg-card px-4 py-2.5 flex items-center justify-between border-b border-border">
           <div className="flex items-center gap-2">
             <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-            <span className="text-sm font-heading text-foreground">ETA</span>
+            <span className="text-sm font-heading text-foreground">Εκτ. Άφιξη</span>
           </div>
           <div className="text-right">
             <span className="font-heading font-bold text-foreground">
-              {eta.minutes < 1 ? '< 1' : eta.minutes} min
+              {eta.minutes < 1 ? '< 1' : eta.minutes} λεπ.
             </span>
             <span className="text-xs text-muted-foreground ml-2">
-              ({eta.distKm < 1 ? `${Math.round(eta.distKm * 1000)}m` : `${eta.distKm.toFixed(1)}km`})
+              ({eta.distKm < 1 ? `${Math.round(eta.distKm * 1000)}μ` : `${eta.distKm.toFixed(1)}χλμ`})
             </span>
           </div>
         </div>
@@ -140,14 +140,14 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
         {driverLat != null && driverLng != null && (
           <>
             <Marker position={[driverLat, driverLng]} icon={driverIcon}>
-              <Popup>Driver is here</Popup>
+              <Popup>Ο οδηγός σας</Popup>
             </Marker>
             <RecenterMap lat={driverLat} lng={driverLng} />
           </>
         )}
         {deliveryLat != null && deliveryLng != null && (
           <Marker position={[deliveryLat, deliveryLng]} icon={deliveryIcon}>
-            <Popup>{deliveryAddress || 'Delivery location'}</Popup>
+            <Popup>{deliveryAddress || 'Τοποθεσία παράδοσης'}</Popup>
           </Marker>
         )}
       </MapContainer>
