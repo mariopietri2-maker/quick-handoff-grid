@@ -218,7 +218,7 @@ export default function DriverStaticMap({
   }
 
   return (
-    <div className={className} style={{ position: 'relative' }}>
+    <div className={className}>
       <NavigationButtons storeLat={storeLat} storeLng={storeLng} storeName={storeName} customerLat={customerLat} customerLng={customerLng} customerName={customerName} />
       <MapContainer
         center={[lat, lng]}
