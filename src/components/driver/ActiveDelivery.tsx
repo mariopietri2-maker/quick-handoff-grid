@@ -169,8 +169,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                   onClick={() => openNavigation(
                     isGoingToStore ? delivery.storeLat : delivery.deliveryLat,
                     isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
-                    isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress,
-                    'google'
+                    isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress
                   )}
                   className="h-12 w-12 rounded-full gradient-primary shadow-primary flex items-center justify-center"
                 >

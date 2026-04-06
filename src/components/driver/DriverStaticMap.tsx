@@ -103,8 +103,8 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
   storeLat?: number | null; storeLng?: number | null; storeName?: string;
   customerLat?: number | null; customerLng?: number | null; customerName?: string;
 }) {
-  const openNav = (lat: number, lng: number, label: string) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
+  const openNav = (lat: number, lng: number) => {
+    window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
   };
 
   const hasStore = storeLat && storeLng;
