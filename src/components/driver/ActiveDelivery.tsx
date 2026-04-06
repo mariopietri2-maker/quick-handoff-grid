@@ -154,28 +154,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
         </CardContent>
       </Card>
 
-      {/* Live Map — shows destination based on current stage */}
-      {user && (
-        <DriverLiveMap
-          driverId={user.id}
-          deliveryLat={
-            ['accepted', 'preparing', 'ready'].includes(delivery.status)
-              ? delivery.storeLat
-              : delivery.deliveryLat
-          }
-          deliveryLng={
-            ['accepted', 'preparing', 'ready'].includes(delivery.status)
-              ? delivery.storeLng
-              : delivery.deliveryLng
-          }
-          deliveryAddress={
-            ['accepted', 'preparing', 'ready'].includes(delivery.status)
-              ? delivery.storeAddress
-              : delivery.deliveryAddress
-          }
-        />
-      )}
-
       {/* Order Items */}
       <Card className="shadow-[var(--shadow-md)]">
         <CardHeader className="pb-2">
