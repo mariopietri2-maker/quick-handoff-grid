@@ -34,6 +34,7 @@ export default function DriverProfilePage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [driverProfile, setDriverProfile] = useState<DriverProfile>({
+    driver_code: null,
     vehicle_type: 'motorcycle',
     vehicle_make: '',
     vehicle_model: '',
