@@ -73,7 +73,7 @@ export default function RestaurantPage() {
       name: item.name,
       price: Number(item.price),
     });
-    toast.success(`${item.name} προστέθηκε`);
+    
   };
 
   if (loading) {
