@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-const UPDATE_INTERVAL_MS = 10_000; // every 10 seconds
+const UPDATE_INTERVAL_MS = 5_000; // every 5 seconds for better precision
 
 export function useDriverLocation(isActive: boolean) {
   const { user } = useAuth();
