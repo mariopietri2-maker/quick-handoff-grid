@@ -51,20 +51,12 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
     });
   };
 
-  const openNavigation = (lat: number | null | undefined, lng: number | null | undefined, address: string, app: 'google' | 'waze') => {
+  const openNavigation = (lat: number | null | undefined, lng: number | null | undefined, address: string) => {
     if (lat && lng) {
-      if (app === 'google') {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
-      } else {
-        window.open(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
-      }
+      window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
     } else {
       const encoded = encodeURIComponent(address);
-      if (app === 'google') {
-        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encoded}`, '_blank');
-      } else {
-        window.open(`https://waze.com/ul?q=${encoded}&navigate=yes`, '_blank');
-      }
+      window.location.href = `geo:0,0?q=${encoded}`;
     }
   };
 
