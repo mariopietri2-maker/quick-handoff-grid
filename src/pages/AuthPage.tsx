@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -17,8 +17,17 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'driver' | 'store'>('driver');
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp } = useAuth();
+  const { signIn, signUp, user, profile } = useAuth();
   const navigate = useNavigate();
+
+  // Redirect after login based on role
+  useEffect(() => {
+    if (user && profile) {
+      if (profile.role === 'driver') navigate('/driver', { replace: true });
+      else if (profile.role === 'store') navigate('/store', { replace: true });
+      else navigate('/order', { replace: true });
+    }
+  }, [user, profile, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,6 +40,7 @@ export default function AuthPage() {
           toast.error(error.message);
         } else {
           toast.success('Καλώς ήρθατε ξανά!');
+          // Navigation will happen via useEffect below
         }
       } else {
         if (!fullName.trim()) {
