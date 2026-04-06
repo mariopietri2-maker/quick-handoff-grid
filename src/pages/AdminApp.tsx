@@ -293,6 +293,7 @@ export default function AdminApp() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Όνομα</TableHead>
+                      <TableHead>Κωδικός</TableHead>
                       <TableHead>Ρόλος</TableHead>
                       <TableHead>Διαχειριστής</TableHead>
                       <TableHead>Τηλέφωνο</TableHead>
