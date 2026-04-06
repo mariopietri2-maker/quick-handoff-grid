@@ -54,7 +54,16 @@ export default function DriverApp() {
   return (
     <div className="h-screen flex flex-col relative overflow-hidden bg-background">
       {/* Full-screen map background */}
-      <DriverStaticMap className="absolute inset-0 z-0" />
+      <DriverStaticMap
+        className="absolute inset-0 z-0"
+        liveMode={hasActiveDelivery}
+        storeLat={storeInfo?.latitude}
+        storeLng={storeInfo?.longitude}
+        storeName={storeInfo?.name}
+        customerLat={activeDelivery?.delivery_latitude}
+        customerLng={activeDelivery?.delivery_longitude}
+        customerName={customerInfo?.name}
+      />
 
       {/* Top bar overlay */}
       <header className="relative z-20 px-4 pt-3 pb-2 flex items-center justify-between">
