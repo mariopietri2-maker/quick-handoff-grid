@@ -224,28 +224,51 @@ export function AddressAutocomplete({
       {noResults && !showMap && (
         <div className="bg-muted/50 rounded-lg p-3 text-center space-y-2">
           <p className="text-sm text-muted-foreground">Δεν βρέθηκε η διεύθυνση</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowMap(true)}
-            className="gap-2"
-          >
-            <Navigation className="h-4 w-4" />
-            Σημειώστε στον χάρτη
-          </Button>
+          <div className="flex justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMap(true)}
+              className="gap-2"
+            >
+              <Navigation className="h-4 w-4" />
+              Σημειώστε στον χάρτη
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={locateGPS}
+              disabled={gpsLoading}
+              className="gap-2"
+            >
+              {gpsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
+              Τοποθεσία GPS
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Always show "pin on map" button */}
+      {/* Always show "pin on map" and GPS buttons */}
       {!showMap && !noResults && (
-        <button
-          type="button"
-          onClick={() => setShowMap(true)}
-          className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2"
-        >
-          <Navigation className="h-3.5 w-3.5" />
-          Σημειώστε στον χάρτη
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowMap(true)}
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2"
+          >
+            <Navigation className="h-3.5 w-3.5" />
+            Σημειώστε στον χάρτη
+          </button>
+          <button
+            type="button"
+            onClick={locateGPS}
+            disabled={gpsLoading}
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2 disabled:opacity-50"
+          >
+            {gpsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}
+            Τοποθεσία GPS
+          </button>
+        </div>
       )}
 
       {/* Map picker */}
