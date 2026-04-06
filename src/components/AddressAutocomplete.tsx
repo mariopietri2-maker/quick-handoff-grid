@@ -1,6 +1,19 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin, Loader2, X } from 'lucide-react';
+import { MapPin, Loader2, X, Navigation } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { Button } from '@/components/ui/button';
+import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import L from 'leaflet';
+import 'leaflet/dist/leaflet.css';
+
+// Fix default marker icon
+const defaultIcon = L.icon({
+  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
+  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
+  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+});
 
 interface AddressResult {
   display_name: string;
@@ -15,6 +28,15 @@ interface AddressAutocompleteProps {
   maxLength?: number;
 }
 
+function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
+  useMapEvents({
+    click(e) {
+      onMapClick(e.latlng.lat, e.latlng.lng);
+    },
+  });
+  return null;
+}
+
 export function AddressAutocomplete({
   value,
   onChange,
@@ -25,6 +47,10 @@ export function AddressAutocomplete({
   const [results, setResults] = useState<AddressResult[]>([]);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(false);
+  const [showMap, setShowMap] = useState(false);
+  const [mapPin, setMapPin] = useState<{ lat: number; lon: number } | null>(null);
+  const [reverseLoading, setReverseLoading] = useState(false);
+  const [noResults, setNoResults] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -43,9 +69,11 @@ export function AddressAutocomplete({
   const search = useCallback(async (q: string) => {
     if (q.length < 3) {
       setResults([]);
+      setNoResults(false);
       return;
     }
     setLoading(true);
+    setNoResults(false);
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1&viewbox=20.7,39.55,20.95,39.75&bounded=1&countrycodes=gr`,
@@ -54,8 +82,10 @@ export function AddressAutocomplete({
       const data: AddressResult[] = await res.json();
       setResults(data);
       setOpen(data.length > 0);
+      setNoResults(data.length === 0 && q.length >= 3);
     } catch {
       setResults([]);
+      setNoResults(true);
     } finally {
       setLoading(false);
     }
@@ -64,6 +94,7 @@ export function AddressAutocomplete({
   const handleInput = (val: string) => {
     setQuery(val);
     onChange(val);
+    setNoResults(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => search(val), 400);
   };
@@ -73,6 +104,8 @@ export function AddressAutocomplete({
     onChange(r.display_name, parseFloat(r.lat), parseFloat(r.lon));
     setOpen(false);
     setResults([]);
+    setNoResults(false);
+    setShowMap(false);
   };
 
   const clear = () => {
@@ -80,10 +113,47 @@ export function AddressAutocomplete({
     onChange('');
     setResults([]);
     setOpen(false);
+    setNoResults(false);
+    setShowMap(false);
+    setMapPin(null);
   };
 
+  const handleMapClick = async (lat: number, lon: number) => {
+    setMapPin({ lat, lon });
+    setReverseLoading(true);
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
+        { headers: { 'Accept-Language': 'el' } }
+      );
+      const data = await res.json();
+      if (data.display_name) {
+        setQuery(data.display_name);
+        onChange(data.display_name, lat, lon);
+      } else {
+        const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+        setQuery(fallback);
+        onChange(fallback, lat, lon);
+      }
+    } catch {
+      const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
+      setQuery(fallback);
+      onChange(fallback, lat, lon);
+    } finally {
+      setReverseLoading(false);
+    }
+  };
+
+  const confirmMapPin = () => {
+    setShowMap(false);
+    setNoResults(false);
+  };
+
+  // Ioannina center
+  const ioannina: [number, number] = [39.6650, 20.8537];
+
   return (
-    <div ref={containerRef} className="relative">
+    <div ref={containerRef} className="relative space-y-2">
       <div className="relative">
         <Input
           value={query}
@@ -115,9 +185,83 @@ export function AddressAutocomplete({
               <span className="text-foreground line-clamp-2">{r.display_name}</span>
             </button>
           ))}
-          <p className="text-[10px] text-muted-foreground text-center py-1.5">
-            Με την υποστήριξη OpenStreetMap
-          </p>
+        </div>
+      )}
+
+      {/* No results - show map option */}
+      {noResults && !showMap && (
+        <div className="bg-muted/50 rounded-lg p-3 text-center space-y-2">
+          <p className="text-sm text-muted-foreground">Δεν βρέθηκε η διεύθυνση</p>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setShowMap(true)}
+            className="gap-2"
+          >
+            <Navigation className="h-4 w-4" />
+            Σημειώστε στον χάρτη
+          </Button>
+        </div>
+      )}
+
+      {/* Always show "pin on map" button */}
+      {!showMap && !noResults && (
+        <button
+          type="button"
+          onClick={() => setShowMap(true)}
+          className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2"
+        >
+          <Navigation className="h-3.5 w-3.5" />
+          Σημειώστε στον χάρτη
+        </button>
+      )}
+
+      {/* Map picker */}
+      {showMap && (
+        <div className="rounded-xl overflow-hidden border border-border space-y-2">
+          <div className="relative h-64">
+            <MapContainer
+              center={mapPin ? [mapPin.lat, mapPin.lon] : ioannina}
+              zoom={14}
+              className="h-full w-full z-0"
+              scrollWheelZoom={true}
+            >
+              <TileLayer
+                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
+                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+              />
+              <MapClickHandler onMapClick={handleMapClick} />
+              {mapPin && (
+                <Marker position={[mapPin.lat, mapPin.lon]} icon={defaultIcon} />
+              )}
+            </MapContainer>
+            {reverseLoading && (
+              <div className="absolute top-2 right-2 bg-card/90 rounded-full p-1.5 shadow">
+                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              </div>
+            )}
+          </div>
+          <div className="px-3 pb-3 flex items-center gap-2">
+            <p className="text-xs text-muted-foreground flex-1">
+              {mapPin ? 'Πατήστε ξανά για αλλαγή τοποθεσίας' : 'Πατήστε στον χάρτη για να ορίσετε τοποθεσία'}
+            </p>
+            <Button
+              size="sm"
+              disabled={!mapPin}
+              onClick={confirmMapPin}
+              className="gap-1.5"
+            >
+              <MapPin className="h-3.5 w-3.5" />
+              Επιβεβαίωση
+            </Button>
+            <Button
+              size="sm"
+              variant="ghost"
+              onClick={() => setShowMap(false)}
+            >
+              Ακύρωση
+            </Button>
+          </div>
         </div>
       )}
     </div>
