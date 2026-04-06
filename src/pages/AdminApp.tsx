@@ -178,6 +178,7 @@ export default function AdminApp() {
             <TabsTrigger value="analytics" className="font-heading">Αναλυτικά</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Παραγγελίες</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Καταστήματα</TabsTrigger>
+            <TabsTrigger value="drivers" className="font-heading">Οδηγοί</TabsTrigger>
             <TabsTrigger value="users" className="font-heading">Χρήστες</TabsTrigger>
             <TabsTrigger value="reviews" className="font-heading">Κριτικές</TabsTrigger>
             <TabsTrigger value="announcements" className="font-heading">Ανακοινώσεις</TabsTrigger>
