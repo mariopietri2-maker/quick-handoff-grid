@@ -40,7 +40,6 @@ const statusSteps = [
 ];
 
 export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps) {
-  const { user } = useAuth();
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
 
   const toggleChecklistItem = (index: number) => {
