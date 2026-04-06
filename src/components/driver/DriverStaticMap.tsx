@@ -103,8 +103,8 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
   storeLat?: number | null; storeLng?: number | null; storeName?: string;
   customerLat?: number | null; customerLng?: number | null; customerName?: string;
 }) {
-  const openNav = (lat: number, lng: number, label: string) => {
-    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
+  const openNav = (lat: number, lng: number) => {
+    window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
   };
 
   const hasStore = storeLat && storeLng;
@@ -115,7 +115,7 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
     <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
       {hasStore && (
         <button
-          onClick={() => openNav(storeLat!, storeLng!, storeName || 'Κατάστημα')}
+          onClick={() => openNav(storeLat!, storeLng!)}
           className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl p-2.5 flex items-center justify-center hover:bg-card transition-colors"
           title={`Πλοήγηση → ${storeName || 'Κατάστημα'}`}
         >
