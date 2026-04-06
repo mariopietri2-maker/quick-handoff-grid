@@ -239,9 +239,6 @@ export default function DriverApp() {
               )}
             </TabsContent>
 
-            <TabsContent value="earnings">
-              <EarningsDashboard />
-            </TabsContent>
           </Tabs>
         </div>
       </div>
