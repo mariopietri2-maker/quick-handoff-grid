@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Car, DollarSign, Radio, Bell, Navigation, Menu } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
+import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +18,17 @@ import DriverStaticMap from '@/components/driver/DriverStaticMap';
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
+  const [driverActive, setDriverActive] = useState<boolean | null>(null);
+  const { user } = useAuth();
+
+  // Check if driver is approved (is_active)
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('driver_profiles').select('is_active').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => {
+        setDriverActive(data?.is_active ?? null);
+      });
+  }, [user]);
   const hasActiveDelivery = !!activeDelivery;
   const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
@@ -50,6 +62,34 @@ export default function DriverApp() {
         });
     }
   }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id]);
+
+  // Show pending approval screen
+  if (driverActive === false) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+        <div className="text-center max-w-md space-y-4">
+          <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
+            <Car className="h-8 w-8 text-amber-600" />
+          </div>
+          <h1 className="font-heading text-2xl font-bold">Αναμονή Έγκρισης</h1>
+          <p className="text-muted-foreground">
+            Ο λογαριασμός σας είναι σε αναμονή έγκρισης από τον διαχειριστή. Θα ενημερωθείτε μόλις εγκριθεί.
+          </p>
+          <Button variant="outline" onClick={() => window.location.reload()}>
+            Έλεγχος κατάστασης
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (driverActive === null && !loading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
 
   return (
     <div className="h-screen flex flex-col relative overflow-hidden bg-background">
