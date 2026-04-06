@@ -140,14 +140,14 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
         {driverLat != null && driverLng != null && (
           <>
             <Marker position={[driverLat, driverLng]} icon={driverIcon}>
-              <Popup>Driver is here</Popup>
+              <Popup>Ο οδηγός σας</Popup>
             </Marker>
             <RecenterMap lat={driverLat} lng={driverLng} />
           </>
         )}
         {deliveryLat != null && deliveryLng != null && (
           <Marker position={[deliveryLat, deliveryLng]} icon={deliveryIcon}>
-            <Popup>{deliveryAddress || 'Delivery location'}</Popup>
+            <Popup>{deliveryAddress || 'Τοποθεσία παράδοσης'}</Popup>
           </Marker>
         )}
       </MapContainer>
