@@ -95,6 +95,18 @@ export default function AdminApp() {
     }
   };
 
+  const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
+    const { error } = await supabase
+      .from('driver_profiles')
+      .update({ is_active: !currentActive } as any)
+      .eq('user_id', userId);
+    if (error) toast.error('Αποτυχία ενημέρωσης οδηγού');
+    else {
+      toast.success(`Οδηγός ${currentActive ? 'απενεργοποιήθηκε' : 'ενεργοποιήθηκε'}`);
+      queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] });
+    }
+  };
+
   const handleChangeRole = async (userId: string, newRole: string) => {
     const { error } = await supabase
       .from('profiles')
@@ -166,6 +178,7 @@ export default function AdminApp() {
             <TabsTrigger value="analytics" className="font-heading">Αναλυτικά</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Παραγγελίες</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Καταστήματα</TabsTrigger>
+            <TabsTrigger value="drivers" className="font-heading">Οδηγοί</TabsTrigger>
             <TabsTrigger value="users" className="font-heading">Χρήστες</TabsTrigger>
             <TabsTrigger value="reviews" className="font-heading">Κριτικές</TabsTrigger>
             <TabsTrigger value="announcements" className="font-heading">Ανακοινώσεις</TabsTrigger>
@@ -278,6 +291,52 @@ export default function AdminApp() {
                     ))}
                     {!stores.data?.length && (
                       <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Δεν υπάρχουν καταστήματα</TableCell></TableRow>
+                    )}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="drivers" className="mt-4">
+            <Card>
+              <CardHeader><CardTitle className="font-heading">Όλοι οι Οδηγοί</CardTitle></CardHeader>
+              <CardContent className="overflow-x-auto">
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Κωδικός</TableHead>
+                      <TableHead>Όνομα</TableHead>
+                      <TableHead>Τηλέφωνο</TableHead>
+                      <TableHead>Ενεργός</TableHead>
+                      <TableHead>Εγγραφή</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {drivers.map((driver) => {
+                      const dp = driverProfiles.data?.find(d => d.user_id === driver.user_id);
+                      return (
+                        <TableRow key={driver.id}>
+                          <TableCell>
+                            <Badge variant="outline" className="font-mono text-xs">{dp?.driver_code || '—'}</Badge>
+                          </TableCell>
+                          <TableCell className="font-semibold">{driver.full_name || '—'}</TableCell>
+                          <TableCell className="text-sm">{driver.phone || '—'}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Switch
+                                checked={dp?.is_active ?? true}
+                                onCheckedChange={() => dp && handleToggleDriverActive(driver.user_id, dp.is_active)}
+                              />
+                              <span className="text-xs text-muted-foreground">{dp?.is_active !== false ? 'Ενεργός' : 'Ανενεργός'}</span>
+                            </div>
+                          </TableCell>
+                          <TableCell className="text-xs">{format(new Date(driver.created_at), 'dd MMM yyyy')}</TableCell>
+                        </TableRow>
+                      );
+                    })}
+                    {drivers.length === 0 && (
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Δεν υπάρχουν οδηγοί</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

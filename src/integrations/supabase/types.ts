@@ -80,6 +80,7 @@ export type Database = {
           iban: string | null
           id: string
           id_document_url: string | null
+          is_active: boolean
           license_document_url: string | null
           license_expiry: string | null
           license_number: string | null
@@ -100,6 +101,7 @@ export type Database = {
           iban?: string | null
           id?: string
           id_document_url?: string | null
+          is_active?: boolean
           license_document_url?: string | null
           license_expiry?: string | null
           license_number?: string | null
@@ -120,6 +122,7 @@ export type Database = {
           iban?: string | null
           id?: string
           id_document_url?: string | null
+          is_active?: boolean
           license_document_url?: string | null
           license_expiry?: string | null
           license_number?: string | null
