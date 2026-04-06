@@ -31,6 +31,7 @@ export default function AuthPage() {
           toast.error(error.message);
         } else {
           toast.success('Καλώς ήρθατε ξανά!');
+          // Navigation will happen via useEffect below
         }
       } else {
         if (!fullName.trim()) {
