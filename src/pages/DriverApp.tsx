@@ -26,7 +26,8 @@ export default function DriverApp() {
     if (!user) return;
     supabase.from('driver_profiles').select('is_active').eq('user_id', user.id).maybeSingle()
       .then(({ data }) => {
-        setDriverActive(data?.is_active ?? null);
+        // No profile row yet = treat as active (profile will be created later)
+        setDriverActive(data ? data.is_active : true);
       });
   }, [user]);
   const hasActiveDelivery = !!activeDelivery;
