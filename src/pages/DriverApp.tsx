@@ -116,9 +116,6 @@ export default function DriverApp() {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <button className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-lg flex items-center justify-center">
-            <Bell className="h-5 w-5 text-foreground" />
-          </button>
         </div>
       </header>
 
