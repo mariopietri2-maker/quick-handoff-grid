@@ -18,7 +18,7 @@ export default function DriverApp() {
   const [isOnline, setIsOnline] = useState(true);
   const hasActiveDelivery = !!activeDelivery;
   const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
-  const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null } | null>(null);
+  const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
@@ -38,9 +38,9 @@ export default function DriverApp() {
       setCustomerInfo(null);
       return;
     }
-    supabase.from('stores').select('name, address, phone').eq('id', activeDelivery.store_id).single()
+    supabase.from('stores').select('name, address, phone, latitude, longitude').eq('id', activeDelivery.store_id).single()
       .then(({ data }) => {
-        if (data) setStoreInfo({ name: data.name, address: data.address, phone: data.phone });
+        if (data) setStoreInfo({ name: data.name, address: data.address, phone: data.phone, latitude: data.latitude, longitude: data.longitude });
       });
     if (activeDelivery.customer_id) {
       supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
@@ -171,7 +171,11 @@ export default function DriverApp() {
                     storeName: storeInfo?.name || 'Pickup Location',
                     storeAddress: storeInfo?.address || 'Store address',
                     storePhone: storeInfo?.phone || null,
+                    storeLat: storeInfo?.latitude ?? null,
+                    storeLng: storeInfo?.longitude ?? null,
                     deliveryAddress: activeDelivery.delivery_address || 'Customer address',
+                    deliveryLat: activeDelivery.delivery_latitude ?? null,
+                    deliveryLng: activeDelivery.delivery_longitude ?? null,
                     customerName: customerInfo?.name || 'Customer',
                     customerPhone: customerInfo?.phone || null,
                     status: activeDelivery.status ?? 'accepted',
