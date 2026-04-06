@@ -38,9 +38,9 @@ export default function DriverApp() {
       setCustomerInfo(null);
       return;
     }
-    supabase.from('stores').select('name, address, phone').eq('id', activeDelivery.store_id).single()
+    supabase.from('stores').select('name, address, phone, latitude, longitude').eq('id', activeDelivery.store_id).single()
       .then(({ data }) => {
-        if (data) setStoreInfo({ name: data.name, address: data.address, phone: data.phone });
+        if (data) setStoreInfo({ name: data.name, address: data.address, phone: data.phone, latitude: data.latitude, longitude: data.longitude });
       });
     if (activeDelivery.customer_id) {
       supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
