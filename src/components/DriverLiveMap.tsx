@@ -106,7 +106,7 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
   if (centerLat == null || centerLng == null) {
     return (
       <div className="h-[250px] rounded-xl bg-muted flex items-center justify-center">
-        <p className="text-sm text-muted-foreground">Waiting for driver location...</p>
+        <p className="text-sm text-muted-foreground">Αναμονή τοποθεσίας οδηγού...</p>
       </div>
     );
   }
