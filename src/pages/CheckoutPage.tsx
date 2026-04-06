@@ -27,7 +27,6 @@ export default function CheckoutPage() {
   const [address, setAddress] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
 
-  // Auto-fill default saved address
   useEffect(() => {
     if (!user) return;
     supabase
@@ -85,35 +84,31 @@ export default function CheckoutPage() {
       .maybeSingle();
 
     if (error || !data) {
-      toast.error('Invalid promo code');
+      toast.error('Μη έγκυρος κωδικός προσφοράς');
       setPromoLoading(false);
       return;
     }
 
-    // Validate expiry
     if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      toast.error('This promo code has expired');
+      toast.error('Αυτός ο κωδικός έχει λήξει');
       setPromoLoading(false);
       return;
     }
 
-    // Validate max uses
     if (data.max_uses !== null && data.current_uses >= data.max_uses) {
-      toast.error('This promo code has reached its usage limit');
+      toast.error('Αυτός ο κωδικός έχει εξαντληθεί');
       setPromoLoading(false);
       return;
     }
 
-    // Validate min order amount
     if (total < Number(data.min_order_amount)) {
-      toast.error(`Minimum order of $${Number(data.min_order_amount).toFixed(2)} required`);
+      toast.error(`Ελάχιστη παραγγελία ${Number(data.min_order_amount).toFixed(2)}€`);
       setPromoLoading(false);
       return;
     }
 
-    // Validate store-specific promo
     if (data.store_id && data.store_id !== storeId) {
-      toast.error('This code is not valid for this restaurant');
+      toast.error('Αυτός ο κωδικός δεν ισχύει για αυτό το εστιατόριο');
       setPromoLoading(false);
       return;
     }
@@ -124,7 +119,7 @@ export default function CheckoutPage() {
       discount_type: data.discount_type as 'percentage' | 'fixed',
       discount_value: Number(data.discount_value),
     });
-    toast.success('Promo code applied! 🎉');
+    toast.success('Ο κωδικός εφαρμόστηκε! 🎉');
     setPromoLoading(false);
   };
 
@@ -135,19 +130,18 @@ export default function CheckoutPage() {
 
   const handlePlaceOrder = async () => {
     if (!user) {
-      toast.error('Please sign in to place an order');
+      toast.error('Παρακαλώ συνδεθείτε για να κάνετε παραγγελία');
       navigate('/auth');
       return;
     }
     if (!address.trim()) {
-      toast.error('Please enter a delivery address');
+      toast.error('Παρακαλώ εισάγετε διεύθυνση παράδοσης');
       return;
     }
     if (!storeId || items.length === 0) return;
 
     setSubmitting(true);
     try {
-      // Create the order
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -166,10 +160,9 @@ export default function CheckoutPage() {
         .single();
 
       if (orderError || !order) {
-        throw orderError || new Error('Failed to create order');
+        throw orderError || new Error('Αποτυχία δημιουργίας παραγγελίας');
       }
 
-      // Create order items
       const orderItems = items.map(item => ({
         order_id: order.id,
         menu_item_id: item.menuItemId,
@@ -187,10 +180,10 @@ export default function CheckoutPage() {
       }
 
       clearCart();
-      toast.success('Order placed! 🎉');
+      toast.success('Η παραγγελία καταχωρήθηκε! 🎉');
       navigate(`/order-tracking/${order.id}`);
     } catch (error: any) {
-      toast.error(error.message || 'Failed to place order');
+      toast.error(error.message || 'Αποτυχία υποβολής παραγγελίας');
     } finally {
       setSubmitting(false);
     }
@@ -203,14 +196,14 @@ export default function CheckoutPage() {
           <button onClick={() => navigate('/order')} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </button>
-          <h1 className="font-heading font-bold text-lg text-foreground">Your Cart</h1>
+          <h1 className="font-heading font-bold text-lg text-foreground">Το Καλάθι σας</h1>
         </header>
         <div className="text-center py-16 px-4">
           <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-          <p className="font-heading text-xl text-foreground">Your cart is empty</p>
-          <p className="text-sm text-muted-foreground mt-1">Browse restaurants and add items</p>
+          <p className="font-heading text-xl text-foreground">Το καλάθι σας είναι άδειο</p>
+          <p className="text-sm text-muted-foreground mt-1">Περιηγηθείτε σε εστιατόρια και προσθέστε προϊόντα</p>
           <Button onClick={() => navigate('/order')} className="mt-6 gradient-primary text-primary-foreground font-heading shadow-primary">
-            Browse Restaurants
+            Περιήγηση Εστιατορίων
           </Button>
         </div>
       </div>
@@ -224,8 +217,8 @@ export default function CheckoutPage() {
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div>
-          <h1 className="font-heading font-bold text-lg text-foreground">Checkout</h1>
-          <p className="text-xs text-muted-foreground">from {storeName}</p>
+          <h1 className="font-heading font-bold text-lg text-foreground">Ολοκλήρωση Παραγγελίας</h1>
+          <p className="text-xs text-muted-foreground">από {storeName}</p>
         </div>
       </header>
 
@@ -233,12 +226,12 @@ export default function CheckoutPage() {
         {/* Cart Items */}
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4 space-y-3">
-            <h2 className="font-heading font-semibold text-foreground">Your Items</h2>
+            <h2 className="font-heading font-semibold text-foreground">Τα Προϊόντα σας</h2>
             {items.map(item => (
               <div key={item.menuItemId} className="flex items-center justify-between py-2 border-b border-border last:border-0">
                 <div className="flex-1">
                   <p className="font-heading text-sm text-foreground">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">${item.price.toFixed(2)} each</p>
+                  <p className="text-xs text-muted-foreground">{item.price.toFixed(2)}€ το τεμάχιο</p>
                 </div>
                 <div className="flex items-center gap-2">
                   <button
@@ -255,7 +248,7 @@ export default function CheckoutPage() {
                     <Plus className="h-3.5 w-3.5 text-primary-foreground" />
                   </button>
                   <span className="font-heading font-semibold text-sm text-foreground w-14 text-right">
-                    ${(item.price * item.quantity).toFixed(2)}
+                    {(item.price * item.quantity).toFixed(2)}€
                   </span>
                 </div>
               </div>
@@ -268,7 +261,7 @@ export default function CheckoutPage() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
-              <h2 className="font-heading font-semibold text-foreground">Delivery Address</h2>
+              <h2 className="font-heading font-semibold text-foreground">Διεύθυνση Παράδοσης</h2>
             </div>
             <AddressAutocomplete
               value={address}
@@ -290,9 +283,9 @@ export default function CheckoutPage() {
         {/* Notes */}
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4 space-y-2">
-            <Label className="font-heading">Order Notes (optional)</Label>
+            <Label className="font-heading">Σημειώσεις Παραγγελίας (προαιρετικά)</Label>
             <Textarea
-              placeholder="Any special instructions..."
+              placeholder="Ειδικές οδηγίες..."
               value={notes}
               onChange={e => setNotes(e.target.value)}
               maxLength={500}
@@ -306,7 +299,7 @@ export default function CheckoutPage() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">💰</span>
-              <h2 className="font-heading font-semibold text-foreground">Tip your driver</h2>
+              <h2 className="font-heading font-semibold text-foreground">Φιλοδώρημα οδηγού</h2>
             </div>
             <div className="grid grid-cols-4 gap-2">
               {[10, 15, 20, 'custom' as const].map(opt => {
@@ -321,19 +314,19 @@ export default function CheckoutPage() {
                         : 'bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
-                    {opt === 'custom' ? 'Custom' : `${opt}%`}
+                    {opt === 'custom' ? 'Άλλο' : `${opt}%`}
                   </button>
                 );
               })}
             </div>
             {tipOption !== 'custom' && tipAmount > 0 && (
               <p className="text-sm text-muted-foreground text-center">
-                ${tipAmount.toFixed(2)} tip
+                {tipAmount.toFixed(2)}€ φιλοδώρημα
               </p>
             )}
             {tipOption === 'custom' && (
               <div className="relative">
-                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-heading">$</span>
+                <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground font-heading">€</span>
                 <Input
                   type="number"
                   value={customTip}
@@ -349,7 +342,7 @@ export default function CheckoutPage() {
               onClick={() => { setTipOption('custom'); setCustomTip('0'); }}
               className="text-xs text-muted-foreground underline underline-offset-2"
             >
-              No tip
+              Χωρίς φιλοδώρημα
             </button>
           </CardContent>
         </Card>
@@ -359,7 +352,7 @@ export default function CheckoutPage() {
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Tag className="h-5 w-5 text-primary" />
-              <h2 className="font-heading font-semibold text-foreground">Promo Code</h2>
+              <h2 className="font-heading font-semibold text-foreground">Κωδικός Προσφοράς</h2>
             </div>
             {appliedPromo ? (
               <div className="flex items-center justify-between bg-success/5 rounded-lg p-3">
@@ -369,8 +362,8 @@ export default function CheckoutPage() {
                     <p className="font-heading font-semibold text-foreground text-sm">{appliedPromo.code}</p>
                     <p className="text-xs text-success">
                       {appliedPromo.discount_type === 'percentage'
-                        ? `${appliedPromo.discount_value}% off`
-                        : `$${appliedPromo.discount_value.toFixed(2)} off`}
+                        ? `${appliedPromo.discount_value}% έκπτωση`
+                        : `${appliedPromo.discount_value.toFixed(2)}€ έκπτωση`}
                     </p>
                   </div>
                 </div>
@@ -381,7 +374,7 @@ export default function CheckoutPage() {
             ) : (
               <div className="flex gap-2">
                 <Input
-                  placeholder="Enter code"
+                  placeholder="Εισάγετε κωδικό"
                   value={promoCode}
                   onChange={e => setPromoCode(e.target.value.toUpperCase())}
                   maxLength={30}
@@ -394,7 +387,7 @@ export default function CheckoutPage() {
                   variant="outline"
                   className="font-heading shrink-0"
                 >
-                  {promoLoading ? '...' : 'Apply'}
+                  {promoLoading ? '...' : 'Εφαρμογή'}
                 </Button>
               </div>
             )}
@@ -404,28 +397,28 @@ export default function CheckoutPage() {
         {/* Order Summary */}
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4 space-y-2">
-            <h2 className="font-heading font-semibold text-foreground">Order Summary</h2>
+            <h2 className="font-heading font-semibold text-foreground">Σύνοψη Παραγγελίας</h2>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Subtotal</span>
-              <span className="text-foreground">${total.toFixed(2)}</span>
+              <span className="text-muted-foreground">Υποσύνολο</span>
+              <span className="text-foreground">{total.toFixed(2)}€</span>
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-success">Discount</span>
-                <span className="text-success">-${discount.toFixed(2)}</span>
+                <span className="text-success">Έκπτωση</span>
+                <span className="text-success">-{discount.toFixed(2)}€</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Delivery Fee</span>
-              <span className="text-foreground">${deliveryFee.toFixed(2)}</span>
+              <span className="text-muted-foreground">Κόστος Παράδοσης</span>
+              <span className="text-foreground">{deliveryFee.toFixed(2)}€</span>
             </div>
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Driver Tip</span>
-              <span className="text-foreground">${tipAmount.toFixed(2)}</span>
+              <span className="text-muted-foreground">Φιλοδώρημα Οδηγού</span>
+              <span className="text-foreground">{tipAmount.toFixed(2)}€</span>
             </div>
             <div className="flex justify-between font-heading font-bold pt-2 border-t border-border">
-              <span className="text-foreground">Total</span>
-              <span className="text-foreground">${grandTotal.toFixed(2)}</span>
+              <span className="text-foreground">Σύνολο</span>
+              <span className="text-foreground">{grandTotal.toFixed(2)}€</span>
             </div>
           </CardContent>
         </Card>
@@ -439,7 +432,7 @@ export default function CheckoutPage() {
             disabled={submitting || !address.trim()}
             className="w-full h-14 gradient-primary shadow-primary text-primary-foreground font-heading text-lg rounded-2xl"
           >
-            {submitting ? 'Placing Order...' : `Place Order — $${grandTotal.toFixed(2)}`}
+            {submitting ? 'Υποβολή Παραγγελίας...' : `Υποβολή Παραγγελίας — ${grandTotal.toFixed(2)}€`}
           </Button>
         </div>
       </div>

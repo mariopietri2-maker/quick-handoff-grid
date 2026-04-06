@@ -47,7 +47,7 @@ export default function CustomerApp() {
             <div className="flex items-center gap-2">
               {user && (
                 <Link to="/orders" className="text-primary-foreground/70 hover:text-primary-foreground text-sm font-heading">
-                  My Orders
+                  Οι Παραγγελίες μου
                 </Link>
               )}
               {itemCount > 0 && (
@@ -63,7 +63,7 @@ export default function CustomerApp() {
               )}
               {!user && (
                 <Link to="/auth" className="text-sm font-heading text-primary-foreground/70 hover:text-primary-foreground">
-                  Sign In
+                  Σύνδεση
                 </Link>
               )}
             </div>
@@ -71,7 +71,7 @@ export default function CustomerApp() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Search restaurants..."
+              placeholder="Αναζήτηση εστιατορίων..."
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-10 bg-primary-foreground/10 border-primary-foreground/20 text-primary-foreground placeholder:text-primary-foreground/40"
@@ -82,20 +82,20 @@ export default function CustomerApp() {
 
       <div className="max-w-2xl mx-auto p-4">
         <h2 className="font-heading font-bold text-lg text-foreground mb-4">
-          {search ? `Results for "${search}"` : 'Nearby Restaurants'}
+          {search ? `Αποτελέσματα για "${search}"` : 'Κοντινά Εστιατόρια'}
         </h2>
 
         {loading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-muted-foreground font-heading">Finding restaurants...</p>
+            <p className="text-muted-foreground font-heading">Αναζήτηση εστιατορίων...</p>
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16">
             <MapPin className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="font-heading text-foreground">No restaurants found</p>
+            <p className="font-heading text-foreground">Δεν βρέθηκαν εστιατόρια</p>
             <p className="text-sm text-muted-foreground mt-1">
-              {search ? 'Try a different search' : 'Check back soon for new restaurants'}
+              {search ? 'Δοκιμάστε διαφορετική αναζήτηση' : 'Ελέγξτε ξανά σύντομα για νέα εστιατόρια'}
             </p>
           </div>
         ) : (
@@ -107,7 +107,6 @@ export default function CustomerApp() {
                 onClick={() => navigate(`/restaurant/${store.id}`)}
               >
                 <CardContent className="p-0">
-                  {/* Store image or gradient placeholder */}
                   <div className="h-32 gradient-dark flex items-center justify-center">
                     {store.image_url ? (
                       <img src={store.image_url} alt={store.name} className="w-full h-full object-cover" />
@@ -126,17 +125,17 @@ export default function CustomerApp() {
                       </div>
                       {store.busy_mode && (
                         <Badge variant="outline" className="text-warning border-warning/30 text-xs">
-                          Busy
+                          Πολυάσχολο
                         </Badge>
                       )}
                     </div>
                     <div className="flex items-center gap-3 mt-2 text-sm text-muted-foreground">
                       <span className="flex items-center gap-1">
                         <Clock className="h-3.5 w-3.5" />
-                        {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} min
+                        {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} λεπ
                       </span>
                       <span>•</span>
-                      <span>$0.99 delivery</span>
+                      <span>0,99€ παράδοση</span>
                     </div>
                   </div>
                 </CardContent>

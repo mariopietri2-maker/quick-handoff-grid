@@ -10,13 +10,13 @@ import type { Database } from '@/integrations/supabase/types';
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
 const statusLabels: Record<string, { label: string; color: string }> = {
-  placed: { label: 'Placed', color: 'bg-info/10 text-info border-info/30' },
-  accepted: { label: 'Accepted', color: 'bg-info/10 text-info border-info/30' },
-  preparing: { label: 'Preparing', color: 'bg-warning/10 text-warning border-warning/30' },
-  ready: { label: 'Ready', color: 'bg-success/10 text-success border-success/30' },
-  picked_up: { label: 'On the Way', color: 'bg-primary/10 text-primary border-primary/30' },
-  delivered: { label: 'Delivered', color: 'bg-success/10 text-success border-success/30' },
-  cancelled: { label: 'Cancelled', color: 'bg-destructive/10 text-destructive border-destructive/30' },
+  placed: { label: 'Καταχωρήθηκε', color: 'bg-info/10 text-info border-info/30' },
+  accepted: { label: 'Αποδεκτή', color: 'bg-info/10 text-info border-info/30' },
+  preparing: { label: 'Ετοιμάζεται', color: 'bg-warning/10 text-warning border-warning/30' },
+  ready: { label: 'Έτοιμη', color: 'bg-success/10 text-success border-success/30' },
+  picked_up: { label: 'Σε Μεταφορά', color: 'bg-primary/10 text-primary border-primary/30' },
+  delivered: { label: 'Παραδόθηκε', color: 'bg-success/10 text-success border-success/30' },
+  cancelled: { label: 'Ακυρωμένη', color: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
 
 export default function MyOrdersPage() {
@@ -40,7 +40,7 @@ export default function MyOrdersPage() {
   }, [user]);
 
   const formatDate = (dateStr: string) => {
-    return new Date(dateStr).toLocaleDateString('en-US', {
+    return new Date(dateStr).toLocaleDateString('el-GR', {
       month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit',
     });
   };
@@ -51,7 +51,7 @@ export default function MyOrdersPage() {
         <button onClick={() => navigate('/order')} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <h1 className="font-heading font-bold text-lg text-foreground">My Orders</h1>
+        <h1 className="font-heading font-bold text-lg text-foreground">Οι Παραγγελίες μου</h1>
       </header>
 
       <div className="max-w-lg mx-auto p-4">
@@ -62,8 +62,8 @@ export default function MyOrdersPage() {
         ) : orders.length === 0 ? (
           <div className="text-center py-16">
             <Package className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-            <p className="font-heading text-foreground">No orders yet</p>
-            <p className="text-sm text-muted-foreground mt-1">Your order history will appear here</p>
+            <p className="font-heading text-foreground">Δεν υπάρχουν παραγγελίες</p>
+            <p className="text-sm text-muted-foreground mt-1">Το ιστορικό παραγγελιών σας θα εμφανίζεται εδώ</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -85,13 +85,13 @@ export default function MyOrdersPage() {
                     </div>
                     <div className="flex items-center justify-between">
                       <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
-                      <span className="font-heading font-bold text-foreground">${Number(order.total_amount).toFixed(2)}</span>
+                      <span className="font-heading font-bold text-foreground">{Number(order.total_amount).toFixed(2)}€</span>
                     </div>
                     {order.delivery_address && (
                       <p className="text-xs text-muted-foreground mt-1 truncate">{order.delivery_address}</p>
                     )}
                     {isActive && (
-                      <p className="text-xs text-primary font-heading mt-2">Tap to track →</p>
+                      <p className="text-xs text-primary font-heading mt-2">Πατήστε για παρακολούθηση →</p>
                     )}
                   </CardContent>
                 </Card>

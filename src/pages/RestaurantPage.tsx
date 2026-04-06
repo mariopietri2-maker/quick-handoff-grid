@@ -33,7 +33,7 @@ export default function RestaurantPage() {
     });
   }, [id]);
 
-  const categories = [...new Set(menuItems.map(i => i.category ?? 'Other'))];
+  const categories = [...new Set(menuItems.map(i => i.category ?? 'Άλλο'))];
 
   const getItemQuantity = (menuItemId: string) => {
     const cartItem = items.find(i => i.menuItemId === menuItemId);
@@ -43,14 +43,14 @@ export default function RestaurantPage() {
   const handleAdd = (item: MenuItemRow) => {
     if (!store) return;
     if (cartStoreId && cartStoreId !== store.id) {
-      toast('Cart cleared — switching to a new restaurant', { duration: 3000 });
+      toast('Το καλάθι εκκαθαρίστηκε — αλλαγή εστιατορίου', { duration: 3000 });
     }
     addItem(store.id, store.name, {
       menuItemId: item.id,
       name: item.name,
       price: Number(item.price),
     });
-    toast.success(`${item.name} added`);
+    toast.success(`${item.name} προστέθηκε`);
   };
 
   if (loading) {
@@ -64,7 +64,7 @@ export default function RestaurantPage() {
   if (!store) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground font-heading">Restaurant not found</p>
+        <p className="text-muted-foreground font-heading">Το εστιατόριο δεν βρέθηκε</p>
       </div>
     );
   }
@@ -101,10 +101,10 @@ export default function RestaurantPage() {
               <RatingBadge storeId={store.id} />
               <span className="flex items-center gap-1">
                 <Clock className="h-3.5 w-3.5" />
-                {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} min
+                {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} λεπ
               </span>
               {store.busy_mode && (
-                <Badge variant="outline" className="text-warning border-warning/30 text-xs">Busy</Badge>
+                <Badge variant="outline" className="text-warning border-warning/30 text-xs">Πολυάσχολο</Badge>
               )}
             </div>
           </CardContent>
@@ -115,15 +115,15 @@ export default function RestaurantPage() {
       <div className="max-w-2xl mx-auto px-4 mt-6 space-y-6">
         {menuItems.length === 0 ? (
           <div className="text-center py-16">
-            <p className="font-heading text-foreground">No items available right now</p>
-            <p className="text-sm text-muted-foreground mt-1">Check back later</p>
+            <p className="font-heading text-foreground">Δεν υπάρχουν διαθέσιμα προϊόντα αυτή τη στιγμή</p>
+            <p className="text-sm text-muted-foreground mt-1">Ελέγξτε ξανά αργότερα</p>
           </div>
         ) : (
           categories.map(category => (
             <div key={category}>
               <h2 className="font-heading font-bold text-lg text-foreground mb-3">{category}</h2>
               <div className="space-y-2">
-                {menuItems.filter(i => (i.category ?? 'Other') === category).map(item => {
+                {menuItems.filter(i => (i.category ?? 'Άλλο') === category).map(item => {
                   const qty = getItemQuantity(item.id);
                   return (
                     <Card key={item.id} className="shadow-[var(--shadow-sm)]">
@@ -134,7 +134,7 @@ export default function RestaurantPage() {
                             <p className="text-sm text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
                           )}
                           <p className="text-sm font-heading font-semibold text-primary mt-1">
-                            ${Number(item.price).toFixed(2)}
+                            {Number(item.price).toFixed(2)}€
                           </p>
                         </div>
                         {qty > 0 ? (
@@ -160,7 +160,7 @@ export default function RestaurantPage() {
                             className="gradient-primary shadow-primary text-primary-foreground font-heading"
                           >
                             <Plus className="h-4 w-4 mr-1" />
-                            Add
+                            Προσθήκη
                           </Button>
                         )}
                       </CardContent>
@@ -174,7 +174,7 @@ export default function RestaurantPage() {
 
         {/* Reviews Section */}
         <div>
-          <h2 className="font-heading font-bold text-lg text-foreground mb-3">Reviews</h2>
+          <h2 className="font-heading font-bold text-lg text-foreground mb-3">Κριτικές</h2>
           <ReviewList storeId={store.id} />
         </div>
       </div>
@@ -188,7 +188,7 @@ export default function RestaurantPage() {
               className="w-full h-14 gradient-primary shadow-primary text-primary-foreground font-heading text-lg rounded-2xl"
             >
               <ShoppingBag className="mr-2 h-5 w-5" />
-              View Cart ({itemCount}) — ${total.toFixed(2)}
+              Καλάθι ({itemCount}) — {total.toFixed(2)}€
             </Button>
           </div>
         </div>
