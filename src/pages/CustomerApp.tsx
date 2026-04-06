@@ -165,6 +165,52 @@ export default function CustomerApp() {
         </div>
       </div>
 
+      {/* Featured / Popular Section */}
+      {!search && selectedCategory === 'all' && stores.length > 0 && (
+        <div className="max-w-2xl mx-auto px-4 pb-2">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="font-heading font-bold text-lg text-foreground">🔥 Δημοφιλή</h2>
+          </div>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
+            {stores.slice(0, 5).map(store => (
+              <button
+                key={store.id}
+                className="flex-shrink-0 w-[200px] text-left group"
+                onClick={() => navigate(`/restaurant/${store.id}`)}
+              >
+                <div className="relative h-28 rounded-xl overflow-hidden mb-2">
+                  {store.image_url ? (
+                    <img
+                      src={store.image_url}
+                      alt={store.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-muted flex items-center justify-center">
+                      <span className="text-3xl">🍽️</span>
+                    </div>
+                  )}
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                  <div className="absolute bottom-2 left-2 right-2">
+                    <span className="text-xs font-bold text-white drop-shadow-sm line-clamp-1">
+                      {store.name}
+                    </span>
+                  </div>
+                  <div className="absolute top-2 right-2 bg-card/90 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
+                    <span className="text-[10px] font-bold text-foreground">⭐ 4.{5 + (store.name.length % 5)}</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                  <span>{20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} λεπ</span>
+                  <span>•</span>
+                  <span>0,99€</span>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Store Listing */}
       <div className="max-w-2xl mx-auto px-4 pb-6">
         {/* Section header */}
