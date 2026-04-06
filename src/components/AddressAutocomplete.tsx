@@ -286,12 +286,23 @@ export function AddressAutocomplete({
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <MapClickHandler onMapClick={handleMapClick} />
+              {flyTo && <FlyToPoint lat={flyTo.lat} lon={flyTo.lon} />}
               {mapPin && (
                 <Marker position={[mapPin.lat, mapPin.lon]} icon={defaultIcon} />
               )}
             </MapContainer>
+            {/* GPS button on map */}
+            <button
+              type="button"
+              onClick={locateGPS}
+              disabled={gpsLoading}
+              className="absolute bottom-3 right-3 z-[1000] h-10 w-10 bg-card rounded-full shadow-md flex items-center justify-center border border-border hover:bg-accent transition-colors disabled:opacity-50"
+              title="Η τοποθεσία μου"
+            >
+              {gpsLoading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Crosshair className="h-5 w-5 text-primary" />}
+            </button>
             {reverseLoading && (
-              <div className="absolute top-2 right-2 bg-card/90 rounded-full p-1.5 shadow">
+              <div className="absolute top-2 right-2 z-[1000] bg-card/90 rounded-full p-1.5 shadow">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
               </div>
             )}
