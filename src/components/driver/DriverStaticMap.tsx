@@ -265,15 +265,15 @@ export default function DriverStaticMap({
         )}
 
         {/* Route lines */}
-        {liveMode && driverToStoreWaypoints.length >= 2 && (
+        {driverToStoreWaypoints.length >= 2 && (
           <RouteLine waypoints={driverToStoreWaypoints} color="hsl(217, 91%, 60%)" />
         )}
-        {liveMode && storeToCustomerWaypoints.length >= 2 && (
+        {storeToCustomerWaypoints.length >= 2 && (
           <RouteLine waypoints={storeToCustomerWaypoints} color="hsl(142, 71%, 45%)" />
         )}
 
         {/* Fit bounds when we have multiple points */}
-        {liveMode && boundsPoints.length >= 2 && (
+        {boundsPoints.length >= 2 && (
           <FitBounds points={boundsPoints} />
         )}
       </MapContainer>
