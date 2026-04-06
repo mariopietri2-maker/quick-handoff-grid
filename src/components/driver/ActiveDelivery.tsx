@@ -3,6 +3,8 @@ import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package } from '
 import { Store, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import DriverLiveMap from '@/components/DriverLiveMap';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DeliveryItem {
   name: string;
