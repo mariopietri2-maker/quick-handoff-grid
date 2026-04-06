@@ -53,7 +53,7 @@ export function useDriverLocation(isActive: boolean) {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => { sendLocation(pos); },
       (err) => { setError(err.message); setTracking(false); },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
     );
 
     return () => {
