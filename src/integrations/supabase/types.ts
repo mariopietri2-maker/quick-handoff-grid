@@ -76,6 +76,7 @@ export type Database = {
           account_holder: string | null
           bank_name: string | null
           created_at: string
+          driver_code: string | null
           iban: string | null
           id: string
           id_document_url: string | null
@@ -95,6 +96,7 @@ export type Database = {
           account_holder?: string | null
           bank_name?: string | null
           created_at?: string
+          driver_code?: string | null
           iban?: string | null
           id?: string
           id_document_url?: string | null
@@ -114,6 +116,7 @@ export type Database = {
           account_holder?: string | null
           bank_name?: string | null
           created_at?: string
+          driver_code?: string | null
           iban?: string | null
           id?: string
           id_document_url?: string | null
