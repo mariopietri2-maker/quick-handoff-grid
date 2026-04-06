@@ -9,6 +9,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import DriverApp from "./pages/DriverApp.tsx";
+import DriverProfilePage from "./pages/DriverProfilePage.tsx";
 import StoreApp from "./pages/StoreApp.tsx";
 import AdminApp from "./pages/AdminApp.tsx";
 import CustomerApp from "./pages/CustomerApp.tsx";
@@ -39,6 +40,11 @@ const App = () => (
               <Route path="/driver" element={
                 <ProtectedRoute allowedRoles={['driver']}>
                   <DriverApp />
+                </ProtectedRoute>
+              } />
+              <Route path="/driver/profile" element={
+                <ProtectedRoute allowedRoles={['driver']}>
+                  <DriverProfilePage />
                 </ProtectedRoute>
               } />
               <Route path="/store" element={
