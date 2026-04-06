@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { MapPin, Loader2, X, Navigation, Crosshair } from 'lucide-react';
+import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
