@@ -59,6 +59,8 @@ export function AddressAutocomplete({
   const [mapPin, setMapPin] = useState<{ lat: number; lon: number } | null>(null);
   const [reverseLoading, setReverseLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [flyTo, setFlyTo] = useState<{ lat: number; lon: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
