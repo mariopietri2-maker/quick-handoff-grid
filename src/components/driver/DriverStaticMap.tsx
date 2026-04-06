@@ -81,7 +81,7 @@ function CompassWidget() {
   const [bearing, setBearing] = useState(0);
 
   useEffect(() => {
-    const onRotate = () => setBearing(-(map as any).getBearing?.() ?? 0);
+    const onRotate = () => setBearing(-((map as any).getBearing?.() || 0));
     // Standard Leaflet doesn't rotate, so bearing is always 0 (north up)
     // We just show a static compass. If map rotation plugin is added, this auto-updates.
     setBearing(0);
