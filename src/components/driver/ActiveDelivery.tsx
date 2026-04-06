@@ -169,43 +169,25 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                 <p className="text-sm text-muted-foreground">{delivery.deliveryAddress}</p>
               </div>
             </div>
+            {/* Google Maps navigation button - right side centered */}
+            {(isGoingToStore || isGoingToCustomer) && (
+              <div className="flex items-center self-center">
+                <button
+                  onClick={() => openNavigation(
+                    isGoingToStore ? delivery.storeLat : delivery.deliveryLat,
+                    isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
+                    isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress,
+                    'google'
+                  )}
+                  className="h-12 w-12 rounded-full gradient-primary shadow-primary flex items-center justify-center"
+                >
+                  <Navigation className="h-5 w-5 text-primary-foreground" />
+                </button>
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
-
-      {/* Navigation Buttons */}
-      {(isGoingToStore || isGoingToCustomer) && (
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            className="flex-1 h-12 font-heading gap-2"
-            onClick={() => openNavigation(
-              isGoingToStore ? delivery.storeLat : delivery.deliveryLat,
-              isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
-              isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress,
-              'google'
-            )}
-          >
-            <MapPin className="h-4 w-4 text-primary" />
-            Google Maps
-            <ExternalLink className="h-3 w-3 text-muted-foreground" />
-          </Button>
-          <Button
-            variant="outline"
-            className="flex-1 h-12 font-heading gap-2"
-            onClick={() => openNavigation(
-              isGoingToStore ? delivery.storeLat : delivery.deliveryLat,
-              isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
-              isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress,
-              'waze'
-            )}
-          >
-            <Navigation className="h-4 w-4 text-blue-500" />
-            Waze
-            <ExternalLink className="h-3 w-3 text-muted-foreground" />
-          </Button>
-        </div>
-      )}
       <Card className="shadow-[var(--shadow-md)]">
         <CardHeader className="pb-2">
           <CardTitle className="font-heading text-lg">Προϊόντα Παραγγελίας</CardTitle>
