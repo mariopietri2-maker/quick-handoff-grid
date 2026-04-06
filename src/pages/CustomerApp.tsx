@@ -9,6 +9,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { ShoppingBag } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
+import PromoBannerCarousel from '@/components/PromoBannerCarousel';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
