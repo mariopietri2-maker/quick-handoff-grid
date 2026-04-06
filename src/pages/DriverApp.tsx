@@ -146,10 +146,6 @@ export default function DriverApp() {
                 Ενεργή
                 {activeDelivery && <span className="ml-1 h-2 w-2 rounded-full bg-success inline-block" />}
               </TabsTrigger>
-              <TabsTrigger value="earnings" className="flex-1 font-heading">
-                <DollarSign className="h-4 w-4 mr-1.5" />
-                Κέρδη
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="offers" className="space-y-4">
