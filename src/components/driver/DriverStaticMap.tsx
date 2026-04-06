@@ -232,7 +232,7 @@ export default function DriverStaticMap({
         touchZoom={true}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
-        <CenterIoanninaButton />
+        
         
         {pos && (
           <>
