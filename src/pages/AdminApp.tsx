@@ -71,6 +71,13 @@ export default function AdminApp() {
     return driverFilter === 'active' ? dp?.is_active !== false : dp?.is_active === false;
   });
 
+  const [storeFilter, setStoreFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const allStores = stores.data ?? [];
+  const filteredStores = allStores.filter(s => {
+    if (storeFilter === 'all') return true;
+    return storeFilter === 'active' ? s.is_active !== false : s.is_active === false;
+  });
+
   const handleAssignDriver = async (orderId: string, driverId: string) => {
     const { error } = await supabase
       .from('orders')
