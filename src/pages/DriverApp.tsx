@@ -46,7 +46,7 @@ export default function DriverApp() {
     if (activeDelivery.customer_id) {
       supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
         .then(({ data }) => {
-          if (data) setCustomerInfo({ name: data.full_name || 'Customer', phone: data.phone });
+          if (data) setCustomerInfo({ name: data.full_name || 'Πελάτης', phone: data.phone });
         });
     }
   }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id]);
@@ -62,7 +62,7 @@ export default function DriverApp() {
           <UserMenu />
         </div>
         <div className="bg-card/90 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 shadow-lg border border-border">
-          <span className="text-xs text-muted-foreground font-heading">Status</span>
+          <span className="text-xs text-muted-foreground font-heading">Κατάσταση</span>
           <button
             onClick={() => setIsOnline(!isOnline)}
             className={`px-3 py-1 rounded-full text-sm font-heading font-bold transition-all ${
@@ -71,7 +71,7 @@ export default function DriverApp() {
                 : 'bg-muted text-muted-foreground'
             }`}
           >
-            {isOnline ? '● Online' : '○ Offline'}
+            {isOnline ? '● Σε σύνδεση' : '○ Εκτός σύνδεσης'}
           </button>
         </div>
         <div className="flex items-center gap-2">
@@ -93,11 +93,11 @@ export default function DriverApp() {
             <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
               <Bell className="h-5 w-5 text-info flex-shrink-0" />
               <div className="flex-1">
-                <p className="text-sm font-heading font-semibold text-foreground">Enable notifications</p>
-                <p className="text-xs text-muted-foreground">Get alerts when new deliveries are available</p>
+                <p className="text-sm font-heading font-semibold text-foreground">Ενεργοποίηση ειδοποιήσεων</p>
+                <p className="text-xs text-muted-foreground">Λάβετε ειδοποιήσεις όταν υπάρχουν νέες παραδόσεις</p>
               </div>
               <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading">
-                Enable
+                Ενεργοποίηση
               </Button>
             </div>
           )}
@@ -108,7 +108,7 @@ export default function DriverApp() {
             <TabsList className="w-full mb-4">
               <TabsTrigger value="offers" className="flex-1 font-heading relative">
                 <Radio className="h-4 w-4 mr-1.5" />
-                Offers
+                Προσφορές
                 {offers.length > 0 && (
                   <Badge className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center gradient-primary text-primary-foreground text-xs">
                     {offers.length}
@@ -117,35 +117,35 @@ export default function DriverApp() {
               </TabsTrigger>
               <TabsTrigger value="active" className="flex-1 font-heading">
                 <Car className="h-4 w-4 mr-1.5" />
-                Active
+                Ενεργή
                 {activeDelivery && <span className="ml-1 h-2 w-2 rounded-full bg-success inline-block" />}
               </TabsTrigger>
               <TabsTrigger value="earnings" className="flex-1 font-heading">
                 <DollarSign className="h-4 w-4 mr-1.5" />
-                Earnings
+                Κέρδη
               </TabsTrigger>
             </TabsList>
 
             <TabsContent value="offers" className="space-y-4">
               {!isOnline ? (
                 <div className="text-center py-12">
-                  <p className="text-muted-foreground font-heading">You're offline</p>
-                  <p className="text-sm text-muted-foreground mt-1">Go online to receive delivery offers</p>
+                  <p className="text-muted-foreground font-heading">Είστε εκτός σύνδεσης</p>
+                  <p className="text-sm text-muted-foreground mt-1">Συνδεθείτε για να λαμβάνετε προσφορές παράδοσης</p>
                 </div>
               ) : loading ? (
                 <div className="text-center py-12">
                   <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-muted-foreground font-heading">Loading offers...</p>
+                  <p className="text-muted-foreground font-heading">Φόρτωση προσφορών...</p>
                 </div>
               ) : offers.length === 0 ? (
                 <div className="text-center py-12">
-                  <h2 className="font-heading font-bold text-xl text-foreground mb-2">I'm Available</h2>
+                  <h2 className="font-heading font-bold text-xl text-foreground mb-2">Είμαι Διαθέσιμος</h2>
                   <p className="text-sm text-muted-foreground">
-                    Waiting for new delivery offers. You'll be notified when one comes in.
+                    Αναμονή για νέες προσφορές παράδοσης. Θα ειδοποιηθείτε όταν έρθει κάποια.
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2 text-sm text-success">
                     <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                    Listening...
+                    Ακρόαση...
                   </div>
                 </div>
               ) : (
@@ -154,9 +154,9 @@ export default function DriverApp() {
                     key={offer.id}
                     offer={{
                       id: offer.id,
-                      storeName: 'Pickup',
-                      storeAddress: offer.delivery_address || 'Store location',
-                      deliveryAddress: offer.delivery_address || 'Customer location',
+                      storeName: 'Παραλαβή',
+                      storeAddress: offer.delivery_address || 'Τοποθεσία καταστήματος',
+                      deliveryAddress: offer.delivery_address || 'Τοποθεσία πελάτη',
                       estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
                       totalDistance: 0,
                       estimatedTime: offer.estimated_prep_time ?? 20,
@@ -175,27 +175,27 @@ export default function DriverApp() {
                   {tracking && (
                     <div className="mb-3 flex items-center gap-2 p-2.5 rounded-lg bg-success/10 border border-success/20">
                       <Navigation className="h-4 w-4 text-success animate-pulse" />
-                      <span className="text-xs font-heading text-success">Sharing live location with customer</span>
+                      <span className="text-xs font-heading text-success">Κοινοποίηση ζωντανής τοποθεσίας στον πελάτη</span>
                     </div>
                   )}
                   {locError && (
                     <div className="mb-3 flex items-center gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/20">
                       <Navigation className="h-4 w-4 text-warning" />
-                      <span className="text-xs font-heading text-warning">GPS unavailable: {locError}</span>
+                      <span className="text-xs font-heading text-warning">GPS μη διαθέσιμο: {locError}</span>
                     </div>
                   )}
                   <ActiveDelivery
                     delivery={{
                       id: activeDelivery.id,
-                      storeName: storeInfo?.name || 'Pickup Location',
-                      storeAddress: storeInfo?.address || 'Store address',
+                      storeName: storeInfo?.name || 'Σημείο Παραλαβής',
+                      storeAddress: storeInfo?.address || 'Διεύθυνση καταστήματος',
                       storePhone: storeInfo?.phone || null,
                       storeLat: storeInfo?.latitude ?? null,
                       storeLng: storeInfo?.longitude ?? null,
-                      deliveryAddress: activeDelivery.delivery_address || 'Customer address',
+                      deliveryAddress: activeDelivery.delivery_address || 'Διεύθυνση πελάτη',
                       deliveryLat: activeDelivery.delivery_latitude ?? null,
                       deliveryLng: activeDelivery.delivery_longitude ?? null,
-                      customerName: customerInfo?.name || 'Customer',
+                      customerName: customerInfo?.name || 'Πελάτης',
                       customerPhone: customerInfo?.phone || null,
                       status: activeDelivery.status ?? 'accepted',
                       items: activeDelivery.order_items?.map(i => ({
@@ -203,7 +203,7 @@ export default function DriverApp() {
                         quantity: i.quantity,
                       })) ?? [],
                       estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
-                      pickupChecklist: ['All items verified', 'Drinks included', 'Utensils added'],
+                      pickupChecklist: ['Όλα τα προϊόντα επιβεβαιωμένα', 'Ποτά συμπεριλαμβάνονται', 'Μαχαιροπίρουνα προστέθηκαν'],
                     }}
                     onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                   />
@@ -211,8 +211,8 @@ export default function DriverApp() {
               ) : (
                 <div className="text-center py-12">
                   <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="font-heading text-foreground">No active delivery</p>
-                  <p className="text-sm text-muted-foreground mt-1">Accept an offer to get started</p>
+                  <p className="font-heading text-foreground">Καμία ενεργή παράδοση</p>
+                  <p className="text-sm text-muted-foreground mt-1">Αποδεχτείτε μια προσφορά για να ξεκινήσετε</p>
                 </div>
               )}
             </TabsContent>

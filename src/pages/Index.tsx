@@ -25,7 +25,7 @@ const Index = () => {
             Delivery<span className="text-gradient-primary"> Marketplace</span>
           </h1>
           <p className="text-primary-foreground/70 text-lg max-w-md mx-auto mb-8">
-            A dual-sided marketplace connecting drivers and restaurants in real-time
+            Μια αγορά που συνδέει οδηγούς και εστιατόρια σε πραγματικό χρόνο
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button
@@ -34,7 +34,7 @@ const Index = () => {
               onClick={() => navigate('/order')}
             >
               <ShoppingBag className="mr-2 h-5 w-5" />
-              Order Food
+              Παραγγελία Φαγητού
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
@@ -44,7 +44,7 @@ const Index = () => {
               onClick={() => handleNav('driver')}
             >
               <Car className="mr-2 h-5 w-5" />
-              Driver App
+              Εφαρμογή Οδηγού
             </Button>
             <Button
               size="lg"
@@ -53,7 +53,7 @@ const Index = () => {
               onClick={() => handleNav('store')}
             >
               <Store className="mr-2 h-5 w-5" />
-              Store App
+              Εφαρμογή Καταστήματος
             </Button>
             {isAdmin && (
               <Button
@@ -63,7 +63,7 @@ const Index = () => {
                 onClick={() => navigate('/admin')}
               >
                 <Shield className="mr-2 h-5 w-5" />
-                Admin
+                Διαχείριση
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             )}
@@ -74,23 +74,23 @@ const Index = () => {
       {/* Features */}
       <div className="max-w-4xl mx-auto px-4 py-16">
         <h2 className="font-heading font-bold text-2xl text-center text-foreground mb-8">
-          Built for Scale
+          Σχεδιασμένο για Κλίμακα
         </h2>
         <div className="grid md:grid-cols-3 gap-4">
           <FeatureCard
             icon={Zap}
-            title="Real-time Updates"
-            description="WebSocket-powered order syncing between drivers and stores"
+            title="Ενημερώσεις σε Πραγματικό Χρόνο"
+            description="Συγχρονισμός παραγγελιών μέσω WebSocket μεταξύ οδηγών και καταστημάτων"
           />
           <FeatureCard
             icon={Shield}
-            title="Secure & Reliable"
-            description="Row-level security, auth, and conflict resolution built-in"
+            title="Ασφαλές & Αξιόπιστο"
+            description="Ασφάλεια σε επίπεδο γραμμής, πιστοποίηση και επίλυση συγκρούσεων"
           />
           <FeatureCard
             icon={BarChart3}
-            title="Analytics"
-            description="Earnings tracking, prep time optimization, and performance metrics"
+            title="Αναλυτικά"
+            description="Παρακολούθηση κερδών, βελτιστοποίηση χρόνου προετοιμασίας και μετρήσεις απόδοσης"
           />
         </div>
       </div>

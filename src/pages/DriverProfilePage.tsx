@@ -50,7 +50,6 @@ export default function DriverProfilePage() {
     if (!user) return;
     setFullName(profile?.full_name || '');
 
-    // Fetch phone from profiles table directly
     supabase.from('profiles').select('phone').eq('user_id', user.id).single()
       .then(({ data }) => { if (data) setPhone(data.phone || ''); });
 
@@ -79,12 +78,10 @@ export default function DriverProfilePage() {
     if (!user) return;
     setSaving(true);
     try {
-      // Update basic profile
       if (section === 'personal') {
         await supabase.from('profiles').update({ full_name: fullName, phone }).eq('user_id', user.id);
       }
 
-      // Upsert driver profile
       const { error } = await supabase.from('driver_profiles').upsert({
         user_id: user.id,
         ...driverProfile,
@@ -92,9 +89,9 @@ export default function DriverProfilePage() {
       }, { onConflict: 'user_id' });
 
       if (error) throw error;
-      toast.success(`${section} saved successfully`);
+      toast.success('Αποθηκεύτηκε επιτυχώς');
     } catch (e: any) {
-      toast.error(e.message || 'Failed to save');
+      toast.error(e.message || 'Αποτυχία αποθήκευσης');
     } finally {
       setSaving(false);
     }
@@ -114,7 +111,7 @@ export default function DriverProfilePage() {
         <button onClick={() => navigate('/driver')}>
           <ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" />
         </button>
-        <h1 className="font-heading font-bold text-lg">Delivery Profile</h1>
+        <h1 className="font-heading font-bold text-lg">Προφίλ Οδηγού</h1>
       </header>
 
       <div className="max-w-lg mx-auto p-4">
@@ -122,33 +119,33 @@ export default function DriverProfilePage() {
           <TabsList className="w-full mb-4 grid grid-cols-4">
             <TabsTrigger value="personal" className="text-xs font-heading">
               <User className="h-3.5 w-3.5 mr-1" />
-              Personal
+              Προσωπικά
             </TabsTrigger>
             <TabsTrigger value="vehicle" className="text-xs font-heading">
               <Car className="h-3.5 w-3.5 mr-1" />
-              Vehicle
+              Όχημα
             </TabsTrigger>
             <TabsTrigger value="documents" className="text-xs font-heading">
               <FileText className="h-3.5 w-3.5 mr-1" />
-              Docs
+              Έγγραφα
             </TabsTrigger>
             <TabsTrigger value="bank" className="text-xs font-heading">
               <Landmark className="h-3.5 w-3.5 mr-1" />
-              Bank
+              Τράπεζα
             </TabsTrigger>
           </TabsList>
 
           <TabsContent value="personal">
             <Card>
-              <CardHeader><CardTitle className="font-heading text-lg">Personal Information</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading text-lg">Προσωπικά Στοιχεία</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label htmlFor="fullName">Full Name</Label>
+                  <Label htmlFor="fullName">Ονοματεπώνυμο</Label>
                   <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} />
                 </div>
                 <div>
-                  <Label htmlFor="phone">Phone Number</Label>
-                  <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+1 234 567 8900" />
+                  <Label htmlFor="phone">Τηλέφωνο</Label>
+                  <Input id="phone" value={phone} onChange={e => setPhone(e.target.value)} placeholder="+30 210 1234567" />
                 </div>
                 <div>
                   <Label>Email</Label>
@@ -156,7 +153,7 @@ export default function DriverProfilePage() {
                 </div>
                 <Button onClick={() => handleSave('personal')} disabled={saving} className="w-full gradient-primary text-primary-foreground font-heading">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                  Save Personal Info
+                  Αποθήκευση Προσωπικών
                 </Button>
               </CardContent>
             </Card>
@@ -164,47 +161,47 @@ export default function DriverProfilePage() {
 
           <TabsContent value="vehicle">
             <Card>
-              <CardHeader><CardTitle className="font-heading text-lg">Vehicle Details</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading text-lg">Στοιχεία Οχήματος</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Vehicle Type</Label>
+                  <Label>Τύπος Οχήματος</Label>
                   <Select value={driverProfile.vehicle_type} onValueChange={v => setDriverProfile(p => ({ ...p, vehicle_type: v }))}>
                     <SelectTrigger><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="motorcycle">Motorcycle</SelectItem>
-                      <SelectItem value="bicycle">Bicycle</SelectItem>
-                      <SelectItem value="car">Car</SelectItem>
-                      <SelectItem value="scooter">Scooter</SelectItem>
+                      <SelectItem value="motorcycle">Μοτοσικλέτα</SelectItem>
+                      <SelectItem value="bicycle">Ποδήλατο</SelectItem>
+                      <SelectItem value="car">Αυτοκίνητο</SelectItem>
+                      <SelectItem value="scooter">Σκούτερ</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Make</Label>
+                    <Label>Μάρκα</Label>
                     <Input value={driverProfile.vehicle_make} onChange={e => setDriverProfile(p => ({ ...p, vehicle_make: e.target.value }))} placeholder="Honda" />
                   </div>
                   <div>
-                    <Label>Model</Label>
+                    <Label>Μοντέλο</Label>
                     <Input value={driverProfile.vehicle_model} onChange={e => setDriverProfile(p => ({ ...p, vehicle_model: e.target.value }))} placeholder="CBR" />
                   </div>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <Label>Year</Label>
+                    <Label>Έτος</Label>
                     <Input type="number" value={driverProfile.vehicle_year ?? ''} onChange={e => setDriverProfile(p => ({ ...p, vehicle_year: e.target.value ? Number(e.target.value) : null }))} placeholder="2023" />
                   </div>
                   <div>
-                    <Label>Color</Label>
-                    <Input value={driverProfile.vehicle_color} onChange={e => setDriverProfile(p => ({ ...p, vehicle_color: e.target.value }))} placeholder="Black" />
+                    <Label>Χρώμα</Label>
+                    <Input value={driverProfile.vehicle_color} onChange={e => setDriverProfile(p => ({ ...p, vehicle_color: e.target.value }))} placeholder="Μαύρο" />
                   </div>
                 </div>
                 <div>
-                  <Label>License Plate</Label>
-                  <Input value={driverProfile.license_plate} onChange={e => setDriverProfile(p => ({ ...p, license_plate: e.target.value }))} placeholder="ABC-1234" />
+                  <Label>Πινακίδα</Label>
+                  <Input value={driverProfile.license_plate} onChange={e => setDriverProfile(p => ({ ...p, license_plate: e.target.value }))} placeholder="ΑΒΓ-1234" />
                 </div>
                 <Button onClick={() => handleSave('vehicle')} disabled={saving} className="w-full gradient-primary text-primary-foreground font-heading">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                  Save Vehicle Info
+                  Αποθήκευση Οχήματος
                 </Button>
               </CardContent>
             </Card>
@@ -212,20 +209,20 @@ export default function DriverProfilePage() {
 
           <TabsContent value="documents">
             <Card>
-              <CardHeader><CardTitle className="font-heading text-lg">Documents</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading text-lg">Έγγραφα</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>License Number</Label>
+                  <Label>Αριθμός Διπλώματος</Label>
                   <Input value={driverProfile.license_number} onChange={e => setDriverProfile(p => ({ ...p, license_number: e.target.value }))} placeholder="DL-123456789" />
                 </div>
                 <div>
-                  <Label>License Expiry</Label>
+                  <Label>Λήξη Διπλώματος</Label>
                   <Input type="date" value={driverProfile.license_expiry} onChange={e => setDriverProfile(p => ({ ...p, license_expiry: e.target.value }))} />
                 </div>
-                <p className="text-xs text-muted-foreground">Document upload coming soon. Contact support to submit ID and license copies.</p>
+                <p className="text-xs text-muted-foreground">Η μεταφόρτωση εγγράφων θα είναι σύντομα διαθέσιμη. Επικοινωνήστε με την υποστήριξη για υποβολή ταυτότητας και διπλώματος.</p>
                 <Button onClick={() => handleSave('documents')} disabled={saving} className="w-full gradient-primary text-primary-foreground font-heading">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                  Save Documents
+                  Αποθήκευση Εγγράφων
                 </Button>
               </CardContent>
             </Card>
@@ -233,15 +230,15 @@ export default function DriverProfilePage() {
 
           <TabsContent value="bank">
             <Card>
-              <CardHeader><CardTitle className="font-heading text-lg">Bank Details</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading text-lg">Τραπεζικά Στοιχεία</CardTitle></CardHeader>
               <CardContent className="space-y-4">
                 <div>
-                  <Label>Bank Name</Label>
-                  <Input value={driverProfile.bank_name} onChange={e => setDriverProfile(p => ({ ...p, bank_name: e.target.value }))} placeholder="National Bank" />
+                  <Label>Τράπεζα</Label>
+                  <Input value={driverProfile.bank_name} onChange={e => setDriverProfile(p => ({ ...p, bank_name: e.target.value }))} placeholder="Εθνική Τράπεζα" />
                 </div>
                 <div>
-                  <Label>Account Holder Name</Label>
-                  <Input value={driverProfile.account_holder} onChange={e => setDriverProfile(p => ({ ...p, account_holder: e.target.value }))} placeholder="John Doe" />
+                  <Label>Δικαιούχος Λογαριασμού</Label>
+                  <Input value={driverProfile.account_holder} onChange={e => setDriverProfile(p => ({ ...p, account_holder: e.target.value }))} placeholder="Γιάννης Παπαδόπουλος" />
                 </div>
                 <div>
                   <Label>IBAN</Label>
@@ -249,7 +246,7 @@ export default function DriverProfilePage() {
                 </div>
                 <Button onClick={() => handleSave('bank')} disabled={saving} className="w-full gradient-primary text-primary-foreground font-heading">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
-                  Save Bank Details
+                  Αποθήκευση Τραπεζικών
                 </Button>
               </CardContent>
             </Card>

@@ -33,10 +33,10 @@ interface ActiveDeliveryProps {
 }
 
 const statusSteps = [
-  { key: 'accepted', label: 'Head to Store', icon: Navigation, description: 'Drive to the restaurant to pick up the order' },
-  { key: 'arrived', label: 'At Store', icon: Store, description: 'You are at the restaurant — verify the order' },
-  { key: 'picked_up', label: 'Delivering', icon: Package, description: 'Heading to the customer with the order' },
-  { key: 'delivered', label: 'Delivered', icon: CheckCircle2, description: 'Order handed to the customer' },
+  { key: 'accepted', label: 'Προς Κατάστημα', icon: Navigation, description: 'Οδηγήστε στο εστιατόριο για παραλαβή' },
+  { key: 'arrived', label: 'Στο Κατάστημα', icon: Store, description: 'Βρίσκεστε στο εστιατόριο — επιβεβαιώστε την παραγγελία' },
+  { key: 'picked_up', label: 'Σε Παράδοση', icon: Package, description: 'Κατευθύνεστε στον πελάτη με την παραγγελία' },
+  { key: 'delivered', label: 'Παραδόθηκε', icon: CheckCircle2, description: 'Η παραγγελία παραδόθηκε στον πελάτη' },
 ];
 
 export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps) {
@@ -55,11 +55,11 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       case 'accepted':
       case 'preparing':
       case 'ready':
-        return { label: '🏪 Arrived at Store', next: 'arrived' };
+        return { label: '🏪 Έφτασα στο Κατάστημα', next: 'arrived' };
       case 'arrived':
-        return { label: '📦 Picked Up Order', next: 'picked_up' };
+        return { label: '📦 Παρέλαβα την Παραγγελία', next: 'picked_up' };
       case 'picked_up':
-        return { label: '✅ Mark Delivered', next: 'delivered' };
+        return { label: '✅ Ολοκλήρωση Παράδοσης', next: 'delivered' };
       default:
         return null;
     }
@@ -67,7 +67,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
 
   const nextAction = getNextAction();
 
-  // Map status to step index — accepted/preparing/ready all map to step 0
   const effectiveStepIndex = ['accepted', 'preparing', 'ready'].includes(delivery.status)
     ? 0
     : statusSteps.findIndex(s => s.key === delivery.status);
@@ -157,7 +156,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       {/* Order Items */}
       <Card className="shadow-[var(--shadow-md)]">
         <CardHeader className="pb-2">
-          <CardTitle className="font-heading text-lg">Order Items</CardTitle>
+          <CardTitle className="font-heading text-lg">Προϊόντα Παραγγελίας</CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
           {delivery.items.map((item, i) => (
@@ -168,13 +167,13 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
         </CardContent>
       </Card>
 
-      {/* Pickup Checklist — visible when at store */}
+      {/* Pickup Checklist */}
       {delivery.status === 'arrived' && (
         <Card className="shadow-[var(--shadow-md)] border-warning/20">
           <CardHeader className="pb-2">
             <CardTitle className="font-heading text-lg flex items-center gap-2">
               <CheckCircle2 className="h-5 w-5 text-warning" />
-              Pickup Checklist
+              Λίστα Ελέγχου Παραλαβής
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-2">
@@ -200,9 +199,9 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
 
       {/* Payout */}
       <div className="gradient-dark rounded-xl p-4 flex items-center justify-between">
-        <span className="text-muted-foreground text-sm">Estimated Payout</span>
+        <span className="text-muted-foreground text-sm">Εκτιμώμενη Αμοιβή</span>
         <span className="font-heading font-bold text-xl text-primary-foreground">
-          ${delivery.estimatedPayout.toFixed(2)}
+          {delivery.estimatedPayout.toFixed(2)}€
         </span>
       </div>
 

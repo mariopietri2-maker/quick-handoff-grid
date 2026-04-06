@@ -48,7 +48,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
       </div>
       <div className="gradient-primary px-4 py-3 flex items-center justify-between">
         <span className="text-primary-foreground font-heading font-bold text-2xl">
-          ${offer.estimatedPayout.toFixed(2)}
+          {offer.estimatedPayout.toFixed(2)}€
         </span>
         <div className="flex items-center gap-2 text-primary-foreground/80 text-sm">
           <Timer className={`h-4 w-4 ${isUrgent ? 'animate-pulse' : ''}`} />
@@ -57,9 +57,9 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
           </span>
           <span className="mx-1">•</span>
           <Navigation className="h-4 w-4" />
-          <span>{offer.totalDistance} mi</span>
+          <span>{offer.totalDistance} χλμ</span>
           <Clock className="h-4 w-4 ml-2" />
-          <span>{offer.estimatedTime} min</span>
+          <span>{offer.estimatedTime} λεπ</span>
         </div>
       </div>
       <CardContent className="p-4 space-y-3">
@@ -75,14 +75,14 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
               <p className="text-sm text-muted-foreground">{offer.storeAddress}</p>
             </div>
             <div>
-              <p className="font-heading font-semibold text-foreground">Drop-off</p>
+              <p className="font-heading font-semibold text-foreground">Παράδοση</p>
               <p className="text-sm text-muted-foreground">{offer.deliveryAddress}</p>
             </div>
           </div>
         </div>
         <div className="flex items-center gap-2 text-sm text-muted-foreground">
           <Package className="h-4 w-4" />
-          <span>{offer.itemCount} items</span>
+          <span>{offer.itemCount} προϊόντα</span>
         </div>
         <div className="flex gap-3 pt-2">
           <Button
@@ -90,13 +90,13 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
             className="flex-1 h-14 text-lg font-heading"
             onClick={() => onDecline(offer.id)}
           >
-            Decline
+            Απόρριψη
           </Button>
           <Button
             className="flex-1 h-14 text-lg font-heading gradient-primary shadow-primary text-primary-foreground"
             onClick={() => onAccept(offer.id)}
           >
-            Accept
+            Αποδοχή
           </Button>
         </div>
       </CardContent>

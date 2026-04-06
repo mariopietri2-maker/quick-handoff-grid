@@ -31,24 +31,24 @@ export function UserMenu() {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <div className="px-2 py-1.5">
-          <p className="text-sm font-heading font-semibold text-foreground">{profile?.full_name || 'User'}</p>
+          <p className="text-sm font-heading font-semibold text-foreground">{profile?.full_name || 'Χρήστης'}</p>
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
         {isDriver ? (
           <DropdownMenuItem onClick={() => navigate('/driver/profile')}>
             <UserCircle className="mr-2 h-4 w-4" />
-            Delivery Profile
+            Προφίλ Οδηγού
           </DropdownMenuItem>
         ) : (
           <DropdownMenuItem onClick={() => navigate('/')}>
             <Home className="mr-2 h-4 w-4" />
-            Home
+            Αρχική
           </DropdownMenuItem>
         )}
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
-          Sign Out
+          Αποσύνδεση
         </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
