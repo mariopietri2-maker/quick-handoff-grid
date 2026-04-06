@@ -17,6 +17,17 @@ import DriverStaticMap from '@/components/driver/DriverStaticMap';
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
+  const [driverActive, setDriverActive] = useState<boolean | null>(null);
+  const { user } = useAuth();
+
+  // Check if driver is approved (is_active)
+  useEffect(() => {
+    if (!user) return;
+    supabase.from('driver_profiles').select('is_active').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => {
+        setDriverActive(data?.is_active ?? null);
+      });
+  }, [user]);
   const hasActiveDelivery = !!activeDelivery;
   const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
