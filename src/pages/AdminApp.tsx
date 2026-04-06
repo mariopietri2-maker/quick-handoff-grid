@@ -305,6 +305,11 @@ export default function AdminApp() {
                       <TableRow key={profile.id}>
                         <TableCell className="font-semibold">{profile.full_name || '—'}</TableCell>
                         <TableCell>
+                          {driverCodeMap.get(profile.user_id) ? (
+                            <Badge variant="outline" className="font-mono text-xs">{driverCodeMap.get(profile.user_id)}</Badge>
+                          ) : '—'}
+                        </TableCell>
+                        <TableCell>
                           <Select value={profile.role} onValueChange={(val) => handleChangeRole(profile.user_id, val)}>
                             <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
