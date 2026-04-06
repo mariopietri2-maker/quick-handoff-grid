@@ -71,6 +71,13 @@ export default function AdminApp() {
     return driverFilter === 'active' ? dp?.is_active !== false : dp?.is_active === false;
   });
 
+  const [storeFilter, setStoreFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const allStores = stores.data ?? [];
+  const filteredStores = allStores.filter(s => {
+    if (storeFilter === 'all') return true;
+    return storeFilter === 'active' ? s.is_active !== false : s.is_active === false;
+  });
+
   const handleAssignDriver = async (orderId: string, driverId: string) => {
     const { error } = await supabase
       .from('orders')
@@ -263,7 +270,21 @@ export default function AdminApp() {
 
           <TabsContent value="stores" className="mt-4">
             <Card>
-              <CardHeader><CardTitle className="font-heading">Όλα τα Καταστήματα</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle className="font-heading">Όλα τα Καταστήματα</CardTitle>
+                <div className="flex gap-2">
+                  {(['all', 'active', 'inactive'] as const).map(f => (
+                    <Button
+                      key={f}
+                      size="sm"
+                      variant={storeFilter === f ? 'default' : 'outline'}
+                      onClick={() => setStoreFilter(f)}
+                    >
+                      {f === 'all' ? `Όλα (${allStores.length})` : f === 'active' ? `Ενεργά (${allStores.filter(s => s.is_active !== false).length})` : `Ανενεργά (${allStores.filter(s => s.is_active === false).length})`}
+                    </Button>
+                  ))}
+                </div>
+              </CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
@@ -276,7 +297,7 @@ export default function AdminApp() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {stores.data?.map((store) => (
+                    {filteredStores.map((store) => (
                       <TableRow key={store.id}>
                         <TableCell className="font-semibold">{store.name}</TableCell>
                         <TableCell className="text-sm">{store.address}</TableCell>
@@ -295,7 +316,7 @@ export default function AdminApp() {
                         <TableCell className="text-xs">{format(new Date(store.created_at), 'dd MMM yyyy')}</TableCell>
                       </TableRow>
                     ))}
-                    {!stores.data?.length && (
+                    {!filteredStores.length && (
                       <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Δεν υπάρχουν καταστήματα</TableCell></TableRow>
                     )}
                   </TableBody>
