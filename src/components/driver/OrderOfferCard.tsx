@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MapPin, DollarSign, Clock, Package, Navigation, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { shortenAddress } from '@/lib/address-utils';
 
 interface OrderOffer {
   id: string;
