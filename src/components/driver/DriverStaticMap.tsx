@@ -188,12 +188,13 @@ export default function DriverStaticMap({
         style={{ height: '100%', width: '100%' }}
         zoomControl={false}
         attributionControl={false}
-        dragging={liveMode}
-        scrollWheelZoom={liveMode}
-        doubleClickZoom={liveMode}
-        touchZoom={liveMode}
+        dragging={true}
+        scrollWheelZoom={true}
+        doubleClickZoom={true}
+        touchZoom={true}
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+        <CenterIoanninaButton />
         
         {pos && (
           <>
