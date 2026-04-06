@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, DollarSign, Radio, Navigation, Menu } from 'lucide-react';
+import { Car, Radio, Navigation, Menu } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
-import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
+
 import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
 
@@ -146,10 +146,6 @@ export default function DriverApp() {
                 Ενεργή
                 {activeDelivery && <span className="ml-1 h-2 w-2 rounded-full bg-success inline-block" />}
               </TabsTrigger>
-              <TabsTrigger value="earnings" className="flex-1 font-heading">
-                <DollarSign className="h-4 w-4 mr-1.5" />
-                Κέρδη
-              </TabsTrigger>
             </TabsList>
 
             <TabsContent value="offers" className="space-y-4">
@@ -243,9 +239,6 @@ export default function DriverApp() {
               )}
             </TabsContent>
 
-            <TabsContent value="earnings">
-              <EarningsDashboard />
-            </TabsContent>
           </Tabs>
         </div>
       </div>
