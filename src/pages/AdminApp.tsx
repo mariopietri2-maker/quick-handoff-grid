@@ -344,6 +344,7 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="users" className="mt-4">
             <Card>
               <CardHeader><CardTitle className="font-heading">Όλοι οι Χρήστες</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
