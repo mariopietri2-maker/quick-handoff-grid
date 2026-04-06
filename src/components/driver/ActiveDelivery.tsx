@@ -50,6 +50,26 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
     });
   };
 
+  const openNavigation = (lat: number | null | undefined, lng: number | null | undefined, address: string, app: 'google' | 'waze') => {
+    if (lat && lng) {
+      if (app === 'google') {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      } else {
+        window.open(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+      }
+    } else {
+      const encoded = encodeURIComponent(address);
+      if (app === 'google') {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encoded}`, '_blank');
+      } else {
+        window.open(`https://waze.com/ul?q=${encoded}&navigate=yes`, '_blank');
+      }
+    }
+  };
+
+  const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
+  const isGoingToCustomer = delivery.status === 'picked_up';
+
   const getNextAction = () => {
     switch (delivery.status) {
       case 'accepted':
