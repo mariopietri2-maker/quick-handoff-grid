@@ -137,6 +137,9 @@ export default function RestaurantPage() {
                             {Number(item.price).toFixed(2)}€
                           </p>
                         </div>
+                        {item.image_url && (
+                          <img src={item.image_url} alt={item.name} className="h-20 w-20 rounded-xl object-cover flex-shrink-0 mr-3" />
+                        )}
                         {qty > 0 ? (
                           <div className="flex items-center gap-2">
                             <button
