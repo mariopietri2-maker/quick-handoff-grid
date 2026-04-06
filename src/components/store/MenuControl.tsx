@@ -36,13 +36,13 @@ export function MenuControl({ storeId }: MenuControlProps) {
     (item.category ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const categories = [...new Set(filtered.map(i => i.category ?? 'Uncategorized'))];
+  const categories = [...new Set(filtered.map(i => i.category ?? 'Χωρίς Κατηγορία'))];
 
   if (loading) {
     return (
       <div className="text-center py-16">
         <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-muted-foreground font-heading">Loading menu...</p>
+        <p className="text-muted-foreground font-heading">Φόρτωση μενού...</p>
       </div>
     );
   }
@@ -53,7 +53,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
         <div className="relative flex-1">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
-            placeholder="Search menu items..."
+            placeholder="Αναζήτηση προϊόντων..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -63,32 +63,32 @@ export function MenuControl({ storeId }: MenuControlProps) {
           <DialogTrigger asChild>
             <Button className="gradient-primary text-primary-foreground shadow-primary">
               <Plus className="h-4 w-4 mr-1" />
-              Add
+              Προσθήκη
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="font-heading">Add Menu Item</DialogTitle>
+              <DialogTitle className="font-heading">Προσθήκη Προϊόντος</DialogTitle>
             </DialogHeader>
             <div className="space-y-3">
               <div>
-                <Label className="font-heading">Name</Label>
-                <Input value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Item name" maxLength={100} />
+                <Label className="font-heading">Όνομα</Label>
+                <Input value={newItem.name} onChange={e => setNewItem(p => ({ ...p, name: e.target.value }))} placeholder="Όνομα προϊόντος" maxLength={100} />
               </div>
               <div>
-                <Label className="font-heading">Price</Label>
+                <Label className="font-heading">Τιμή</Label>
                 <Input type="number" step="0.01" min="0" value={newItem.price} onChange={e => setNewItem(p => ({ ...p, price: e.target.value }))} placeholder="0.00" />
               </div>
               <div>
-                <Label className="font-heading">Category</Label>
-                <Input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="e.g. Pizza, Drinks" maxLength={50} />
+                <Label className="font-heading">Κατηγορία</Label>
+                <Input value={newItem.category} onChange={e => setNewItem(p => ({ ...p, category: e.target.value }))} placeholder="π.χ. Πίτσα, Ποτά" maxLength={50} />
               </div>
               <div>
-                <Label className="font-heading">Description (optional)</Label>
-                <Input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Short description" maxLength={200} />
+                <Label className="font-heading">Περιγραφή (προαιρετικό)</Label>
+                <Input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Σύντομη περιγραφή" maxLength={200} />
               </div>
               <Button onClick={handleAdd} className="w-full gradient-primary text-primary-foreground font-heading" disabled={!newItem.name || !newItem.price || !newItem.category}>
-                Add Item
+                Προσθήκη
               </Button>
             </div>
           </DialogContent>
@@ -97,8 +97,8 @@ export function MenuControl({ storeId }: MenuControlProps) {
 
       {items.length === 0 ? (
         <div className="text-center py-16">
-          <p className="font-heading text-foreground">No menu items yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Add your first item to get started</p>
+          <p className="font-heading text-foreground">Δεν υπάρχουν προϊόντα</p>
+          <p className="text-sm text-muted-foreground mt-1">Προσθέστε το πρώτο σας προϊόν για να ξεκινήσετε</p>
         </div>
       ) : (
         categories.map(category => (
@@ -107,7 +107,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
               {category}
             </h3>
             <div className="space-y-2">
-              {filtered.filter(i => (i.category ?? 'Uncategorized') === category).map(item => (
+              {filtered.filter(i => (i.category ?? 'Χωρίς Κατηγορία') === category).map(item => (
                 <Card key={item.id} className={`shadow-[var(--shadow-sm)] ${
                   !item.is_available ? 'opacity-50' : item.is_snoozed ? 'border-warning/40' : ''
                 }`}>
@@ -118,17 +118,17 @@ export function MenuControl({ storeId }: MenuControlProps) {
                         {item.is_snoozed && (
                           <Badge variant="outline" className="text-warning border-warning/30 text-xs">
                             <Moon className="h-3 w-3 mr-1" />
-                            Snoozed
+                            Παύση
                           </Badge>
                         )}
                         {!item.is_available && (
                           <Badge variant="destructive" className="text-xs">
                             <X className="h-3 w-3 mr-1" />
-                            86'd
+                            Εξαντλήθηκε
                           </Badge>
                         )}
                       </div>
-                      <span className="text-sm text-muted-foreground">${Number(item.price).toFixed(2)}</span>
+                      <span className="text-sm text-muted-foreground">€{Number(item.price).toFixed(2)}</span>
                       {item.description && (
                         <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                       )}
@@ -142,7 +142,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
                               ? 'bg-warning/10 text-warning'
                               : 'bg-muted text-muted-foreground hover:text-warning'
                           }`}
-                          title="Snooze item"
+                          title="Παύση προϊόντος"
                         >
                           <Moon className="h-4 w-4" />
                         </button>

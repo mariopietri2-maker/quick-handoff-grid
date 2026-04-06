@@ -22,6 +22,8 @@ interface SavedAddressesProps {
 }
 
 const labelIcons: Record<string, typeof Home> = {
+  'Σπίτι': Home,
+  'Δουλειά': Briefcase,
   Home: Home,
   Work: Briefcase,
 };
@@ -31,7 +33,7 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
   const [showSave, setShowSave] = useState(false);
-  const [saveLabel, setSaveLabel] = useState('Home');
+  const [saveLabel, setSaveLabel] = useState('Σπίτι');
   const [saving, setSaving] = useState(false);
   const [editId, setEditId] = useState<string | null>(null);
   const [editLabel, setEditLabel] = useState('');
@@ -52,7 +54,7 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
 
   const handleSave = async () => {
     if (!user || !currentAddress?.trim()) {
-      toast.error('Enter an address first');
+      toast.error('Εισάγετε πρώτα μια διεύθυνση');
       return;
     }
     setSaving(true);
@@ -64,9 +66,9 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
         address: currentAddress,
       } as any);
     if (error) {
-      toast.error('Failed to save address');
+      toast.error('Αποτυχία αποθήκευσης διεύθυνσης');
     } else {
-      toast.success('Address saved!');
+      toast.success('Η διεύθυνση αποθηκεύτηκε!');
       setShowSave(false);
       fetchAddresses();
     }
@@ -76,17 +78,16 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('saved_addresses').delete().eq('id', id);
     if (!error) {
-      toast.success('Address removed');
+      toast.success('Η διεύθυνση αφαιρέθηκε');
       fetchAddresses();
     }
   };
 
   const handleSetDefault = async (id: string) => {
     if (!user) return;
-    // Unset all defaults first
     await supabase.from('saved_addresses').update({ is_default: false } as any).eq('user_id', user.id);
     await supabase.from('saved_addresses').update({ is_default: true } as any).eq('id', id);
-    toast.success('Default address updated');
+    toast.success('Η προεπιλεγμένη διεύθυνση ενημερώθηκε');
     fetchAddresses();
   };
 
@@ -104,10 +105,9 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
 
   return (
     <div className="space-y-2">
-      {/* Saved Address Chips */}
       {addresses.length > 0 && (
         <div className="space-y-1.5">
-          <p className="text-xs text-muted-foreground font-heading">Saved addresses</p>
+          <p className="text-xs text-muted-foreground font-heading">Αποθηκευμένες διευθύνσεις</p>
           {addresses.map(addr => {
             const Icon = labelIcons[addr.label] ?? MapPin;
             const isSelected = currentAddress === addr.address;
@@ -164,7 +164,7 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
                     <button
                       onClick={e => { e.stopPropagation(); handleSetDefault(addr.id); }}
                       className="h-6 w-6 rounded-full hover:bg-muted flex items-center justify-center"
-                      title="Set as default"
+                      title="Ορισμός ως προεπιλογή"
                     >
                       <Star className="h-3 w-3 text-muted-foreground" />
                     </button>
@@ -182,7 +182,6 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
         </div>
       )}
 
-      {/* Save Current Address */}
       {canSave && (
         showSave ? (
           <div className="flex items-center gap-2 p-2 rounded-lg bg-muted/50">
@@ -191,12 +190,12 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
               onChange={e => setSaveLabel(e.target.value)}
               className="text-xs bg-background border border-border rounded px-2 py-1 font-heading"
             >
-              <option value="Home">🏠 Home</option>
-              <option value="Work">💼 Work</option>
-              <option value="Other">📍 Other</option>
+              <option value="Σπίτι">🏠 Σπίτι</option>
+              <option value="Δουλειά">💼 Δουλειά</option>
+              <option value="Άλλο">📍 Άλλο</option>
             </select>
             <Button size="sm" onClick={handleSave} disabled={saving} className="h-7 text-xs font-heading gradient-primary text-primary-foreground">
-              {saving ? '...' : 'Save'}
+              {saving ? '...' : 'Αποθήκευση'}
             </Button>
             <button onClick={() => setShowSave(false)} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
               <X className="h-3 w-3 text-muted-foreground" />
@@ -208,7 +207,7 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
             className="flex items-center gap-1.5 text-xs text-primary font-heading hover:underline"
           >
             <Plus className="h-3.5 w-3.5" />
-            Save this address
+            Αποθήκευση αυτής της διεύθυνσης
           </button>
         )
       )}

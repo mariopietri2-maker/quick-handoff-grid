@@ -33,6 +33,17 @@ const STATUS_COLORS = [
   'hsl(25, 95%, 53%)',
 ];
 
+const statusLabelsEl: Record<string, string> = {
+  pending: 'Εκκρεμεί',
+  placed: 'Υποβλήθηκε',
+  accepted: 'Αποδεκτή',
+  preparing: 'Ετοιμάζεται',
+  ready: 'Έτοιμη',
+  picked_up: 'Παραλήφθηκε',
+  delivered: 'Παραδόθηκε',
+  cancelled: 'Ακυρώθηκε',
+};
+
 export default function PlatformAnalytics({ orders, profiles }: PlatformAnalyticsProps) {
   const { dailyRevenue, dailyOrders, userGrowth, statusPie } = useMemo(() => {
     const days = 30;
@@ -40,7 +51,6 @@ export default function PlatformAnalytics({ orders, profiles }: PlatformAnalytic
     const orderCountMap = new Map<string, number>();
     const userGrowthMap = new Map<string, number>();
 
-    // Init last 30 days
     for (let i = days - 1; i >= 0; i--) {
       const key = format(subDays(new Date(), i), 'yyyy-MM-dd');
       revenueMap.set(key, 0);
@@ -63,56 +73,53 @@ export default function PlatformAnalytics({ orders, profiles }: PlatformAnalytic
       }
     });
 
-    // Cumulative user growth
     let cumulative = profiles.filter(
       (p) => new Date(p.created_at) < subDays(new Date(), days)
     ).length;
 
     const userGrowthArr = Array.from(userGrowthMap.entries()).map(([date, count]) => {
       cumulative += count;
-      return { date, label: format(parseISO(date), 'MMM d'), users: cumulative, newUsers: count };
+      return { date, label: format(parseISO(date), 'dd MMM'), users: cumulative, newUsers: count };
     });
 
     const dailyRevenue = Array.from(revenueMap.entries()).map(([date, revenue]) => ({
       date,
-      label: format(parseISO(date), 'MMM d'),
+      label: format(parseISO(date), 'dd MMM'),
       revenue: Math.round(revenue * 100) / 100,
     }));
 
     const dailyOrders = Array.from(orderCountMap.entries()).map(([date, count]) => ({
       date,
-      label: format(parseISO(date), 'MMM d'),
+      label: format(parseISO(date), 'dd MMM'),
       orders: count,
     }));
 
-    // Status breakdown
     const statusCount: Record<string, number> = {};
     orders.forEach((o) => {
       statusCount[o.status] = (statusCount[o.status] ?? 0) + 1;
     });
-    const statusPie = Object.entries(statusCount).map(([name, value]) => ({ name, value }));
+    const statusPie = Object.entries(statusCount).map(([name, value]) => ({ name: statusLabelsEl[name] ?? name, value }));
 
     return { dailyRevenue, dailyOrders, userGrowth: userGrowthArr, statusPie };
   }, [orders, profiles]);
 
-  const revenueConfig = { revenue: { label: 'Revenue', color: 'hsl(var(--primary))' } };
-  const ordersConfig = { orders: { label: 'Orders', color: 'hsl(var(--accent))' } };
-  const usersConfig = { users: { label: 'Total Users', color: 'hsl(var(--primary))' } };
+  const revenueConfig = { revenue: { label: 'Έσοδα', color: 'hsl(var(--primary))' } };
+  const ordersConfig = { orders: { label: 'Παραγγελίες', color: 'hsl(var(--accent))' } };
+  const usersConfig = { users: { label: 'Σύνολο Χρηστών', color: 'hsl(var(--primary))' } };
   const statusConfig = Object.fromEntries(
     statusPie.map((s, i) => [s.name, { label: s.name, color: STATUS_COLORS[i % STATUS_COLORS.length] }])
   );
 
   return (
     <div className="space-y-4">
-      {/* Revenue Over Time */}
       <Card>
-        <CardHeader><CardTitle className="font-heading text-base">Revenue (Last 30 Days)</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="font-heading text-base">Έσοδα (Τελευταίες 30 Ημέρες)</CardTitle></CardHeader>
         <CardContent>
           <ChartContainer config={revenueConfig} className="h-[250px] w-full">
             <AreaChart data={dailyRevenue}>
               <CartesianGrid strokeDasharray="3 3" />
               <XAxis dataKey="label" tick={{ fontSize: 10 }} interval="preserveStartEnd" />
-              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `$${v}`} />
+              <YAxis tick={{ fontSize: 10 }} tickFormatter={(v) => `€${v}`} />
               <ChartTooltip content={<ChartTooltipContent />} />
               <defs>
                 <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
@@ -127,9 +134,8 @@ export default function PlatformAnalytics({ orders, profiles }: PlatformAnalytic
       </Card>
 
       <div className="grid md:grid-cols-2 gap-4">
-        {/* Order Trends */}
         <Card>
-          <CardHeader><CardTitle className="font-heading text-base">Order Trends</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-heading text-base">Τάσεις Παραγγελιών</CardTitle></CardHeader>
           <CardContent>
             <ChartContainer config={ordersConfig} className="h-[220px] w-full">
               <BarChart data={dailyOrders}>
@@ -143,9 +149,8 @@ export default function PlatformAnalytics({ orders, profiles }: PlatformAnalytic
           </CardContent>
         </Card>
 
-        {/* User Growth */}
         <Card>
-          <CardHeader><CardTitle className="font-heading text-base">User Growth</CardTitle></CardHeader>
+          <CardHeader><CardTitle className="font-heading text-base">Αύξηση Χρηστών</CardTitle></CardHeader>
           <CardContent>
             <ChartContainer config={usersConfig} className="h-[220px] w-full">
               <LineChart data={userGrowth}>
@@ -160,9 +165,8 @@ export default function PlatformAnalytics({ orders, profiles }: PlatformAnalytic
         </Card>
       </div>
 
-      {/* Order Status Breakdown */}
       <Card>
-        <CardHeader><CardTitle className="font-heading text-base">Order Status Breakdown</CardTitle></CardHeader>
+        <CardHeader><CardTitle className="font-heading text-base">Κατανομή Κατάστασης Παραγγελιών</CardTitle></CardHeader>
         <CardContent className="flex items-center justify-center">
           <ChartContainer config={statusConfig} className="h-[250px] w-full max-w-md">
             <PieChart>

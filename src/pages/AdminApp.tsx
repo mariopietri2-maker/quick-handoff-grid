@@ -29,6 +29,17 @@ const statusColors: Record<string, string> = {
   cancelled: 'bg-red-500/10 text-red-600 border-red-500/20',
 };
 
+const statusLabelsEl: Record<string, string> = {
+  pending: 'Εκκρεμεί',
+  placed: 'Υποβλήθηκε',
+  accepted: 'Αποδεκτή',
+  preparing: 'Ετοιμάζεται',
+  ready: 'Έτοιμη',
+  picked_up: 'Παραλήφθηκε',
+  delivered: 'Παραδόθηκε',
+  cancelled: 'Ακυρώθηκε',
+};
+
 export default function AdminApp() {
   const { signOut } = useAuth();
   const { orders, stores, profiles, earnings, reviews, userRoles } = useAdminData();
@@ -44,9 +55,9 @@ export default function AdminApp() {
       .from('orders')
       .update({ status: status as any })
       .eq('id', orderId);
-    if (error) toast.error('Failed to update order');
+    if (error) toast.error('Αποτυχία ενημέρωσης παραγγελίας');
     else {
-      toast.success('Order status updated');
+      toast.success('Η κατάσταση ενημερώθηκε');
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     }
   };
@@ -58,9 +69,9 @@ export default function AdminApp() {
       .from('orders')
       .update({ driver_id: driverId === 'unassign' ? null : driverId })
       .eq('id', orderId);
-    if (error) toast.error('Failed to assign driver');
+    if (error) toast.error('Αποτυχία ανάθεσης οδηγού');
     else {
-      toast.success('Driver assigned');
+      toast.success('Ο οδηγός ανατέθηκε');
       queryClient.invalidateQueries({ queryKey: ['admin-orders'] });
     }
   };
@@ -76,9 +87,9 @@ export default function AdminApp() {
       .from('stores')
       .update({ is_active: !currentActive })
       .eq('id', storeId);
-    if (error) toast.error('Failed to update store');
+    if (error) toast.error('Αποτυχία ενημέρωσης καταστήματος');
     else {
-      toast.success(`Store ${currentActive ? 'deactivated' : 'activated'}`);
+      toast.success(`Κατάστημα ${currentActive ? 'απενεργοποιήθηκε' : 'ενεργοποιήθηκε'}`);
       queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
     }
   };
@@ -88,9 +99,9 @@ export default function AdminApp() {
       .from('profiles')
       .update({ role: newRole as any })
       .eq('user_id', userId);
-    if (error) toast.error('Failed to update role');
+    if (error) toast.error('Αποτυχία αλλαγής ρόλου');
     else {
-      toast.success('User role updated');
+      toast.success('Ο ρόλος ενημερώθηκε');
       queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
     }
   };
@@ -102,18 +113,18 @@ export default function AdminApp() {
         .delete()
         .eq('user_id', userId)
         .eq('role', 'admin');
-      if (error) toast.error('Failed to remove admin');
+      if (error) toast.error('Αποτυχία αφαίρεσης admin');
       else {
-        toast.success('Admin role removed');
+        toast.success('Ο ρόλος admin αφαιρέθηκε');
         queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
       }
     } else {
       const { error } = await supabase
         .from('user_roles')
         .insert({ user_id: userId, role: 'admin' as any });
-      if (error) toast.error('Failed to grant admin');
+      if (error) toast.error('Αποτυχία εκχώρησης admin');
       else {
-        toast.success('Admin role granted');
+        toast.success('Ο ρόλος admin εκχωρήθηκε');
         queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
       }
     }
@@ -123,34 +134,40 @@ export default function AdminApp() {
     userRoles.data?.filter((r) => r.role === 'admin').map((r) => r.user_id) ?? []
   );
 
+  const roleLabels: Record<string, string> = {
+    customer: 'Πελάτης',
+    driver: 'Οδηγός',
+    store: 'Κατάστημα',
+  };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="gradient-dark text-primary-foreground px-4 py-3 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <Link to="/"><ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" /></Link>
           <Shield className="h-5 w-5" />
-          <h1 className="font-heading font-bold text-lg">Admin Dashboard</h1>
+          <h1 className="font-heading font-bold text-lg">Πίνακας Διαχείρισης</h1>
         </div>
-        <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground">Sign Out</Button>
+        <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground">Αποσύνδεση</Button>
       </header>
 
       <div className="max-w-6xl mx-auto p-4 space-y-6">
         <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatCard icon={ShoppingBag} label="Orders" value={orders.data?.length ?? 0} />
-          <StatCard icon={DollarSign} label="Revenue" value={`$${totalRevenue.toFixed(2)}`} />
-          <StatCard icon={Store} label="Stores" value={stores.data?.length ?? 0} />
-          <StatCard icon={Users} label="Users" value={profiles.data?.length ?? 0} />
-          <StatCard icon={Star} label="Avg Rating" value={avgRating} />
+          <StatCard icon={ShoppingBag} label="Παραγγελίες" value={orders.data?.length ?? 0} />
+          <StatCard icon={DollarSign} label="Έσοδα" value={`€${totalRevenue.toFixed(2)}`} />
+          <StatCard icon={Store} label="Καταστήματα" value={stores.data?.length ?? 0} />
+          <StatCard icon={Users} label="Χρήστες" value={profiles.data?.length ?? 0} />
+          <StatCard icon={Star} label="Μέση Βαθμ." value={avgRating} />
         </div>
 
         <Tabs defaultValue="analytics">
           <TabsList className="w-full grid grid-cols-6">
-            <TabsTrigger value="analytics" className="font-heading">Analytics</TabsTrigger>
-            <TabsTrigger value="orders" className="font-heading">Orders</TabsTrigger>
-            <TabsTrigger value="stores" className="font-heading">Stores</TabsTrigger>
-            <TabsTrigger value="users" className="font-heading">Users</TabsTrigger>
-            <TabsTrigger value="reviews" className="font-heading">Reviews</TabsTrigger>
-            <TabsTrigger value="announcements" className="font-heading">Announce</TabsTrigger>
+            <TabsTrigger value="analytics" className="font-heading">Αναλυτικά</TabsTrigger>
+            <TabsTrigger value="orders" className="font-heading">Παραγγελίες</TabsTrigger>
+            <TabsTrigger value="stores" className="font-heading">Καταστήματα</TabsTrigger>
+            <TabsTrigger value="users" className="font-heading">Χρήστες</TabsTrigger>
+            <TabsTrigger value="reviews" className="font-heading">Κριτικές</TabsTrigger>
+            <TabsTrigger value="announcements" className="font-heading">Ανακοινώσεις</TabsTrigger>
           </TabsList>
 
           <TabsContent value="analytics" className="mt-4">
@@ -164,36 +181,35 @@ export default function AdminApp() {
             <AnnouncementsManager />
           </TabsContent>
 
-          {/* Orders Tab */}
           <TabsContent value="orders" className="mt-4 space-y-4">
             <AssignmentSettings />
             <Card>
-              <CardHeader><CardTitle className="font-heading">All Orders</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading">Όλες οι Παραγγελίες</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
                       <TableHead>ID</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead>Driver</TableHead>
-                      <TableHead>Total</TableHead>
-                      <TableHead>Created</TableHead>
-                      <TableHead>Actions</TableHead>
+                      <TableHead>Κατάσταση</TableHead>
+                      <TableHead>Οδηγός</TableHead>
+                      <TableHead>Σύνολο</TableHead>
+                      <TableHead>Ημερομηνία</TableHead>
+                      <TableHead>Ενέργειες</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {orders.data?.map((order) => (
                       <TableRow key={order.id}>
                         <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}…</TableCell>
-                        <TableCell><Badge variant="outline" className={statusColors[order.status] ?? ''}>{order.status}</Badge></TableCell>
+                        <TableCell><Badge variant="outline" className={statusColors[order.status] ?? ''}>{statusLabelsEl[order.status] ?? order.status}</Badge></TableCell>
                         <TableCell>
                           <Select value={order.driver_id || 'unassigned'} onValueChange={(val) => handleAssignDriver(order.id, val)}>
                             <SelectTrigger className="w-36 h-8 text-xs">
-                              <SelectValue placeholder="Unassigned" />
+                              <SelectValue placeholder="Χωρίς οδηγό" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="unassigned" disabled>Unassigned</SelectItem>
-                              <SelectItem value="unassign">✕ Remove driver</SelectItem>
+                              <SelectItem value="unassigned" disabled>Χωρίς οδηγό</SelectItem>
+                              <SelectItem value="unassign">✕ Αφαίρεση οδηγού</SelectItem>
                               {drivers.map((d) => (
                                 <SelectItem key={d.user_id} value={d.user_id}>
                                   {d.full_name || d.user_id.slice(0, 8)}
@@ -202,14 +218,14 @@ export default function AdminApp() {
                             </SelectContent>
                           </Select>
                         </TableCell>
-                        <TableCell>${Number(order.total_amount).toFixed(2)}</TableCell>
-                        <TableCell className="text-xs">{format(new Date(order.created_at), 'MMM d, HH:mm')}</TableCell>
+                        <TableCell>€{Number(order.total_amount).toFixed(2)}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(order.created_at), 'dd MMM, HH:mm')}</TableCell>
                         <TableCell>
                           <Select value={order.status} onValueChange={(val) => handleUpdateOrderStatus(order.id, val)}>
                             <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {['pending', 'placed', 'accepted', 'preparing', 'ready', 'picked_up', 'delivered', 'cancelled'].map((s) => (
-                                <SelectItem key={s} value={s}>{s}</SelectItem>
+                                <SelectItem key={s} value={s}>{statusLabelsEl[s] ?? s}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -217,7 +233,7 @@ export default function AdminApp() {
                       </TableRow>
                     ))}
                     {!orders.data?.length && (
-                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">No orders yet</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Δεν υπάρχουν παραγγελίες</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -225,19 +241,18 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
-          {/* Stores Tab */}
           <TabsContent value="stores" className="mt-4">
             <Card>
-              <CardHeader><CardTitle className="font-heading">All Stores</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading">Όλα τα Καταστήματα</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Address</TableHead>
-                      <TableHead>Active</TableHead>
-                      <TableHead>Busy</TableHead>
-                      <TableHead>Created</TableHead>
+                      <TableHead>Όνομα</TableHead>
+                      <TableHead>Διεύθυνση</TableHead>
+                      <TableHead>Ενεργό</TableHead>
+                      <TableHead>Πολυάσχολο</TableHead>
+                      <TableHead>Δημιουργία</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -251,17 +266,17 @@ export default function AdminApp() {
                               checked={!!store.is_active}
                               onCheckedChange={() => handleToggleStoreActive(store.id, store.is_active)}
                             />
-                            <span className="text-xs text-muted-foreground">{store.is_active ? 'Active' : 'Inactive'}</span>
+                            <span className="text-xs text-muted-foreground">{store.is_active ? 'Ενεργό' : 'Ανενεργό'}</span>
                           </div>
                         </TableCell>
                         <TableCell>
-                          <Badge variant={store.busy_mode ? 'destructive' : 'outline'}>{store.busy_mode ? 'Busy' : 'Normal'}</Badge>
+                          <Badge variant={store.busy_mode ? 'destructive' : 'outline'}>{store.busy_mode ? 'Πολυάσχολο' : 'Κανονικό'}</Badge>
                         </TableCell>
-                        <TableCell className="text-xs">{format(new Date(store.created_at), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(store.created_at), 'dd MMM yyyy')}</TableCell>
                       </TableRow>
                     ))}
                     {!stores.data?.length && (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No stores yet</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Δεν υπάρχουν καταστήματα</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -269,19 +284,18 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
-          {/* Users Tab */}
           <TabsContent value="users" className="mt-4">
             <Card>
-              <CardHeader><CardTitle className="font-heading">All Users</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading">Όλοι οι Χρήστες</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Role</TableHead>
-                      <TableHead>Admin</TableHead>
-                      <TableHead>Phone</TableHead>
-                      <TableHead>Joined</TableHead>
+                      <TableHead>Όνομα</TableHead>
+                      <TableHead>Ρόλος</TableHead>
+                      <TableHead>Διαχειριστής</TableHead>
+                      <TableHead>Τηλέφωνο</TableHead>
+                      <TableHead>Εγγραφή</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -293,7 +307,7 @@ export default function AdminApp() {
                             <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
                             <SelectContent>
                               {['customer', 'driver', 'store'].map((r) => (
-                                <SelectItem key={r} value={r}>{r}</SelectItem>
+                                <SelectItem key={r} value={r}>{roleLabels[r] ?? r}</SelectItem>
                               ))}
                             </SelectContent>
                           </Select>
@@ -312,11 +326,11 @@ export default function AdminApp() {
                           </div>
                         </TableCell>
                         <TableCell className="text-sm">{profile.phone || '—'}</TableCell>
-                        <TableCell className="text-xs">{format(new Date(profile.created_at), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(profile.created_at), 'dd MMM yyyy')}</TableCell>
                       </TableRow>
                     ))}
                     {!profiles.data?.length && (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">No users yet</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Δεν υπάρχουν χρήστες</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
@@ -324,18 +338,17 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
-          {/* Reviews Tab */}
           <TabsContent value="reviews" className="mt-4">
             <Card>
-              <CardHeader><CardTitle className="font-heading">All Reviews</CardTitle></CardHeader>
+              <CardHeader><CardTitle className="font-heading">Όλες οι Κριτικές</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Rating</TableHead>
-                      <TableHead>Comment</TableHead>
-                      <TableHead>Order</TableHead>
-                      <TableHead>Date</TableHead>
+                      <TableHead>Βαθμολογία</TableHead>
+                      <TableHead>Σχόλιο</TableHead>
+                      <TableHead>Παραγγελία</TableHead>
+                      <TableHead>Ημερομηνία</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -350,11 +363,11 @@ export default function AdminApp() {
                         </TableCell>
                         <TableCell className="text-sm max-w-xs truncate">{review.comment || '—'}</TableCell>
                         <TableCell className="font-mono text-xs">{review.order_id.slice(0, 8)}…</TableCell>
-                        <TableCell className="text-xs">{format(new Date(review.created_at), 'MMM d, yyyy')}</TableCell>
+                        <TableCell className="text-xs">{format(new Date(review.created_at), 'dd MMM yyyy')}</TableCell>
                       </TableRow>
                     ))}
                     {!reviews.data?.length && (
-                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">No reviews yet</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Δεν υπάρχουν κριτικές</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

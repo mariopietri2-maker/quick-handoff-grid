@@ -16,20 +16,19 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
   if (!store) {
     return (
       <div className="text-center py-16">
-        <p className="text-muted-foreground font-heading">Loading settings...</p>
+        <p className="text-muted-foreground font-heading">Φόρτωση ρυθμίσεων...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Store Status */}
       <Card className="shadow-[var(--shadow-md)]">
         <CardContent className="p-4">
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-heading font-semibold text-foreground">Store Active</h3>
-              <p className="text-sm text-muted-foreground">Accept new orders</p>
+              <h3 className="font-heading font-semibold text-foreground">Κατάστημα Ενεργό</h3>
+              <p className="text-sm text-muted-foreground">Αποδοχή νέων παραγγελιών</p>
             </div>
             <Switch
               checked={store.is_active ?? true}
@@ -39,15 +38,14 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
         </CardContent>
       </Card>
 
-      {/* Busy Mode */}
       <Card className={`shadow-[var(--shadow-md)] ${store.busy_mode ? 'border-warning/40' : ''}`}>
         <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
               <Zap className={`h-5 w-5 ${store.busy_mode ? 'text-warning' : 'text-muted-foreground'}`} />
               <div>
-                <h3 className="font-heading font-semibold text-foreground">Busy Mode</h3>
-                <p className="text-sm text-muted-foreground">Increases delivery fees & slows orders</p>
+                <h3 className="font-heading font-semibold text-foreground">Λειτουργία Πολυκοσμίας</h3>
+                <p className="text-sm text-muted-foreground">Αυξάνει τα τέλη παράδοσης & επιβραδύνει παραγγελίες</p>
               </div>
             </div>
             <Switch
@@ -59,21 +57,20 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             <div className="bg-warning/10 rounded-lg p-3 flex items-start gap-2">
               <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
               <p className="text-sm text-warning">
-                Delivery fees are increased by 25% and delivery radius is reduced to manage order volume.
+                Τα τέλη παράδοσης αυξάνονται κατά 25% και η ακτίνα παράδοσης μειώνεται για τη διαχείριση του όγκου παραγγελιών.
               </p>
             </div>
           )}
         </CardContent>
       </Card>
 
-      {/* Prep Buffer */}
       <Card className="shadow-[var(--shadow-md)]">
         <CardContent className="p-4 space-y-4">
           <div className="flex items-center gap-2">
             <Clock className="h-5 w-5 text-muted-foreground" />
             <div>
-              <h3 className="font-heading font-semibold text-foreground">Prep Time Buffer</h3>
-              <p className="text-sm text-muted-foreground">Add extra time to all estimated prep times</p>
+              <h3 className="font-heading font-semibold text-foreground">Χρόνος Ετοιμασίας</h3>
+              <p className="text-sm text-muted-foreground">Προσθήκη επιπλέον χρόνου σε όλους τους εκτιμώμενους χρόνους</p>
             </div>
           </div>
           <div className="space-y-2">
@@ -84,23 +81,22 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
               step={5}
             />
             <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Buffer:</span>
+              <span className="text-muted-foreground">Επιπλέον χρόνος:</span>
               <Badge variant="outline" className="font-heading">
-                +{store.prep_buffer_minutes ?? 0} minutes
+                +{store.prep_buffer_minutes ?? 0} λεπτά
               </Badge>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Store Info */}
       <Card className="shadow-[var(--shadow-md)]">
         <CardContent className="p-4 space-y-2">
-          <h3 className="font-heading font-semibold text-foreground">Store Details</h3>
+          <h3 className="font-heading font-semibold text-foreground">Στοιχεία Καταστήματος</h3>
           <div className="text-sm space-y-1">
-            <p className="text-muted-foreground">Name: <span className="text-foreground">{store.name}</span></p>
-            <p className="text-muted-foreground">Address: <span className="text-foreground">{store.address}</span></p>
-            {store.phone && <p className="text-muted-foreground">Phone: <span className="text-foreground">{store.phone}</span></p>}
+            <p className="text-muted-foreground">Όνομα: <span className="text-foreground">{store.name}</span></p>
+            <p className="text-muted-foreground">Διεύθυνση: <span className="text-foreground">{store.address}</span></p>
+            {store.phone && <p className="text-muted-foreground">Τηλέφωνο: <span className="text-foreground">{store.phone}</span></p>}
           </div>
         </CardContent>
       </Card>

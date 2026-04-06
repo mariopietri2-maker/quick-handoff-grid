@@ -13,7 +13,6 @@ import DriverLiveMap from '@/components/DriverLiveMap';
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
 
-// Delivery time estimate: prep time + 15 min delivery buffer
 const DELIVERY_BUFFER_MIN = 15;
 
 function DeliveryCountdown({ order }: { order: OrderRow }) {
@@ -26,15 +25,11 @@ function DeliveryCountdown({ order }: { order: OrderRow }) {
 
   const prepMin = order.estimated_prep_time ?? 30;
   const totalMin = prepMin + DELIVERY_BUFFER_MIN;
-
-  // Use the time when order moved past 'placed' (updated_at approximates acceptance)
-  // Fall back to created_at + a small buffer
   const startTime = new Date(order.created_at).getTime();
   const endTime = startTime + totalMin * 60 * 1000;
   const elapsed = now - startTime;
   const remaining = Math.max(0, endTime - now);
   const progress = Math.min(100, (elapsed / (totalMin * 60 * 1000)) * 100);
-
   const remainingMin = Math.floor(remaining / 60000);
   const remainingSec = Math.floor((remaining % 60000) / 1000);
   const isOverdue = remaining === 0;
@@ -46,17 +41,17 @@ function DeliveryCountdown({ order }: { order: OrderRow }) {
           <div className="flex items-center gap-2">
             <Clock className={`h-5 w-5 ${isOverdue ? 'text-warning' : 'text-primary'}`} />
             <span className="text-sm font-heading text-foreground">
-              {isOverdue ? 'Taking a bit longer' : 'Estimated delivery'}
+              {isOverdue ? 'Καθυστερεί λίγο' : 'Εκτιμώμενη παράδοση'}
             </span>
           </div>
           <span className={`font-heading font-bold text-xl tabular-nums ${isOverdue ? 'text-warning' : 'text-foreground'}`}>
-            {isOverdue ? 'Soon' : `${remainingMin}:${String(remainingSec).padStart(2, '0')}`}
+            {isOverdue ? 'Σύντομα' : `${remainingMin}:${String(remainingSec).padStart(2, '0')}`}
           </span>
         </div>
         <Progress value={progress} className="h-2" />
         <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Prep ~{prepMin} min</span>
-          <span>Delivery ~{DELIVERY_BUFFER_MIN} min</span>
+          <span>Ετοιμασία ~{prepMin} λεπ.</span>
+          <span>Παράδοση ~{DELIVERY_BUFFER_MIN} λεπ.</span>
         </div>
       </CardContent>
     </Card>
@@ -64,24 +59,24 @@ function DeliveryCountdown({ order }: { order: OrderRow }) {
 }
 
 const statusSteps = [
-  { key: 'placed', label: 'Order Placed', icon: Package, description: 'Your order has been sent to the restaurant' },
-  { key: 'accepted', label: 'Accepted', icon: CheckCircle2, description: 'Restaurant confirmed your order' },
-  { key: 'preparing', label: 'Preparing', icon: Utensils, description: 'Your food is being prepared' },
-  { key: 'ready', label: 'Ready for Pickup', icon: Package, description: 'Waiting for a driver to pick up' },
-  { key: 'arrived', label: 'Driver at Store', icon: Car, description: 'Driver arrived at the restaurant' },
-  { key: 'picked_up', label: 'On the Way', icon: Car, description: 'Driver is heading to you' },
-  { key: 'delivered', label: 'Delivered', icon: MapPin, description: 'Order has been delivered' },
+  { key: 'placed', label: 'Παραγγελία Υποβλήθηκε', icon: Package, description: 'Η παραγγελία σας στάλθηκε στο εστιατόριο' },
+  { key: 'accepted', label: 'Αποδεκτή', icon: CheckCircle2, description: 'Το εστιατόριο επιβεβαίωσε την παραγγελία σας' },
+  { key: 'preparing', label: 'Ετοιμάζεται', icon: Utensils, description: 'Το φαγητό σας ετοιμάζεται' },
+  { key: 'ready', label: 'Έτοιμη για Παραλαβή', icon: Package, description: 'Αναμονή οδηγού για παραλαβή' },
+  { key: 'arrived', label: 'Οδηγός στο Κατάστημα', icon: Car, description: 'Ο οδηγός έφτασε στο εστιατόριο' },
+  { key: 'picked_up', label: 'Σε Μεταφορά', icon: Car, description: 'Ο οδηγός κατευθύνεται προς εσάς' },
+  { key: 'delivered', label: 'Παραδόθηκε', icon: MapPin, description: 'Η παραγγελία παραδόθηκε' },
 ];
 
 const statusMessages: Record<string, { emoji: string; title: string; subtitle: string }> = {
-  placed: { emoji: '📋', title: 'Order Sent!', subtitle: 'Waiting for restaurant to accept' },
-  accepted: { emoji: '👨‍🍳', title: 'Restaurant Accepted!', subtitle: 'They\'re getting started on your order' },
-  preparing: { emoji: '🔥', title: 'Cooking in Progress', subtitle: 'Your food is being freshly prepared' },
-  ready: { emoji: '✅', title: 'Ready for Pickup!', subtitle: 'A driver will grab your order soon' },
-  arrived: { emoji: '🏪', title: 'Driver at Store', subtitle: 'Your driver is at the restaurant picking up your order' },
-  picked_up: { emoji: '🚗', title: 'On the Way!', subtitle: 'Your driver is heading to you now' },
-  delivered: { emoji: '🎉', title: 'Delivered!', subtitle: 'Enjoy your meal' },
-  cancelled: { emoji: '❌', title: 'Cancelled', subtitle: 'This order has been cancelled' },
+  placed: { emoji: '📋', title: 'Παραγγελία Στάλθηκε!', subtitle: 'Αναμονή αποδοχής από το εστιατόριο' },
+  accepted: { emoji: '👨‍🍳', title: 'Το Εστιατόριο Αποδέχτηκε!', subtitle: 'Ξεκινούν την ετοιμασία της παραγγελίας' },
+  preparing: { emoji: '🔥', title: 'Ετοιμάζεται', subtitle: 'Το φαγητό σας ετοιμάζεται φρέσκο' },
+  ready: { emoji: '✅', title: 'Έτοιμη για Παραλαβή!', subtitle: 'Ένας οδηγός θα παραλάβει σύντομα' },
+  arrived: { emoji: '🏪', title: 'Οδηγός στο Κατάστημα', subtitle: 'Ο οδηγός είναι στο εστιατόριο και παραλαμβάνει' },
+  picked_up: { emoji: '🚗', title: 'Σε Μεταφορά!', subtitle: 'Ο οδηγός κατευθύνεται προς εσάς' },
+  delivered: { emoji: '🎉', title: 'Παραδόθηκε!', subtitle: 'Καλή όρεξη!' },
+  cancelled: { emoji: '❌', title: 'Ακυρώθηκε', subtitle: 'Αυτή η παραγγελία ακυρώθηκε' },
 };
 
 export default function OrderTrackingPage() {
@@ -104,10 +99,8 @@ export default function OrderTrackingPage() {
     ]).then(async ([orderRes, itemsRes]) => {
       if (orderRes.data) {
         setOrder(orderRes.data);
-        // Fetch store name
         const { data: store } = await supabase.from('stores').select('name').eq('id', orderRes.data.store_id).single();
         if (store) setStoreName(store.name);
-        // Fetch driver name if assigned
         if (orderRes.data.driver_id) {
           const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', orderRes.data.driver_id).single();
           if (profile) {
@@ -117,7 +110,6 @@ export default function OrderTrackingPage() {
         }
       }
       setItems(itemsRes.data ?? []);
-      // Check if already reviewed
       if (orderRes.data) {
         const { data: existingReview } = await supabase.from('reviews').select('id').eq('order_id', orderRes.data.id).maybeSingle();
         if (existingReview) setHasReviewed(true);
@@ -126,7 +118,6 @@ export default function OrderTrackingPage() {
     });
   }, [id]);
 
-  // Real-time subscription
   useEffect(() => {
     if (!id) return;
     const channel = supabase
@@ -140,7 +131,6 @@ export default function OrderTrackingPage() {
         const updated = payload.new as OrderRow;
         setOrder(prev => prev ? { ...prev, ...updated } : prev);
         setLastUpdate(new Date());
-        // Fetch driver name if newly assigned
         if (updated.driver_id && !driverName) {
           const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', updated.driver_id).single();
           if (profile) {
@@ -165,7 +155,7 @@ export default function OrderTrackingPage() {
   if (!order) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground font-heading">Order not found</p>
+        <p className="text-muted-foreground font-heading">Η παραγγελία δεν βρέθηκε</p>
       </div>
     );
   }
@@ -183,16 +173,15 @@ export default function OrderTrackingPage() {
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div className="flex-1">
-          <h1 className="font-heading font-bold text-lg text-foreground">Track Order</h1>
+          <h1 className="font-heading font-bold text-lg text-foreground">Παρακολούθηση</h1>
           <p className="text-xs text-muted-foreground font-mono">#{order.id.slice(0, 8)}</p>
         </div>
         <Badge variant={isCancelled ? 'destructive' : 'default'} className="font-heading">
-          {isCancelled ? 'Cancelled' : isDelivered ? 'Complete' : 'Live'}
+          {isCancelled ? 'Ακυρώθηκε' : isDelivered ? 'Ολοκληρώθηκε' : 'Ζωντανά'}
         </Badge>
       </header>
 
       <div className="max-w-lg mx-auto p-4 space-y-4">
-        {/* Hero Status Card */}
         <Card className={`shadow-[var(--shadow-lg)] overflow-hidden ${isCancelled ? 'border-destructive/30' : ''}`}>
           <div className={`p-6 text-center ${isCancelled ? 'bg-destructive/5' : isDelivered ? 'bg-success/5' : 'bg-primary/5'}`}>
             <span className="text-4xl block mb-2">{currentMessage.emoji}</span>
@@ -201,17 +190,16 @@ export default function OrderTrackingPage() {
             {!isCancelled && !isDelivered && (
               <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
                 <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                Live updates • Last: {lastUpdate.toLocaleTimeString()}
+                Ζωντανές ενημερώσεις • Τελευταία: {lastUpdate.toLocaleTimeString()}
               </div>
             )}
           </div>
 
-          {/* Progress Bar */}
           {!isCancelled && (
             <div className="px-6 pb-4 pt-3">
               <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                <span>Order placed</span>
-                <span>Delivered</span>
+                <span>Υποβολή</span>
+                <span>Παράδοση</span>
               </div>
               <div className="h-2 bg-muted rounded-full overflow-hidden">
                 <div
@@ -223,7 +211,6 @@ export default function OrderTrackingPage() {
           )}
         </Card>
 
-        {/* Restaurant Info */}
         {storeName && (
           <Card className="shadow-[var(--shadow-md)]">
             <CardContent className="p-4 flex items-center gap-3">
@@ -231,14 +218,13 @@ export default function OrderTrackingPage() {
                 <Utensils className="h-5 w-5 text-primary" />
               </div>
               <div>
-                <p className="font-heading font-semibold text-foreground text-sm">Restaurant</p>
+                <p className="font-heading font-semibold text-foreground text-sm">Εστιατόριο</p>
                 <p className="text-muted-foreground text-sm">{storeName}</p>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Driver Info */}
         {order.driver_id && (
           <Card className="shadow-[var(--shadow-md)] border-primary/20">
             <CardContent className="p-4 flex items-center gap-3">
@@ -246,8 +232,8 @@ export default function OrderTrackingPage() {
                 <User className="h-6 w-6 text-primary-foreground" />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-heading font-semibold text-foreground">{driverName || 'Driver'}</p>
-                <p className="text-xs text-muted-foreground">Your delivery driver</p>
+                <p className="font-heading font-semibold text-foreground">{driverName || 'Οδηγός'}</p>
+                <p className="text-xs text-muted-foreground">Ο οδηγός παράδοσής σας</p>
                 {driverPhone && (
                   <a href={`tel:${driverPhone}`} className="text-xs text-primary font-heading flex items-center gap-1 mt-0.5">
                     <Phone className="h-3 w-3" /> {driverPhone}
@@ -268,7 +254,6 @@ export default function OrderTrackingPage() {
           </Card>
         )}
 
-        {/* Live Driver Map */}
         {order.driver_id && !isDelivered && !isCancelled && (
           <DriverLiveMap
             driverId={order.driver_id}
@@ -278,11 +263,10 @@ export default function OrderTrackingPage() {
           />
         )}
 
-        {/* Status Timeline */}
         {!isCancelled && (
           <Card className="shadow-[var(--shadow-md)]">
             <CardContent className="p-6">
-              <h3 className="font-heading font-semibold text-foreground mb-4">Order Progress</h3>
+              <h3 className="font-heading font-semibold text-foreground mb-4">Πρόοδος Παραγγελίας</h3>
               <div className="space-y-0">
                 {statusSteps.map((step, i) => {
                   const Icon = step.icon;
@@ -319,19 +303,18 @@ export default function OrderTrackingPage() {
           </Card>
         )}
 
-        {/* Order Items */}
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4">
-            <h3 className="font-heading font-semibold text-foreground mb-3">Order Details</h3>
+            <h3 className="font-heading font-semibold text-foreground mb-3">Λεπτομέρειες Παραγγελίας</h3>
             {items.map(item => (
               <div key={item.id} className="flex justify-between py-2 border-b border-border last:border-0 text-sm">
                 <span className="text-foreground">{item.quantity}x {item.name}</span>
-                <span className="text-muted-foreground">${(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
+                <span className="text-muted-foreground">€{(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
               </div>
             ))}
             <div className="flex justify-between pt-3 border-t border-border font-heading font-bold">
-              <span className="text-foreground">Total</span>
-              <span className="text-foreground">${Number(order.total_amount).toFixed(2)}</span>
+              <span className="text-foreground">Σύνολο</span>
+              <span className="text-foreground">€{Number(order.total_amount).toFixed(2)}</span>
             </div>
             {order.delivery_address && (
               <div className="flex items-start gap-2 mt-3 text-sm text-muted-foreground">
@@ -342,10 +325,8 @@ export default function OrderTrackingPage() {
           </CardContent>
         </Card>
 
-        {/* Countdown Timer */}
         {!isDelivered && !isCancelled && <DeliveryCountdown order={order} />}
 
-        {/* Review Form - only for delivered orders */}
         {isDelivered && !hasReviewed && (
           <ReviewForm
             orderId={order.id}
@@ -357,7 +338,7 @@ export default function OrderTrackingPage() {
           <Card className="shadow-[var(--shadow-sm)] bg-success/5 border-success/20">
             <CardContent className="p-4 text-center">
               <Star className="h-6 w-6 fill-warning text-warning mx-auto mb-1" />
-              <p className="font-heading text-sm text-foreground">Thanks for your review!</p>
+              <p className="font-heading text-sm text-foreground">Ευχαριστούμε για την κριτική σας!</p>
             </CardContent>
           </Card>
         )}
@@ -367,7 +348,7 @@ export default function OrderTrackingPage() {
           variant="outline"
           className="w-full font-heading"
         >
-          My Orders
+          Οι Παραγγελίες μου
         </Button>
       </div>
     </div>
