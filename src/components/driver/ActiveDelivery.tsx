@@ -16,7 +16,11 @@ interface ActiveDeliveryData {
   storeName: string;
   storeAddress: string;
   storePhone: string | null;
+  storeLat?: number | null;
+  storeLng?: number | null;
   deliveryAddress: string;
+  deliveryLat?: number | null;
+  deliveryLng?: number | null;
   customerName: string;
   customerPhone: string | null;
   status: string;
