@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface DriverProfile {
+  driver_code: string | null;
   vehicle_type: string;
   vehicle_make: string;
   vehicle_model: string;
