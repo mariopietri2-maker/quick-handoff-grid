@@ -42,8 +42,9 @@ const statusLabelsEl: Record<string, string> = {
 
 export default function AdminApp() {
   const { signOut } = useAuth();
-  const { orders, stores, profiles, earnings, reviews, userRoles } = useAdminData();
+  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles } = useAdminData();
   const queryClient = useQueryClient();
+  const driverCodeMap = new Map((driverProfiles.data ?? []).map(d => [d.user_id, d.driver_code]));
 
   const totalRevenue = orders.data?.reduce((sum, o) => sum + Number(o.total_amount), 0) ?? 0;
   const avgRating = reviews.data?.length
@@ -292,6 +293,7 @@ export default function AdminApp() {
                   <TableHeader>
                     <TableRow>
                       <TableHead>Όνομα</TableHead>
+                      <TableHead>Κωδικός</TableHead>
                       <TableHead>Ρόλος</TableHead>
                       <TableHead>Διαχειριστής</TableHead>
                       <TableHead>Τηλέφωνο</TableHead>
@@ -302,6 +304,11 @@ export default function AdminApp() {
                     {profiles.data?.map((profile) => (
                       <TableRow key={profile.id}>
                         <TableCell className="font-semibold">{profile.full_name || '—'}</TableCell>
+                        <TableCell>
+                          {driverCodeMap.get(profile.user_id) ? (
+                            <Badge variant="outline" className="font-mono text-xs">{driverCodeMap.get(profile.user_id)}</Badge>
+                          ) : '—'}
+                        </TableCell>
                         <TableCell>
                           <Select value={profile.role} onValueChange={(val) => handleChangeRole(profile.user_id, val)}>
                             <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
@@ -330,7 +337,7 @@ export default function AdminApp() {
                       </TableRow>
                     ))}
                     {!profiles.data?.length && (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Δεν υπάρχουν χρήστες</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Δεν υπάρχουν χρήστες</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>

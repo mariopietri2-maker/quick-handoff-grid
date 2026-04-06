@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ArrowLeft, User, Car, FileText, Landmark, Save, Loader2 } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,6 +13,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 
 interface DriverProfile {
+  driver_code: string | null;
   vehicle_type: string;
   vehicle_make: string;
   vehicle_model: string;
@@ -33,6 +35,7 @@ export default function DriverProfilePage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [driverProfile, setDriverProfile] = useState<DriverProfile>({
+    driver_code: null,
     vehicle_type: 'motorcycle',
     vehicle_make: '',
     vehicle_model: '',
@@ -57,6 +60,7 @@ export default function DriverProfilePage() {
       .then(({ data }) => {
         if (data) {
           setDriverProfile({
+            driver_code: (data as any).driver_code || null,
             vehicle_type: data.vehicle_type || 'motorcycle',
             vehicle_make: data.vehicle_make || '',
             vehicle_model: data.vehicle_model || '',
@@ -139,6 +143,15 @@ export default function DriverProfilePage() {
             <Card>
               <CardHeader><CardTitle className="font-heading text-lg">Προσωπικά Στοιχεία</CardTitle></CardHeader>
               <CardContent className="space-y-4">
+                {driverProfile.driver_code && (
+                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Κωδικός Οδηγού</p>
+                      <p className="font-heading font-bold text-lg text-primary">{driverProfile.driver_code}</p>
+                    </div>
+                    <Badge variant="outline" className="border-primary/30 text-primary font-heading">ID</Badge>
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="fullName">Ονοματεπώνυμο</Label>
                   <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} />
