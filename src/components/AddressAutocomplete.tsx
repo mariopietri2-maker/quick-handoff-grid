@@ -162,6 +162,7 @@ export function AddressAutocomplete({
 
   const locateGPS = () => {
     if (!navigator.geolocation) {
+      toast.error('Η τοποθεσία GPS δεν υποστηρίζεται στη συσκευή σας');
       return;
     }
     setGpsLoading(true);
@@ -175,10 +176,17 @@ export function AddressAutocomplete({
         handleMapClick(lat, lon);
         setGpsLoading(false);
       },
-      () => {
+      (err) => {
         setGpsLoading(false);
+        if (err.code === 1) {
+          toast.error('Η πρόσβαση στην τοποθεσία απορρίφθηκε. Ενεργοποιήστε την τοποθεσία στις ρυθμίσεις.');
+        } else if (err.code === 2) {
+          toast.error('Δεν ήταν δυνατή η εύρεση τοποθεσίας. Δοκιμάστε ξανά.');
+        } else {
+          toast.error('Λήξη χρόνου τοποθεσίας. Δοκιμάστε ξανά.');
+        }
       },
-      { enableHighAccuracy: true, timeout: 10000 }
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
     );
   };
 
