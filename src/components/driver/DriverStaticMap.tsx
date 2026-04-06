@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -57,6 +57,44 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null;
 }
 
+/** Fetch a driving route from OSRM (free, no API key) */
+async function fetchRoute(waypoints: [number, number][]): Promise<[number, number][]> {
+  if (waypoints.length < 2) return [];
+  const coords = waypoints.map(([lat, lng]) => `${lng},${lat}`).join(';');
+  try {
+    const res = await fetch(
+      `https://router.project-osrm.org/route/v1/driving/${coords}?overview=full&geometries=geojson`
+    );
+    const data = await res.json();
+    if (data.code === 'Ok' && data.routes?.[0]) {
+      return data.routes[0].geometry.coordinates.map(([lng, lat]: [number, number]) => [lat, lng] as [number, number]);
+    }
+  } catch {
+    // Fallback: straight line
+  }
+  return waypoints;
+}
+
+function RouteLine({ waypoints, color }: { waypoints: [number, number][]; color: string }) {
+  const [route, setRoute] = useState<[number, number][]>([]);
+  const prevKey = useRef('');
+
+  useEffect(() => {
+    const key = waypoints.map(p => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join('|');
+    if (key === prevKey.current || waypoints.length < 2) return;
+    prevKey.current = key;
+    fetchRoute(waypoints).then(setRoute);
+  }, [waypoints]);
+
+  if (route.length < 2) return null;
+  return (
+    <Polyline
+      positions={route}
+      pathOptions={{ color, weight: 5, opacity: 0.8, dashArray: undefined }}
+    />
+  );
+}
+
 interface DriverStaticMapProps {
   className?: string;
   liveMode?: boolean;
@@ -85,10 +123,9 @@ export default function DriverStaticMap({
     if (!('geolocation' in navigator)) return;
 
     if (liveMode) {
-      // Live tracking with watchPosition
       watchRef.current = navigator.geolocation.watchPosition(
         (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => setPos({ lat: 39.6650, lng: 20.8537 }), // fallback Ioannina
+        () => setPos({ lat: 39.6650, lng: 20.8537 }),
         { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
       );
       return () => {
@@ -99,7 +136,7 @@ export default function DriverStaticMap({
     } else {
       navigator.geolocation.getCurrentPosition(
         (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => setPos({ lat: 39.6650, lng: 20.8537 }), // fallback Ioannina
+        () => setPos({ lat: 39.6650, lng: 20.8537 }),
         { enableHighAccuracy: false, timeout: 10000 }
       );
     }
@@ -113,6 +150,16 @@ export default function DriverStaticMap({
   if (pos) boundsPoints.push([pos.lat, pos.lng]);
   if (storeLat && storeLng) boundsPoints.push([storeLat, storeLng]);
   if (customerLat && customerLng) boundsPoints.push([customerLat, customerLng]);
+
+  // Build route waypoints: driver → store → customer
+  const driverToStoreWaypoints: [number, number][] = [];
+  const storeToCustomerWaypoints: [number, number][] = [];
+  if (pos && storeLat && storeLng) {
+    driverToStoreWaypoints.push([pos.lat, pos.lng], [storeLat, storeLng]);
+  }
+  if (storeLat && storeLng && customerLat && customerLng) {
+    storeToCustomerWaypoints.push([storeLat, storeLng], [customerLat, customerLng]);
+  }
 
   return (
     <div className={className}>
@@ -150,6 +197,14 @@ export default function DriverStaticMap({
           <Marker position={[customerLat, customerLng]} icon={customerIcon}>
             <Popup>{customerName || 'Πελάτης'}</Popup>
           </Marker>
+        )}
+
+        {/* Route lines */}
+        {liveMode && driverToStoreWaypoints.length >= 2 && (
+          <RouteLine waypoints={driverToStoreWaypoints} color="hsl(217, 91%, 60%)" />
+        )}
+        {liveMode && storeToCustomerWaypoints.length >= 2 && (
+          <RouteLine waypoints={storeToCustomerWaypoints} color="hsl(142, 71%, 45%)" />
         )}
 
         {/* Fit bounds when we have multiple points */}
