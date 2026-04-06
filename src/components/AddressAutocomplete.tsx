@@ -48,7 +48,7 @@ export function AddressAutocomplete({
     setLoading(true);
     try {
       const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q + ', Ioannina, Greece')}&limit=5&addressdetails=0&viewbox=20.7,39.55,20.95,39.75&bounded=1`,
+        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1&viewbox=20.7,39.55,20.95,39.75&bounded=1&countrycodes=gr`,
         { headers: { 'Accept-Language': 'el' } }
       );
       const data: AddressResult[] = await res.json();
