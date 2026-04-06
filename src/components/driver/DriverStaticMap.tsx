@@ -57,7 +57,7 @@ function FitBounds({ points }: { points: [number, number][] }) {
   return null;
 }
 
-const IOANNINA_CENTER: [number, number] = [39.6650, 20.8537];
+
 
 
 
