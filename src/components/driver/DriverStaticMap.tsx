@@ -112,7 +112,7 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
   if (!hasStore && !hasCustomer) return null;
 
   return (
-    <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+    <div className="absolute top-16 right-4 z-[1000] flex flex-col gap-2">
       {hasStore && (
         <button
           onClick={() => openNav(storeLat!, storeLng!)}
