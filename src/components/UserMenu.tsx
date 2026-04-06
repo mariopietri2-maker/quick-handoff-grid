@@ -32,6 +32,10 @@ export function UserMenu() {
           <p className="text-sm font-heading font-semibold text-foreground">{profile?.full_name || 'User'}</p>
           <p className="text-xs text-muted-foreground">{user.email}</p>
         </div>
+        <DropdownMenuItem onClick={() => navigate('/')}>
+          <Home className="mr-2 h-4 w-4" />
+          Home
+        </DropdownMenuItem>
         <DropdownMenuItem onClick={handleSignOut} className="text-destructive">
           <LogOut className="mr-2 h-4 w-4" />
           Sign Out
