@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 
-const UPDATE_INTERVAL_MS = 10_000; // every 10 seconds
+const UPDATE_INTERVAL_MS = 5_000; // every 5 seconds for better precision
 
 export function useDriverLocation(isActive: boolean) {
   const { user } = useAuth();
@@ -53,7 +53,7 @@ export function useDriverLocation(isActive: boolean) {
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => { sendLocation(pos); },
       (err) => { setError(err.message); setTracking(false); },
-      { enableHighAccuracy: true, maximumAge: 5000, timeout: 15000 }
+      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
     );
 
     return () => {
