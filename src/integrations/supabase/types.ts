@@ -588,6 +588,16 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      create_driver_earning: {
+        Args: {
+          p_base_pay: number
+          p_bonus?: number
+          p_driver_id: string
+          p_order_id: string
+          p_tip?: number
+        }
+        Returns: undefined
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]

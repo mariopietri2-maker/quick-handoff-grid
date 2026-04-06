@@ -195,21 +195,19 @@ export function useDriverOrders() {
     } else {
       if (newStatus === 'delivered') {
         toast.success('Παράδοση ολοκληρώθηκε! 🎉');
-        // Create earnings record
+        // Create earnings record via secure RPC
         if (user) {
           const order = activeDelivery;
           if (order) {
             const basePay = Number(order.delivery_fee ?? 3);
             const tip = Number(order.tip_amount ?? 0);
             const bonus = 0;
-            const total = basePay + tip + bonus;
-            await supabase.from('earnings').insert({
-              driver_id: user.id,
-              order_id: orderId,
-              base_pay: basePay,
-              tip,
-              bonus,
-              total,
+            await supabase.rpc('create_driver_earning', {
+              p_driver_id: user.id,
+              p_order_id: orderId,
+              p_base_pay: basePay,
+              p_tip: tip,
+              p_bonus: bonus,
             });
           }
         }
