@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { MapPin, DollarSign, Clock, Package, Navigation, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
+import { shortenAddress } from '@/lib/address-utils';
 
 interface OrderOffer {
   id: string;
@@ -72,11 +73,11 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
           <div className="flex-1 space-y-3">
             <div>
               <p className="font-heading font-semibold text-foreground">{offer.storeName}</p>
-              <p className="text-sm text-muted-foreground">{offer.storeAddress}</p>
+              <p className="text-sm text-muted-foreground">{shortenAddress(offer.storeAddress)}</p>
             </div>
             <div>
               <p className="font-heading font-semibold text-foreground">Παράδοση</p>
-              <p className="text-sm text-muted-foreground">{offer.deliveryAddress}</p>
+              <p className="text-sm text-muted-foreground">{shortenAddress(offer.deliveryAddress)}</p>
             </div>
           </div>
         </div>

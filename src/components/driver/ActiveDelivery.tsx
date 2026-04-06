@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, MapPin, ExternalLink } from 'lucide-react';
 import { Store, User } from 'lucide-react';
+import { shortenAddress } from '@/lib/address-utils';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -155,7 +156,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                     </a>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{delivery.storeAddress}</p>
+                <p className="text-sm text-muted-foreground">{shortenAddress(delivery.storeAddress)}</p>
               </div>
               <div>
                 <div className="flex items-center justify-between">
@@ -166,7 +167,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                     </a>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{delivery.deliveryAddress}</p>
+                <p className="text-sm text-muted-foreground">{shortenAddress(delivery.deliveryAddress)}</p>
               </div>
             </div>
             {/* Google Maps navigation button - right side centered */}
