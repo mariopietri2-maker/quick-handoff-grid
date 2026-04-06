@@ -63,7 +63,13 @@ export default function AdminApp() {
     }
   };
 
-  const drivers = profiles.data?.filter(p => p.role === 'driver') ?? [];
+  const [driverFilter, setDriverFilter] = useState<'all' | 'active' | 'inactive'>('all');
+  const allDrivers = profiles.data?.filter(p => p.role === 'driver') ?? [];
+  const drivers = allDrivers.filter(d => {
+    if (driverFilter === 'all') return true;
+    const dp = driverProfiles.data?.find(dp => dp.user_id === d.user_id);
+    return driverFilter === 'active' ? dp?.is_active !== false : dp?.is_active === false;
+  });
 
   const handleAssignDriver = async (orderId: string, driverId: string) => {
     const { error } = await supabase
