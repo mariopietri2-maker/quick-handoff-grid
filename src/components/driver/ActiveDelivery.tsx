@@ -156,7 +156,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                     </a>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{delivery.storeAddress}</p>
+                <p className="text-sm text-muted-foreground">{shortenAddress(delivery.storeAddress)}</p>
               </div>
               <div>
                 <div className="flex items-center justify-between">
