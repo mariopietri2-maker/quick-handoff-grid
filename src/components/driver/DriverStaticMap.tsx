@@ -266,7 +266,7 @@ export default function DriverStaticMap({
       >
         <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
         <CenterIoanninaButton />
-        
+        <CompassWidget />
         {pos && (
           <>
             {/* Accuracy circle */}
