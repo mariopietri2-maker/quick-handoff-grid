@@ -22,11 +22,11 @@ export function ReviewForm({ orderId, storeId, onSubmitted }: ReviewFormProps) {
 
   const handleSubmit = async () => {
     if (!user || rating === 0) {
-      toast.error('Please select a rating');
+      toast.error('Παρακαλώ επιλέξτε βαθμολογία');
       return;
     }
     if (comment.length > 500) {
-      toast.error('Review must be under 500 characters');
+      toast.error('Η κριτική πρέπει να είναι κάτω από 500 χαρακτήρες');
       return;
     }
     setSubmitting(true);
@@ -40,12 +40,12 @@ export function ReviewForm({ orderId, storeId, onSubmitted }: ReviewFormProps) {
 
     if (error) {
       if (error.code === '23505') {
-        toast.error('You already reviewed this order');
+        toast.error('Έχετε ήδη αξιολογήσει αυτή την παραγγελία');
       } else {
-        toast.error('Failed to submit review');
+        toast.error('Αποτυχία υποβολής κριτικής');
       }
     } else {
-      toast.success('Review submitted! Thanks 🎉');
+      toast.success('Η κριτική υποβλήθηκε! Ευχαριστούμε 🎉');
       onSubmitted?.();
     }
     setSubmitting(false);
@@ -54,7 +54,7 @@ export function ReviewForm({ orderId, storeId, onSubmitted }: ReviewFormProps) {
   return (
     <Card className="shadow-[var(--shadow-md)] border-primary/20">
       <CardHeader className="pb-2">
-        <CardTitle className="font-heading text-lg">Rate your order</CardTitle>
+        <CardTitle className="font-heading text-lg">Βαθμολογήστε την παραγγελία σας</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <div className="flex justify-center gap-2">
@@ -78,11 +78,11 @@ export function ReviewForm({ orderId, storeId, onSubmitted }: ReviewFormProps) {
         </div>
         {rating > 0 && (
           <p className="text-center text-sm text-muted-foreground font-heading">
-            {['', 'Poor', 'Fair', 'Good', 'Great', 'Amazing!'][rating]}
+            {['', 'Κακό', 'Μέτριο', 'Καλό', 'Πολύ Καλό', 'Εξαιρετικό!'][rating]}
           </p>
         )}
         <Textarea
-          placeholder="Tell us about your experience (optional)"
+          placeholder="Πείτε μας για την εμπειρία σας (προαιρετικά)"
           value={comment}
           onChange={e => setComment(e.target.value)}
           maxLength={500}
@@ -95,7 +95,7 @@ export function ReviewForm({ orderId, storeId, onSubmitted }: ReviewFormProps) {
           className="w-full gradient-primary text-primary-foreground font-heading"
         >
           <Send className="h-4 w-4 mr-2" />
-          {submitting ? 'Submitting...' : 'Submit Review'}
+          {submitting ? 'Υποβολή...' : 'Υποβολή Κριτικής'}
         </Button>
       </CardContent>
     </Card>

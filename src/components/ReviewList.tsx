@@ -39,25 +39,23 @@ export function ReviewList({ storeId }: ReviewListProps) {
   if (loading) return null;
   if (reviews.length === 0) {
     return (
-      <p className="text-sm text-muted-foreground text-center py-4">No reviews yet</p>
+      <p className="text-sm text-muted-foreground text-center py-4">Δεν υπάρχουν κριτικές ακόμα</p>
     );
   }
 
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+    new Date(d).toLocaleDateString('el-GR', { month: 'short', day: 'numeric', year: 'numeric' });
 
   return (
     <div className="space-y-3">
-      {/* Summary */}
       <div className="flex items-center gap-3 px-1">
         <div className="flex items-center gap-1">
           <Star className="h-5 w-5 fill-warning text-warning" />
           <span className="font-heading font-bold text-foreground text-lg">{avgRating.toFixed(1)}</span>
         </div>
-        <span className="text-sm text-muted-foreground">({reviews.length} review{reviews.length !== 1 ? 's' : ''})</span>
+        <span className="text-sm text-muted-foreground">({reviews.length} κριτικ{reviews.length !== 1 ? 'ές' : 'ή'})</span>
       </div>
 
-      {/* Reviews */}
       {reviews.map(review => (
         <Card key={review.id} className="shadow-[var(--shadow-sm)]">
           <CardContent className="p-3">
@@ -84,7 +82,6 @@ export function ReviewList({ storeId }: ReviewListProps) {
   );
 }
 
-/** Small inline rating badge for restaurant cards */
 export function RatingBadge({ storeId }: { storeId: string }) {
   const [avg, setAvg] = useState<number | null>(null);
   const [count, setCount] = useState(0);
