@@ -109,7 +109,7 @@ export function useDriverOrders() {
       .eq('driver_id', user.id)
       .in('status', ['accepted', 'preparing', 'ready', 'arrived', 'picked_up'])
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (active) {
       setActiveDelivery(active as OrderWithItems);
