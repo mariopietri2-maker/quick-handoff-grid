@@ -49,7 +49,10 @@ export default function DriverProfilePage() {
   useEffect(() => {
     if (!user) return;
     setFullName(profile?.full_name || '');
-    setPhone(profile?.phone || '');
+
+    // Fetch phone from profiles table directly
+    supabase.from('profiles').select('phone').eq('user_id', user.id).single()
+      .then(({ data }) => { if (data) setPhone(data.phone || ''); });
 
     supabase.from('driver_profiles').select('*').eq('user_id', user.id).single()
       .then(({ data }) => {
