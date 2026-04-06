@@ -127,7 +127,8 @@ export default function DriverApp() {
               <img src="https://maps.google.com/mapfiles/ms/icons/red-dot.png" alt="Google Maps" className="h-6 w-6" />
             </a>
           )}
-      </div>
+        </div>
+      </header>
 
       {/* Bottom sheet */}
       <div className="relative z-10 mt-auto bg-card rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.12)] border-t border-border flex flex-col max-h-[65vh] overflow-hidden">
