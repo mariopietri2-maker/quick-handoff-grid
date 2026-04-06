@@ -79,9 +79,10 @@ export function useAdminData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_profiles')
-        .select('user_id, driver_code' as any);
+        .select('user_id, driver_code, is_active' as any)
+        .order('created_at' as any, { ascending: false });
       if (error) throw error;
-      return data as unknown as { user_id: string; driver_code: string | null }[];
+      return data as unknown as { user_id: string; driver_code: string | null; is_active: boolean }[];
     },
   });
 
