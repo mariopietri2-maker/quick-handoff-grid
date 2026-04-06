@@ -42,6 +42,11 @@ const App = () => (
                   <DriverApp />
                 </ProtectedRoute>
               } />
+              <Route path="/driver/profile" element={
+                <ProtectedRoute allowedRoles={['driver']}>
+                  <DriverProfilePage />
+                </ProtectedRoute>
+              } />
               <Route path="/store" element={
                 <ProtectedRoute allowedRoles={['store']}>
                   <StoreApp />
