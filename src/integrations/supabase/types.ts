@@ -71,6 +71,66 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_profiles: {
+        Row: {
+          account_holder: string | null
+          bank_name: string | null
+          created_at: string
+          iban: string | null
+          id: string
+          id_document_url: string | null
+          license_document_url: string | null
+          license_expiry: string | null
+          license_number: string | null
+          license_plate: string | null
+          updated_at: string
+          user_id: string
+          vehicle_color: string | null
+          vehicle_make: string | null
+          vehicle_model: string | null
+          vehicle_type: string | null
+          vehicle_year: number | null
+        }
+        Insert: {
+          account_holder?: string | null
+          bank_name?: string | null
+          created_at?: string
+          iban?: string | null
+          id?: string
+          id_document_url?: string | null
+          license_document_url?: string | null
+          license_expiry?: string | null
+          license_number?: string | null
+          license_plate?: string | null
+          updated_at?: string
+          user_id: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_type?: string | null
+          vehicle_year?: number | null
+        }
+        Update: {
+          account_holder?: string | null
+          bank_name?: string | null
+          created_at?: string
+          iban?: string | null
+          id?: string
+          id_document_url?: string | null
+          license_document_url?: string | null
+          license_expiry?: string | null
+          license_number?: string | null
+          license_plate?: string | null
+          updated_at?: string
+          user_id?: string
+          vehicle_color?: string | null
+          vehicle_make?: string | null
+          vehicle_model?: string | null
+          vehicle_type?: string | null
+          vehicle_year?: number | null
+        }
+        Relationships: []
+      }
       earnings: {
         Row: {
           base_pay: number
