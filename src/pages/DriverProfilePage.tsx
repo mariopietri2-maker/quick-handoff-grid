@@ -142,6 +142,15 @@ export default function DriverProfilePage() {
             <Card>
               <CardHeader><CardTitle className="font-heading text-lg">Προσωπικά Στοιχεία</CardTitle></CardHeader>
               <CardContent className="space-y-4">
+                {driverProfile.driver_code && (
+                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between">
+                    <div>
+                      <p className="text-xs text-muted-foreground">Κωδικός Οδηγού</p>
+                      <p className="font-heading font-bold text-lg text-primary">{driverProfile.driver_code}</p>
+                    </div>
+                    <Badge variant="outline" className="border-primary/30 text-primary font-heading">ID</Badge>
+                  </div>
+                )}
                 <div>
                   <Label htmlFor="fullName">Ονοματεπώνυμο</Label>
                   <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} />
