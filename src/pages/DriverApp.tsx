@@ -34,15 +34,6 @@ export default function DriverApp() {
   const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
-    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
-  );
-
-  const handleEnableNotifications = async () => {
-    const granted = await requestNotificationPermission();
-    setNotifPermission(granted ? 'granted' : 'denied');
-  };
-
   const handleDecline = (_id: string) => {};
 
   // Fetch store & customer info for active delivery
