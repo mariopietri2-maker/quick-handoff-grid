@@ -73,7 +73,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
           <div className="flex-1 space-y-3">
             <div>
               <p className="font-heading font-semibold text-foreground">{offer.storeName}</p>
-              <p className="text-sm text-muted-foreground">{offer.storeAddress}</p>
+              <p className="text-sm text-muted-foreground">{shortenAddress(offer.storeAddress)}</p>
             </div>
             <div>
               <p className="font-heading font-semibold text-foreground">Παράδοση</p>
