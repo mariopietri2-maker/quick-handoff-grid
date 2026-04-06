@@ -18,7 +18,7 @@ interface AddressAutocompleteProps {
 export function AddressAutocomplete({
   value,
   onChange,
-  placeholder = 'Enter your delivery address',
+  placeholder = 'Εισάγετε τη διεύθυνση παράδοσης',
   maxLength = 200,
 }: AddressAutocompleteProps) {
   const [query, setQuery] = useState(value);
@@ -28,10 +28,8 @@ export function AddressAutocomplete({
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
-  // Sync external value
   useEffect(() => { setQuery(value); }, [value]);
 
-  // Close on outside click
   useEffect(() => {
     const handler = (e: MouseEvent) => {
       if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
@@ -51,7 +49,7 @@ export function AddressAutocomplete({
     try {
       const res = await fetch(
         `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=0`,
-        { headers: { 'Accept-Language': 'en' } }
+        { headers: { 'Accept-Language': 'el' } }
       );
       const data: AddressResult[] = await res.json();
       setResults(data);
@@ -118,7 +116,7 @@ export function AddressAutocomplete({
             </button>
           ))}
           <p className="text-[10px] text-muted-foreground text-center py-1.5">
-            Powered by OpenStreetMap
+            Με την υποστήριξη OpenStreetMap
           </p>
         </div>
       )}

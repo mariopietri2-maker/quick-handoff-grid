@@ -14,9 +14,9 @@ import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 
 const audienceLabels: Record<string, string> = {
-  all: 'Everyone',
-  drivers: 'Drivers',
-  store_owners: 'Store Owners',
+  all: 'Όλοι',
+  drivers: 'Οδηγοί',
+  store_owners: 'Ιδιοκτήτες Καταστημάτων',
 };
 
 const audienceColors: Record<string, string> = {
@@ -45,9 +45,9 @@ export default function AnnouncementsManager() {
     } as any);
     setSending(false);
     if (error) {
-      toast.error('Failed to send announcement');
+      toast.error('Αποτυχία αποστολής ανακοίνωσης');
     } else {
-      toast.success('Announcement sent!');
+      toast.success('Η ανακοίνωση στάλθηκε!');
       setTitle('');
       setMessage('');
       setAudience('all');
@@ -57,9 +57,9 @@ export default function AnnouncementsManager() {
 
   const handleDelete = async (id: string) => {
     const { error } = await supabase.from('announcements').delete().eq('id', id);
-    if (error) toast.error('Failed to delete');
+    if (error) toast.error('Αποτυχία διαγραφής');
     else {
-      toast.success('Announcement deleted');
+      toast.success('Η ανακοίνωση διαγράφηκε');
       queryClient.invalidateQueries({ queryKey: ['announcements'] });
     }
   };
@@ -69,17 +69,17 @@ export default function AnnouncementsManager() {
       <Card>
         <CardHeader>
           <CardTitle className="font-heading flex items-center gap-2">
-            <Megaphone className="h-5 w-5" /> New Announcement
+            <Megaphone className="h-5 w-5" /> Νέα Ανακοίνωση
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
           <Input
-            placeholder="Announcement title"
+            placeholder="Τίτλος ανακοίνωσης"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
           />
           <Textarea
-            placeholder="Write your message..."
+            placeholder="Γράψτε το μήνυμά σας..."
             value={message}
             onChange={(e) => setMessage(e.target.value)}
             rows={3}
@@ -90,14 +90,14 @@ export default function AnnouncementsManager() {
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Everyone</SelectItem>
-                <SelectItem value="drivers">Drivers Only</SelectItem>
-                <SelectItem value="store_owners">Store Owners Only</SelectItem>
+                <SelectItem value="all">Όλοι</SelectItem>
+                <SelectItem value="drivers">Μόνο Οδηγοί</SelectItem>
+                <SelectItem value="store_owners">Μόνο Καταστήματα</SelectItem>
               </SelectContent>
             </Select>
             <Button onClick={handleSend} disabled={sending || !title.trim() || !message.trim()}>
               <Send className="h-4 w-4 mr-2" />
-              {sending ? 'Sending...' : 'Send'}
+              {sending ? 'Αποστολή...' : 'Αποστολή'}
             </Button>
           </div>
         </CardContent>
@@ -105,12 +105,12 @@ export default function AnnouncementsManager() {
 
       <Card>
         <CardHeader>
-          <CardTitle className="font-heading text-base">Sent Announcements</CardTitle>
+          <CardTitle className="font-heading text-base">Απεσταλμένες Ανακοινώσεις</CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          {isLoading && <p className="text-sm text-muted-foreground">Loading...</p>}
+          {isLoading && <p className="text-sm text-muted-foreground">Φόρτωση...</p>}
           {announcements?.length === 0 && (
-            <p className="text-sm text-muted-foreground text-center py-6">No announcements yet</p>
+            <p className="text-sm text-muted-foreground text-center py-6">Δεν υπάρχουν ανακοινώσεις</p>
           )}
           {announcements?.map((a: any) => (
             <div key={a.id} className="border rounded-lg p-3 space-y-1">
@@ -127,7 +127,7 @@ export default function AnnouncementsManager() {
               </div>
               <p className="text-sm text-muted-foreground">{a.message}</p>
               <p className="text-xs text-muted-foreground/60">
-                {format(new Date(a.created_at), 'MMM d, yyyy · HH:mm')}
+                {format(new Date(a.created_at), 'dd MMM yyyy · HH:mm')}
               </p>
             </div>
           ))}

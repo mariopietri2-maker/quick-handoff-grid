@@ -67,16 +67,16 @@ export function PromoManager({ storeId }: PromoManagerProps) {
 
   const handleSave = async () => {
     if (!form.code.trim() || !form.discount_value) {
-      toast.error('Code and discount value are required');
+      toast.error('Ο κωδικός και η αξία έκπτωσης είναι υποχρεωτικά');
       return;
     }
     const value = parseFloat(form.discount_value);
     if (isNaN(value) || value <= 0) {
-      toast.error('Enter a valid discount value');
+      toast.error('Εισάγετε έγκυρη αξία έκπτωσης');
       return;
     }
     if (form.discount_type === 'percentage' && value > 100) {
-      toast.error('Percentage cannot exceed 100');
+      toast.error('Το ποσοστό δεν μπορεί να υπερβαίνει το 100');
       return;
     }
 
@@ -97,9 +97,9 @@ export function PromoManager({ storeId }: PromoManagerProps) {
         .update(payload)
         .eq('id', editId);
       if (error) {
-        toast.error(error.message.includes('idx_promo_codes_code') ? 'Code already exists' : 'Failed to update');
+        toast.error(error.message.includes('idx_promo_codes_code') ? 'Ο κωδικός υπάρχει ήδη' : 'Αποτυχία ενημέρωσης');
       } else {
-        toast.success('Promo code updated');
+        toast.success('Ο κωδικός προσφοράς ενημερώθηκε');
         resetForm();
         fetchPromos();
       }
@@ -108,9 +108,9 @@ export function PromoManager({ storeId }: PromoManagerProps) {
         .from('promo_codes')
         .insert(payload);
       if (error) {
-        toast.error(error.message.includes('idx_promo_codes_code') ? 'Code already exists' : 'Failed to create');
+        toast.error(error.message.includes('idx_promo_codes_code') ? 'Ο κωδικός υπάρχει ήδη' : 'Αποτυχία δημιουργίας');
       } else {
-        toast.success('Promo code created! 🎉');
+        toast.success('Κωδικός προσφοράς δημιουργήθηκε! 🎉');
         resetForm();
         fetchPromos();
       }
@@ -124,7 +124,7 @@ export function PromoManager({ storeId }: PromoManagerProps) {
       .update({ is_active: !promo.is_active })
       .eq('id', promo.id);
     if (!error) {
-      toast.success(promo.is_active ? 'Promo deactivated' : 'Promo activated');
+      toast.success(promo.is_active ? 'Προσφορά απενεργοποιήθηκε' : 'Προσφορά ενεργοποιήθηκε');
       fetchPromos();
     }
   };
@@ -139,19 +139,18 @@ export function PromoManager({ storeId }: PromoManagerProps) {
     return (
       <div className="text-center py-16">
         <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-muted-foreground font-heading">Loading promos...</p>
+        <p className="text-muted-foreground font-heading">Φόρτωση προσφορών...</p>
       </div>
     );
   }
 
   return (
     <div className="space-y-4">
-      {/* Create / Edit Form */}
       {showForm ? (
         <Card className="shadow-[var(--shadow-md)] border-primary/20">
           <CardHeader className="pb-2">
             <div className="flex items-center justify-between">
-              <CardTitle className="font-heading text-lg">{editId ? 'Edit Promo' : 'New Promo Code'}</CardTitle>
+              <CardTitle className="font-heading text-lg">{editId ? 'Επεξεργασία Προσφοράς' : 'Νέος Κωδικός Προσφοράς'}</CardTitle>
               <button onClick={resetForm} className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
                 <X className="h-4 w-4 text-muted-foreground" />
               </button>
@@ -159,28 +158,28 @@ export function PromoManager({ storeId }: PromoManagerProps) {
           </CardHeader>
           <CardContent className="space-y-3">
             <div>
-              <Label className="font-heading text-sm">Code</Label>
+              <Label className="font-heading text-sm">Κωδικός</Label>
               <Input
                 value={form.code}
                 onChange={e => setForm(p => ({ ...p, code: e.target.value.toUpperCase() }))}
-                placeholder="e.g. WELCOME10"
+                placeholder="π.χ. WELCOME10"
                 className="font-mono uppercase"
                 maxLength={30}
               />
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="font-heading text-sm">Type</Label>
+                <Label className="font-heading text-sm">Τύπος</Label>
                 <Select value={form.discount_type} onValueChange={v => setForm(p => ({ ...p, discount_type: v as any }))}>
                   <SelectTrigger><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="percentage">Percentage (%)</SelectItem>
-                    <SelectItem value="fixed">Fixed ($)</SelectItem>
+                    <SelectItem value="percentage">Ποσοστό (%)</SelectItem>
+                    <SelectItem value="fixed">Σταθερό (€)</SelectItem>
                   </SelectContent>
                 </Select>
               </div>
               <div>
-                <Label className="font-heading text-sm">Value</Label>
+                <Label className="font-heading text-sm">Αξία</Label>
                 <Input
                   type="number"
                   value={form.discount_value}
@@ -193,7 +192,7 @@ export function PromoManager({ storeId }: PromoManagerProps) {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <Label className="font-heading text-sm">Min Order ($)</Label>
+                <Label className="font-heading text-sm">Ελάχ. Παραγγελία (€)</Label>
                 <Input
                   type="number"
                   value={form.min_order_amount}
@@ -204,18 +203,18 @@ export function PromoManager({ storeId }: PromoManagerProps) {
                 />
               </div>
               <div>
-                <Label className="font-heading text-sm">Max Uses</Label>
+                <Label className="font-heading text-sm">Μέγ. Χρήσεις</Label>
                 <Input
                   type="number"
                   value={form.max_uses}
                   onChange={e => setForm(p => ({ ...p, max_uses: e.target.value }))}
-                  placeholder="Unlimited"
+                  placeholder="Απεριόριστο"
                   min="1"
                 />
               </div>
             </div>
             <div>
-              <Label className="font-heading text-sm">Expires At (optional)</Label>
+              <Label className="font-heading text-sm">Λήξη (προαιρετικό)</Label>
               <Input
                 type="datetime-local"
                 value={form.expires_at}
@@ -227,7 +226,7 @@ export function PromoManager({ storeId }: PromoManagerProps) {
               disabled={saving}
               className="w-full gradient-primary text-primary-foreground font-heading"
             >
-              {saving ? 'Saving...' : editId ? 'Update Promo' : 'Create Promo'}
+              {saving ? 'Αποθήκευση...' : editId ? 'Ενημέρωση' : 'Δημιουργία'}
             </Button>
           </CardContent>
         </Card>
@@ -237,16 +236,15 @@ export function PromoManager({ storeId }: PromoManagerProps) {
           className="w-full gradient-primary text-primary-foreground font-heading"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Create Promo Code
+          Δημιουργία Κωδικού Προσφοράς
         </Button>
       )}
 
-      {/* Promo List */}
       {promos.length === 0 && !showForm ? (
         <div className="text-center py-12">
           <Tag className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-          <p className="font-heading text-foreground">No promo codes yet</p>
-          <p className="text-sm text-muted-foreground mt-1">Create your first code to attract customers</p>
+          <p className="font-heading text-foreground">Δεν υπάρχουν κωδικοί προσφοράς</p>
+          <p className="text-sm text-muted-foreground mt-1">Δημιουργήστε τον πρώτο κωδικό για να προσελκύσετε πελάτες</p>
         </div>
       ) : (
         promos.map(promo => {
@@ -259,15 +257,15 @@ export function PromoManager({ storeId }: PromoManagerProps) {
                   <div>
                     <div className="flex items-center gap-2">
                       <p className="font-mono font-bold text-foreground">{promo.code}</p>
-                      {!promo.is_active && <Badge variant="outline" className="text-xs">Inactive</Badge>}
-                      {expired && <Badge variant="outline" className="text-xs text-destructive border-destructive/30">Expired</Badge>}
-                      {maxed && <Badge variant="outline" className="text-xs text-warning border-warning/30">Maxed</Badge>}
+                      {!promo.is_active && <Badge variant="outline" className="text-xs">Ανενεργό</Badge>}
+                      {expired && <Badge variant="outline" className="text-xs text-destructive border-destructive/30">Έληξε</Badge>}
+                      {maxed && <Badge variant="outline" className="text-xs text-warning border-warning/30">Εξαντλήθηκε</Badge>}
                     </div>
                     <p className="text-sm text-primary font-heading mt-0.5">
                       {promo.discount_type === 'percentage'
-                        ? `${promo.discount_value}% off`
-                        : `$${Number(promo.discount_value).toFixed(2)} off`}
-                      {Number(promo.min_order_amount) > 0 && ` • Min $${Number(promo.min_order_amount).toFixed(2)}`}
+                        ? `${promo.discount_value}% έκπτωση`
+                        : `€${Number(promo.discount_value).toFixed(2)} έκπτωση`}
+                      {Number(promo.min_order_amount) > 0 && ` • Ελάχ. €${Number(promo.min_order_amount).toFixed(2)}`}
                     </p>
                   </div>
                   <div className="flex items-center gap-1">
@@ -282,9 +280,9 @@ export function PromoManager({ storeId }: PromoManagerProps) {
                   </div>
                 </div>
                 <div className="flex items-center gap-4 text-xs text-muted-foreground">
-                  <span>Used: {promo.current_uses}{promo.max_uses ? `/${promo.max_uses}` : ''}</span>
+                  <span>Χρήσεις: {promo.current_uses}{promo.max_uses ? `/${promo.max_uses}` : ''}</span>
                   {promo.expires_at && (
-                    <span>Expires: {new Date(promo.expires_at).toLocaleDateString()}</span>
+                    <span>Λήξη: {new Date(promo.expires_at).toLocaleDateString('el-GR')}</span>
                   )}
                 </div>
               </CardContent>

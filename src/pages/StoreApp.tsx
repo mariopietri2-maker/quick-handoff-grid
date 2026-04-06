@@ -51,12 +51,12 @@ export default function StoreApp() {
         <div className="flex items-center gap-2">
           {store && (
             <Badge variant="outline" className={`font-heading ${store.is_active ? 'text-success border-success/30' : 'text-muted-foreground border-border'}`}>
-              {store.is_active ? '● Open' : '○ Closed'}
+              {store.is_active ? '● Ανοιχτό' : '○ Κλειστό'}
             </Badge>
           )}
           {newOrders > 0 && (
             <Badge className="gradient-primary text-primary-foreground font-heading">
-              {newOrders} new
+              {newOrders} νέες
             </Badge>
           )}
           <UserMenu />
@@ -67,10 +67,9 @@ export default function StoreApp() {
         {storeLoading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-            <p className="text-muted-foreground font-heading">Loading...</p>
+            <p className="text-muted-foreground font-heading">Φόρτωση...</p>
           </div>
         ) : !store ? (
-          /* Store Creation Form */
           <div className="max-w-md mx-auto py-8">
             <Card className="shadow-[var(--shadow-lg)]">
               <CardContent className="p-6 space-y-4">
@@ -78,27 +77,27 @@ export default function StoreApp() {
                   <div className="h-16 w-16 rounded-2xl gradient-primary shadow-primary flex items-center justify-center mx-auto mb-3">
                     <Plus className="h-8 w-8 text-primary-foreground" />
                   </div>
-                  <h2 className="font-heading font-bold text-xl text-foreground">Set Up Your Store</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Create your restaurant profile to start receiving orders</p>
+                  <h2 className="font-heading font-bold text-xl text-foreground">Ρύθμιση Καταστήματος</h2>
+                  <p className="text-sm text-muted-foreground mt-1">Δημιουργήστε το προφίλ του εστιατορίου σας για να αρχίσετε να δέχεστε παραγγελίες</p>
                 </div>
                 <div>
-                  <Label className="font-heading">Store Name</Label>
-                  <Input value={newStore.name} onChange={e => setNewStore(p => ({ ...p, name: e.target.value }))} placeholder="e.g. Mario's Pizza" maxLength={100} />
+                  <Label className="font-heading">Όνομα Καταστήματος</Label>
+                  <Input value={newStore.name} onChange={e => setNewStore(p => ({ ...p, name: e.target.value }))} placeholder="π.χ. Πιτσαρία Μάριος" maxLength={100} />
                 </div>
                 <div>
-                  <Label className="font-heading">Address</Label>
-                  <Input value={newStore.address} onChange={e => setNewStore(p => ({ ...p, address: e.target.value }))} placeholder="123 Main St, City" maxLength={200} />
+                  <Label className="font-heading">Διεύθυνση</Label>
+                  <Input value={newStore.address} onChange={e => setNewStore(p => ({ ...p, address: e.target.value }))} placeholder="Οδός 123, Πόλη" maxLength={200} />
                 </div>
                 <div>
-                  <Label className="font-heading">Phone (optional)</Label>
-                  <Input value={newStore.phone} onChange={e => setNewStore(p => ({ ...p, phone: e.target.value }))} placeholder="(555) 123-4567" maxLength={20} />
+                  <Label className="font-heading">Τηλέφωνο (προαιρετικό)</Label>
+                  <Input value={newStore.phone} onChange={e => setNewStore(p => ({ ...p, phone: e.target.value }))} placeholder="210 1234567" maxLength={20} />
                 </div>
                 <Button
                   onClick={handleCreateStore}
                   className="w-full h-12 font-heading text-lg gradient-primary shadow-primary text-primary-foreground"
                   disabled={!newStore.name || !newStore.address || creating}
                 >
-                  {creating ? 'Creating...' : 'Create Store'}
+                  {creating ? 'Δημιουργία...' : 'Δημιουργία Καταστήματος'}
                 </Button>
               </CardContent>
             </Card>
@@ -109,11 +108,11 @@ export default function StoreApp() {
               <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
                 <Bell className="h-5 w-5 text-info flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="text-sm font-heading font-semibold text-foreground">Enable notifications</p>
-                  <p className="text-xs text-muted-foreground">Get sound + browser alerts when new orders arrive</p>
+                  <p className="text-sm font-heading font-semibold text-foreground">Ενεργοποίηση ειδοποιήσεων</p>
+                  <p className="text-xs text-muted-foreground">Λάβετε ηχητικές ειδοποιήσεις όταν φτάνουν νέες παραγγελίες</p>
                 </div>
                 <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading">
-                  Enable
+                  Ενεργοποίηση
                 </Button>
               </div>
             )}
@@ -122,7 +121,7 @@ export default function StoreApp() {
             <TabsList className="w-full mb-4">
               <TabsTrigger value="orders" className="flex-1 font-heading relative">
                 <ClipboardList className="h-4 w-4 mr-1.5" />
-                Orders
+                Παραγγελίες
                 {newOrders > 0 && (
                   <Badge className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center gradient-primary text-primary-foreground text-xs">
                     {newOrders}
@@ -131,19 +130,19 @@ export default function StoreApp() {
               </TabsTrigger>
               <TabsTrigger value="menu" className="flex-1 font-heading">
                 <UtensilsCrossed className="h-4 w-4 mr-1.5" />
-                Menu
+                Μενού
               </TabsTrigger>
               <TabsTrigger value="analytics" className="flex-1 font-heading">
                 <BarChart3 className="h-4 w-4 mr-1.5" />
-                Stats
+                Στατιστικά
               </TabsTrigger>
               <TabsTrigger value="promos" className="flex-1 font-heading">
                 <Tag className="h-4 w-4 mr-1.5" />
-                Promos
+                Προσφορές
               </TabsTrigger>
               <TabsTrigger value="settings" className="flex-1 font-heading">
                 <Settings className="h-4 w-4 mr-1.5" />
-                Settings
+                Ρυθμίσεις
               </TabsTrigger>
             </TabsList>
 
@@ -151,18 +150,18 @@ export default function StoreApp() {
               {loading ? (
                 <div className="text-center py-16">
                   <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-muted-foreground font-heading">Loading orders...</p>
+                  <p className="text-muted-foreground font-heading">Φόρτωση παραγγελιών...</p>
                 </div>
               ) : orders.length === 0 ? (
                 <div className="text-center py-16">
                   <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="font-heading text-foreground">No active orders</p>
+                  <p className="font-heading text-foreground">Δεν υπάρχουν ενεργές παραγγελίες</p>
                   <p className="text-sm text-muted-foreground mt-1">
-                    New orders will appear here in real-time
+                    Νέες παραγγελίες θα εμφανιστούν εδώ σε πραγματικό χρόνο
                   </p>
                   <div className="mt-4 flex items-center justify-center gap-2 text-sm text-success">
                     <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                    Listening for orders...
+                    Αναμονή για παραγγελίες...
                   </div>
                 </div>
               ) : (

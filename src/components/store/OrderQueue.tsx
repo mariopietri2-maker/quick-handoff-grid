@@ -10,23 +10,23 @@ interface OrderQueueProps {
 }
 
 const statusConfig: Record<string, { label: string; variant: 'destructive' | 'default' | 'secondary'; bg: string }> = {
-  placed: { label: 'New', variant: 'destructive', bg: 'bg-primary/10 border-primary/30' },
-  accepted: { label: 'Accepted', variant: 'default', bg: 'bg-info/10 border-info/30' },
-  preparing: { label: 'In Progress', variant: 'default', bg: 'bg-warning/10 border-warning/30' },
-  ready: { label: 'Ready', variant: 'secondary', bg: 'bg-success/10 border-success/30' },
+  placed: { label: 'Νέα', variant: 'destructive', bg: 'bg-primary/10 border-primary/30' },
+  accepted: { label: 'Αποδεκτή', variant: 'default', bg: 'bg-info/10 border-info/30' },
+  preparing: { label: 'Σε Εξέλιξη', variant: 'default', bg: 'bg-warning/10 border-warning/30' },
+  ready: { label: 'Έτοιμη', variant: 'secondary', bg: 'bg-success/10 border-success/30' },
 };
 
 export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
   const getTimeSince = (dateStr: string) => {
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
-    return diff < 1 ? 'Just now' : `${diff}m ago`;
+    return diff < 1 ? 'Μόλις τώρα' : `${diff}λ πριν`;
   };
 
   const getNextAction = (status: string) => {
     switch (status) {
-      case 'placed': return { label: 'Accept & Start Preparing', next: 'preparing' };
-      case 'accepted': return { label: 'Start Preparing', next: 'preparing' };
-      case 'preparing': return { label: 'Mark Ready', next: 'ready' };
+      case 'placed': return { label: 'Αποδοχή & Έναρξη Ετοιμασίας', next: 'preparing' };
+      case 'accepted': return { label: 'Έναρξη Ετοιμασίας', next: 'preparing' };
+      case 'preparing': return { label: 'Σημείωση Έτοιμη', next: 'ready' };
       case 'ready': return null;
       default: return null;
     }
@@ -59,28 +59,26 @@ export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
                 {items.map((item, i) => (
                   <div key={i} className="flex justify-between text-sm">
                     <span className="text-foreground">{item.quantity}x {item.name}</span>
-                    <span className="text-muted-foreground">${Number(item.unit_price).toFixed(2)}</span>
+                    <span className="text-muted-foreground">€{Number(item.unit_price).toFixed(2)}</span>
                   </div>
                 ))}
                 <div className="flex justify-between font-heading font-semibold pt-2 border-t border-border">
-                  <span className="text-foreground">Total</span>
-                  <span className="text-foreground">${Number(order.total_amount).toFixed(2)}</span>
+                  <span className="text-foreground">Σύνολο</span>
+                  <span className="text-foreground">€{Number(order.total_amount).toFixed(2)}</span>
                 </div>
               </div>
 
-              {/* Driver Info */}
               {order.driver_id && (
                 <div className="flex items-center gap-2 py-2 px-3 rounded-lg bg-card mb-3">
                   <Car className="h-4 w-4 text-info" />
-                  <span className="text-sm text-foreground">Driver assigned</span>
+                  <span className="text-sm text-foreground">Οδηγός ανατέθηκε</span>
                 </div>
               )}
 
-              {/* Prep Time */}
               {order.status === 'preparing' && order.estimated_prep_time && order.estimated_prep_time > 0 && (
                 <div className="flex items-center gap-2 text-sm text-warning mb-3">
                   <Timer className="h-4 w-4" />
-                  <span>~{order.estimated_prep_time} min remaining</span>
+                  <span>~{order.estimated_prep_time} λεπτά απομένουν</span>
                 </div>
               )}
 
@@ -107,7 +105,7 @@ export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
               {order.status === 'ready' && (
                 <div className="text-center py-2">
                   <span className="text-sm text-success font-heading font-semibold">
-                    ✓ Waiting for driver pickup
+                    ✓ Αναμονή παραλαβής από οδηγό
                   </span>
                 </div>
               )}
