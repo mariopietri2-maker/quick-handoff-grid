@@ -59,6 +59,7 @@ export default function DriverProfilePage() {
       .then(({ data }) => {
         if (data) {
           setDriverProfile({
+            driver_code: (data as any).driver_code || null,
             vehicle_type: data.vehicle_type || 'motorcycle',
             vehicle_make: data.vehicle_make || '',
             vehicle_model: data.vehicle_model || '',
