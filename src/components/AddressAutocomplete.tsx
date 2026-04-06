@@ -1,8 +1,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin, Loader2, X, Navigation } from 'lucide-react';
+import { MapPin, Loader2, X, Navigation, Crosshair } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -37,6 +37,14 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
   return null;
 }
 
+function FlyToPoint({ lat, lon }: { lat: number; lon: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([lat, lon], 17, { duration: 1 });
+  }, [lat, lon, map]);
+  return null;
+}
+
 export function AddressAutocomplete({
   value,
   onChange,
@@ -51,6 +59,8 @@ export function AddressAutocomplete({
   const [mapPin, setMapPin] = useState<{ lat: number; lon: number } | null>(null);
   const [reverseLoading, setReverseLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
+  const [gpsLoading, setGpsLoading] = useState(false);
+  const [flyTo, setFlyTo] = useState<{ lat: number; lon: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -149,6 +159,28 @@ export function AddressAutocomplete({
     setNoResults(false);
   };
 
+  const locateGPS = () => {
+    if (!navigator.geolocation) {
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        setMapPin({ lat, lon });
+        setFlyTo({ lat, lon });
+        setShowMap(true);
+        handleMapClick(lat, lon);
+        setGpsLoading(false);
+      },
+      () => {
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Ioannina center
   const ioannina: [number, number] = [39.6650, 20.8537];
 
@@ -192,28 +224,51 @@ export function AddressAutocomplete({
       {noResults && !showMap && (
         <div className="bg-muted/50 rounded-lg p-3 text-center space-y-2">
           <p className="text-sm text-muted-foreground">Δεν βρέθηκε η διεύθυνση</p>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setShowMap(true)}
-            className="gap-2"
-          >
-            <Navigation className="h-4 w-4" />
-            Σημειώστε στον χάρτη
-          </Button>
+          <div className="flex justify-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowMap(true)}
+              className="gap-2"
+            >
+              <Navigation className="h-4 w-4" />
+              Σημειώστε στον χάρτη
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={locateGPS}
+              disabled={gpsLoading}
+              className="gap-2"
+            >
+              {gpsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
+              Τοποθεσία GPS
+            </Button>
+          </div>
         </div>
       )}
 
-      {/* Always show "pin on map" button */}
+      {/* Always show "pin on map" and GPS buttons */}
       {!showMap && !noResults && (
-        <button
-          type="button"
-          onClick={() => setShowMap(true)}
-          className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2"
-        >
-          <Navigation className="h-3.5 w-3.5" />
-          Σημειώστε στον χάρτη
-        </button>
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => setShowMap(true)}
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2"
+          >
+            <Navigation className="h-3.5 w-3.5" />
+            Σημειώστε στον χάρτη
+          </button>
+          <button
+            type="button"
+            onClick={locateGPS}
+            disabled={gpsLoading}
+            className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2 disabled:opacity-50"
+          >
+            {gpsLoading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Crosshair className="h-3.5 w-3.5" />}
+            Τοποθεσία GPS
+          </button>
+        </div>
       )}
 
       {/* Map picker */}
@@ -231,12 +286,23 @@ export function AddressAutocomplete({
                 url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
               />
               <MapClickHandler onMapClick={handleMapClick} />
+              {flyTo && <FlyToPoint lat={flyTo.lat} lon={flyTo.lon} />}
               {mapPin && (
                 <Marker position={[mapPin.lat, mapPin.lon]} icon={defaultIcon} />
               )}
             </MapContainer>
+            {/* GPS button on map */}
+            <button
+              type="button"
+              onClick={locateGPS}
+              disabled={gpsLoading}
+              className="absolute bottom-3 right-3 z-[1000] h-10 w-10 bg-card rounded-full shadow-md flex items-center justify-center border border-border hover:bg-accent transition-colors disabled:opacity-50"
+              title="Η τοποθεσία μου"
+            >
+              {gpsLoading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Crosshair className="h-5 w-5 text-primary" />}
+            </button>
             {reverseLoading && (
-              <div className="absolute top-2 right-2 bg-card/90 rounded-full p-1.5 shadow">
+              <div className="absolute top-2 right-2 z-[1000] bg-card/90 rounded-full p-1.5 shadow">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
               </div>
             )}
