@@ -167,7 +167,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                     </a>
                   )}
                 </div>
-                <p className="text-sm text-muted-foreground">{delivery.deliveryAddress}</p>
+                <p className="text-sm text-muted-foreground">{shortenAddress(delivery.deliveryAddress)}</p>
               </div>
             </div>
             {/* Google Maps navigation button - right side centered */}

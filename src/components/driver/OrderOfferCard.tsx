@@ -77,7 +77,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
             </div>
             <div>
               <p className="font-heading font-semibold text-foreground">Παράδοση</p>
-              <p className="text-sm text-muted-foreground">{offer.deliveryAddress}</p>
+              <p className="text-sm text-muted-foreground">{shortenAddress(offer.deliveryAddress)}</p>
             </div>
           </div>
         </div>
