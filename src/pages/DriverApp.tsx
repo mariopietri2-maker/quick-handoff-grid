@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, DollarSign, Radio, Bell, Navigation, Menu } from 'lucide-react';
+import { Car, DollarSign, Radio, Navigation, Menu } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -10,7 +10,7 @@ import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
-import { requestNotificationPermission } from '@/lib/notifications';
+
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverStaticMap from '@/components/driver/DriverStaticMap';
@@ -34,15 +34,6 @@ export default function DriverApp() {
   const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
-  const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
-    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
-  );
-
-  const handleEnableNotifications = async () => {
-    const granted = await requestNotificationPermission();
-    setNotifPermission(granted ? 'granted' : 'denied');
-  };
-
   const handleDecline = (_id: string) => {};
 
   // Fetch store & customer info for active delivery
@@ -125,9 +116,6 @@ export default function DriverApp() {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          <button className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-lg flex items-center justify-center">
-            <Bell className="h-5 w-5 text-foreground" />
-          </button>
         </div>
       </header>
 
@@ -139,18 +127,6 @@ export default function DriverApp() {
         </div>
 
         <div className="flex-1 overflow-y-auto px-4 pb-6">
-          {notifPermission === 'default' && (
-            <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
-              <Bell className="h-5 w-5 text-info flex-shrink-0" />
-              <div className="flex-1">
-                <p className="text-sm font-heading font-semibold text-foreground">Ενεργοποίηση ειδοποιήσεων</p>
-                <p className="text-xs text-muted-foreground">Λάβετε ειδοποιήσεις όταν υπάρχουν νέες παραδόσεις</p>
-              </div>
-              <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading">
-                Ενεργοποίηση
-              </Button>
-            </div>
-          )}
 
           <AnnouncementsBanner audience="drivers" />
 
