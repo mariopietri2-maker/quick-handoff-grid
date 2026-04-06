@@ -3,8 +3,6 @@ import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package } from '
 import { Store, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import DriverLiveMap from '@/components/DriverLiveMap';
-import { useAuth } from '@/hooks/useAuth';
 
 interface DeliveryItem {
   name: string;
@@ -42,7 +40,6 @@ const statusSteps = [
 ];
 
 export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps) {
-  const { user } = useAuth();
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
 
   const toggleChecklistItem = (index: number) => {
@@ -156,28 +153,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
           </div>
         </CardContent>
       </Card>
-
-      {/* Live Map — shows destination based on current stage */}
-      {user && (
-        <DriverLiveMap
-          driverId={user.id}
-          deliveryLat={
-            ['accepted', 'preparing', 'ready'].includes(delivery.status)
-              ? delivery.storeLat
-              : delivery.deliveryLat
-          }
-          deliveryLng={
-            ['accepted', 'preparing', 'ready'].includes(delivery.status)
-              ? delivery.storeLng
-              : delivery.deliveryLng
-          }
-          deliveryAddress={
-            ['accepted', 'preparing', 'ready'].includes(delivery.status)
-              ? delivery.storeAddress
-              : delivery.deliveryAddress
-          }
-        />
-      )}
 
       {/* Order Items */}
       <Card className="shadow-[var(--shadow-md)]">
