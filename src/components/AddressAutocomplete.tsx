@@ -37,6 +37,14 @@ function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number
   return null;
 }
 
+function FlyToPoint({ lat, lon }: { lat: number; lon: number }) {
+  const map = useMap();
+  useEffect(() => {
+    map.flyTo([lat, lon], 17, { duration: 1 });
+  }, [lat, lon, map]);
+  return null;
+}
+
 export function AddressAutocomplete({
   value,
   onChange,
