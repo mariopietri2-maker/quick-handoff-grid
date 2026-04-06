@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package } from 'lucide-react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, MapPin, ExternalLink } from 'lucide-react';
 import { Store, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
