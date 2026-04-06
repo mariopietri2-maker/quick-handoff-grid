@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { MapPin, Loader2, X, Navigation } from 'lucide-react';
+import { MapPin, Loader2, X, Navigation, Crosshair } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { MapContainer, TileLayer, Marker, useMapEvents } from 'react-leaflet';
