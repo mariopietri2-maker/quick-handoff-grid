@@ -106,9 +106,29 @@ export default function CustomerApp() {
         </div>
       </header>
 
+      {/* Category Filters */}
+      <div className="max-w-2xl mx-auto px-4 pt-3 pb-1">
+        <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          {CATEGORY_FILTERS.map(cat => (
+            <button
+              key={cat.value}
+              onClick={() => setSelectedCategory(cat.value)}
+              className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-sm font-heading whitespace-nowrap transition-colors ${
+                selectedCategory === cat.value
+                  ? 'bg-primary text-primary-foreground shadow-sm'
+                  : 'bg-muted text-muted-foreground hover:bg-muted/80'
+              }`}
+            >
+              <span>{cat.emoji}</span>
+              {cat.label}
+            </button>
+          ))}
+        </div>
+      </div>
+
       <div className="max-w-2xl mx-auto p-4">
         <h2 className="font-heading font-bold text-lg text-foreground mb-4">
-          {search ? `Αποτελέσματα για "${search}"` : 'Κοντινά Εστιατόρια'}
+          {search ? `Αποτελέσματα για "${search}"` : selectedCategory !== 'all' ? CATEGORY_FILTERS.find(c => c.value === selectedCategory)?.label ?? 'Εστιατόρια' : 'Κοντινά Εστιατόρια'}
         </h2>
 
         {loading ? (
