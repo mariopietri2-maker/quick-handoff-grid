@@ -159,6 +159,28 @@ export function AddressAutocomplete({
     setNoResults(false);
   };
 
+  const locateGPS = () => {
+    if (!navigator.geolocation) {
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        const lat = pos.coords.latitude;
+        const lon = pos.coords.longitude;
+        setMapPin({ lat, lon });
+        setFlyTo({ lat, lon });
+        setShowMap(true);
+        handleMapClick(lat, lon);
+        setGpsLoading(false);
+      },
+      () => {
+        setGpsLoading(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
   // Ioannina center
   const ioannina: [number, number] = [39.6650, 20.8537];
 
