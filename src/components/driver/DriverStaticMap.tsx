@@ -135,31 +135,24 @@ export default function DriverStaticMap({
   customerLng,
   customerName,
 }: DriverStaticMapProps) {
-  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [pos, setPos] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
   const watchRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
 
-    if (liveMode) {
-      watchRef.current = navigator.geolocation.watchPosition(
-        (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => setPos({ lat: 39.6650, lng: 20.8537 }),
-        { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
-      );
-      return () => {
-        if (watchRef.current !== null) {
-          navigator.geolocation.clearWatch(watchRef.current);
-        }
-      };
-    } else {
-      navigator.geolocation.getCurrentPosition(
-        (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => setPos({ lat: 39.6650, lng: 20.8537 }),
-        { enableHighAccuracy: false, timeout: 10000 }
-      );
-    }
-  }, [liveMode]);
+    // Always use watchPosition with high accuracy for precise GPS
+    watchRef.current = navigator.geolocation.watchPosition(
+      (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      () => setPos({ lat: 39.6650, lng: 20.8537, accuracy: null }),
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
+    );
+    return () => {
+      if (watchRef.current !== null) {
+        navigator.geolocation.clearWatch(watchRef.current);
+      }
+    };
+  }, []);
 
   const lat = pos?.lat ?? 39.6650;
   const lng = pos?.lng ?? 20.8537;
