@@ -114,6 +114,50 @@ function RouteLine({ waypoints, color }: { waypoints: [number, number][]; color:
   );
 }
 
+function NavigationButtons({ storeLat, storeLng, storeName, customerLat, customerLng, customerName }: {
+  storeLat?: number | null; storeLng?: number | null; storeName?: string;
+  customerLat?: number | null; customerLng?: number | null; customerName?: string;
+}) {
+  const openNav = (lat: number, lng: number, label: string) => {
+    window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}&travelmode=driving`, '_blank');
+  };
+
+  const hasStore = storeLat && storeLng;
+  const hasCustomer = customerLat && customerLng;
+  if (!hasStore && !hasCustomer) return null;
+
+  return (
+    <div className="absolute top-4 right-4 z-[1000] flex flex-col gap-2">
+      {hasStore && (
+        <button
+          onClick={() => openNav(storeLat!, storeLng!, storeName || 'Κατάστημα')}
+          className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl px-3 py-2.5 flex items-center gap-2 hover:bg-card transition-colors"
+          title={`Πλοήγηση → ${storeName || 'Κατάστημα'}`}
+        >
+          <div className="h-7 w-7 rounded-full flex items-center justify-center text-sm" style={{ background: 'hsl(25, 95%, 53%)' }}>🏪</div>
+          <div className="text-left">
+            <p className="text-xs font-heading font-semibold text-foreground leading-tight">{storeName || 'Κατάστημα'}</p>
+            <p className="text-[10px] text-muted-foreground">Πλοήγηση →</p>
+          </div>
+        </button>
+      )}
+      {hasCustomer && (
+        <button
+          onClick={() => openNav(customerLat!, customerLng!, customerName || 'Πελάτης')}
+          className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl px-3 py-2.5 flex items-center gap-2 hover:bg-card transition-colors"
+          title={`Πλοήγηση → ${customerName || 'Πελάτης'}`}
+        >
+          <div className="h-7 w-7 rounded-full flex items-center justify-center text-sm" style={{ background: 'hsl(142, 71%, 45%)' }}>📍</div>
+          <div className="text-left">
+            <p className="text-xs font-heading font-semibold text-foreground leading-tight">{customerName || 'Πελάτης'}</p>
+            <p className="text-[10px] text-muted-foreground">Πλοήγηση →</p>
+          </div>
+        </button>
+      )}
+    </div>
+  );
+}
+
 interface DriverStaticMapProps {
   className?: string;
   liveMode?: boolean;
