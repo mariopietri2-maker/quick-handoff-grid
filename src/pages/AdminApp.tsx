@@ -42,8 +42,9 @@ const statusLabelsEl: Record<string, string> = {
 
 export default function AdminApp() {
   const { signOut } = useAuth();
-  const { orders, stores, profiles, earnings, reviews, userRoles } = useAdminData();
+  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles } = useAdminData();
   const queryClient = useQueryClient();
+  const driverCodeMap = new Map((driverProfiles.data ?? []).map(d => [d.user_id, d.driver_code]));
 
   const totalRevenue = orders.data?.reduce((sum, o) => sum + Number(o.total_amount), 0) ?? 0;
   const avgRating = reviews.data?.length
