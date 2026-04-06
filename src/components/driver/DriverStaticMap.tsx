@@ -122,15 +122,6 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
           <div className="h-8 w-8 rounded-full flex items-center justify-center text-base" style={{ background: 'hsl(25, 95%, 53%)' }}>🏪</div>
         </button>
       )}
-      {hasCustomer && (
-        <button
-          onClick={() => openNav(customerLat!, customerLng!, customerName || 'Πελάτης')}
-          className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl p-2.5 flex items-center justify-center hover:bg-card transition-colors"
-          title={`Πλοήγηση → ${customerName || 'Πελάτης'}`}
-        >
-          <div className="h-8 w-8 rounded-full flex items-center justify-center text-base" style={{ background: 'hsl(142, 71%, 45%)' }}>📍</div>
-        </button>
-      )}
     </div>
   );
 }
