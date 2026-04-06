@@ -12,30 +12,56 @@ import type { Database } from '@/integrations/supabase/types';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
+const CATEGORY_FILTERS = [
+  { label: 'Όλα', value: 'all', emoji: '🍽️' },
+  { label: 'Πίτσα', value: 'Πίτσες', emoji: '🍕' },
+  { label: 'Burgers', value: 'Burgers', emoji: '🍔' },
+  { label: 'Κρέπες', value: 'Κρέπες', emoji: '🥞' },
+  { label: 'Ζυμαρικά', value: 'Ζυμαρικά', emoji: '🍝' },
+  { label: 'Σουβλάκια', value: 'Σουβλάκια', emoji: '🥙' },
+  { label: 'Σαλάτες', value: 'Σαλάτες', emoji: '🥗' },
+];
+
 export default function CustomerApp() {
   const [stores, setStores] = useState<StoreRow[]>([]);
+  const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount, total } = useCart();
 
   useEffect(() => {
-    supabase
-      .from('stores')
-      .select('*')
-      .eq('is_active', true)
-      .order('name')
-      .then(({ data }) => {
-        setStores(data ?? []);
-        setLoading(false);
+    async function load() {
+      const [storesRes, menuRes] = await Promise.all([
+        supabase.from('stores').select('*').eq('is_active', true).order('name'),
+        supabase.from('menu_items').select('store_id, category').eq('is_available', true),
+      ]);
+      setStores(storesRes.data ?? []);
+      // Build a map of store_id -> unique categories
+      const catMap: Record<string, string[]> = {};
+      (menuRes.data ?? []).forEach(item => {
+        if (!item.category) return;
+        if (!catMap[item.store_id]) catMap[item.store_id] = [];
+        if (!catMap[item.store_id].includes(item.category)) {
+          catMap[item.store_id].push(item.category);
+        }
       });
+      setStoreCategories(catMap);
+      setLoading(false);
+    }
+    load();
   }, []);
 
-  const filtered = stores.filter(s =>
-    s.name.toLowerCase().includes(search.toLowerCase()) ||
-    s.address.toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = stores.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.address.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (selectedCategory === 'all') return true;
+    const cats = storeCategories[s.id] ?? [];
+    return cats.some(c => c.includes(selectedCategory));
+  });
 
   return (
     <div className="min-h-screen bg-background">
