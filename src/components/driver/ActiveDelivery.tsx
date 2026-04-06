@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package } from 'lucide-react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, MapPin, ExternalLink } from 'lucide-react';
 import { Store, User } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -49,6 +49,26 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       return next;
     });
   };
+
+  const openNavigation = (lat: number | null | undefined, lng: number | null | undefined, address: string, app: 'google' | 'waze') => {
+    if (lat && lng) {
+      if (app === 'google') {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${lat},${lng}`, '_blank');
+      } else {
+        window.open(`https://waze.com/ul?ll=${lat},${lng}&navigate=yes`, '_blank');
+      }
+    } else {
+      const encoded = encodeURIComponent(address);
+      if (app === 'google') {
+        window.open(`https://www.google.com/maps/dir/?api=1&destination=${encoded}`, '_blank');
+      } else {
+        window.open(`https://waze.com/ul?q=${encoded}&navigate=yes`, '_blank');
+      }
+    }
+  };
+
+  const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
+  const isGoingToCustomer = delivery.status === 'picked_up';
 
   const getNextAction = () => {
     switch (delivery.status) {
@@ -153,7 +173,39 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
         </CardContent>
       </Card>
 
-      {/* Order Items */}
+      {/* Navigation Buttons */}
+      {(isGoingToStore || isGoingToCustomer) && (
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            className="flex-1 h-12 font-heading gap-2"
+            onClick={() => openNavigation(
+              isGoingToStore ? delivery.storeLat : delivery.deliveryLat,
+              isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
+              isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress,
+              'google'
+            )}
+          >
+            <MapPin className="h-4 w-4 text-primary" />
+            Google Maps
+            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+          </Button>
+          <Button
+            variant="outline"
+            className="flex-1 h-12 font-heading gap-2"
+            onClick={() => openNavigation(
+              isGoingToStore ? delivery.storeLat : delivery.deliveryLat,
+              isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
+              isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress,
+              'waze'
+            )}
+          >
+            <Navigation className="h-4 w-4 text-blue-500" />
+            Waze
+            <ExternalLink className="h-3 w-3 text-muted-foreground" />
+          </Button>
+        </div>
+      )}
       <Card className="shadow-[var(--shadow-md)]">
         <CardHeader className="pb-2">
           <CardTitle className="font-heading text-lg">Προϊόντα Παραγγελίας</CardTitle>
