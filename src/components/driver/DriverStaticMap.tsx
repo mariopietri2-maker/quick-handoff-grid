@@ -1,5 +1,5 @@
 import { useEffect, useState, useRef, useCallback } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 
@@ -135,31 +135,24 @@ export default function DriverStaticMap({
   customerLng,
   customerName,
 }: DriverStaticMapProps) {
-  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [pos, setPos] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
   const watchRef = useRef<number | null>(null);
 
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
 
-    if (liveMode) {
-      watchRef.current = navigator.geolocation.watchPosition(
-        (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => setPos({ lat: 39.6650, lng: 20.8537 }),
-        { enableHighAccuracy: true, maximumAge: 3000, timeout: 15000 }
-      );
-      return () => {
-        if (watchRef.current !== null) {
-          navigator.geolocation.clearWatch(watchRef.current);
-        }
-      };
-    } else {
-      navigator.geolocation.getCurrentPosition(
-        (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-        () => setPos({ lat: 39.6650, lng: 20.8537 }),
-        { enableHighAccuracy: false, timeout: 10000 }
-      );
-    }
-  }, [liveMode]);
+    // Always use watchPosition with high accuracy for precise GPS
+    watchRef.current = navigator.geolocation.watchPosition(
+      (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
+      () => setPos({ lat: 39.6650, lng: 20.8537, accuracy: null }),
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
+    );
+    return () => {
+      if (watchRef.current !== null) {
+        navigator.geolocation.clearWatch(watchRef.current);
+      }
+    };
+  }, []);
 
   const lat = pos?.lat ?? 39.6650;
   const lng = pos?.lng ?? 20.8537;
@@ -198,8 +191,30 @@ export default function DriverStaticMap({
         
         {pos && (
           <>
+            {/* Accuracy circle */}
+            {pos.accuracy && pos.accuracy < 500 && (
+              <Circle
+                center={[pos.lat, pos.lng]}
+                radius={pos.accuracy}
+                pathOptions={{ color: 'hsl(217, 91%, 60%)', fillColor: 'hsl(217, 91%, 60%)', fillOpacity: 0.1, weight: 1 }}
+              />
+            )}
             <Marker position={[pos.lat, pos.lng]} icon={driverDot}>
-              <Popup>Εσύ</Popup>
+              <Popup>
+                <div className="text-center">
+                  <strong>Η τοποθεσία σου</strong>
+                  <br />
+                  <span className="text-xs">
+                    {pos.lat.toFixed(5)}, {pos.lng.toFixed(5)}
+                  </span>
+                  {pos.accuracy && (
+                    <>
+                      <br />
+                      <span className="text-xs">Ακρίβεια: ±{Math.round(pos.accuracy)}μ</span>
+                    </>
+                  )}
+                </div>
+              </Popup>
             </Marker>
             <LiveTracker lat={pos.lat} lng={pos.lng} />
           </>
