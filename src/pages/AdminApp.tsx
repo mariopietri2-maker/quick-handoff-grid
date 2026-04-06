@@ -337,7 +337,7 @@ export default function AdminApp() {
                       </TableRow>
                     ))}
                     {!profiles.data?.length && (
-                      <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Δεν υπάρχουν χρήστες</TableCell></TableRow>
+                      <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Δεν υπάρχουν χρήστες</TableCell></TableRow>
                     )}
                   </TableBody>
                 </Table>
