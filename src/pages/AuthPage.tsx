@@ -54,9 +54,6 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-background flex flex-col">
       <header className="gradient-dark text-primary-foreground px-4 py-3 flex items-center gap-3">
-        <Link to="/">
-          <ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" />
-        </Link>
         <h1 className="font-heading font-bold text-lg">Delivery Marketplace</h1>
       </header>
 
