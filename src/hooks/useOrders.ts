@@ -109,7 +109,7 @@ export function useDriverOrders() {
       .eq('driver_id', user.id)
       .in('status', ['accepted', 'preparing', 'ready', 'arrived', 'picked_up'])
       .limit(1)
-      .single();
+      .maybeSingle();
 
     if (active) {
       setActiveDelivery(active as OrderWithItems);
@@ -194,7 +194,25 @@ export function useDriverOrders() {
       toast.error('Failed to update status');
     } else {
       if (newStatus === 'delivered') {
-        toast.success('Delivery completed! 🎉');
+        toast.success('Παράδοση ολοκληρώθηκε! 🎉');
+        // Create earnings record
+        if (user) {
+          const order = activeDelivery;
+          if (order) {
+            const basePay = Number(order.delivery_fee ?? 3);
+            const tip = Number(order.tip_amount ?? 0);
+            const bonus = 0;
+            const total = basePay + tip + bonus;
+            await supabase.from('earnings').insert({
+              driver_id: user.id,
+              order_id: orderId,
+              base_pay: basePay,
+              tip,
+              bonus,
+              total,
+            });
+          }
+        }
         setActiveDelivery(null);
       } else {
         toast.success(`Status updated: ${newStatus.replace('_', ' ')}`);
