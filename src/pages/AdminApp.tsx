@@ -525,16 +525,23 @@ export default function AdminApp() {
   );
 }
 
-function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
+const colorMap: Record<string, string> = {
+  primary: 'gradient-primary shadow-primary',
+  success: 'gradient-success',
+  warning: 'bg-warning',
+  info: 'bg-info',
+};
+
+function StatCard({ icon: Icon, label, value, color = 'primary' }: { icon: React.ElementType; label: string; value: string | number; color?: string }) {
   return (
-    <Card className="shadow-[var(--shadow-md)]">
+    <Card className="shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-shadow">
       <CardContent className="p-4 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg gradient-primary shadow-primary flex items-center justify-center shrink-0">
+        <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${colorMap[color] || 'gradient-primary shadow-primary'}`}>
           <Icon className="h-5 w-5 text-primary-foreground" />
         </div>
         <div>
           <p className="text-xs text-muted-foreground font-heading">{label}</p>
-          <p className="font-heading font-bold text-lg">{value}</p>
+          <p className="font-heading font-bold text-xl leading-tight">{value}</p>
         </div>
       </CardContent>
     </Card>
