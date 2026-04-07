@@ -100,27 +100,46 @@ function RouteLine({ waypoints, color }: { waypoints: [number, number][]; color:
   );
 }
 
-function NavigationButtons({ storeLat, storeLng, storeName, customerLat, customerLng, customerName }: {
+function NavigationButtons({
+  storeLat,
+  storeLng,
+  storeName,
+  customerLat,
+  customerLng,
+  customerName,
+  customerAddress,
+}: {
   storeLat?: number | null; storeLng?: number | null; storeName?: string;
   customerLat?: number | null; customerLng?: number | null; customerName?: string;
+  customerAddress?: string | null;
 }) {
-  const openNav = (lat: number, lng: number) => {
-    openGoogleMapsNavigation({ lat, lng });
-  };
-
-  const hasStore = storeLat && storeLng;
-  const hasCustomer = customerLat && customerLng;
+  const hasStore = storeLat != null && storeLng != null;
+  const hasCustomer = customerAddress || (customerLat != null && customerLng != null);
   if (!hasStore && !hasCustomer) return null;
 
   return (
     <div className="absolute top-16 right-4 z-[1000] flex flex-col gap-2">
       {hasStore && (
         <button
-          onClick={() => openNav(storeLat!, storeLng!)}
+          onClick={() => openGoogleMapsNavigation({ lat: storeLat, lng: storeLng })}
           className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl p-2.5 flex items-center justify-center hover:bg-card transition-colors"
           title={`Πλοήγηση → ${storeName || 'Κατάστημα'}`}
         >
           <div className="h-8 w-8 rounded-full flex items-center justify-center text-base bg-secondary text-secondary-foreground">🏪</div>
+        </button>
+      )}
+
+      {hasCustomer && (
+        <button
+          onClick={() => openGoogleMapsNavigation({
+            lat: customerLat,
+            lng: customerLng,
+            address: customerAddress,
+          })}
+          className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl p-2.5 flex items-center justify-center hover:bg-card transition-colors"
+          title={`Πλοήγηση → ${customerName || 'Πελάτης'}`}
+        >
+          <div className="h-8 w-8 rounded-full flex items-center justify-center text-base bg-primary text-primary-foreground">📍</div>
         </button>
       )}
     </div>
@@ -136,6 +155,7 @@ interface DriverStaticMapProps {
   customerLat?: number | null;
   customerLng?: number | null;
   customerName?: string;
+  customerAddress?: string | null;
 }
 
 export default function DriverStaticMap({
