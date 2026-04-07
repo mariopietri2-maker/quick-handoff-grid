@@ -117,23 +117,7 @@ export default function DriverApp() {
             {isOnline ? '● Σε σύνδεση' : '○ Εκτός σύνδεσης'}
           </button>
         </div>
-        <div className="flex items-center gap-2">
-          {(activeDelivery?.delivery_address || (activeDelivery?.delivery_latitude != null && activeDelivery?.delivery_longitude != null)) && (
-            <button
-              onClick={() => {
-                openGoogleMapsNavigation({
-                  lat: activeDelivery?.delivery_latitude,
-                  lng: activeDelivery?.delivery_longitude,
-                  address: activeDelivery?.delivery_address,
-                });
-              }}
-              className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-lg flex items-center justify-center hover:bg-card transition-colors"
-              title="Πλοήγηση Google Maps"
-            >
-              <Navigation className="h-5 w-5 text-primary" />
-            </button>
-          )}
-        </div>
+        <div className="flex items-center gap-2" />
       </header>
 
       {/* Bottom sheet */}
