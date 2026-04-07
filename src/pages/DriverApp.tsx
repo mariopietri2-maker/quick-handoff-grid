@@ -117,7 +117,7 @@ export default function DriverApp() {
             {isOnline ? '● Σε σύνδεση' : '○ Εκτός σύνδεσης'}
           </button>
         </div>
-        <div className="flex items-center gap-2" />
+        
       </header>
 
       {/* Bottom sheet */}
