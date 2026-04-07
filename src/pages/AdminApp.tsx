@@ -188,8 +188,9 @@ export default function AdminApp() {
         </div>
 
         <Tabs defaultValue="analytics">
-          <TabsList className="w-full grid grid-cols-6">
+          <TabsList className="w-full grid grid-cols-8">
             <TabsTrigger value="analytics" className="font-heading">Αναλυτικά</TabsTrigger>
+            <TabsTrigger value="map" className="font-heading">Χάρτης</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Παραγγελίες</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Καταστήματα</TabsTrigger>
             <TabsTrigger value="drivers" className="font-heading">Οδηγοί</TabsTrigger>
