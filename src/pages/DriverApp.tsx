@@ -100,24 +100,25 @@ export default function DriverApp() {
       />
 
       {/* Top bar overlay */}
-      <header className="relative z-20 px-4 pt-3 pb-2 flex items-center justify-between">
+      <header className="relative z-20 px-4 pt-3 pb-2 flex items-center">
         <div className="flex items-center gap-2">
           <UserMenu />
         </div>
-        <div className="bg-card/90 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 shadow-lg border border-border">
-          <span className="text-xs text-muted-foreground font-heading">Κατάσταση</span>
-          <button
-            onClick={() => setIsOnline(!isOnline)}
-            className={`px-3 py-1 rounded-full text-sm font-heading font-bold transition-all ${
-              isOnline 
-                ? 'bg-foreground text-background' 
-                : 'bg-muted text-muted-foreground'
-            }`}
-          >
-            {isOnline ? '● Σε σύνδεση' : '○ Εκτός σύνδεσης'}
-          </button>
+        <div className="flex-1 flex justify-center">
+          <div className="bg-card/90 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 shadow-lg border border-border">
+            <span className="text-xs text-muted-foreground font-heading">Κατάσταση</span>
+            <button
+              onClick={() => setIsOnline(!isOnline)}
+              className={`px-3 py-1 rounded-full text-sm font-heading font-bold transition-all ${
+                isOnline 
+                  ? 'bg-foreground text-background' 
+                  : 'bg-muted text-muted-foreground'
+              }`}
+            >
+              {isOnline ? '● Σε σύνδεση' : '○ Εκτός σύνδεσης'}
+            </button>
+          </div>
         </div>
-        
       </header>
 
       {/* Bottom sheet */}
