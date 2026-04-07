@@ -31,7 +31,7 @@ export default function DriverApp() {
       });
   }, [user]);
   const hasActiveDelivery = !!activeDelivery;
-  const { tracking, error: locError } = useDriverLocation(isOnline && hasActiveDelivery);
+  const { tracking, error: locError } = useDriverLocation(isOnline);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (_id: string) => {};
