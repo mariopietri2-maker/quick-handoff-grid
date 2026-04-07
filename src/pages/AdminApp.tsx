@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone, MapPin } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
