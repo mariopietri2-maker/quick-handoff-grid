@@ -9,10 +9,11 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone, MapPin } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
+import AdminDriversMap from '@/components/admin/AdminDriversMap';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -187,8 +188,9 @@ export default function AdminApp() {
         </div>
 
         <Tabs defaultValue="analytics">
-          <TabsList className="w-full grid grid-cols-6">
+          <TabsList className="w-full grid grid-cols-8">
             <TabsTrigger value="analytics" className="font-heading">Αναλυτικά</TabsTrigger>
+            <TabsTrigger value="map" className="font-heading">Χάρτης</TabsTrigger>
             <TabsTrigger value="orders" className="font-heading">Παραγγελίες</TabsTrigger>
             <TabsTrigger value="stores" className="font-heading">Καταστήματα</TabsTrigger>
             <TabsTrigger value="drivers" className="font-heading">Οδηγοί</TabsTrigger>
@@ -202,6 +204,10 @@ export default function AdminApp() {
               orders={(orders.data ?? []) as any}
               profiles={(profiles.data ?? []) as any}
             />
+          </TabsContent>
+
+          <TabsContent value="map" className="mt-4">
+            <AdminDriversMap />
           </TabsContent>
 
           <TabsContent value="announcements" className="mt-4">
