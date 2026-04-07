@@ -21,6 +21,13 @@ const driverIcon = new L.DivIcon({
   className: '',
 });
 
+const storeIcon = new L.DivIcon({
+  html: `<div style="background:hsl(25,95%,53%);width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;border:3px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.3);font-size:14px;">🏪</div>`,
+  iconSize: [30, 30],
+  iconAnchor: [15, 15],
+  className: '',
+});
+
 interface DriverLocation {
   driver_id: string;
   latitude: number;
@@ -36,6 +43,15 @@ interface DriverInfo {
   code: string | null;
 }
 
+interface StoreMarker {
+  id: string;
+  name: string;
+  address: string;
+  latitude: number;
+  longitude: number;
+  is_active: boolean | null;
+}
+
 function FitAllMarkers({ positions }: { positions: [number, number][] }) {
   const map = useMap();
   useEffect(() => {
@@ -46,35 +62,37 @@ function FitAllMarkers({ positions }: { positions: [number, number][] }) {
     }
     const bounds = L.latLngBounds(positions.map(p => L.latLng(p[0], p[1])));
     map.fitBounds(bounds, { padding: [40, 40], maxZoom: 16 });
-  }, [positions.length]); // only fit on count change
+  }, [positions.length]);
   return null;
 }
 
 export default function AdminDriversMap() {
   const [locations, setLocations] = useState<DriverLocation[]>([]);
   const [driverInfos, setDriverInfos] = useState<Map<string, DriverInfo>>(new Map());
+  const [stores, setStores] = useState<StoreMarker[]>([]);
 
-  // Fetch driver names
+  // Fetch driver names + stores
   useEffect(() => {
     async function load() {
-      const [{ data: profiles }, { data: driverProfiles }] = await Promise.all([
+      const [{ data: profiles }, { data: driverProfiles }, { data: storesData }] = await Promise.all([
         supabase.from('profiles').select('user_id, full_name').eq('role', 'driver' as any),
         supabase.from('driver_profiles').select('user_id, driver_code' as any),
+        supabase.from('stores').select('id, name, address, latitude, longitude, is_active'),
       ]);
 
       const map = new Map<string, DriverInfo>();
       profiles?.forEach((p: any) => {
-        map.set(p.user_id, {
-          driver_id: p.user_id,
-          name: p.full_name || p.user_id.slice(0, 8),
-          code: null,
-        });
+        map.set(p.user_id, { driver_id: p.user_id, name: p.full_name || p.user_id.slice(0, 8), code: null });
       });
       (driverProfiles as any[])?.forEach((dp: any) => {
         const existing = map.get(dp.user_id);
         if (existing) existing.code = dp.driver_code;
       });
       setDriverInfos(map);
+
+      if (storesData) {
+        setStores(storesData.filter(s => s.latitude != null && s.longitude != null) as StoreMarker[]);
+      }
     }
     load();
   }, []);
@@ -112,9 +130,13 @@ export default function AdminDriversMap() {
     return () => { supabase.removeChannel(channel); };
   }, []);
 
-  const positions: [number, number][] = locations.map(l => [l.latitude, l.longitude]);
-  const centerLat = positions.length ? positions.reduce((s, p) => s + p[0], 0) / positions.length : 39.6650;
-  const centerLng = positions.length ? positions.reduce((s, p) => s + p[1], 0) / positions.length : 20.8537;
+  // Combine all positions for bounds fitting
+  const allPositions: [number, number][] = [
+    ...locations.map(l => [l.latitude, l.longitude] as [number, number]),
+    ...stores.map(s => [s.latitude, s.longitude] as [number, number]),
+  ];
+  const centerLat = allPositions.length ? allPositions.reduce((s, p) => s + p[0], 0) / allPositions.length : 39.6650;
+  const centerLng = allPositions.length ? allPositions.reduce((s, p) => s + p[1], 0) / allPositions.length : 20.8537;
 
   const timeSince = (isoDate: string) => {
     const diffSec = Math.round((Date.now() - new Date(isoDate).getTime()) / 1000);
@@ -126,11 +148,16 @@ export default function AdminDriversMap() {
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="font-heading">Χάρτης Οδηγών (Live)</CardTitle>
-        <Badge variant="outline" className="gap-1.5">
-          <span className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-          {locations.length} online
-        </Badge>
+        <CardTitle className="font-heading">Χάρτης Οδηγών & Καταστημάτων</CardTitle>
+        <div className="flex gap-2">
+          <Badge variant="outline" className="gap-1.5">
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            {locations.length} οδηγοί
+          </Badge>
+          <Badge variant="outline" className="gap-1.5">
+            🏪 {stores.length} καταστήματα
+          </Badge>
+        </div>
       </CardHeader>
       <CardContent>
         <div className="rounded-xl overflow-hidden border border-border" style={{ height: '450px' }}>
@@ -142,6 +169,21 @@ export default function AdminDriversMap() {
             attributionControl={false}
           >
             <TileLayer url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png" />
+
+            {/* Store markers */}
+            {stores.map(store => (
+              <Marker key={`store-${store.id}`} position={[store.latitude, store.longitude]} icon={storeIcon}>
+                <Popup>
+                  <div className="text-center space-y-1">
+                    <strong>{store.name}</strong>
+                    <div className="text-xs opacity-70">{store.address}</div>
+                    <div className="text-xs">{store.is_active ? '✅ Ενεργό' : '❌ Ανενεργό'}</div>
+                  </div>
+                </Popup>
+              </Marker>
+            ))}
+
+            {/* Driver markers */}
             {locations.map(loc => {
               const info = driverInfos.get(loc.driver_id);
               return (
@@ -159,7 +201,8 @@ export default function AdminDriversMap() {
                 </Marker>
               );
             })}
-            {positions.length > 0 && <FitAllMarkers positions={positions} />}
+
+            {allPositions.length > 0 && <FitAllMarkers positions={allPositions} />}
           </MapContainer>
         </div>
       </CardContent>
