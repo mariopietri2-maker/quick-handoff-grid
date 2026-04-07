@@ -167,6 +167,7 @@ export default function DriverStaticMap({
   customerLat,
   customerLng,
   customerName,
+  customerAddress,
 }: DriverStaticMapProps) {
   const [pos, setPos] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
   const watchRef = useRef<number | null>(null);
@@ -174,7 +175,6 @@ export default function DriverStaticMap({
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
 
-    // Always use watchPosition with high accuracy for precise GPS
     watchRef.current = navigator.geolocation.watchPosition(
       (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
       () => setPos({ lat: 39.6650, lng: 20.8537, accuracy: null }),
@@ -190,25 +190,31 @@ export default function DriverStaticMap({
   const lat = pos?.lat ?? 39.6650;
   const lng = pos?.lng ?? 20.8537;
 
-  // Collect points for fitting bounds
   const boundsPoints: [number, number][] = [];
   if (pos) boundsPoints.push([pos.lat, pos.lng]);
-  if (storeLat && storeLng) boundsPoints.push([storeLat, storeLng]);
-  if (customerLat && customerLng) boundsPoints.push([customerLat, customerLng]);
+  if (storeLat != null && storeLng != null) boundsPoints.push([storeLat, storeLng]);
+  if (customerLat != null && customerLng != null) boundsPoints.push([customerLat, customerLng]);
 
-  // Build route waypoints: driver → store → customer
   const driverToStoreWaypoints: [number, number][] = [];
   const storeToCustomerWaypoints: [number, number][] = [];
-  if (pos && storeLat && storeLng) {
+  if (pos && storeLat != null && storeLng != null) {
     driverToStoreWaypoints.push([pos.lat, pos.lng], [storeLat, storeLng]);
   }
-  if (storeLat && storeLng && customerLat && customerLng) {
+  if (storeLat != null && storeLng != null && customerLat != null && customerLng != null) {
     storeToCustomerWaypoints.push([storeLat, storeLng], [customerLat, customerLng]);
   }
 
   return (
     <div className={className}>
-      <NavigationButtons storeLat={storeLat} storeLng={storeLng} storeName={storeName} customerLat={customerLat} customerLng={customerLng} customerName={customerName} />
+      <NavigationButtons
+        storeLat={storeLat}
+        storeLng={storeLng}
+        storeName={storeName}
+        customerLat={customerLat}
+        customerLng={customerLng}
+        customerName={customerName}
+        customerAddress={customerAddress}
+      />
       <MapContainer
         center={[lat, lng]}
         zoom={14}
