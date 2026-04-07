@@ -96,6 +96,7 @@ export default function DriverApp() {
         customerLat={activeDelivery?.delivery_latitude}
         customerLng={activeDelivery?.delivery_longitude}
         customerName={customerInfo?.name}
+        customerAddress={activeDelivery?.delivery_address}
       />
 
       {/* Top bar overlay */}
