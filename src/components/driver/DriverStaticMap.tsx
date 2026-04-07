@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 // Fix default marker icons for bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;
@@ -104,7 +105,7 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
   customerLat?: number | null; customerLng?: number | null; customerName?: string;
 }) {
   const openNav = (lat: number, lng: number) => {
-    window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
+    openGoogleMapsNavigation({ lat, lng });
   };
 
   const hasStore = storeLat && storeLng;
@@ -119,7 +120,7 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
           className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl p-2.5 flex items-center justify-center hover:bg-card transition-colors"
           title={`Πλοήγηση → ${storeName || 'Κατάστημα'}`}
         >
-          <div className="h-8 w-8 rounded-full flex items-center justify-center text-base" style={{ background: 'hsl(25, 95%, 53%)' }}>🏪</div>
+          <div className="h-8 w-8 rounded-full flex items-center justify-center text-base bg-secondary text-secondary-foreground">🏪</div>
         </button>
       )}
     </div>

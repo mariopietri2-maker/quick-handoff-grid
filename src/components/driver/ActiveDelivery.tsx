@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, MapPin, ExternalLink } from 'lucide-react';
 import { Store, User } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
+import { openGoogleMapsNavigation } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
@@ -52,12 +53,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
   };
 
   const openNavigation = (lat: number | null | undefined, lng: number | null | undefined, address: string) => {
-    if (lat && lng) {
-      window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
-    } else {
-      const encoded = encodeURIComponent(address);
-      window.location.href = `geo:0,0?q=${encoded}`;
-    }
+    openGoogleMapsNavigation({ lat, lng, address });
   };
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
