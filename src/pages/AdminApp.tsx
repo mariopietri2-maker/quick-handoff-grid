@@ -206,6 +206,10 @@ export default function AdminApp() {
             />
           </TabsContent>
 
+          <TabsContent value="map" className="mt-4">
+            <AdminDriversMap />
+          </TabsContent>
+
           <TabsContent value="announcements" className="mt-4">
             <AnnouncementsManager />
           </TabsContent>
