@@ -169,35 +169,67 @@ export default function AdminApp() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="gradient-dark text-primary-foreground px-4 py-3 flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Link to="/"><ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" /></Link>
-          <Shield className="h-5 w-5" />
-          <h1 className="font-heading font-bold text-lg">Πίνακας Διαχείρισης</h1>
+      {/* Header */}
+      <header className="gradient-dark text-primary-foreground px-4 py-4 md:py-5">
+        <div className="max-w-6xl mx-auto flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <Link to="/">
+              <ArrowLeft className="h-5 w-5 text-primary-foreground/70 hover:text-primary-foreground" />
+            </Link>
+            <div className="h-9 w-9 rounded-lg gradient-primary flex items-center justify-center shadow-primary">
+              <Shield className="h-5 w-5" />
+            </div>
+            <div>
+              <h1 className="font-heading font-bold text-lg leading-tight">Πίνακας Διαχείρισης</h1>
+              <p className="text-xs text-primary-foreground/60 hidden sm:block">Επισκόπηση & διαχείριση πλατφόρμας</p>
+            </div>
+          </div>
+          <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground hover:bg-white/10">
+            Αποσύνδεση
+          </Button>
         </div>
-        <Button variant="ghost" size="sm" onClick={signOut} className="text-primary-foreground/70 hover:text-primary-foreground">Αποσύνδεση</Button>
       </header>
 
       <div className="max-w-6xl mx-auto p-4 space-y-6">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-3">
-          <StatCard icon={ShoppingBag} label="Παραγγελίες" value={orders.data?.length ?? 0} />
-          <StatCard icon={DollarSign} label="Έσοδα" value={`€${totalRevenue.toFixed(2)}`} />
-          <StatCard icon={Store} label="Καταστήματα" value={stores.data?.length ?? 0} />
-          <StatCard icon={Users} label="Χρήστες" value={profiles.data?.length ?? 0} />
-          <StatCard icon={Star} label="Μέση Βαθμ." value={avgRating} />
+        {/* Stat Cards */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3">
+          <StatCard icon={ShoppingBag} label="Παραγγελίες" value={orders.data?.length ?? 0} color="primary" />
+          <StatCard icon={DollarSign} label="Έσοδα" value={`€${totalRevenue.toFixed(2)}`} color="success" />
+          <StatCard icon={Store} label="Καταστήματα" value={stores.data?.length ?? 0} color="warning" />
+          <StatCard icon={Users} label="Χρήστες" value={profiles.data?.length ?? 0} color="info" />
+          <StatCard icon={Star} label="Μέση Βαθμ." value={avgRating} color="primary" />
         </div>
 
+        {/* Tabs */}
         <Tabs defaultValue="analytics">
-          <TabsList className="w-full grid grid-cols-8">
-            <TabsTrigger value="analytics" className="font-heading">Αναλυτικά</TabsTrigger>
-            <TabsTrigger value="map" className="font-heading">Χάρτης</TabsTrigger>
-            <TabsTrigger value="orders" className="font-heading">Παραγγελίες</TabsTrigger>
-            <TabsTrigger value="stores" className="font-heading">Καταστήματα</TabsTrigger>
-            <TabsTrigger value="drivers" className="font-heading">Οδηγοί</TabsTrigger>
-            <TabsTrigger value="users" className="font-heading">Χρήστες</TabsTrigger>
-            <TabsTrigger value="reviews" className="font-heading">Κριτικές</TabsTrigger>
-            <TabsTrigger value="announcements" className="font-heading">Ανακοινώσεις</TabsTrigger>
-          </TabsList>
+          <div className="overflow-x-auto -mx-4 px-4 pb-1">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-8 gap-1 bg-muted/60 p-1">
+              <TabsTrigger value="analytics" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <BarChart3 className="h-3.5 w-3.5" />Αναλυτικά
+              </TabsTrigger>
+              <TabsTrigger value="map" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <MapPin className="h-3.5 w-3.5" />Χάρτης
+              </TabsTrigger>
+              <TabsTrigger value="orders" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <ShoppingBag className="h-3.5 w-3.5" />Παραγγελίες
+              </TabsTrigger>
+              <TabsTrigger value="stores" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <Store className="h-3.5 w-3.5" />Καταστήματα
+              </TabsTrigger>
+              <TabsTrigger value="drivers" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <Users className="h-3.5 w-3.5" />Οδηγοί
+              </TabsTrigger>
+              <TabsTrigger value="users" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <Shield className="h-3.5 w-3.5" />Χρήστες
+              </TabsTrigger>
+              <TabsTrigger value="reviews" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <Star className="h-3.5 w-3.5" />Κριτικές
+              </TabsTrigger>
+              <TabsTrigger value="announcements" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <Megaphone className="h-3.5 w-3.5" />Ανακοινώσεις
+              </TabsTrigger>
+            </TabsList>
+          </div>
 
           <TabsContent value="analytics" className="mt-4">
             <PlatformAnalytics
@@ -493,16 +525,23 @@ export default function AdminApp() {
   );
 }
 
-function StatCard({ icon: Icon, label, value }: { icon: React.ElementType; label: string; value: string | number }) {
+const colorMap: Record<string, string> = {
+  primary: 'gradient-primary shadow-primary',
+  success: 'gradient-success',
+  warning: 'bg-warning',
+  info: 'bg-info',
+};
+
+function StatCard({ icon: Icon, label, value, color = 'primary' }: { icon: React.ElementType; label: string; value: string | number; color?: string }) {
   return (
-    <Card className="shadow-[var(--shadow-md)]">
+    <Card className="shadow-[var(--shadow-md)] hover:shadow-[var(--shadow-lg)] transition-shadow">
       <CardContent className="p-4 flex items-center gap-3">
-        <div className="h-10 w-10 rounded-lg gradient-primary shadow-primary flex items-center justify-center shrink-0">
+        <div className={`h-11 w-11 rounded-xl flex items-center justify-center shrink-0 ${colorMap[color] || 'gradient-primary shadow-primary'}`}>
           <Icon className="h-5 w-5 text-primary-foreground" />
         </div>
         <div>
           <p className="text-xs text-muted-foreground font-heading">{label}</p>
-          <p className="font-heading font-bold text-lg">{value}</p>
+          <p className="font-heading font-bold text-xl leading-tight">{value}</p>
         </div>
       </CardContent>
     </Card>
