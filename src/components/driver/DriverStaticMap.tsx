@@ -162,15 +162,6 @@ export default function DriverStaticMap({
 
   return (
     <div className={className}>
-      <NavigationButtons
-        storeLat={storeLat}
-        storeLng={storeLng}
-        storeName={storeName}
-        customerLat={customerLat}
-        customerLng={customerLng}
-        customerName={customerName}
-        customerAddress={customerAddress}
-      />
       <MapContainer
         center={[lat, lng]}
         zoom={14}
