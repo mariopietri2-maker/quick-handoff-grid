@@ -96,6 +96,7 @@ export default function DriverApp() {
         customerLat={activeDelivery?.delivery_latitude}
         customerLng={activeDelivery?.delivery_longitude}
         customerName={customerInfo?.name}
+        customerAddress={activeDelivery?.delivery_address}
       />
 
       {/* Top bar overlay */}
@@ -117,13 +118,13 @@ export default function DriverApp() {
           </button>
         </div>
         <div className="flex items-center gap-2">
-          {activeDelivery?.delivery_latitude && activeDelivery?.delivery_longitude && (
+          {(activeDelivery?.delivery_address || (activeDelivery?.delivery_latitude != null && activeDelivery?.delivery_longitude != null)) && (
             <button
               onClick={() => {
                 openGoogleMapsNavigation({
-                  lat: activeDelivery.delivery_latitude,
-                  lng: activeDelivery.delivery_longitude,
-                  address: activeDelivery.delivery_address,
+                  lat: activeDelivery?.delivery_latitude,
+                  lng: activeDelivery?.delivery_longitude,
+                  address: activeDelivery?.delivery_address,
                 });
               }}
               className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-lg flex items-center justify-center hover:bg-card transition-colors"

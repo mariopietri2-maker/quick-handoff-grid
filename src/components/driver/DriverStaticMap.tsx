@@ -100,27 +100,46 @@ function RouteLine({ waypoints, color }: { waypoints: [number, number][]; color:
   );
 }
 
-function NavigationButtons({ storeLat, storeLng, storeName, customerLat, customerLng, customerName }: {
+function NavigationButtons({
+  storeLat,
+  storeLng,
+  storeName,
+  customerLat,
+  customerLng,
+  customerName,
+  customerAddress,
+}: {
   storeLat?: number | null; storeLng?: number | null; storeName?: string;
   customerLat?: number | null; customerLng?: number | null; customerName?: string;
+  customerAddress?: string | null;
 }) {
-  const openNav = (lat: number, lng: number) => {
-    openGoogleMapsNavigation({ lat, lng });
-  };
-
-  const hasStore = storeLat && storeLng;
-  const hasCustomer = customerLat && customerLng;
+  const hasStore = storeLat != null && storeLng != null;
+  const hasCustomer = customerAddress || (customerLat != null && customerLng != null);
   if (!hasStore && !hasCustomer) return null;
 
   return (
     <div className="absolute top-16 right-4 z-[1000] flex flex-col gap-2">
       {hasStore && (
         <button
-          onClick={() => openNav(storeLat!, storeLng!)}
+          onClick={() => openGoogleMapsNavigation({ lat: storeLat, lng: storeLng })}
           className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl p-2.5 flex items-center justify-center hover:bg-card transition-colors"
           title={`Πλοήγηση → ${storeName || 'Κατάστημα'}`}
         >
           <div className="h-8 w-8 rounded-full flex items-center justify-center text-base bg-secondary text-secondary-foreground">🏪</div>
+        </button>
+      )}
+
+      {hasCustomer && (
+        <button
+          onClick={() => openGoogleMapsNavigation({
+            lat: customerLat,
+            lng: customerLng,
+            address: customerAddress,
+          })}
+          className="bg-card/90 backdrop-blur-md border border-border shadow-lg rounded-xl p-2.5 flex items-center justify-center hover:bg-card transition-colors"
+          title={`Πλοήγηση → ${customerName || 'Πελάτης'}`}
+        >
+          <div className="h-8 w-8 rounded-full flex items-center justify-center text-base bg-primary text-primary-foreground">📍</div>
         </button>
       )}
     </div>
@@ -136,6 +155,7 @@ interface DriverStaticMapProps {
   customerLat?: number | null;
   customerLng?: number | null;
   customerName?: string;
+  customerAddress?: string | null;
 }
 
 export default function DriverStaticMap({
@@ -147,6 +167,7 @@ export default function DriverStaticMap({
   customerLat,
   customerLng,
   customerName,
+  customerAddress,
 }: DriverStaticMapProps) {
   const [pos, setPos] = useState<{ lat: number; lng: number; accuracy: number | null } | null>(null);
   const watchRef = useRef<number | null>(null);
@@ -154,7 +175,6 @@ export default function DriverStaticMap({
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
 
-    // Always use watchPosition with high accuracy for precise GPS
     watchRef.current = navigator.geolocation.watchPosition(
       (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy }),
       () => setPos({ lat: 39.6650, lng: 20.8537, accuracy: null }),
@@ -170,25 +190,31 @@ export default function DriverStaticMap({
   const lat = pos?.lat ?? 39.6650;
   const lng = pos?.lng ?? 20.8537;
 
-  // Collect points for fitting bounds
   const boundsPoints: [number, number][] = [];
   if (pos) boundsPoints.push([pos.lat, pos.lng]);
-  if (storeLat && storeLng) boundsPoints.push([storeLat, storeLng]);
-  if (customerLat && customerLng) boundsPoints.push([customerLat, customerLng]);
+  if (storeLat != null && storeLng != null) boundsPoints.push([storeLat, storeLng]);
+  if (customerLat != null && customerLng != null) boundsPoints.push([customerLat, customerLng]);
 
-  // Build route waypoints: driver → store → customer
   const driverToStoreWaypoints: [number, number][] = [];
   const storeToCustomerWaypoints: [number, number][] = [];
-  if (pos && storeLat && storeLng) {
+  if (pos && storeLat != null && storeLng != null) {
     driverToStoreWaypoints.push([pos.lat, pos.lng], [storeLat, storeLng]);
   }
-  if (storeLat && storeLng && customerLat && customerLng) {
+  if (storeLat != null && storeLng != null && customerLat != null && customerLng != null) {
     storeToCustomerWaypoints.push([storeLat, storeLng], [customerLat, customerLng]);
   }
 
   return (
     <div className={className}>
-      <NavigationButtons storeLat={storeLat} storeLng={storeLng} storeName={storeName} customerLat={customerLat} customerLng={customerLng} customerName={customerName} />
+      <NavigationButtons
+        storeLat={storeLat}
+        storeLng={storeLng}
+        storeName={storeName}
+        customerLat={customerLat}
+        customerLng={customerLng}
+        customerName={customerName}
+        customerAddress={customerAddress}
+      />
       <MapContainer
         center={[lat, lng]}
         zoom={14}
