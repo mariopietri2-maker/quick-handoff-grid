@@ -13,6 +13,7 @@ import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChar
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
+import AdminDriversMap from '@/components/admin/AdminDriversMap';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
