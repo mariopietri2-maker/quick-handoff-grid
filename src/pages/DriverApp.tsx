@@ -120,9 +120,11 @@ export default function DriverApp() {
           {activeDelivery?.delivery_latitude && activeDelivery?.delivery_longitude && (
             <button
               onClick={() => {
-                const lat = activeDelivery.delivery_latitude;
-                const lng = activeDelivery.delivery_longitude;
-                window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
+                openGoogleMapsNavigation({
+                  lat: activeDelivery.delivery_latitude,
+                  lng: activeDelivery.delivery_longitude,
+                  address: activeDelivery.delivery_address,
+                });
               }}
               className="h-10 w-10 rounded-full bg-card/90 backdrop-blur-md border border-border shadow-lg flex items-center justify-center hover:bg-card transition-colors"
               title="Πλοήγηση Google Maps"

@@ -53,12 +53,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
   };
 
   const openNavigation = (lat: number | null | undefined, lng: number | null | undefined, address: string) => {
-    if (lat && lng) {
-      window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
-    } else {
-      const encoded = encodeURIComponent(address);
-      window.location.href = `geo:0,0?q=${encoded}`;
-    }
+    openGoogleMapsNavigation({ lat, lng, address });
   };
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
