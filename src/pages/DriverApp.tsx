@@ -14,6 +14,7 @@ import { useDriverOrders } from '@/hooks/useOrders';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverStaticMap from '@/components/driver/DriverStaticMap';
+import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();

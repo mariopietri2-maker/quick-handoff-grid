@@ -2,6 +2,7 @@ import { useEffect, useState, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, Polyline, Circle, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
+import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 // Fix default marker icons for bundlers
 delete (L.Icon.Default.prototype as any)._getIconUrl;

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, MapPin, ExternalLink } from 'lucide-react';
 import { Store, User } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
+import { openGoogleMapsNavigation } from '@/lib/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 
