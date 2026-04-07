@@ -105,7 +105,7 @@ function NavigationButtons({ storeLat, storeLng, storeName, customerLat, custome
   customerLat?: number | null; customerLng?: number | null; customerName?: string;
 }) {
   const openNav = (lat: number, lng: number) => {
-    window.location.href = `geo:${lat},${lng}?q=${lat},${lng}`;
+    openGoogleMapsNavigation({ lat, lng });
   };
 
   const hasStore = storeLat && storeLng;
