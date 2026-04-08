@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Car, Radio, Navigation, Menu } from 'lucide-react';
+import { Car, Radio, Navigation, Menu, Wallet, Users } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -7,10 +7,11 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
-
+import { DriverWallet } from '@/components/driver/DriverWallet';
+import { DriverReferral } from '@/components/driver/DriverReferral';
+import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { Badge } from '@/components/ui/badge';
 import { useDriverOrders } from '@/hooks/useOrders';
-
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverStaticMap from '@/components/driver/DriverStaticMap';
@@ -134,19 +135,27 @@ export default function DriverApp() {
 
           <Tabs defaultValue="offers">
             <TabsList className="w-full mb-4">
-              <TabsTrigger value="offers" className="flex-1 font-heading relative">
-                <Radio className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="offers" className="flex-1 font-heading relative text-xs px-2">
+                <Radio className="h-3.5 w-3.5 mr-1" />
                 Προσφορές
                 {offers.length > 0 && (
-                  <Badge className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center gradient-primary text-primary-foreground text-xs">
+                  <Badge className="ml-1 h-4 w-4 p-0 flex items-center justify-center gradient-primary text-primary-foreground text-[10px]">
                     {offers.length}
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="active" className="flex-1 font-heading">
-                <Car className="h-4 w-4 mr-1.5" />
+              <TabsTrigger value="active" className="flex-1 font-heading text-xs px-2">
+                <Car className="h-3.5 w-3.5 mr-1" />
                 Ενεργή
                 {activeDelivery && <span className="ml-1 h-2 w-2 rounded-full bg-success inline-block" />}
+              </TabsTrigger>
+              <TabsTrigger value="wallet" className="flex-1 font-heading text-xs px-2">
+                <Wallet className="h-3.5 w-3.5 mr-1" />
+                Πορτοφόλι
+              </TabsTrigger>
+              <TabsTrigger value="referral" className="flex-1 font-heading text-xs px-2">
+                <Users className="h-3.5 w-3.5 mr-1" />
+                Πρόσκληση
               </TabsTrigger>
             </TabsList>
 
@@ -182,6 +191,9 @@ export default function DriverApp() {
                       storeAddress: offer.delivery_address || 'Τοποθεσία καταστήματος',
                       deliveryAddress: offer.delivery_address || 'Τοποθεσία πελάτη',
                       estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
+                      basePay: Number(offer.delivery_fee ?? 0),
+                      tipAmount: Number(offer.tip_amount ?? 0),
+                      perKmRate: 0.50,
                       totalDistance: 0,
                       estimatedTime: offer.estimated_prep_time ?? 20,
                       itemCount: offer.order_items?.length ?? 0,
@@ -241,9 +253,20 @@ export default function DriverApp() {
               )}
             </TabsContent>
 
+            <TabsContent value="wallet">
+              <DriverWallet />
+            </TabsContent>
+
+            <TabsContent value="referral">
+              <DriverReferral />
+            </TabsContent>
+
           </Tabs>
         </div>
       </div>
+
+      {/* Floating Support Button */}
+      <DriverSupportButton orderId={activeDelivery?.id} />
     </div>
   );
 }
