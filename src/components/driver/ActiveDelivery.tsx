@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, MapPin, ExternalLink } from 'lucide-react';
+import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { Store, User } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
@@ -188,6 +189,9 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
           ))}
         </CardContent>
       </Card>
+
+      {/* Wait Time Bonus */}
+      <WaitTimeBonusBanner orderId={delivery.id} status={delivery.status} />
 
       {/* Pickup Checklist */}
       {delivery.status === 'arrived' && (
