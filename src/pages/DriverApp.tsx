@@ -1,10 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Car, Radio, Navigation, Menu, Wallet, Users } from 'lucide-react';
+import { Car, Radio, Navigation, Wallet, Users, Zap } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { DriverWallet } from '@/components/driver/DriverWallet';
@@ -15,30 +14,30 @@ import { useDriverOrders } from '@/hooks/useOrders';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverStaticMap from '@/components/driver/DriverStaticMap';
-import { openGoogleMapsNavigation } from '@/lib/navigation';
+
+type DriverTab = 'offers' | 'active' | 'wallet' | 'referral';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
+  const [activeTab, setActiveTab] = useState<DriverTab>('offers');
   const { user } = useAuth();
 
-  // Check if driver is approved (is_active)
   useEffect(() => {
     if (!user) return;
     supabase.from('driver_profiles').select('is_active').eq('user_id', user.id).maybeSingle()
       .then(({ data }) => {
-        // No profile row yet = treat as active (profile will be created later)
         setDriverActive(data ? data.is_active : true);
       });
   }, [user]);
+
   const hasActiveDelivery = !!activeDelivery;
   const { tracking, error: locError } = useDriverLocation(isOnline);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (_id: string) => {};
 
-  // Fetch store & customer info for active delivery
   useEffect(() => {
     if (!activeDelivery) {
       setStoreInfo(null);
@@ -57,19 +56,18 @@ export default function DriverApp() {
     }
   }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id]);
 
-  // Show pending approval screen
   if (driverActive === false) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
+      <div className="min-h-screen bg-[hsl(225,25%,8%)] flex items-center justify-center p-4">
         <div className="text-center max-w-md space-y-4">
-          <div className="h-16 w-16 rounded-full bg-amber-100 flex items-center justify-center mx-auto">
-            <Car className="h-8 w-8 text-amber-600" />
+          <div className="h-20 w-20 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto border border-warning/20">
+            <Car className="h-10 w-10 text-warning" />
           </div>
-          <h1 className="font-heading text-2xl font-bold">Αναμονή Έγκρισης</h1>
-          <p className="text-muted-foreground">
-            Ο λογαριασμός σας είναι σε αναμονή έγκρισης από τον διαχειριστή. Θα ενημερωθείτε μόλις εγκριθεί.
+          <h1 className="font-heading text-2xl font-bold text-[hsl(220,14%,96%)]">Αναμονή Έγκρισης</h1>
+          <p className="text-[hsl(220,10%,55%)]">
+            Ο λογαριασμός σας είναι σε αναμονή έγκρισης από τον διαχειριστή.
           </p>
-          <Button variant="outline" onClick={() => window.location.reload()}>
+          <Button variant="outline" onClick={() => window.location.reload()} className="border-[hsl(225,15%,25%)] text-[hsl(220,14%,96%)] hover:bg-[hsl(225,20%,16%)]">
             Έλεγχος κατάστασης
           </Button>
         </div>
@@ -79,15 +77,22 @@ export default function DriverApp() {
 
   if (driverActive === null && !loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="min-h-screen bg-[hsl(225,25%,8%)] flex items-center justify-center">
+        <div className="h-8 w-8 border-4 border-[hsl(145,65%,42%)] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
+  const tabs: { key: DriverTab; icon: React.ElementType; label: string; badge?: number | boolean }[] = [
+    { key: 'offers', icon: Radio, label: 'Προσφορές', badge: offers.length > 0 ? offers.length : undefined },
+    { key: 'active', icon: Zap, label: 'Ενεργή', badge: !!activeDelivery },
+    { key: 'wallet', icon: Wallet, label: 'Πορτοφόλι' },
+    { key: 'referral', icon: Users, label: 'Πρόσκληση' },
+  ];
+
   return (
-    <div className="h-screen flex flex-col relative overflow-hidden bg-background">
-      {/* Full-screen map background */}
+    <div className="driver-shell h-screen flex flex-col relative overflow-hidden bg-[hsl(var(--driver-bg))]">
+      {/* Full-screen map */}
       <DriverStaticMap
         className="absolute inset-0 z-0"
         liveMode={hasActiveDelivery}
@@ -100,85 +105,106 @@ export default function DriverApp() {
         customerAddress={activeDelivery?.delivery_address}
       />
 
-      {/* Top bar overlay */}
+      {/* Premium glass header */}
       <header className="relative z-20 px-4 pt-3 pb-2 flex items-center">
-        <div className="flex items-center gap-2">
+        <div className="flex items-center">
           <UserMenu />
         </div>
         <div className="flex-1 flex justify-center">
-          <div className="bg-card/90 backdrop-blur-md rounded-full px-4 py-2 flex items-center gap-2 shadow-lg border border-border">
-            <span className="text-xs text-muted-foreground font-heading">Κατάσταση</span>
-            <button
-              onClick={() => setIsOnline(!isOnline)}
-              className={`px-3 py-1 rounded-full text-sm font-heading font-bold transition-all ${
-                isOnline 
-                  ? 'bg-foreground text-background' 
-                  : 'bg-muted text-muted-foreground'
-              }`}
-            >
-              {isOnline ? '● Σε σύνδεση' : '○ Εκτός σύνδεσης'}
-            </button>
-          </div>
+          <button
+            onClick={() => setIsOnline(!isOnline)}
+            className={`driver-glass rounded-full px-5 py-2.5 flex items-center gap-2.5 transition-all duration-300 ${
+              isOnline ? 'driver-glow-green' : ''
+            }`}
+          >
+            <span className={`h-2.5 w-2.5 rounded-full transition-colors ${
+              isOnline ? 'bg-[hsl(145,65%,42%)] animate-pulse' : 'bg-[hsl(220,10%,40%)]'
+            }`} />
+            <span className={`text-sm font-heading font-semibold ${
+              isOnline ? 'text-[hsl(145,65%,70%)]' : 'text-[hsl(220,10%,55%)]'
+            }`}>
+              {isOnline ? 'Online' : 'Offline'}
+            </span>
+          </button>
         </div>
+        <div className="w-10" /> {/* Spacer for centering */}
       </header>
 
-      {/* Bottom sheet */}
-      <div className="relative z-10 mt-auto bg-card rounded-t-3xl shadow-[0_-4px_30px_rgba(0,0,0,0.12)] border-t border-border flex flex-col max-h-[65vh] overflow-hidden">
+      {/* Bottom sheet with premium dark glass */}
+      <div className="relative z-10 mt-auto driver-gradient-surface rounded-t-[28px] border-t border-[hsl(225,15%,22%)] flex flex-col max-h-[65vh] overflow-hidden"
+        style={{ boxShadow: '0 -8px 40px hsl(225 25% 5% / 0.5)' }}
+      >
         {/* Drag handle */}
-        <div className="flex justify-center pt-3 pb-2">
-          <div className="w-10 h-1 rounded-full bg-muted-foreground/30" />
+        <div className="flex justify-center pt-3 pb-1">
+          <div className="w-9 h-1 rounded-full bg-[hsl(225,15%,30%)]" />
         </div>
 
-        <div className="flex-1 overflow-y-auto px-4 pb-6">
+        {/* Tab bar */}
+        <div className="flex px-3 pb-3 gap-1">
+          {tabs.map(tab => {
+            const Icon = tab.icon;
+            const isActive = activeTab === tab.key;
+            return (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key)}
+                className={`flex-1 flex flex-col items-center gap-1 py-2.5 rounded-xl transition-all duration-200 relative ${
+                  isActive
+                    ? 'bg-[hsl(225,18%,18%)] text-[hsl(145,65%,60%)]'
+                    : 'text-[hsl(220,10%,45%)] hover:text-[hsl(220,10%,65%)]'
+                }`}
+              >
+                <div className="relative">
+                  <Icon className="h-4 w-4" />
+                  {typeof tab.badge === 'number' && tab.badge > 0 && (
+                    <span className="absolute -top-1.5 -right-2.5 h-4 min-w-[16px] px-1 rounded-full bg-primary text-primary-foreground text-[9px] font-bold flex items-center justify-center">
+                      {tab.badge}
+                    </span>
+                  )}
+                  {tab.badge === true && (
+                    <span className="absolute -top-0.5 -right-1 h-2 w-2 rounded-full bg-[hsl(145,65%,42%)]" />
+                  )}
+                </div>
+                <span className="text-[10px] font-heading font-medium">{tab.label}</span>
+              </button>
+            );
+          })}
+        </div>
 
+        {/* Content area */}
+        <div className="flex-1 overflow-y-auto px-4 pb-8">
           <AnnouncementsBanner audience="drivers" />
 
-          <Tabs defaultValue="offers">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="offers" className="flex-1 font-heading relative text-xs px-2">
-                <Radio className="h-3.5 w-3.5 mr-1" />
-                Προσφορές
-                {offers.length > 0 && (
-                  <Badge className="ml-1 h-4 w-4 p-0 flex items-center justify-center gradient-primary text-primary-foreground text-[10px]">
-                    {offers.length}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="active" className="flex-1 font-heading text-xs px-2">
-                <Car className="h-3.5 w-3.5 mr-1" />
-                Ενεργή
-                {activeDelivery && <span className="ml-1 h-2 w-2 rounded-full bg-success inline-block" />}
-              </TabsTrigger>
-              <TabsTrigger value="wallet" className="flex-1 font-heading text-xs px-2">
-                <Wallet className="h-3.5 w-3.5 mr-1" />
-                Πορτοφόλι
-              </TabsTrigger>
-              <TabsTrigger value="referral" className="flex-1 font-heading text-xs px-2">
-                <Users className="h-3.5 w-3.5 mr-1" />
-                Πρόσκληση
-              </TabsTrigger>
-            </TabsList>
-
-            <TabsContent value="offers" className="space-y-4">
+          {/* OFFERS TAB */}
+          {activeTab === 'offers' && (
+            <div className="space-y-4">
               {!isOnline ? (
-                <div className="text-center py-12">
-                  <p className="text-muted-foreground font-heading">Είστε εκτός σύνδεσης</p>
-                  <p className="text-sm text-muted-foreground mt-1">Συνδεθείτε για να λαμβάνετε προσφορές παράδοσης</p>
+                <div className="text-center py-16">
+                  <div className="h-16 w-16 rounded-2xl bg-[hsl(225,18%,16%)] flex items-center justify-center mx-auto mb-4 border border-[hsl(225,15%,22%)]">
+                    <Radio className="h-7 w-7 text-[hsl(220,10%,40%)]" />
+                  </div>
+                  <p className="font-heading font-semibold text-[hsl(220,14%,96%)]">Εκτός Σύνδεσης</p>
+                  <p className="text-sm text-[hsl(220,10%,45%)] mt-1 max-w-[240px] mx-auto">
+                    Ενεργοποιήστε τη σύνδεση για να λαμβάνετε παραγγελίες
+                  </p>
                 </div>
               ) : loading ? (
-                <div className="text-center py-12">
-                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-muted-foreground font-heading">Φόρτωση προσφορών...</p>
+                <div className="text-center py-16">
+                  <div className="h-10 w-10 border-3 border-[hsl(145,65%,42%)] border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+                  <p className="text-[hsl(220,10%,55%)] font-heading text-sm">Αναζήτηση προσφορών...</p>
                 </div>
               ) : offers.length === 0 ? (
-                <div className="text-center py-12">
-                  <h2 className="font-heading font-bold text-xl text-foreground mb-2">Είμαι Διαθέσιμος</h2>
-                  <p className="text-sm text-muted-foreground">
-                    Αναμονή για νέες προσφορές παράδοσης. Θα ειδοποιηθείτε όταν έρθει κάποια.
+                <div className="text-center py-16">
+                  <div className="h-20 w-20 rounded-full bg-[hsl(145,65%,42%)/0.08] flex items-center justify-center mx-auto mb-4 border border-[hsl(145,65%,42%)/0.15]">
+                    <Zap className="h-8 w-8 text-[hsl(145,65%,50%)]" />
+                  </div>
+                  <h2 className="font-heading font-bold text-lg text-[hsl(220,14%,96%)]">Έτοιμος για Παραγγελίες</h2>
+                  <p className="text-sm text-[hsl(220,10%,45%)] mt-1.5 max-w-[260px] mx-auto">
+                    Θα ειδοποιηθείτε αμέσως μόλις εμφανιστεί νέα παραγγελία
                   </p>
-                  <div className="mt-4 flex items-center justify-center gap-2 text-sm text-success">
-                    <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                    Ακρόαση...
+                  <div className="mt-5 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(145,65%,42%)/0.08] border border-[hsl(145,65%,42%)/0.15]">
+                    <span className="h-2 w-2 rounded-full bg-[hsl(145,65%,42%)] animate-pulse" />
+                    <span className="text-xs font-heading font-medium text-[hsl(145,65%,60%)]">Live • Ακρόαση</span>
                   </div>
                 </div>
               ) : (
@@ -203,21 +229,24 @@ export default function DriverApp() {
                   />
                 ))
               )}
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="active">
+          {/* ACTIVE TAB */}
+          {activeTab === 'active' && (
+            <div>
               {activeDelivery ? (
                 <>
                   {tracking && (
-                    <div className="mb-3 flex items-center gap-2 p-2.5 rounded-lg bg-success/10 border border-success/20">
-                      <Navigation className="h-4 w-4 text-success animate-pulse" />
-                      <span className="text-xs font-heading text-success">Κοινοποίηση ζωντανής τοποθεσίας στον πελάτη</span>
+                    <div className="mb-3 flex items-center gap-2 p-2.5 rounded-xl bg-[hsl(145,65%,42%)/0.08] border border-[hsl(145,65%,42%)/0.15]">
+                      <Navigation className="h-4 w-4 text-[hsl(145,65%,50%)] animate-pulse" />
+                      <span className="text-xs font-heading font-medium text-[hsl(145,65%,60%)]">Ζωντανή τοποθεσία κοινοποιείται</span>
                     </div>
                   )}
                   {locError && (
-                    <div className="mb-3 flex items-center gap-2 p-2.5 rounded-lg bg-warning/10 border border-warning/20">
+                    <div className="mb-3 flex items-center gap-2 p-2.5 rounded-xl bg-warning/8 border border-warning/15">
                       <Navigation className="h-4 w-4 text-warning" />
-                      <span className="text-xs font-heading text-warning">GPS μη διαθέσιμο: {locError}</span>
+                      <span className="text-xs font-heading text-warning">GPS: {locError}</span>
                     </div>
                   )}
                   <ActiveDelivery
@@ -245,27 +274,26 @@ export default function DriverApp() {
                   />
                 </>
               ) : (
-                <div className="text-center py-12">
-                  <Car className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="font-heading text-foreground">Καμία ενεργή παράδοση</p>
-                  <p className="text-sm text-muted-foreground mt-1">Αποδεχτείτε μια προσφορά για να ξεκινήσετε</p>
+                <div className="text-center py-16">
+                  <div className="h-16 w-16 rounded-2xl bg-[hsl(225,18%,16%)] flex items-center justify-center mx-auto mb-4 border border-[hsl(225,15%,22%)]">
+                    <Car className="h-7 w-7 text-[hsl(220,10%,40%)]" />
+                  </div>
+                  <p className="font-heading font-semibold text-[hsl(220,14%,96%)]">Καμία Ενεργή Παράδοση</p>
+                  <p className="text-sm text-[hsl(220,10%,45%)] mt-1">Αποδεχτείτε μια παραγγελία για να ξεκινήσετε</p>
                 </div>
               )}
-            </TabsContent>
+            </div>
+          )}
 
-            <TabsContent value="wallet">
-              <DriverWallet />
-            </TabsContent>
+          {/* WALLET TAB */}
+          {activeTab === 'wallet' && <DriverWallet />}
 
-            <TabsContent value="referral">
-              <DriverReferral />
-            </TabsContent>
-
-          </Tabs>
+          {/* REFERRAL TAB */}
+          {activeTab === 'referral' && <DriverReferral />}
         </div>
       </div>
 
-      {/* Floating Support Button */}
+      {/* Floating Support */}
       <DriverSupportButton orderId={activeDelivery?.id} />
     </div>
   );

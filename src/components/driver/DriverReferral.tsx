@@ -1,7 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Users, Copy, Gift, CheckCircle2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -25,7 +23,6 @@ export function DriverReferral() {
         setReferralCode(data[0].referral_code);
         setReferrals(data);
       } else {
-        // Generate new referral code
         const code = `GRID-${user.id.slice(0, 6).toUpperCase()}`;
         const { data: newRef } = await supabase
           .from('driver_referrals')
@@ -45,7 +42,7 @@ export function DriverReferral() {
   const copyCode = () => {
     if (referralCode) {
       navigator.clipboard.writeText(referralCode);
-      toast({ title: 'Αντιγράφηκε!', description: 'Ο κωδικός αντιγράφηκε στο πρόχειρο' });
+      toast({ title: 'Αντιγράφηκε!', description: 'Κωδικός στο πρόχειρο' });
     }
   };
 
@@ -55,38 +52,42 @@ export function DriverReferral() {
   if (loading) return null;
 
   return (
-    <div className="space-y-4">
-      <Card className="gradient-dark overflow-hidden">
-        <CardContent className="p-6 text-center">
-          <Gift className="h-10 w-10 text-warning mx-auto mb-2" />
-          <h3 className="font-heading font-bold text-xl text-primary-foreground">Κάλεσε Φίλους, Κέρδισε!</h3>
-          <p className="text-sm text-primary-foreground/70 mt-1">
-            Κέρδισε 10€ για κάθε οδηγό που εγγράφεται με τον κωδικό σου
-          </p>
-          <div className="mt-4 bg-white/10 rounded-xl p-3 flex items-center justify-between">
-            <span className="font-mono font-bold text-lg text-primary-foreground">{referralCode}</span>
-            <Button variant="ghost" size="sm" onClick={copyCode} className="text-primary-foreground hover:bg-white/10">
-              <Copy className="h-4 w-4" />
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
+    <div className="space-y-3">
+      {/* Hero */}
+      <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[hsl(225,20%,14%)] to-[hsl(225,25%,10%)] border border-[hsl(225,15%,20%)] p-6 text-center"
+        style={{ boxShadow: '0 8px 32px hsl(225 25% 5% / 0.4)' }}
+      >
+        <div className="h-14 w-14 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-3 border border-warning/20">
+          <Gift className="h-7 w-7 text-warning" />
+        </div>
+        <h3 className="font-heading font-bold text-lg text-[hsl(220,14%,96%)]">Κάλεσε & Κέρδισε</h3>
+        <p className="text-xs text-[hsl(220,10%,45%)] mt-1 max-w-[240px] mx-auto">
+          10€ μπόνους για κάθε οδηγό που εγγράφεται με τον κωδικό σου
+        </p>
 
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="shadow-[var(--shadow-sm)]">
-          <CardContent className="p-3 text-center">
-            <Users className="h-5 w-5 text-primary mx-auto mb-1" />
-            <p className="text-xs text-muted-foreground">Προσκλήσεις</p>
-            <p className="font-heading font-bold text-lg text-foreground">{referrals.length}</p>
-          </CardContent>
-        </Card>
-        <Card className="shadow-[var(--shadow-sm)]">
-          <CardContent className="p-3 text-center">
-            <CheckCircle2 className="h-5 w-5 text-success mx-auto mb-1" />
-            <p className="text-xs text-muted-foreground">Κερδίσατε</p>
-            <p className="font-heading font-bold text-lg text-success">{totalBonus}€</p>
-          </CardContent>
-        </Card>
+        <div className="mt-4 rounded-xl bg-[hsl(225,18%,18%)] border border-[hsl(225,15%,25%)] p-3 flex items-center justify-between">
+          <span className="font-mono font-bold text-lg text-[hsl(145,65%,60%)] tracking-wider">{referralCode}</span>
+          <button
+            onClick={copyCode}
+            className="h-9 w-9 rounded-lg bg-[hsl(225,20%,22%)] flex items-center justify-center hover:bg-[hsl(225,20%,26%)] transition-colors"
+          >
+            <Copy className="h-4 w-4 text-[hsl(220,10%,60%)]" />
+          </button>
+        </div>
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-xl bg-[hsl(225,20%,12%)] border border-[hsl(225,15%,20%)] p-4 text-center">
+          <Users className="h-5 w-5 text-primary mx-auto mb-1.5" />
+          <p className="text-[10px] text-[hsl(220,10%,45%)] uppercase tracking-wider">Προσκλήσεις</p>
+          <p className="font-heading font-bold text-xl text-[hsl(220,14%,96%)]">{referrals.length}</p>
+        </div>
+        <div className="rounded-xl bg-[hsl(225,20%,12%)] border border-[hsl(225,15%,20%)] p-4 text-center">
+          <CheckCircle2 className="h-5 w-5 text-[hsl(145,65%,50%)] mx-auto mb-1.5" />
+          <p className="text-[10px] text-[hsl(220,10%,45%)] uppercase tracking-wider">Κερδίσατε</p>
+          <p className="font-heading font-bold text-xl text-[hsl(145,65%,55%)]">{totalBonus}€</p>
+        </div>
       </div>
     </div>
   );
