@@ -13,6 +13,10 @@ interface OrderOffer {
   totalDistance: number;
   estimatedTime: number;
   itemCount: number;
+  perKmRate?: number;
+  basePay?: number;
+  deliveryFee?: number;
+  tipAmount?: number;
 }
 
 interface OrderOfferCardProps {
@@ -81,9 +85,23 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
             </div>
           </div>
         </div>
-        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-          <Package className="h-4 w-4" />
-          <span>{offer.itemCount} προϊόντα</span>
+        {/* Payout breakdown */}
+        <div className="bg-muted/50 rounded-lg p-3 space-y-1.5">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground flex items-center gap-1.5">
+              <Package className="h-3.5 w-3.5" /> {offer.itemCount} προϊόντα
+            </span>
+            <span className="text-muted-foreground">
+              {offer.totalDistance > 0 ? `${(offer.perKmRate ?? 0.50).toFixed(2)}€/χλμ` : ''}
+            </span>
+          </div>
+          {(offer.basePay !== undefined || offer.tipAmount !== undefined) && (
+            <div className="flex items-center justify-between text-xs text-muted-foreground border-t border-border pt-1.5">
+              <span>Βάση: {(offer.basePay ?? 0).toFixed(2)}€</span>
+              <span>Φιλοδώρημα: {(offer.tipAmount ?? 0).toFixed(2)}€</span>
+              <span className="font-bold text-foreground">Σύνολο: {offer.estimatedPayout.toFixed(2)}€</span>
+            </div>
+          )}
         </div>
         <div className="flex gap-3 pt-2">
           <Button
