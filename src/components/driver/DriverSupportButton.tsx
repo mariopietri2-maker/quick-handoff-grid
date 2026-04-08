@@ -1,6 +1,5 @@
 import { useState } from 'react';
-import { Headphones, AlertTriangle, Camera, Car, Smartphone, MessageCircle, X, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
+import { Headphones, AlertTriangle, Car, Smartphone, MessageCircle, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,10 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 const categories = [
-  { key: 'emergency', label: 'Έκτακτη Ανάγκη', icon: AlertTriangle, color: 'text-destructive bg-destructive/10' },
-  { key: 'customer_issue', label: 'Πρόβλημα Πελάτη', icon: MessageCircle, color: 'text-warning bg-warning/10' },
-  { key: 'vehicle_issue', label: 'Πρόβλημα Οχήματος', icon: Car, color: 'text-primary bg-primary/10' },
-  { key: 'app_issue', label: 'Πρόβλημα Εφαρμογής', icon: Smartphone, color: 'text-muted-foreground bg-muted' },
+  { key: 'emergency', label: 'Έκτακτο', icon: AlertTriangle, color: 'text-primary bg-primary/10 border-primary/20' },
+  { key: 'customer_issue', label: 'Πελάτης', icon: MessageCircle, color: 'text-warning bg-warning/10 border-warning/20' },
+  { key: 'vehicle_issue', label: 'Όχημα', icon: Car, color: 'text-[hsl(145,65%,50%)] bg-[hsl(145,65%,42%)/0.1] border-[hsl(145,65%,42%)/0.2]' },
+  { key: 'app_issue', label: 'Εφαρμογή', icon: Smartphone, color: 'text-[hsl(220,10%,55%)] bg-[hsl(225,18%,16%)] border-[hsl(225,15%,22%)]' },
 ];
 
 export function DriverSupportButton({ orderId }: { orderId?: string }) {
@@ -32,9 +31,9 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     });
     setSubmitting(false);
     if (error) {
-      toast({ title: 'Σφάλμα', description: 'Δεν ήταν δυνατή η υποβολή', variant: 'destructive' });
+      toast({ title: 'Σφάλμα', description: 'Αποτυχία υποβολής', variant: 'destructive' });
     } else {
-      toast({ title: 'Υποβλήθηκε!', description: 'Ο διαχειριστής θα σας απαντήσει σύντομα' });
+      toast({ title: 'Υποβλήθηκε!', description: 'Θα απαντήσουμε σύντομα' });
       setOpen(false);
       setCategory(null);
       setDescription('');
@@ -45,58 +44,54 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-50 h-14 w-14 rounded-full bg-destructive text-destructive-foreground shadow-lg flex items-center justify-center animate-in slide-in-from-right-4"
+        className="fixed bottom-24 right-4 z-50 h-12 w-12 rounded-xl bg-primary shadow-[0_4px_16px_hsl(0,85%,50%/0.35)] flex items-center justify-center active:scale-95 transition-transform"
         aria-label="Βοήθεια"
       >
-        <Headphones className="h-6 w-6" />
+        <Headphones className="h-5 w-5 text-primary-foreground" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto bg-[hsl(225,20%,12%)] border-[hsl(225,15%,22%)] text-[hsl(220,14%,96%)]">
           <DialogHeader>
-            <DialogTitle className="font-heading text-xl">Χρειάζεστε Βοήθεια;</DialogTitle>
+            <DialogTitle className="font-heading text-lg">Χρειάζεστε Βοήθεια;</DialogTitle>
           </DialogHeader>
 
           {!category ? (
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
               {categories.map(cat => {
                 const Icon = cat.icon;
                 return (
                   <button
                     key={cat.key}
                     onClick={() => setCategory(cat.key)}
-                    className="flex flex-col items-center gap-2 p-4 rounded-xl border border-border hover:border-primary/40 transition-colors"
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors hover:brightness-110 ${cat.color}`}
                   >
-                    <div className={`h-12 w-12 rounded-full flex items-center justify-center ${cat.color}`}>
-                      <Icon className="h-6 w-6" />
-                    </div>
-                    <span className="text-sm font-heading font-medium text-foreground">{cat.label}</span>
+                    <Icon className="h-6 w-6" />
+                    <span className="text-xs font-heading font-semibold">{cat.label}</span>
                   </button>
                 );
               })}
             </div>
           ) : (
-            <div className="space-y-4">
-              <div className="flex items-center gap-2">
-                <Button variant="ghost" size="sm" onClick={() => setCategory(null)}>← Πίσω</Button>
-                <span className="font-heading font-medium text-foreground">
-                  {categories.find(c => c.key === category)?.label}
-                </span>
-              </div>
+            <div className="space-y-3">
+              <button onClick={() => setCategory(null)} className="text-xs text-[hsl(220,10%,50%)] hover:text-[hsl(220,10%,70%)]">
+                ← Πίσω
+              </button>
               <Textarea
                 placeholder="Περιγράψτε το πρόβλημα..."
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
+                className="bg-[hsl(225,18%,16%)] border-[hsl(225,15%,22%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,35%)]"
               />
-              <Button
+              <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full h-12 font-heading gradient-primary text-primary-foreground"
+                className="w-full h-11 rounded-xl font-heading font-bold text-sm driver-gradient-earn text-[hsl(220,14%,96%)] flex items-center justify-center gap-2 disabled:opacity-50"
               >
-                <Send className="h-4 w-4 mr-2" />
+                <Send className="h-4 w-4" />
                 {submitting ? 'Αποστολή...' : 'Αποστολή'}
-              </Button>
+              </button>
             </div>
           )}
         </DialogContent>
