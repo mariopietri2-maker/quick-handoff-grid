@@ -41,6 +41,48 @@ export type Database = {
         }
         Relationships: []
       }
+      demand_zones: {
+        Row: {
+          bonus_amount: number
+          created_at: string
+          driver_count: number
+          id: string
+          is_active: boolean
+          latitude: number
+          longitude: number
+          name: string
+          order_count: number
+          radius_km: number
+          updated_at: string
+        }
+        Insert: {
+          bonus_amount?: number
+          created_at?: string
+          driver_count?: number
+          id?: string
+          is_active?: boolean
+          latitude: number
+          longitude: number
+          name: string
+          order_count?: number
+          radius_km?: number
+          updated_at?: string
+        }
+        Update: {
+          bonus_amount?: number
+          created_at?: string
+          driver_count?: number
+          id?: string
+          is_active?: boolean
+          latitude?: number
+          longitude?: number
+          name?: string
+          order_count?: number
+          radius_km?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_locations: {
         Row: {
           driver_id: string
@@ -134,6 +176,69 @@ export type Database = {
           vehicle_model?: string | null
           vehicle_type?: string | null
           vehicle_year?: number | null
+        }
+        Relationships: []
+      }
+      driver_referrals: {
+        Row: {
+          bonus_amount: number
+          completed_at: string | null
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string | null
+          referrer_id: string
+          status: string
+        }
+        Insert: {
+          bonus_amount?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id?: string | null
+          referrer_id: string
+          status?: string
+        }
+        Update: {
+          bonus_amount?: number
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string | null
+          referrer_id?: string
+          status?: string
+        }
+        Relationships: []
+      }
+      driver_wallets: {
+        Row: {
+          available_balance: number
+          created_at: string
+          driver_id: string
+          id: string
+          pending_balance: number
+          total_withdrawn: number
+          updated_at: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          pending_balance?: number
+          total_withdrawn?: number
+          updated_at?: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          pending_balance?: number
+          total_withdrawn?: number
+          updated_at?: string
         }
         Relationships: []
       }
@@ -562,6 +667,56 @@ export type Database = {
         }
         Relationships: []
       }
+      support_tickets: {
+        Row: {
+          category: string
+          created_at: string
+          description: string | null
+          driver_id: string
+          id: string
+          order_id: string | null
+          photo_url: string | null
+          resolution_notes: string | null
+          resolved_by: string | null
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          created_at?: string
+          description?: string | null
+          driver_id: string
+          id?: string
+          order_id?: string | null
+          photo_url?: string | null
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          created_at?: string
+          description?: string | null
+          driver_id?: string
+          id?: string
+          order_id?: string | null
+          photo_url?: string | null
+          resolution_notes?: string | null
+          resolved_by?: string | null
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "support_tickets_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -582,6 +737,91 @@ export type Database = {
           user_id?: string
         }
         Relationships: []
+      }
+      wait_time_bonuses: {
+        Row: {
+          arrived_at: string
+          bonus_amount: number | null
+          created_at: string
+          driver_id: string
+          id: string
+          is_applied: boolean | null
+          order_id: string | null
+          picked_up_at: string | null
+          wait_minutes: number | null
+        }
+        Insert: {
+          arrived_at?: string
+          bonus_amount?: number | null
+          created_at?: string
+          driver_id: string
+          id?: string
+          is_applied?: boolean | null
+          order_id?: string | null
+          picked_up_at?: string | null
+          wait_minutes?: number | null
+        }
+        Update: {
+          arrived_at?: string
+          bonus_amount?: number | null
+          created_at?: string
+          driver_id?: string
+          id?: string
+          is_applied?: boolean | null
+          order_id?: string | null
+          picked_up_at?: string | null
+          wait_minutes?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wait_time_bonuses_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      wallet_transactions: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          driver_id: string
+          id: string
+          order_id: string | null
+          status: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          driver_id: string
+          id?: string
+          order_id?: string | null
+          status?: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          driver_id?: string
+          id?: string
+          order_id?: string | null
+          status?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "wallet_transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
@@ -604,6 +844,10 @@ export type Database = {
           _user_id: string
         }
         Returns: boolean
+      }
+      request_wallet_withdrawal: {
+        Args: { p_amount: number; p_driver_id: string }
+        Returns: undefined
       }
     }
     Enums: {
