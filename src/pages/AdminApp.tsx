@@ -9,11 +9,14 @@ import { Switch } from '@/components/ui/switch';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone, MapPin } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, DollarSign, Star, ArrowLeft, BarChart3, Megaphone, MapPin, Wallet, MessageSquare, Flame } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
 import AdminDriversMap from '@/components/admin/AdminDriversMap';
+import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
+import FinancialsManager from '@/components/admin/FinancialsManager';
+import DemandZonesManager from '@/components/admin/DemandZonesManager';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -203,7 +206,7 @@ export default function AdminApp() {
         {/* Tabs */}
         <Tabs defaultValue="analytics">
           <div className="overflow-x-auto -mx-4 px-4 pb-1">
-            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-8 gap-1 bg-muted/60 p-1">
+            <TabsList className="inline-flex w-auto min-w-full sm:grid sm:grid-cols-11 gap-1 bg-muted/60 p-1">
               <TabsTrigger value="analytics" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
                 <BarChart3 className="h-3.5 w-3.5" />Αναλυτικά
               </TabsTrigger>
@@ -221,6 +224,15 @@ export default function AdminApp() {
               </TabsTrigger>
               <TabsTrigger value="users" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
                 <Shield className="h-3.5 w-3.5" />Χρήστες
+              </TabsTrigger>
+              <TabsTrigger value="financials" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <Wallet className="h-3.5 w-3.5" />Οικονομικά
+              </TabsTrigger>
+              <TabsTrigger value="tickets" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <MessageSquare className="h-3.5 w-3.5" />Tickets
+              </TabsTrigger>
+              <TabsTrigger value="demand" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
+                <Flame className="h-3.5 w-3.5" />Ζώνες
               </TabsTrigger>
               <TabsTrigger value="reviews" className="font-heading text-xs sm:text-sm gap-1.5 whitespace-nowrap">
                 <Star className="h-3.5 w-3.5" />Κριτικές
@@ -483,6 +495,17 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
+          <TabsContent value="financials" className="mt-4">
+            <FinancialsManager />
+          </TabsContent>
+
+          <TabsContent value="tickets" className="mt-4">
+            <SupportTicketsManager />
+          </TabsContent>
+
+          <TabsContent value="demand" className="mt-4">
+            <DemandZonesManager />
+          </TabsContent>
           <TabsContent value="reviews" className="mt-4">
             <Card>
               <CardHeader><CardTitle className="font-heading">Όλες οι Κριτικές</CardTitle></CardHeader>
