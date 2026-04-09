@@ -52,41 +52,39 @@ export function DriverReferral() {
   if (loading) return null;
 
   return (
-    <div className="space-y-3">
-      {/* Hero */}
-      <div className="rounded-2xl overflow-hidden bg-gradient-to-br from-[hsl(225,20%,14%)] to-[hsl(225,25%,10%)] border border-[hsl(225,15%,20%)] p-6 text-center"
-        style={{ boxShadow: '0 8px 32px hsl(225 25% 5% / 0.4)' }}
-      >
-        <div className="h-14 w-14 rounded-2xl bg-warning/10 flex items-center justify-center mx-auto mb-3 border border-warning/20">
-          <Gift className="h-7 w-7 text-warning" />
+    <div className="space-y-4">
+      {/* Hero card */}
+      <div className="rounded-2xl bg-primary text-primary-foreground p-6 text-center shadow-lg">
+        <div className="h-14 w-14 rounded-full bg-primary-foreground/15 flex items-center justify-center mx-auto mb-3">
+          <Gift className="h-7 w-7" />
         </div>
-        <h3 className="font-heading font-bold text-lg text-[hsl(220,14%,96%)]">Κάλεσε & Κέρδισε</h3>
-        <p className="text-xs text-[hsl(220,10%,45%)] mt-1 max-w-[240px] mx-auto">
+        <h3 className="font-heading font-bold text-xl">Κάλεσε & Κέρδισε</h3>
+        <p className="text-xs text-primary-foreground/70 mt-1 max-w-[240px] mx-auto">
           10€ μπόνους για κάθε οδηγό που εγγράφεται με τον κωδικό σου
         </p>
 
-        <div className="mt-4 rounded-xl bg-[hsl(225,18%,18%)] border border-[hsl(225,15%,25%)] p-3 flex items-center justify-between">
-          <span className="font-mono font-bold text-lg text-[hsl(145,65%,60%)] tracking-wider">{referralCode}</span>
+        <div className="mt-4 rounded-xl bg-primary-foreground/10 p-3 flex items-center justify-between">
+          <span className="font-mono font-bold text-lg tracking-wider">{referralCode}</span>
           <button
             onClick={copyCode}
-            className="h-9 w-9 rounded-lg bg-[hsl(225,20%,22%)] flex items-center justify-center hover:bg-[hsl(225,20%,26%)] transition-colors"
+            className="h-9 w-9 rounded-lg bg-primary-foreground/15 flex items-center justify-center hover:bg-primary-foreground/25 transition-colors"
           >
-            <Copy className="h-4 w-4 text-[hsl(220,10%,60%)]" />
+            <Copy className="h-4 w-4" />
           </button>
         </div>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-xl bg-[hsl(225,20%,12%)] border border-[hsl(225,15%,20%)] p-4 text-center">
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-xl bg-card border border-border p-4 text-center shadow-sm">
           <Users className="h-5 w-5 text-primary mx-auto mb-1.5" />
-          <p className="text-[10px] text-[hsl(220,10%,45%)] uppercase tracking-wider">Προσκλήσεις</p>
-          <p className="font-heading font-bold text-xl text-[hsl(220,14%,96%)]">{referrals.length}</p>
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Προσκλήσεις</p>
+          <p className="font-heading font-bold text-xl text-foreground">{referrals.length}</p>
         </div>
-        <div className="rounded-xl bg-[hsl(225,20%,12%)] border border-[hsl(225,15%,20%)] p-4 text-center">
-          <CheckCircle2 className="h-5 w-5 text-[hsl(145,65%,50%)] mx-auto mb-1.5" />
-          <p className="text-[10px] text-[hsl(220,10%,45%)] uppercase tracking-wider">Κερδίσατε</p>
-          <p className="font-heading font-bold text-xl text-[hsl(145,65%,55%)]">{totalBonus}€</p>
+        <div className="rounded-xl bg-card border border-border p-4 text-center shadow-sm">
+          <CheckCircle2 className="h-5 w-5 text-primary mx-auto mb-1.5" />
+          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Κερδίσατε</p>
+          <p className="font-heading font-bold text-xl text-primary">{totalBonus}€</p>
         </div>
       </div>
     </div>
