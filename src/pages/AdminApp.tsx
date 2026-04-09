@@ -495,7 +495,19 @@ export default function AdminApp() {
             </Card>
           </TabsContent>
 
-          <TabsContent value="reviews" className="mt-4">
+          <TabsContent value="financials" className="mt-4">
+            <FinancialsManager />
+          </TabsContent>
+
+          <TabsContent value="tickets" className="mt-4">
+            <SupportTicketsManager />
+          </TabsContent>
+
+          <TabsContent value="demand" className="mt-4">
+            <DemandZonesManager />
+          </TabsContent>
+
+
             <Card>
               <CardHeader><CardTitle className="font-heading">Όλες οι Κριτικές</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
