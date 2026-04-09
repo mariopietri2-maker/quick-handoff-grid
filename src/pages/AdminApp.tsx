@@ -506,8 +506,7 @@ export default function AdminApp() {
           <TabsContent value="demand" className="mt-4">
             <DemandZonesManager />
           </TabsContent>
-
-
+          <TabsContent value="reviews" className="mt-4">
             <Card>
               <CardHeader><CardTitle className="font-heading">Όλες οι Κριτικές</CardTitle></CardHeader>
               <CardContent className="overflow-x-auto">
