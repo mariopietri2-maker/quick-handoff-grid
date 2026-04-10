@@ -142,12 +142,11 @@ export default function CustomerApp() {
               onClick={() => setSelectedCategory(cat.value)}
               className="flex flex-col items-center gap-1.5 min-w-[60px] group"
             >
-                <div
-                  className={`h-14 w-14 rounded-full flex items-center justify-center text-2xl transition-all duration-200 ${
-                    selectedCategory === cat.value
-                      ? 'bg-primary/10 ring-2 ring-primary shadow-sm scale-110'
-                      : `${cat.bg} group-hover:shadow-sm group-hover:scale-105`
-                    : `${cat.bg} group-hover:shadow-sm`
+              <div
+                className={`h-14 w-14 rounded-full flex items-center justify-center text-2xl transition-all duration-200 ${
+                  selectedCategory === cat.value
+                    ? 'bg-primary/10 ring-2 ring-primary shadow-sm scale-110'
+                    : `${cat.bg} group-hover:shadow-sm group-hover:scale-105`
                 }`}
               >
                 {cat.emoji}
