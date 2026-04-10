@@ -143,10 +143,10 @@ export default function CustomerApp() {
               className="flex flex-col items-center gap-1.5 min-w-[60px] group"
             >
               <div
-                className={`h-14 w-14 rounded-full flex items-center justify-center text-2xl transition-all ${
+                className={`h-14 w-14 rounded-full flex items-center justify-center text-2xl transition-all duration-200 ${
                   selectedCategory === cat.value
-                    ? 'bg-primary/10 ring-2 ring-primary shadow-sm'
-                    : `${cat.bg} group-hover:shadow-sm`
+                    ? 'bg-primary/10 ring-2 ring-primary shadow-sm scale-110'
+                    : `${cat.bg} group-hover:shadow-sm group-hover:scale-105`
                 }`}
               >
                 {cat.emoji}
@@ -173,9 +173,9 @@ export default function CustomerApp() {
           </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
             {stores.slice(0, 5).map(store => (
-              <button
-                key={store.id}
-                className="flex-shrink-0 w-[200px] text-left group"
+                <button
+                  key={store.id}
+                  className="flex-shrink-0 w-[200px] text-left group hover-lift"
                 onClick={() => navigate(`/restaurant/${store.id}`)}
               >
                 <div className="relative h-28 rounded-xl overflow-hidden mb-2">
@@ -250,7 +250,8 @@ export default function CustomerApp() {
             {filtered.map(store => (
               <button
                 key={store.id}
-                className="w-full text-left group"
+                className="w-full text-left group hover-lift animate-fade-in"
+                style={{ animationDelay: `${0.05 * filtered.indexOf(store)}s`, animationFillMode: 'both' }}
                 onClick={() => navigate(`/restaurant/${store.id}`)}
               >
                 {/* Image */}
