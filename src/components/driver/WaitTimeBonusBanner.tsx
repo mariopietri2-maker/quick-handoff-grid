@@ -17,12 +17,9 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
   const [waitMinutes, setWaitMinutes] = useState(0);
   const [bonusRecordId, setBonusRecordId] = useState<string | null>(null);
 
-  // Create or fetch wait_time_bonus record when status becomes 'arrived'
   useEffect(() => {
     if (!user || status !== 'arrived') return;
-
     const checkOrCreate = async () => {
-      // Check existing
       const { data } = await supabase
         .from('wait_time_bonuses')
         .select('id, arrived_at')
@@ -48,7 +45,6 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
     checkOrCreate();
   }, [user, orderId, status]);
 
-  // Timer tick
   useEffect(() => {
     if (!arrivedAt || status !== 'arrived') return;
     const interval = setInterval(() => {
@@ -58,7 +54,6 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
     return () => clearInterval(interval);
   }, [arrivedAt, status]);
 
-  // Update bonus when picked up
   useEffect(() => {
     if (status !== 'picked_up' || !bonusRecordId || !user) return;
     const updateBonus = async () => {
@@ -81,26 +76,26 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
   const isEarning = waitMinutes >= BONUS_THRESHOLD_MINUTES;
 
   return (
-    <div className={`rounded-xl p-3 flex items-center gap-3 border ${
-      isEarning ? 'bg-warning/10 border-warning/30' : 'bg-muted/50 border-border'
+    <div className={`rounded-xl p-3 flex items-center gap-3 driver-glass ${
+      isEarning ? 'border-2 border-orange-500/30' : ''
     }`}>
-      <div className={`h-10 w-10 rounded-full flex items-center justify-center ${
-        isEarning ? 'bg-warning/20' : 'bg-muted'
+      <div className={`h-10 w-10 rounded-xl flex items-center justify-center ${
+        isEarning ? 'bg-orange-500/15' : 'bg-[hsl(var(--driver-surface-elevated))]'
       }`}>
-        <Timer className={`h-5 w-5 ${isEarning ? 'text-warning animate-pulse' : 'text-muted-foreground'}`} />
+        <Timer className={`h-5 w-5 ${isEarning ? 'text-orange-400 animate-pulse' : 'text-[hsl(var(--driver-text-muted))]'}`} />
       </div>
       <div className="flex-1">
-        <p className="text-sm font-heading font-medium text-foreground">
+        <p className="text-sm font-heading font-medium text-[hsl(var(--driver-text))]">
           Αναμονή: {waitMinutes} λεπτά
         </p>
         {isEarning ? (
-          <p className="text-xs text-warning font-medium flex items-center gap-1">
+          <p className="text-xs text-orange-400 font-medium flex items-center gap-1">
             <Coins className="h-3 w-3" />
-            Μπόνους καθυστέρησης: +{bonusAmount.toFixed(2)}€ (+€0.10/λεπ)
+            Μπόνους: +{bonusAmount.toFixed(2)}€ (+€0.10/λεπ)
           </p>
         ) : (
-          <p className="text-xs text-muted-foreground">
-            Μπόνους μετά τα {BONUS_THRESHOLD_MINUTES} λεπτά αναμονής
+          <p className="text-xs text-[hsl(var(--driver-text-muted))]">
+            Μπόνους μετά τα {BONUS_THRESHOLD_MINUTES} λεπτά
           </p>
         )}
       </div>
