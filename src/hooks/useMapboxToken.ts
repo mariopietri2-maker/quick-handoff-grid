@@ -1,0 +1,27 @@
+import { useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+
+let cachedToken: string | null = null;
+
+export function useMapboxToken() {
+  const [token, setToken] = useState<string | null>(cachedToken);
+  const [loading, setLoading] = useState(!cachedToken);
+
+  useEffect(() => {
+    if (cachedToken) {
+      setToken(cachedToken);
+      setLoading(false);
+      return;
+    }
+
+    supabase.functions.invoke('get-mapbox-token').then(({ data, error }) => {
+      if (!error && data?.token) {
+        cachedToken = data.token;
+        setToken(data.token);
+      }
+      setLoading(false);
+    });
+  }, []);
+
+  return { token, loading };
+}
