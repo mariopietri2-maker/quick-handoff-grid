@@ -15,7 +15,8 @@ import { useDriverOrders } from '@/hooks/useOrders';
 import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
-import DriverMapbox from '@/components/driver/DriverMapbox';
+import DriverMapbox, { type RouteInfo } from '@/components/driver/DriverMapbox';
+import { NavigationPanel } from '@/components/driver/NavigationPanel';
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
@@ -38,6 +39,12 @@ export default function DriverApp() {
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (_id: string) => {};
+  const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+
+  // Determine navigation target based on delivery status
+  const navigatingTo = activeDelivery
+    ? (['accepted', 'preparing', 'ready', 'arrived'].includes(activeDelivery.status ?? '') ? 'store' as const : activeDelivery.status === 'picked_up' ? 'customer' as const : null)
+    : null;
 
   useEffect(() => {
     if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
@@ -116,6 +123,8 @@ export default function DriverApp() {
                 customerLng={activeDelivery?.delivery_longitude}
                 customerName={customerInfo?.name}
                 customerAddress={activeDelivery?.delivery_address}
+                navigatingTo={navigatingTo}
+                onRouteUpdate={setRouteInfo}
               />
               {/* Gradient overlay at bottom */}
               <div className="absolute bottom-0 left-0 right-0 h-24 bg-gradient-to-t from-[#0a0a0f] to-transparent pointer-events-none" />
@@ -142,6 +151,17 @@ export default function DriverApp() {
             </div>
 
             <AnnouncementsBanner audience="drivers" />
+
+            {/* Navigation Panel */}
+            {routeInfo && navigatingTo && (
+              <div className="px-4 pt-3">
+                <NavigationPanel
+                  route={routeInfo}
+                  destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
+                  destinationType={navigatingTo}
+                />
+              </div>
+            )}
 
             {/* Content */}
             <div className="px-4 py-3 space-y-3">
