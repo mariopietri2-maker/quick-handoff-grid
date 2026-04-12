@@ -1,7 +1,13 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+
+export interface RouteInfo {
+  distance: number; // meters
+  duration: number; // seconds
+  steps: { instruction: string; distance: number; duration: number }[];
+}
 
 interface DriverMapboxProps {
   className?: string;
@@ -12,12 +18,16 @@ interface DriverMapboxProps {
   customerLng?: number | null;
   customerName?: string;
   customerAddress?: string | null;
+  navigatingTo?: 'store' | 'customer' | null;
+  onRouteUpdate?: (route: RouteInfo | null) => void;
 }
 
 export default function DriverMapbox({
   className,
   storeLat, storeLng, storeName,
   customerLat, customerLng, customerName, customerAddress,
+  navigatingTo,
+  onRouteUpdate,
 }: DriverMapboxProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -27,7 +37,8 @@ export default function DriverMapbox({
   const { token, loading } = useMapboxToken();
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const watchRef = useRef<number | null>(null);
-  const initialFitDone = useRef(false);
+  const routeFetchRef = useRef<AbortController | null>(null);
+  const lastRouteKey = useRef('');
 
   // Watch position
   useEffect(() => {
@@ -60,6 +71,51 @@ export default function DriverMapbox({
       showUserHeading: true,
     }), 'top-right');
 
+    map.on('load', () => {
+      // Route source + layers
+      map.addSource('route', {
+        type: 'geojson',
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
+      });
+      // Glow layer
+      map.addLayer({
+        id: 'route-glow',
+        type: 'line',
+        source: 'route',
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 12,
+          'line-opacity': 0.2,
+          'line-blur': 8,
+        },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+      });
+      // Border
+      map.addLayer({
+        id: 'route-border',
+        type: 'line',
+        source: 'route',
+        paint: {
+          'line-color': '#1d4ed8',
+          'line-width': 6,
+          'line-opacity': 0.6,
+        },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+      });
+      // Main line
+      map.addLayer({
+        id: 'route-line',
+        type: 'line',
+        source: 'route',
+        paint: {
+          'line-color': '#3b82f6',
+          'line-width': 4,
+          'line-opacity': 0.9,
+        },
+        layout: { 'line-join': 'round', 'line-cap': 'round' },
+      });
+    });
+
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
@@ -68,17 +124,15 @@ export default function DriverMapbox({
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !pos) return;
-
     if (driverMarkerRef.current) {
       driverMarkerRef.current.setLngLat([pos.lng, pos.lat]);
     } else {
       const el = document.createElement('div');
       el.innerHTML = `
         <div style="position:relative;">
-          <div style="width:20px;height:20px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 0 0 4px rgba(59,130,246,0.3),0 2px 8px rgba(0,0,0,0.3);"></div>
-          <div style="position:absolute;top:-2px;left:-2px;width:24px;height:24px;border-radius:50%;background:rgba(59,130,246,0.2);animation:pulse 2s infinite;"></div>
-        </div>
-      `;
+          <div style="width:22px;height:22px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 0 0 4px rgba(59,130,246,0.3),0 2px 8px rgba(0,0,0,0.3);"></div>
+          <div style="position:absolute;top:-3px;left:-3px;width:28px;height:28px;border-radius:50%;background:rgba(59,130,246,0.2);animation:pulse 2s infinite;"></div>
+        </div>`;
       driverMarkerRef.current = new mapboxgl.Marker({ element: el })
         .setLngLat([pos.lng, pos.lat])
         .addTo(map);
@@ -91,16 +145,16 @@ export default function DriverMapbox({
     if (!map) return;
     storeMarkerRef.current?.remove();
     storeMarkerRef.current = null;
-
     if (storeLat != null && storeLng != null) {
       const el = document.createElement('div');
-      el.innerHTML = `<div style="width:36px;height:36px;background:#f97316;border-radius:12px;border:3px solid white;box-shadow:0 2px 12px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;">🏪</div>`;
+      const isTarget = navigatingTo === 'store';
+      el.innerHTML = `<div style="width:40px;height:40px;background:${isTarget ? '#f97316' : '#f97316'};border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(249,115,22,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">🏪</div>`;
       storeMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([storeLng, storeLat])
-        .setPopup(new mapboxgl.Popup({ offset: 20 }).setHTML(`<strong>${storeName || 'Κατάστημα'}</strong>`))
+        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${storeName || 'Κατάστημα'}</strong>`))
         .addTo(map);
     }
-  }, [storeLat, storeLng, storeName]);
+  }, [storeLat, storeLng, storeName, navigatingTo]);
 
   // Customer marker
   useEffect(() => {
@@ -108,34 +162,107 @@ export default function DriverMapbox({
     if (!map) return;
     customerMarkerRef.current?.remove();
     customerMarkerRef.current = null;
-
     if (customerLat != null && customerLng != null) {
       const el = document.createElement('div');
-      el.innerHTML = `<div style="width:36px;height:36px;background:#22c55e;border-radius:12px;border:3px solid white;box-shadow:0 2px 12px rgba(34,197,94,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;">📍</div>`;
+      const isTarget = navigatingTo === 'customer';
+      el.innerHTML = `<div style="width:40px;height:40px;background:#22c55e;border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(34,197,94,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">📍</div>`;
       customerMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([customerLng, customerLat])
-        .setPopup(new mapboxgl.Popup({ offset: 20 }).setHTML(`<strong>${customerName || 'Παράδοση'}</strong><br/><span style="font-size:11px;">${customerAddress || ''}</span>`))
+        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${customerName || 'Παράδοση'}</strong><br/><span style="font-size:11px;">${customerAddress || ''}</span>`))
         .addTo(map);
     }
-  }, [customerLat, customerLng, customerName, customerAddress]);
+  }, [customerLat, customerLng, customerName, customerAddress, navigatingTo]);
 
-  // Fit bounds when we have multiple points
-  useEffect(() => {
+  // Fetch & draw route
+  const fetchRoute = useCallback(async () => {
     const map = mapRef.current;
-    if (!map || initialFitDone.current) return;
-
-    const points: [number, number][] = [];
-    if (pos) points.push([pos.lng, pos.lat]);
-    if (storeLat != null && storeLng != null) points.push([storeLng, storeLat]);
-    if (customerLat != null && customerLng != null) points.push([customerLng, customerLat]);
-
-    if (points.length >= 2) {
-      const bounds = new mapboxgl.LngLatBounds();
-      points.forEach(p => bounds.extend(p));
-      map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
-      initialFitDone.current = true;
+    if (!map || !token || !pos || !navigatingTo) {
+      // Clear route
+      if (map?.getSource('route')) {
+        (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
+          type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {},
+        });
+      }
+      onRouteUpdate?.(null);
+      return;
     }
-  }, [pos, storeLat, storeLng, customerLat, customerLng]);
+
+    let destLat: number | null = null;
+    let destLng: number | null = null;
+    if (navigatingTo === 'store' && storeLat != null && storeLng != null) {
+      destLat = storeLat; destLng = storeLng;
+    } else if (navigatingTo === 'customer' && customerLat != null && customerLng != null) {
+      destLat = customerLat; destLng = customerLng;
+    }
+    if (destLat == null || destLng == null) return;
+
+    const routeKey = `${pos.lat.toFixed(4)},${pos.lng.toFixed(4)}-${destLat},${destLng}`;
+    if (routeKey === lastRouteKey.current) return;
+    lastRouteKey.current = routeKey;
+
+    routeFetchRef.current?.abort();
+    const ctrl = new AbortController();
+    routeFetchRef.current = ctrl;
+
+    try {
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${pos.lng},${pos.lat};${destLng},${destLat}?geometries=geojson&overview=full&steps=true&access_token=${token}`;
+      const res = await fetch(url, { signal: ctrl.signal });
+      const data = await res.json();
+      const route = data.routes?.[0];
+      if (!route) return;
+
+      const coords = route.geometry.coordinates;
+
+      if (map.getSource('route')) {
+        (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
+          type: 'Feature',
+          geometry: { type: 'LineString', coordinates: coords },
+          properties: {},
+        });
+      }
+
+      // Fit route
+      const bounds = new mapboxgl.LngLatBounds();
+      coords.forEach((c: [number, number]) => bounds.extend(c));
+      bounds.extend([pos.lng, pos.lat]);
+      map.fitBounds(bounds, { padding: { top: 80, bottom: 200, left: 50, right: 50 }, maxZoom: 16 });
+
+      // Parse steps
+      const steps = route.legs[0]?.steps?.map((s: any) => ({
+        instruction: s.maneuver?.instruction || '',
+        distance: s.distance,
+        duration: s.duration,
+      })) || [];
+
+      onRouteUpdate?.({
+        distance: route.distance,
+        duration: route.duration,
+        steps,
+      });
+    } catch (e: any) {
+      if (e.name !== 'AbortError') console.error('Route fetch error:', e);
+    }
+  }, [pos, navigatingTo, storeLat, storeLng, customerLat, customerLng, token, onRouteUpdate]);
+
+  // Fetch route on change (throttled)
+  useEffect(() => {
+    const timer = setTimeout(fetchRoute, 1500);
+    return () => clearTimeout(timer);
+  }, [fetchRoute]);
+
+  // Clear route when not navigating
+  useEffect(() => {
+    if (!navigatingTo) {
+      const map = mapRef.current;
+      if (map?.getSource('route')) {
+        (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
+          type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {},
+        });
+      }
+      onRouteUpdate?.(null);
+      lastRouteKey.current = '';
+    }
+  }, [navigatingTo]);
 
   if (loading || !token) {
     return (
