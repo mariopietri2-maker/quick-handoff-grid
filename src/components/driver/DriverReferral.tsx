@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Users, Copy, Gift, CheckCircle2 } from 'lucide-react';
+import { Users, Copy, Gift, CheckCircle2, Share2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
@@ -46,6 +46,17 @@ export function DriverReferral() {
     }
   };
 
+  const shareCode = () => {
+    if (referralCode && navigator.share) {
+      navigator.share({
+        title: 'QuickGrid Driver',
+        text: `Γίνε οδηγός QuickGrid! Χρησιμοποίησε τον κωδικό μου: ${referralCode}`,
+      });
+    } else {
+      copyCode();
+    }
+  };
+
   const completedReferrals = referrals.filter(r => r.status === 'completed').length;
   const totalBonus = completedReferrals * 10;
 
@@ -54,37 +65,45 @@ export function DriverReferral() {
   return (
     <div className="space-y-4">
       {/* Hero card */}
-      <div className="rounded-2xl bg-primary text-primary-foreground p-6 text-center shadow-lg">
-        <div className="h-14 w-14 rounded-full bg-primary-foreground/15 flex items-center justify-center mx-auto mb-3">
-          <Gift className="h-7 w-7" />
+      <div className="rounded-2xl driver-gradient-earn p-6 text-center">
+        <div className="h-16 w-16 rounded-2xl bg-white/15 flex items-center justify-center mx-auto mb-3 backdrop-blur-sm">
+          <Gift className="h-8 w-8 text-white" />
         </div>
-        <h3 className="font-heading font-bold text-xl">Κάλεσε & Κέρδισε</h3>
-        <p className="text-xs text-primary-foreground/70 mt-1 max-w-[240px] mx-auto">
+        <h3 className="font-heading font-bold text-xl text-white">Κάλεσε & Κέρδισε</h3>
+        <p className="text-xs text-white/60 mt-1 max-w-[240px] mx-auto">
           10€ μπόνους για κάθε οδηγό που εγγράφεται με τον κωδικό σου
         </p>
 
-        <div className="mt-4 rounded-xl bg-primary-foreground/10 p-3 flex items-center justify-between">
-          <span className="font-mono font-bold text-lg tracking-wider">{referralCode}</span>
-          <button
-            onClick={copyCode}
-            className="h-9 w-9 rounded-lg bg-primary-foreground/15 flex items-center justify-center hover:bg-primary-foreground/25 transition-colors"
-          >
-            <Copy className="h-4 w-4" />
-          </button>
+        <div className="mt-4 rounded-xl bg-white/10 backdrop-blur-sm p-3 flex items-center justify-between border border-white/10">
+          <span className="font-mono font-bold text-lg tracking-wider text-white">{referralCode}</span>
+          <div className="flex gap-2">
+            <button
+              onClick={copyCode}
+              className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+            >
+              <Copy className="h-4 w-4 text-white" />
+            </button>
+            <button
+              onClick={shareCode}
+              className="h-9 w-9 rounded-lg bg-white/15 flex items-center justify-center hover:bg-white/25 transition-colors"
+            >
+              <Share2 className="h-4 w-4 text-white" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Stats */}
       <div className="grid grid-cols-2 gap-3">
-        <div className="rounded-xl bg-card border border-border p-4 text-center shadow-sm">
-          <Users className="h-5 w-5 text-primary mx-auto mb-1.5" />
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Προσκλήσεις</p>
-          <p className="font-heading font-bold text-xl text-foreground">{referrals.length}</p>
+        <div className="rounded-xl driver-glass p-4 text-center">
+          <Users className="h-5 w-5 text-[hsl(var(--driver-text-muted))] mx-auto mb-1.5" />
+          <p className="text-[9px] text-[hsl(var(--driver-text-muted))] uppercase tracking-wider">Προσκλήσεις</p>
+          <p className="font-heading font-bold text-xl text-[hsl(var(--driver-text))] tabular-nums">{referrals.length}</p>
         </div>
-        <div className="rounded-xl bg-card border border-border p-4 text-center shadow-sm">
-          <CheckCircle2 className="h-5 w-5 text-primary mx-auto mb-1.5" />
-          <p className="text-[10px] text-muted-foreground uppercase tracking-wider">Κερδίσατε</p>
-          <p className="font-heading font-bold text-xl text-primary">{totalBonus}€</p>
+        <div className="rounded-xl driver-glass p-4 text-center">
+          <CheckCircle2 className="h-5 w-5 text-[hsl(var(--driver-accent))] mx-auto mb-1.5" />
+          <p className="text-[9px] text-[hsl(var(--driver-text-muted))] uppercase tracking-wider">Κερδίσατε</p>
+          <p className="font-heading font-bold text-xl text-[hsl(var(--driver-accent))] tabular-nums">{totalBonus}€</p>
         </div>
       </div>
     </div>

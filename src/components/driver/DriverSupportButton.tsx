@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Headphones, AlertTriangle, Car, Smartphone, MessageCircle, Send } from 'lucide-react';
+import { Headphones, AlertTriangle, Car, Smartphone, MessageCircle, Send, X } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -7,10 +7,10 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 
 const categories = [
-  { key: 'emergency', label: 'Έκτακτο', icon: AlertTriangle, color: 'text-destructive bg-destructive/10 border-destructive/20' },
-  { key: 'customer_issue', label: 'Πελάτης', icon: MessageCircle, color: 'text-primary bg-primary/10 border-primary/20' },
-  { key: 'vehicle_issue', label: 'Όχημα', icon: Car, color: 'text-foreground bg-muted border-border' },
-  { key: 'app_issue', label: 'Εφαρμογή', icon: Smartphone, color: 'text-muted-foreground bg-muted border-border' },
+  { key: 'emergency', label: 'Έκτακτο', icon: AlertTriangle, color: 'text-red-400 bg-red-500/10 border-red-500/20' },
+  { key: 'customer_issue', label: 'Πελάτης', icon: MessageCircle, color: 'text-blue-400 bg-blue-500/10 border-blue-500/20' },
+  { key: 'vehicle_issue', label: 'Όχημα', icon: Car, color: 'text-orange-400 bg-orange-500/10 border-orange-500/20' },
+  { key: 'app_issue', label: 'Εφαρμογή', icon: Smartphone, color: 'text-[hsl(var(--driver-text-muted))] bg-[hsl(var(--driver-surface))] border-[hsl(var(--driver-border))]' },
 ];
 
 export function DriverSupportButton({ orderId }: { orderId?: string }) {
@@ -44,16 +44,16 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-40 h-12 w-12 rounded-full bg-primary shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        className="fixed bottom-24 right-4 z-40 h-12 w-12 rounded-2xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-[hsl(var(--driver-surface))]"
         aria-label="Βοήθεια"
       >
-        <Headphones className="h-5 w-5 text-primary-foreground" />
+        <Headphones className="h-5 w-5 text-[hsl(var(--driver-text))]" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-sm mx-auto">
+        <DialogContent className="max-w-sm mx-auto bg-[hsl(var(--driver-surface))] border-[hsl(var(--driver-border))]">
           <DialogHeader>
-            <DialogTitle className="font-heading text-lg">Χρειάζεστε Βοήθεια;</DialogTitle>
+            <DialogTitle className="font-heading text-lg text-[hsl(var(--driver-text))]">Χρειάζεστε Βοήθεια;</DialogTitle>
           </DialogHeader>
 
           {!category ? (
@@ -64,7 +64,7 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
                   <button
                     key={cat.key}
                     onClick={() => setCategory(cat.key)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors hover:brightness-95 ${cat.color}`}
+                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors hover:brightness-110 ${cat.color}`}
                   >
                     <Icon className="h-6 w-6" />
                     <span className="text-xs font-heading font-semibold">{cat.label}</span>
@@ -74,7 +74,7 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
             </div>
           ) : (
             <div className="space-y-3">
-              <button onClick={() => setCategory(null)} className="text-xs text-muted-foreground hover:text-foreground">
+              <button onClick={() => setCategory(null)} className="text-xs text-[hsl(var(--driver-text-muted))] hover:text-[hsl(var(--driver-text))]">
                 ← Πίσω
               </button>
               <Textarea
@@ -82,11 +82,12 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
+                className="bg-[hsl(var(--driver-bg))] border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]"
               />
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full h-11 rounded-xl font-heading font-bold text-sm bg-primary text-primary-foreground flex items-center justify-center gap-2 disabled:opacity-50"
+                className="w-full h-11 rounded-xl font-heading font-bold text-sm bg-[hsl(var(--driver-accent))] text-white flex items-center justify-center gap-2 disabled:opacity-50 driver-glow-green"
               >
                 <Send className="h-4 w-4" />
                 {submitting ? 'Αποστολή...' : 'Αποστολή'}

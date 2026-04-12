@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, User } from 'lucide-react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, User, MapPin } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
@@ -74,20 +74,20 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
 
   return (
     <div className="space-y-3">
-      {/* Status stepper — DoorDash style horizontal */}
-      <div className="rounded-2xl bg-card border border-border p-4 shadow-sm">
-        <div className="flex items-center justify-between mb-2">
+      {/* Status stepper */}
+      <div className="rounded-2xl driver-glass p-4">
+        <div className="flex items-center justify-between mb-3">
           {statusSteps.map((step, i) => {
             const Icon = step.icon;
             const isComplete = i <= effectiveStepIndex;
             const isCurrent = i === effectiveStepIndex;
             return (
               <div key={step.key} className="flex items-center">
-                <div className={`h-9 w-9 rounded-full flex items-center justify-center transition-all ${
+                <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
                   isComplete
-                    ? 'bg-primary text-primary-foreground'
-                    : 'bg-muted text-muted-foreground'
-                } ${isCurrent && delivery.status !== 'delivered' ? 'ring-4 ring-primary/20 scale-110' : ''}`}>
+                    ? 'bg-[hsl(var(--driver-accent))] text-white'
+                    : 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
+                } ${isCurrent && delivery.status !== 'delivered' ? 'ring-4 ring-[hsl(var(--driver-accent))]/20 scale-110' : ''}`}>
                   {i < effectiveStepIndex ? (
                     <CheckCircle2 className="h-4 w-4" />
                   ) : (
@@ -95,53 +95,53 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                   )}
                 </div>
                 {i < statusSteps.length - 1 && (
-                  <div className={`h-0.5 w-5 sm:w-8 mx-0.5 rounded-full ${
-                    i < effectiveStepIndex ? 'bg-primary' : 'bg-border'
+                  <div className={`h-0.5 w-5 sm:w-8 mx-1 rounded-full transition-colors ${
+                    i < effectiveStepIndex ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-border))]'
                   }`} />
                 )}
               </div>
             );
           })}
         </div>
-        <p className="font-heading font-bold text-center text-foreground text-sm">
+        <p className="font-heading font-bold text-center text-[hsl(var(--driver-text))] text-sm tracking-wide">
           {statusSteps[effectiveStepIndex]?.label}
         </p>
       </div>
 
       {/* Route card */}
-      <div className="rounded-2xl bg-card border border-border p-4 shadow-sm">
+      <div className="rounded-2xl driver-glass p-4">
         <div className="flex items-start gap-3">
           <div className="flex flex-col items-center gap-1">
-            <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
-              <Store className="h-4 w-4 text-primary" />
+            <div className="h-10 w-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
+              <Store className="h-4.5 w-4.5 text-orange-400" />
             </div>
-            <div className="w-0.5 h-5 bg-border" />
-            <div className="h-9 w-9 rounded-xl bg-foreground/10 flex items-center justify-center">
-              <User className="h-4 w-4 text-foreground" />
+            <div className="w-0.5 h-5 bg-[hsl(var(--driver-border))]" />
+            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center border border-[hsl(var(--driver-accent))]/20">
+              <MapPin className="h-4.5 w-4.5 text-[hsl(var(--driver-accent))]" />
             </div>
           </div>
           <div className="flex-1 space-y-3">
             <div>
               <div className="flex items-center justify-between">
-                <p className="font-heading font-bold text-sm text-foreground">{delivery.storeName}</p>
+                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">{delivery.storeName}</p>
                 {delivery.storePhone && (
-                  <a href={`tel:${delivery.storePhone}`} className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
-                    <Phone className="h-3.5 w-3.5 text-primary" />
+                  <a href={`tel:${delivery.storePhone}`} className="h-8 w-8 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors">
+                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
                   </a>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">{shortenAddress(delivery.storeAddress)}</p>
+              <p className="text-xs text-[hsl(var(--driver-text-muted))]">{shortenAddress(delivery.storeAddress)}</p>
             </div>
             <div>
               <div className="flex items-center justify-between">
-                <p className="font-heading font-bold text-sm text-foreground">{delivery.customerName}</p>
+                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">{delivery.customerName}</p>
                 {delivery.customerPhone && (
-                  <a href={`tel:${delivery.customerPhone}`} className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                    <Phone className="h-3.5 w-3.5 text-foreground" />
+                  <a href={`tel:${delivery.customerPhone}`} className="h-8 w-8 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors">
+                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
                   </a>
                 )}
               </div>
-              <p className="text-xs text-muted-foreground">{shortenAddress(delivery.deliveryAddress)}</p>
+              <p className="text-xs text-[hsl(var(--driver-text-muted))]">{shortenAddress(delivery.deliveryAddress)}</p>
             </div>
           </div>
         </div>
@@ -154,25 +154,27 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
               isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
               isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress
             )}
-            className="w-full mt-3 h-10 rounded-xl bg-muted text-foreground text-sm font-heading font-semibold flex items-center justify-center gap-2 hover:bg-muted/80 transition-colors"
+            className="w-full mt-3 h-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] text-[hsl(var(--driver-text))] text-sm font-heading font-semibold flex items-center justify-center gap-2 hover:bg-[hsl(var(--driver-surface-elevated))]/80 transition-colors border border-[hsl(var(--driver-border))]"
           >
-            <Navigation className="h-4 w-4 text-primary" />
-            Πλοήγηση
+            <Navigation className="h-4 w-4 text-blue-400" />
+            Πλοήγηση Google Maps
           </button>
         )}
       </div>
 
       {/* Order items */}
-      <div className="rounded-2xl bg-card border border-border p-4 shadow-sm">
-        <p className="font-heading font-bold text-sm text-foreground mb-2 flex items-center gap-2">
+      <div className="rounded-2xl driver-glass p-4">
+        <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-3 flex items-center gap-2">
           <Package className="h-4 w-4 text-primary" />
           Παραγγελία ({delivery.items.length} τεμ.)
         </p>
-        {delivery.items.map((item, i) => (
-          <div key={i} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-            <span className="text-sm text-foreground">{item.quantity}× {item.name}</span>
-          </div>
-        ))}
+        <div className="space-y-0">
+          {delivery.items.map((item, i) => (
+            <div key={i} className="flex items-center justify-between py-2.5 border-b border-[hsl(var(--driver-border))] last:border-0">
+              <span className="text-sm text-[hsl(var(--driver-text))]">{item.quantity}× {item.name}</span>
+            </div>
+          ))}
+        </div>
       </div>
 
       {/* Wait time bonus */}
@@ -180,10 +182,10 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
 
       {/* Pickup checklist */}
       {delivery.status === 'arrived' && (
-        <div className="rounded-2xl bg-card border-2 border-primary/20 p-4 shadow-sm">
-          <p className="font-heading font-bold text-sm text-foreground mb-2 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-primary" />
-            Λίστα Ελέγχου
+        <div className="rounded-2xl driver-glass border-2 border-[hsl(var(--driver-accent))]/20 p-4">
+          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
+            <CheckCircle2 className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+            Λίστα Ελέγχου Παραλαβής
           </p>
           {delivery.pickupChecklist.map((item, i) => (
             <button
@@ -192,11 +194,11 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
               className="flex items-center gap-3 w-full py-2.5 text-left"
             >
               {checkedItems.has(i) ? (
-                <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
+                <CheckCircle2 className="h-5 w-5 text-[hsl(var(--driver-accent))] flex-shrink-0" />
               ) : (
-                <Circle className="h-5 w-5 text-muted-foreground flex-shrink-0" />
+                <Circle className="h-5 w-5 text-[hsl(var(--driver-text-muted))] flex-shrink-0" />
               )}
-              <span className={`text-sm ${checkedItems.has(i) ? 'line-through text-muted-foreground' : 'text-foreground'}`}>
+              <span className={`text-sm ${checkedItems.has(i) ? 'line-through text-[hsl(var(--driver-text-muted))]' : 'text-[hsl(var(--driver-text))]'}`}>
                 {item}
               </span>
             </button>
@@ -205,16 +207,16 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       )}
 
       {/* Payout */}
-      <div className="rounded-2xl bg-card border border-border p-4 shadow-sm flex items-center justify-between">
-        <span className="text-muted-foreground text-sm">Αμοιβή</span>
-        <span className="font-heading font-extrabold text-xl text-primary">{delivery.estimatedPayout.toFixed(2)}€</span>
+      <div className="rounded-2xl driver-glass p-4 flex items-center justify-between">
+        <span className="text-[hsl(var(--driver-text-muted))] text-sm font-heading">Εκτιμώμενη Αμοιβή</span>
+        <span className="font-heading font-extrabold text-xl text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
       </div>
 
       {/* Main CTA */}
       {nextAction && (
         <button
           onClick={() => onStatusUpdate(nextAction.next)}
-          className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-primary text-primary-foreground shadow-[0_6px_24px_hsl(var(--primary)/0.3)] hover:shadow-[0_8px_32px_hsl(var(--primary)/0.4)] transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
         >
           {nextAction.label}
           <ChevronRight className="h-5 w-5" />
