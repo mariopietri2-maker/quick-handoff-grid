@@ -18,6 +18,7 @@ import DriverMapbox, { type RouteInfo } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { WaitTimeBonusBanner } from '@/components/driver/WaitTimeBonusBanner';
 import { DriverHomeHeader } from '@/components/driver/DriverHomeHeader';
+import DriverClassicLayout from '@/components/driver/DriverClassicLayout';
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
@@ -25,14 +26,18 @@ export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
+  const [driverLayout, setDriverLayout] = useState<string>('default');
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
   const { user } = useAuth();
   const { today } = useEarnings();
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('driver_profiles').select('is_active').eq('user_id', user.id).maybeSingle()
-      .then(({ data }) => setDriverActive(data ? data.is_active : true));
+    supabase.from('driver_profiles').select('is_active, layout').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => {
+        setDriverActive(data ? (data as any).is_active : true);
+        setDriverLayout((data as any)?.layout || 'default');
+      });
   }, [user]);
 
   const hasActiveDelivery = !!activeDelivery;
