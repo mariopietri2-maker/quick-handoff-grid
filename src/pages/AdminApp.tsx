@@ -98,6 +98,12 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
   };
 
+  const handleChangeDriverLayout = async (userId: string, layout: string) => {
+    const { error } = await supabase.from('driver_profiles').update({ layout } as any).eq('user_id', userId);
+    if (error) toast.error('Αποτυχία αλλαγής layout');
+    else { toast.success('Layout ενημερώθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
+  };
+
   const handleChangeRole = async (userId: string, newRole: string) => {
     const { error } = await supabase.from('profiles').update({ role: newRole as any }).eq('user_id', userId);
     if (error) toast.error('Αποτυχία');
