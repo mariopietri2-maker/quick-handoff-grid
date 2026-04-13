@@ -123,6 +123,7 @@ export type Database = {
           id: string
           id_document_url: string | null
           is_active: boolean
+          layout: string
           license_document_url: string | null
           license_expiry: string | null
           license_number: string | null
@@ -144,6 +145,7 @@ export type Database = {
           id?: string
           id_document_url?: string | null
           is_active?: boolean
+          layout?: string
           license_document_url?: string | null
           license_expiry?: string | null
           license_number?: string | null
@@ -165,6 +167,7 @@ export type Database = {
           id?: string
           id_document_url?: string | null
           is_active?: boolean
+          layout?: string
           license_document_url?: string | null
           license_expiry?: string | null
           license_number?: string | null
