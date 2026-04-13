@@ -87,6 +87,11 @@ export default function DriverApp() {
     );
   }
 
+  // Render classic layout if assigned
+  if (driverLayout === 'classic') {
+    return <DriverClassicLayout />;
+  }
+
   const bottomTabs: { key: DriverTab; icon: React.ElementType; label: string }[] = [
     { key: 'home', icon: MapPin, label: 'Αρχική' },
     { key: 'earnings', icon: TrendingUp, label: 'Κέρδη' },
