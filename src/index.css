@@ -192,4 +192,27 @@
   .driver-gradient-surface {
     background: linear-gradient(180deg, hsl(225 20% 14%), hsl(225 25% 10%));
   }
+
+  .safe-area-top {
+    padding-top: env(safe-area-inset-top, 0px);
+  }
+
+  .safe-area-bottom {
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+
+  .scrollbar-thin {
+    scrollbar-width: thin;
+    scrollbar-color: hsl(225 15% 25% / 0.5) transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar {
+    width: 4px;
+  }
+  .scrollbar-thin::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-thin::-webkit-scrollbar-thumb {
+    background: hsl(225 15% 25% / 0.5);
+    border-radius: 2px;
+  }
 }

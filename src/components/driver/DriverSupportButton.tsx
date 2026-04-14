@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Headphones, AlertTriangle, Car, Smartphone, MessageCircle, Send, X } from 'lucide-react';
+import { Headphones, AlertTriangle, Car, Smartphone, MessageCircle, Send } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
@@ -44,10 +44,10 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-24 right-4 z-40 h-12 w-12 rounded-2xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-[hsl(var(--driver-surface))]"
+        className="fixed bottom-[88px] right-4 z-40 h-11 w-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-[hsl(var(--driver-surface))]"
         aria-label="Βοήθεια"
       >
-        <Headphones className="h-5 w-5 text-[hsl(var(--driver-text))]" />
+        <Headphones className="h-4.5 w-4.5 text-[hsl(var(--driver-text))]" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
@@ -57,14 +57,14 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
           </DialogHeader>
 
           {!category ? (
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-2 gap-3">
               {categories.map(cat => {
                 const Icon = cat.icon;
                 return (
                   <button
                     key={cat.key}
                     onClick={() => setCategory(cat.key)}
-                    className={`flex flex-col items-center gap-2 p-4 rounded-xl border transition-colors hover:brightness-110 ${cat.color}`}
+                    className={`flex flex-col items-center gap-2.5 p-5 rounded-xl border transition-colors hover:brightness-110 ${cat.color}`}
                   >
                     <Icon className="h-6 w-6" />
                     <span className="text-xs font-heading font-semibold">{cat.label}</span>
@@ -73,8 +73,8 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
               })}
             </div>
           ) : (
-            <div className="space-y-3">
-              <button onClick={() => setCategory(null)} className="text-xs text-[hsl(var(--driver-text-muted))] hover:text-[hsl(var(--driver-text))]">
+            <div className="space-y-4">
+              <button onClick={() => setCategory(null)} className="text-xs text-[hsl(var(--driver-text-muted))] hover:text-[hsl(var(--driver-text))] transition-colors">
                 ← Πίσω
               </button>
               <Textarea
@@ -82,12 +82,12 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
                 value={description}
                 onChange={e => setDescription(e.target.value)}
                 rows={3}
-                className="bg-[hsl(var(--driver-bg))] border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]"
+                className="bg-[hsl(var(--driver-bg))] border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))] focus:ring-[hsl(var(--driver-accent))]"
               />
               <button
                 onClick={handleSubmit}
                 disabled={submitting}
-                className="w-full h-11 rounded-xl font-heading font-bold text-sm bg-[hsl(var(--driver-accent))] text-white flex items-center justify-center gap-2 disabled:opacity-50 driver-glow-green"
+                className="w-full h-12 rounded-xl font-heading font-bold text-sm bg-[hsl(var(--driver-accent))] text-white flex items-center justify-center gap-2 disabled:opacity-50 driver-glow-green active:scale-[0.98] transition-all"
               >
                 <Send className="h-4 w-4" />
                 {submitting ? 'Αποστολή...' : 'Αποστολή'}
