@@ -16,9 +16,7 @@ import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
-import { WaitTimeBonusBanner } from '@/components/driver/WaitTimeBonusBanner';
 import { DriverHomeHeader } from '@/components/driver/DriverHomeHeader';
-import DriverClassicLayout from '@/components/driver/DriverClassicLayout';
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
@@ -26,21 +24,16 @@ export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
   const [isOnline, setIsOnline] = useState(true);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
-  const [driverLayout, setDriverLayout] = useState<string>('default');
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
   const { user } = useAuth();
   const { today } = useEarnings();
 
   useEffect(() => {
     if (!user) return;
-    supabase.from('driver_profiles').select('is_active, layout').eq('user_id', user.id).maybeSingle()
-      .then(({ data }) => {
-        setDriverActive(data ? (data as any).is_active : true);
-        setDriverLayout((data as any)?.layout || 'default');
-      });
+    supabase.from('driver_profiles').select('is_active').eq('user_id', user.id).maybeSingle()
+      .then(({ data }) => setDriverActive(data ? data.is_active : true));
   }, [user]);
 
-  const hasActiveDelivery = !!activeDelivery;
   const { tracking, error: locError } = useDriverLocation(isOnline);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
@@ -87,11 +80,6 @@ export default function DriverApp() {
     );
   }
 
-  // Render classic layout if assigned
-  if (driverLayout === 'classic') {
-    return <DriverClassicLayout />;
-  }
-
   const bottomTabs: { key: DriverTab; icon: React.ElementType; label: string }[] = [
     { key: 'home', icon: MapPin, label: 'Αρχική' },
     { key: 'earnings', icon: TrendingUp, label: 'Κέρδη' },
@@ -101,79 +89,75 @@ export default function DriverApp() {
 
   return (
     <div className="h-screen flex flex-col driver-shell bg-[hsl(var(--driver-bg))]">
-      {/* ─── HEADER ─── */}
-      <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass">
-        <UserMenu />
-        <div className="flex items-center gap-2">
-          <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
-            <Zap className="h-3.5 w-3.5 text-white" />
-          </div>
-          <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">QuickGrid</span>
-        </div>
-        <button
-          onClick={() => setIsOnline(!isOnline)}
-          className={`relative px-5 py-1.5 rounded-full text-xs font-heading font-bold transition-all duration-300 ${
-            isOnline
-              ? 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green'
-              : 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
-          }`}
-        >
-          {isOnline && <span className="absolute left-2 top-1/2 -translate-y-1/2 h-1.5 w-1.5 rounded-full bg-white animate-pulse" />}
-          {isOnline ? 'Online' : 'Offline'}
-        </button>
-      </header>
+      {activeTab === 'home' ? (
+        /* ─── FULLSCREEN MAP + OVERLAY ─── */
+        <div className="flex-1 relative">
+          {/* Fullscreen Map */}
+          <DriverMapbox
+            className="absolute inset-0"
+            storeLat={storeInfo?.latitude}
+            storeLng={storeInfo?.longitude}
+            storeName={storeInfo?.name}
+            customerLat={activeDelivery?.delivery_latitude}
+            customerLng={activeDelivery?.delivery_longitude}
+            customerName={customerInfo?.name}
+            customerAddress={activeDelivery?.delivery_address}
+            navigatingTo={navigatingTo}
+            onRouteUpdate={setRouteInfo}
+          />
 
-      {/* ─── MAIN ─── */}
-      <div className="flex-1 overflow-y-auto pb-20">
-        {activeTab === 'home' && (
-          <div>
-            {/* Mapbox Map */}
-            <div className="relative h-[300px]">
-              <DriverMapbox
-                className="absolute inset-0"
-                storeLat={storeInfo?.latitude}
-                storeLng={storeInfo?.longitude}
-                storeName={storeInfo?.name}
-                customerLat={activeDelivery?.delivery_latitude}
-                customerLng={activeDelivery?.delivery_longitude}
-                customerName={customerInfo?.name}
-                customerAddress={activeDelivery?.delivery_address}
-                navigatingTo={navigatingTo}
-                onRouteUpdate={setRouteInfo}
-              />
-              {/* Bottom gradient fade */}
-              <div className="absolute bottom-0 left-0 right-0 h-28 bg-gradient-to-t from-[hsl(var(--driver-bg))] to-transparent pointer-events-none" />
-
-              {/* Floating earnings pill */}
-              <DriverHomeHeader today={today} />
+          {/* ─── TOP BAR (floating over map) ─── */}
+          <div className="absolute top-0 left-0 right-0 z-20 px-4 pt-3 pb-2 flex items-center justify-between">
+            <div className="driver-glass rounded-full p-1.5">
+              <UserMenu />
             </div>
+            <div className="driver-glass rounded-full px-4 py-2 flex items-center gap-2">
+              <div className="h-5 w-5 rounded-md gradient-primary flex items-center justify-center">
+                <Zap className="h-3 w-3 text-white" />
+              </div>
+              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
+            </div>
+            <button
+              onClick={() => setIsOnline(!isOnline)}
+              className={`driver-glass rounded-full px-4 py-2 text-xs font-heading font-bold transition-all duration-300 ${
+                isOnline
+                  ? 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green border-none'
+                  : 'text-[hsl(var(--driver-text-muted))]'
+              }`}
+            >
+              {isOnline && <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-1.5" />}
+              {isOnline ? 'Online' : 'Offline'}
+            </button>
+          </div>
 
-            <AnnouncementsBanner audience="drivers" />
+          {/* ─── FLOATING EARNINGS PILL ─── */}
+          <DriverHomeHeader today={today} />
 
-            {/* Navigation Panel */}
-            {routeInfo && navigatingTo && (
-              <div className="px-4 pt-3">
+          {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
+          <div className="absolute bottom-16 left-0 right-0 z-20 max-h-[55vh] overflow-y-auto px-3 pb-2 space-y-2 pointer-events-none">
+            <div className="pointer-events-auto space-y-2">
+              <AnnouncementsBanner audience="drivers" />
+
+              {/* Navigation Panel */}
+              {routeInfo && navigatingTo && (
                 <NavigationPanel
                   route={routeInfo}
                   destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
                   destinationType={navigatingTo}
                 />
-              </div>
-            )}
+              )}
 
-            {/* Content */}
-            <div className="px-4 py-3 space-y-3">
-              {/* Active delivery */}
+              {/* Active delivery card */}
               {activeDelivery && (
                 <>
                   {tracking && (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20">
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20 driver-glass">
                       <Navigation className="h-4 w-4 text-[hsl(var(--driver-accent))] animate-pulse" />
-                      <span className="text-xs font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή τοποθεσία κοινοποιείται</span>
+                      <span className="text-xs font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή τοποθεσία</span>
                     </div>
                   )}
                   {locError && (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20">
+                    <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
                       <Navigation className="h-4 w-4 text-destructive" />
                       <span className="text-xs font-heading text-destructive">GPS: {locError}</span>
                     </div>
@@ -201,91 +185,98 @@ export default function DriverApp() {
                 </>
               )}
 
-              {/* Offers */}
-              {!activeDelivery && (
+              {/* Order offer cards */}
+              {!activeDelivery && isOnline && !loading && offers.length > 0 && (
                 <>
-                  {!isOnline ? (
-                    <div className="text-center py-16">
-                      <div className="h-16 w-16 rounded-2xl bg-[hsl(var(--driver-surface))] flex items-center justify-center mx-auto mb-4 border border-[hsl(var(--driver-border))]">
-                        <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))]" />
-                      </div>
-                      <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-lg">Εκτός Σύνδεσης</p>
-                      <p className="text-sm text-[hsl(var(--driver-text-muted))] mt-1">Πατήστε <strong className="text-[hsl(var(--driver-accent))]">Online</strong> για παραγγελίες</p>
-                    </div>
-                  ) : loading ? (
-                    <div className="text-center py-16">
-                      <div className="h-10 w-10 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-                      <p className="text-[hsl(var(--driver-text-muted))] font-heading text-sm">Αναζήτηση...</p>
-                    </div>
-                  ) : offers.length === 0 ? (
-                    <div className="text-center py-16">
-                      <div className="relative h-20 w-20 mx-auto mb-4">
-                        <div className="absolute inset-0 rounded-2xl bg-primary/15 animate-ping opacity-30" />
-                        <div className="relative h-20 w-20 rounded-2xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
-                          <Zap className="h-9 w-9 text-primary" />
-                        </div>
-                      </div>
-                      <h2 className="font-heading font-bold text-lg text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</h2>
-                      <p className="text-sm text-[hsl(var(--driver-text-muted))] mt-1.5 max-w-[260px] mx-auto">
-                        Θα ειδοποιηθείτε μόλις εμφανιστεί νέα παραγγελία
-                      </p>
-                      <div className="mt-4 inline-flex items-center gap-2 px-4 py-2 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
-                        <span className="h-2 w-2 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
-                        <span className="text-xs font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-3">
-                      <div className="flex items-center justify-between">
-                        <h3 className="font-heading font-bold text-[hsl(var(--driver-text))]">Διαθέσιμες Παραγγελίες</h3>
-                        <Badge className="bg-primary text-primary-foreground font-heading">{offers.length}</Badge>
-                      </div>
-                      {offers.map(offer => (
-                        <OrderOfferCard
-                          key={offer.id}
-                          offer={{
-                            id: offer.id,
-                            storeName: 'Παραλαβή',
-                            storeAddress: offer.delivery_address || 'Κατάστημα',
-                            deliveryAddress: offer.delivery_address || 'Πελάτης',
-                            estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
-                            basePay: Number(offer.delivery_fee ?? 0),
-                            tipAmount: Number(offer.tip_amount ?? 0),
-                            perKmRate: 0.50,
-                            totalDistance: 0,
-                            estimatedTime: offer.estimated_prep_time ?? 20,
-                            itemCount: offer.order_items?.length ?? 0,
-                          }}
-                          onAccept={acceptOrder}
-                          onDecline={handleDecline}
-                        />
-                      ))}
-                    </div>
-                  )}
+                  <div className="flex items-center justify-between px-1">
+                    <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
+                    <Badge className="bg-primary text-primary-foreground font-heading text-[10px]">{offers.length}</Badge>
+                  </div>
+                  {offers.map(offer => (
+                    <OrderOfferCard
+                      key={offer.id}
+                      offer={{
+                        id: offer.id,
+                        storeName: 'Παραλαβή',
+                        storeAddress: offer.delivery_address || 'Κατάστημα',
+                        deliveryAddress: offer.delivery_address || 'Πελάτης',
+                        estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
+                        basePay: Number(offer.delivery_fee ?? 0),
+                        tipAmount: Number(offer.tip_amount ?? 0),
+                        perKmRate: 0.50,
+                        totalDistance: 0,
+                        estimatedTime: offer.estimated_prep_time ?? 20,
+                        itemCount: offer.order_items?.length ?? 0,
+                      }}
+                      onAccept={acceptOrder}
+                      onDecline={handleDecline}
+                    />
+                  ))}
                 </>
+              )}
+
+              {/* Offline state */}
+              {!activeDelivery && !isOnline && (
+                <div className="driver-glass rounded-2xl p-5 text-center">
+                  <Radio className="h-6 w-6 text-[hsl(var(--driver-text-muted))] mx-auto mb-2" />
+                  <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
+                  <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-0.5">Πατήστε <strong className="text-[hsl(var(--driver-accent))]">Online</strong> για παραγγελίες</p>
+                </div>
+              )}
+
+              {/* Waiting state */}
+              {!activeDelivery && isOnline && !loading && offers.length === 0 && (
+                <div className="driver-glass rounded-2xl p-5 text-center">
+                  <div className="relative h-12 w-12 mx-auto mb-2">
+                    <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
+                    <div className="relative h-12 w-12 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
+                      <Zap className="h-6 w-6 text-primary" />
+                    </div>
+                  </div>
+                  <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
+                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
+                    <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
+                    <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
+                  </div>
+                </div>
+              )}
+
+              {/* Loading state */}
+              {!activeDelivery && isOnline && loading && (
+                <div className="driver-glass rounded-2xl p-5 text-center">
+                  <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                  <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
+                </div>
               )}
             </div>
           </div>
-        )}
-
-        {activeTab === 'earnings' && (
-          <div className="px-4 py-4">
-            <EarningsDashboard />
+        </div>
+      ) : (
+        /* ─── NON-MAP TABS ─── */
+        <>
+          <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass">
+            <UserMenu />
+            <div className="flex items-center gap-2">
+              <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
+                <Zap className="h-3.5 w-3.5 text-white" />
+              </div>
+              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">QuickGrid</span>
+            </div>
+            <div className="w-10" />
+          </header>
+          <div className="flex-1 overflow-y-auto pb-20">
+            {activeTab === 'earnings' && (
+              <div className="px-4 py-4"><EarningsDashboard /></div>
+            )}
+            {activeTab === 'wallet' && (
+              <div className="px-4 py-4"><DriverWallet /></div>
+            )}
+            {activeTab === 'referral' && (
+              <div className="px-4 py-4"><DriverReferral /></div>
+            )}
           </div>
-        )}
-
-        {activeTab === 'wallet' && (
-          <div className="px-4 py-4">
-            <DriverWallet />
-          </div>
-        )}
-
-        {activeTab === 'referral' && (
-          <div className="px-4 py-4">
-            <DriverReferral />
-          </div>
-        )}
-      </div>
+        </>
+      )}
 
       {/* ─── BOTTOM NAV ─── */}
       <nav className="fixed bottom-0 inset-x-0 z-30 driver-glass safe-area-bottom">
