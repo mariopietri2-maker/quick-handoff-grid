@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Navigation, Clock, Timer, MapPin, DollarSign, Zap } from 'lucide-react';
+import { Package, Navigation, Clock, Timer, DollarSign } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 
 interface OrderOffer {
@@ -43,10 +43,10 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
   return (
     <div className="rounded-2xl overflow-hidden driver-glass animate-in slide-in-from-bottom-4">
       {/* Top bar — payout + timer */}
-      <div className="bg-[hsl(var(--driver-accent))] px-4 py-3.5 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
-            <DollarSign className="h-4 w-4 text-white" />
+      <div className="bg-[hsl(var(--driver-accent))] px-4 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-lg bg-white/20 flex items-center justify-center">
+            <DollarSign className="h-4.5 w-4.5 text-white" />
           </div>
           <span className="font-heading font-extrabold text-2xl text-white tabular-nums">
             {offer.estimatedPayout.toFixed(2)}€
@@ -69,34 +69,34 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
       </div>
 
       {/* Route */}
-      <div className="px-4 pt-4 pb-3">
+      <div className="px-4 pt-4 pb-4">
         <div className="flex items-start gap-3">
           <div className="flex flex-col items-center gap-1 pt-1">
-            <div className="h-3.5 w-3.5 rounded-full bg-orange-400 border-2 border-orange-300 shadow-[0_0_8px_rgba(251,146,60,0.4)]" />
-            <div className="w-0.5 h-8 bg-[hsl(var(--driver-border))]" />
-            <div className="h-3.5 w-3.5 rounded-full bg-[hsl(var(--driver-accent))] border-2 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
+            <div className="h-3 w-3 rounded-full bg-orange-400 border-2 border-orange-300 shadow-[0_0_8px_rgba(251,146,60,0.4)]" />
+            <div className="w-0.5 h-7 bg-[hsl(var(--driver-border))]" />
+            <div className="h-3 w-3 rounded-full bg-[hsl(var(--driver-accent))] border-2 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
           </div>
-          <div className="flex-1 space-y-3">
+          <div className="flex-1 space-y-2.5">
             <div>
               <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">{offer.storeName}</p>
-              <p className="text-xs text-[hsl(var(--driver-text-muted))]">{shortenAddress(offer.storeAddress)}</p>
+              <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-0.5">{shortenAddress(offer.storeAddress)}</p>
             </div>
             <div>
               <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Παράδοση</p>
-              <p className="text-xs text-[hsl(var(--driver-text-muted))]">{shortenAddress(offer.deliveryAddress)}</p>
+              <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-0.5">{shortenAddress(offer.deliveryAddress)}</p>
             </div>
           </div>
         </div>
 
         {/* Info chips */}
         <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
             <Navigation className="h-3 w-3" />{offer.totalDistance || '—'} χλμ
           </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
             <Clock className="h-3 w-3" />~{offer.estimatedTime} λεπ
           </span>
-          <span className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
+          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
             <Package className="h-3 w-3" />{offer.itemCount} τεμ.
           </span>
         </div>
@@ -110,17 +110,17 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
           </div>
         )}
 
-        {/* Actions */}
-        <div className="flex gap-3 mt-4">
+        {/* Actions — clear separation with proper spacing */}
+        <div className="flex gap-3 mt-5">
           <button
             onClick={() => onDecline(offer.id)}
-            className="flex-1 h-12 rounded-xl text-sm font-heading font-bold border border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface))] transition-colors"
+            className="flex-1 h-12 rounded-xl text-sm font-heading font-bold border-2 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface))] transition-all active:scale-[0.97]"
           >
             Απόρριψη
           </button>
           <button
             onClick={() => onAccept(offer.id)}
-            className="flex-1 h-12 rounded-xl text-sm font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.98]"
+            className="flex-[1.4] h-12 rounded-xl text-sm font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.97]"
           >
             Αποδοχή ✓
           </button>

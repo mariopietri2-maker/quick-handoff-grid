@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, User, MapPin } from 'lucide-react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
@@ -83,11 +83,11 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
             const isCurrent = i === effectiveStepIndex;
             return (
               <div key={step.key} className="flex items-center">
-                <div className={`h-10 w-10 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
                   isComplete
                     ? 'bg-[hsl(var(--driver-accent))] text-white'
                     : 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
-                } ${isCurrent && delivery.status !== 'delivered' ? 'ring-4 ring-[hsl(var(--driver-accent))]/20 scale-110' : ''}`}>
+                } ${isCurrent && delivery.status !== 'delivered' ? 'ring-3 ring-[hsl(var(--driver-accent))]/20 scale-110' : ''}`}>
                   {i < effectiveStepIndex ? (
                     <CheckCircle2 className="h-4 w-4" />
                   ) : (
@@ -95,7 +95,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
                   )}
                 </div>
                 {i < statusSteps.length - 1 && (
-                  <div className={`h-0.5 w-5 sm:w-8 mx-1 rounded-full transition-colors ${
+                  <div className={`h-0.5 w-4 sm:w-6 mx-0.5 rounded-full transition-colors ${
                     i < effectiveStepIndex ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-border))]'
                   }`} />
                 )}
@@ -112,36 +112,36 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       <div className="rounded-2xl driver-glass p-4">
         <div className="flex items-start gap-3">
           <div className="flex flex-col items-center gap-1">
-            <div className="h-10 w-10 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
-              <Store className="h-4.5 w-4.5 text-orange-400" />
+            <div className="h-9 w-9 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
+              <Store className="h-4 w-4 text-orange-400" />
             </div>
-            <div className="w-0.5 h-5 bg-[hsl(var(--driver-border))]" />
-            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center border border-[hsl(var(--driver-accent))]/20">
-              <MapPin className="h-4.5 w-4.5 text-[hsl(var(--driver-accent))]" />
+            <div className="w-0.5 h-4 bg-[hsl(var(--driver-border))]" />
+            <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center border border-[hsl(var(--driver-accent))]/20">
+              <MapPin className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
             </div>
           </div>
-          <div className="flex-1 space-y-3">
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">{delivery.storeName}</p>
-                {delivery.storePhone && (
-                  <a href={`tel:${delivery.storePhone}`} className="h-8 w-8 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors">
-                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
-                  </a>
-                )}
+          <div className="flex-1 min-w-0 space-y-2.5">
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.storeName}</p>
+                <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.storeAddress)}</p>
               </div>
-              <p className="text-xs text-[hsl(var(--driver-text-muted))]">{shortenAddress(delivery.storeAddress)}</p>
+              {delivery.storePhone && (
+                <a href={`tel:${delivery.storePhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
+                  <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
+                </a>
+              )}
             </div>
-            <div>
-              <div className="flex items-center justify-between">
-                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">{delivery.customerName}</p>
-                {delivery.customerPhone && (
-                  <a href={`tel:${delivery.customerPhone}`} className="h-8 w-8 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors">
-                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
-                  </a>
-                )}
+            <div className="flex items-center justify-between gap-2">
+              <div className="min-w-0">
+                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.customerName}</p>
+                <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.deliveryAddress)}</p>
               </div>
-              <p className="text-xs text-[hsl(var(--driver-text-muted))]">{shortenAddress(delivery.deliveryAddress)}</p>
+              {delivery.customerPhone && (
+                <a href={`tel:${delivery.customerPhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
+                  <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
+                </a>
+              )}
             </div>
           </div>
         </div>
@@ -154,7 +154,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
               isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
               isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress
             )}
-            className="w-full mt-3 h-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] text-[hsl(var(--driver-text))] text-sm font-heading font-semibold flex items-center justify-center gap-2 hover:bg-[hsl(var(--driver-surface-elevated))]/80 transition-colors border border-[hsl(var(--driver-border))]"
+            className="w-full mt-4 h-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] text-[hsl(var(--driver-text))] text-sm font-heading font-semibold flex items-center justify-center gap-2 hover:bg-[hsl(var(--driver-surface-elevated))]/80 transition-colors border border-[hsl(var(--driver-border))] active:scale-[0.98]"
           >
             <Navigation className="h-4 w-4 text-blue-400" />
             Πλοήγηση Google Maps
@@ -164,13 +164,13 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
 
       {/* Order items */}
       <div className="rounded-2xl driver-glass p-4">
-        <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-3 flex items-center gap-2">
+        <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
           <Package className="h-4 w-4 text-primary" />
           Παραγγελία ({delivery.items.length} τεμ.)
         </p>
         <div className="space-y-0">
           {delivery.items.map((item, i) => (
-            <div key={i} className="flex items-center justify-between py-2.5 border-b border-[hsl(var(--driver-border))] last:border-0">
+            <div key={i} className="flex items-center justify-between py-2 border-b border-[hsl(var(--driver-border))]/50 last:border-0">
               <span className="text-sm text-[hsl(var(--driver-text))]">{item.quantity}× {item.name}</span>
             </div>
           ))}
@@ -183,7 +183,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       {/* Pickup checklist */}
       {delivery.status === 'arrived' && (
         <div className="rounded-2xl driver-glass border-2 border-[hsl(var(--driver-accent))]/20 p-4">
-          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
+          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-3 flex items-center gap-2">
             <CheckCircle2 className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
             Λίστα Ελέγχου Παραλαβής
           </p>
@@ -216,7 +216,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       {nextAction && (
         <button
           onClick={() => onStatusUpdate(nextAction.next)}
-          className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.98] flex items-center justify-center gap-2"
+          className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
         >
           {nextAction.label}
           <ChevronRight className="h-5 w-5" />

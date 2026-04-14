@@ -87,10 +87,11 @@ export default function DriverApp() {
     { key: 'referral', icon: Users, label: 'Πρόσκληση' },
   ];
 
+  const hasOverlayContent = activeDelivery || (!activeDelivery && isOnline && offers.length > 0) || (!activeDelivery && !isOnline);
+
   return (
     <div className="h-screen flex flex-col driver-shell bg-[hsl(var(--driver-bg))]">
       {activeTab === 'home' ? (
-        /* ─── FULLSCREEN MAP + OVERLAY ─── */
         <div className="flex-1 relative">
           {/* Fullscreen Map */}
           <DriverMapbox
@@ -107,36 +108,58 @@ export default function DriverApp() {
           />
 
           {/* ─── TOP BAR (floating over map) ─── */}
-          <div className="absolute top-0 left-0 right-0 z-20 px-4 pt-3 pb-2 flex items-center justify-between">
-            <div className="driver-glass rounded-full p-1.5">
-              <UserMenu />
-            </div>
-            <div className="driver-glass rounded-full px-4 py-2 flex items-center gap-2">
-              <div className="h-5 w-5 rounded-md gradient-primary flex items-center justify-center">
-                <Zap className="h-3 w-3 text-white" />
+          <div className="absolute top-0 left-0 right-0 z-20 safe-area-top">
+            <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
+              <div className="driver-glass rounded-full p-1.5 shrink-0">
+                <UserMenu />
               </div>
-              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
+              <div className="driver-glass rounded-full px-4 py-2 flex items-center gap-2 shrink-0">
+                <div className="h-5 w-5 rounded-md gradient-primary flex items-center justify-center">
+                  <Zap className="h-3 w-3 text-white" />
+                </div>
+                <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
+              </div>
+              <button
+                onClick={() => setIsOnline(!isOnline)}
+                className={`shrink-0 driver-glass rounded-full px-4 py-2 text-xs font-heading font-bold transition-all duration-300 ${
+                  isOnline
+                    ? 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green border-transparent'
+                    : 'text-[hsl(var(--driver-text-muted))]'
+                }`}
+              >
+                {isOnline && <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-1.5 align-middle" />}
+                {isOnline ? 'Online' : 'Offline'}
+              </button>
             </div>
-            <button
-              onClick={() => setIsOnline(!isOnline)}
-              className={`driver-glass rounded-full px-4 py-2 text-xs font-heading font-bold transition-all duration-300 ${
-                isOnline
-                  ? 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green border-none'
-                  : 'text-[hsl(var(--driver-text-muted))]'
-              }`}
-            >
-              {isOnline && <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-1.5" />}
-              {isOnline ? 'Online' : 'Offline'}
-            </button>
           </div>
 
-          {/* ─── FLOATING EARNINGS PILL ─── */}
-          <DriverHomeHeader today={today} />
+          {/* ─── FLOATING EARNINGS (only when no overlay content) ─── */}
+          {!hasOverlayContent && <DriverHomeHeader today={today} />}
 
           {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
-          <div className="absolute bottom-16 left-0 right-0 z-20 max-h-[55vh] overflow-y-auto px-3 pb-2 space-y-2 pointer-events-none">
-            <div className="pointer-events-auto space-y-2">
+          <div className="absolute bottom-[72px] left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-3 space-y-3 pointer-events-none scrollbar-thin">
+            <div className="pointer-events-auto space-y-3">
               <AnnouncementsBanner audience="drivers" />
+
+              {/* Earnings pill when overlay content is visible */}
+              {hasOverlayContent && (
+                <div className="driver-glass rounded-xl px-4 py-3 flex items-center justify-between">
+                  <div>
+                    <p className="text-[10px] text-[hsl(var(--driver-text-muted))] font-heading uppercase tracking-widest">Σήμερα</p>
+                    <p className="font-heading font-extrabold text-xl text-[hsl(var(--driver-text))] tabular-nums">{today.total.toFixed(2)}€</p>
+                  </div>
+                  <div className="flex gap-4">
+                    <div className="text-center">
+                      <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] tabular-nums">{today.trips}</p>
+                      <p className="text-[9px] text-[hsl(var(--driver-text-muted))] uppercase">Διαδρομές</p>
+                    </div>
+                    <div className="text-center">
+                      <p className="font-heading font-bold text-sm text-[hsl(var(--driver-accent))] tabular-nums">{today.tips.toFixed(2)}€</p>
+                      <p className="text-[9px] text-[hsl(var(--driver-text-muted))] uppercase">Tips</p>
+                    </div>
+                  </div>
+                </div>
+              )}
 
               {/* Navigation Panel */}
               {routeInfo && navigatingTo && (
@@ -151,14 +174,14 @@ export default function DriverApp() {
               {activeDelivery && (
                 <>
                   {tracking && (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20 driver-glass">
-                      <Navigation className="h-4 w-4 text-[hsl(var(--driver-accent))] animate-pulse" />
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20 driver-glass">
+                      <Navigation className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))] animate-pulse" />
                       <span className="text-xs font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή τοποθεσία</span>
                     </div>
                   )}
                   {locError && (
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
-                      <Navigation className="h-4 w-4 text-destructive" />
+                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
+                      <Navigation className="h-3.5 w-3.5 text-destructive" />
                       <span className="text-xs font-heading text-destructive">GPS: {locError}</span>
                     </div>
                   )}
@@ -187,10 +210,10 @@ export default function DriverApp() {
 
               {/* Order offer cards */}
               {!activeDelivery && isOnline && !loading && offers.length > 0 && (
-                <>
+                <div className="space-y-3">
                   <div className="flex items-center justify-between px-1">
                     <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
-                    <Badge className="bg-primary text-primary-foreground font-heading text-[10px]">{offers.length}</Badge>
+                    <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5">{offers.length}</Badge>
                   </div>
                   {offers.map(offer => (
                     <OrderOfferCard
@@ -212,29 +235,29 @@ export default function DriverApp() {
                       onDecline={handleDecline}
                     />
                   ))}
-                </>
+                </div>
               )}
 
               {/* Offline state */}
               {!activeDelivery && !isOnline && (
-                <div className="driver-glass rounded-2xl p-5 text-center">
-                  <Radio className="h-6 w-6 text-[hsl(var(--driver-text-muted))] mx-auto mb-2" />
+                <div className="driver-glass rounded-2xl p-6 text-center">
+                  <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-3" />
                   <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
-                  <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-0.5">Πατήστε <strong className="text-[hsl(var(--driver-accent))]">Online</strong> για παραγγελίες</p>
+                  <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Πατήστε <strong className="text-[hsl(var(--driver-accent))]">Online</strong> για παραγγελίες</p>
                 </div>
               )}
 
               {/* Waiting state */}
               {!activeDelivery && isOnline && !loading && offers.length === 0 && (
-                <div className="driver-glass rounded-2xl p-5 text-center">
-                  <div className="relative h-12 w-12 mx-auto mb-2">
+                <div className="driver-glass rounded-2xl p-6 text-center">
+                  <div className="relative h-12 w-12 mx-auto mb-3">
                     <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
                     <div className="relative h-12 w-12 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
                       <Zap className="h-6 w-6 text-primary" />
                     </div>
                   </div>
                   <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
-                  <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
+                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
                     <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
                     <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
                   </div>
@@ -243,8 +266,8 @@ export default function DriverApp() {
 
               {/* Loading state */}
               {!activeDelivery && isOnline && loading && (
-                <div className="driver-glass rounded-2xl p-5 text-center">
-                  <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-2" />
+                <div className="driver-glass rounded-2xl p-6 text-center">
+                  <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                   <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
                 </div>
               )}
@@ -254,7 +277,7 @@ export default function DriverApp() {
       ) : (
         /* ─── NON-MAP TABS ─── */
         <>
-          <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass">
+          <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass safe-area-top">
             <UserMenu />
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
@@ -264,7 +287,7 @@ export default function DriverApp() {
             </div>
             <div className="w-10" />
           </header>
-          <div className="flex-1 overflow-y-auto pb-20">
+          <div className="flex-1 overflow-y-auto pb-24">
             {activeTab === 'earnings' && (
               <div className="px-4 py-4"><EarningsDashboard /></div>
             )}
@@ -279,8 +302,8 @@ export default function DriverApp() {
       )}
 
       {/* ─── BOTTOM NAV ─── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 driver-glass safe-area-bottom">
-        <div className="flex">
+      <nav className="fixed bottom-0 inset-x-0 z-30 driver-glass border-t border-[hsl(var(--driver-border))]">
+        <div className="flex safe-area-bottom">
           {bottomTabs.map(tab => {
             const Icon = tab.icon;
             const isActive = activeTab === tab.key;
@@ -288,15 +311,15 @@ export default function DriverApp() {
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 flex flex-col items-center gap-0.5 py-2.5 transition-all duration-200 relative ${
+                className={`flex-1 flex flex-col items-center gap-1 py-3 transition-all duration-200 relative ${
                   isActive ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
                 }`}
               >
                 {isActive && <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[hsl(var(--driver-accent))] rounded-full" style={{ boxShadow: 'var(--driver-accent-glow)' }} />}
                 <Icon className="h-5 w-5" />
-                <span className="text-[10px] font-heading font-semibold">{tab.label}</span>
+                <span className="text-[10px] font-heading font-semibold leading-none">{tab.label}</span>
                 {tab.key === 'home' && offers.length > 0 && !activeDelivery && (
-                  <span className="absolute top-1.5 right-1/4 h-2.5 w-2.5 rounded-full bg-primary driver-glow-red" />
+                  <span className="absolute top-2 left-1/2 ml-2 h-2 w-2 rounded-full bg-primary driver-glow-red" />
                 )}
               </button>
             );

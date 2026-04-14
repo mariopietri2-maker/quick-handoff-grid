@@ -10,7 +10,7 @@ interface DriverHomeHeaderProps {
 
 export function DriverHomeHeader({ today }: DriverHomeHeaderProps) {
   return (
-    <div className="absolute bottom-4 left-3 right-3 z-10">
+    <div className="absolute bottom-[80px] left-4 right-4 z-10">
       <div className="driver-glass rounded-2xl p-4">
         <div className="flex items-center justify-between">
           <div>
