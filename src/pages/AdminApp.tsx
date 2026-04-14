@@ -298,7 +298,7 @@ function StoresSection({ stores, allStores, filter, setFilter, onToggle }: any) 
   );
 }
 
-function DriversSection({ drivers, allDrivers, driverProfiles, filter, setFilter, onToggle, onChangeLayout }: any) {
+function DriversSection({ drivers, allDrivers, driverProfiles, filter, setFilter, onToggle }: any) {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between flex-wrap gap-2">
@@ -314,7 +314,7 @@ function DriversSection({ drivers, allDrivers, driverProfiles, filter, setFilter
       <Card>
         <CardContent className="overflow-x-auto p-0">
           <Table>
-            <TableHeader><TableRow><TableHead>Κωδικός</TableHead><TableHead>Όνομα</TableHead><TableHead>Τηλέφωνο</TableHead><TableHead>Ενεργός</TableHead><TableHead>Layout</TableHead><TableHead>Εγγραφή</TableHead></TableRow></TableHeader>
+            <TableHeader><TableRow><TableHead>Κωδικός</TableHead><TableHead>Όνομα</TableHead><TableHead>Τηλέφωνο</TableHead><TableHead>Ενεργός</TableHead><TableHead>Εγγραφή</TableHead></TableRow></TableHeader>
             <TableBody>
               {drivers.map((driver: any) => {
                 const dp = driverProfiles?.find((d: any) => d.user_id === driver.user_id);
@@ -324,20 +324,11 @@ function DriversSection({ drivers, allDrivers, driverProfiles, filter, setFilter
                     <TableCell className="font-semibold">{driver.full_name || '—'}</TableCell>
                     <TableCell className="text-sm">{driver.phone || '—'}</TableCell>
                     <TableCell><Switch checked={dp?.is_active ?? true} onCheckedChange={() => dp && onToggle(driver.user_id, dp.is_active)} /></TableCell>
-                    <TableCell>
-                      <Select value={dp?.layout || 'default'} onValueChange={val => onChangeLayout(driver.user_id, val)}>
-                        <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
-                        <SelectContent>
-                          <SelectItem value="default">🌙 Dark</SelectItem>
-                          <SelectItem value="classic">☀️ Classic</SelectItem>
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
                     <TableCell className="text-xs">{format(new Date(driver.created_at), 'dd MMM yyyy')}</TableCell>
                   </TableRow>
                 );
               })}
-              {!drivers.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Κανένας οδηγός</TableCell></TableRow>}
+              {!drivers.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Κανένας οδηγός</TableCell></TableRow>}
             </TableBody>
           </Table>
         </CardContent>
