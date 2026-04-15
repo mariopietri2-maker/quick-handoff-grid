@@ -16,7 +16,7 @@ import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
-import { DriverHomeHeader } from '@/components/driver/DriverHomeHeader';
+
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
@@ -26,7 +26,7 @@ export default function DriverApp() {
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
   const { user } = useAuth();
-  const { today } = useEarnings();
+  useEarnings();
 
   useEffect(() => {
     if (!user) return;
@@ -87,7 +87,7 @@ export default function DriverApp() {
     { key: 'referral', icon: Users, label: 'Πρόσκληση' },
   ];
 
-  const hasOverlayContent = activeDelivery || (!activeDelivery && isOnline && offers.length > 0) || (!activeDelivery && !isOnline);
+  
 
   return (
     <div className="h-screen flex flex-col driver-shell bg-[hsl(var(--driver-bg))]">
@@ -123,33 +123,10 @@ export default function DriverApp() {
             </div>
           </div>
 
-          {/* ─── FLOATING EARNINGS (only when no overlay content) ─── */}
-          {!hasOverlayContent && <DriverHomeHeader today={today} />}
-
           {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
           <div className="absolute bottom-[72px] left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-3 space-y-3 pointer-events-none scrollbar-thin">
             <div className="pointer-events-auto space-y-3">
               <AnnouncementsBanner audience="drivers" />
-
-              {/* Earnings pill when overlay content is visible */}
-              {hasOverlayContent && (
-                <div className="driver-glass rounded-xl px-4 py-3 flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] text-[hsl(var(--driver-text-muted))] font-heading uppercase tracking-widest">Σήμερα</p>
-                    <p className="font-heading font-extrabold text-xl text-[hsl(var(--driver-text))] tabular-nums">{today.total.toFixed(2)}€</p>
-                  </div>
-                  <div className="flex gap-4">
-                    <div className="text-center">
-                      <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] tabular-nums">{today.trips}</p>
-                      <p className="text-[9px] text-[hsl(var(--driver-text-muted))] uppercase">Διαδρομές</p>
-                    </div>
-                    <div className="text-center">
-                      <p className="font-heading font-bold text-sm text-[hsl(var(--driver-accent))] tabular-nums">{today.tips.toFixed(2)}€</p>
-                      <p className="text-[9px] text-[hsl(var(--driver-text-muted))] uppercase">Tips</p>
-                    </div>
-                  </div>
-                </div>
-              )}
 
               {/* Navigation Panel */}
               {routeInfo && navigatingTo && (
