@@ -119,17 +119,7 @@ export default function DriverApp() {
                 </div>
                 <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
               </div>
-              <button
-                onClick={() => setIsOnline(!isOnline)}
-                className={`shrink-0 driver-glass rounded-full px-4 py-2 text-xs font-heading font-bold transition-all duration-300 ${
-                  isOnline
-                    ? 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green border-transparent'
-                    : 'text-[hsl(var(--driver-text-muted))]'
-                }`}
-              >
-                {isOnline && <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-1.5 align-middle" />}
-                {isOnline ? 'Online' : 'Offline'}
-              </button>
+              <div className="w-10" />
             </div>
           </div>
 
