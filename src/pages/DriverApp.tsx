@@ -16,7 +16,7 @@ import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
-import { DriverHomeHeader } from '@/components/driver/DriverHomeHeader';
+
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
@@ -87,7 +87,7 @@ export default function DriverApp() {
     { key: 'referral', icon: Users, label: 'Πρόσκληση' },
   ];
 
-  const hasOverlayContent = activeDelivery || (!activeDelivery && isOnline && offers.length > 0) || (!activeDelivery && !isOnline);
+  
 
   return (
     <div className="h-screen flex flex-col driver-shell bg-[hsl(var(--driver-bg))]">
