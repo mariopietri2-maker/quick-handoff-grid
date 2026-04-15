@@ -123,6 +123,10 @@ export default function DriverApp() {
             </div>
           </div>
 
+          {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
+          <div className="absolute bottom-[72px] left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-3 space-y-3 pointer-events-none scrollbar-thin">
+            <div className="pointer-events-auto space-y-3">
+              <AnnouncementsBanner audience="drivers" />
 
               {/* Navigation Panel */}
               {routeInfo && navigatingTo && (
