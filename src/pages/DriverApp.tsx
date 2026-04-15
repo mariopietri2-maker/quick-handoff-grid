@@ -245,32 +245,12 @@ export default function DriverApp() {
 
                   {/* Slide to go Online/Offline */}
                   <div className="px-4 pb-4 pt-1">
-                    <div className="relative h-14 rounded-full bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))] overflow-hidden">
-                      <div
-                        className={`absolute inset-0 rounded-full transition-all duration-500 ${
-                          isOnline ? 'bg-[hsl(var(--driver-accent))]/20' : 'bg-transparent'
-                        }`}
-                      />
-                      <button
-                        onClick={() => setIsOnline(!isOnline)}
-                        className="absolute inset-0 w-full h-full flex items-center cursor-pointer"
-                      >
-                        <div
-                          className={`absolute h-11 w-11 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-lg ${
-                            isOnline
-                              ? 'left-[calc(100%-3rem)] bg-[hsl(var(--driver-accent))]'
-                              : 'left-1 bg-[hsl(var(--driver-text-muted))]'
-                          }`}
-                        >
-                          <Zap className="h-5 w-5 text-white" />
-                        </div>
-                        <span className={`w-full text-center font-heading font-bold text-xs transition-all duration-300 ${
-                          isOnline ? 'text-[hsl(var(--driver-accent))] pr-12' : 'text-[hsl(var(--driver-text-muted))] pl-12'
-                        }`}>
-                          {isOnline ? 'Online' : 'Slide to Go Online'}
-                        </span>
-                      </button>
-                    </div>
+                    <SlideToggle
+                      isOn={isOnline}
+                      onToggle={setIsOnline}
+                      onLabel="Online"
+                      offLabel="Slide to Go Online"
+                    />
                   </div>
                 </div>
               )}
