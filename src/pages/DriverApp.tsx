@@ -277,13 +277,6 @@ export default function DriverApp() {
                 </div>
               )}
 
-              {/* Loading state */}
-              {!activeDelivery && isOnline && loading && (
-                <div className="driver-glass rounded-2xl p-6 text-center">
-                  <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
