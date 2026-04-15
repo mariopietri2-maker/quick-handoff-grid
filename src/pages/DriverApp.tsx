@@ -119,17 +119,7 @@ export default function DriverApp() {
                 </div>
                 <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
               </div>
-              <button
-                onClick={() => setIsOnline(!isOnline)}
-                className={`shrink-0 driver-glass rounded-full px-4 py-2 text-xs font-heading font-bold transition-all duration-300 ${
-                  isOnline
-                    ? 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green border-transparent'
-                    : 'text-[hsl(var(--driver-text-muted))]'
-                }`}
-              >
-                {isOnline && <span className="inline-block h-1.5 w-1.5 rounded-full bg-white animate-pulse mr-1.5 align-middle" />}
-                {isOnline ? 'Online' : 'Offline'}
-              </button>
+              <div className="w-10" />
             </div>
           </div>
 
@@ -241,18 +231,9 @@ export default function DriverApp() {
               {/* Combined Online/Offline + Waiting state */}
               {!activeDelivery && (
                 <div className="driver-glass rounded-2xl overflow-hidden transition-all duration-500 ease-out">
-                  {/* Go Online button (offline) */}
-                  {!isOnline && (
-                    <div className="p-6 text-center animate-fade-in">
-                      <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-3" />
-                      <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
-                      <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Πατήστε <strong className="text-[hsl(var(--driver-accent))]">Online</strong> για παραγγελίες</p>
-                    </div>
-                  )}
-
                   {/* Waiting for orders (online, no offers) */}
                   {isOnline && !loading && offers.length === 0 && (
-                    <div className="p-6 text-center animate-fade-in">
+                    <div className="p-5 text-center animate-fade-in">
                       <div className="relative h-12 w-12 mx-auto mb-3">
                         <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
                         <div className="relative h-12 w-12 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
@@ -260,7 +241,7 @@ export default function DriverApp() {
                         </div>
                       </div>
                       <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
-                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
+                      <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
                         <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
                         <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
                       </div>
@@ -269,11 +250,50 @@ export default function DriverApp() {
 
                   {/* Loading */}
                   {isOnline && loading && (
-                    <div className="p-6 text-center animate-fade-in">
+                    <div className="p-5 text-center animate-fade-in">
                       <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                       <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
                     </div>
                   )}
+
+                  {/* Offline message */}
+                  {!isOnline && (
+                    <div className="p-5 text-center animate-fade-in">
+                      <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-2" />
+                      <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
+                      <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Σύρετε για να συνδεθείτε</p>
+                    </div>
+                  )}
+
+                  {/* Slide to go Online/Offline */}
+                  <div className="px-4 pb-4 pt-1">
+                    <div className="relative h-14 rounded-full bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))] overflow-hidden">
+                      <div
+                        className={`absolute inset-0 rounded-full transition-all duration-500 ${
+                          isOnline ? 'bg-[hsl(var(--driver-accent))]/20' : 'bg-transparent'
+                        }`}
+                      />
+                      <button
+                        onClick={() => setIsOnline(!isOnline)}
+                        className="absolute inset-0 w-full h-full flex items-center cursor-pointer"
+                      >
+                        <div
+                          className={`absolute h-11 w-11 rounded-full flex items-center justify-center transition-all duration-500 ease-out shadow-lg ${
+                            isOnline
+                              ? 'left-[calc(100%-3rem)] bg-[hsl(var(--driver-accent))]'
+                              : 'left-1 bg-[hsl(var(--driver-text-muted))]'
+                          }`}
+                        >
+                          <Zap className="h-5 w-5 text-white" />
+                        </div>
+                        <span className={`w-full text-center font-heading font-bold text-xs transition-all duration-300 ${
+                          isOnline ? 'text-[hsl(var(--driver-accent))] pr-12' : 'text-[hsl(var(--driver-text-muted))] pl-12'
+                        }`}>
+                          {isOnline ? 'Online' : 'Slide to Go Online'}
+                        </span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
 
