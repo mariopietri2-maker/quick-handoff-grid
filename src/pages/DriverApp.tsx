@@ -16,6 +16,7 @@ import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
+import { SlideToggle } from '@/components/driver/SlideToggle';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
