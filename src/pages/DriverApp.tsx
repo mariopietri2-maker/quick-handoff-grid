@@ -238,39 +238,45 @@ export default function DriverApp() {
                 </div>
               )}
 
-              {/* Offline state */}
-              {!activeDelivery && !isOnline && (
-                <div className="driver-glass rounded-2xl p-6 text-center">
-                  <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-3" />
-                  <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
-                  <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Πατήστε <strong className="text-[hsl(var(--driver-accent))]">Online</strong> για παραγγελίες</p>
-                </div>
-              )}
-
-              {/* Waiting state */}
-              {!activeDelivery && isOnline && !loading && offers.length === 0 && (
-                <div className="driver-glass rounded-2xl p-6 text-center">
-                  <div className="relative h-12 w-12 mx-auto mb-3">
-                    <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
-                    <div className="relative h-12 w-12 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
-                      <Zap className="h-6 w-6 text-primary" />
+              {/* Combined Online/Offline + Waiting state */}
+              {!activeDelivery && (
+                <div className="driver-glass rounded-2xl overflow-hidden transition-all duration-500 ease-out">
+                  {/* Go Online button (offline) */}
+                  {!isOnline && (
+                    <div className="p-6 text-center animate-fade-in">
+                      <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-3" />
+                      <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
+                      <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Πατήστε <strong className="text-[hsl(var(--driver-accent))]">Online</strong> για παραγγελίες</p>
                     </div>
-                  </div>
-                  <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
-                  <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
-                    <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
-                    <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
-                  </div>
+                  )}
+
+                  {/* Waiting for orders (online, no offers) */}
+                  {isOnline && !loading && offers.length === 0 && (
+                    <div className="p-6 text-center animate-fade-in">
+                      <div className="relative h-12 w-12 mx-auto mb-3">
+                        <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
+                        <div className="relative h-12 w-12 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
+                          <Zap className="h-6 w-6 text-primary" />
+                        </div>
+                      </div>
+                      <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
+                      <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
+                        <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
+                        <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Loading */}
+                  {isOnline && loading && (
+                    <div className="p-6 text-center animate-fade-in">
+                      <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                      <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
+                    </div>
+                  )}
                 </div>
               )}
 
-              {/* Loading state */}
-              {!activeDelivery && isOnline && loading && (
-                <div className="driver-glass rounded-2xl p-6 text-center">
-                  <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
-                </div>
-              )}
             </div>
           </div>
         </div>
