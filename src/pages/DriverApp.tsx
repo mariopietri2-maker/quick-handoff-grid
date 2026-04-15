@@ -26,7 +26,7 @@ export default function DriverApp() {
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
   const { user } = useAuth();
-  const { today } = useEarnings();
+  useEarnings();
 
   useEffect(() => {
     if (!user) return;
