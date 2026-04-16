@@ -3,6 +3,10 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 
+export interface DriverMapboxHandle {
+  recenter: () => void;
+}
+
 export interface RouteInfo {
   distance: number; // meters
   duration: number; // seconds
