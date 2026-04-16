@@ -65,11 +65,7 @@ export default function DriverMapbox({
       pitchWithRotate: false,
     });
 
-    map.addControl(new mapboxgl.GeolocateControl({
-      positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: true,
-      showUserHeading: true,
-    }), 'top-right');
+    // GeolocateControl removed — custom recenter button used instead
 
     map.on('load', () => {
       // Route source + layers
@@ -263,6 +259,14 @@ export default function DriverMapbox({
       lastRouteKey.current = '';
     }
   }, [navigatingTo]);
+
+  // Expose recenter method
+  const recenter = useCallback(() => {
+    const map = mapRef.current;
+    if (map && pos) {
+      map.flyTo({ center: [pos.lng, pos.lat], zoom: 15, duration: 800 });
+    }
+  }, [pos]);
 
   if (loading || !token) {
     return (
