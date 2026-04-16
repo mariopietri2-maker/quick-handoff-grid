@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Car, Navigation, Wallet, Users, Zap, Radio, TrendingUp, MapPin } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { Car, Navigation, Wallet, Users, Zap, Radio, TrendingUp, MapPin, Crosshair } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -14,7 +14,7 @@ import { useDriverOrders } from '@/hooks/useOrders';
 import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
-import DriverMapbox, { type RouteInfo } from '@/components/driver/DriverMapbox';
+import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
