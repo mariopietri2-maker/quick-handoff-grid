@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -22,13 +22,13 @@ interface DriverMapboxProps {
   onRouteUpdate?: (route: RouteInfo | null) => void;
 }
 
-export default function DriverMapbox({
+const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function DriverMapbox({
   className,
   storeLat, storeLng, storeName,
   customerLat, customerLng, customerName, customerAddress,
   navigatingTo,
   onRouteUpdate,
-}: DriverMapboxProps) {
+}, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null);
