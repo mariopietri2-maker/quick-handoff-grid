@@ -120,16 +120,14 @@ export default function DriverApp() {
                 </div>
                 <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
               </div>
-              <div className="w-10" />
-            </div>
+              <div className="driver-glass rounded-full p-1.5 shrink-0">
+                <DriverSupportButton orderId={activeDelivery?.id} />
+              </div>
           </div>
 
           {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
           <div className="absolute bottom-[72px] left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-3 space-y-3 pointer-events-none scrollbar-thin">
             <div className="pointer-events-auto space-y-3">
-              <div className="flex justify-end">
-                <DriverSupportButton orderId={activeDelivery?.id} />
-              </div>
               <AnnouncementsBanner audience="drivers" />
 
               {/* Navigation Panel */}
