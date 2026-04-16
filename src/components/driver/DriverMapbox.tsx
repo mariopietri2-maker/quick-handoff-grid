@@ -1,7 +1,11 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHandle } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+
+export interface DriverMapboxHandle {
+  recenter: () => void;
+}
 
 export interface RouteInfo {
   distance: number; // meters
@@ -22,13 +26,13 @@ interface DriverMapboxProps {
   onRouteUpdate?: (route: RouteInfo | null) => void;
 }
 
-export default function DriverMapbox({
+const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function DriverMapbox({
   className,
   storeLat, storeLng, storeName,
   customerLat, customerLng, customerName, customerAddress,
   navigatingTo,
   onRouteUpdate,
-}: DriverMapboxProps) {
+}, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null);
@@ -65,11 +69,7 @@ export default function DriverMapbox({
       pitchWithRotate: false,
     });
 
-    map.addControl(new mapboxgl.GeolocateControl({
-      positionOptions: { enableHighAccuracy: true },
-      trackUserLocation: true,
-      showUserHeading: true,
-    }), 'top-right');
+    // GeolocateControl removed — custom recenter button used instead
 
     map.on('load', () => {
       // Route source + layers
@@ -264,6 +264,16 @@ export default function DriverMapbox({
     }
   }, [navigatingTo]);
 
+  // Expose recenter method
+  const recenter = useCallback(() => {
+    const map = mapRef.current;
+    if (map && pos) {
+      map.flyTo({ center: [pos.lng, pos.lat], zoom: 15, duration: 800 });
+    }
+  }, [pos]);
+
+  useImperativeHandle(ref, () => ({ recenter }), [recenter]);
+
   if (loading || !token) {
     return (
       <div className={`bg-muted/50 flex items-center justify-center ${className}`}>
@@ -273,4 +283,6 @@ export default function DriverMapbox({
   }
 
   return <div ref={mapContainer} className={className} style={{ minHeight: '200px' }} />;
-}
+});
+
+export default DriverMapbox;
