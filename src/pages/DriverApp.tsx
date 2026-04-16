@@ -40,6 +40,7 @@ export default function DriverApp() {
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (_id: string) => {};
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
     ? (['accepted', 'preparing', 'ready', 'arrived'].includes(activeDelivery.status ?? '') ? 'store' as const : activeDelivery.status === 'picked_up' ? 'customer' as const : null)
@@ -96,6 +97,7 @@ export default function DriverApp() {
         <div className="flex-1 relative">
           {/* Fullscreen Map */}
           <DriverMapbox
+            ref={mapRef}
             className="absolute inset-0"
             storeLat={storeInfo?.latitude}
             storeLng={storeInfo?.longitude}
@@ -129,6 +131,15 @@ export default function DriverApp() {
           {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
           <div className="absolute bottom-[72px] left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-3 space-y-3 pointer-events-none scrollbar-thin">
             <div className="pointer-events-auto space-y-3">
+              {/* Recenter button */}
+              <div className="flex justify-end">
+                <button
+                  onClick={() => mapRef.current?.recenter()}
+                  className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-colors active:scale-95"
+                >
+                  <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
+                </button>
+              </div>
               <AnnouncementsBanner audience="drivers" />
 
               {/* Navigation Panel */}
