@@ -217,11 +217,12 @@
   }
 }
 
-/* Reposition Mapbox logo & attribution above bottom cards */
-.mapboxgl-ctrl-bottom-left,
-.mapboxgl-ctrl-bottom-right {
-  bottom: 280px !important;
+/* Reposition Mapbox controls above bottom overlay cards */
+.driver-shell .mapboxgl-ctrl-bottom-left,
+.driver-shell .mapboxgl-ctrl-bottom-right {
+  bottom: 52vh !important;
+  transition: bottom 0.3s ease;
 }
-.mapboxgl-ctrl-logo {
+.driver-shell .mapboxgl-ctrl-logo {
   margin: 0 0 4px 4px !important;
 }
