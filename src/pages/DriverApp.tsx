@@ -123,6 +123,7 @@ export default function DriverApp() {
               <div className="driver-glass rounded-full p-1.5 shrink-0">
                 <DriverSupportButton orderId={activeDelivery?.id} />
               </div>
+            </div>
           </div>
 
           {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
