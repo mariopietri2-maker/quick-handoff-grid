@@ -44,7 +44,7 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-[88px] right-4 z-40 h-11 w-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-[hsl(var(--driver-surface))]"
+        className="h-11 w-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-[hsl(var(--driver-surface))]"
         aria-label="Βοήθεια"
       >
         <Headphones className="h-4.5 w-4.5 text-[hsl(var(--driver-text))]" />
