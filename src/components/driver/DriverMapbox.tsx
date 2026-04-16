@@ -268,6 +268,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     }
   }, [pos]);
 
+  useImperativeHandle(ref, () => ({ recenter }), [recenter]);
+
   if (loading || !token) {
     return (
       <div className={`bg-muted/50 flex items-center justify-center ${className}`}>
@@ -277,4 +279,6 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   }
 
   return <div ref={mapContainer} className={className} style={{ minHeight: '200px' }} />;
-}
+});
+
+export default DriverMapbox;
