@@ -216,3 +216,12 @@
     border-radius: 2px;
   }
 }
+
+/* Reposition Mapbox logo & attribution above bottom cards */
+.mapboxgl-ctrl-bottom-left,
+.mapboxgl-ctrl-bottom-right {
+  bottom: 280px !important;
+}
+.mapboxgl-ctrl-logo {
+  margin: 0 0 4px 4px !important;
+}
