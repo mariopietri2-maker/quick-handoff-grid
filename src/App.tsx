@@ -12,6 +12,7 @@ import DriverApp from "./pages/DriverApp.tsx";
 import DriverProfilePage from "./pages/DriverProfilePage.tsx";
 import StoreApp from "./pages/StoreApp.tsx";
 import AdminApp from "./pages/AdminApp.tsx";
+import SupportApp from "./pages/SupportApp.tsx";
 import CustomerApp from "./pages/CustomerApp.tsx";
 import RestaurantPage from "./pages/RestaurantPage.tsx";
 import CheckoutPage from "./pages/CheckoutPage.tsx";
@@ -55,6 +56,11 @@ const App = () => (
               <Route path="/admin" element={
                 <ProtectedRoute allowedRoles={['admin']}>
                   <AdminApp />
+                </ProtectedRoute>
+              } />
+              <Route path="/support" element={
+                <ProtectedRoute allowedRoles={['support']}>
+                  <SupportApp />
                 </ProtectedRoute>
               } />
               <Route path="*" element={<NotFound />} />
