@@ -116,18 +116,25 @@ export type Database = {
       driver_profiles: {
         Row: {
           account_holder: string | null
+          availability: Json | null
           bank_name: string | null
           created_at: string
+          date_of_birth: string | null
           driver_code: string | null
+          emergency_contact_name: string | null
+          emergency_contact_phone: string | null
+          home_address: string | null
           iban: string | null
           id: string
           id_document_url: string | null
           is_active: boolean
+          languages: string[] | null
           layout: string
           license_document_url: string | null
           license_expiry: string | null
           license_number: string | null
           license_plate: string | null
+          secondary_phone: string | null
           updated_at: string
           user_id: string
           vehicle_color: string | null
@@ -138,18 +145,25 @@ export type Database = {
         }
         Insert: {
           account_holder?: string | null
+          availability?: Json | null
           bank_name?: string | null
           created_at?: string
+          date_of_birth?: string | null
           driver_code?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          home_address?: string | null
           iban?: string | null
           id?: string
           id_document_url?: string | null
           is_active?: boolean
+          languages?: string[] | null
           layout?: string
           license_document_url?: string | null
           license_expiry?: string | null
           license_number?: string | null
           license_plate?: string | null
+          secondary_phone?: string | null
           updated_at?: string
           user_id: string
           vehicle_color?: string | null
@@ -160,18 +174,25 @@ export type Database = {
         }
         Update: {
           account_holder?: string | null
+          availability?: Json | null
           bank_name?: string | null
           created_at?: string
+          date_of_birth?: string | null
           driver_code?: string | null
+          emergency_contact_name?: string | null
+          emergency_contact_phone?: string | null
+          home_address?: string | null
           iban?: string | null
           id?: string
           id_document_url?: string | null
           is_active?: boolean
+          languages?: string[] | null
           layout?: string
           license_document_url?: string | null
           license_expiry?: string | null
           license_number?: string | null
           license_plate?: string | null
+          secondary_phone?: string | null
           updated_at?: string
           user_id?: string
           vehicle_color?: string | null
@@ -389,6 +410,7 @@ export type Database = {
           delivery_fee: number | null
           delivery_latitude: number | null
           delivery_longitude: number | null
+          distance_km: number | null
           driver_id: string | null
           estimated_prep_time: number | null
           id: string
@@ -408,6 +430,7 @@ export type Database = {
           delivery_fee?: number | null
           delivery_latitude?: number | null
           delivery_longitude?: number | null
+          distance_km?: number | null
           driver_id?: string | null
           estimated_prep_time?: number | null
           id?: string
@@ -427,6 +450,7 @@ export type Database = {
           delivery_fee?: number | null
           delivery_latitude?: number | null
           delivery_longitude?: number | null
+          distance_km?: number | null
           driver_id?: string | null
           estimated_prep_time?: number | null
           id?: string
@@ -452,17 +476,26 @@ export type Database = {
       platform_settings: {
         Row: {
           assignment_mode: string
+          base_pay: number
           id: number
+          min_pay: number
+          per_km_rate: number
           updated_at: string
         }
         Insert: {
           assignment_mode?: string
+          base_pay?: number
           id?: number
+          min_pay?: number
+          per_km_rate?: number
           updated_at?: string
         }
         Update: {
           assignment_mode?: string
+          base_pay?: number
           id?: number
+          min_pay?: number
+          per_km_rate?: number
           updated_at?: string
         }
         Relationships: []
