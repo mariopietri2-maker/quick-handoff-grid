@@ -753,6 +753,41 @@ export type Database = {
           },
         ]
       }
+      ticket_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+          sender_role: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          sender_id: string
+          sender_role: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id?: string
+          sender_role?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
