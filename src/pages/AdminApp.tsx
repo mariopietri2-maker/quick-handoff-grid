@@ -16,6 +16,7 @@ import AssignmentSettings from '@/components/admin/AssignmentSettings';
 import AdminDriversMap from '@/components/admin/AdminDriversMap';
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
 import FinancialsManager from '@/components/admin/FinancialsManager';
+import PricingSettings from '@/components/admin/PricingSettings';
 import DemandZonesManager from '@/components/admin/DemandZonesManager';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminOverview from '@/components/admin/AdminOverview';
@@ -137,6 +138,8 @@ export default function AdminApp() {
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
         return <FinancialsManager />;
+      case 'pricing':
+        return <PricingSettings />;
       case 'tickets':
         return <SupportTicketsManager />;
       case 'map':

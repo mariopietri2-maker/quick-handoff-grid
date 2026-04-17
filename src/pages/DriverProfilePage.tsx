@@ -1,16 +1,27 @@
-import { useState, useEffect } from 'react';
-import { ArrowLeft, User, Car, FileText, Landmark, Save, Loader2 } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
+import { ArrowLeft, User, Car, FileText, Landmark, Save, Loader2, Phone, Camera, Globe, Calendar, ShieldAlert } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+
+const SHIFTS = ['morning', 'afternoon', 'evening', 'night'] as const;
+const SHIFT_LABELS: Record<string, string> = {
+  morning: 'Πρωί (06–12)',
+  afternoon: 'Μεσημέρι (12–18)',
+  evening: 'Απόγευμα (18–24)',
+  night: 'Νύχτα (00–06)',
+};
+const LANGUAGE_OPTIONS = ['Ελληνικά', 'English', 'Shqip', 'Русский', 'العربية', 'Français', 'Deutsch', 'Español', 'Italiano'];
 
 interface DriverProfile {
   driver_code: string | null;
@@ -25,6 +36,13 @@ interface DriverProfile {
   bank_name: string;
   account_holder: string;
   iban: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  languages: string[];
+  availability: { shifts?: string[] };
+  date_of_birth: string;
+  home_address: string;
+  secondary_phone: string;
 }
 
 export default function DriverProfilePage() {
@@ -32,8 +50,11 @@ export default function DriverProfilePage() {
   const { user, profile } = useAuth();
   const [saving, setSaving] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [uploading, setUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState<string | null>(null);
   const [driverProfile, setDriverProfile] = useState<DriverProfile>({
     driver_code: null,
     vehicle_type: 'motorcycle',
@@ -47,36 +68,88 @@ export default function DriverProfilePage() {
     bank_name: '',
     account_holder: '',
     iban: '',
+    emergency_contact_name: '',
+    emergency_contact_phone: '',
+    languages: [],
+    availability: { shifts: [] },
+    date_of_birth: '',
+    home_address: '',
+    secondary_phone: '',
   });
 
   useEffect(() => {
     if (!user) return;
     setFullName(profile?.full_name || '');
 
-    supabase.from('profiles').select('phone').eq('user_id', user.id).single()
-      .then(({ data }) => { if (data) setPhone(data.phone || ''); });
+    supabase.from('profiles').select('phone, avatar_url').eq('user_id', user.id).single()
+      .then(({ data }) => {
+        if (data) {
+          setPhone(data.phone || '');
+          setAvatarUrl((data as any).avatar_url || null);
+        }
+      });
 
     supabase.from('driver_profiles').select('*').eq('user_id', user.id).single()
       .then(({ data }) => {
         if (data) {
+          const d: any = data;
           setDriverProfile({
-            driver_code: (data as any).driver_code || null,
-            vehicle_type: data.vehicle_type || 'motorcycle',
-            vehicle_make: data.vehicle_make || '',
-            vehicle_model: data.vehicle_model || '',
-            vehicle_year: data.vehicle_year,
-            vehicle_color: data.vehicle_color || '',
-            license_plate: data.license_plate || '',
-            license_number: data.license_number || '',
-            license_expiry: data.license_expiry || '',
-            bank_name: data.bank_name || '',
-            account_holder: data.account_holder || '',
-            iban: data.iban || '',
+            driver_code: d.driver_code || null,
+            vehicle_type: d.vehicle_type || 'motorcycle',
+            vehicle_make: d.vehicle_make || '',
+            vehicle_model: d.vehicle_model || '',
+            vehicle_year: d.vehicle_year,
+            vehicle_color: d.vehicle_color || '',
+            license_plate: d.license_plate || '',
+            license_number: d.license_number || '',
+            license_expiry: d.license_expiry || '',
+            bank_name: d.bank_name || '',
+            account_holder: d.account_holder || '',
+            iban: d.iban || '',
+            emergency_contact_name: d.emergency_contact_name || '',
+            emergency_contact_phone: d.emergency_contact_phone || '',
+            languages: Array.isArray(d.languages) ? d.languages : [],
+            availability: d.availability || { shifts: [] },
+            date_of_birth: d.date_of_birth || '',
+            home_address: d.home_address || '',
+            secondary_phone: d.secondary_phone || '',
           });
         }
         setLoading(false);
       });
   }, [user, profile]);
+
+  const handleAvatarUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file || !user) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      toast.error('Η εικόνα πρέπει να είναι κάτω από 5MB');
+      return;
+    }
+
+    setUploading(true);
+    try {
+      const ext = file.name.split('.').pop() || 'jpg';
+      const path = `${user.id}/avatar-${Date.now()}.${ext}`;
+      const { error: upErr } = await supabase.storage.from('avatars').upload(path, file, {
+        cacheControl: '3600',
+        upsert: false,
+      });
+      if (upErr) throw upErr;
+
+      const { data: pub } = supabase.storage.from('avatars').getPublicUrl(path);
+      const url = pub.publicUrl;
+
+      await supabase.from('profiles').update({ avatar_url: url }).eq('user_id', user.id);
+      setAvatarUrl(url);
+      toast.success('Φωτογραφία ενημερώθηκε');
+    } catch (err: any) {
+      toast.error(err.message || 'Αποτυχία ανεβάσματος');
+    } finally {
+      setUploading(false);
+    }
+  };
 
   const handleSave = async (section: string) => {
     if (!user) return;
@@ -86,11 +159,15 @@ export default function DriverProfilePage() {
         await supabase.from('profiles').update({ full_name: fullName, phone }).eq('user_id', user.id);
       }
 
-      const { error } = await supabase.from('driver_profiles').upsert({
+      const payload: any = {
         user_id: user.id,
         ...driverProfile,
         vehicle_year: driverProfile.vehicle_year || null,
-      }, { onConflict: 'user_id' });
+        date_of_birth: driverProfile.date_of_birth || null,
+        license_expiry: driverProfile.license_expiry || null,
+      };
+
+      const { error } = await supabase.from('driver_profiles').upsert(payload, { onConflict: 'user_id' });
 
       if (error) throw error;
       toast.success('Αποθηκεύτηκε επιτυχώς');
@@ -99,6 +176,26 @@ export default function DriverProfilePage() {
     } finally {
       setSaving(false);
     }
+  };
+
+  const toggleLanguage = (lang: string) => {
+    setDriverProfile(p => ({
+      ...p,
+      languages: p.languages.includes(lang)
+        ? p.languages.filter(l => l !== lang)
+        : [...p.languages, lang],
+    }));
+  };
+
+  const toggleShift = (shift: string) => {
+    const current = driverProfile.availability?.shifts || [];
+    setDriverProfile(p => ({
+      ...p,
+      availability: {
+        ...p.availability,
+        shifts: current.includes(shift) ? current.filter(s => s !== shift) : [...current, shift],
+      },
+    }));
   };
 
   if (loading) {
@@ -119,39 +216,69 @@ export default function DriverProfilePage() {
       </header>
 
       <div className="max-w-lg mx-auto p-4">
+        {/* Avatar header */}
+        <Card className="mb-4">
+          <CardContent className="p-4 flex items-center gap-4">
+            <div className="relative">
+              <div className="h-20 w-20 rounded-full bg-muted overflow-hidden border-2 border-primary/20 flex items-center justify-center">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt="Avatar" className="h-full w-full object-cover" />
+                ) : (
+                  <User className="h-10 w-10 text-muted-foreground" />
+                )}
+              </div>
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                disabled={uploading}
+                className="absolute -bottom-1 -right-1 h-8 w-8 rounded-full gradient-primary text-primary-foreground flex items-center justify-center shadow-md disabled:opacity-50"
+                aria-label="Αλλαγή φωτογραφίας"
+              >
+                {uploading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Camera className="h-4 w-4" />}
+              </button>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept="image/*"
+                className="hidden"
+                onChange={handleAvatarUpload}
+              />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="font-heading font-bold truncate">{fullName || 'Οδηγός'}</p>
+              <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+              {driverProfile.driver_code && (
+                <Badge variant="outline" className="mt-1 border-primary/30 text-primary font-mono text-[10px]">
+                  {driverProfile.driver_code}
+                </Badge>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+
         <Tabs defaultValue="personal">
-          <TabsList className="w-full mb-4 grid grid-cols-4">
-            <TabsTrigger value="personal" className="text-xs font-heading">
-              <User className="h-3.5 w-3.5 mr-1" />
-              Προσωπικά
+          <TabsList className="w-full mb-4 grid grid-cols-5">
+            <TabsTrigger value="personal" className="text-[10px] font-heading px-1">
+              <User className="h-3 w-3 mr-0.5" />Προσ.
             </TabsTrigger>
-            <TabsTrigger value="vehicle" className="text-xs font-heading">
-              <Car className="h-3.5 w-3.5 mr-1" />
-              Όχημα
+            <TabsTrigger value="contact" className="text-[10px] font-heading px-1">
+              <Phone className="h-3 w-3 mr-0.5" />Επαφή
             </TabsTrigger>
-            <TabsTrigger value="documents" className="text-xs font-heading">
-              <FileText className="h-3.5 w-3.5 mr-1" />
-              Έγγραφα
+            <TabsTrigger value="vehicle" className="text-[10px] font-heading px-1">
+              <Car className="h-3 w-3 mr-0.5" />Όχημα
             </TabsTrigger>
-            <TabsTrigger value="bank" className="text-xs font-heading">
-              <Landmark className="h-3.5 w-3.5 mr-1" />
-              Τράπεζα
+            <TabsTrigger value="documents" className="text-[10px] font-heading px-1">
+              <FileText className="h-3 w-3 mr-0.5" />Έγγρ.
+            </TabsTrigger>
+            <TabsTrigger value="bank" className="text-[10px] font-heading px-1">
+              <Landmark className="h-3 w-3 mr-0.5" />Τράπ.
             </TabsTrigger>
           </TabsList>
 
+          {/* PERSONAL */}
           <TabsContent value="personal">
             <Card>
               <CardHeader><CardTitle className="font-heading text-lg">Προσωπικά Στοιχεία</CardTitle></CardHeader>
               <CardContent className="space-y-4">
-                {driverProfile.driver_code && (
-                  <div className="p-3 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-between">
-                    <div>
-                      <p className="text-xs text-muted-foreground">Κωδικός Οδηγού</p>
-                      <p className="font-heading font-bold text-lg text-primary">{driverProfile.driver_code}</p>
-                    </div>
-                    <Badge variant="outline" className="border-primary/30 text-primary font-heading">ID</Badge>
-                  </div>
-                )}
                 <div>
                   <Label htmlFor="fullName">Ονοματεπώνυμο</Label>
                   <Input id="fullName" value={fullName} onChange={e => setFullName(e.target.value)} />
@@ -164,6 +291,79 @@ export default function DriverProfilePage() {
                   <Label>Email</Label>
                   <Input value={user?.email || ''} disabled className="bg-muted" />
                 </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <Label className="flex items-center gap-1"><Calendar className="h-3 w-3" /> Ημ. Γέννησης</Label>
+                    <Input
+                      type="date"
+                      value={driverProfile.date_of_birth}
+                      onChange={e => setDriverProfile(p => ({ ...p, date_of_birth: e.target.value }))}
+                    />
+                  </div>
+                  <div>
+                    <Label>Δευτ. Τηλέφωνο</Label>
+                    <Input
+                      value={driverProfile.secondary_phone}
+                      onChange={e => setDriverProfile(p => ({ ...p, secondary_phone: e.target.value }))}
+                      placeholder="προαιρετικό"
+                    />
+                  </div>
+                </div>
+                <div>
+                  <Label>Διεύθυνση Κατοικίας</Label>
+                  <Textarea
+                    value={driverProfile.home_address}
+                    onChange={e => setDriverProfile(p => ({ ...p, home_address: e.target.value }))}
+                    placeholder="Οδός, αριθμός, ΤΚ, πόλη"
+                    rows={2}
+                  />
+                </div>
+
+                {/* Availability */}
+                <div>
+                  <Label className="mb-2 block">Διαθεσιμότητα Βάρδιας</Label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {SHIFTS.map(s => {
+                      const checked = (driverProfile.availability?.shifts || []).includes(s);
+                      return (
+                        <label
+                          key={s}
+                          className={`flex items-center gap-2 p-2 rounded-lg border cursor-pointer transition ${
+                            checked ? 'border-primary bg-primary/5' : 'border-border'
+                          }`}
+                        >
+                          <Checkbox checked={checked} onCheckedChange={() => toggleShift(s)} />
+                          <span className="text-xs font-heading">{SHIFT_LABELS[s]}</span>
+                        </label>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Languages */}
+                <div>
+                  <Label className="mb-2 flex items-center gap-1"><Globe className="h-3 w-3" /> Γλώσσες</Label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {LANGUAGE_OPTIONS.map(lang => {
+                      const active = driverProfile.languages.includes(lang);
+                      return (
+                        <button
+                          key={lang}
+                          type="button"
+                          onClick={() => toggleLanguage(lang)}
+                          className={`px-2.5 py-1 rounded-full text-xs font-heading border transition ${
+                            active
+                              ? 'bg-primary text-primary-foreground border-primary'
+                              : 'bg-muted border-border text-muted-foreground hover:bg-muted/70'
+                          }`}
+                        >
+                          {lang}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
                 <Button onClick={() => handleSave('personal')} disabled={saving} className="w-full gradient-primary text-primary-foreground font-heading">
                   {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
                   Αποθήκευση Προσωπικών
@@ -172,6 +372,44 @@ export default function DriverProfilePage() {
             </Card>
           </TabsContent>
 
+          {/* EMERGENCY CONTACT */}
+          <TabsContent value="contact">
+            <Card>
+              <CardHeader>
+                <CardTitle className="font-heading text-lg flex items-center gap-2">
+                  <ShieldAlert className="h-4 w-4 text-destructive" />
+                  Επαφή Έκτακτης Ανάγκης
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <p className="text-xs text-muted-foreground">
+                  Σε περίπτωση ατυχήματος ή έκτακτης ανάγκης, η ομάδα υποστήριξης θα επικοινωνήσει με αυτό το άτομο.
+                </p>
+                <div>
+                  <Label>Όνομα Επαφής</Label>
+                  <Input
+                    value={driverProfile.emergency_contact_name}
+                    onChange={e => setDriverProfile(p => ({ ...p, emergency_contact_name: e.target.value }))}
+                    placeholder="π.χ. Μαρία Παπαδοπούλου"
+                  />
+                </div>
+                <div>
+                  <Label>Τηλέφωνο Επαφής</Label>
+                  <Input
+                    value={driverProfile.emergency_contact_phone}
+                    onChange={e => setDriverProfile(p => ({ ...p, emergency_contact_phone: e.target.value }))}
+                    placeholder="+30 69X XXXX XXX"
+                  />
+                </div>
+                <Button onClick={() => handleSave('contact')} disabled={saving} className="w-full gradient-primary text-primary-foreground font-heading">
+                  {saving ? <Loader2 className="h-4 w-4 animate-spin mr-2" /> : <Save className="h-4 w-4 mr-2" />}
+                  Αποθήκευση Επαφής
+                </Button>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* VEHICLE */}
           <TabsContent value="vehicle">
             <Card>
               <CardHeader><CardTitle className="font-heading text-lg">Στοιχεία Οχήματος</CardTitle></CardHeader>
@@ -220,6 +458,7 @@ export default function DriverProfilePage() {
             </Card>
           </TabsContent>
 
+          {/* DOCUMENTS */}
           <TabsContent value="documents">
             <Card>
               <CardHeader><CardTitle className="font-heading text-lg">Έγγραφα</CardTitle></CardHeader>
@@ -241,6 +480,7 @@ export default function DriverProfilePage() {
             </Card>
           </TabsContent>
 
+          {/* BANK */}
           <TabsContent value="bank">
             <Card>
               <CardHeader><CardTitle className="font-heading text-lg">Τραπεζικά Στοιχεία</CardTitle></CardHeader>
