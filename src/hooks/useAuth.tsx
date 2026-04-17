@@ -22,6 +22,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [loading, setLoading] = useState(true);
   const [profile, setProfile] = useState<{ role: string; full_name: string | null } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
+  const [isSupport, setIsSupport] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -31,14 +32,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .single();
     setProfile(data);
 
-    // Check admin role from user_roles table
-    const { data: adminRole } = await supabase
+    // Check admin & support roles from user_roles table
+    const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
-      .eq('user_id', userId)
-      .eq('role', 'admin')
-      .maybeSingle();
-    setIsAdmin(!!adminRole);
+      .eq('user_id', userId);
+    const roleList = (roles ?? []).map((r: any) => r.role);
+    setIsAdmin(roleList.includes('admin'));
+    setIsSupport(roleList.includes('support'));
   };
 
   useEffect(() => {
@@ -95,10 +96,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setProfile(null);
     setIsAdmin(false);
+    setIsSupport(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, isAdmin, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, isAdmin, isSupport, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );
