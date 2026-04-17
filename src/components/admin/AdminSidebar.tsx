@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3, ShoppingBag, Store, Users, Shield, Wallet,
   MessageSquare, Flame, Star, Megaphone, MapPin, Settings,
-  Activity, Bell, ChevronLeft, ChevronRight, LayoutDashboard,
+  Activity, Bell, ChevronLeft, ChevronRight, LayoutDashboard, DollarSign,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -40,6 +40,7 @@ const navGroups = [
     label: 'Οικονομικά & Υποστήριξη',
     items: [
       { id: 'financials', label: 'Οικονομικά', icon: Wallet },
+      { id: 'pricing', label: 'Τιμολόγηση', icon: DollarSign },
       { id: 'tickets', label: 'Support Tickets', icon: MessageSquare, badgeKey: 'pendingTickets' as const },
     ],
   },
