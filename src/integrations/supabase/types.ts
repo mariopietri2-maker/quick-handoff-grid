@@ -753,6 +753,41 @@ export type Database = {
           },
         ]
       }
+      ticket_messages: {
+        Row: {
+          created_at: string
+          id: string
+          message: string
+          sender_id: string
+          sender_role: string
+          ticket_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          message: string
+          sender_id: string
+          sender_role: string
+          ticket_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          message?: string
+          sender_id?: string
+          sender_role?: string
+          ticket_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_messages_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_roles: {
         Row: {
           created_at: string
@@ -887,7 +922,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "driver" | "store" | "customer" | "admin"
+      app_role: "driver" | "store" | "customer" | "admin" | "support"
       discount_type: "percentage" | "fixed"
       order_status:
         | "pending"
@@ -1026,7 +1061,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["driver", "store", "customer", "admin"],
+      app_role: ["driver", "store", "customer", "admin", "support"],
       discount_type: ["percentage", "fixed"],
       order_status: [
         "pending",

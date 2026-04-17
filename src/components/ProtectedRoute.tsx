@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, loading, profile, isAdmin } = useAuth();
+  const { user, loading, profile, isAdmin, isSupport } = useAuth();
 
   if (loading) {
     return (
@@ -24,9 +24,13 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
-  // Admin role is checked from user_roles table, not profile.role
   if (allowedRoles?.includes('admin')) {
     if (!isAdmin) return <Navigate to="/" replace />;
+    return <>{children}</>;
+  }
+
+  if (allowedRoles?.includes('support')) {
+    if (!isSupport && !isAdmin) return <Navigate to="/" replace />;
     return <>{children}</>;
   }
 
