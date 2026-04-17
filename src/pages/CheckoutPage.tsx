@@ -142,6 +142,32 @@ export default function CheckoutPage() {
 
     setSubmitting(true);
     try {
+      // Compute driving distance via Mapbox if we have both store + delivery coords
+      let distanceKm: number | null = null;
+      try {
+        const { data: storeData } = await supabase
+          .from('stores')
+          .select('latitude, longitude')
+          .eq('id', storeId)
+          .maybeSingle();
+        if (
+          storeData?.latitude && storeData?.longitude &&
+          deliveryCoords?.lat && deliveryCoords?.lon
+        ) {
+          const { data: tokenRes } = await supabase.functions.invoke('get-mapbox-token');
+          const token = tokenRes?.token;
+          if (token) {
+            const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${storeData.longitude},${storeData.latitude};${deliveryCoords.lon},${deliveryCoords.lat}?access_token=${token}&overview=false`;
+            const res = await fetch(url);
+            const json = await res.json();
+            const meters = json?.routes?.[0]?.distance;
+            if (typeof meters === 'number') distanceKm = +(meters / 1000).toFixed(2);
+          }
+        }
+      } catch {
+        // non-fatal: continue without distance
+      }
+
       const { data: order, error: orderError } = await supabase
         .from('orders')
         .insert({
@@ -154,8 +180,9 @@ export default function CheckoutPage() {
           delivery_address: address,
           delivery_latitude: deliveryCoords?.lat ?? null,
           delivery_longitude: deliveryCoords?.lon ?? null,
+          distance_km: distanceKm,
           notes: notes || null,
-        })
+        } as any)
         .select()
         .single();
 
