@@ -15,16 +15,18 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [role, setRole] = useState<'driver' | 'store'>('driver');
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp, user, profile } = useAuth();
+  const { signIn, signUp, user, profile, isAdmin, isSupport } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
     if (user && profile) {
-      if (profile.role === 'driver') navigate('/driver', { replace: true });
+      if (isAdmin) navigate('/admin', { replace: true });
+      else if (isSupport) navigate('/support', { replace: true });
+      else if (profile.role === 'driver') navigate('/driver', { replace: true });
       else if (profile.role === 'store') navigate('/store', { replace: true });
       else navigate('/order', { replace: true });
     }
-  }, [user, profile, navigate]);
+  }, [user, profile, isAdmin, isSupport, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
