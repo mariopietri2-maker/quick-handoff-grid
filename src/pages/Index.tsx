@@ -1,11 +1,11 @@
-import { Car, Store, ArrowRight, Zap, Shield, BarChart3, ShoppingBag, MapPin, Clock, Users, Search, ClipboardList, Bike, CheckCircle } from 'lucide-react';
+import { Car, Store, ArrowRight, Zap, Shield, BarChart3, ShoppingBag, MapPin, Clock, Users, Search, ClipboardList, Bike, CheckCircle, Headphones } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, profile, isAdmin } = useAuth();
+  const { user, profile, isAdmin, isSupport } = useAuth();
 
   const handleNav = (target: 'driver' | 'store') => {
     if (user && profile?.role === target) {
@@ -90,6 +90,18 @@ const Index = () => {
               >
                 <Shield className="mr-2 h-5 w-5" />
                 Διαχείριση
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            )}
+            {(isSupport || isAdmin) && (
+              <Button
+                size="lg"
+                variant="outline"
+                className="h-14 px-8 text-base font-heading font-semibold border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,12%)] bg-transparent rounded-xl press-scale"
+                onClick={() => navigate('/support')}
+              >
+                <Headphones className="mr-2 h-5 w-5" />
+                Υποστήριξη
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
             )}
