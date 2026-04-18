@@ -2,7 +2,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import {
   BarChart3, ShoppingBag, Store, Users, Shield, Wallet,
   MessageSquare, Flame, Star, Megaphone, MapPin, Settings,
-  Activity, Bell, ChevronLeft, ChevronRight, LayoutDashboard, DollarSign,
+  Activity, Bell, ChevronLeft, ChevronRight, LayoutDashboard, DollarSign, Headphones,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -34,6 +34,7 @@ const navGroups = [
       { id: 'stores', label: 'Καταστήματα', icon: Store },
       { id: 'drivers', label: 'Οδηγοί', icon: Users },
       { id: 'users', label: 'Χρήστες', icon: Shield },
+      { id: 'support_roles', label: 'Support Agents', icon: Headphones },
     ],
   },
   {

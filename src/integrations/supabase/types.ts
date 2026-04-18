@@ -135,6 +135,8 @@ export type Database = {
           license_number: string | null
           license_plate: string | null
           secondary_phone: string | null
+          suspended_at: string | null
+          suspension_reason: string | null
           updated_at: string
           user_id: string
           vehicle_color: string | null
@@ -164,6 +166,8 @@ export type Database = {
           license_number?: string | null
           license_plate?: string | null
           secondary_phone?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id: string
           vehicle_color?: string | null
@@ -193,6 +197,8 @@ export type Database = {
           license_number?: string | null
           license_plate?: string | null
           secondary_phone?: string | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
           user_id?: string
           vehicle_color?: string | null
@@ -477,24 +483,54 @@ export type Database = {
         Row: {
           assignment_mode: string
           base_pay: number
+          bike_multiplier: number
+          car_multiplier: number
+          customer_base_fee: number
+          customer_per_km_fee: number
+          default_commission_pct: number
           id: number
           min_pay: number
+          motorcycle_multiplier: number
+          peak_end_hour: number
+          peak_multiplier: number
+          peak_start_hour: number
+          peak_weekdays: number[]
           per_km_rate: number
           updated_at: string
         }
         Insert: {
           assignment_mode?: string
           base_pay?: number
+          bike_multiplier?: number
+          car_multiplier?: number
+          customer_base_fee?: number
+          customer_per_km_fee?: number
+          default_commission_pct?: number
           id?: number
           min_pay?: number
+          motorcycle_multiplier?: number
+          peak_end_hour?: number
+          peak_multiplier?: number
+          peak_start_hour?: number
+          peak_weekdays?: number[]
           per_km_rate?: number
           updated_at?: string
         }
         Update: {
           assignment_mode?: string
           base_pay?: number
+          bike_multiplier?: number
+          car_multiplier?: number
+          customer_base_fee?: number
+          customer_per_km_fee?: number
+          default_commission_pct?: number
           id?: number
           min_pay?: number
+          motorcycle_multiplier?: number
+          peak_end_hour?: number
+          peak_multiplier?: number
+          peak_start_hour?: number
+          peak_weekdays?: number[]
           per_km_rate?: number
           updated_at?: string
         }
@@ -655,6 +691,41 @@ export type Database = {
         }
         Relationships: []
       }
+      store_pricing_overrides: {
+        Row: {
+          base_pay: number | null
+          commission_pct: number | null
+          min_pay: number | null
+          per_km_rate: number | null
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          base_pay?: number | null
+          commission_pct?: number | null
+          min_pay?: number | null
+          per_km_rate?: number | null
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          base_pay?: number | null
+          commission_pct?: number | null
+          min_pay?: number | null
+          per_km_rate?: number | null
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "store_pricing_overrides_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: true
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       stores: {
         Row: {
           address: string
@@ -669,6 +740,8 @@ export type Database = {
           owner_id: string
           phone: string | null
           prep_buffer_minutes: number | null
+          suspended_at: string | null
+          suspension_reason: string | null
           updated_at: string
         }
         Insert: {
@@ -684,6 +757,8 @@ export type Database = {
           owner_id: string
           phone?: string | null
           prep_buffer_minutes?: number | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Update: {
@@ -699,6 +774,8 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           prep_buffer_minutes?: number | null
+          suspended_at?: string | null
+          suspension_reason?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -899,6 +976,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      admin_adjust_wallet: {
+        Args: { p_amount: number; p_description: string; p_driver_id: string }
+        Returns: undefined
+      }
       create_driver_earning: {
         Args: {
           p_base_pay: number

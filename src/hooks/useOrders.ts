@@ -194,35 +194,8 @@ export function useDriverOrders() {
       toast.error('Failed to update status');
     } else {
       if (newStatus === 'delivered') {
-        toast.success('Παράδοση ολοκληρώθηκε! 🎉');
-        // Create earnings record via secure RPC using platform pricing
-        if (user) {
-          const order = activeDelivery;
-          if (order) {
-            // Load current pricing settings
-            const { data: settings } = await supabase
-              .from('platform_settings')
-              .select('base_pay, per_km_rate, min_pay')
-              .eq('id', 1)
-              .maybeSingle();
-
-            const base = Number((settings as any)?.base_pay ?? order.delivery_fee ?? 3);
-            const perKm = Number((settings as any)?.per_km_rate ?? 0);
-            const minPay = Number((settings as any)?.min_pay ?? 0);
-            const km = Number((order as any).distance_km ?? 0);
-
-            const computedBase = Math.max(minPay, base + perKm * km);
-            const tip = Number(order.tip_amount ?? 0);
-            const bonus = 0;
-            await supabase.rpc('create_driver_earning', {
-              p_driver_id: user.id,
-              p_order_id: orderId,
-              p_base_pay: computedBase,
-              p_tip: tip,
-              p_bonus: bonus,
-            });
-          }
-        }
+        // Earnings + wallet credit are now handled automatically by a DB trigger
+        toast.success('Παράδοση ολοκληρώθηκε! 🎉 Πιστώθηκε στο πορτοφόλι.');
         setActiveDelivery(null);
       } else {
         toast.success(`Status updated: ${newStatus.replace('_', ' ')}`);
