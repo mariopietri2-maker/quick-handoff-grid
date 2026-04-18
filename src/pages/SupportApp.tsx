@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,8 @@ import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone } from 'lucide-react';
-import { TicketChat } from '@/components/support/TicketChat';
+import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
+import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -39,6 +40,7 @@ export default function SupportApp() {
   const [activeTicket, setActiveTicket] = useState<any | null>(null);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const chatRef = useRef<TicketChatHandle>(null);
 
   const { data: tickets } = useQuery({
     queryKey: ['support-tickets'],
@@ -177,9 +179,14 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
+          <SupportAIPanel
+            ticketId={activeTicket.id}
+            onUseReply={(t) => chatRef.current?.setDraft(t)}
+          />
+
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
-            <TicketChat ticketId={activeTicket.id} />
+            <TicketChat ref={chatRef} ticketId={activeTicket.id} />
           </div>
         </div>
 

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -16,13 +16,24 @@ interface Message {
   created_at: string;
 }
 
-export function TicketChat({ ticketId }: { ticketId: string }) {
+export interface TicketChatHandle {
+  setDraft: (text: string) => void;
+}
+
+export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(function TicketChat(
+  { ticketId },
+  ref
+) {
   const { user, isAdmin } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  useImperativeHandle(ref, () => ({
+    setDraft: (t: string) => setText(t),
+  }));
 
   useEffect(() => {
     let active = true;
@@ -147,4 +158,4 @@ export function TicketChat({ ticketId }: { ticketId: string }) {
       </div>
     </div>
   );
-}
+});
