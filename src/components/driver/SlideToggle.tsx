@@ -1,5 +1,5 @@
-import { useRef, useState, useCallback } from 'react';
-import { Zap, AlertTriangle } from 'lucide-react';
+import { useRef, useState, useCallback, useEffect } from 'react';
+import { Power, AlertTriangle, ChevronRight } from 'lucide-react';
 import {
   AlertDialog, AlertDialogAction, AlertDialogCancel,
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
@@ -11,34 +11,46 @@ interface SlideToggleProps {
   onToggle: (value: boolean) => void;
   onLabel?: string;
   offLabel?: string;
+  disabled?: boolean;
 }
 
-const THUMB_SIZE = 44;
+const THUMB_SIZE = 52;
 const TRACK_PADDING = 4;
-// Easy ON: 50% of track. Hard OFF: must drag 95% AND confirm.
-const ON_THRESHOLD = 0.5;
-const OFF_THRESHOLD = 0.95;
+const ON_THRESHOLD = 0.5;   // easy to go online
+const OFF_THRESHOLD = 0.92; // hard to go offline
 
 export function SlideToggle({
   isOn,
   onToggle,
-  onLabel = 'Online',
-  offLabel = 'Slide to Go Online',
+  onLabel = 'Είσαι Online',
+  offLabel = 'Σύρε για να συνδεθείς',
+  disabled = false,
 }: SlideToggleProps) {
   const trackRef = useRef<HTMLDivElement>(null);
   const [dragX, setDragX] = useState<number | null>(null);
   const [confirmOff, setConfirmOff] = useState(false);
+  const [trackW, setTrackW] = useState(0);
   const startX = useRef(0);
   const dragging = useRef(false);
 
-  const getMaxX = useCallback(() => {
-    if (!trackRef.current) return 200;
-    return trackRef.current.offsetWidth - THUMB_SIZE - TRACK_PADDING * 2;
+  useEffect(() => {
+    if (!trackRef.current) return;
+    const ro = new ResizeObserver(() => {
+      if (trackRef.current) setTrackW(trackRef.current.offsetWidth);
+    });
+    ro.observe(trackRef.current);
+    setTrackW(trackRef.current.offsetWidth);
+    return () => ro.disconnect();
   }, []);
+
+  const getMaxX = useCallback(() => {
+    return Math.max(0, trackW - THUMB_SIZE - TRACK_PADDING * 2);
+  }, [trackW]);
 
   const getRestX = useCallback(() => (isOn ? getMaxX() : 0), [isOn, getMaxX]);
 
   const handleStart = (clientX: number) => {
+    if (disabled) return;
     dragging.current = true;
     startX.current = clientX - getRestX();
     setDragX(getRestX());
@@ -58,15 +70,14 @@ export function SlideToggle({
     const finalX = dragX ?? 0;
 
     if (!isOn) {
-      // Easy go online
       if (finalX > maxX * ON_THRESHOLD) {
         setDragX(null);
         onToggle(true);
+        if ('vibrate' in navigator) try { navigator.vibrate(40); } catch {}
         return;
       }
     } else {
-      // Hard go offline: must reach 95% then confirm
-      const offProgress = 1 - finalX / maxX;
+      const offProgress = 1 - finalX / Math.max(1, maxX);
       if (offProgress > OFF_THRESHOLD) {
         setDragX(null);
         setConfirmOff(true);
@@ -87,53 +98,121 @@ export function SlideToggle({
   const currentX = dragX !== null ? dragX : getRestX();
   const maxX = getMaxX();
   const progress = maxX > 0 ? currentX / maxX : (isOn ? 1 : 0);
+  const isDragging = dragX !== null;
 
-  // Spring-like easing when dragging on
-  const fillTransition = dragX === null
-    ? 'transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1)'
+  const fillTransition = !isDragging
+    ? 'transform 0.55s cubic-bezier(0.34, 1.56, 0.64, 1)'
     : 'none';
-  const thumbTransition = dragX === null
-    ? 'left 0.45s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s, transform 0.2s'
-    : 'background-color 0.3s, transform 0.2s';
+  const thumbTransition = !isDragging
+    ? 'left 0.55s cubic-bezier(0.34, 1.56, 0.64, 1), background-color 0.3s, transform 0.2s, box-shadow 0.3s'
+    : 'background-color 0.2s, transform 0.15s, box-shadow 0.2s';
+
+  // Tip label changes during drag in either direction
+  const label = (() => {
+    if (!isOn) return progress > 0.5 ? 'Άσε για να συνδεθείς' : offLabel;
+    if (isDragging) {
+      const off = 1 - progress;
+      if (off > OFF_THRESHOLD) return 'Άσε για επιβεβαίωση';
+      if (off > 0.4) return `Σύρε ως το τέλος για offline`;
+      return 'Σύρε αριστερά για offline';
+    }
+    return onLabel;
+  })();
 
   return (
     <>
       <div
         ref={trackRef}
-        className="relative h-14 rounded-full bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))] overflow-hidden select-none touch-none"
+        className={`relative h-16 rounded-full overflow-hidden select-none touch-none transition-all duration-300 ${
+          isOn
+            ? 'bg-gradient-to-r from-[hsl(var(--driver-accent))]/15 via-[hsl(var(--driver-accent))]/10 to-[hsl(var(--driver-accent))]/5 border border-[hsl(var(--driver-accent))]/30 shadow-[0_0_30px_-6px_hsl(var(--driver-accent)/0.4)]'
+            : 'bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))]'
+        } ${disabled ? 'opacity-50 pointer-events-none' : ''}`}
         onMouseMove={onMouseMove}
         onMouseUp={onMouseUp}
         onMouseLeave={onMouseLeave}
       >
+        {/* Animated background fill */}
         <div
-          className="absolute inset-0 rounded-full bg-[hsl(var(--driver-accent))]/20 origin-left"
-          style={{ transform: `scaleX(${progress})`, transition: fillTransition }}
+          className="absolute inset-y-0 left-0 rounded-full"
+          style={{
+            width: '100%',
+            background: 'linear-gradient(90deg, hsl(var(--driver-accent)/0.45) 0%, hsl(var(--driver-accent)/0.25) 60%, transparent 100%)',
+            transformOrigin: 'left center',
+            transform: `scaleX(${progress})`,
+            transition: fillTransition,
+          }}
         />
 
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className={`font-heading font-bold text-xs transition-colors duration-300 ${
-            progress > 0.5 ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
-          }`}>
-            {isOn
-              ? (dragging.current && progress < 0.5 ? `Σύρε δεξιά για να μείνεις ON` : onLabel)
-              : (progress > 0.5 ? onLabel : offLabel)}
+        {/* Shimmer sweep when ON */}
+        {isOn && !isDragging && (
+          <div
+            className="absolute inset-0 pointer-events-none opacity-50"
+            style={{
+              background: 'linear-gradient(90deg, transparent 0%, hsl(var(--driver-accent)/0.3) 50%, transparent 100%)',
+              animation: 'slide-shimmer 2.4s ease-in-out infinite',
+              backgroundSize: '200% 100%',
+            }}
+          />
+        )}
+
+        {/* Pulsing dots hint when OFF */}
+        {!isOn && !isDragging && (
+          <div className="absolute right-6 top-1/2 -translate-y-1/2 flex gap-1.5 pointer-events-none">
+            {[0, 1, 2].map(i => (
+              <ChevronRight
+                key={i}
+                className="h-4 w-4 text-[hsl(var(--driver-text-muted))]"
+                style={{ animation: `slide-arrow 1.6s ease-in-out ${i * 0.2}s infinite` }}
+              />
+            ))}
+          </div>
+        )}
+
+        {/* Center label */}
+        <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-16">
+          <span
+            className={`font-heading font-bold text-sm tracking-wide transition-colors duration-300 text-center ${
+              progress > 0.45 ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
+            }`}
+          >
+            {label}
           </span>
         </div>
 
+        {/* Thumb */}
         <div
-          className={`absolute top-1 h-[44px] w-[44px] rounded-full flex items-center justify-center shadow-lg cursor-grab active:cursor-grabbing active:scale-110 ${
-            progress > 0.5 ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-text-muted))]'
+          className={`absolute top-1 rounded-full flex items-center justify-center cursor-grab active:cursor-grabbing select-none ${
+            progress > 0.45
+              ? 'bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(var(--driver-accent))]/80'
+              : 'bg-gradient-to-br from-[hsl(var(--driver-text))] to-[hsl(var(--driver-text-muted))]'
           }`}
           style={{
+            width: THUMB_SIZE,
+            height: THUMB_SIZE,
             left: `${TRACK_PADDING + currentX}px`,
             transition: thumbTransition,
+            boxShadow: progress > 0.45
+              ? '0 6px 20px -2px hsl(var(--driver-accent)/0.6), 0 0 0 1px hsl(var(--driver-accent)/0.3) inset'
+              : '0 4px 14px -2px rgba(0,0,0,0.4), 0 0 0 1px rgba(255,255,255,0.08) inset',
+            transform: isDragging ? 'scale(1.08)' : 'scale(1)',
           }}
           onTouchStart={onTouchStart}
           onTouchMove={onTouchMove}
           onTouchEnd={onTouchEnd}
           onMouseDown={onMouseDown}
         >
-          <Zap className="h-5 w-5 text-white" />
+          {/* Inner glow ring */}
+          {progress > 0.45 && !isDragging && (
+            <span
+              className="absolute inset-0 rounded-full"
+              style={{
+                animation: 'thumb-pulse 2s ease-in-out infinite',
+                boxShadow: '0 0 0 0 hsl(var(--driver-accent)/0.6)',
+              }}
+            />
+          )}
+          <Power className="h-5 w-5 text-white drop-shadow" strokeWidth={2.5} />
         </div>
       </div>
 
