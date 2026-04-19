@@ -496,6 +496,7 @@ export type Database = {
           peak_start_hour: number
           peak_weekdays: number[]
           per_km_rate: number
+          show_stores_on_driver_map: boolean
           updated_at: string
         }
         Insert: {
@@ -514,6 +515,7 @@ export type Database = {
           peak_start_hour?: number
           peak_weekdays?: number[]
           per_km_rate?: number
+          show_stores_on_driver_map?: boolean
           updated_at?: string
         }
         Update: {
@@ -532,6 +534,7 @@ export type Database = {
           peak_start_hour?: number
           peak_weekdays?: number[]
           per_km_rate?: number
+          show_stores_on_driver_map?: boolean
           updated_at?: string
         }
         Relationships: []

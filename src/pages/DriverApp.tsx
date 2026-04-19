@@ -18,6 +18,7 @@ import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/compone
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 import { DriverSoundSettings } from '@/components/driver/DriverSoundSettings';
+import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
@@ -56,6 +57,7 @@ export default function DriverApp() {
   }, [driverActive, isOnline]);
 
   const { tracking, error: locError } = useDriverLocation(isOnline);
+  const { stores: nearbyStores } = useNearbyStoresForDriver();
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (_id: string) => {};
@@ -128,6 +130,7 @@ export default function DriverApp() {
             customerAddress={activeDelivery?.delivery_address}
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
+            nearbyStores={nearbyStores}
           />
 
           {/* ─── TOP BAR (floating over map) ─── */}

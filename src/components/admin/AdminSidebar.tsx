@@ -49,6 +49,7 @@ const navGroups = [
     label: 'Εργαλεία',
     items: [
       { id: 'map', label: 'Live Χάρτης', icon: MapPin },
+      { id: 'driver_map_settings', label: 'Χάρτης Οδηγών', icon: Settings },
       { id: 'demand', label: 'Ζώνες Ζήτησης', icon: Flame },
       { id: 'reviews', label: 'Κριτικές', icon: Star },
       { id: 'announcements', label: 'Ανακοινώσεις', icon: Megaphone },

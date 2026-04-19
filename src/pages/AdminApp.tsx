@@ -21,6 +21,7 @@ import SupportRoleManager from '@/components/admin/SupportRoleManager';
 import WalletAdjustDialog from '@/components/admin/WalletAdjustDialog';
 import SuspendDialog from '@/components/admin/SuspendDialog';
 import DemandZonesManager from '@/components/admin/DemandZonesManager';
+import DriverMapSettings from '@/components/admin/DriverMapSettings';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminActivityLog from '@/components/admin/AdminActivityLog';
@@ -149,6 +150,8 @@ export default function AdminApp() {
         return <SupportTicketsManager />;
       case 'map':
         return <AdminDriversMap />;
+      case 'driver_map_settings':
+        return <DriverMapSettings />;
       case 'demand':
         return <DemandZonesManager />;
       case 'reviews':
