@@ -18,6 +18,7 @@ import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/compone
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 import { DriverSoundSettings } from '@/components/driver/DriverSoundSettings';
+import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
