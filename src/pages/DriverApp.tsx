@@ -290,7 +290,7 @@ export default function DriverApp() {
                       onToggle={setIsOnline}
                       onLabel="Είσαι Online"
                       offLabel="Σύρε για να συνδεθείς"
-                      disabled={driverActive === false}
+                      disabled={driverActive !== true}
                     />
                   </div>
                 </div>
