@@ -2,7 +2,8 @@ import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { playOrderSound, showOrderNotification, playDeliverySound, showDeliveryNotification } from '@/lib/notifications';
+import { playOrderSound, showOrderNotification, showDeliveryNotification } from '@/lib/notifications';
+import { playOfferAlert } from '@/lib/driver-sound-prefs';
 import type { Database } from '@/integrations/supabase/types';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -154,7 +155,7 @@ export function useDriverOrders() {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             fetchOrders();
             if (payload.eventType === 'INSERT') {
-              playDeliverySound();
+              playOfferAlert();
               const newOrder = payload.new as OrderRow;
               showDeliveryNotification(Number(newOrder.delivery_fee ?? 0) + Number(newOrder.tip_amount ?? 0));
               toast('📦 New delivery available!', { duration: 4000 });
