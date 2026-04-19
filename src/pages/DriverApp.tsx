@@ -130,6 +130,7 @@ export default function DriverApp() {
             customerAddress={activeDelivery?.delivery_address}
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
+            nearbyStores={nearbyStores}
           />
 
           {/* ─── TOP BAR (floating over map) ─── */}
