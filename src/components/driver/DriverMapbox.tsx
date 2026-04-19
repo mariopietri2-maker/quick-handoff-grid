@@ -13,6 +13,15 @@ export interface RouteInfo {
   steps: { instruction: string; distance: number; duration: number }[];
 }
 
+interface NearbyStorePin {
+  id: string;
+  name: string;
+  latitude: number;
+  longitude: number;
+  image_url: string | null;
+  pendingOrders: number;
+}
+
 interface DriverMapboxProps {
   className?: string;
   storeLat?: number | null;
@@ -24,6 +33,7 @@ interface DriverMapboxProps {
   customerAddress?: string | null;
   navigatingTo?: 'store' | 'customer' | null;
   onRouteUpdate?: (route: RouteInfo | null) => void;
+  nearbyStores?: NearbyStorePin[];
 }
 
 const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function DriverMapbox({
@@ -32,6 +42,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   customerLat, customerLng, customerName, customerAddress,
   navigatingTo,
   onRouteUpdate,
+  nearbyStores,
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
