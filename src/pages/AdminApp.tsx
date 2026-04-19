@@ -150,6 +150,8 @@ export default function AdminApp() {
         return <SupportTicketsManager />;
       case 'map':
         return <AdminDriversMap />;
+      case 'driver_map_settings':
+        return <DriverMapSettings />;
       case 'demand':
         return <DemandZonesManager />;
       case 'reviews':
