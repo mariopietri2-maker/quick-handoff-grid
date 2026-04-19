@@ -49,6 +49,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const driverMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const storeMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const customerMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const nearbyMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const { token, loading } = useMapboxToken();
   const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
   const watchRef = useRef<number | null>(null);
