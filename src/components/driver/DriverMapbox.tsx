@@ -185,6 +185,67 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     }
   }, [customerLat, customerLng, customerName, customerAddress, navigatingTo]);
 
+  // Nearby stores markers (admin-toggleable)
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+
+    const incoming = nearbyStores ?? [];
+    const incomingIds = new Set(incoming.map(s => s.id));
+
+    // Remove markers no longer in list
+    nearbyMarkersRef.current.forEach((marker, id) => {
+      if (!incomingIds.has(id)) {
+        marker.remove();
+        nearbyMarkersRef.current.delete(id);
+      }
+    });
+
+    // Add or update
+    incoming.forEach(s => {
+      // Don't show a nearby pin where the active store/customer pin already is
+      if (storeLat != null && storeLng != null
+          && Math.abs(storeLat - s.latitude) < 1e-5
+          && Math.abs(storeLng - s.longitude) < 1e-5) {
+        const existing = nearbyMarkersRef.current.get(s.id);
+        if (existing) { existing.remove(); nearbyMarkersRef.current.delete(s.id); }
+        return;
+      }
+
+      const safeName = s.name.replace(/[<>"]/g, '');
+      const initials = safeName.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '🏪';
+      const badge = s.pendingOrders > 0
+        ? `<div style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;background:#ef4444;color:white;border-radius:10px;border:2px solid white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${s.pendingOrders}</div>`
+        : '';
+      const imgInner = s.image_url
+        ? `<img src="${s.image_url}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerText:'${initials}',style:'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);'}))" />`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);">${initials}</div>`;
+
+      const html = `
+        <div style="position:relative;cursor:pointer;">
+          <div style="width:36px;height:36px;border-radius:10px;border:2.5px solid white;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,0.4);background:#1f2937;">
+            ${imgInner}
+          </div>
+          ${badge}
+        </div>`;
+
+      const existing = nearbyMarkersRef.current.get(s.id);
+      if (existing) {
+        existing.getElement().innerHTML = html;
+        existing.setLngLat([s.longitude, s.latitude]);
+      } else {
+        const el = document.createElement('div');
+        el.innerHTML = html;
+        const popupContent = `<strong style="font-size:13px;">${safeName}</strong><br/><span style="font-size:11px;color:#6b7280;">${s.pendingOrders} ενεργ${s.pendingOrders === 1 ? 'ή' : 'ές'} παραγγελί${s.pendingOrders === 1 ? 'α' : 'ες'}</span>`;
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
+          .setLngLat([s.longitude, s.latitude])
+          .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(popupContent))
+          .addTo(map);
+        nearbyMarkersRef.current.set(s.id, marker);
+      }
+    });
+  }, [nearbyStores, storeLat, storeLng]);
+
   // Fetch & draw route
   const fetchRoute = useCallback(async () => {
     const map = mapRef.current;
