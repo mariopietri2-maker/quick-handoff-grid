@@ -216,3 +216,20 @@
     border-radius: 2px;
   }
 }
+
+@keyframes slide-shimmer {
+  0% { background-position: -100% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes slide-arrow {
+  0%, 100% { opacity: 0.3; transform: translateX(0); }
+  50% { opacity: 1; transform: translateX(4px); }
+}
+
+@keyframes thumb-pulse {
+  0%   { box-shadow: 0 0 0 0 hsl(var(--driver-accent) / 0.6); }
+  70%  { box-shadow: 0 0 0 14px hsl(var(--driver-accent) / 0); }
+  100% { box-shadow: 0 0 0 0 hsl(var(--driver-accent) / 0); }
+}
+

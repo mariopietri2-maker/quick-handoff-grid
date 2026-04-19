@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Car, Navigation, Wallet, Users, Zap, Radio, TrendingUp, MapPin, Crosshair } from 'lucide-react';
+import { Car, Navigation, Wallet, Users, Zap, Radio, TrendingUp, MapPin, Crosshair, Bell } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -17,6 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
+import { DriverSoundSettings } from '@/components/driver/DriverSoundSettings';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
