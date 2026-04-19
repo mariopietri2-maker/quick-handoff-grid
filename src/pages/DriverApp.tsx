@@ -34,7 +34,26 @@ export default function DriverApp() {
     if (!user) return;
     supabase.from('driver_profiles').select('is_active').eq('user_id', user.id).maybeSingle()
       .then(({ data }) => setDriverActive(data ? data.is_active : true));
+
+    // Realtime: if admin suspends driver, force offline immediately
+    const channel = supabase
+      .channel(`driver-active-${user.id}`)
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'driver_profiles', filter: `user_id=eq.${user.id}` },
+        (payload) => {
+          const active = (payload.new as { is_active?: boolean }).is_active;
+          setDriverActive(active ?? true);
+          if (active === false) setIsOnline(false);
+        }
+      )
+      .subscribe();
+    return () => { supabase.removeChannel(channel); };
   }, [user]);
+
+  // Force offline whenever driver becomes inactive
+  useEffect(() => {
+    if (driverActive === false && isOnline) setIsOnline(false);
+  }, [driverActive, isOnline]);
 
   const { tracking, error: locError } = useDriverLocation(isOnline);
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
@@ -123,7 +142,14 @@ export default function DriverApp() {
                 </div>
                 <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
               </div>
-              <div className="driver-glass rounded-full p-1.5 shrink-0">
+              <div className="driver-glass rounded-full p-1.5 shrink-0 flex items-center gap-1">
+                <DriverSoundSettings
+                  trigger={
+                    <button className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[hsl(var(--driver-surface))] transition-colors active:scale-95">
+                      <Bell className="h-4 w-4 text-[hsl(var(--driver-text))]" />
+                    </button>
+                  }
+                />
                 <DriverSupportButton orderId={activeDelivery?.id} />
               </div>
             </div>
@@ -262,8 +288,9 @@ export default function DriverApp() {
                     <SlideToggle
                       isOn={isOnline}
                       onToggle={setIsOnline}
-                      onLabel="Online"
-                      offLabel="Slide to Go Online"
+                      onLabel="Είσαι Online"
+                      offLabel="Σύρε για να συνδεθείς"
+                      disabled={driverActive === false}
                     />
                   </div>
                 </div>
