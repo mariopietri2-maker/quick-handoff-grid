@@ -21,5 +21,10 @@ export function getGoogleMapsNavigationUrl({ lat, lng, address }: NavigationTarg
 export function openGoogleMapsNavigation(target: NavigationTarget) {
   const url = getGoogleMapsNavigationUrl(target);
   if (!url) return;
-  window.location.assign(url);
+  // Open in a new tab/external app (Google Maps app on mobile) instead of navigating away from the driver app
+  const win = window.open(url, '_blank', 'noopener,noreferrer');
+  if (!win) {
+    // Popup blocked fallback
+    window.location.href = url;
+  }
 }
