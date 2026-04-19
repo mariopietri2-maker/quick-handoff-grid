@@ -66,7 +66,7 @@ export function useNearbyStoresForDriver() {
       const { data: orderRows } = await supabase
         .from('orders')
         .select('store_id')
-        .in('status', ACTIVE_STATUSES as unknown as string[])
+        .in('status', [...ACTIVE_STATUSES])
         .in('store_id', valid.map(s => s.id));
 
       const counts: Record<string, number> = {};
