@@ -72,9 +72,24 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
         'postgres_changes',
         { event: 'INSERT', schema: 'public', table: 'ticket_messages', filter: `ticket_id=eq.${ticketId}` },
         (payload) => {
-          setMessages((prev) =>
-            prev.find((m) => m.id === (payload.new as Message).id) ? prev : [...prev, payload.new as Message]
-          );
+          const incoming = payload.new as Message;
+          setMessages((prev) => {
+            // Already have the real row
+            if (prev.some((m) => m.id === incoming.id)) return prev;
+            // Replace optimistic match (same sender + same text within 10s)
+            const optimisticIdx = prev.findIndex(
+              (m) =>
+                m.sender_id === incoming.sender_id &&
+                m.message === incoming.message &&
+                Math.abs(new Date(m.created_at).getTime() - new Date(incoming.created_at).getTime()) < 10000
+            );
+            if (optimisticIdx >= 0) {
+              const next = [...prev];
+              next[optimisticIdx] = incoming;
+              return next;
+            }
+            return [...prev, incoming];
+          });
         }
       )
       .subscribe();
