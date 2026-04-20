@@ -143,7 +143,7 @@ export default function DriverApp() {
 
 
   return (
-    <div className="h-[100dvh] flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden">
+    <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden">
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
           {/* Fullscreen Map */}
@@ -168,11 +168,11 @@ export default function DriverApp() {
               <div className="shrink-0">
                 <UserMenu />
               </div>
-              <div className="driver-glass rounded-full px-4 py-2 flex items-center gap-2 shrink-0 hover-lift">
-                <div className="h-5 w-5 rounded-md gradient-primary flex items-center justify-center animate-float">
-                  <Zap className="h-3 w-3 text-white" />
+              <div className="bg-white/95 backdrop-blur-md rounded-full pl-1.5 pr-4 py-1 flex items-center gap-2 shrink-0 shadow-lg border border-white/40 hover-lift">
+                <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shadow-primary animate-float">
+                  <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
                 </div>
-                <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Fresh Delivery</span>
+                <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
               </div>
               <div className="shrink-0">
                 <DriverSupportButton orderId={activeDelivery?.id} />
