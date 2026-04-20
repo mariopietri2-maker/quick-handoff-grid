@@ -244,37 +244,38 @@ export default function DriverApp() {
 
               {/* Order offer cards */}
               {!activeDelivery && isOnline && !loading && offers.length > 0 && (
-                <div className="space-y-3">
+                <div className="space-y-3 animate-slide-up">
                   <div className="flex items-center justify-between px-1">
                     <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
-                    <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5">{offers.length}</Badge>
+                    <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5 animate-pop">{offers.length}</Badge>
                   </div>
-                  {offers.map(offer => (
-                    <OrderOfferCard
-                      key={offer.id}
-                      offer={{
-                        id: offer.id,
-                        storeName: 'Παραλαβή',
-                        storeAddress: offer.delivery_address || 'Κατάστημα',
-                        deliveryAddress: offer.delivery_address || 'Πελάτης',
-                        estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
-                        basePay: Number(offer.delivery_fee ?? 0),
-                        tipAmount: Number(offer.tip_amount ?? 0),
-                        perKmRate: 0.50,
-                        totalDistance: 0,
-                        estimatedTime: offer.estimated_prep_time ?? 20,
-                        itemCount: offer.order_items?.length ?? 0,
-                      }}
-                      onAccept={acceptOrder}
-                      onDecline={handleDecline}
-                    />
+                  {offers.map((offer, i) => (
+                    <div key={offer.id} className="animate-pop" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
+                      <OrderOfferCard
+                        offer={{
+                          id: offer.id,
+                          storeName: 'Παραλαβή',
+                          storeAddress: offer.delivery_address || 'Κατάστημα',
+                          deliveryAddress: offer.delivery_address || 'Πελάτης',
+                          estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
+                          basePay: Number(offer.delivery_fee ?? 0),
+                          tipAmount: Number(offer.tip_amount ?? 0),
+                          perKmRate: 0.50,
+                          totalDistance: 0,
+                          estimatedTime: offer.estimated_prep_time ?? 20,
+                          itemCount: offer.order_items?.length ?? 0,
+                        }}
+                        onAccept={acceptOrder}
+                        onDecline={handleDecline}
+                      />
+                    </div>
                   ))}
                 </div>
               )}
 
               {/* Combined Online/Offline + Waiting state */}
               {!activeDelivery && (
-                <div className="driver-glass rounded-2xl overflow-hidden transition-all duration-500 ease-out">
+                <div className="driver-glass rounded-2xl overflow-hidden transition-all duration-500 ease-out animate-scale-in">
                   {/* Waiting for orders (online, no offers) */}
                   {isOnline && !loading && offers.length === 0 && (
                     <div className="p-5 text-center animate-fade-in">
