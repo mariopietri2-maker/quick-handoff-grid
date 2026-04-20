@@ -44,10 +44,10 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="h-11 w-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] shadow-lg flex items-center justify-center active:scale-95 transition-transform hover:bg-[hsl(var(--driver-surface))]"
+        className="h-10 w-10 rounded-full bg-background border-2 border-border shadow-md flex items-center justify-center text-foreground transition-all duration-200 hover:bg-accent active:scale-95"
         aria-label="Βοήθεια"
       >
-        <Headphones className="h-4.5 w-4.5 text-[hsl(var(--driver-text))]" />
+        <Headphones className="h-5 w-5" />
       </button>
 
       <Dialog open={open} onOpenChange={setOpen}>
