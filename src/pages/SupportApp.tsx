@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock } from 'lucide-react';
+import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
+import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
 
@@ -28,6 +30,14 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   open: { label: 'Ανοιχτό', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
   in_progress: { label: 'Σε εξέλιξη', color: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' },
   resolved: { label: 'Επιλύθηκε', color: 'bg-green-500/10 text-green-700 border-green-500/20' },
+};
+
+const PRIORITY_ORDER: Record<string, number> = { sos: 0, high: 1, normal: 2, low: 3 };
+const priorityConfig: Record<TicketPriority, { label: string; color: string; icon: any }> = {
+  sos: { label: 'SOS', color: 'bg-red-600 text-white border-red-700 animate-pulse', icon: Siren },
+  high: { label: 'Υψηλή', color: 'bg-orange-500/15 text-orange-700 border-orange-500/30', icon: Flag },
+  normal: { label: 'Κανονική', color: 'bg-muted text-muted-foreground border-border', icon: Flag },
+  low: { label: 'Χαμηλή', color: 'bg-slate-500/10 text-slate-600 border-slate-500/20', icon: Flag },
 };
 
 const categoryConfig: Record<string, { label: string; icon: any; color: string }> = {
