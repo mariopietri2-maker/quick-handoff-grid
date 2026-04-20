@@ -1,6 +1,9 @@
 // Driver sound preferences stored locally per device
 
-export type SoundPattern = 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse';
+export type SoundPattern =
+  | 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse'
+  | 'wolt' | 'uber' | 'doordash' | 'glovo' | 'kaching'
+  | 'arcade' | 'marimba' | 'classic_phone' | 'siren';
 
 export interface DriverSoundPrefs {
   enabled: boolean;
