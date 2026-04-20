@@ -25,11 +25,38 @@ type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
-  const [isOnline, setIsOnline] = useState(true);
+  // Drivers always start OFFLINE — must opt-in each session
+  const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
   const { user } = useAuth();
   useEarnings();
+
+  // ─── 30-minute auto-offline inactivity timer ───
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastActivity = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (!isOnline) {
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      return;
+    }
+    const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+    const resetTimer = () => {
+      lastActivity.current = Date.now();
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = setTimeout(() => {
+        setIsOnline(false);
+      }, INACTIVITY_MS);
+    };
+    const events: (keyof WindowEventMap)[] = ['pointerdown', 'touchstart', 'keydown', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    };
+  }, [isOnline]);
 
   useEffect(() => {
     if (!user) return;
@@ -135,24 +162,26 @@ export default function DriverApp() {
 
           {/* ─── TOP BAR (floating over map) ─── */}
           <div className="absolute top-0 left-0 right-0 z-20 safe-area-top">
-            <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-              <div className="driver-glass rounded-full p-1.5 shrink-0">
-                <UserMenu />
+            <div className="px-4 pt-3 pb-2 flex items-start justify-between gap-3">
+              <div className="flex flex-col gap-2 shrink-0">
+                <div className="driver-glass rounded-full p-1.5">
+                  <UserMenu />
+                </div>
+                <DriverSoundSettings
+                  trigger={
+                    <button className="driver-glass h-10 w-10 rounded-full flex items-center justify-center hover:bg-[hsl(var(--driver-surface))] transition-colors active:scale-95">
+                      <Bell className="h-4 w-4 text-[hsl(var(--driver-text))]" />
+                    </button>
+                  }
+                />
               </div>
-              <div className="driver-glass rounded-full px-4 py-2 flex items-center gap-2 shrink-0">
+              <div className="driver-glass rounded-full px-4 py-2 flex items-center gap-2 shrink-0 mt-1">
                 <div className="h-5 w-5 rounded-md gradient-primary flex items-center justify-center">
                   <Zap className="h-3 w-3 text-white" />
                 </div>
                 <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
               </div>
-              <div className="driver-glass rounded-full p-1.5 shrink-0 flex items-center gap-1">
-                <DriverSoundSettings
-                  trigger={
-                    <button className="h-9 w-9 rounded-full flex items-center justify-center hover:bg-[hsl(var(--driver-surface))] transition-colors active:scale-95">
-                      <Bell className="h-4 w-4 text-[hsl(var(--driver-text))]" />
-                    </button>
-                  }
-                />
+              <div className="driver-glass rounded-full p-1.5 shrink-0 mt-1">
                 <DriverSupportButton orderId={activeDelivery?.id} />
               </div>
             </div>
