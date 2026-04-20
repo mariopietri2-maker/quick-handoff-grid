@@ -24,10 +24,16 @@ export function UserMenu() {
   const isDriver = profile?.role === 'driver';
   const [soundOpen, setSoundOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   const handleSignOut = async () => {
     await signOut();
     navigate('/auth');
+  };
+
+  const go = (path: string) => {
+    setMenuOpen(false);
+    setTimeout(() => navigate(path), 0);
   };
 
   const handleShare = async () => {
@@ -47,13 +53,21 @@ export function UserMenu() {
 
   return (
     <>
-      <DropdownMenu>
+      <DropdownMenu open={menuOpen} onOpenChange={setMenuOpen}>
         <DropdownMenuTrigger asChild>
-          <Button variant="ghost" size="icon" className="h-8 w-8 rounded-full">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-9 w-9 rounded-full bg-white text-foreground border border-border shadow-sm hover:bg-accent"
+          >
             <User className="h-4 w-4" />
           </Button>
         </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-64">
+        <DropdownMenuContent
+          align="start"
+          sideOffset={8}
+          className="w-64 bg-popover text-popover-foreground border border-border shadow-xl z-50"
+        >
           <div className="px-3 py-2.5 bg-gradient-to-br from-primary/10 to-transparent rounded-t-md">
             <p className="text-sm font-heading font-bold text-foreground truncate">
               {profile?.full_name || 'Χρήστης'}
@@ -72,19 +86,19 @@ export function UserMenu() {
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Λογαριασμός
               </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigate('/driver/profile')}>
+              <DropdownMenuItem onSelect={() => go('/driver/profile')}>
                 <UserCircle className="mr-2 h-4 w-4" />
                 Προφίλ Οδηγού
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/driver?tab=earnings')}>
+              <DropdownMenuItem onSelect={() => go('/driver?tab=earnings')}>
                 <TrendingUp className="mr-2 h-4 w-4" />
                 Κέρδη & Στατιστικά
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/driver?tab=wallet')}>
+              <DropdownMenuItem onSelect={() => go('/driver?tab=wallet')}>
                 <Wallet className="mr-2 h-4 w-4" />
                 Πορτοφόλι
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => navigate('/driver?tab=referral')}>
+              <DropdownMenuItem onSelect={() => go('/driver?tab=referral')}>
                 <Users className="mr-2 h-4 w-4" />
                 Πρόσκληση Οδηγών
               </DropdownMenuItem>
@@ -94,13 +108,21 @@ export function UserMenu() {
                 Ρυθμίσεις
               </DropdownMenuLabel>
               <DropdownMenuItem
-                onSelect={(e) => { e.preventDefault(); setSettingsOpen(true); }}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setMenuOpen(false);
+                  setTimeout(() => setSettingsOpen(true), 50);
+                }}
               >
                 <Settings className="mr-2 h-4 w-4" />
                 Ρυθμίσεις Εφαρμογής
               </DropdownMenuItem>
               <DropdownMenuItem
-                onSelect={(e) => { e.preventDefault(); setSoundOpen(true); }}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setMenuOpen(false);
+                  setTimeout(() => setSoundOpen(true), 50);
+                }}
               >
                 <Bell className="mr-2 h-4 w-4" />
                 Ήχος Ειδοποιήσεων
@@ -110,19 +132,19 @@ export function UserMenu() {
               <DropdownMenuLabel className="text-[10px] uppercase tracking-wider text-muted-foreground">
                 Βοήθεια
               </DropdownMenuLabel>
-              <DropdownMenuItem onClick={() => navigate('/driver/profile?tab=support')}>
+              <DropdownMenuItem onSelect={() => go('/driver/profile?tab=support')}>
                 <LifeBuoy className="mr-2 h-4 w-4" />
                 Υποστήριξη
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={handleShare}>
+              <DropdownMenuItem onSelect={() => { setMenuOpen(false); handleShare(); }}>
                 <Share2 className="mr-2 h-4 w-4" />
                 Μοιραστείτε την εφαρμογή
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.open('https://quick-handoff-grid.lovable.app', '_blank')}>
+              <DropdownMenuItem onSelect={() => window.open('https://quick-handoff-grid.lovable.app', '_blank')}>
                 <HelpCircle className="mr-2 h-4 w-4" />
                 Συχνές Ερωτήσεις
               </DropdownMenuItem>
-              <DropdownMenuItem onClick={() => window.open('https://quick-handoff-grid.lovable.app', '_blank')}>
+              <DropdownMenuItem onSelect={() => window.open('https://quick-handoff-grid.lovable.app', '_blank')}>
                 <FileText className="mr-2 h-4 w-4" />
                 Όροι & Πολιτική
               </DropdownMenuItem>
@@ -130,7 +152,7 @@ export function UserMenu() {
           ) : (
             <>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onClick={() => navigate('/')}>
+              <DropdownMenuItem onSelect={() => go('/')}>
                 <Home className="mr-2 h-4 w-4" />
                 Αρχική
               </DropdownMenuItem>
@@ -138,7 +160,10 @@ export function UserMenu() {
           )}
 
           <DropdownMenuSeparator />
-          <DropdownMenuItem onClick={handleSignOut} className="text-destructive focus:text-destructive">
+          <DropdownMenuItem
+            onSelect={() => { setMenuOpen(false); handleSignOut(); }}
+            className="text-destructive focus:text-destructive"
+          >
             <LogOut className="mr-2 h-4 w-4" />
             Αποσύνδεση
           </DropdownMenuItem>
