@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -167,28 +167,46 @@ export default function DriverApp() {
             nearbyStores={nearbyStores}
           />
 
-          {/* ─── TOP BAR (floating over map) ─── */}
-          <div className="absolute top-0 left-0 right-0 z-20 safe-area-top animate-slide-down">
-            <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-              <div className="shrink-0">
-                <UserMenu />
-              </div>
-              <div className="bg-white/95 backdrop-blur-md rounded-full pl-1.5 pr-4 py-1 flex items-center gap-2 shrink-0 shadow-lg border border-white/40 hover-lift">
-                <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shadow-primary animate-float">
-                  <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
+          {/* ─── TOP BAR (hidden in nav mode) ─── */}
+          {!isNavActive && (
+            <div className="absolute top-0 left-0 right-0 z-20 safe-area-top animate-slide-down">
+              <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
+                <div className="shrink-0">
+                  <UserMenu />
                 </div>
-                <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
-              </div>
-              <div className="shrink-0">
-                <DriverSupportButton orderId={activeDelivery?.id} />
+                <div className="bg-white/95 backdrop-blur-md rounded-full pl-1.5 pr-4 py-1 flex items-center gap-2 shrink-0 shadow-lg border border-white/40 hover-lift">
+                  <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shadow-primary animate-float">
+                    <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
+                  </div>
+                  <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
+                </div>
+                <div className="shrink-0">
+                  <DriverSupportButton orderId={activeDelivery?.id} />
+                </div>
               </div>
             </div>
-          </div>
+          )}
+
+          {/* ─── NAV MODE: top exit bar ─── */}
+          {isNavActive && (
+            <div className="absolute top-0 left-0 right-0 z-30 safe-area-top animate-slide-down">
+              <div className="px-4 pt-3 pb-2 flex items-center justify-end">
+                <button
+                  onClick={() => setNavMode(false)}
+                  className="h-10 px-4 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-2 shadow-lg active:scale-95"
+                  aria-label="Κλείσιμο πλοήγησης"
+                >
+                  <X className="h-4 w-4 text-[hsl(var(--driver-text))]" />
+                  <span className="text-xs font-heading font-semibold text-[hsl(var(--driver-text))]">Έξοδος</span>
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
           <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin">
             <div className="pointer-events-auto space-y-3 animate-slide-up">
-              {/* Recenter button */}
+              {/* Recenter button (always visible) */}
               <div className="flex justify-end animate-pop stagger-1">
                 <button
                   onClick={() => mapRef.current?.recenter()}
@@ -198,55 +216,68 @@ export default function DriverApp() {
                   <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
                 </button>
               </div>
-              <AnnouncementsBanner audience="drivers" />
 
-              {/* Navigation Panel */}
-              {routeInfo && navigatingTo && (
+              {/* In nav mode: ONLY show NavigationPanel */}
+              {isNavActive && (
                 <NavigationPanel
-                  route={routeInfo}
+                  route={routeInfo!}
                   destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
-                  destinationType={navigatingTo}
+                  destinationType={navigatingTo!}
                 />
               )}
 
-              {/* Active delivery card */}
-              {activeDelivery && (
+              {/* Normal mode */}
+              {!isNavActive && (
                 <>
-                  {tracking && (
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20 driver-glass">
-                      <Navigation className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))] animate-pulse" />
-                      <span className="text-xs font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή τοποθεσία</span>
-                    </div>
+                  <AnnouncementsBanner audience="drivers" />
+
+                  {/* Inline Navigation Panel preview */}
+                  {routeInfo && navigatingTo && (
+                    <NavigationPanel
+                      route={routeInfo}
+                      destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
+                      destinationType={navigatingTo}
+                    />
                   )}
-                  {locError && (
-                    <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
-                      <Navigation className="h-3.5 w-3.5 text-destructive" />
-                      <span className="text-xs font-heading text-destructive">GPS: {locError}</span>
-                    </div>
+
+                  {/* Active delivery card */}
+                  {activeDelivery && (
+                    <>
+                      {tracking && (
+                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20 driver-glass">
+                          <Navigation className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))] animate-pulse" />
+                          <span className="text-xs font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή τοποθεσία</span>
+                        </div>
+                      )}
+                      {locError && (
+                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
+                          <Navigation className="h-3.5 w-3.5 text-destructive" />
+                          <span className="text-xs font-heading text-destructive">GPS: {locError}</span>
+                        </div>
+                      )}
+                      <ActiveDelivery
+                        delivery={{
+                          id: activeDelivery.id,
+                          storeName: storeInfo?.name || 'Σημείο Παραλαβής',
+                          storeAddress: storeInfo?.address || 'Διεύθυνση',
+                          storePhone: storeInfo?.phone || null,
+                          storeLat: storeInfo?.latitude ?? null,
+                          storeLng: storeInfo?.longitude ?? null,
+                          deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
+                          deliveryLat: activeDelivery.delivery_latitude ?? null,
+                          deliveryLng: activeDelivery.delivery_longitude ?? null,
+                          customerName: customerInfo?.name || 'Πελάτης',
+                          customerPhone: customerInfo?.phone || null,
+                          status: activeDelivery.status ?? 'accepted',
+                          items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
+                          estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
+                          pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
+                        }}
+                        onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
+                        onFocusDestination={(target) => { mapRef.current?.focusOn(target); setNavMode(true); }}
+                      />
+                    </>
                   )}
-                  <ActiveDelivery
-                    delivery={{
-                      id: activeDelivery.id,
-                      storeName: storeInfo?.name || 'Σημείο Παραλαβής',
-                      storeAddress: storeInfo?.address || 'Διεύθυνση',
-                      storePhone: storeInfo?.phone || null,
-                      storeLat: storeInfo?.latitude ?? null,
-                      storeLng: storeInfo?.longitude ?? null,
-                      deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
-                      deliveryLat: activeDelivery.delivery_latitude ?? null,
-                      deliveryLng: activeDelivery.delivery_longitude ?? null,
-                      customerName: customerInfo?.name || 'Πελάτης',
-                      customerPhone: customerInfo?.phone || null,
-                      status: activeDelivery.status ?? 'accepted',
-                      items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
-                      estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
-                      pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
-                    }}
-                    onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
-                    onFocusDestination={(target) => mapRef.current?.focusOn(target)}
-                  />
-                </>
-              )}
 
               {/* Order offer cards */}
               {!activeDelivery && isOnline && !loading && offers.length > 0 && (
