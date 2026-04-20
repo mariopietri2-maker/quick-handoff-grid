@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingBag, DollarSign, Store, Users, Star, TrendingUp, TrendingDown, Clock, ArrowUpRight } from 'lucide-react';
 import { format, subDays, isAfter } from 'date-fns';
+import LiveOpsMap from './LiveOpsMap';
 
 interface Props {
   orders: any[];
