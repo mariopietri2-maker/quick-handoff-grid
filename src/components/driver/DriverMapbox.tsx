@@ -164,24 +164,80 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
 
-  // Update driver marker
+  // Update driver marker (arrow that rotates with heading when in followMode)
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !pos) return;
+
+    const heading = pos.heading ?? 0;
+    // Marker visual rotation: in followMode the map rotates so arrow stays "up";
+    // otherwise rotate marker to show direction of travel.
+    const markerRotation = followMode ? 0 : heading;
+
     if (driverMarkerRef.current) {
       driverMarkerRef.current.setLngLat([pos.lng, pos.lat]);
+      const inner = driverMarkerRef.current.getElement().querySelector<HTMLDivElement>('[data-driver-arrow]');
+      if (inner) inner.style.transform = `rotate(${markerRotation}deg)`;
     } else {
       const el = document.createElement('div');
       el.innerHTML = `
-        <div style="position:relative;">
-          <div style="width:22px;height:22px;background:#3b82f6;border-radius:50%;border:3px solid white;box-shadow:0 0 0 4px rgba(59,130,246,0.3),0 2px 8px rgba(0,0,0,0.3);"></div>
-          <div style="position:absolute;top:-3px;left:-3px;width:28px;height:28px;border-radius:50%;background:rgba(59,130,246,0.2);animation:pulse 2s infinite;"></div>
+        <div style="position:relative;width:34px;height:34px;">
+          <div style="position:absolute;inset:-6px;border-radius:50%;background:rgba(59,130,246,0.18);animation:pulse 2s infinite;"></div>
+          <div data-driver-arrow style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;transition:transform 250ms ease-out;transform:rotate(${markerRotation}deg);">
+            <svg width="34" height="34" viewBox="0 0 34 34" xmlns="http://www.w3.org/2000/svg">
+              <circle cx="17" cy="17" r="13" fill="#3b82f6" stroke="white" stroke-width="3"/>
+              <path d="M17 7 L23 19 L17 16 L11 19 Z" fill="white"/>
+            </svg>
+          </div>
         </div>`;
-      driverMarkerRef.current = new mapboxgl.Marker({ element: el })
+      driverMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([pos.lng, pos.lat])
         .addTo(map);
     }
-  }, [pos]);
+  }, [pos, followMode]);
+
+  // Follow-camera: smoothly track driver with heading-up bearing + 3D pitch
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !pos) return;
+
+    if (!followMode) return;
+
+    // Smooth heading transitions to avoid jitter
+    const rawHeading = pos.heading;
+    if (rawHeading != null) {
+      const prev = smoothedHeadingRef.current;
+      if (prev == null) {
+        smoothedHeadingRef.current = rawHeading;
+      } else {
+        // Take shortest angular path
+        let delta = rawHeading - prev;
+        if (delta > 180) delta -= 360;
+        if (delta < -180) delta += 360;
+        smoothedHeadingRef.current = (prev + delta * 0.4 + 360) % 360;
+      }
+    }
+
+    map.easeTo({
+      center: [pos.lng, pos.lat],
+      bearing: smoothedHeadingRef.current ?? map.getBearing(),
+      pitch: 55,
+      zoom: Math.max(map.getZoom(), 17),
+      duration: 600,
+      essential: true,
+    });
+  }, [pos, followMode]);
+
+  // When leaving followMode, reset bearing/pitch to flat north-up view
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    if (!followMode) {
+      smoothedHeadingRef.current = null;
+      map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
+    }
+  }, [followMode]);
+
 
   // Store marker
   useEffect(() => {
@@ -326,11 +382,13 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         });
       }
 
-      // Fit route
-      const bounds = new mapboxgl.LngLatBounds();
-      coords.forEach((c: [number, number]) => bounds.extend(c));
-      bounds.extend([pos.lng, pos.lat]);
-      map.fitBounds(bounds, { padding: { top: 80, bottom: 200, left: 50, right: 50 }, maxZoom: 16 });
+      // Fit route — skip while in followMode so we don't fight the follow camera
+      if (!followModeRef.current) {
+        const bounds = new mapboxgl.LngLatBounds();
+        coords.forEach((c: [number, number]) => bounds.extend(c));
+        bounds.extend([pos.lng, pos.lat]);
+        map.fitBounds(bounds, { padding: { top: 80, bottom: 200, left: 50, right: 50 }, maxZoom: 16 });
+      }
 
       // Parse steps
       const steps = route.legs[0]?.steps?.map((s: any) => ({
