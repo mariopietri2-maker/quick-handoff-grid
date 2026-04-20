@@ -172,7 +172,7 @@ export default function DriverApp() {
                 <div className="h-5 w-5 rounded-md gradient-primary flex items-center justify-center animate-float">
                   <Zap className="h-3 w-3 text-white" />
                 </div>
-                <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
+                <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Fresh Delivery</span>
               </div>
               <div className="shrink-0">
                 <DriverSupportButton orderId={activeDelivery?.id} />
@@ -341,7 +341,7 @@ export default function DriverApp() {
               <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center animate-float">
                 <Zap className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">QuickGrid</span>
+              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">Fresh Delivery</span>
             </div>
             <div className="w-10" />
           </header>
