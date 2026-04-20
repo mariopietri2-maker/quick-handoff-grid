@@ -12,11 +12,20 @@ import {
 import { requestNotificationPermission } from '@/lib/notifications';
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
-  { value: 'chime',  label: 'Χτύπος (κλασικό)', emoji: '🔔' },
-  { value: 'bell',   label: 'Καμπάνα',          emoji: '🛎️' },
-  { value: 'urgent', label: 'Επείγον',          emoji: '🚨' },
-  { value: 'cash',   label: 'Ταμείο',           emoji: '💰' },
-  { value: 'pulse',  label: 'Παλμός',           emoji: '💫' },
+  { value: 'wolt',          label: 'Wolt-style',     emoji: '💙' },
+  { value: 'uber',          label: 'Uber-style',     emoji: '⚡' },
+  { value: 'doordash',      label: 'DoorDash-style', emoji: '🛵' },
+  { value: 'glovo',         label: 'Glovo-style',    emoji: '🟡' },
+  { value: 'kaching',       label: 'Ka-ching',       emoji: '💸' },
+  { value: 'cash',          label: 'Ταμείο',         emoji: '💰' },
+  { value: 'arcade',        label: 'Arcade Coin',    emoji: '🎮' },
+  { value: 'marimba',       label: 'Marimba',        emoji: '🎵' },
+  { value: 'chime',         label: 'Χτύπος',         emoji: '🔔' },
+  { value: 'bell',          label: 'Καμπάνα',        emoji: '🛎️' },
+  { value: 'classic_phone', label: 'Τηλέφωνο',       emoji: '☎️' },
+  { value: 'pulse',         label: 'Παλμός',         emoji: '💫' },
+  { value: 'urgent',        label: 'Επείγον',        emoji: '🚨' },
+  { value: 'siren',         label: 'Σειρήνα',        emoji: '🚓' },
 ];
 
 interface DriverSoundSettingsProps {
