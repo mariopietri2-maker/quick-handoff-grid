@@ -1,6 +1,9 @@
 // Driver sound preferences stored locally per device
 
-export type SoundPattern = 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse';
+export type SoundPattern =
+  | 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse'
+  | 'wolt' | 'uber' | 'doordash' | 'glovo' | 'kaching'
+  | 'arcade' | 'marimba' | 'classic_phone' | 'siren';
 
 export interface DriverSoundPrefs {
   enabled: boolean;
@@ -49,6 +52,62 @@ const PATTERNS: Record<SoundPattern, ToneSpec[]> = {
   urgent: [{ freq: 1000, dur: 0.1, type: 'square' }, { freq: 1000, dur: 0.1, type: 'square' }, { freq: 1200, dur: 0.15, type: 'square' }],
   cash:   [{ freq: 1318.51, dur: 0.08 }, { freq: 1567.98, dur: 0.08 }, { freq: 2093, dur: 0.25 }],
   pulse:  [{ freq: 600, dur: 0.12, type: 'sine' }, { freq: 800, dur: 0.18, type: 'sine' }],
+
+  // Wolt-style: clean two-note rising chime
+  wolt: [{ freq: 880, dur: 0.18, type: 'sine' }, { freq: 1318.51, dur: 0.28, type: 'sine' }],
+
+  // Uber-style: short triangle ping
+  uber: [{ freq: 1046.5, dur: 0.12, type: 'triangle' }, { freq: 1396.91, dur: 0.22, type: 'triangle' }],
+
+  // DoorDash-style: warm bell trio
+  doordash: [
+    { freq: 659.25, dur: 0.14, type: 'triangle' },
+    { freq: 880, dur: 0.14, type: 'triangle' },
+    { freq: 1108.73, dur: 0.3, type: 'triangle' },
+  ],
+
+  // Glovo-style: bouncy alert
+  glovo: [
+    { freq: 783.99, dur: 0.1, type: 'sine' },
+    { freq: 1046.5, dur: 0.1, type: 'sine' },
+    { freq: 783.99, dur: 0.1, type: 'sine' },
+    { freq: 1318.51, dur: 0.22, type: 'sine' },
+  ],
+
+  // Ka-ching cash register
+  kaching: [
+    { freq: 2093, dur: 0.06, type: 'square', gain: 0.35 },
+    { freq: 2637, dur: 0.06, type: 'square', gain: 0.35 },
+    { freq: 3136, dur: 0.18, type: 'triangle' },
+  ],
+
+  // 8-bit arcade coin
+  arcade: [
+    { freq: 988, dur: 0.08, type: 'square' },
+    { freq: 1319, dur: 0.18, type: 'square' },
+  ],
+
+  // Marimba - soft mallet feel
+  marimba: [
+    { freq: 523.25, dur: 0.12, type: 'sine' },
+    { freq: 783.99, dur: 0.12, type: 'sine' },
+    { freq: 1046.5, dur: 0.18, type: 'sine' },
+  ],
+
+  // Classic phone double-ring
+  classic_phone: [
+    { freq: 440, dur: 0.18, type: 'sine' },
+    { freq: 480, dur: 0.18, type: 'sine' },
+    { freq: 440, dur: 0.18, type: 'sine' },
+    { freq: 480, dur: 0.18, type: 'sine' },
+  ],
+
+  // Siren - emergency style
+  siren: [
+    { freq: 800, dur: 0.18, type: 'sawtooth' },
+    { freq: 1200, dur: 0.18, type: 'sawtooth' },
+    { freq: 800, dur: 0.18, type: 'sawtooth' },
+  ],
 };
 
 export function playPattern(pattern: SoundPattern, volume: number) {
