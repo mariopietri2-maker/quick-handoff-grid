@@ -25,11 +25,38 @@ type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
-  const [isOnline, setIsOnline] = useState(true);
+  // Drivers always start OFFLINE — must opt-in each session
+  const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [activeTab, setActiveTab] = useState<DriverTab>('home');
   const { user } = useAuth();
   useEarnings();
+
+  // ─── 30-minute auto-offline inactivity timer ───
+  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const lastActivity = useRef<number>(Date.now());
+
+  useEffect(() => {
+    if (!isOnline) {
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      return;
+    }
+    const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+    const resetTimer = () => {
+      lastActivity.current = Date.now();
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+      inactivityTimer.current = setTimeout(() => {
+        setIsOnline(false);
+      }, INACTIVITY_MS);
+    };
+    const events: (keyof WindowEventMap)[] = ['pointerdown', 'touchstart', 'keydown', 'scroll'];
+    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
+    resetTimer();
+    return () => {
+      events.forEach(e => window.removeEventListener(e, resetTimer));
+      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
+    };
+  }, [isOnline]);
 
   useEffect(() => {
     if (!user) return;
