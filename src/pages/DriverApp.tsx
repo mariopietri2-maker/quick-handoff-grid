@@ -328,7 +328,13 @@ export default function DriverApp() {
         /* ─── NON-MAP TABS ─── */
         <>
           <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass safe-area-top">
-            <UserMenu />
+            <button
+              onClick={() => setActiveTab('home')}
+              className="h-10 w-10 rounded-full bg-white border-2 border-border shadow-md flex items-center justify-center hover:bg-accent transition-colors"
+              aria-label="Πίσω"
+            >
+              <ArrowLeft className="h-5 w-5 text-foreground" />
+            </button>
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
                 <Zap className="h-3.5 w-3.5 text-white" />
@@ -337,7 +343,7 @@ export default function DriverApp() {
             </div>
             <div className="w-10" />
           </header>
-          <div className="flex-1 overflow-y-auto pb-24">
+          <div className="flex-1 overflow-y-auto pb-6">
             {activeTab === 'earnings' && (
               <div className="px-4 py-4"><EarningsDashboard /></div>
             )}
@@ -350,33 +356,6 @@ export default function DriverApp() {
           </div>
         </>
       )}
-
-      {/* ─── BOTTOM NAV ─── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 driver-glass border-t border-[hsl(var(--driver-border))]">
-        <div className="flex safe-area-bottom">
-          {bottomTabs.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 flex flex-col items-center gap-1 py-3 transition-all duration-200 relative ${
-                  isActive ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
-                }`}
-              >
-                {isActive && <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[hsl(var(--driver-accent))] rounded-full" style={{ boxShadow: 'var(--driver-accent-glow)' }} />}
-                <Icon className="h-5 w-5" />
-                <span className="text-[10px] font-heading font-semibold leading-none">{tab.label}</span>
-                {tab.key === 'home' && offers.length > 0 && !activeDelivery && (
-                  <span className="absolute top-2 left-1/2 ml-2 h-2 w-2 rounded-full bg-primary driver-glow-red" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
     </div>
   );
 }
