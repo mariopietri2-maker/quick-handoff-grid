@@ -326,7 +326,7 @@ export default function SupportApp() {
 
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
-            <TicketChat ref={chatRef} ticketId={activeTicket.id} />
+            <TicketChat ref={chatRef} ticketId={activeTicket.id} priority={currentPriority} />
           </div>
         </div>
 
