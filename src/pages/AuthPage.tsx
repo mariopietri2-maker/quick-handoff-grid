@@ -62,7 +62,7 @@ export default function AuthPage() {
     <div className="min-h-screen bg-[hsl(220,20%,7%)] flex flex-col">
       {/* Header */}
       <header className="px-4 py-4 flex items-center justify-center">
-        <span className="font-heading font-extrabold text-xl text-primary">DeliveryApp</span>
+        <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
       </header>
 
       <div className="flex-1 flex items-center justify-center p-4">
