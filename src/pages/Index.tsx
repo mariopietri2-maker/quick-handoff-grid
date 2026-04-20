@@ -20,7 +20,7 @@ const Index = () => {
       {/* ─── NAVBAR ─── */}
       <nav className="sticky top-0 z-50 border-b border-[hsl(220,20%,14%)] bg-[hsl(220,20%,7%)]/90 backdrop-blur-md">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <span className="font-heading font-extrabold text-xl text-primary">DeliveryApp</span>
+          <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
           <Button
             size="sm"
             className="gradient-primary text-primary-foreground font-heading font-bold rounded-lg press-scale"
@@ -169,7 +169,7 @@ const Index = () => {
       {/* ─── FOOTER ─── */}
       <footer className="border-t border-[hsl(220,20%,14%)] py-8">
         <div className="max-w-6xl mx-auto px-4 text-center">
-          <p className="text-sm text-[hsl(220,10%,40%)]">© 2026 DeliveryApp. Με ❤️ για την Ελλάδα.</p>
+          <p className="text-sm text-[hsl(220,10%,40%)]">© 2026 Fresh Delivery. Με ❤️ για την Ελλάδα.</p>
         </div>
       </footer>
     </div>
