@@ -180,7 +180,6 @@ export function useDriverOrders() {
     if (error) {
       toast.error('Failed to accept order');
     } else {
-      toast.success('Order accepted!');
       fetchOrders();
     }
   };
@@ -195,8 +194,6 @@ export function useDriverOrders() {
       toast.error('Failed to update status');
     } else {
       if (newStatus === 'delivered') {
-        // Earnings + wallet credit are now handled automatically by a DB trigger
-        toast.success('Παράδοση ολοκληρώθηκε! 🎉 Πιστώθηκε στο πορτοφόλι.');
         setActiveDelivery(null);
       }
       fetchOrders();
