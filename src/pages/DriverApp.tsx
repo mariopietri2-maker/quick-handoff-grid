@@ -329,23 +329,23 @@ export default function DriverApp() {
       ) : (
         /* ─── NON-MAP TABS ─── */
         <>
-          <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass safe-area-top">
+          <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass safe-area-top animate-slide-down">
             <button
               onClick={() => setActiveTab('home')}
-              className="h-10 w-10 rounded-full bg-white border-2 border-border shadow-md flex items-center justify-center hover:bg-accent transition-colors"
+              className="h-10 w-10 rounded-full bg-white border-2 border-border shadow-md flex items-center justify-center hover:bg-accent transition-all duration-200 active:scale-90 hover:-translate-x-0.5"
               aria-label="Πίσω"
             >
               <ArrowLeft className="h-5 w-5 text-foreground" />
             </button>
-            <div className="flex items-center gap-2">
-              <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
+            <div className="flex items-center gap-2 animate-fade-in">
+              <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center animate-float">
                 <Zap className="h-3.5 w-3.5 text-white" />
               </div>
               <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">QuickGrid</span>
             </div>
             <div className="w-10" />
           </header>
-          <div className="flex-1 overflow-y-auto pb-6">
+          <div key={activeTab} className="flex-1 overflow-y-auto pb-6 animate-fade-in">
             {activeTab === 'earnings' && (
               <div className="px-4 py-4"><EarningsDashboard /></div>
             )}
