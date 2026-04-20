@@ -111,7 +111,11 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       zoom: 14,
       attributionControl: false,
       pitchWithRotate: false,
+      dragRotate: false,
+      touchPitch: false,
     });
+    // Disable two-finger rotate gesture so map stays north-up unless in nav follow mode
+    map.touchZoomRotate.disableRotation();
 
     // GeolocateControl removed — custom recenter button used instead
 
