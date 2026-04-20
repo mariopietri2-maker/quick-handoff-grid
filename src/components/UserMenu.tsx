@@ -71,7 +71,8 @@ export function UserMenu() {
         <DropdownMenuContent
           align="start"
           sideOffset={8}
-          className="z-[200] w-[min(20rem,calc(100vw-1.5rem))] max-h-[75vh] overflow-y-auto rounded-2xl border-2 border-border bg-popover p-2 text-popover-foreground shadow-2xl"
+          collisionPadding={12}
+          className="z-[200] w-72 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-2xl"
         >
           <div className="mb-1 rounded-xl border border-border bg-muted/60 px-3 py-3">
             <p className="text-sm font-heading font-bold text-foreground truncate">
