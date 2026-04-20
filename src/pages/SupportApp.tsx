@@ -11,6 +11,8 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock } from 'lucide-react';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
+import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
+import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
 
@@ -187,6 +189,8 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
+          <DriverProfilePanel driverId={activeTicket.driver_id} />
+
           <SupportAIPanel
             ticketId={activeTicket.id}
             onUseReply={(t) => chatRef.current?.setDraft(t)}
@@ -276,11 +280,6 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
-          <SupportAIPanel
-            ticketId={activeTicket.id}
-            onUseReply={(t) => chatRef.current?.setDraft(t)}
-          />
-
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
             <TicketChat ref={chatRef} ticketId={activeTicket.id} />
@@ -362,6 +361,8 @@ export default function SupportApp() {
             Όλα
           </Button>
         </div>
+
+        <SlaSettingsPanel />
 
         <div className="space-y-2">
           {filtered.length === 0 ? (

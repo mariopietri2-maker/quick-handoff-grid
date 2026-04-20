@@ -6,6 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Send, Loader2, Timer, AlarmClock } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
+import { useSlaSettings } from '@/hooks/useSlaSettings';
 
 interface Message {
   id: string;
@@ -118,13 +119,17 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(fun
   }, [messages, viewerIsAgent]);
 
   const elapsedSec = waitingOn ? differenceInSeconds(now, waitingOn.since) : 0;
+  const { data: sla } = useSlaSettings();
+  const warnT = sla?.warn ?? 60;
+  const urgentT = sla?.urgent ?? 180;
+  const breachT = sla?.breach ?? 600;
 
-  // Color tiers: green < 60s, yellow < 3min, orange < 10min, red after
-  const timerTone = elapsedSec < 60
+  // Color tiers driven by configurable SLA thresholds
+  const timerTone = elapsedSec < warnT
     ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400'
-    : elapsedSec < 180
+    : elapsedSec < urgentT
     ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/30 dark:text-yellow-400'
-    : elapsedSec < 600
+    : elapsedSec < breachT
     ? 'bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-400'
     : 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-400 animate-pulse';
 
@@ -174,7 +179,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(fun
           {waitingOn ? <AlarmClock className="h-3.5 w-3.5" /> : <Timer className="h-3.5 w-3.5" />}
           {waitingOn ? `${timerLabel}: ${formatElapsed(elapsedSec)}` : 'Καμία εκκρεμής απάντηση'}
         </span>
-        {waitingOn && elapsedSec >= 600 && viewerIsAgent && (
+        {waitingOn && elapsedSec >= breachT && viewerIsAgent && (
           <span className="text-[10px] uppercase tracking-wide font-bold">SLA Παραβίαση</span>
         )}
       </div>
