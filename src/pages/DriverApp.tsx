@@ -29,7 +29,14 @@ export default function DriverApp() {
   // Drivers always start OFFLINE — must opt-in each session
   const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
-  const [activeTab, setActiveTab] = useState<DriverTab>('home');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const tabParam = searchParams.get('tab');
+  const activeTab: DriverTab = (tabParam === 'earnings' || tabParam === 'wallet' || tabParam === 'referral') ? tabParam : 'home';
+  const setActiveTab = (t: DriverTab) => {
+    if (t === 'home') { searchParams.delete('tab'); setSearchParams(searchParams); }
+    else { searchParams.set('tab', t); setSearchParams(searchParams); }
+  };
   const { user } = useAuth();
   useEarnings();
 
