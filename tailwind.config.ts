@@ -104,9 +104,35 @@ export default {
           "0%": { opacity: "0", transform: "translateY(20px)" },
           "100%": { opacity: "1", transform: "translateY(0)" },
         },
+        "slide-down": {
+          "0%": { opacity: "0", transform: "translateY(-20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "slide-in-right": {
+          "0%": { opacity: "0", transform: "translateX(20px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "pop": {
+          "0%": { transform: "scale(0.8)", opacity: "0" },
+          "60%": { transform: "scale(1.05)", opacity: "1" },
+          "100%": { transform: "scale(1)", opacity: "1" },
+        },
+        "shake": {
+          "0%, 100%": { transform: "translateX(0)" },
+          "25%": { transform: "translateX(-4px)" },
+          "75%": { transform: "translateX(4px)" },
+        },
+        "glow-pulse": {
+          "0%, 100%": { boxShadow: "0 0 0 0 hsl(var(--primary) / 0.4)" },
+          "50%": { boxShadow: "0 0 0 12px hsl(var(--primary) / 0)" },
+        },
         "shimmer": {
           "0%": { backgroundPosition: "-200% 0" },
           "100%": { backgroundPosition: "200% 0" },
+        },
+        "float": {
+          "0%, 100%": { transform: "translateY(0)" },
+          "50%": { transform: "translateY(-6px)" },
         },
       },
       animation: {
@@ -115,8 +141,14 @@ export default {
         "fade-in": "fade-in 0.4s ease-out",
         "fade-out": "fade-out 0.3s ease-out",
         "scale-in": "scale-in 0.3s ease-out",
-        "slide-up": "slide-up 0.5s ease-out",
+        "slide-up": "slide-up 0.5s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-down": "slide-down 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "slide-in-right": "slide-in-right 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "pop": "pop 0.4s cubic-bezier(0.16, 1, 0.3, 1)",
+        "shake": "shake 0.4s ease-in-out",
+        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "shimmer": "shimmer 2s infinite linear",
+        "float": "float 3s ease-in-out infinite",
         "enter": "fade-in 0.3s ease-out, scale-in 0.2s ease-out",
       },
     },
