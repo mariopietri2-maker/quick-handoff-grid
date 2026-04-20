@@ -10,10 +10,13 @@ const config: CapacitorConfig = {
   },
   android: {
     backgroundColor: '#1a1a2e',
+    webContentsDebuggingEnabled: true,
+    allowMixedContent: true,
   },
   ios: {
     backgroundColor: '#1a1a2e',
     contentInset: 'never',
+    scrollEnabled: false,
   },
   plugins: {
     StatusBar: {

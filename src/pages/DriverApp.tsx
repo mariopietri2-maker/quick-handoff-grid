@@ -143,7 +143,7 @@ export default function DriverApp() {
 
 
   return (
-    <div className="h-screen flex flex-col driver-shell bg-[hsl(var(--driver-bg))]">
+    <div className="h-[100dvh] flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden">
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
           {/* Fullscreen Map */}

@@ -113,9 +113,13 @@
   }
 
   html, body, #root {
-    @apply min-h-screen w-full;
+    @apply w-full;
     margin: 0;
     padding: 0;
+    /* True viewport height that ignores browser chrome on native */
+    min-height: 100vh;
+    min-height: 100dvh;
+    height: 100%;
   }
 
   body {
@@ -123,6 +127,16 @@
     /* Safe areas handled per-screen via .safe-area-top/.safe-area-bottom so the
        app shell color extends edge-to-edge under notch/status bar. */
     overscroll-behavior: none;
+  }
+
+  /* Native (Capacitor) full-bleed: lock to dynamic viewport, no overscroll bands */
+  html.is-native,
+  html.is-native body,
+  html.is-native #root {
+    height: 100dvh;
+    max-height: 100dvh;
+    overflow: hidden;
+    background: #1a1a2e;
   }
 
   h1, h2, h3, h4, h5, h6 {
