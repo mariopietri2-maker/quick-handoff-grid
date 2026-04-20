@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Car, Navigation, Wallet, Users, Zap, Radio, TrendingUp, MapPin, Crosshair } from 'lucide-react';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
