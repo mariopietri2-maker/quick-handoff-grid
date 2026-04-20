@@ -21,16 +21,14 @@ export function ReviewList({ storeId }: ReviewListProps) {
 
   useEffect(() => {
     supabase
-      .from('reviews')
-      .select('id, rating, comment, created_at')
-      .eq('store_id', storeId)
-      .order('created_at', { ascending: false })
-      .limit(20)
+      .rpc('get_public_reviews' as any, { p_store_id: storeId })
       .then(({ data }) => {
-        const items = (data ?? []) as Review[];
+        const all = ((data ?? []) as Review[])
+          .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        const items = all.slice(0, 20);
         setReviews(items);
-        if (items.length > 0) {
-          setAvgRating(items.reduce((sum, r) => sum + r.rating, 0) / items.length);
+        if (all.length > 0) {
+          setAvgRating(all.reduce((sum, r) => sum + r.rating, 0) / all.length);
         }
         setLoading(false);
       });
@@ -88,9 +86,7 @@ export function RatingBadge({ storeId }: { storeId: string }) {
 
   useEffect(() => {
     supabase
-      .from('reviews')
-      .select('rating')
-      .eq('store_id', storeId)
+      .rpc('get_public_reviews' as any, { p_store_id: storeId })
       .then(({ data }) => {
         const items = (data ?? []) as { rating: number }[];
         if (items.length > 0) {
