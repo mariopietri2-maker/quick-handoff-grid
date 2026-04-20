@@ -97,11 +97,16 @@ export default function DriverApp() {
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (_id: string) => {};
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [navMode, setNavMode] = useState(false);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
     ? (['accepted', 'preparing', 'ready', 'arrived'].includes(activeDelivery.status ?? '') ? 'store' as const : activeDelivery.status === 'picked_up' ? 'customer' as const : null)
     : null;
+
+  // Auto-exit nav mode if delivery ends
+  useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
+  const isNavActive = navMode && !!routeInfo && !!navigatingTo;
 
   useEffect(() => {
     if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
