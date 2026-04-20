@@ -165,6 +165,7 @@ export default function DriverApp() {
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
             nearbyStores={nearbyStores}
+            followMode={isNavActive}
           />
 
           {/* ─── TOP BAR (hidden in nav mode) ─── */}
