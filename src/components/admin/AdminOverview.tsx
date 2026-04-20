@@ -2,6 +2,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { ShoppingBag, DollarSign, Store, Users, Star, TrendingUp, TrendingDown, Clock, ArrowUpRight } from 'lucide-react';
 import { format, subDays, isAfter } from 'date-fns';
+import LiveOpsMap from './LiveOpsMap';
 
 interface Props {
   orders: any[];
@@ -49,6 +50,9 @@ export default function AdminOverview({ orders, stores, profiles, reviews, earni
         <h1 className="font-heading font-bold text-2xl">Dashboard</h1>
         <p className="text-muted-foreground text-sm">Καλημέρα! Ιδού η σημερινή επισκόπηση.</p>
       </div>
+
+      {/* Live Ops Map — full width hero */}
+      <LiveOpsMap />
 
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
