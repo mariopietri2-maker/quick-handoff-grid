@@ -139,14 +139,8 @@ export default function DriverApp() {
     );
   }
 
-  const bottomTabs: { key: DriverTab; icon: React.ElementType; label: string }[] = [
-    { key: 'home', icon: MapPin, label: 'Αρχική' },
-    { key: 'earnings', icon: TrendingUp, label: 'Κέρδη' },
-    { key: 'wallet', icon: Wallet, label: 'Πορτοφόλι' },
-    { key: 'referral', icon: Users, label: 'Πρόσκληση' },
-  ];
+  void MapPin; // unused but kept for future
 
-  
 
   return (
     <div className="h-screen flex flex-col driver-shell bg-[hsl(var(--driver-bg))]">
