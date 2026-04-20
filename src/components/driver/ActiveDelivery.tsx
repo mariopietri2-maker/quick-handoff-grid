@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
-import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -27,6 +26,7 @@ interface ActiveDeliveryData {
 interface ActiveDeliveryProps {
   delivery: ActiveDeliveryData;
   onStatusUpdate: (status: string) => void;
+  onFocusDestination?: (target: 'store' | 'customer') => void;
 }
 
 const statusSteps = [
@@ -36,7 +36,7 @@ const statusSteps = [
   { key: 'delivered', label: 'Παραδόθηκε', icon: CheckCircle2 },
 ];
 
-export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps) {
+export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
 
   const toggleChecklistItem = (index: number) => {
@@ -45,10 +45,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
       next.has(index) ? next.delete(index) : next.add(index);
       return next;
     });
-  };
-
-  const openNav = (lat: number | null | undefined, lng: number | null | undefined, address: string) => {
-    openGoogleMapsNavigation({ lat, lng, address });
   };
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
@@ -146,18 +142,14 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
           </div>
         </div>
 
-        {/* Navigate button */}
+        {/* Navigate button — focuses the in-app map on the destination */}
         {(isGoingToStore || isGoingToCustomer) && (
           <button
-            onClick={() => openNav(
-              isGoingToStore ? delivery.storeLat : delivery.deliveryLat,
-              isGoingToStore ? delivery.storeLng : delivery.deliveryLng,
-              isGoingToStore ? delivery.storeAddress : delivery.deliveryAddress
-            )}
-            className="w-full mt-4 h-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] text-[hsl(var(--driver-text))] text-sm font-heading font-semibold flex items-center justify-center gap-2 hover:bg-[hsl(var(--driver-surface-elevated))]/80 transition-colors border border-[hsl(var(--driver-border))] active:scale-[0.98]"
+            onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
+            className="w-full mt-4 h-11 rounded-xl gradient-primary text-white text-sm font-heading font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
           >
-            <Navigation className="h-4 w-4 text-blue-400" />
-            Πλοήγηση Google Maps
+            <Navigation className="h-4 w-4" />
+            Εμφάνιση Διαδρομής στο Χάρτη
           </button>
         )}
       </div>
