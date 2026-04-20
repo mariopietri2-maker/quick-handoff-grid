@@ -502,6 +502,20 @@ export type Database = {
           customer_base_fee: number
           customer_per_km_fee: number
           default_commission_pct: number
+          dist_bike_max_km: number
+          dist_car_min_value: number
+          dist_distance_weight: number
+          dist_fairness_weight: number
+          dist_max_waves: number
+          dist_min_acceptance_rate: number
+          dist_min_driver_rating: number
+          dist_motorcycle_max_km: number
+          dist_offer_timeout_seconds: number
+          dist_rating_weight: number
+          dist_search_radius_km: number
+          dist_vehicle_rules_enabled: boolean
+          dist_wave_size: number
+          distribution_mode: string
           id: number
           min_pay: number
           motorcycle_multiplier: number
@@ -526,6 +540,20 @@ export type Database = {
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
+          dist_bike_max_km?: number
+          dist_car_min_value?: number
+          dist_distance_weight?: number
+          dist_fairness_weight?: number
+          dist_max_waves?: number
+          dist_min_acceptance_rate?: number
+          dist_min_driver_rating?: number
+          dist_motorcycle_max_km?: number
+          dist_offer_timeout_seconds?: number
+          dist_rating_weight?: number
+          dist_search_radius_km?: number
+          dist_vehicle_rules_enabled?: boolean
+          dist_wave_size?: number
+          distribution_mode?: string
           id?: number
           min_pay?: number
           motorcycle_multiplier?: number
@@ -550,6 +578,20 @@ export type Database = {
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
+          dist_bike_max_km?: number
+          dist_car_min_value?: number
+          dist_distance_weight?: number
+          dist_fairness_weight?: number
+          dist_max_waves?: number
+          dist_min_acceptance_rate?: number
+          dist_min_driver_rating?: number
+          dist_motorcycle_max_km?: number
+          dist_offer_timeout_seconds?: number
+          dist_rating_weight?: number
+          dist_search_radius_km?: number
+          dist_vehicle_rules_enabled?: boolean
+          dist_wave_size?: number
+          distribution_mode?: string
           id?: number
           min_pay?: number
           motorcycle_multiplier?: number
