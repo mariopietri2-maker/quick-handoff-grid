@@ -20,11 +20,15 @@ const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] =
 ];
 
 interface DriverSoundSettingsProps {
-  trigger: React.ReactNode;
+  trigger?: React.ReactNode;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }
 
-export function DriverSoundSettings({ trigger }: DriverSoundSettingsProps) {
-  const [open, setOpen] = useState(false);
+export function DriverSoundSettings({ trigger, open: controlledOpen, onOpenChange }: DriverSoundSettingsProps) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [prefs, setPrefs] = useState<DriverSoundPrefs>(() => loadDriverSoundPrefs());
   const [notif, setNotif] = useState<NotificationPermission>(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
@@ -40,7 +44,7 @@ export function DriverSoundSettings({ trigger }: DriverSoundSettingsProps) {
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>{trigger}</SheetTrigger>
+      {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
       <SheetContent side="bottom" className="bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-3xl max-h-[88vh] overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle className="font-heading text-[hsl(var(--driver-text))] flex items-center gap-2">
