@@ -1004,30 +1004,6 @@ export type Database = {
       }
     }
     Views: {
-      reviews_public: {
-        Row: {
-          comment: string | null
-          created_at: string | null
-          id: string | null
-          rating: number | null
-          store_id: string | null
-        }
-        Insert: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-          store_id?: string | null
-        }
-        Update: {
-          comment?: string | null
-          created_at?: string | null
-          id?: string | null
-          rating?: number | null
-          store_id?: string | null
-        }
-        Relationships: []
-      }
       stores_public: {
         Row: {
           address: string | null
@@ -1091,6 +1067,16 @@ export type Database = {
           p_tip?: number
         }
         Returns: undefined
+      }
+      get_public_reviews: {
+        Args: { p_store_id?: string }
+        Returns: {
+          comment: string
+          created_at: string
+          id: string
+          rating: number
+          store_id: string
+        }[]
       }
       has_role: {
         Args: {
