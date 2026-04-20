@@ -437,7 +437,20 @@ export default function SupportApp() {
                           <p className="font-heading font-semibold text-sm truncate">
                             {driver?.full_name ?? ticket.driver_id.slice(0, 8)}
                           </p>
-                          <Badge variant="outline" className={`${cfg.color} text-[10px] shrink-0`}>{cfg.label}</Badge>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {(() => {
+                              const pri = (ticket.priority ?? 'normal') as TicketPriority;
+                              const pp = priorityConfig[pri];
+                              const PI = pp.icon;
+                              if (pri === 'normal') return null;
+                              return (
+                                <Badge variant="outline" className={`${pp.color} text-[10px] gap-0.5 px-1.5`}>
+                                  <PI className="h-2.5 w-2.5" />{pp.label}
+                                </Badge>
+                              );
+                            })()}
+                            <Badge variant="outline" className={`${cfg.color} text-[10px]`}>{cfg.label}</Badge>
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{cat.label}</p>
                         {ticket.description && (
