@@ -1,10 +1,10 @@
-import { forwardRef, useEffect, useImperativeHandle, useRef, useState } from 'react';
+import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Send, Loader2 } from 'lucide-react';
-import { format } from 'date-fns';
+import { Send, Loader2, Timer, AlarmClock } from 'lucide-react';
+import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
 
 interface Message {
@@ -20,16 +20,29 @@ export interface TicketChatHandle {
   setDraft: (text: string) => void;
 }
 
+function formatElapsed(totalSeconds: number) {
+  if (totalSeconds < 0) totalSeconds = 0;
+  const h = Math.floor(totalSeconds / 3600);
+  const m = Math.floor((totalSeconds % 3600) / 60);
+  const s = totalSeconds % 60;
+  if (h > 0) return `${h}ω ${m}λ`;
+  if (m > 0) return `${m}λ ${s.toString().padStart(2, '0')}δ`;
+  return `${s}δ`;
+}
+
 export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(function TicketChat(
   { ticketId },
   ref
 ) {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [now, setNow] = useState<Date>(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
+
+  const viewerIsAgent = isAdmin || profile?.role === 'support' || profile?.role === 'admin';
 
   useImperativeHandle(ref, () => ({
     setDraft: (t: string) => setText(t),
@@ -71,18 +84,59 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(fun
     };
   }, [ticketId]);
 
+  // Tick every second for the live response timer
+  useEffect(() => {
+    const id = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(id);
+  }, []);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
+  // Find last message from the OPPOSITE party — that's what we're waiting on
+  const waitingOn = useMemo(() => {
+    if (!messages.length) return null;
+    // Find most recent message from the other side that hasn't been replied to
+    for (let i = messages.length - 1; i >= 0; i--) {
+      const m = messages[i];
+      const isAgentMsg = m.sender_role === 'support' || m.sender_role === 'admin';
+      const isFromOtherSide = viewerIsAgent ? !isAgentMsg : isAgentMsg;
+      if (isFromOtherSide) {
+        // Check no reply after this from viewer side
+        const hasReplyAfter = messages.slice(i + 1).some((later) => {
+          const laterIsAgent = later.sender_role === 'support' || later.sender_role === 'admin';
+          return viewerIsAgent ? laterIsAgent : !laterIsAgent;
+        });
+        if (!hasReplyAfter) {
+          return { since: new Date(m.created_at), fromAgent: isAgentMsg };
+        }
+        return null;
+      }
+    }
+    return null;
+  }, [messages, viewerIsAgent]);
+
+  const elapsedSec = waitingOn ? differenceInSeconds(now, waitingOn.since) : 0;
+
+  // Color tiers: green < 60s, yellow < 3min, orange < 10min, red after
+  const timerTone = elapsedSec < 60
+    ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400'
+    : elapsedSec < 180
+    ? 'bg-yellow-500/10 text-yellow-700 border-yellow-500/30 dark:text-yellow-400'
+    : elapsedSec < 600
+    ? 'bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-400'
+    : 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-400 animate-pulse';
+
   const send = async () => {
     if (!text.trim() || !user) return;
     setSending(true);
+    const senderRole = isAdmin ? 'admin' : profile?.role === 'support' ? 'support' : 'driver';
     const optimistic: Message = {
       id: crypto.randomUUID(),
       ticket_id: ticketId,
       sender_id: user.id,
-      sender_role: isAdmin ? 'admin' : 'support',
+      sender_role: senderRole,
       message: text.trim(),
       created_at: new Date().toISOString(),
     };
@@ -93,7 +147,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(fun
     const { error } = await supabase.from('ticket_messages').insert({
       ticket_id: ticketId,
       sender_id: user.id,
-      sender_role: isAdmin ? 'admin' : 'support',
+      sender_role: senderRole,
       message: messageText,
     });
 
@@ -104,8 +158,27 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(fun
     setSending(false);
   };
 
+  const timerLabel = waitingOn
+    ? viewerIsAgent
+      ? 'Αναμονή απάντησης'
+      : waitingOn.fromAgent
+      ? 'Απάντηση πριν'
+      : 'Αναμονή υποστήριξης'
+    : 'Σε εκκρεμότητα';
+
   return (
     <div className="flex flex-col h-[480px] border rounded-lg bg-card">
+      {/* Live response timer bar */}
+      <div className={`flex items-center justify-between gap-2 px-3 py-2 border-b text-xs font-heading ${waitingOn ? timerTone : 'bg-muted/40 text-muted-foreground'}`}>
+        <span className="flex items-center gap-1.5">
+          {waitingOn ? <AlarmClock className="h-3.5 w-3.5" /> : <Timer className="h-3.5 w-3.5" />}
+          {waitingOn ? `${timerLabel}: ${formatElapsed(elapsedSec)}` : 'Καμία εκκρεμής απάντηση'}
+        </span>
+        {waitingOn && elapsedSec >= 600 && viewerIsAgent && (
+          <span className="text-[10px] uppercase tracking-wide font-bold">SLA Παραβίαση</span>
+        )}
+      </div>
+
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
@@ -113,23 +186,27 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(fun
           </div>
         ) : messages.length === 0 ? (
           <p className="text-center text-sm text-muted-foreground py-8">
-            Καμία συνομιλία ακόμα. Στείλτε το πρώτο μήνυμα στον οδηγό.
+            {viewerIsAgent
+              ? 'Καμία συνομιλία ακόμα. Στείλτε το πρώτο μήνυμα στον οδηγό.'
+              : 'Καμία συνομιλία ακόμα. Στείλτε το πρώτο σας μήνυμα.'}
           </p>
         ) : (
           messages.map((m) => {
-            const isAgent = m.sender_role === 'support' || m.sender_role === 'admin';
+            const isAgentMsg = m.sender_role === 'support' || m.sender_role === 'admin';
+            const isMine = m.sender_id === user?.id;
             return (
-              <div key={m.id} className={`flex ${isAgent ? 'justify-end' : 'justify-start'}`}>
+              <div key={m.id} className={`flex ${isMine ? 'justify-end' : 'justify-start'}`}>
                 <div
                   className={`max-w-[75%] rounded-2xl px-4 py-2 ${
-                    isAgent
+                    isMine
                       ? 'bg-primary text-primary-foreground rounded-br-sm'
                       : 'bg-muted text-foreground rounded-bl-sm'
                   }`}
                 >
                   <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
-                  <p className={`text-[10px] mt-1 ${isAgent ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {m.sender_role === 'driver' ? 'Οδηγός' : m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη'} ·{' '}
+                  <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                    {m.sender_role === 'driver' ? 'Οδηγός' : isAgentMsg ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη') : m.sender_role}
+                    {' · '}
                     {format(new Date(m.created_at), 'HH:mm')}
                   </p>
                 </div>
