@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
-import { Car, Navigation, Wallet, Users, Zap, Radio, TrendingUp, MapPin, Crosshair } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -28,7 +29,14 @@ export default function DriverApp() {
   // Drivers always start OFFLINE — must opt-in each session
   const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
-  const [activeTab, setActiveTab] = useState<DriverTab>('home');
+  const [searchParams, setSearchParams] = useSearchParams();
+  
+  const tabParam = searchParams.get('tab');
+  const activeTab: DriverTab = (tabParam === 'earnings' || tabParam === 'wallet' || tabParam === 'referral') ? tabParam : 'home';
+  const setActiveTab = (t: DriverTab) => {
+    if (t === 'home') { searchParams.delete('tab'); setSearchParams(searchParams); }
+    else { searchParams.set('tab', t); setSearchParams(searchParams); }
+  };
   const { user } = useAuth();
   useEarnings();
 
@@ -131,14 +139,8 @@ export default function DriverApp() {
     );
   }
 
-  const bottomTabs: { key: DriverTab; icon: React.ElementType; label: string }[] = [
-    { key: 'home', icon: MapPin, label: 'Αρχική' },
-    { key: 'earnings', icon: TrendingUp, label: 'Κέρδη' },
-    { key: 'wallet', icon: Wallet, label: 'Πορτοφόλι' },
-    { key: 'referral', icon: Users, label: 'Πρόσκληση' },
-  ];
+  void MapPin; // unused but kept for future
 
-  
 
   return (
     <div className="h-screen flex flex-col driver-shell bg-[hsl(var(--driver-bg))]">
@@ -179,7 +181,7 @@ export default function DriverApp() {
           </div>
 
           {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
-          <div className="absolute bottom-[72px] left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-3 space-y-3 pointer-events-none scrollbar-thin">
+          <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin">
             <div className="pointer-events-auto space-y-3">
               {/* Recenter button */}
               <div className="flex justify-end">
@@ -326,7 +328,13 @@ export default function DriverApp() {
         /* ─── NON-MAP TABS ─── */
         <>
           <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass safe-area-top">
-            <UserMenu />
+            <button
+              onClick={() => setActiveTab('home')}
+              className="h-10 w-10 rounded-full bg-white border-2 border-border shadow-md flex items-center justify-center hover:bg-accent transition-colors"
+              aria-label="Πίσω"
+            >
+              <ArrowLeft className="h-5 w-5 text-foreground" />
+            </button>
             <div className="flex items-center gap-2">
               <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center">
                 <Zap className="h-3.5 w-3.5 text-white" />
@@ -335,7 +343,7 @@ export default function DriverApp() {
             </div>
             <div className="w-10" />
           </header>
-          <div className="flex-1 overflow-y-auto pb-24">
+          <div className="flex-1 overflow-y-auto pb-6">
             {activeTab === 'earnings' && (
               <div className="px-4 py-4"><EarningsDashboard /></div>
             )}
@@ -348,33 +356,6 @@ export default function DriverApp() {
           </div>
         </>
       )}
-
-      {/* ─── BOTTOM NAV ─── */}
-      <nav className="fixed bottom-0 inset-x-0 z-30 driver-glass border-t border-[hsl(var(--driver-border))]">
-        <div className="flex safe-area-bottom">
-          {bottomTabs.map(tab => {
-            const Icon = tab.icon;
-            const isActive = activeTab === tab.key;
-            return (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                className={`flex-1 flex flex-col items-center gap-1 py-3 transition-all duration-200 relative ${
-                  isActive ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
-                }`}
-              >
-                {isActive && <div className="absolute top-0 left-1/4 right-1/4 h-0.5 bg-[hsl(var(--driver-accent))] rounded-full" style={{ boxShadow: 'var(--driver-accent-glow)' }} />}
-                <Icon className="h-5 w-5" />
-                <span className="text-[10px] font-heading font-semibold leading-none">{tab.label}</span>
-                {tab.key === 'home' && offers.length > 0 && !activeDelivery && (
-                  <span className="absolute top-2 left-1/2 ml-2 h-2 w-2 rounded-full bg-primary driver-glow-red" />
-                )}
-              </button>
-            );
-          })}
-        </div>
-      </nav>
-
     </div>
   );
 }

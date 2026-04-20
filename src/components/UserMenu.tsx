@@ -58,15 +58,15 @@ export function UserMenu() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-9 w-9 rounded-full bg-white text-foreground border border-border shadow-sm hover:bg-accent"
+            className="h-10 w-10 rounded-full bg-white text-foreground border-2 border-border shadow-md hover:bg-accent"
           >
-            <User className="h-4 w-4" />
+            <User className="h-5 w-5" />
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent
           align="start"
           sideOffset={8}
-          className="w-64 bg-popover text-popover-foreground border border-border shadow-xl z-50"
+          className="w-64 max-h-[80vh] overflow-y-auto bg-white text-foreground border border-border shadow-2xl z-[100]"
         >
           <div className="px-3 py-2.5 bg-gradient-to-br from-primary/10 to-transparent rounded-t-md">
             <p className="text-sm font-heading font-bold text-foreground truncate">
