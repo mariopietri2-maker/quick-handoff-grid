@@ -127,15 +127,38 @@
     @apply transition-transform duration-200 hover:scale-[1.03];
   }
   .hover-lift {
-    @apply transition-all duration-200 hover:-translate-y-0.5 hover:shadow-lg;
+    @apply transition-all duration-300 ease-out hover:-translate-y-0.5 hover:shadow-lg;
   }
   .press-scale {
     @apply transition-transform duration-100 active:scale-[0.97];
   }
+  .interactive {
+    @apply transition-all duration-200 ease-out hover:-translate-y-0.5 hover:shadow-md active:translate-y-0 active:scale-[0.98];
+  }
+  .icon-spin-hover {
+    @apply transition-transform duration-300 hover:rotate-12;
+  }
+
+  /* Stagger animation delays */
+  .stagger-1 { animation-delay: 60ms; animation-fill-mode: both; }
+  .stagger-2 { animation-delay: 120ms; animation-fill-mode: both; }
+  .stagger-3 { animation-delay: 180ms; animation-fill-mode: both; }
+  .stagger-4 { animation-delay: 240ms; animation-fill-mode: both; }
+  .stagger-5 { animation-delay: 300ms; animation-fill-mode: both; }
 
   /* Smooth transitions */
   .transition-smooth {
     @apply transition-all duration-300 ease-out;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .animate-fade-in, .animate-slide-up, .animate-slide-down, .animate-slide-in-right,
+    .animate-pop, .animate-scale-in, .animate-shimmer, .animate-float, .animate-glow-pulse {
+      animation: none !important;
+    }
+    .interactive, .hover-lift, .hover-scale, .press-scale {
+      transition: none !important;
+    }
   }
 
   .gradient-primary {
