@@ -29,8 +29,7 @@ export async function openGoogleMapsNavigation(target: NavigationTarget) {
       // Prefer the geo: scheme on Android so the Maps app opens directly with route
       if (Capacitor.getPlatform() === 'android' && target.lat != null && target.lng != null) {
         const geoUrl = `google.navigation:q=${target.lat},${target.lng}&mode=d`;
-        const { Browser } = await import('@capacitor/browser').catch(() => ({ Browser: null as any }));
-        // Use window.open with _system which Capacitor maps to external intent
+        // _system tells Capacitor to hand the URL to the OS — fires Android intent
         window.open(geoUrl, '_system');
         return;
       }
