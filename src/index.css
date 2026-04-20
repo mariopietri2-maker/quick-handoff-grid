@@ -120,11 +120,8 @@
 
   body {
     @apply bg-background text-foreground font-body antialiased;
-    /* Respect device safe areas (notches, status bars) on native/PWA */
-    padding-top: env(safe-area-inset-top);
-    padding-bottom: env(safe-area-inset-bottom);
-    padding-left: env(safe-area-inset-left);
-    padding-right: env(safe-area-inset-right);
+    /* Safe areas handled per-screen via .safe-area-top/.safe-area-bottom so the
+       app shell color extends edge-to-edge under notch/status bar. */
     overscroll-behavior: none;
   }
 
