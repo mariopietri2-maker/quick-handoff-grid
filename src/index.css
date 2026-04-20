@@ -156,18 +156,18 @@
     -webkit-text-fill-color: transparent;
   }
 
-  /* Driver-specific premium dark theme */
+  /* Driver-specific BRIGHT theme */
   .driver-shell {
-    --driver-bg: 225 25% 8%;
-    --driver-surface: 225 20% 12%;
-    --driver-surface-elevated: 225 18% 16%;
-    --driver-border: 225 15% 20%;
-    --driver-text: 220 14% 96%;
-    --driver-text-muted: 220 10% 55%;
-    --driver-accent: 145 65% 42%;
-    --driver-accent-glow: 0 0 20px hsl(145 65% 42% / 0.3);
-    --driver-glass: hsl(225 20% 12% / 0.85);
-    --driver-glass-border: hsl(225 15% 25% / 0.5);
+    --driver-bg: 220 25% 97%;
+    --driver-surface: 0 0% 100%;
+    --driver-surface-elevated: 220 25% 99%;
+    --driver-border: 220 15% 88%;
+    --driver-text: 220 25% 12%;
+    --driver-text-muted: 220 12% 42%;
+    --driver-accent: 145 65% 38%;
+    --driver-accent-glow: 0 0 20px hsl(145 65% 38% / 0.3);
+    --driver-glass: hsl(0 0% 100% / 0.85);
+    --driver-glass-border: hsl(220 15% 85% / 0.7);
   }
 
   .driver-glass {
@@ -175,10 +175,11 @@
     backdrop-filter: blur(20px) saturate(180%);
     -webkit-backdrop-filter: blur(20px) saturate(180%);
     border: 1px solid var(--driver-glass-border);
+    box-shadow: 0 4px 16px -4px hsl(220 25% 12% / 0.08), 0 1px 3px hsl(220 25% 12% / 0.04);
   }
 
   .driver-glow-green {
-    box-shadow: 0 0 16px hsl(145 65% 42% / 0.25), 0 0 4px hsl(145 65% 42% / 0.15);
+    box-shadow: 0 0 16px hsl(145 65% 38% / 0.25), 0 0 4px hsl(145 65% 38% / 0.15);
   }
 
   .driver-glow-red {
@@ -186,11 +187,11 @@
   }
 
   .driver-gradient-earn {
-    background: linear-gradient(135deg, hsl(145 65% 38%), hsl(160 55% 42%));
+    background: linear-gradient(135deg, hsl(145 65% 42%), hsl(160 55% 46%));
   }
 
   .driver-gradient-surface {
-    background: linear-gradient(180deg, hsl(225 20% 14%), hsl(225 25% 10%));
+    background: linear-gradient(180deg, hsl(0 0% 100%), hsl(220 25% 96%));
   }
 
   .safe-area-top {
