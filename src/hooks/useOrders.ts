@@ -198,8 +198,6 @@ export function useDriverOrders() {
         // Earnings + wallet credit are now handled automatically by a DB trigger
         toast.success('Παράδοση ολοκληρώθηκε! 🎉 Πιστώθηκε στο πορτοφόλι.');
         setActiveDelivery(null);
-      } else {
-        toast.success(`Status updated: ${newStatus.replace('_', ' ')}`);
       }
       fetchOrders();
     }
