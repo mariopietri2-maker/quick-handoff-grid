@@ -158,6 +158,9 @@ export default function SupportApp() {
     const cat = categoryConfig[activeTicket.category] ?? categoryConfig.other;
     const CatIcon = cat.icon;
     const cfg = statusConfig[activeTicket.status] ?? statusConfig.open;
+    const currentPriority: TicketPriority = (activeTicket.priority ?? 'normal') as TicketPriority;
+    const pcfg = priorityConfig[currentPriority];
+    const PIcon = pcfg.icon;
 
     return (
       <div className="min-h-screen bg-background">
@@ -171,6 +174,9 @@ export default function SupportApp() {
             </p>
             <p className="text-xs text-muted-foreground">Ticket #{activeTicket.id.slice(0, 8)}</p>
           </div>
+          <Badge variant="outline" className={`${pcfg.color} text-[10px] gap-1`}>
+            <PIcon className="h-3 w-3" /> {pcfg.label}
+          </Badge>
           <Badge variant="outline" className={cfg.color}>{cfg.label}</Badge>
         </header>
 
@@ -202,7 +208,18 @@ export default function SupportApp() {
                 </div>
               )}
               {activeTicket.status !== 'resolved' && (
-                <div className="flex gap-2 pt-2 border-t">
+                <div className="flex gap-2 pt-2 border-t flex-wrap items-center">
+                  <Select value={currentPriority} onValueChange={(v) => updatePriority(activeTicket.id, v as TicketPriority)}>
+                    <SelectTrigger className="h-8 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sos">🚨 SOS</SelectItem>
+                      <SelectItem value="high">🚩 Υψηλή</SelectItem>
+                      <SelectItem value="normal">⚪ Κανονική</SelectItem>
+                      <SelectItem value="low">🟦 Χαμηλή</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {activeTicket.status === 'open' && (
                     <Button size="sm" variant="outline" onClick={() => updateStatus(activeTicket.id, 'in_progress')}>
                       <Clock className="h-4 w-4 mr-1" /> Σε εξέλιξη
