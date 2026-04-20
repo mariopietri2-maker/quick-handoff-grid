@@ -362,6 +362,8 @@ export default function SupportApp() {
           </Button>
         </div>
 
+        <SlaSettingsPanel />
+
         <div className="space-y-2">
           {filtered.length === 0 ? (
             <Card>
