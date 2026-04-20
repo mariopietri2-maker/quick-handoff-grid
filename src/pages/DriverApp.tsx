@@ -17,7 +17,7 @@ import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
 import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
-import { DriverSoundSettings } from '@/components/driver/DriverSoundSettings';
+
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 
 
