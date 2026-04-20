@@ -8,6 +8,23 @@ const config: CapacitorConfig = {
     url: 'https://a8538a52-88f3-4701-a1b9-d56a6120ba4c.lovableproject.com?forceHideBadge=true',
     cleartext: true,
   },
+  android: {
+    backgroundColor: '#1a1a2e',
+  },
+  ios: {
+    backgroundColor: '#1a1a2e',
+    contentInset: 'never',
+  },
+  plugins: {
+    StatusBar: {
+      style: 'DARK',
+      backgroundColor: '#1a1a2e',
+      overlaysWebView: true,
+    },
+    SplashScreen: {
+      backgroundColor: '#1a1a2e',
+    },
+  },
 };
 
 export default config;
