@@ -178,7 +178,7 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
                 </button>
 
                 <p className="text-[10px] text-center text-[hsl(var(--driver-text-muted))]">
-                  Μέσος χρόνος απάντησης: <span className="font-bold text-[hsl(var(--driver-accent))]">< 5 λεπτά</span>
+                  Μέσος χρόνος απάντησης: <span className="font-bold text-[hsl(var(--driver-accent))]">{'< 5 λεπτά'}</span>
                 </p>
               </div>
             )}
