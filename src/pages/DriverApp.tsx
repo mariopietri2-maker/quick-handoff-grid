@@ -165,7 +165,7 @@ export default function DriverApp() {
           {/* ─── TOP BAR (floating over map) ─── */}
           <div className="absolute top-0 left-0 right-0 z-20 safe-area-top animate-slide-down">
             <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-              <div className="driver-glass rounded-full p-1.5 shrink-0 hover-lift">
+              <div className="shrink-0">
                 <UserMenu />
               </div>
               <div className="driver-glass rounded-full px-4 py-2 flex items-center gap-2 shrink-0 hover-lift">
@@ -174,7 +174,7 @@ export default function DriverApp() {
                 </div>
                 <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">QuickGrid</span>
               </div>
-              <div className="driver-glass rounded-full p-1.5 shrink-0 hover-lift">
+              <div className="shrink-0">
                 <DriverSupportButton orderId={activeDelivery?.id} />
               </div>
             </div>
