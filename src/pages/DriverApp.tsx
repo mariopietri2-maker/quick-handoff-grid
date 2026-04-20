@@ -30,7 +30,7 @@ export default function DriverApp() {
   const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
+  
   const tabParam = searchParams.get('tab');
   const activeTab: DriverTab = (tabParam === 'earnings' || tabParam === 'wallet' || tabParam === 'referral') ? tabParam : 'home';
   const setActiveTab = (t: DriverTab) => {
