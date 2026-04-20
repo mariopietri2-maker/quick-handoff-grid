@@ -156,29 +156,29 @@ export function SlideToggle({
           />
         )}
 
-        {/* Pulsing dots hint when OFF */}
-        {!isOn && !isDragging && (
-          <div className="absolute right-6 top-1/2 -translate-y-1/2 flex gap-1.5 pointer-events-none">
-            {[0, 1, 2].map(i => (
-              <ChevronRight
-                key={i}
-                className="h-4 w-4 text-[hsl(var(--driver-text-muted))]"
-                style={{ animation: `slide-arrow 1.6s ease-in-out ${i * 0.2}s infinite` }}
-              />
-            ))}
-          </div>
-        )}
-
         {/* Center label */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none px-16">
+        <div
+          className="absolute inset-y-0 flex items-center justify-center pointer-events-none"
+          style={{ left: THUMB_SIZE + TRACK_PADDING * 2, right: TRACK_PADDING * 3 }}
+        >
           <span
-            className={`font-heading font-bold text-sm tracking-wide transition-colors duration-300 text-center ${
+            className={`font-heading font-bold text-[13px] tracking-tight transition-colors duration-300 text-center truncate w-full ${
               progress > 0.45 ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
             }`}
           >
             {label}
           </span>
         </div>
+
+        {/* Pulsing arrow hint when OFF — single chevron, subtle */}
+        {!isOn && !isDragging && progress < 0.1 && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none">
+            <ChevronRight
+              className="h-4 w-4 text-[hsl(var(--driver-text-muted))] opacity-60"
+              style={{ animation: `slide-arrow 1.6s ease-in-out infinite` }}
+            />
+          </div>
+        )}
 
         {/* Thumb */}
         <div
