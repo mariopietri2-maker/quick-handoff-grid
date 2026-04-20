@@ -60,18 +60,18 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
 
   return (
     <>
-      {/* Round headphones button — high-contrast white ring for visibility on any map */}
+      {/* Match left-side UserMenu: round, h-10 w-10, gradient + shadow */}
       <button
         onClick={() => setOpen(true)}
-        className="relative h-11 w-11 rounded-full bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_38%)] ring-2 ring-white/90 shadow-xl shadow-black/40 flex items-center justify-center text-white transition-all duration-200 hover:brightness-110 hover:scale-105 active:scale-95"
+        className="relative h-10 w-10 rounded-full bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_38%)] border-0 shadow-primary text-white flex items-center justify-center transition-all duration-200 hover:brightness-110 hover:scale-105 active:scale-95"
         aria-label="Υποστήριξη"
       >
-        <Headphones className="h-5 w-5" strokeWidth={2.5} />
+        <Headphones className="h-5 w-5" strokeWidth={2.25} />
         <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white animate-pulse" />
       </button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-        <DialogContent className="max-w-md mx-auto bg-[hsl(var(--driver-surface))] border-[hsl(var(--driver-border))] p-0 overflow-hidden">
+        <DialogContent className="max-w-md mx-auto bg-card border border-border p-0 overflow-hidden shadow-2xl">
           {/* Header */}
           <div className="px-5 pt-5 pb-3 bg-gradient-to-br from-[hsl(var(--driver-accent))]/15 to-transparent border-b border-[hsl(var(--driver-border))]">
             <DialogHeader>
