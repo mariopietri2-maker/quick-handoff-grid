@@ -192,6 +192,95 @@ export default function SupportApp() {
             onUseReply={(t) => chatRef.current?.setDraft(t)}
           />
 
+          {/* Agent Toolbox */}
+          <Card>
+            <CardContent className="p-3 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[11px] uppercase tracking-wide font-heading font-bold text-muted-foreground flex items-center gap-1.5">
+                  <Zap className="h-3.5 w-3.5 text-primary" /> Εργαλεία Agent
+                </p>
+                <span className="text-[10px] flex items-center gap-1 text-muted-foreground">
+                  <AlarmClock className="h-3 w-3" />
+                  Ηλικία: {differenceInMinutes(new Date(), new Date(activeTicket.created_at))}λ
+                </span>
+              </div>
+
+              <div className="flex flex-wrap gap-1.5">
+                {driver?.phone && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    asChild
+                  >
+                    <a href={`tel:${driver.phone}`}>
+                      <Phone className="h-3 w-3 mr-1" /> Κλήση οδηγού
+                    </a>
+                  </Button>
+                )}
+                {driver?.phone && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() => {
+                      navigator.clipboard.writeText(driver.phone!);
+                      toast.success('Τηλέφωνο αντιγράφηκε');
+                    }}
+                  >
+                    <Copy className="h-3 w-3 mr-1" /> Αντιγραφή τηλ.
+                  </Button>
+                )}
+                {activeTicket.order_id && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    className="h-7 text-[11px]"
+                    onClick={() => {
+                      navigator.clipboard.writeText(activeTicket.order_id);
+                      toast.success('Order ID αντιγράφηκε');
+                    }}
+                  >
+                    <Hash className="h-3 w-3 mr-1" /> Order #{activeTicket.order_id.slice(0, 6)}
+                  </Button>
+                )}
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="h-7 text-[11px]"
+                  onClick={() => {
+                    navigator.clipboard.writeText(activeTicket.id);
+                    toast.success('Ticket ID αντιγράφηκε');
+                  }}
+                >
+                  <Copy className="h-3 w-3 mr-1" /> Ticket ID
+                </Button>
+              </div>
+
+              <div>
+                <p className="text-[10px] uppercase tracking-wide font-heading font-bold text-muted-foreground mb-1.5">
+                  Γρήγορες απαντήσεις
+                </p>
+                <div className="flex flex-wrap gap-1.5">
+                  {QUICK_REPLIES.map((q) => (
+                    <button
+                      key={q.label}
+                      onClick={() => chatRef.current?.setDraft(q.text)}
+                      className="text-[11px] px-2 py-1 rounded-md border bg-muted/40 hover:bg-muted transition-colors"
+                    >
+                      {q.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <SupportAIPanel
+            ticketId={activeTicket.id}
+            onUseReply={(t) => chatRef.current?.setDraft(t)}
+          />
+
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
             <TicketChat ref={chatRef} ticketId={activeTicket.id} />
