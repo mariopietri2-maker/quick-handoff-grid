@@ -35,6 +35,8 @@ interface DriverMapboxProps {
   navigatingTo?: 'store' | 'customer' | null;
   onRouteUpdate?: (route: RouteInfo | null) => void;
   nearbyStores?: NearbyStorePin[];
+  /** When true: camera follows driver position with heading-up rotation + 3D tilt (like Google Maps nav) */
+  followMode?: boolean;
 }
 
 const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function DriverMapbox({
@@ -44,6 +46,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   navigatingTo,
   onRouteUpdate,
   nearbyStores,
+  followMode = false,
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -52,18 +55,46 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const customerMarkerRef = useRef<mapboxgl.Marker | null>(null);
   const nearbyMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const { token, loading } = useMapboxToken();
-  const [pos, setPos] = useState<{ lat: number; lng: number } | null>(null);
+  const [pos, setPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
+  const lastPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const smoothedHeadingRef = useRef<number | null>(null);
   const watchRef = useRef<number | null>(null);
   const routeFetchRef = useRef<AbortController | null>(null);
   const lastRouteKey = useRef('');
+  const followModeRef = useRef(followMode);
+  useEffect(() => { followModeRef.current = followMode; }, [followMode]);
 
-  // Watch position
+  // Compute bearing between two coords (fallback when GPS heading unavailable, e.g. desktop)
+  const bearingBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const toDeg = (r: number) => (r * 180) / Math.PI;
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat), lat2 = toRad(b.lat);
+    const y = Math.sin(dLng) * Math.cos(lat2);
+    const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
+    return (toDeg(Math.atan2(y, x)) + 360) % 360;
+  };
+
+  // Watch position (now also captures heading)
   useEffect(() => {
     if (!('geolocation' in navigator)) return;
     watchRef.current = navigator.geolocation.watchPosition(
-      (p) => setPos({ lat: p.coords.latitude, lng: p.coords.longitude }),
-      () => setPos({ lat: 39.6650, lng: 20.8537 }),
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 20000 }
+      (p) => {
+        const next = { lat: p.coords.latitude, lng: p.coords.longitude };
+        let heading: number | null = (typeof p.coords.heading === 'number' && !isNaN(p.coords.heading)) ? p.coords.heading : null;
+        // Fallback: derive heading from movement vector if GPS doesn't provide one
+        if (heading == null && lastPosRef.current) {
+          const movedM = Math.hypot(
+            (next.lat - lastPosRef.current.lat) * 111000,
+            (next.lng - lastPosRef.current.lng) * 111000 * Math.cos(next.lat * Math.PI / 180),
+          );
+          if (movedM > 3) heading = bearingBetween(lastPosRef.current, next);
+        }
+        lastPosRef.current = next;
+        setPos({ ...next, heading });
+      },
+      () => setPos({ lat: 39.6650, lng: 20.8537, heading: null }),
+      { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
     );
     return () => { if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current); };
   }, []);
