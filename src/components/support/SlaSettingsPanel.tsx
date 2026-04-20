@@ -5,16 +5,20 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Timer, Save, Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Timer, Save, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
-import { useSlaSettings } from '@/hooks/useSlaSettings';
+import { useSlaSettings, useSupportLoad } from '@/hooks/useSlaSettings';
 
 export function SlaSettingsPanel() {
   const { data, isLoading } = useSlaSettings();
+  const { data: load } = useSupportLoad();
   const qc = useQueryClient();
   const [warn, setWarn] = useState(60);
   const [urgent, setUrgent] = useState(180);
   const [breach, setBreach] = useState(600);
+  const [agentScaling, setAgentScaling] = useState(true);
+  const [ticketsPerAgent, setTicketsPerAgent] = useState(5);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -22,6 +26,8 @@ export function SlaSettingsPanel() {
       setWarn(data.warn);
       setUrgent(data.urgent);
       setBreach(data.breach);
+      setAgentScaling(data.agentScaling);
+      setTicketsPerAgent(data.ticketsPerAgent);
     }
   }, [data]);
 
@@ -37,6 +43,8 @@ export function SlaSettingsPanel() {
         sla_warn_seconds: warn,
         sla_urgent_seconds: urgent,
         sla_breach_seconds: breach,
+        sla_agent_scaling: agentScaling,
+        sla_tickets_per_agent: ticketsPerAgent,
       } as any)
       .eq('id', 1);
     setSaving(false);
@@ -45,8 +53,12 @@ export function SlaSettingsPanel() {
     } else {
       toast.success('Αποθηκεύτηκε');
       qc.invalidateQueries({ queryKey: ['sla-settings'] });
+      qc.invalidateQueries({ queryKey: ['support-load'] });
     }
   };
+
+  const capacity = Math.max(1, (load?.agentCount ?? 1) * ticketsPerAgent);
+  const overload = (load?.openTickets ?? 0) > capacity;
 
   return (
     <Card>
@@ -58,7 +70,7 @@ export function SlaSettingsPanel() {
           {isLoading && <Loader2 className="h-3 w-3 animate-spin text-muted-foreground" />}
         </div>
         <p className="text-[10px] text-muted-foreground -mt-1">
-          Ορίζει τα χρώματα του χρονομετρητή στους οδηγούς και τους agents.
+          Βασικά όρια (priority normal). SOS/High/Low προσαρμόζονται αυτόματα.
         </p>
 
         <div className="grid grid-cols-3 gap-2">
@@ -91,6 +103,36 @@ export function SlaSettingsPanel() {
               onChange={(e) => setBreach(parseInt(e.target.value) || 0)}
               className="h-8 text-sm"
             />
+          </div>
+        </div>
+
+        <div className="border-t pt-3 space-y-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-1.5">
+              <Users className="h-3.5 w-3.5 text-primary" />
+              <Label className="text-[11px] font-heading font-bold uppercase">Κλιμάκωση βάσει agents</Label>
+            </div>
+            <Switch checked={agentScaling} onCheckedChange={setAgentScaling} />
+          </div>
+          <p className="text-[10px] text-muted-foreground">
+            Τα όρια επεκτείνονται όταν τα tickets ξεπερνούν τη χωρητικότητα.
+          </p>
+          <div className="grid grid-cols-2 gap-2 items-end">
+            <div>
+              <Label className="text-[10px] uppercase">Tickets / Agent</Label>
+              <Input
+                type="number"
+                min={1}
+                value={ticketsPerAgent}
+                onChange={(e) => setTicketsPerAgent(parseInt(e.target.value) || 1)}
+                className="h-8 text-sm"
+                disabled={!agentScaling}
+              />
+            </div>
+            <div className={`text-[10px] rounded-md p-2 border ${overload ? 'border-orange-500/30 bg-orange-500/10 text-orange-700' : 'bg-muted/40'}`}>
+              <p className="font-bold">{load?.agentCount ?? '—'} agents</p>
+              <p>{load?.openTickets ?? 0} ανοιχτά / {capacity} χωρ.</p>
+            </div>
           </div>
         </div>
 

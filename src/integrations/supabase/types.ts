@@ -511,7 +511,9 @@ export type Database = {
           peak_weekdays: number[]
           per_km_rate: number
           show_stores_on_driver_map: boolean
+          sla_agent_scaling: boolean
           sla_breach_seconds: number
+          sla_tickets_per_agent: number
           sla_urgent_seconds: number
           sla_warn_seconds: number
           updated_at: string
@@ -533,7 +535,9 @@ export type Database = {
           peak_weekdays?: number[]
           per_km_rate?: number
           show_stores_on_driver_map?: boolean
+          sla_agent_scaling?: boolean
           sla_breach_seconds?: number
+          sla_tickets_per_agent?: number
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
           updated_at?: string
@@ -555,7 +559,9 @@ export type Database = {
           peak_weekdays?: number[]
           per_km_rate?: number
           show_stores_on_driver_map?: boolean
+          sla_agent_scaling?: boolean
           sla_breach_seconds?: number
+          sla_tickets_per_agent?: number
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
           updated_at?: string
@@ -829,6 +835,7 @@ export type Database = {
           id: string
           order_id: string | null
           photo_url: string | null
+          priority: string
           resolution_notes: string | null
           resolved_by: string | null
           status: string
@@ -842,6 +849,7 @@ export type Database = {
           id?: string
           order_id?: string | null
           photo_url?: string | null
+          priority?: string
           resolution_notes?: string | null
           resolved_by?: string | null
           status?: string
@@ -855,6 +863,7 @@ export type Database = {
           id?: string
           order_id?: string | null
           photo_url?: string | null
+          priority?: string
           resolution_notes?: string | null
           resolved_by?: string | null
           status?: string
@@ -1067,6 +1076,7 @@ export type Database = {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
       }
+      count_active_support_agents: { Args: never; Returns: number }
       create_driver_earning: {
         Args: {
           p_base_pay: number

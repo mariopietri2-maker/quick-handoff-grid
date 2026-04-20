@@ -6,7 +6,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Send, Loader2, Timer, AlarmClock } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
-import { useSlaSettings } from '@/hooks/useSlaSettings';
+import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
 
 interface Message {
   id: string;
@@ -31,8 +31,8 @@ function formatElapsed(totalSeconds: number) {
   return `${s}δ`;
 }
 
-export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(function TicketChat(
-  { ticketId },
+export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; priority?: TicketPriority }>(function TicketChat(
+  { ticketId, priority = 'normal' },
   ref
 ) {
   const { user, isAdmin, profile } = useAuth();
@@ -119,10 +119,10 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string }>(fun
   }, [messages, viewerIsAgent]);
 
   const elapsedSec = waitingOn ? differenceInSeconds(now, waitingOn.since) : 0;
-  const { data: sla } = useSlaSettings();
-  const warnT = sla?.warn ?? 60;
-  const urgentT = sla?.urgent ?? 180;
-  const breachT = sla?.breach ?? 600;
+  const sla = useEffectiveSla(priority);
+  const warnT = sla.warn;
+  const urgentT = sla.urgent;
+  const breachT = sla.breach;
 
   // Color tiers driven by configurable SLA thresholds
   const timerTone = elapsedSec < warnT

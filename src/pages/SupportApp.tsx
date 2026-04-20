@@ -8,11 +8,13 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock } from 'lucide-react';
+import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
+import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
 
@@ -28,6 +30,14 @@ const statusConfig: Record<string, { label: string; color: string }> = {
   open: { label: 'Ανοιχτό', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
   in_progress: { label: 'Σε εξέλιξη', color: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' },
   resolved: { label: 'Επιλύθηκε', color: 'bg-green-500/10 text-green-700 border-green-500/20' },
+};
+
+const PRIORITY_ORDER: Record<string, number> = { sos: 0, high: 1, normal: 2, low: 3 };
+const priorityConfig: Record<TicketPriority, { label: string; color: string; icon: any }> = {
+  sos: { label: 'SOS', color: 'bg-red-600 text-white border-red-700 animate-pulse', icon: Siren },
+  high: { label: 'Υψηλή', color: 'bg-orange-500/15 text-orange-700 border-orange-500/30', icon: Flag },
+  normal: { label: 'Κανονική', color: 'bg-muted text-muted-foreground border-border', icon: Flag },
+  low: { label: 'Χαμηλή', color: 'bg-slate-500/10 text-slate-600 border-slate-500/20', icon: Flag },
 };
 
 const categoryConfig: Record<string, { label: string; icon: any; color: string }> = {
@@ -97,6 +107,16 @@ export default function SupportApp() {
     }
   };
 
+  const updatePriority = async (id: string, priority: TicketPriority) => {
+    const { error } = await supabase.from('support_tickets').update({ priority } as any).eq('id', id);
+    if (error) toast.error('Αποτυχία προτεραιότητας');
+    else {
+      toast.success('Προτεραιότητα ενημερώθηκε');
+      queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
+      if (activeTicket?.id === id) setActiveTicket({ ...activeTicket, priority });
+    }
+  };
+
   const resolve = async () => {
     if (!activeTicket) return;
     const { error } = await supabase
@@ -118,7 +138,14 @@ export default function SupportApp() {
     navigate('/auth');
   };
 
-  const filtered = tickets?.filter((t) => statusFilter === 'all' || t.status === statusFilter) ?? [];
+  const filtered = (tickets?.filter((t) => statusFilter === 'all' || t.status === statusFilter) ?? [])
+    .slice()
+    .sort((a: any, b: any) => {
+      const pa = PRIORITY_ORDER[a.priority ?? 'normal'] ?? 2;
+      const pb = PRIORITY_ORDER[b.priority ?? 'normal'] ?? 2;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   const counts = {
     open: tickets?.filter((t) => t.status === 'open').length ?? 0,
     in_progress: tickets?.filter((t) => t.status === 'in_progress').length ?? 0,
@@ -131,6 +158,9 @@ export default function SupportApp() {
     const cat = categoryConfig[activeTicket.category] ?? categoryConfig.other;
     const CatIcon = cat.icon;
     const cfg = statusConfig[activeTicket.status] ?? statusConfig.open;
+    const currentPriority: TicketPriority = (activeTicket.priority ?? 'normal') as TicketPriority;
+    const pcfg = priorityConfig[currentPriority];
+    const PIcon = pcfg.icon;
 
     return (
       <div className="min-h-screen bg-background">
@@ -144,6 +174,9 @@ export default function SupportApp() {
             </p>
             <p className="text-xs text-muted-foreground">Ticket #{activeTicket.id.slice(0, 8)}</p>
           </div>
+          <Badge variant="outline" className={`${pcfg.color} text-[10px] gap-1`}>
+            <PIcon className="h-3 w-3" /> {pcfg.label}
+          </Badge>
           <Badge variant="outline" className={cfg.color}>{cfg.label}</Badge>
         </header>
 
@@ -175,7 +208,18 @@ export default function SupportApp() {
                 </div>
               )}
               {activeTicket.status !== 'resolved' && (
-                <div className="flex gap-2 pt-2 border-t">
+                <div className="flex gap-2 pt-2 border-t flex-wrap items-center">
+                  <Select value={currentPriority} onValueChange={(v) => updatePriority(activeTicket.id, v as TicketPriority)}>
+                    <SelectTrigger className="h-8 w-[140px] text-xs">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="sos">🚨 SOS</SelectItem>
+                      <SelectItem value="high">🚩 Υψηλή</SelectItem>
+                      <SelectItem value="normal">⚪ Κανονική</SelectItem>
+                      <SelectItem value="low">🟦 Χαμηλή</SelectItem>
+                    </SelectContent>
+                  </Select>
                   {activeTicket.status === 'open' && (
                     <Button size="sm" variant="outline" onClick={() => updateStatus(activeTicket.id, 'in_progress')}>
                       <Clock className="h-4 w-4 mr-1" /> Σε εξέλιξη
@@ -282,7 +326,7 @@ export default function SupportApp() {
 
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
-            <TicketChat ref={chatRef} ticketId={activeTicket.id} />
+            <TicketChat ref={chatRef} ticketId={activeTicket.id} priority={currentPriority} />
           </div>
         </div>
 
@@ -393,7 +437,20 @@ export default function SupportApp() {
                           <p className="font-heading font-semibold text-sm truncate">
                             {driver?.full_name ?? ticket.driver_id.slice(0, 8)}
                           </p>
-                          <Badge variant="outline" className={`${cfg.color} text-[10px] shrink-0`}>{cfg.label}</Badge>
+                          <div className="flex items-center gap-1 shrink-0">
+                            {(() => {
+                              const pri = (ticket.priority ?? 'normal') as TicketPriority;
+                              const pp = priorityConfig[pri];
+                              const PI = pp.icon;
+                              if (pri === 'normal') return null;
+                              return (
+                                <Badge variant="outline" className={`${pp.color} text-[10px] gap-0.5 px-1.5`}>
+                                  <PI className="h-2.5 w-2.5" />{pp.label}
+                                </Badge>
+                              );
+                            })()}
+                            <Badge variant="outline" className={`${cfg.color} text-[10px]`}>{cfg.label}</Badge>
+                          </div>
                         </div>
                         <p className="text-xs text-muted-foreground mt-0.5">{cat.label}</p>
                         {ticket.description && (
