@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import {
   LifeBuoy, AlertTriangle, Car, Smartphone, MessageCircle, Send,
-  Package, CreditCard, Navigation as NavIcon, Phone, ChevronLeft,
+  Package, CreditCard, Navigation as NavIcon, Phone, ChevronLeft, Headphones,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -60,17 +60,14 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
 
   return (
     <>
-      {/* High-contrast white pill — always visible over any map color */}
+      {/* Round headphones button — high-contrast white ring for visibility on any map */}
       <button
         onClick={() => setOpen(true)}
-        className="relative h-10 pl-2.5 pr-3.5 rounded-full bg-white shadow-lg border border-white/60 flex items-center gap-1.5 text-foreground transition-all duration-200 hover:scale-105 active:scale-95"
+        className="relative h-11 w-11 rounded-full bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_38%)] ring-2 ring-white/90 shadow-xl shadow-black/40 flex items-center justify-center text-white transition-all duration-200 hover:brightness-110 hover:scale-105 active:scale-95"
         aria-label="Υποστήριξη"
       >
-        <span className="h-7 w-7 rounded-full bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_38%)] flex items-center justify-center shadow-inner">
-          <LifeBuoy className="h-4 w-4 text-white" strokeWidth={2.5} />
-        </span>
-        <span className="font-heading font-bold text-xs tracking-tight">Βοήθεια</span>
-        <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-emerald-500 ring-2 ring-white animate-pulse" />
+        <Headphones className="h-5 w-5" strokeWidth={2.5} />
+        <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white animate-pulse" />
       </button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
