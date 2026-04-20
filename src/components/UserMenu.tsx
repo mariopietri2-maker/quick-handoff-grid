@@ -63,7 +63,7 @@ export function UserMenu() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 rounded-full bg-background text-foreground border-2 border-border shadow-md hover:bg-accent"
+            className="h-10 w-10 rounded-full gradient-primary text-white border-0 shadow-primary hover:brightness-110 hover:scale-105 transition-all"
           >
             <User className="h-5 w-5" />
           </Button>
