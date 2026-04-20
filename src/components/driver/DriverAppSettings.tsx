@@ -24,20 +24,20 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
     <div className="space-y-3">
-      <p className="text-[10px] font-heading uppercase tracking-[0.15em] text-[hsl(var(--driver-text-muted))]">{title}</p>
+      <p className="text-[10px] font-heading uppercase tracking-[0.15em] text-muted-foreground">{title}</p>
       <div className="space-y-2">{children}</div>
     </div>
   );
 
   const Row = ({ icon: Icon, label, children, desc }: { icon: React.ElementType; label: string; children: React.ReactNode; desc?: string }) => (
-    <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-[hsl(var(--driver-bg))] border border-[hsl(var(--driver-border))]">
+    <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-muted/40 border border-border">
       <div className="flex items-start gap-3 min-w-0">
-        <div className="h-8 w-8 rounded-lg bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))] flex items-center justify-center shrink-0">
-          <Icon className="h-4 w-4 text-[hsl(var(--driver-text))]" />
+        <div className="h-8 w-8 rounded-lg bg-card border border-border flex items-center justify-center shrink-0">
+          <Icon className="h-4 w-4 text-foreground" />
         </div>
         <div className="min-w-0">
-          <Label className="text-sm font-heading font-semibold text-[hsl(var(--driver-text))] block">{label}</Label>
-          {desc && <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5">{desc}</p>}
+          <Label className="text-sm font-heading font-semibold text-foreground block">{label}</Label>
+          {desc && <p className="text-[11px] text-muted-foreground mt-0.5">{desc}</p>}
         </div>
       </div>
       <div className="shrink-0">{children}</div>
@@ -46,10 +46,10 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="bottom" className="bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-3xl max-h-[88vh] overflow-y-auto">
+      <SheetContent side="bottom" className="bg-background border-t border-border rounded-t-3xl max-h-[88vh] overflow-y-auto text-foreground">
         <SheetHeader className="text-left mb-4">
-          <SheetTitle className="font-heading text-[hsl(var(--driver-text))] flex items-center gap-2">
-            <Settings className="h-5 w-5 text-[hsl(var(--driver-accent))]" />
+          <SheetTitle className="font-heading text-foreground flex items-center gap-2">
+            <Settings className="h-5 w-5 text-primary" />
             Ρυθμίσεις Εφαρμογής
           </SheetTitle>
         </SheetHeader>
@@ -141,7 +141,7 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
             </Row>
           </Section>
 
-          <p className="text-[10px] text-center text-[hsl(var(--driver-text-muted))] pt-2">
+          <p className="text-[10px] text-center text-muted-foreground pt-2">
             Οι ρυθμίσεις αποθηκεύονται σε αυτή τη συσκευή
           </p>
         </div>
