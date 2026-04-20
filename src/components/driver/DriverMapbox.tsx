@@ -5,6 +5,7 @@ import { useMapboxToken } from '@/hooks/useMapboxToken';
 
 export interface DriverMapboxHandle {
   recenter: () => void;
+  focusOn: (target: 'store' | 'customer') => void;
 }
 
 export interface RouteInfo {
@@ -345,7 +346,24 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     }
   }, [pos]);
 
-  useImperativeHandle(ref, () => ({ recenter }), [recenter]);
+  const focusOn = useCallback((target: 'store' | 'customer') => {
+    const map = mapRef.current;
+    if (!map) return;
+    const lat = target === 'store' ? storeLat : customerLat;
+    const lng = target === 'store' ? storeLng : customerLng;
+    if (lat == null || lng == null) return;
+
+    if (pos) {
+      const bounds = new mapboxgl.LngLatBounds();
+      bounds.extend([pos.lng, pos.lat]);
+      bounds.extend([lng, lat]);
+      map.fitBounds(bounds, { padding: { top: 120, bottom: 260, left: 60, right: 60 }, maxZoom: 16, duration: 800 });
+    } else {
+      map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
+    }
+  }, [storeLat, storeLng, customerLat, customerLng, pos]);
+
+  useImperativeHandle(ref, () => ({ recenter, focusOn }), [recenter, focusOn]);
 
   if (loading || !token) {
     return (
