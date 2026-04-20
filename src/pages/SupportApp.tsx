@@ -107,6 +107,16 @@ export default function SupportApp() {
     }
   };
 
+  const updatePriority = async (id: string, priority: TicketPriority) => {
+    const { error } = await supabase.from('support_tickets').update({ priority } as any).eq('id', id);
+    if (error) toast.error('Αποτυχία προτεραιότητας');
+    else {
+      toast.success('Προτεραιότητα ενημερώθηκε');
+      queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
+      if (activeTicket?.id === id) setActiveTicket({ ...activeTicket, priority });
+    }
+  };
+
   const resolve = async () => {
     if (!activeTicket) return;
     const { error } = await supabase
@@ -128,7 +138,14 @@ export default function SupportApp() {
     navigate('/auth');
   };
 
-  const filtered = tickets?.filter((t) => statusFilter === 'all' || t.status === statusFilter) ?? [];
+  const filtered = (tickets?.filter((t) => statusFilter === 'all' || t.status === statusFilter) ?? [])
+    .slice()
+    .sort((a: any, b: any) => {
+      const pa = PRIORITY_ORDER[a.priority ?? 'normal'] ?? 2;
+      const pb = PRIORITY_ORDER[b.priority ?? 'normal'] ?? 2;
+      if (pa !== pb) return pa - pb;
+      return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+    });
   const counts = {
     open: tickets?.filter((t) => t.status === 'open').length ?? 0,
     in_progress: tickets?.filter((t) => t.status === 'in_progress').length ?? 0,
