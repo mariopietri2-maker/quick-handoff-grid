@@ -238,6 +238,7 @@ export default function DriverApp() {
                       pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
                     }}
                     onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
+                    onFocusDestination={(target) => mapRef.current?.focusOn(target)}
                   />
                 </>
               )}
