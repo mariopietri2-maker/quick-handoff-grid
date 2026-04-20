@@ -148,13 +148,12 @@ export default function DriverApp() {
 
 
   return (
-    <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden">
+    <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden overscroll-none">
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
-          {/* Fullscreen Map */}
           <DriverMapbox
             ref={mapRef}
-            className="absolute inset-0"
+            className="fixed inset-0 z-0"
             storeLat={storeInfo?.latitude}
             storeLng={storeInfo?.longitude}
             storeName={storeInfo?.name}
@@ -168,11 +167,10 @@ export default function DriverApp() {
             followMode={isNavActive}
           />
 
-          {/* ─── TOP BAR (hidden in nav mode) ─── */}
           {!isNavActive && (
-            <div className="absolute top-0 left-0 right-0 z-20 safe-area-top animate-slide-down">
+            <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
               <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-                <div className="shrink-0">
+                <div className="shrink-0 pointer-events-auto">
                   <UserMenu />
                 </div>
                 <div className="bg-white/95 backdrop-blur-md rounded-full pl-1.5 pr-4 py-1 flex items-center gap-2 shrink-0 shadow-lg border border-white/40 hover-lift">
@@ -181,20 +179,19 @@ export default function DriverApp() {
                   </div>
                   <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
                 </div>
-                <div className="shrink-0">
+                <div className="shrink-0 pointer-events-auto">
                   <DriverSupportButton orderId={activeDelivery?.id} />
                 </div>
               </div>
             </div>
           )}
 
-          {/* ─── NAV MODE: top exit bar ─── */}
           {isNavActive && (
-            <div className="absolute top-0 left-0 right-0 z-30 safe-area-top animate-slide-down">
+            <div className="fixed top-0 left-0 right-0 z-30 safe-area-top animate-slide-down pointer-events-none">
               <div className="px-4 pt-3 pb-2 flex items-center justify-end">
                 <button
                   onClick={() => setNavMode(false)}
-                  className="h-10 px-4 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-2 shadow-lg active:scale-95"
+                  className="h-10 px-4 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-2 shadow-lg active:scale-95 pointer-events-auto"
                   aria-label="Κλείσιμο πλοήγησης"
                 >
                   <X className="h-4 w-4 text-[hsl(var(--driver-text))]" />
@@ -204,8 +201,7 @@ export default function DriverApp() {
             </div>
           )}
 
-          {/* ─── BOTTOM OVERLAY CARDS (over map) ─── */}
-          <div className="absolute bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin">
+          <div className="fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain">
             <div className="pointer-events-auto space-y-3 animate-slide-up">
               {/* Recenter button (always visible) */}
               <div className="flex justify-end animate-pop stagger-1">
