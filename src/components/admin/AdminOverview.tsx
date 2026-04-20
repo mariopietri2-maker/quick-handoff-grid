@@ -51,6 +51,9 @@ export default function AdminOverview({ orders, stores, profiles, reviews, earni
         <p className="text-muted-foreground text-sm">Καλημέρα! Ιδού η σημερινή επισκόπηση.</p>
       </div>
 
+      {/* Live Ops Map — full width hero */}
+      <LiveOpsMap />
+
       {/* KPI Row */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <KPICard
