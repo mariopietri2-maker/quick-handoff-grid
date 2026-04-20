@@ -49,8 +49,8 @@ export function DriverReferral() {
   const shareCode = () => {
     if (referralCode && navigator.share) {
       navigator.share({
-        title: 'QuickGrid Driver',
-        text: `Γίνε οδηγός QuickGrid! Χρησιμοποίησε τον κωδικό μου: ${referralCode}`,
+        title: 'Fresh Delivery Driver',
+        text: `Γίνε οδηγός Fresh Delivery! Χρησιμοποίησε τον κωδικό μου: ${referralCode}`,
       });
     } else {
       copyCode();

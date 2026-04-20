@@ -42,11 +42,11 @@ export function UserMenu() {
   };
 
   const handleShare = async () => {
-    const text = 'Γίνε QuickGrid driver και κέρδισε bonus καλωσορίσματος!';
+    const text = 'Γίνε Fresh Delivery driver και κέρδισε bonus καλωσορίσματος!';
     const url = window.location.origin + '/auth';
     try {
       if (navigator.share) {
-        await navigator.share({ title: 'QuickGrid Drivers', text, url });
+        await navigator.share({ title: 'Fresh Delivery Drivers', text, url });
       } else {
         await navigator.clipboard.writeText(`${text} ${url}`);
         toast.success('Αντιγράφηκε ο σύνδεσμος');
