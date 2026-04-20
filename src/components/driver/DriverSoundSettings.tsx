@@ -44,7 +44,7 @@ export function DriverSoundSettings({ trigger, open: controlledOpen, onOpenChang
 
   return (
     <Sheet open={open} onOpenChange={setOpen}>
-      <SheetTrigger asChild>{trigger}</SheetTrigger>
+      {trigger && <SheetTrigger asChild>{trigger}</SheetTrigger>}
       <SheetContent side="bottom" className="bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-3xl max-h-[88vh] overflow-y-auto">
         <SheetHeader className="text-left">
           <SheetTitle className="font-heading text-[hsl(var(--driver-text))] flex items-center gap-2">
