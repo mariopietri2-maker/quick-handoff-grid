@@ -56,6 +56,16 @@ const navGroups = [
       { id: 'announcements', label: 'Ανακοινώσεις', icon: Megaphone },
     ],
   },
+  {
+    label: 'Πλατφόρμα',
+    items: [
+      { id: 'feature_flags', label: 'Feature Flags', icon: Flag },
+      { id: 'overrides', label: 'Surge / Overrides', icon: Zap },
+      { id: 'remote_actions', label: 'Remote Actions', icon: UserCog },
+      { id: 'admin_perms', label: 'Admin Permissions', icon: ShieldCheck },
+      { id: 'audit_log', label: 'Audit Log', icon: ScrollText },
+    ],
+  },
 ];
 
 export default function AdminSidebar({ activeSection, onSectionChange, pendingTickets = 0, pendingWithdrawals = 0 }: AdminSidebarProps) {
