@@ -15,6 +15,7 @@ import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
 import { TeamChat } from '@/components/support/TeamChat';
+import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { Users } from 'lucide-react';
 import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
@@ -388,12 +389,14 @@ export default function SupportApp() {
       </header>
 
       {view === 'team' ? (
-        <div className="p-4 max-w-7xl mx-auto">
+        <div className="p-4 max-w-7xl mx-auto space-y-4">
+          <AnnouncementsBanner audience="support" />
           <TeamChat />
         </div>
       ) : (
 
       <div className="p-4 space-y-4 max-w-3xl mx-auto">
+        <AnnouncementsBanner audience="support" />
         <div className="grid grid-cols-3 gap-2">
           <button
             onClick={() => setStatusFilter('open')}
