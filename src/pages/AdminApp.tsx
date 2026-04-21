@@ -163,6 +163,16 @@ export default function AdminApp() {
         return <ReviewsSection reviews={reviews.data} />;
       case 'announcements':
         return <AnnouncementsManager />;
+      case 'feature_flags':
+        return <FeatureFlagsManager />;
+      case 'overrides':
+        return <OperationalOverrides />;
+      case 'remote_actions':
+        return <RemoteUserActions />;
+      case 'admin_perms':
+        return <AdminPermissionsManager />;
+      case 'audit_log':
+        return <AdminAuditLog />;
       default:
         return null;
     }
