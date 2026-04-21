@@ -14,6 +14,8 @@ import { TicketChat, type TicketChatHandle } from '@/components/support/TicketCh
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
+import { TeamChat } from '@/components/support/TeamChat';
+import { Users } from 'lucide-react';
 import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
@@ -60,6 +62,7 @@ export default function SupportApp() {
   const [activeTicket, setActiveTicket] = useState<any | null>(null);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [view, setView] = useState<'tickets' | 'team'>('tickets');
   const chatRef = useRef<TicketChatHandle>(null);
 
   const { data: tickets } = useQuery({
@@ -351,7 +354,7 @@ export default function SupportApp() {
   // List view
   return (
     <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-card border-b px-4 h-14 flex items-center justify-between">
+      <header className="sticky top-0 z-10 bg-card border-b px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <Headphones className="h-5 w-5 text-primary" />
@@ -361,10 +364,34 @@ export default function SupportApp() {
             <p className="text-[10px] text-muted-foreground leading-tight">{profile?.full_name ?? 'Agent'}</p>
           </div>
         </div>
+        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+          <button
+            onClick={() => setView('tickets')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'tickets' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <MessageSquare className="h-3.5 w-3.5" /> Tickets
+          </button>
+          <button
+            onClick={() => setView('team')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'team' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Users className="h-3.5 w-3.5" /> Ομάδα
+          </button>
+        </div>
         <Button variant="ghost" size="icon" onClick={handleSignOut}>
           <LogOut className="h-4 w-4" />
         </Button>
       </header>
+
+      {view === 'team' ? (
+        <div className="p-4 max-w-7xl mx-auto">
+          <TeamChat />
+        </div>
+      ) : (
 
       <div className="p-4 space-y-4 max-w-3xl mx-auto">
         <div className="grid grid-cols-3 gap-2">
@@ -468,6 +495,7 @@ export default function SupportApp() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
