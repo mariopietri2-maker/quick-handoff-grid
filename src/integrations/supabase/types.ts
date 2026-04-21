@@ -14,6 +14,87 @@ export type Database = {
   }
   public: {
     Tables: {
+      admin_audit_log: {
+        Row: {
+          action: string
+          actor_id: string
+          actor_name: string | null
+          created_at: string
+          description: string | null
+          id: string
+          metadata: Json | null
+          target_id: string | null
+          target_type: string | null
+        }
+        Insert: {
+          action: string
+          actor_id: string
+          actor_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string
+          actor_name?: string | null
+          created_at?: string
+          description?: string | null
+          id?: string
+          metadata?: Json | null
+          target_id?: string | null
+          target_type?: string | null
+        }
+        Relationships: []
+      }
+      admin_permissions: {
+        Row: {
+          can_manage_finances: boolean
+          can_manage_orders: boolean
+          can_manage_settings: boolean
+          can_manage_users: boolean
+          can_view_audit: boolean
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          scope: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          can_manage_finances?: boolean
+          can_manage_orders?: boolean
+          can_manage_settings?: boolean
+          can_manage_users?: boolean
+          can_view_audit?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          scope?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          can_manage_finances?: boolean
+          can_manage_orders?: boolean
+          can_manage_settings?: boolean
+          can_manage_users?: boolean
+          can_view_audit?: boolean
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          scope?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string
@@ -41,6 +122,33 @@ export type Database = {
           message?: string
           target_audience?: string
           title?: string
+        }
+        Relationships: []
+      }
+      banned_devices: {
+        Row: {
+          banned_by: string | null
+          created_at: string
+          device_fingerprint: string
+          id: string
+          reason: string | null
+          user_id: string | null
+        }
+        Insert: {
+          banned_by?: string | null
+          created_at?: string
+          device_fingerprint: string
+          id?: string
+          reason?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          banned_by?: string | null
+          created_at?: string
+          device_fingerprint?: string
+          id?: string
+          reason?: string | null
+          user_id?: string | null
         }
         Relationships: []
       }
@@ -316,6 +424,39 @@ export type Database = {
           },
         ]
       }
+      feature_flags: {
+        Row: {
+          category: string
+          description: string | null
+          id: string
+          is_enabled: boolean
+          key: string
+          label: string
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          category?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          key: string
+          label: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          category?: string
+          description?: string | null
+          id?: string
+          is_enabled?: boolean
+          key?: string
+          label?: string
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string | null
@@ -520,6 +661,8 @@ export type Database = {
           dist_wave_size: number
           distribution_mode: string
           id: number
+          maintenance_message: string | null
+          maintenance_mode: boolean
           min_pay: number
           motorcycle_multiplier: number
           peak_end_hour: number
@@ -558,6 +701,8 @@ export type Database = {
           dist_wave_size?: number
           distribution_mode?: string
           id?: number
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           min_pay?: number
           motorcycle_multiplier?: number
           peak_end_hour?: number
@@ -596,6 +741,8 @@ export type Database = {
           dist_wave_size?: number
           distribution_mode?: string
           id?: number
+          maintenance_message?: string | null
+          maintenance_mode?: boolean
           min_pay?: number
           motorcycle_multiplier?: number
           peak_end_hour?: number
@@ -1021,6 +1168,48 @@ export type Database = {
           },
         ]
       }
+      surge_zones: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          latitude: number
+          longitude: number
+          multiplier: number
+          name: string
+          radius_km: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          latitude: number
+          longitude: number
+          multiplier?: number
+          name: string
+          radius_km?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          latitude?: number
+          longitude?: number
+          multiplier?: number
+          name?: string
+          radius_km?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       ticket_messages: {
         Row: {
           created_at: string
@@ -1247,6 +1436,16 @@ export type Database = {
         Returns: boolean
       }
       is_support_or_admin: { Args: { _user_id: string }; Returns: boolean }
+      log_admin_action: {
+        Args: {
+          p_action: string
+          p_description?: string
+          p_metadata?: Json
+          p_target_id?: string
+          p_target_type?: string
+        }
+        Returns: undefined
+      }
       request_wallet_withdrawal: {
         Args: { p_amount: number; p_driver_id: string }
         Returns: undefined

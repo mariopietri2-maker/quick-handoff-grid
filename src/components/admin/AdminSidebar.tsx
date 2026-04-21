@@ -3,6 +3,7 @@ import {
   BarChart3, ShoppingBag, Store, Users, Shield, Wallet,
   MessageSquare, Flame, Star, Megaphone, MapPin, Settings,
   Activity, Bell, ChevronLeft, ChevronRight, LayoutDashboard, DollarSign, Headphones,
+  Flag, ShieldCheck, UserCog, Zap, ScrollText,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -53,6 +54,16 @@ const navGroups = [
       { id: 'demand', label: 'Ζώνες Ζήτησης', icon: Flame },
       { id: 'reviews', label: 'Κριτικές', icon: Star },
       { id: 'announcements', label: 'Ανακοινώσεις', icon: Megaphone },
+    ],
+  },
+  {
+    label: 'Πλατφόρμα',
+    items: [
+      { id: 'feature_flags', label: 'Feature Flags', icon: Flag },
+      { id: 'overrides', label: 'Surge / Overrides', icon: Zap },
+      { id: 'remote_actions', label: 'Remote Actions', icon: UserCog },
+      { id: 'admin_perms', label: 'Admin Permissions', icon: ShieldCheck },
+      { id: 'audit_log', label: 'Audit Log', icon: ScrollText },
     ],
   },
 ];

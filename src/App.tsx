@@ -19,6 +19,7 @@ import CheckoutPage from "./pages/CheckoutPage.tsx";
 import OrderTrackingPage from "./pages/OrderTrackingPage.tsx";
 import MyOrdersPage from "./pages/MyOrdersPage.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import MaintenanceBanner from "@/components/MaintenanceBanner";
 
 const queryClient = new QueryClient();
 
@@ -30,6 +31,7 @@ const App = () => (
       <BrowserRouter>
         <AuthProvider>
           <CartProvider>
+            <MaintenanceBanner />
             <Routes>
               <Route path="/" element={<Index />} />
               <Route path="/auth" element={<AuthPage />} />

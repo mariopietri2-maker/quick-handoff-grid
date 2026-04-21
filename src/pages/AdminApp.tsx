@@ -25,6 +25,11 @@ import DriverMapSettings from '@/components/admin/DriverMapSettings';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminOverview from '@/components/admin/AdminOverview';
 import AdminActivityLog from '@/components/admin/AdminActivityLog';
+import FeatureFlagsManager from '@/components/admin/FeatureFlagsManager';
+import OperationalOverrides from '@/components/admin/OperationalOverrides';
+import RemoteUserActions from '@/components/admin/RemoteUserActions';
+import AdminPermissionsManager from '@/components/admin/AdminPermissionsManager';
+import AdminAuditLog from '@/components/admin/AdminAuditLog';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -158,6 +163,16 @@ export default function AdminApp() {
         return <ReviewsSection reviews={reviews.data} />;
       case 'announcements':
         return <AnnouncementsManager />;
+      case 'feature_flags':
+        return <FeatureFlagsManager />;
+      case 'overrides':
+        return <OperationalOverrides />;
+      case 'remote_actions':
+        return <RemoteUserActions />;
+      case 'admin_perms':
+        return <AdminPermissionsManager />;
+      case 'audit_log':
+        return <AdminAuditLog />;
       default:
         return null;
     }
