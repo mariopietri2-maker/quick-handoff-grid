@@ -495,6 +495,7 @@ export default function SupportApp() {
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
