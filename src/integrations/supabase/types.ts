@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          expires_at: string | null
           id: string
           message: string
           target_audience: string
@@ -26,6 +27,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          expires_at?: string | null
           id?: string
           message: string
           target_audience?: string
@@ -34,6 +36,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          expires_at?: string | null
           id?: string
           message?: string
           target_audience?: string

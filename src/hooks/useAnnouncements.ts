@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-export function useAnnouncements(audience?: 'drivers' | 'store_owners' | 'all') {
+export function useAnnouncements(audience?: 'drivers' | 'store_owners' | 'support' | 'all') {
   const queryClient = useQueryClient();
 
   useEffect(() => {
