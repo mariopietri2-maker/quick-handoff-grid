@@ -14,6 +14,8 @@ import { TicketChat, type TicketChatHandle } from '@/components/support/TicketCh
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
+import { TeamChat } from '@/components/support/TeamChat';
+import { Users } from 'lucide-react';
 import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
