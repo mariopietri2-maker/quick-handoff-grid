@@ -62,6 +62,7 @@ export default function SupportApp() {
   const [activeTicket, setActiveTicket] = useState<any | null>(null);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
+  const [view, setView] = useState<'tickets' | 'team'>('tickets');
   const chatRef = useRef<TicketChatHandle>(null);
 
   const { data: tickets } = useQuery({
