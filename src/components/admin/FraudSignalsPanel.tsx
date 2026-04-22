@@ -44,7 +44,7 @@ export default function FraudSignalsPanel() {
       .order('created_at', { ascending: false })
       .limit(100);
     setSignals(data ?? []);
-    const userIds = [...new Set((data ?? []).map((s: Signal) => s.user_id))];
+    const userIds: string[] = [...new Set((data ?? []).map((s: Signal) => s.user_id as string))];
     if (userIds.length) {
       const { data: profs } = await supabase.from('profiles').select('user_id, full_name').in('user_id', userIds);
       const map: Record<string, string> = {};

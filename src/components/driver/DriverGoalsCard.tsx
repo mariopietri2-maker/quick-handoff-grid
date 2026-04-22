@@ -9,7 +9,7 @@ import { useEarnings } from '@/hooks/useEarnings';
 
 export default function DriverGoalsCard() {
   const { state, update } = useDriverState();
-  const { earnings } = useEarnings();
+  const { today: todaySummary, week: weekSummary } = useEarnings();
   const [editing, setEditing] = useState(false);
   const [daily, setDaily] = useState('50');
   const [weekly, setWeekly] = useState('300');
@@ -23,17 +23,8 @@ export default function DriverGoalsCard() {
 
   if (!state) return null;
 
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const weekStart = new Date(today);
-  weekStart.setDate(today.getDate() - today.getDay());
-
-  const todayTotal = (earnings ?? [])
-    .filter((e: any) => new Date(e.created_at) >= today)
-    .reduce((s: number, e: any) => s + Number(e.total ?? 0), 0);
-  const weekTotal = (earnings ?? [])
-    .filter((e: any) => new Date(e.created_at) >= weekStart)
-    .reduce((s: number, e: any) => s + Number(e.total ?? 0), 0);
+  const todayTotal = todaySummary.total;
+  const weekTotal = weekSummary.total;
 
   const dailyPct = Math.min(100, (todayTotal / state.daily_goal) * 100);
   const weeklyPct = Math.min(100, (weekTotal / state.weekly_goal) * 100);
