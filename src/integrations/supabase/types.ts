@@ -152,6 +152,39 @@ export type Database = {
         }
         Relationships: []
       }
+      canned_replies: {
+        Row: {
+          body: string
+          category: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          label: string
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          body: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          body?: string
+          category?: string | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          label?: string
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_favorites: {
         Row: {
           created_at: string
@@ -407,6 +440,39 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_state: {
+        Row: {
+          break_until: string | null
+          daily_goal: number
+          driver_id: string
+          on_break: boolean
+          shift_cash_balance: number
+          shift_started_at: string | null
+          updated_at: string
+          weekly_goal: number
+        }
+        Insert: {
+          break_until?: string | null
+          daily_goal?: number
+          driver_id: string
+          on_break?: boolean
+          shift_cash_balance?: number
+          shift_started_at?: string | null
+          updated_at?: string
+          weekly_goal?: number
+        }
+        Update: {
+          break_until?: string | null
+          daily_goal?: number
+          driver_id?: string
+          on_break?: boolean
+          shift_cash_balance?: number
+          shift_started_at?: string | null
+          updated_at?: string
+          weekly_goal?: number
+        }
+        Relationships: []
+      }
       driver_wallets: {
         Row: {
           available_balance: number
@@ -511,6 +577,164 @@ export type Database = {
         }
         Relationships: []
       }
+      fraud_signals: {
+        Row: {
+          created_at: string
+          details: Json
+          id: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+          severity: string
+          signal_type: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          details?: Json
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          signal_type: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          details?: Json
+          id?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+          severity?: string
+          signal_type?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      group_order_participants: {
+        Row: {
+          display_name: string | null
+          group_order_id: string
+          id: string
+          items: Json
+          joined_at: string
+          paid: boolean
+          subtotal: number
+          user_id: string
+        }
+        Insert: {
+          display_name?: string | null
+          group_order_id: string
+          id?: string
+          items?: Json
+          joined_at?: string
+          paid?: boolean
+          subtotal?: number
+          user_id: string
+        }
+        Update: {
+          display_name?: string | null
+          group_order_id?: string
+          id?: string
+          items?: Json
+          joined_at?: string
+          paid?: boolean
+          subtotal?: number
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "group_order_participants_group_order_id_fkey"
+            columns: ["group_order_id"]
+            isOneToOne: false
+            referencedRelation: "group_orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      group_orders: {
+        Row: {
+          closes_at: string | null
+          created_at: string
+          delivery_address: string | null
+          delivery_latitude: number | null
+          delivery_longitude: number | null
+          host_id: string
+          id: string
+          notes: string | null
+          share_code: string
+          status: string
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          closes_at?: string | null
+          created_at?: string
+          delivery_address?: string | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          host_id: string
+          id?: string
+          notes?: string | null
+          share_code: string
+          status?: string
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          closes_at?: string | null
+          created_at?: string
+          delivery_address?: string | null
+          delivery_latitude?: number | null
+          delivery_longitude?: number | null
+          host_id?: string
+          id?: string
+          notes?: string | null
+          share_code?: string
+          status?: string
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      menu_item_modifiers: {
+        Row: {
+          created_at: string
+          group_name: string
+          id: string
+          is_multi: boolean
+          is_required: boolean
+          menu_item_id: string
+          option_name: string
+          price_delta: number
+          sort_order: number
+        }
+        Insert: {
+          created_at?: string
+          group_name: string
+          id?: string
+          is_multi?: boolean
+          is_required?: boolean
+          menu_item_id: string
+          option_name: string
+          price_delta?: number
+          sort_order?: number
+        }
+        Update: {
+          created_at?: string
+          group_name?: string
+          id?: string
+          is_multi?: boolean
+          is_required?: boolean
+          menu_item_id?: string
+          option_name?: string
+          price_delta?: number
+          sort_order?: number
+        }
+        Relationships: []
+      }
       menu_items: {
         Row: {
           category: string | null
@@ -577,6 +801,30 @@ export type Database = {
           },
         ]
       }
+      order_item_modifiers: {
+        Row: {
+          group_name: string
+          id: string
+          option_name: string
+          order_item_id: string
+          price_delta: number
+        }
+        Insert: {
+          group_name: string
+          id?: string
+          option_name: string
+          order_item_id: string
+          price_delta?: number
+        }
+        Update: {
+          group_name?: string
+          id?: string
+          option_name?: string
+          order_item_id?: string
+          price_delta?: number
+        }
+        Relationships: []
+      }
       order_items: {
         Row: {
           created_at: string
@@ -624,6 +872,8 @@ export type Database = {
       }
       orders: {
         Row: {
+          cash_received: number | null
+          change_due: number | null
           created_at: string
           customer_id: string | null
           delivery_address: string | null
@@ -633,10 +883,15 @@ export type Database = {
           distance_km: number | null
           driver_id: string | null
           estimated_prep_time: number | null
+          group_order_id: string | null
           id: string
           notes: string | null
+          payment_method: string
           photo_verification_url: string | null
           pickup_checklist: Json | null
+          refund_reason: string | null
+          refunded_amount: number
+          scheduled_for: string | null
           status: Database["public"]["Enums"]["order_status"]
           store_id: string
           tip_amount: number | null
@@ -644,6 +899,8 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          cash_received?: number | null
+          change_due?: number | null
           created_at?: string
           customer_id?: string | null
           delivery_address?: string | null
@@ -653,10 +910,15 @@ export type Database = {
           distance_km?: number | null
           driver_id?: string | null
           estimated_prep_time?: number | null
+          group_order_id?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string
           photo_verification_url?: string | null
           pickup_checklist?: Json | null
+          refund_reason?: string | null
+          refunded_amount?: number
+          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_id: string
           tip_amount?: number | null
@@ -664,6 +926,8 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          cash_received?: number | null
+          change_due?: number | null
           created_at?: string
           customer_id?: string | null
           delivery_address?: string | null
@@ -673,10 +937,15 @@ export type Database = {
           distance_km?: number | null
           driver_id?: string | null
           estimated_prep_time?: number | null
+          group_order_id?: string | null
           id?: string
           notes?: string | null
+          payment_method?: string
           photo_verification_url?: string | null
           pickup_checklist?: Json | null
+          refund_reason?: string | null
+          refunded_amount?: number
+          scheduled_for?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_id?: string
           tip_amount?: number | null
@@ -916,6 +1185,42 @@ export type Database = {
           },
         ]
       }
+      refunds: {
+        Row: {
+          amount: number
+          created_at: string
+          customer_id: string | null
+          id: string
+          issued_by: string
+          notes: string | null
+          order_id: string
+          reason: string | null
+          refund_type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          issued_by: string
+          notes?: string | null
+          order_id: string
+          reason?: string | null
+          refund_type?: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          customer_id?: string | null
+          id?: string
+          issued_by?: string
+          notes?: string | null
+          order_id?: string
+          reason?: string | null
+          refund_type?: string
+        }
+        Relationships: []
+      }
       reviews: {
         Row: {
           comment: string | null
@@ -1009,6 +1314,51 @@ export type Database = {
           longitude?: number | null
           updated_at?: string
           user_id?: string
+        }
+        Relationships: []
+      }
+      store_auto_accept_rules: {
+        Row: {
+          default_prep_minutes: number
+          enabled: boolean
+          max_amount: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          default_prep_minutes?: number
+          enabled?: boolean
+          max_amount?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          default_prep_minutes?: number
+          enabled?: boolean
+          max_amount?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      store_daily_summary_log: {
+        Row: {
+          id: string
+          sent_at: string
+          store_id: string
+          summary_date: string
+        }
+        Insert: {
+          id?: string
+          sent_at?: string
+          store_id: string
+          summary_date: string
+        }
+        Update: {
+          id?: string
+          sent_at?: string
+          store_id?: string
+          summary_date?: string
         }
         Relationships: []
       }
@@ -1547,6 +1897,16 @@ export type Database = {
           p_target_type?: string
         }
         Returns: undefined
+      }
+      refund_order: {
+        Args: {
+          p_amount: number
+          p_notes?: string
+          p_order_id: string
+          p_reason: string
+          p_refund_type?: string
+        }
+        Returns: string
       }
       request_wallet_withdrawal: {
         Args: { p_amount: number; p_driver_id: string }
