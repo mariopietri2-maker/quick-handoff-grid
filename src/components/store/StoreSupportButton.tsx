@@ -74,10 +74,10 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
     if (!open || !user) return;
     let active = true;
     const load = async () => {
-      const { data } = await supabase
+      const { data } = await (supabase as any)
         .from('support_tickets')
         .select('id, category, description, status, created_at, order_id')
-        .eq('requester_id' as any, user.id)
+        .eq('requester_id', user.id)
         .order('created_at', { ascending: false })
         .limit(20);
       if (active) setTickets((data ?? []) as Ticket[]);
