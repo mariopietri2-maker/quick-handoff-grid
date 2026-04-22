@@ -152,6 +152,60 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_favorites: {
+        Row: {
+          created_at: string
+          id: string
+          menu_item_id: string | null
+          store_id: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          store_id?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          menu_item_id?: string | null
+          store_id?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customer_rewards: {
+        Row: {
+          created_at: string
+          id: string
+          lifetime_points: number
+          points: number
+          tier: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          lifetime_points?: number
+          points?: number
+          tier?: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          lifetime_points?: number
+          points?: number
+          tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       demand_zones: {
         Row: {
           bonus_amount: number
@@ -466,9 +520,12 @@ export type Database = {
           image_url: string | null
           is_available: boolean | null
           is_snoozed: boolean | null
+          low_stock_threshold: number | null
           name: string
           price: number
+          stock_count: number | null
           store_id: string
+          track_inventory: boolean
           updated_at: string
         }
         Insert: {
@@ -479,9 +536,12 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           is_snoozed?: boolean | null
+          low_stock_threshold?: number | null
           name: string
           price: number
+          stock_count?: number | null
           store_id: string
+          track_inventory?: boolean
           updated_at?: string
         }
         Update: {
@@ -492,9 +552,12 @@ export type Database = {
           image_url?: string | null
           is_available?: boolean | null
           is_snoozed?: boolean | null
+          low_stock_threshold?: number | null
           name?: string
           price?: number
+          stock_count?: number | null
           store_id?: string
+          track_inventory?: boolean
           updated_at?: string
         }
         Relationships: [
@@ -886,6 +949,33 @@ export type Database = {
         }
         Relationships: []
       }
+      reward_history: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          points_change: number
+          reason: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          points_change: number
+          reason: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          points_change?: number
+          reason?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       saved_addresses: {
         Row: {
           address: string
@@ -969,12 +1059,14 @@ export type Database = {
           address: string
           busy_mode: boolean | null
           created_at: string
+          holiday_dates: string[] | null
           id: string
           image_url: string | null
           is_active: boolean | null
           latitude: number | null
           longitude: number | null
           name: string
+          opening_hours: Json | null
           owner_id: string
           phone: string | null
           prep_buffer_minutes: number | null
@@ -986,12 +1078,14 @@ export type Database = {
           address: string
           busy_mode?: boolean | null
           created_at?: string
+          holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name: string
+          opening_hours?: Json | null
           owner_id: string
           phone?: string | null
           prep_buffer_minutes?: number | null
@@ -1003,12 +1097,14 @@ export type Database = {
           address?: string
           busy_mode?: boolean | null
           created_at?: string
+          holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string
+          opening_hours?: Json | null
           owner_id?: string
           phone?: string | null
           prep_buffer_minutes?: number | null
@@ -1120,11 +1216,13 @@ export type Database = {
           category: string
           created_at: string
           description: string | null
-          driver_id: string
+          driver_id: string | null
           id: string
           order_id: string | null
           photo_url: string | null
           priority: string
+          requester_id: string | null
+          requester_role: string
           resolution_notes: string | null
           resolved_by: string | null
           status: string
@@ -1134,11 +1232,13 @@ export type Database = {
           category: string
           created_at?: string
           description?: string | null
-          driver_id: string
+          driver_id?: string | null
           id?: string
           order_id?: string | null
           photo_url?: string | null
           priority?: string
+          requester_id?: string | null
+          requester_role?: string
           resolution_notes?: string | null
           resolved_by?: string | null
           status?: string
@@ -1148,11 +1248,13 @@ export type Database = {
           category?: string
           created_at?: string
           description?: string | null
-          driver_id?: string
+          driver_id?: string | null
           id?: string
           order_id?: string | null
           photo_url?: string | null
           priority?: string
+          requester_id?: string | null
+          requester_role?: string
           resolution_notes?: string | null
           resolved_by?: string | null
           status?: string
