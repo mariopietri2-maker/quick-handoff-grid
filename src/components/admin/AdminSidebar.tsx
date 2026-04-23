@@ -64,6 +64,8 @@ const navGroups = [
       { id: 'remote_actions', label: 'Remote Actions', icon: UserCog },
       { id: 'admin_perms', label: 'Admin Permissions', icon: ShieldCheck },
       { id: 'audit_log', label: 'Audit Log', icon: ScrollText },
+      { id: 'canned_replies', label: 'Έτοιμες Απαντήσεις', icon: MessageSquare },
+      { id: 'fraud', label: 'Σήματα Απάτης', icon: ShieldCheck },
     ],
   },
 ];

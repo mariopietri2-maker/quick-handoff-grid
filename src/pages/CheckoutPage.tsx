@@ -312,6 +312,7 @@ export default function CheckoutPage() {
 
         <ScheduledDeliveryPicker value={scheduledFor} onChange={setScheduledFor} />
 
+
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4 space-y-2">
             <Label className="font-heading">Σημειώσεις Παραγγελίας (προαιρετικά)</Label>

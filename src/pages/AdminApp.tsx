@@ -30,6 +30,9 @@ import OperationalOverrides from '@/components/admin/OperationalOverrides';
 import RemoteUserActions from '@/components/admin/RemoteUserActions';
 import AdminPermissionsManager from '@/components/admin/AdminPermissionsManager';
 import AdminAuditLog from '@/components/admin/AdminAuditLog';
+import LiveOpsKPI from '@/components/admin/LiveOpsKPI';
+import CannedRepliesManager from '@/components/admin/CannedRepliesManager';
+import FraudSignalsPanel from '@/components/admin/FraudSignalsPanel';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -132,7 +135,12 @@ export default function AdminApp() {
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
-        return <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />;
+        return (
+          <div className="space-y-6">
+            <LiveOpsKPI />
+            <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
+          </div>
+        );
       case 'analytics':
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'activity':
@@ -173,6 +181,10 @@ export default function AdminApp() {
         return <AdminPermissionsManager />;
       case 'audit_log':
         return <AdminAuditLog />;
+      case 'canned_replies':
+        return <CannedRepliesManager />;
+      case 'fraud':
+        return <FraudSignalsPanel />;
       default:
         return null;
     }
