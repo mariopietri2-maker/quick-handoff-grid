@@ -182,7 +182,7 @@ export default function StoreApp() {
                   </div>
                 </div>
               ) : (
-                <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} />
+                <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} storeName={store.name} />
               )}
             </TabsContent>
 

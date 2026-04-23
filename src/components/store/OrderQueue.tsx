@@ -2,11 +2,13 @@ import { Clock, User, Car, ChevronRight, Timer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { PrintTicketButton } from './PrintOrderTicket';
 import type { OrderWithItems } from '@/hooks/useOrders';
 
 interface OrderQueueProps {
   orders: OrderWithItems[];
   onStatusUpdate: (orderId: string, newStatus: string) => void;
+  storeName?: string;
 }
 
 const statusConfig: Record<string, { label: string; variant: 'destructive' | 'default' | 'secondary'; bg: string }> = {
@@ -16,7 +18,7 @@ const statusConfig: Record<string, { label: string; variant: 'destructive' | 'de
   ready: { label: 'Έτοιμη', variant: 'secondary', bg: 'bg-success/10 border-success/30' },
 };
 
-export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
+export function OrderQueue({ orders, onStatusUpdate, storeName = 'Κατάστημα' }: OrderQueueProps) {
   const getTimeSince = (dateStr: string) => {
     const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 60000);
     return diff < 1 ? 'Μόλις τώρα' : `${diff}λ πριν`;
@@ -49,10 +51,13 @@ export function OrderQueue({ orders, onStatusUpdate }: OrderQueueProps) {
                   </Badge>
                   <span className="text-sm font-mono text-muted-foreground">#{order.id.slice(0, 6)}</span>
                 </div>
-                <span className="text-sm text-muted-foreground flex items-center gap-1">
-                  <Clock className="h-3.5 w-3.5" />
-                  {getTimeSince(order.created_at)}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                    <Clock className="h-3.5 w-3.5" />
+                    {getTimeSince(order.created_at)}
+                  </span>
+                  <PrintTicketButton order={order} storeName={storeName} />
+                </div>
               </div>
 
               <div className="space-y-1 mb-3">
