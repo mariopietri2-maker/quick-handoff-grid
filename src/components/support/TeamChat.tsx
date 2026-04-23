@@ -3,11 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Hash, Send, Loader2, Plus, Users, Circle, MessageCircle, Megaphone, Flame } from 'lucide-react';
+import { Hash, Loader2, Plus, Users, Circle, MessageCircle, Megaphone, Flame } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { toast } from 'sonner';
+import { ChatComposer, type ComposerAttachment } from '@/components/chat/ChatComposer';
+import { ChatAttachment } from '@/components/chat/ChatAttachment';
 
 interface Channel {
   id: string;
@@ -22,7 +23,9 @@ interface TeamMessage {
   channel_id: string;
   sender_id: string;
   sender_role: string;
-  message: string;
+  message: string | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
   created_at: string;
 }
 
