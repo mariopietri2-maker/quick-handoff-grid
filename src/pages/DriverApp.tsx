@@ -185,7 +185,8 @@ export default function DriverApp() {
                   </div>
                   <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
                 </div>
-                <div className="shrink-0 pointer-events-auto">
+                <div className="shrink-0 pointer-events-auto flex items-center gap-2">
+                  {!activeDelivery && <DriverBreakButton />}
                   <DriverSupportButton orderId={activeDelivery?.id} />
                 </div>
               </div>
