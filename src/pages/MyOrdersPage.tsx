@@ -1,10 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, Clock, CheckCircle2 } from 'lucide-react';
+import { ArrowLeft, Package, Clock, CheckCircle2, RotateCcw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { useCart } from '@/hooks/useCart';
+import { RewardsCard } from '@/components/customer/RewardsCard';
+import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -22,8 +26,32 @@ const statusLabels: Record<string, { label: string; color: string }> = {
 export default function MyOrdersPage() {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { addItem } = useCart();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const reorder = async (orderId: string, storeId: string) => {
+    const [{ data: items }, { data: store }] = await Promise.all([
+      supabase.from('order_items').select('menu_item_id, name, quantity, unit_price').eq('order_id', orderId),
+      supabase.from('stores').select('id, name').eq('id', storeId).maybeSingle(),
+    ]);
+    if (!items?.length || !store) {
+      toast.error('Δεν βρέθηκαν προϊόντα');
+      return;
+    }
+    items.forEach((i) => {
+      if (!i.menu_item_id) return;
+      for (let q = 0; q < i.quantity; q++) {
+        addItem(store.id, store.name, {
+          menuItemId: i.menu_item_id,
+          name: i.name,
+          price: Number(i.unit_price),
+        });
+      }
+    });
+    toast.success(`${items.length} προϊόντα προστέθηκαν στο καλάθι`);
+    navigate('/checkout');
+  };
 
   useEffect(() => {
     if (!user) return;
@@ -54,7 +82,8 @@ export default function MyOrdersPage() {
         <h1 className="font-heading font-bold text-lg text-foreground">Οι Παραγγελίες μου</h1>
       </header>
 
-      <div className="max-w-lg mx-auto p-4">
+      <div className="max-w-lg mx-auto p-4 space-y-4">
+        <RewardsCard />
         {loading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -70,28 +99,41 @@ export default function MyOrdersPage() {
             {orders.map(order => {
               const status = statusLabels[order.status] ?? statusLabels.placed;
               const isActive = !['delivered', 'cancelled'].includes(order.status);
+              const isDelivered = order.status === 'delivered';
               return (
                 <Card
                   key={order.id}
-                  className={`shadow-[var(--shadow-sm)] cursor-pointer hover:shadow-[var(--shadow-md)] transition-shadow ${isActive ? 'border-primary/20' : ''}`}
-                  onClick={() => navigate(`/order-tracking/${order.id}`)}
+                  className={`shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow ${isActive ? 'border-primary/20' : ''}`}
                 >
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</span>
-                      <Badge variant="outline" className={`text-xs font-heading ${status.color}`}>
-                        {status.label}
-                      </Badge>
+                    <div onClick={() => navigate(`/order-tracking/${order.id}`)} className="cursor-pointer">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</span>
+                        <Badge variant="outline" className={`text-xs font-heading ${status.color}`}>
+                          {status.label}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center justify-between">
+                        <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
+                        <span className="font-heading font-bold text-foreground">{Number(order.total_amount).toFixed(2)}€</span>
+                      </div>
+                      {order.delivery_address && (
+                        <p className="text-xs text-muted-foreground mt-1 truncate">{order.delivery_address}</p>
+                      )}
+                      {isActive && (
+                        <p className="text-xs text-primary font-heading mt-2">Πατήστε για παρακολούθηση →</p>
+                      )}
                     </div>
-                    <div className="flex items-center justify-between">
-                      <span className="text-sm text-muted-foreground">{formatDate(order.created_at)}</span>
-                      <span className="font-heading font-bold text-foreground">{Number(order.total_amount).toFixed(2)}€</span>
-                    </div>
-                    {order.delivery_address && (
-                      <p className="text-xs text-muted-foreground mt-1 truncate">{order.delivery_address}</p>
-                    )}
-                    {isActive && (
-                      <p className="text-xs text-primary font-heading mt-2">Πατήστε για παρακολούθηση →</p>
+                    {isDelivered && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        className="w-full mt-3 font-heading"
+                        onClick={(e) => { e.stopPropagation(); reorder(order.id, order.store_id); }}
+                      >
+                        <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                        Επανάληψη παραγγελίας
+                      </Button>
                     )}
                   </CardContent>
                 </Card>

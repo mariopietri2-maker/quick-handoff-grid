@@ -12,6 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SavedAddresses } from '@/components/SavedAddresses';
+import ScheduledDeliveryPicker from '@/components/customer/ScheduledDeliveryPicker';
 
 interface AppliedPromo {
   id: string;
@@ -45,6 +46,7 @@ export default function CheckoutPage() {
       });
   }, [user]); // eslint-disable-line react-hooks/exhaustive-deps
   const [notes, setNotes] = useState('');
+  const [scheduledFor, setScheduledFor] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
@@ -182,6 +184,7 @@ export default function CheckoutPage() {
           delivery_longitude: deliveryCoords?.lon ?? null,
           distance_km: distanceKm,
           notes: notes || null,
+          scheduled_for: scheduledFor,
         } as any)
         .select()
         .single();
@@ -307,7 +310,9 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
-        {/* Notes */}
+        <ScheduledDeliveryPicker value={scheduledFor} onChange={setScheduledFor} />
+
+
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4 space-y-2">
             <Label className="font-heading">Σημειώσεις Παραγγελίας (προαιρετικά)</Label>

@@ -8,6 +8,7 @@ import { useCart } from '@/hooks/useCart';
 import { ShoppingBag, User } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import PromoBannerCarousel from '@/components/PromoBannerCarousel';
+import { FavoriteButton } from '@/components/customer/FavoriteButton';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
@@ -279,6 +280,9 @@ export default function CustomerApp() {
                       Πολυάσχολο
                     </div>
                   )}
+                  <div className="absolute top-2 left-2">
+                    <FavoriteButton storeId={store.id} size="sm" />
+                  </div>
                 </div>
 
                 {/* Info */}

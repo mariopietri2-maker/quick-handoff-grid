@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag } from 'lucide-react';
+import { useState } from 'react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
@@ -7,6 +7,10 @@ import { MenuControl } from '@/components/store/MenuControl';
 import { StoreSettings } from '@/components/store/StoreSettings';
 import { StoreAnalyticsDashboard } from '@/components/store/StoreAnalyticsDashboard';
 import { PromoManager } from '@/components/store/PromoManager';
+import { InventoryControl } from '@/components/store/InventoryControl';
+import { StoreHoursManager } from '@/components/store/StoreHoursManager';
+import AutoAcceptRules from '@/components/store/AutoAcceptRules';
+import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -59,6 +63,7 @@ export default function StoreApp() {
               {newOrders} νέες
             </Badge>
           )}
+          {store && <StoreSupportButton />}
           <UserMenu />
         </div>
       </header>
@@ -118,8 +123,8 @@ export default function StoreApp() {
             )}
             <AnnouncementsBanner audience="store_owners" />
             <Tabs defaultValue="orders">
-            <TabsList className="w-full mb-4">
-              <TabsTrigger value="orders" className="flex-1 font-heading relative">
+            <TabsList className="w-full mb-4 flex-wrap h-auto gap-1">
+              <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
                 <ClipboardList className="h-4 w-4 mr-1.5" />
                 Παραγγελίες
                 {newOrders > 0 && (
@@ -128,19 +133,31 @@ export default function StoreApp() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="menu" className="flex-1 font-heading">
+              <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading">
                 <UtensilsCrossed className="h-4 w-4 mr-1.5" />
                 Μενού
               </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex-1 font-heading">
+              <TabsTrigger value="inventory" className="flex-1 min-w-[90px] font-heading">
+                <Package className="h-4 w-4 mr-1.5" />
+                Απόθεμα
+              </TabsTrigger>
+              <TabsTrigger value="hours" className="flex-1 min-w-[80px] font-heading">
+                <Clock className="h-4 w-4 mr-1.5" />
+                Ωράριο
+              </TabsTrigger>
+              <TabsTrigger value="analytics" className="flex-1 min-w-[90px] font-heading">
                 <BarChart3 className="h-4 w-4 mr-1.5" />
                 Στατιστικά
               </TabsTrigger>
-              <TabsTrigger value="promos" className="flex-1 font-heading">
+              <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading">
                 <Tag className="h-4 w-4 mr-1.5" />
                 Προσφορές
               </TabsTrigger>
-              <TabsTrigger value="settings" className="flex-1 font-heading">
+              <TabsTrigger value="automation" className="flex-1 min-w-[90px] font-heading">
+                <Zap className="h-4 w-4 mr-1.5" />
+                Auto
+              </TabsTrigger>
+              <TabsTrigger value="settings" className="flex-1 min-w-[90px] font-heading">
                 <Settings className="h-4 w-4 mr-1.5" />
                 Ρυθμίσεις
               </TabsTrigger>
@@ -165,12 +182,20 @@ export default function StoreApp() {
                   </div>
                 </div>
               ) : (
-                <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} />
+                <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} storeName={store.name} />
               )}
             </TabsContent>
 
             <TabsContent value="menu">
               <MenuControl storeId={store.id} />
+            </TabsContent>
+
+            <TabsContent value="inventory">
+              <InventoryControl storeId={store.id} />
+            </TabsContent>
+
+            <TabsContent value="hours">
+              <StoreHoursManager storeId={store.id} />
             </TabsContent>
 
             <TabsContent value="analytics">
@@ -179,6 +204,10 @@ export default function StoreApp() {
 
             <TabsContent value="promos">
               <PromoManager storeId={store.id} />
+            </TabsContent>
+
+            <TabsContent value="automation">
+              <AutoAcceptRules storeId={store.id} />
             </TabsContent>
 
             <TabsContent value="settings">

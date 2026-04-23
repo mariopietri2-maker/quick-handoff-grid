@@ -11,7 +11,11 @@ import { DriverWallet } from '@/components/driver/DriverWallet';
 import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
+import DriverBreakButton from '@/components/driver/DriverBreakButton';
+import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
+import CashTracker from '@/components/driver/CashTracker';
 import { useDriverOrders } from '@/hooks/useOrders';
+import { useDriverState } from '@/hooks/useDriverState';
 import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +30,8 @@ type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
+  const { state: driverState } = useDriverState();
+  const onBreak = !!driverState?.on_break;
   // Drivers always start OFFLINE — must opt-in each session
   const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
@@ -179,7 +185,8 @@ export default function DriverApp() {
                   </div>
                   <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
                 </div>
-                <div className="shrink-0 pointer-events-auto">
+                <div className="shrink-0 pointer-events-auto flex items-center gap-2">
+                  {!activeDelivery && <DriverBreakButton />}
                   <DriverSupportButton orderId={activeDelivery?.id} />
                 </div>
               </div>
@@ -228,6 +235,12 @@ export default function DriverApp() {
                 <>
                   <AnnouncementsBanner audience="drivers" />
 
+                  {/* On-break banner */}
+                  {onBreak && (
+                    <div className="px-3 py-2.5 rounded-xl bg-warning/15 border border-warning/30 driver-glass flex items-center gap-2">
+                      <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
+                    </div>
+                  )}
                   {/* Inline Navigation Panel preview */}
                   {routeInfo && navigatingTo && (
                     <NavigationPanel
@@ -277,7 +290,7 @@ export default function DriverApp() {
                   )}
 
               {/* Order offer cards */}
-              {!activeDelivery && isOnline && !loading && offers.length > 0 && (
+              {!activeDelivery && isOnline && !onBreak && !loading && offers.length > 0 && (
                 <div className="space-y-3 animate-slide-up">
                   <div className="flex items-center justify-between px-1">
                     <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
@@ -383,7 +396,11 @@ export default function DriverApp() {
           </header>
           <div key={activeTab} className="flex-1 overflow-y-auto pb-6 animate-fade-in">
             {activeTab === 'earnings' && (
-              <div className="px-4 py-4"><EarningsDashboard /></div>
+              <div className="px-4 py-4 space-y-4">
+                <DriverGoalsCard />
+                <CashTracker />
+                <EarningsDashboard />
+              </div>
             )}
             {activeTab === 'wallet' && (
               <div className="px-4 py-4"><DriverWallet /></div>
