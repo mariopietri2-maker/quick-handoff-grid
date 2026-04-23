@@ -333,32 +333,29 @@ export function TeamChat() {
                       </span>
                     </div>
                   )}
-                  <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.message}</p>
+                  {m.attachment_url && (
+                    <div className={m.message ? 'mb-1' : ''}>
+                      <ChatAttachment url={m.attachment_url} type={m.attachment_type} />
+                    </div>
+                  )}
+                  {m.message && (
+                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.message}</p>
+                  )}
                 </div>
               );
             })
           )}
         </div>
 
-        <div className="border-t p-2.5 flex gap-2 items-end">
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder={activeChannel ? `Μήνυμα στο #${activeChannel.name}` : 'Επίλεξε κανάλι'}
-            rows={1}
-            className="resize-none min-h-[40px] max-h-32"
-            disabled={!activeChannel}
-          />
-          <Button onClick={send} disabled={sending || !draft.trim() || !activeChannel} size="icon" className="h-10 w-10 shrink-0">
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
+        <ChatComposer
+          onSend={send}
+          draft={draft}
+          onDraftChange={setDraft}
+          uploadFolder="team"
+          disabled={!activeChannel}
+          placeholder={activeChannel ? `Μήνυμα στο #${activeChannel.name}` : 'Επίλεξε κανάλι'}
+          rows={1}
+        />
       </div>
 
       {/* Roster */}
