@@ -225,7 +225,14 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
                       : 'bg-muted text-foreground rounded-bl-sm'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
+                  {m.attachment_url && (
+                    <div className={m.message ? 'mb-1.5' : ''}>
+                      <ChatAttachment url={m.attachment_url} type={m.attachment_type} />
+                    </div>
+                  )}
+                  {m.message && (
+                    <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
+                  )}
                   <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                     {m.sender_role === 'driver' ? 'Οδηγός' : isAgentMsg ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη') : m.sender_role}
                     {' · '}
@@ -237,24 +244,13 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
           })
         )}
       </div>
-      <div className="border-t p-3 flex gap-2 items-end">
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          placeholder="Γράψτε ένα μήνυμα..."
-          rows={2}
-          className="resize-none"
-        />
-        <Button onClick={send} disabled={sending || !text.trim()} size="icon" className="h-10 w-10 shrink-0">
-          {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </Button>
-      </div>
+      <ChatComposer
+        onSend={send}
+        draft={text}
+        onDraftChange={setText}
+        uploadFolder="tickets"
+        placeholder="Γράψτε ένα μήνυμα..."
+      />
     </div>
   );
 });
