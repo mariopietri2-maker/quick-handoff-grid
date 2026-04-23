@@ -203,33 +203,33 @@ export function TeamChat() {
     [agents, presence]
   );
 
-  const send = async () => {
-    if (!draft.trim() || !user || !activeChannel) return;
-    setSending(true);
+  const send = async (msgText: string, attachment: ComposerAttachment | null) => {
+    if ((!msgText.trim() && !attachment) || !user || !activeChannel) return;
     const senderRole = isAdmin ? 'admin' : profile?.role ?? 'support';
     const optimistic: TeamMessage = {
       id: crypto.randomUUID(),
       channel_id: activeChannel.id,
       sender_id: user.id,
       sender_role: senderRole,
-      message: draft.trim(),
+      message: msgText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
-    const text = draft.trim();
-    setDraft('');
 
     const { error } = await supabase.from('support_team_messages').insert({
       channel_id: activeChannel.id,
       sender_id: user.id,
       sender_role: senderRole,
-      message: text,
-    });
+      message: msgText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+    } as any);
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       toast.error('Αποτυχία αποστολής');
     }
-    setSending(false);
   };
 
   const createChannel = async () => {
