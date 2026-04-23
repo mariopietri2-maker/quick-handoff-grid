@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useMenuItems } from '@/hooks/useMenuItems';
+import ItemModifiersEditor from './ItemModifiersEditor';
 
 interface MenuControlProps {
   storeId: string;
@@ -133,7 +134,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
                         <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-2">
                       {item.is_available && (
                         <button
                           onClick={() => toggleSnooze(item.id)}
@@ -147,6 +148,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
                           <Moon className="h-4 w-4" />
                         </button>
                       )}
+                      <ItemModifiersEditor menuItemId={item.id} itemName={item.name} />
                       <Switch
                         checked={item.is_available ?? true}
                         onCheckedChange={() => toggleAvailable(item.id)}
