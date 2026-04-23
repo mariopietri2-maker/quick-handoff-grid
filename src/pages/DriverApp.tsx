@@ -11,7 +11,11 @@ import { DriverWallet } from '@/components/driver/DriverWallet';
 import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
+import DriverBreakButton from '@/components/driver/DriverBreakButton';
+import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
+import CashTracker from '@/components/driver/CashTracker';
 import { useDriverOrders } from '@/hooks/useOrders';
+import { useDriverState } from '@/hooks/useDriverState';
 import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
@@ -26,6 +30,8 @@ type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
   const { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus } = useDriverOrders();
+  const { state: driverState } = useDriverState();
+  const onBreak = !!driverState?.on_break;
   // Drivers always start OFFLINE — must opt-in each session
   const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
