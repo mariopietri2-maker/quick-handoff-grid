@@ -150,34 +150,34 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
     ? 'bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-400'
     : 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-400 animate-pulse';
 
-  const send = async () => {
-    if (!text.trim() || !user) return;
-    setSending(true);
+  const send = async (messageText: string, attachment: ComposerAttachment | null) => {
+    if ((!messageText.trim() && !attachment) || !user) return;
     const senderRole = isAdmin ? 'admin' : profile?.role === 'support' ? 'support' : 'driver';
     const optimistic: Message = {
       id: crypto.randomUUID(),
       ticket_id: ticketId,
       sender_id: user.id,
       sender_role: senderRole,
-      message: text.trim(),
+      message: messageText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
-    const messageText = text.trim();
-    setText('');
 
     const { error } = await supabase.from('ticket_messages').insert({
       ticket_id: ticketId,
       sender_id: user.id,
       sender_role: senderRole,
-      message: messageText,
-    });
+      message: messageText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+    } as any);
 
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       toast.error('Αποτυχία αποστολής');
     }
-    setSending(false);
   };
 
   const timerLabel = waitingOn
