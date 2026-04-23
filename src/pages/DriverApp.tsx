@@ -235,6 +235,12 @@ export default function DriverApp() {
                 <>
                   <AnnouncementsBanner audience="drivers" />
 
+                  {/* On-break banner */}
+                  {onBreak && (
+                    <div className="px-3 py-2.5 rounded-xl bg-warning/15 border border-warning/30 driver-glass flex items-center gap-2">
+                      <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
+                    </div>
+                  )}
                   {/* Inline Navigation Panel preview */}
                   {routeInfo && navigatingTo && (
                     <NavigationPanel
@@ -390,7 +396,11 @@ export default function DriverApp() {
           </header>
           <div key={activeTab} className="flex-1 overflow-y-auto pb-6 animate-fade-in">
             {activeTab === 'earnings' && (
-              <div className="px-4 py-4"><EarningsDashboard /></div>
+              <div className="px-4 py-4 space-y-4">
+                <DriverGoalsCard />
+                <CashTracker />
+                <EarningsDashboard />
+              </div>
             )}
             {activeTab === 'wallet' && (
               <div className="px-4 py-4"><DriverWallet /></div>
