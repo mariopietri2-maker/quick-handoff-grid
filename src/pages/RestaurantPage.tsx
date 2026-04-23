@@ -7,6 +7,8 @@ import { useCart } from '@/hooks/useCart';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { ReviewList, RatingBadge } from '@/components/ReviewList';
+import { FavoriteButton } from '@/components/customer/FavoriteButton';
+import GroupOrderShare from '@/components/customer/GroupOrderShare';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
@@ -150,9 +152,12 @@ export default function RestaurantPage() {
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <button className="absolute top-4 right-4 h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
-          <Share2 className="h-5 w-5 text-foreground" />
-        </button>
+        <div className="absolute top-4 right-4 flex items-center gap-2">
+          <FavoriteButton storeId={store.id} size="md" />
+          <button className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
+            <Share2 className="h-5 w-5 text-foreground" />
+          </button>
+        </div>
       </div>
 
       {/* Store Info */}
@@ -178,6 +183,9 @@ export default function RestaurantPage() {
             Πολυάσχολο — αυξημένοι χρόνοι παράδοσης
           </div>
         )}
+        <div className="mt-3">
+          <GroupOrderShare storeId={store.id} />
+        </div>
       </div>
 
       {/* Category Tabs (sticky) */}
