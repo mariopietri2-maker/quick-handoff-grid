@@ -290,7 +290,7 @@ export default function DriverApp() {
                   )}
 
               {/* Order offer cards */}
-              {!activeDelivery && isOnline && !loading && offers.length > 0 && (
+              {!activeDelivery && isOnline && !onBreak && !loading && offers.length > 0 && (
                 <div className="space-y-3 animate-slide-up">
                   <div className="flex items-center justify-between px-1">
                     <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
