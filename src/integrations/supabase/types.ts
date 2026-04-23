@@ -1528,26 +1528,32 @@ export type Database = {
       }
       support_team_messages: {
         Row: {
+          attachment_type: string | null
+          attachment_url: string | null
           channel_id: string
           created_at: string
           id: string
-          message: string
+          message: string | null
           sender_id: string
           sender_role: string
         }
         Insert: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_id: string
           created_at?: string
           id?: string
-          message: string
+          message?: string | null
           sender_id: string
           sender_role?: string
         }
         Update: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           channel_id?: string
           created_at?: string
           id?: string
-          message?: string
+          message?: string | null
           sender_id?: string
           sender_role?: string
         }
@@ -1664,25 +1670,31 @@ export type Database = {
       }
       ticket_messages: {
         Row: {
+          attachment_type: string | null
+          attachment_url: string | null
           created_at: string
           id: string
-          message: string
+          message: string | null
           sender_id: string
           sender_role: string
           ticket_id: string
         }
         Insert: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           created_at?: string
           id?: string
-          message: string
+          message?: string | null
           sender_id: string
           sender_role: string
           ticket_id: string
         }
         Update: {
+          attachment_type?: string | null
+          attachment_url?: string | null
           created_at?: string
           id?: string
-          message?: string
+          message?: string | null
           sender_id?: string
           sender_role?: string
           ticket_id?: string

@@ -3,11 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Hash, Send, Loader2, Plus, Users, Circle, MessageCircle, Megaphone, Flame } from 'lucide-react';
+import { Hash, Loader2, Plus, Users, Circle, MessageCircle, Megaphone, Flame } from 'lucide-react';
 import { format, isToday, isYesterday } from 'date-fns';
 import { toast } from 'sonner';
+import { ChatComposer, type ComposerAttachment } from '@/components/chat/ChatComposer';
+import { ChatAttachment } from '@/components/chat/ChatAttachment';
 
 interface Channel {
   id: string;
@@ -22,7 +23,9 @@ interface TeamMessage {
   channel_id: string;
   sender_id: string;
   sender_role: string;
-  message: string;
+  message: string | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
   created_at: string;
 }
 
@@ -200,33 +203,33 @@ export function TeamChat() {
     [agents, presence]
   );
 
-  const send = async () => {
-    if (!draft.trim() || !user || !activeChannel) return;
-    setSending(true);
+  const send = async (msgText: string, attachment: ComposerAttachment | null) => {
+    if ((!msgText.trim() && !attachment) || !user || !activeChannel) return;
     const senderRole = isAdmin ? 'admin' : profile?.role ?? 'support';
     const optimistic: TeamMessage = {
       id: crypto.randomUUID(),
       channel_id: activeChannel.id,
       sender_id: user.id,
       sender_role: senderRole,
-      message: draft.trim(),
+      message: msgText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
-    const text = draft.trim();
-    setDraft('');
 
     const { error } = await supabase.from('support_team_messages').insert({
       channel_id: activeChannel.id,
       sender_id: user.id,
       sender_role: senderRole,
-      message: text,
-    });
+      message: msgText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+    } as any);
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       toast.error('Αποτυχία αποστολής');
     }
-    setSending(false);
   };
 
   const createChannel = async () => {
@@ -330,32 +333,29 @@ export function TeamChat() {
                       </span>
                     </div>
                   )}
-                  <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.message}</p>
+                  {m.attachment_url && (
+                    <div className={m.message ? 'mb-1' : ''}>
+                      <ChatAttachment url={m.attachment_url} type={m.attachment_type} />
+                    </div>
+                  )}
+                  {m.message && (
+                    <p className="text-sm whitespace-pre-wrap break-words leading-relaxed">{m.message}</p>
+                  )}
                 </div>
               );
             })
           )}
         </div>
 
-        <div className="border-t p-2.5 flex gap-2 items-end">
-          <Textarea
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' && !e.shiftKey) {
-                e.preventDefault();
-                send();
-              }
-            }}
-            placeholder={activeChannel ? `Μήνυμα στο #${activeChannel.name}` : 'Επίλεξε κανάλι'}
-            rows={1}
-            className="resize-none min-h-[40px] max-h-32"
-            disabled={!activeChannel}
-          />
-          <Button onClick={send} disabled={sending || !draft.trim() || !activeChannel} size="icon" className="h-10 w-10 shrink-0">
-            {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-          </Button>
-        </div>
+        <ChatComposer
+          onSend={send}
+          draft={draft}
+          onDraftChange={setDraft}
+          uploadFolder="team"
+          disabled={!activeChannel}
+          placeholder={activeChannel ? `Μήνυμα στο #${activeChannel.name}` : 'Επίλεξε κανάλι'}
+          rows={1}
+        />
       </div>
 
       {/* Roster */}

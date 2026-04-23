@@ -1,19 +1,21 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Send, Loader2, Timer, AlarmClock } from 'lucide-react';
+import { Loader2, Timer, AlarmClock } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
 import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
+import { ChatComposer, type ComposerAttachment } from '@/components/chat/ChatComposer';
+import { ChatAttachment } from '@/components/chat/ChatAttachment';
 
 interface Message {
   id: string;
   ticket_id: string;
   sender_id: string;
   sender_role: string;
-  message: string;
+  message: string | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
   created_at: string;
 }
 
@@ -148,34 +150,34 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
     ? 'bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-400'
     : 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-400 animate-pulse';
 
-  const send = async () => {
-    if (!text.trim() || !user) return;
-    setSending(true);
+  const send = async (messageText: string, attachment: ComposerAttachment | null) => {
+    if ((!messageText.trim() && !attachment) || !user) return;
     const senderRole = isAdmin ? 'admin' : profile?.role === 'support' ? 'support' : 'driver';
     const optimistic: Message = {
       id: crypto.randomUUID(),
       ticket_id: ticketId,
       sender_id: user.id,
       sender_role: senderRole,
-      message: text.trim(),
+      message: messageText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
-    const messageText = text.trim();
-    setText('');
 
     const { error } = await supabase.from('ticket_messages').insert({
       ticket_id: ticketId,
       sender_id: user.id,
       sender_role: senderRole,
-      message: messageText,
-    });
+      message: messageText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+    } as any);
 
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
       toast.error('Αποτυχία αποστολής');
     }
-    setSending(false);
   };
 
   const timerLabel = waitingOn
@@ -223,7 +225,14 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
                       : 'bg-muted text-foreground rounded-bl-sm'
                   }`}
                 >
-                  <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
+                  {m.attachment_url && (
+                    <div className={m.message ? 'mb-1.5' : ''}>
+                      <ChatAttachment url={m.attachment_url} type={m.attachment_type} />
+                    </div>
+                  )}
+                  {m.message && (
+                    <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
+                  )}
                   <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
                     {m.sender_role === 'driver' ? 'Οδηγός' : isAgentMsg ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη') : m.sender_role}
                     {' · '}
@@ -235,24 +244,13 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
           })
         )}
       </div>
-      <div className="border-t p-3 flex gap-2 items-end">
-        <Textarea
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              send();
-            }
-          }}
-          placeholder="Γράψτε ένα μήνυμα..."
-          rows={2}
-          className="resize-none"
-        />
-        <Button onClick={send} disabled={sending || !text.trim()} size="icon" className="h-10 w-10 shrink-0">
-          {sending ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-        </Button>
-      </div>
+      <ChatComposer
+        onSend={send}
+        draft={text}
+        onDraftChange={setText}
+        uploadFolder="tickets"
+        placeholder="Γράψτε ένα μήνυμα..."
+      />
     </div>
   );
 });
