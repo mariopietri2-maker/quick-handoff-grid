@@ -18,6 +18,9 @@ interface ChatComposerProps {
   rows?: number;
   /** Sub-folder under user-id for uploaded images, e.g. "tickets" or "team" */
   uploadFolder?: string;
+  /** Optional controlled draft text (for canned replies, etc.) */
+  draft?: string;
+  onDraftChange?: (text: string) => void;
 }
 
 // Built-in trending pack (Tenor public CDN — these are stable category feeds)
@@ -43,9 +46,17 @@ export function ChatComposer({
   placeholder = 'Γράψτε ένα μήνυμα...',
   rows = 2,
   uploadFolder = 'misc',
+  draft,
+  onDraftChange,
 }: ChatComposerProps) {
   const { user } = useAuth();
-  const [text, setText] = useState('');
+  const [internalText, setInternalText] = useState('');
+  const text = draft !== undefined ? draft : internalText;
+  const setText = (v: string | ((p: string) => string)) => {
+    const next = typeof v === 'function' ? (v as (p: string) => string)(text) : v;
+    if (onDraftChange) onDraftChange(next);
+    if (draft === undefined) setInternalText(next);
+  };
   const [attachment, setAttachment] = useState<ComposerAttachment | null>(null);
   const [sending, setSending] = useState(false);
   const [uploading, setUploading] = useState(false);
