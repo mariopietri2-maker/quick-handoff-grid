@@ -1,19 +1,21 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Send, Loader2, Timer, AlarmClock } from 'lucide-react';
+import { Loader2, Timer, AlarmClock } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
 import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
+import { ChatComposer, type ComposerAttachment } from '@/components/chat/ChatComposer';
+import { ChatAttachment } from '@/components/chat/ChatAttachment';
 
 interface Message {
   id: string;
   ticket_id: string;
   sender_id: string;
   sender_role: string;
-  message: string;
+  message: string | null;
+  attachment_url?: string | null;
+  attachment_type?: string | null;
   created_at: string;
 }
 
