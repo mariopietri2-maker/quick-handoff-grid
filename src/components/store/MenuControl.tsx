@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Moon, X, Search, Plus } from 'lucide-react';
+import { Moon, X, Search, Plus, CheckSquare, Square } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
+import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useMenuItems } from '@/hooks/useMenuItems';
@@ -15,10 +16,30 @@ interface MenuControlProps {
 }
 
 export function MenuControl({ storeId }: MenuControlProps) {
-  const { items, loading, toggleAvailable, toggleSnooze, addItem } = useMenuItems(storeId);
+  const { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem } = useMenuItems(storeId);
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newItem, setNewItem] = useState({ name: '', price: '', category: '', description: '' });
+
+  const toggleSelected = (id: string) => {
+    setSelectedIds(prev => {
+      const next = new Set(prev);
+      next.has(id) ? next.delete(id) : next.add(id);
+      return next;
+    });
+  };
+
+  const exitSelectMode = () => {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  };
+
+  const runBulk = async (fn: () => Promise<void>) => {
+    await fn();
+    exitSelectMode();
+  };
 
   const handleAdd = async () => {
     if (!newItem.name || !newItem.price || !newItem.category) return;
@@ -60,6 +81,14 @@ export function MenuControl({ storeId }: MenuControlProps) {
             className="pl-10"
           />
         </div>
+        <Button
+          variant={selectMode ? 'default' : 'outline'}
+          onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
+          className="font-heading"
+        >
+          {selectMode ? <CheckSquare className="h-4 w-4 mr-1" /> : <Square className="h-4 w-4 mr-1" />}
+          {selectMode ? 'Άκυρο' : 'Επιλογή'}
+        </Button>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
             <Button className="gradient-primary text-primary-foreground shadow-primary">
