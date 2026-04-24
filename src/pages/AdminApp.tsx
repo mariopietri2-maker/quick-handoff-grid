@@ -177,10 +177,42 @@ export default function AdminApp() {
                 <p className="text-sm font-semibold text-destructive">Επαναφορά πλατφόρμας</p>
                 <p className="text-[11px] text-muted-foreground">Διαγράφει όλες τις παραγγελίες, μενού, κριτικές, tickets και μηδενίζει πορτοφόλια & πόντους.</p>
               </div>
-              <Button variant="destructive" size="sm" disabled={wiping} onClick={handleWipeAll}>
+              <Button variant="destructive" size="sm" disabled={wiping} onClick={() => { setWipeConfirmText(''); setWipeDialogOpen(true); }}>
                 {wiping ? 'Διαγραφή…' : 'Reset All Data'}
               </Button>
             </div>
+            <AlertDialog open={wipeDialogOpen} onOpenChange={(o) => { setWipeDialogOpen(o); if (!o) setWipeConfirmText(''); }}>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
+                    <AlertTriangle className="h-5 w-5" /> Επαναφορά όλων των δεδομένων
+                  </AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Θα διαγραφούν <strong>ΟΛΕΣ</strong> οι παραγγελίες, μενού, κριτικές, ανακοινώσεις, tickets, συναλλαγές
+                    και θα μηδενιστούν όλα τα πορτοφόλια & πόντοι. Η ενέργεια <strong>δεν αναιρείται</strong>.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <div className="space-y-2">
+                  <p className="text-sm">Πληκτρολόγησε <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-destructive">RESET</code> για επιβεβαίωση:</p>
+                  <Input
+                    value={wipeConfirmText}
+                    onChange={(e) => setWipeConfirmText(e.target.value)}
+                    placeholder="RESET"
+                    autoFocus
+                  />
+                </div>
+                <AlertDialogFooter>
+                  <AlertDialogCancel disabled={wiping}>Ακύρωση</AlertDialogCancel>
+                  <AlertDialogAction
+                    disabled={wiping || wipeConfirmText !== 'RESET'}
+                    onClick={(e) => { e.preventDefault(); handleWipeAll(); }}
+                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  >
+                    {wiping ? 'Διαγραφή…' : 'Διαγραφή όλων'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
             <LiveOpsKPI />
             <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
           </div>
