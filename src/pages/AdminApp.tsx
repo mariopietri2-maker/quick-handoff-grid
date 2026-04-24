@@ -113,6 +113,13 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
   };
 
+  const handleResetDriverCash = async (userId: string, driverName: string) => {
+    if (!confirm(`Μηδενισμός ταμείου βάρδιας για ${driverName};`)) return;
+    const { error } = await (supabase.rpc as any)('admin_reset_driver_cash', { p_driver_id: userId });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success('Ταμείο μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-states'] }); }
+  };
+
 
 
 
