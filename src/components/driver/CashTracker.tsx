@@ -1,24 +1,46 @@
 import { useState } from 'react';
-import { Banknote, Plus, RotateCcw } from 'lucide-react';
+import { Banknote, Plus, Minus, RotateCcw, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { useDriverState } from '@/hooks/useDriverState';
 
+type Mode = 'add' | 'subtract' | 'set';
+
 export default function CashTracker() {
-  const { state, addCash, resetCash } = useDriverState();
-  const [addOpen, setAddOpen] = useState(false);
+  const { state, addCash, update, resetCash } = useDriverState();
+  const [open, setOpen] = useState(false);
+  const [mode, setMode] = useState<Mode>('add');
   const [amount, setAmount] = useState('');
 
   if (!state) return null;
 
-  const submitAdd = async () => {
-    const v = Number(amount);
-    if (v > 0) await addCash(v);
-    setAmount('');
-    setAddOpen(false);
+  const openWith = (m: Mode) => {
+    setMode(m);
+    setAmount(m === 'set' ? Number(state.shift_cash_balance).toFixed(2) : '');
+    setOpen(true);
   };
+
+  const submit = async () => {
+    const v = Number(amount);
+    if (isNaN(v)) { setOpen(false); return; }
+    if (mode === 'add' && v > 0) {
+      await addCash(v);
+    } else if (mode === 'subtract' && v > 0) {
+      const next = Math.max(0, Number(state.shift_cash_balance) - v);
+      await update({ shift_cash_balance: next });
+    } else if (mode === 'set' && v >= 0) {
+      await update({ shift_cash_balance: v });
+    }
+    setAmount('');
+    setOpen(false);
+  };
+
+  const title =
+    mode === 'add' ? 'Παραλαβή μετρητών' :
+    mode === 'subtract' ? 'Αφαίρεση μετρητών' :
+    'Διόρθωση ποσού';
 
   return (
     <>
@@ -33,31 +55,46 @@ export default function CashTracker() {
               <RotateCcw className="h-4 w-4" />
             </Button>
           </div>
-          <div className="text-3xl font-heading font-extrabold text-foreground">
+          <button
+            onClick={() => openWith('set')}
+            className="text-3xl font-heading font-extrabold text-foreground flex items-center gap-2 hover:opacity-80 transition-opacity"
+            title="Πάτησε για διόρθωση"
+          >
             €{Number(state.shift_cash_balance).toFixed(2)}
-          </div>
+            <Pencil className="h-4 w-4 text-muted-foreground" />
+          </button>
           <p className="text-xs text-muted-foreground">
-            Σύνολο μετρητών που έχετε εισπράξει σε αυτή τη βάρδια.
+            Σύνολο μετρητών που έχετε εισπράξει σε αυτή τη βάρδια. Πάτησε το ποσό για διόρθωση.
           </p>
-          <Button onClick={() => setAddOpen(true)} className="w-full" variant="outline">
-            <Plus className="h-4 w-4 mr-1.5" /> Προσθήκη μετρητών
-          </Button>
+          <div className="grid grid-cols-2 gap-2">
+            <Button onClick={() => openWith('add')} variant="outline">
+              <Plus className="h-4 w-4 mr-1.5" /> Προσθήκη
+            </Button>
+            <Button onClick={() => openWith('subtract')} variant="outline">
+              <Minus className="h-4 w-4 mr-1.5" /> Αφαίρεση
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
-      <Dialog open={addOpen} onOpenChange={setAddOpen}>
+      <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xs">
           <DialogHeader>
-            <DialogTitle>Παραλαβή μετρητών</DialogTitle>
+            <DialogTitle>{title}</DialogTitle>
           </DialogHeader>
           <Input
             type="number"
+            inputMode="decimal"
+            step="0.01"
             placeholder="Ποσό σε €"
             value={amount}
             onChange={e => setAmount(e.target.value)}
             autoFocus
           />
-          <Button onClick={submitAdd}>Προσθήκη</Button>
+          <DialogFooter className="gap-2 sm:gap-2">
+            <Button variant="ghost" onClick={() => setOpen(false)}>Άκυρο</Button>
+            <Button onClick={submit}>Αποθήκευση</Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </>
