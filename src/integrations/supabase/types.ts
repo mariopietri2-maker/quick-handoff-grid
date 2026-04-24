@@ -209,6 +209,39 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_referrals: {
+        Row: {
+          completed_at: string | null
+          created_at: string
+          id: string
+          referral_code: string
+          referred_id: string | null
+          referrer_id: string
+          reward_amount: number
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code: string
+          referred_id?: string | null
+          referrer_id: string
+          reward_amount?: number
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          created_at?: string
+          id?: string
+          referral_code?: string
+          referred_id?: string | null
+          referrer_id?: string
+          reward_amount?: number
+          status?: string
+        }
+        Relationships: []
+      }
       customer_rewards: {
         Row: {
           created_at: string
@@ -234,6 +267,71 @@ export type Database = {
           lifetime_points?: number
           points?: number
           tier?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
+      customer_wallet_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          description: string | null
+          id: string
+          order_id: string | null
+          type: string
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type: string
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_wallet_ledger_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      customer_wallets: {
+        Row: {
+          balance: number
+          created_at: string
+          id: string
+          lifetime_credit: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          balance?: number
+          created_at?: string
+          id?: string
+          lifetime_credit?: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          balance?: number
+          created_at?: string
+          id?: string
+          lifetime_credit?: number
           updated_at?: string
           user_id?: string
         }
@@ -769,48 +867,66 @@ export type Database = {
       }
       menu_items: {
         Row: {
+          allergens: string[] | null
+          calories: number | null
           category: string | null
           created_at: string
           description: string | null
           id: string
           image_url: string | null
           is_available: boolean | null
+          is_gluten_free: boolean | null
           is_snoozed: boolean | null
+          is_vegan: boolean | null
+          is_vegetarian: boolean | null
           low_stock_threshold: number | null
           name: string
           price: number
+          spicy_level: number | null
           stock_count: number | null
           store_id: string
           track_inventory: boolean
           updated_at: string
         }
         Insert: {
+          allergens?: string[] | null
+          calories?: number | null
           category?: string | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
+          is_gluten_free?: boolean | null
           is_snoozed?: boolean | null
+          is_vegan?: boolean | null
+          is_vegetarian?: boolean | null
           low_stock_threshold?: number | null
           name: string
           price: number
+          spicy_level?: number | null
           stock_count?: number | null
           store_id: string
           track_inventory?: boolean
           updated_at?: string
         }
         Update: {
+          allergens?: string[] | null
+          calories?: number | null
           category?: string | null
           created_at?: string
           description?: string | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
+          is_gluten_free?: boolean | null
           is_snoozed?: boolean | null
+          is_vegan?: boolean | null
+          is_vegetarian?: boolean | null
           low_stock_threshold?: number | null
           name?: string
           price?: number
+          spicy_level?: number | null
           stock_count?: number | null
           store_id?: string
           track_inventory?: boolean
@@ -930,6 +1046,7 @@ export type Database = {
           refunded_amount: number
           scheduled_for: string | null
           source: string
+          stacked_with_order_id: string | null
           status: Database["public"]["Enums"]["order_status"]
           store_charge: number
           store_id: string
@@ -964,6 +1081,7 @@ export type Database = {
           refunded_amount?: number
           scheduled_for?: string | null
           source?: string
+          stacked_with_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_charge?: number
           store_id: string
@@ -998,6 +1116,7 @@ export type Database = {
           refunded_amount?: number
           scheduled_for?: string | null
           source?: string
+          stacked_with_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
           store_charge?: number
           store_id?: string
@@ -1006,6 +1125,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "orders_stacked_with_order_id_fkey"
+            columns: ["stacked_with_order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "orders_store_id_fkey"
             columns: ["store_id"]
@@ -1966,6 +2092,15 @@ export type Database = {
         }
         Returns: string
       }
+      credit_customer_wallet: {
+        Args: {
+          p_amount: number
+          p_description: string
+          p_type: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
       get_public_reviews: {
         Args: { p_store_id?: string }
         Returns: {
@@ -1997,6 +2132,10 @@ export type Database = {
           p_target_type?: string
         }
         Returns: undefined
+      }
+      redeem_wallet_credit: {
+        Args: { p_amount: number; p_order_id: string }
+        Returns: number
       }
       refund_order: {
         Args: {
