@@ -2,6 +2,7 @@ import { DollarSign, ShoppingBag, Clock, TrendingUp, Star, Package } from 'lucid
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { useStoreAnalytics } from '@/hooks/useStoreAnalytics';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
+import { StoreRefunds } from './StoreRefunds';
 
 interface StoreAnalyticsDashboardProps {
   storeId: string;
@@ -193,6 +194,8 @@ export function StoreAnalyticsDashboard({ storeId }: StoreAnalyticsDashboardProp
           )}
         </CardContent>
       </Card>
+
+      <StoreRefunds storeId={storeId} />
     </div>
   );
 }

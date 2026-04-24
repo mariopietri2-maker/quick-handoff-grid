@@ -31,11 +31,11 @@ export default function AdminPermissionsManager() {
     const [r, p, pp] = await Promise.all([
       supabase.from('user_roles').select('user_id, role').eq('role', 'admin'),
       supabase.from('profiles').select('user_id, full_name'),
-      (supabase.from as any)('admin_permissions').select('*'),
+      supabase.from('admin_permissions').select('*'),
     ]);
-    const adminIds = new Set((r.data ?? []).map((x: any) => x.user_id));
-    setAdmins(((p.data ?? []) as any).filter((x: any) => adminIds.has(x.user_id)));
-    setPerms((pp.data ?? []) as any);
+    const adminIds = new Set((r.data ?? []).map((x) => x.user_id));
+    setAdmins(((p.data ?? []) as Profile[]).filter((x) => adminIds.has(x.user_id)));
+    setPerms((pp.data ?? []) as Permission[]);
     setLoading(false);
   };
 
@@ -63,9 +63,9 @@ export default function AdminPermissionsManager() {
       can_view_audit: editing.can_view_audit,
       notes: editing.notes,
     };
-    const { error } = await (supabase.from as any)('admin_permissions').upsert(payload, { onConflict: 'user_id' });
+    const { error } = await supabase.from('admin_permissions').upsert(payload, { onConflict: 'user_id' });
     if (error) return toast.error(error.message);
-    await (supabase.rpc as any)('log_admin_action', {
+    await supabase.rpc('log_admin_action', {
       p_action: 'grant_permission',
       p_target_type: 'admin',
       p_target_id: editing.user_id,
@@ -78,7 +78,7 @@ export default function AdminPermissionsManager() {
 
   const remove = async (id: string) => {
     if (!confirm('Διαγραφή permissions;')) return;
-    const { error } = await (supabase.from as any)('admin_permissions').delete().eq('id', id);
+    const { error } = await supabase.from('admin_permissions').delete().eq('id', id);
     if (error) return toast.error(error.message);
     toast.success('Διαγράφηκε');
     load();
@@ -182,7 +182,7 @@ export default function AdminPermissionsManager() {
                 <div key={p.key} className="flex items-center justify-between gap-3">
                   <Label className="text-sm font-normal flex-1">{p.label}</Label>
                   <Switch
-                    checked={(editing as any)[p.key]}
+                    checked={editing[p.key as keyof Permission] as boolean}
                     onCheckedChange={(v) => setEditing(prev => prev && ({ ...prev, [p.key]: v }))}
                   />
                 </div>

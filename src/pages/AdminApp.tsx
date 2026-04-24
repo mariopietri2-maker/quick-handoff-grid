@@ -203,15 +203,15 @@ export default function AdminApp() {
         <AdminSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
       </div>
 
-      {/* Mobile sidebar overlay */}
-      {mobileMenuOpen && (
-        <div className="fixed inset-0 z-40 md:hidden">
-          <div className="absolute inset-0 bg-black/50" onClick={() => setMobileMenuOpen(false)} />
-          <div className="relative z-50">
-            <AdminSidebar activeSection={activeSection} onSectionChange={(s) => { setActiveSection(s); setMobileMenuOpen(false); }} />
-          </div>
-        </div>
-      )}
+      {/* Mobile Sidebar (Sheet drawer) */}
+      <div className="md:hidden">
+        <AdminSidebar
+          activeSection={activeSection}
+          onSectionChange={setActiveSection}
+          mobileOpen={mobileMenuOpen}
+          onMobileOpenChange={setMobileMenuOpen}
+        />
+      </div>
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
