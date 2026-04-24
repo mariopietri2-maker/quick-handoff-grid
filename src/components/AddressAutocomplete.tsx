@@ -3,23 +3,14 @@ import { MapPin, Loader2, X, Navigation, Crosshair } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { MapContainer, TileLayer, Marker, useMapEvents, useMap } from 'react-leaflet';
-import L from 'leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix default marker icon
-const defaultIcon = L.icon({
-  iconUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon.png',
-  iconRetinaUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-icon-2x.png',
-  shadowUrl: 'https://unpkg.com/leaflet@1.9.4/dist/images/marker-shadow.png',
-  iconSize: [25, 41],
-  iconAnchor: [12, 41],
-});
+import mapboxgl from 'mapbox-gl';
+import 'mapbox-gl/dist/mapbox-gl.css';
+import { useMapboxToken } from '@/hooks/useMapboxToken';
 
 interface AddressResult {
   display_name: string;
-  lat: string;
-  lon: string;
+  lat: number;
+  lon: number;
 }
 
 interface AddressAutocompleteProps {
@@ -29,22 +20,10 @@ interface AddressAutocompleteProps {
   maxLength?: number;
 }
 
-function MapClickHandler({ onMapClick }: { onMapClick: (lat: number, lon: number) => void }) {
-  useMapEvents({
-    click(e) {
-      onMapClick(e.latlng.lat, e.latlng.lng);
-    },
-  });
-  return null;
-}
-
-function FlyToPoint({ lat, lon }: { lat: number; lon: number }) {
-  const map = useMap();
-  useEffect(() => {
-    map.flyTo([lat, lon], 17, { duration: 1 });
-  }, [lat, lon, map]);
-  return null;
-}
+// Ioannina center
+const IOANNINA: [number, number] = [20.8537, 39.6650]; // [lng, lat]
+// Bias bbox around Ioannina region (minLng, minLat, maxLng, maxLat)
+const IOANNINA_BBOX = '20.7,39.55,20.95,39.75';
 
 export function AddressAutocomplete({
   value,
@@ -52,6 +31,7 @@ export function AddressAutocomplete({
   placeholder = 'Εισάγετε τη διεύθυνση παράδοσης',
   maxLength = 200,
 }: AddressAutocompleteProps) {
+  const { token, loading: tokenLoading } = useMapboxToken();
   const [query, setQuery] = useState(value);
   const [results, setResults] = useState<AddressResult[]>([]);
   const [loading, setLoading] = useState(false);
@@ -61,9 +41,12 @@ export function AddressAutocomplete({
   const [reverseLoading, setReverseLoading] = useState(false);
   const [noResults, setNoResults] = useState(false);
   const [gpsLoading, setGpsLoading] = useState(false);
-  const [flyTo, setFlyTo] = useState<{ lat: number; lon: number } | null>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
+
+  const mapContainer = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<mapboxgl.Map | null>(null);
+  const markerRef = useRef<mapboxgl.Marker | null>(null);
 
   useEffect(() => { setQuery(value); }, [value]);
 
@@ -78,7 +61,7 @@ export function AddressAutocomplete({
   }, []);
 
   const search = useCallback(async (q: string) => {
-    if (q.length < 3) {
+    if (q.length < 3 || !token) {
       setResults([]);
       setNoResults(false);
       return;
@@ -86,21 +69,25 @@ export function AddressAutocomplete({
     setLoading(true);
     setNoResults(false);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(q)}&limit=5&addressdetails=1&viewbox=20.7,39.55,20.95,39.75&bounded=1&countrycodes=gr`,
-        { headers: { 'Accept-Language': 'el' } }
-      );
-      const data: AddressResult[] = await res.json();
-      setResults(data);
-      setOpen(data.length > 0);
-      setNoResults(data.length === 0 && q.length >= 3);
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=5&bbox=${IOANNINA_BBOX}&proximity=${IOANNINA[0]},${IOANNINA[1]}&types=address,poi,place,locality,neighborhood`;
+      const res = await fetch(url);
+      const data = await res.json();
+      const features = (data.features ?? []) as Array<{ place_name: string; center: [number, number] }>;
+      const mapped: AddressResult[] = features.map(f => ({
+        display_name: f.place_name,
+        lon: f.center[0],
+        lat: f.center[1],
+      }));
+      setResults(mapped);
+      setOpen(mapped.length > 0);
+      setNoResults(mapped.length === 0 && q.length >= 3);
     } catch {
       setResults([]);
       setNoResults(true);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   const handleInput = (val: string) => {
     setQuery(val);
@@ -112,7 +99,7 @@ export function AddressAutocomplete({
 
   const selectResult = (r: AddressResult) => {
     setQuery(r.display_name);
-    onChange(r.display_name, parseFloat(r.lat), parseFloat(r.lon));
+    onChange(r.display_name, r.lat, r.lon);
     setOpen(false);
     setResults([]);
     setNoResults(false);
@@ -129,18 +116,17 @@ export function AddressAutocomplete({
     setMapPin(null);
   };
 
-  const handleMapClick = async (lat: number, lon: number) => {
-    setMapPin({ lat, lon });
+  const reverseGeocode = useCallback(async (lat: number, lon: number) => {
     setReverseLoading(true);
     try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=18&addressdetails=1`,
-        { headers: { 'Accept-Language': 'el' } }
-      );
+      if (!token) throw new Error('no token');
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${token}&language=el&limit=1`;
+      const res = await fetch(url);
       const data = await res.json();
-      if (data.display_name) {
-        setQuery(data.display_name);
-        onChange(data.display_name, lat, lon);
+      const name = data.features?.[0]?.place_name as string | undefined;
+      if (name) {
+        setQuery(name);
+        onChange(name, lat, lon);
       } else {
         const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
         setQuery(fallback);
@@ -153,6 +139,11 @@ export function AddressAutocomplete({
     } finally {
       setReverseLoading(false);
     }
+  }, [token, onChange]);
+
+  const handleMapClick = (lat: number, lon: number) => {
+    setMapPin({ lat, lon });
+    reverseGeocode(lat, lon);
   };
 
   const confirmMapPin = () => {
@@ -171,9 +162,8 @@ export function AddressAutocomplete({
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
         setMapPin({ lat, lon });
-        setFlyTo({ lat, lon });
         setShowMap(true);
-        handleMapClick(lat, lon);
+        reverseGeocode(lat, lon);
         setGpsLoading(false);
       },
       (err) => {
@@ -190,8 +180,45 @@ export function AddressAutocomplete({
     );
   };
 
-  // Ioannina center
-  const ioannina: [number, number] = [39.6650, 20.8537];
+  // Init map when shown
+  useEffect(() => {
+    if (!showMap || !token || !mapContainer.current || mapRef.current) return;
+    mapboxgl.accessToken = token;
+    const center: [number, number] = mapPin ? [mapPin.lon, mapPin.lat] : IOANNINA;
+    const map = new mapboxgl.Map({
+      container: mapContainer.current,
+      style: 'mapbox://styles/mapbox/streets-v12',
+      center,
+      zoom: 14,
+      attributionControl: false,
+    });
+    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+    map.on('click', (e) => {
+      handleMapClick(e.lngLat.lat, e.lngLat.lng);
+    });
+    mapRef.current = map;
+
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      markerRef.current = null;
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [showMap, token]);
+
+  // Update / create marker
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapPin) return;
+    if (markerRef.current) {
+      markerRef.current.setLngLat([mapPin.lon, mapPin.lat]);
+    } else {
+      markerRef.current = new mapboxgl.Marker({ color: 'hsl(var(--primary))' })
+        .setLngLat([mapPin.lon, mapPin.lat])
+        .addTo(map);
+    }
+    map.easeTo({ center: [mapPin.lon, mapPin.lat], zoom: Math.max(map.getZoom(), 16), duration: 800 });
+  }, [mapPin]);
 
   return (
     <div ref={containerRef} className="relative space-y-2">
@@ -205,7 +232,7 @@ export function AddressAutocomplete({
           className="pr-16"
         />
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
-          {loading && <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />}
+          {(loading || tokenLoading) && <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />}
           {query && !loading && (
             <button onClick={clear} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
               <X className="h-3 w-3 text-muted-foreground" />
@@ -229,27 +256,15 @@ export function AddressAutocomplete({
         </div>
       )}
 
-      {/* No results - show map option */}
       {noResults && !showMap && (
         <div className="bg-muted/50 rounded-lg p-3 text-center space-y-2">
           <p className="text-sm text-muted-foreground">Δεν βρέθηκε η διεύθυνση</p>
           <div className="flex justify-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setShowMap(true)}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={() => setShowMap(true)} className="gap-2">
               <Navigation className="h-4 w-4" />
               Σημειώστε στον χάρτη
             </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={locateGPS}
-              disabled={gpsLoading}
-              className="gap-2"
-            >
+            <Button variant="outline" size="sm" onClick={locateGPS} disabled={gpsLoading} className="gap-2">
               {gpsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
               Τοποθεσία GPS
             </Button>
@@ -257,7 +272,6 @@ export function AddressAutocomplete({
         </div>
       )}
 
-      {/* Always show "pin on map" and GPS buttons */}
       {!showMap && !noResults && (
         <div className="flex items-center gap-3">
           <button
@@ -280,38 +294,27 @@ export function AddressAutocomplete({
         </div>
       )}
 
-      {/* Map picker */}
       {showMap && (
         <div className="rounded-xl overflow-hidden border border-border space-y-2">
-          <div className="relative h-64">
-            <MapContainer
-              center={mapPin ? [mapPin.lat, mapPin.lon] : ioannina}
-              zoom={14}
-              className="h-full w-full z-0"
-              scrollWheelZoom={true}
-            >
-              <TileLayer
-                attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a>'
-                url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-              />
-              <MapClickHandler onMapClick={handleMapClick} />
-              {flyTo && <FlyToPoint lat={flyTo.lat} lon={flyTo.lon} />}
-              {mapPin && (
-                <Marker position={[mapPin.lat, mapPin.lon]} icon={defaultIcon} />
-              )}
-            </MapContainer>
-            {/* GPS button on map */}
+          <div className="relative h-64 bg-muted">
+            {tokenLoading || !token ? (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              </div>
+            ) : (
+              <div ref={mapContainer} className="absolute inset-0" />
+            )}
             <button
               type="button"
               onClick={locateGPS}
               disabled={gpsLoading}
-              className="absolute bottom-3 right-3 z-[1000] h-10 w-10 bg-card rounded-full shadow-md flex items-center justify-center border border-border hover:bg-accent transition-colors disabled:opacity-50"
+              className="absolute bottom-3 right-3 z-10 h-10 w-10 bg-card rounded-full shadow-md flex items-center justify-center border border-border hover:bg-accent transition-colors disabled:opacity-50"
               title="Η τοποθεσία μου"
             >
               {gpsLoading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Crosshair className="h-5 w-5 text-primary" />}
             </button>
             {reverseLoading && (
-              <div className="absolute top-2 right-2 z-[1000] bg-card/90 rounded-full p-1.5 shadow">
+              <div className="absolute top-2 right-2 z-10 bg-card/90 rounded-full p-1.5 shadow">
                 <Loader2 className="h-4 w-4 animate-spin text-primary" />
               </div>
             )}
@@ -320,20 +323,11 @@ export function AddressAutocomplete({
             <p className="text-xs text-muted-foreground flex-1">
               {mapPin ? 'Πατήστε ξανά για αλλαγή τοποθεσίας' : 'Πατήστε στον χάρτη για να ορίσετε τοποθεσία'}
             </p>
-            <Button
-              size="sm"
-              disabled={!mapPin}
-              onClick={confirmMapPin}
-              className="gap-1.5"
-            >
+            <Button size="sm" disabled={!mapPin} onClick={confirmMapPin} className="gap-1.5">
               <MapPin className="h-3.5 w-3.5" />
               Επιβεβαίωση
             </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={() => setShowMap(false)}
-            >
+            <Button size="sm" variant="ghost" onClick={() => setShowMap(false)}>
               Ακύρωση
             </Button>
           </div>
