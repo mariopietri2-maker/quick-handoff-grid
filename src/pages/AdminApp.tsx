@@ -42,14 +42,14 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
 
 const statusColors: Record<string, string> = {
-  pending: 'bg-yellow-500/10 text-yellow-600 border-yellow-500/20',
-  placed: 'bg-blue-500/10 text-blue-600 border-blue-500/20',
-  accepted: 'bg-indigo-500/10 text-indigo-600 border-indigo-500/20',
-  preparing: 'bg-orange-500/10 text-orange-600 border-orange-500/20',
-  ready: 'bg-emerald-500/10 text-emerald-600 border-emerald-500/20',
-  picked_up: 'bg-purple-500/10 text-purple-600 border-purple-500/20',
-  delivered: 'bg-green-500/10 text-green-600 border-green-500/20',
-  cancelled: 'bg-red-500/10 text-red-600 border-red-500/20',
+  pending:   'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30',
+  placed:    'bg-blue-500/10 text-blue-700 dark:text-blue-400 border-blue-500/30',
+  accepted:  'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/30',
+  preparing: 'bg-orange-500/10 text-orange-700 dark:text-orange-400 border-orange-500/30',
+  ready:     'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/30',
+  picked_up: 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/30',
+  delivered: 'bg-green-500/10 text-green-700 dark:text-green-400 border-green-500/30',
+  cancelled: 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30',
 };
 
 const statusLabelsEl: Record<string, string> = {
@@ -195,7 +195,7 @@ export default function AdminApp() {
   };
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="admin-shell min-h-screen bg-muted/30 flex">
       {/* Desktop Sidebar */}
       <div className="hidden md:block">
         <AdminSidebar activeSection={activeSection} onSectionChange={setActiveSection} />
@@ -213,36 +213,37 @@ export default function AdminApp() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar */}
-        <header className="h-16 border-b border-border bg-card flex items-center justify-between px-4 lg:px-6 shrink-0 sticky top-0 z-20">
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="md:hidden" onClick={() => setMobileMenuOpen(true)}>
-              <Menu className="h-5 w-5" />
+        {/* Top Bar — slim, monospaced search, command-palette feel */}
+        <header className="h-12 border-b border-border bg-card/80 backdrop-blur flex items-center justify-between px-3 lg:px-4 shrink-0 sticky top-0 z-20">
+          <div className="flex items-center gap-2">
+            <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setMobileMenuOpen(true)}>
+              <Menu className="h-4 w-4" />
             </Button>
             <div className="relative hidden sm:block">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
               <Input
-                placeholder="Αναζήτηση..."
+                placeholder="Αναζήτηση παντού…"
                 value={searchQuery}
                 onChange={e => setSearchQuery(e.target.value)}
-                className="pl-9 w-64 h-9 bg-muted/50 border-0"
+                className="pl-8 w-72 h-8 bg-muted/50 border-border/60 text-[12.5px] focus-visible:ring-1"
               />
+              <kbd className="hidden lg:inline-flex absolute right-2 top-1/2 -translate-y-1/2 h-5 px-1.5 items-center text-[10px] font-mono text-muted-foreground bg-background border border-border/60 rounded">⌘K</kbd>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="relative">
-              <Bell className="h-4 w-4" />
+          <div className="flex items-center gap-1">
+            <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+              <Bell className="h-3.5 w-3.5" />
             </Button>
-            <div className="h-6 w-px bg-border mx-1" />
-            <Button variant="ghost" size="sm" onClick={signOut} className="gap-2 text-muted-foreground hover:text-foreground">
-              <LogOut className="h-4 w-4" />
+            <div className="h-5 w-px bg-border mx-1" />
+            <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
+              <LogOut className="h-3.5 w-3.5" />
               <span className="hidden sm:inline">Αποσύνδεση</span>
             </Button>
           </div>
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-4 lg:p-6 overflow-auto">
+        <main className="flex-1 p-3 lg:p-4 overflow-auto">
           {renderContent()}
         </main>
       </div>
@@ -252,201 +253,232 @@ export default function AdminApp() {
 
 /* ── Sub-sections extracted as components ── */
 
+function SectionHeader({ title, sub, count, children }: { title: string; sub?: string; count?: number; children?: React.ReactNode }) {
+  return (
+    <div className="admin-section-header">
+      <div className="flex items-baseline gap-2 min-w-0">
+        <h2 className="admin-section-title truncate">{title}</h2>
+        {typeof count === 'number' && (
+          <span className="text-[11px] tabular-nums text-muted-foreground bg-muted px-1.5 py-0.5 rounded">{count}</span>
+        )}
+        {sub && <span className="admin-section-sub truncate">· {sub}</span>}
+      </div>
+      <div className="flex items-center gap-1.5">{children}</div>
+    </div>
+  );
+}
+
 function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateStatus, onAssignDriver }: any) {
   return (
-    <div className="space-y-4">
-      <h2 className="font-heading font-bold text-xl">Παραγγελίες</h2>
+    <div className="space-y-3">
+      <SectionHeader title="Παραγγελίες" count={orders?.length ?? 0} sub="ζωντανή ροή & ανάθεση" />
       <AssignmentSettings />
-      <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>ID</TableHead><TableHead>Κατάσταση</TableHead><TableHead>Οδηγός</TableHead>
-                <TableHead>Σύνολο</TableHead><TableHead>Ημερομηνία</TableHead><TableHead>Ενέργειες</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
+      <div className="admin-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead>
+              <tr>
+                <th>ID</th><th>Κατάσταση</th><th>Οδηγός</th>
+                <th className="text-right">Σύνολο</th><th>Ημερομηνία</th><th>Ενέργειες</th>
+              </tr>
+            </thead>
+            <tbody>
               {orders?.map((order: any) => (
-                <TableRow key={order.id}>
-                  <TableCell className="font-mono text-xs">{order.id.slice(0, 8)}…</TableCell>
-                  <TableCell><Badge variant="outline" className={statusColors[order.status] ?? ''}>{statusLabels[order.status] ?? order.status}</Badge></TableCell>
-                  <TableCell>
+                <tr key={order.id}>
+                  <td className="font-mono text-[11.5px] text-muted-foreground">#{order.id.slice(0, 8)}</td>
+                  <td>
+                    <span className={`admin-pill ${statusColors[order.status] ?? ''}`}>
+                      {statusLabels[order.status] ?? order.status}
+                    </span>
+                  </td>
+                  <td>
                     <Select value={order.driver_id || 'unassigned'} onValueChange={val => onAssignDriver(order.id, val)}>
-                      <SelectTrigger className="w-36 h-8 text-xs"><SelectValue placeholder="Χωρίς οδηγό" /></SelectTrigger>
+                      <SelectTrigger className="w-36 h-7 text-[11.5px]"><SelectValue placeholder="Χωρίς οδηγό" /></SelectTrigger>
                       <SelectContent>
                         <SelectItem value="unassigned" disabled>Χωρίς οδηγό</SelectItem>
                         <SelectItem value="unassign">✕ Αφαίρεση</SelectItem>
                         {drivers.map((d: any) => <SelectItem key={d.user_id} value={d.user_id}>{d.full_name || d.user_id.slice(0, 8)}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  </TableCell>
-                  <TableCell className="font-semibold">€{Number(order.total_amount).toFixed(2)}</TableCell>
-                  <TableCell className="text-xs">{format(new Date(order.created_at), 'dd MMM, HH:mm')}</TableCell>
-                  <TableCell>
+                  </td>
+                  <td className="font-semibold tabular-nums text-right">€{Number(order.total_amount).toFixed(2)}</td>
+                  <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(order.created_at), 'dd MMM, HH:mm')}</td>
+                  <td>
                     <Select value={order.status} onValueChange={val => onUpdateStatus(order.id, val)}>
-                      <SelectTrigger className="w-32 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-32 h-7 text-[11.5px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {['pending','placed','accepted','preparing','ready','picked_up','delivered','cancelled'].map(s => (
                           <SelectItem key={s} value={s}>{statusLabels[s] ?? s}</SelectItem>
                         ))}
                       </SelectContent>
                     </Select>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                </tr>
               ))}
-              {!orders?.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Δεν υπάρχουν παραγγελίες</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              {!orders?.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Δεν υπάρχουν παραγγελίες</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 function StoresSection({ stores, allStores, filter, setFilter, onToggle }: any) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="font-heading font-bold text-xl">Καταστήματα</h2>
-        <div className="flex gap-2">
+    <div className="space-y-3">
+      <SectionHeader title="Καταστήματα" count={allStores.length}>
+        <div className="flex gap-1 p-0.5 bg-muted rounded-md">
           {(['all', 'active', 'inactive'] as const).map(f => (
-            <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} onClick={() => setFilter(f)}>
-              {f === 'all' ? `Όλα (${allStores.length})` : f === 'active' ? `Ενεργά (${allStores.filter((s: any) => s.is_active !== false).length})` : `Ανενεργά (${allStores.filter((s: any) => s.is_active === false).length})`}
-            </Button>
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-2.5 h-6 text-[11px] font-medium rounded transition-colors ${filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {f === 'all' ? `Όλα ${allStores.length}` : f === 'active' ? `Ενεργά ${allStores.filter((s: any) => s.is_active !== false).length}` : `Ανενεργά ${allStores.filter((s: any) => s.is_active === false).length}`}
+            </button>
           ))}
         </div>
-      </div>
-      <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader><TableRow><TableHead>Όνομα</TableHead><TableHead>Διεύθυνση</TableHead><TableHead>Ενεργό</TableHead><TableHead>Κατάσταση</TableHead><TableHead>Δημιουργία</TableHead></TableRow></TableHeader>
-            <TableBody>
+      </SectionHeader>
+      <div className="admin-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
+            <tbody>
               {stores.map((store: any) => (
-                <TableRow key={store.id}>
-                  <TableCell className="font-semibold">{store.name}</TableCell>
-                  <TableCell className="text-sm">{store.address}</TableCell>
-                  <TableCell><Switch checked={!!store.is_active} onCheckedChange={() => onToggle(store.id, store.is_active)} /></TableCell>
-                  <TableCell><Badge variant={store.busy_mode ? 'destructive' : 'outline'}>{store.busy_mode ? 'Πολυάσχολο' : 'Κανονικό'}</Badge></TableCell>
-                  <TableCell className="text-xs">{format(new Date(store.created_at), 'dd MMM yyyy')}</TableCell>
-                </TableRow>
+                <tr key={store.id}>
+                  <td className="font-medium">{store.name}</td>
+                  <td className="text-muted-foreground">{store.address}</td>
+                  <td><Switch checked={!!store.is_active} onCheckedChange={() => onToggle(store.id, store.is_active)} /></td>
+                  <td>
+                    <span className={`admin-pill ${store.busy_mode ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30' : 'bg-muted text-muted-foreground border-border'}`}>
+                      {store.busy_mode ? 'Πολυάσχολο' : 'Κανονικό'}
+                    </span>
+                  </td>
+                  <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(store.created_at), 'dd MMM yyyy')}</td>
+                </tr>
               ))}
-              {!stores.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Κανένα κατάστημα</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              {!stores.length && <tr><td colSpan={5} className="text-center text-muted-foreground py-10">Κανένα κατάστημα</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 function DriversSection({ drivers, allDrivers, driverProfiles, filter, setFilter, onToggle }: any) {
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between flex-wrap gap-2">
-        <h2 className="font-heading font-bold text-xl">Οδηγοί</h2>
-        <div className="flex gap-2">
+    <div className="space-y-3">
+      <SectionHeader title="Οδηγοί" count={allDrivers.length}>
+        <div className="flex gap-1 p-0.5 bg-muted rounded-md">
           {(['all', 'active', 'inactive'] as const).map(f => (
-            <Button key={f} size="sm" variant={filter === f ? 'default' : 'outline'} onClick={() => setFilter(f)}>
-              {f === 'all' ? `Όλοι (${allDrivers.length})` : f === 'active' ? `Ενεργοί` : `Ανενεργοί`}
-            </Button>
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-2.5 h-6 text-[11px] font-medium rounded transition-colors ${filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+            >
+              {f === 'all' ? `Όλοι ${allDrivers.length}` : f === 'active' ? 'Ενεργοί' : 'Ανενεργοί'}
+            </button>
           ))}
         </div>
-      </div>
-      <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader><TableRow><TableHead>Κωδικός</TableHead><TableHead>Όνομα</TableHead><TableHead>Τηλέφωνο</TableHead><TableHead>Ενεργός</TableHead><TableHead>Εγγραφή</TableHead></TableRow></TableHeader>
-            <TableBody>
+      </SectionHeader>
+      <div className="admin-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead><tr><th>Κωδικός</th><th>Όνομα</th><th>Τηλέφωνο</th><th className="w-20">Ενεργός</th><th>Εγγραφή</th></tr></thead>
+            <tbody>
               {drivers.map((driver: any) => {
                 const dp = driverProfiles?.find((d: any) => d.user_id === driver.user_id);
                 return (
-                  <TableRow key={driver.id}>
-                    <TableCell><Badge variant="outline" className="font-mono text-xs">{dp?.driver_code || '—'}</Badge></TableCell>
-                    <TableCell className="font-semibold">{driver.full_name || '—'}</TableCell>
-                    <TableCell className="text-sm">{driver.phone || '—'}</TableCell>
-                    <TableCell><Switch checked={dp?.is_active ?? true} onCheckedChange={() => dp && onToggle(driver.user_id, dp.is_active)} /></TableCell>
-                    <TableCell className="text-xs">{format(new Date(driver.created_at), 'dd MMM yyyy')}</TableCell>
-                  </TableRow>
+                  <tr key={driver.id}>
+                    <td><span className="font-mono text-[11px] text-muted-foreground">{dp?.driver_code || '—'}</span></td>
+                    <td className="font-medium">{driver.full_name || '—'}</td>
+                    <td className="text-muted-foreground tabular-nums">{driver.phone || '—'}</td>
+                    <td><Switch checked={dp?.is_active ?? true} onCheckedChange={() => dp && onToggle(driver.user_id, dp.is_active)} /></td>
+                    <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(driver.created_at), 'dd MMM yyyy')}</td>
+                  </tr>
                 );
               })}
-              {!drivers.length && <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Κανένας οδηγός</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              {!drivers.length && <tr><td colSpan={5} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 function UsersSection({ profiles, adminUserIds, driverCodeMap, onChangeRole, onToggleAdmin }: any) {
   return (
-    <div className="space-y-4">
-      <h2 className="font-heading font-bold text-xl">Χρήστες & Δικαιώματα</h2>
-      <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader><TableRow><TableHead>Όνομα</TableHead><TableHead>Κωδικός</TableHead><TableHead>Ρόλος</TableHead><TableHead>Admin</TableHead><TableHead>Τηλέφωνο</TableHead><TableHead>Εγγραφή</TableHead></TableRow></TableHeader>
-            <TableBody>
+    <div className="space-y-3">
+      <SectionHeader title="Χρήστες & Δικαιώματα" count={profiles?.length ?? 0} />
+      <div className="admin-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead><tr><th>Όνομα</th><th>Κωδικός</th><th>Ρόλος</th><th>Admin</th><th>Τηλέφωνο</th><th>Εγγραφή</th></tr></thead>
+            <tbody>
               {profiles?.map((profile: any) => (
-                <TableRow key={profile.id}>
-                  <TableCell className="font-semibold">{profile.full_name || '—'}</TableCell>
-                  <TableCell>{driverCodeMap.get(profile.user_id) ? <Badge variant="outline" className="font-mono text-xs">{driverCodeMap.get(profile.user_id)}</Badge> : '—'}</TableCell>
-                  <TableCell>
+                <tr key={profile.id}>
+                  <td className="font-medium">{profile.full_name || '—'}</td>
+                  <td>{driverCodeMap.get(profile.user_id) ? <span className="font-mono text-[11px] text-muted-foreground">{driverCodeMap.get(profile.user_id)}</span> : '—'}</td>
+                  <td>
                     <Select value={profile.role} onValueChange={val => onChangeRole(profile.user_id, val)}>
-                      <SelectTrigger className="w-28 h-8 text-xs"><SelectValue /></SelectTrigger>
+                      <SelectTrigger className="w-28 h-7 text-[11.5px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
                         {['customer','driver','store'].map(r => <SelectItem key={r} value={r}>{{ customer: 'Πελάτης', driver: 'Οδηγός', store: 'Κατάστημα' }[r]}</SelectItem>)}
                       </SelectContent>
                     </Select>
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
+                  </td>
+                  <td>
+                    <div className="flex items-center gap-1.5">
                       <Switch checked={adminUserIds.has(profile.user_id)} onCheckedChange={() => onToggleAdmin(profile.user_id, adminUserIds.has(profile.user_id))} />
-                      {adminUserIds.has(profile.user_id) && <Badge className="bg-primary/10 text-primary border-primary/20" variant="outline"><Shield className="h-3 w-3 mr-1" />Admin</Badge>}
+                      {adminUserIds.has(profile.user_id) && (
+                        <span className="admin-pill bg-primary/10 text-primary border-primary/30"><Shield className="h-2.5 w-2.5" />Admin</span>
+                      )}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-sm">{profile.phone || '—'}</TableCell>
-                  <TableCell className="text-xs">{format(new Date(profile.created_at), 'dd MMM yyyy')}</TableCell>
-                </TableRow>
+                  </td>
+                  <td className="text-muted-foreground tabular-nums">{profile.phone || '—'}</td>
+                  <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(profile.created_at), 'dd MMM yyyy')}</td>
+                </tr>
               ))}
-              {!profiles?.length && <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Κανένας χρήστης</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              {!profiles?.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Κανένας χρήστης</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }
 
 function ReviewsSection({ reviews }: { reviews: any[] | undefined }) {
   return (
-    <div className="space-y-4">
-      <h2 className="font-heading font-bold text-xl">Κριτικές</h2>
-      <Card>
-        <CardContent className="overflow-x-auto p-0">
-          <Table>
-            <TableHeader><TableRow><TableHead>Βαθμολογία</TableHead><TableHead>Σχόλιο</TableHead><TableHead>Παραγγελία</TableHead><TableHead>Ημερομηνία</TableHead></TableRow></TableHeader>
-            <TableBody>
+    <div className="space-y-3">
+      <SectionHeader title="Κριτικές" count={reviews?.length ?? 0} />
+      <div className="admin-card overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="admin-table">
+            <thead><tr><th>Βαθμολογία</th><th>Σχόλιο</th><th>Παραγγελία</th><th>Ημερομηνία</th></tr></thead>
+            <tbody>
               {reviews?.map((review: any) => (
-                <TableRow key={review.id}>
-                  <TableCell>
+                <tr key={review.id}>
+                  <td>
                     <div className="flex gap-0.5">
                       {Array.from({ length: 5 }, (_, i) => (
-                        <Star key={i} className={`h-4 w-4 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />
+                        <Star key={i} className={`h-3 w-3 ${i < review.rating ? 'text-yellow-500 fill-yellow-500' : 'text-muted-foreground/30'}`} />
                       ))}
                     </div>
-                  </TableCell>
-                  <TableCell className="text-sm max-w-xs truncate">{review.comment || '—'}</TableCell>
-                  <TableCell className="font-mono text-xs">{review.order_id.slice(0, 8)}…</TableCell>
-                  <TableCell className="text-xs">{format(new Date(review.created_at), 'dd MMM yyyy')}</TableCell>
-                </TableRow>
+                  </td>
+                  <td className="max-w-md truncate text-muted-foreground">{review.comment || '—'}</td>
+                  <td className="font-mono text-[11px] text-muted-foreground">#{review.order_id.slice(0, 8)}</td>
+                  <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(review.created_at), 'dd MMM yyyy')}</td>
+                </tr>
               ))}
-              {!reviews?.length && <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Καμία κριτική</TableCell></TableRow>}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+              {!reviews?.length && <tr><td colSpan={4} className="text-center text-muted-foreground py-10">Καμία κριτική</td></tr>}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

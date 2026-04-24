@@ -169,35 +169,35 @@ function SidebarBody({
         <button
           onClick={() => onSectionChange(item.id)}
           className={cn(
-            'w-full flex items-center gap-3 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-150',
+            'w-full flex items-center gap-2.5 px-2 h-7 rounded text-[12.5px] font-medium transition-colors',
             isActive
-              ? 'bg-primary/10 text-primary shadow-sm'
+              ? 'bg-primary/10 text-primary'
               : 'text-muted-foreground hover:bg-muted hover:text-foreground',
           )}
           title={collapsed ? item.label : undefined}
         >
-          <item.icon className={cn('h-4 w-4 shrink-0', isActive && 'text-primary')} />
+          <item.icon className={cn('h-3.5 w-3.5 shrink-0', isActive && 'text-primary')} />
           {!collapsed && (
             <>
               <span className="truncate flex-1 text-left">{item.label}</span>
               {badgeCount > 0 && (
-                <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px]">
+                <Badge variant="destructive" className="h-4 min-w-[16px] px-1 text-[9px] leading-none">
                   {badgeCount}
                 </Badge>
               )}
             </>
           )}
           {collapsed && badgeCount > 0 && (
-            <span className="absolute right-1 top-0.5 h-2 w-2 rounded-full bg-destructive" />
+            <span className="absolute right-0.5 top-0.5 h-1.5 w-1.5 rounded-full bg-destructive" />
           )}
         </button>
         {!collapsed && !opts?.compact && (
           <button
             onClick={(e) => { e.stopPropagation(); setConfirmHide({ id: item.id, label: item.label }); }}
-            className="absolute right-1 top-1/2 -translate-y-1/2 h-6 w-6 rounded-md flex items-center justify-center opacity-0 group-hover/item:opacity-100 hover:bg-destructive/15 hover:text-destructive transition-opacity"
+            className="absolute right-0.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded flex items-center justify-center opacity-0 group-hover/item:opacity-100 hover:bg-destructive/15 hover:text-destructive transition-opacity"
             title="Αφαίρεση από μενού"
           >
-            <X className="h-3.5 w-3.5" />
+            <X className="h-3 w-3" />
           </button>
         )}
       </div>
@@ -206,36 +206,36 @@ function SidebarBody({
 
   return (
     <>
-      {/* Logo / Brand */}
-      <div className="h-16 flex items-center px-4 border-b border-border shrink-0">
-        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary to-accent flex items-center justify-center shrink-0">
-          <Shield className="h-5 w-5 text-primary-foreground" />
+      {/* Logo / Brand — flat, monochrome chip */}
+      <div className="h-12 flex items-center px-3 border-b border-border shrink-0">
+        <div className="h-6 w-6 rounded-md bg-foreground flex items-center justify-center shrink-0">
+          <Shield className="h-3.5 w-3.5 text-background" />
         </div>
         {!collapsed && (
-          <div className="ml-3 overflow-hidden">
-            <p className="font-heading font-bold text-sm leading-tight truncate">Admin Panel</p>
-            <p className="text-[10px] text-muted-foreground truncate">Διαχείριση Πλατφόρμας</p>
+          <div className="ml-2.5 overflow-hidden">
+            <p className="font-heading font-bold text-[12.5px] leading-tight truncate">Admin</p>
+            <p className="text-[10px] text-muted-foreground truncate leading-tight">Πλατφόρμα</p>
           </div>
         )}
       </div>
 
       {/* Search */}
       {!collapsed && (
-        <div className="px-3 pt-3 pb-1 shrink-0">
+        <div className="px-2 pt-2 pb-1 shrink-0">
           <div className="relative">
-            <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+            <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3 w-3 text-muted-foreground" />
             <Input
               value={search}
               onChange={(e) => setSearch(e.target.value)}
               placeholder="Αναζήτηση μενού..."
-              className="pl-8 h-8 text-xs bg-muted/50 border-0"
+              className="pl-7 h-7 text-[11.5px] bg-muted/50 border-border/40 focus-visible:ring-1"
             />
             {search && (
               <button
                 onClick={() => setSearch('')}
-                className="absolute right-1.5 top-1/2 -translate-y-1/2 h-5 w-5 rounded flex items-center justify-center hover:bg-muted text-muted-foreground"
+                className="absolute right-1 top-1/2 -translate-y-1/2 h-4 w-4 rounded flex items-center justify-center hover:bg-muted text-muted-foreground"
               >
-                <X className="h-3 w-3" />
+                <X className="h-2.5 w-2.5" />
               </button>
             )}
           </div>
@@ -243,15 +243,15 @@ function SidebarBody({
       )}
 
       {/* Nav */}
-      <ScrollArea className="flex-1 py-2">
-        <nav className="px-2 space-y-4">
+      <ScrollArea className="flex-1 py-1.5">
+        <nav className="px-1.5 space-y-3">
           {/* Recent — only when not searching, not collapsed, has items */}
           {!collapsed && !q && recentItems.length > 0 && (
             <div>
-              <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60 flex items-center gap-1.5">
-                <Clock className="h-3 w-3" /> Πρόσφατα
+              <p className="px-2 mb-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60 flex items-center gap-1">
+                <Clock className="h-2.5 w-2.5" /> Πρόσφατα
               </p>
-              <div className="space-y-0.5">
+              <div className="space-y-px">
                 {recentItems.map(item => renderItem(item, { compact: true }))}
               </div>
             </div>
@@ -265,11 +265,11 @@ function SidebarBody({
             return (
               <div key={group.label}>
                 {!collapsed && (
-                  <p className="px-3 mb-1 text-[10px] font-semibold uppercase tracking-wider text-muted-foreground/60">
+                  <p className="px-2 mb-0.5 text-[9.5px] font-semibold uppercase tracking-[0.08em] text-muted-foreground/60">
                     {group.label}
                   </p>
                 )}
-                <div className="space-y-0.5">
+                <div className="space-y-px">
                   {visibleItems.map(item => renderItem(item))}
                 </div>
               </div>
@@ -277,7 +277,7 @@ function SidebarBody({
           })}
 
           {!collapsed && q && allItems.filter(i => !hidden.has(i.id) && matchesSearch(i.label)).length === 0 && (
-            <p className="px-3 py-4 text-xs text-center text-muted-foreground">Δεν βρέθηκαν αποτελέσματα</p>
+            <p className="px-3 py-4 text-[11px] text-center text-muted-foreground">Δεν βρέθηκαν αποτελέσματα</p>
           )}
         </nav>
       </ScrollArea>
@@ -406,12 +406,12 @@ export default function AdminSidebar({
     );
   }
 
-  // Desktop fixed sidebar
+  // Desktop fixed sidebar — slimmer for utility-dense look
   return (
     <aside
       className={cn(
         'h-screen sticky top-0 bg-card border-r border-border flex flex-col transition-all duration-300 z-30',
-        collapsed ? 'w-[68px]' : 'w-[240px]',
+        collapsed ? 'w-[56px]' : 'w-[212px]',
       )}
     >
       <SidebarBody
