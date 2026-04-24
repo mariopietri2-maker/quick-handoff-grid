@@ -9,9 +9,12 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
-  Headphones, ShoppingBag, LogOut,
+  Headphones, ShoppingBag, LogOut, Languages, Palette,
 } from 'lucide-react';
 import { toast } from 'sonner';
+import { LanguageToggle } from '@/components/LanguageToggle';
+import { ThemeToggle } from '@/components/ThemeToggle';
+import { useT } from '@/lib/i18n';
 
 const roleConfig: Record<string, { label: string; icon: any; path: string; color: string }> = {
   admin:    { label: 'Admin',    icon: Shield,     path: '/admin',   color: 'text-primary' },
@@ -164,6 +167,26 @@ export default function ProfilePage() {
                   </button>
                 );
               })}
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Appearance & Language */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-heading">
+              <Palette className="h-5 w-5 text-primary" />
+              Εμφάνιση & Γλώσσα
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Γλώσσα / Language</Label>
+              <LanguageToggle />
+            </div>
+            <div className="space-y-2">
+              <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> Θέμα</Label>
+              <ThemeToggle />
             </div>
           </CardContent>
         </Card>
