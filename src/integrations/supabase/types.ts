@@ -2062,6 +2062,10 @@ export type Database = {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
       }
+      admin_reset_driver_cash: {
+        Args: { p_driver_id: string }
+        Returns: undefined
+      }
       count_active_support_agents: { Args: never; Returns: number }
       create_driver_earning: {
         Args: {
