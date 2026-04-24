@@ -125,6 +125,33 @@ export function MenuControl({ storeId }: MenuControlProps) {
         </Dialog>
       </div>
 
+      {selectMode && (
+        <div className="sticky top-16 z-10 flex flex-wrap items-center gap-2 p-3 rounded-xl bg-primary/5 border border-primary/30">
+          <span className="text-sm font-heading font-semibold">{selectedIds.size} επιλεγμένα</span>
+          <div className="flex flex-wrap gap-2 ml-auto">
+            <Button size="sm" variant="outline" onClick={() => setSelectedIds(new Set(filtered.map(i => i.id)))}>
+              Όλα
+            </Button>
+            <Button size="sm" variant="outline" disabled={selectedIds.size === 0}
+              onClick={() => runBulk(() => bulkSetSnooze(Array.from(selectedIds), true))}>
+              <Moon className="h-3.5 w-3.5 mr-1" /> Παύση
+            </Button>
+            <Button size="sm" variant="outline" disabled={selectedIds.size === 0}
+              onClick={() => runBulk(() => bulkSetSnooze(Array.from(selectedIds), false))}>
+              Επανενεργοποίηση
+            </Button>
+            <Button size="sm" variant="destructive" disabled={selectedIds.size === 0}
+              onClick={() => runBulk(() => bulkSetAvailable(Array.from(selectedIds), false))}>
+              <X className="h-3.5 w-3.5 mr-1" /> Εξαντλήθηκαν
+            </Button>
+            <Button size="sm" disabled={selectedIds.size === 0}
+              onClick={() => runBulk(() => bulkSetAvailable(Array.from(selectedIds), true))}>
+              Διαθέσιμα
+            </Button>
+          </div>
+        </div>
+      )}
+
       {items.length === 0 ? (
         <div className="text-center py-16">
           <p className="font-heading text-foreground">Δεν υπάρχουν προϊόντα</p>
@@ -140,8 +167,14 @@ export function MenuControl({ storeId }: MenuControlProps) {
               {filtered.filter(i => (i.category ?? 'Χωρίς Κατηγορία') === category).map(item => (
                 <Card key={item.id} className={`shadow-[var(--shadow-sm)] ${
                   !item.is_available ? 'opacity-50' : item.is_snoozed ? 'border-warning/40' : ''
-                }`}>
-                  <CardContent className="p-3 flex items-center justify-between">
+                } ${selectMode && selectedIds.has(item.id) ? 'ring-2 ring-primary' : ''}`}>
+                  <CardContent className="p-3 flex items-center justify-between gap-2">
+                    {selectMode && (
+                      <Checkbox
+                        checked={selectedIds.has(item.id)}
+                        onCheckedChange={() => toggleSelected(item.id)}
+                      />
+                    )}
                     <div className="flex-1">
                       <div className="flex items-center gap-2">
                         <span className="font-heading font-semibold text-foreground">{item.name}</span>
