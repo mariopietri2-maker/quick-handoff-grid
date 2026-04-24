@@ -189,28 +189,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
       : 'Αναμονή υποστήριξης'
     : 'Σε εκκρεμότητα';
 
-  const suggestReply = async () => {
-    if (suggesting) return;
-    setSuggesting(true);
-    try {
-      const { data, error } = await supabase.functions.invoke('support-ai', {
-        body: { ticketId, action: 'suggest_reply' },
-      });
-      if (error) throw error;
-      const result = (data as { result?: string })?.result?.trim();
-      if (result) {
-        setText(result);
-        toast.success('Πρόταση AI έτοιμη — μπορείτε να την επεξεργαστείτε');
-      } else {
-        toast.error('Καμία πρόταση από το AI');
-      }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Αποτυχία πρότασης AI';
-      toast.error(msg);
-    } finally {
-      setSuggesting(false);
-    }
-  };
+  // AI reply suggestion removed — drivers must receive only human-written responses.
 
   return (
     <div className="flex flex-col h-[480px] border rounded-lg bg-card">
