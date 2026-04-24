@@ -128,23 +128,6 @@ export default function AdminApp() {
     else { toast.success('Πορτοφόλι μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
   };
 
-  const [wiping, setWiping] = useState(false);
-  const [wipeDialogOpen, setWipeDialogOpen] = useState(false);
-  const [wipeConfirmText, setWipeConfirmText] = useState('');
-  const handleWipeAll = async () => {
-    if (wipeConfirmText !== 'RESET') {
-      toast.error('Πληκτρολόγησε RESET για επιβεβαίωση');
-      return;
-    }
-    setWiping(true);
-    const { error } = await (supabase.rpc as any)('admin_wipe_all_data');
-    setWiping(false);
-    if (error) { toast.error(error.message || 'Αποτυχία'); return; }
-    toast.success('Όλα τα δεδομένα διαγράφηκαν & μηδενίστηκαν');
-    setWipeDialogOpen(false);
-    setWipeConfirmText('');
-    queryClient.invalidateQueries();
-  };
 
 
 
