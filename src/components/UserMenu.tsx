@@ -201,9 +201,23 @@ export function UserMenu() {
           ) : (
             <>
               <DropdownMenuSeparator />
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/profile')}>
+                <UserCircle className="mr-2 h-4 w-4 shrink-0" />
+                Το Προφίλ μου
+              </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/')}>
                 <Home className="mr-2 h-4 w-4 shrink-0" />
                 Αρχική
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {isDriver && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/profile')}>
+                <UserCircle className="mr-2 h-4 w-4 shrink-0" />
+                Το Προφίλ μου
               </DropdownMenuItem>
             </>
           )}

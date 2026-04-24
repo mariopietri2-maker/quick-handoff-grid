@@ -24,13 +24,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <Navigate to="/auth" replace />;
   }
 
+  // Admins have access to every protected route
+  if (isAdmin) return <>{children}</>;
+
   if (allowedRoles?.includes('admin')) {
-    if (!isAdmin) return <Navigate to="/" replace />;
-    return <>{children}</>;
+    return <Navigate to="/" replace />;
   }
 
   if (allowedRoles?.includes('support')) {
-    if (!isSupport && !isAdmin) return <Navigate to="/" replace />;
+    if (!isSupport) return <Navigate to="/" replace />;
     return <>{children}</>;
   }
 
