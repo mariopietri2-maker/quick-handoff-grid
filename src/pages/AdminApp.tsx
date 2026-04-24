@@ -129,16 +129,20 @@ export default function AdminApp() {
   };
 
   const [wiping, setWiping] = useState(false);
+  const [wipeDialogOpen, setWipeDialogOpen] = useState(false);
+  const [wipeConfirmText, setWipeConfirmText] = useState('');
   const handleWipeAll = async () => {
-    const confirm1 = confirm('⚠️ ΠΡΟΣΟΧΗ: Θα διαγραφούν ΟΛΑ τα δεδομένα (παραγγελίες, μενού, κριτικές, ανακοινώσεις, tickets, συναλλαγές κτλ) και θα μηδενιστούν όλα τα πορτοφόλια & πόντοι. Συνέχεια;');
-    if (!confirm1) return;
-    const typed = prompt('Πληκτρολόγησε "RESET" για επιβεβαίωση:');
-    if (typed !== 'RESET') { toast.error('Ακυρώθηκε'); return; }
+    if (wipeConfirmText !== 'RESET') {
+      toast.error('Πληκτρολόγησε RESET για επιβεβαίωση');
+      return;
+    }
     setWiping(true);
     const { error } = await (supabase.rpc as any)('admin_wipe_all_data');
     setWiping(false);
     if (error) { toast.error(error.message || 'Αποτυχία'); return; }
     toast.success('Όλα τα δεδομένα διαγράφηκαν & μηδενίστηκαν');
+    setWipeDialogOpen(false);
+    setWipeConfirmText('');
     queryClient.invalidateQueries();
   };
 
