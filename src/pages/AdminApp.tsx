@@ -127,6 +127,20 @@ export default function AdminApp() {
     else { toast.success('Πορτοφόλι μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
   };
 
+  const [wiping, setWiping] = useState(false);
+  const handleWipeAll = async () => {
+    const confirm1 = confirm('⚠️ ΠΡΟΣΟΧΗ: Θα διαγραφούν ΟΛΑ τα δεδομένα (παραγγελίες, μενού, κριτικές, ανακοινώσεις, tickets, συναλλαγές κτλ) και θα μηδενιστούν όλα τα πορτοφόλια & πόντοι. Συνέχεια;');
+    if (!confirm1) return;
+    const typed = prompt('Πληκτρολόγησε "RESET" για επιβεβαίωση:');
+    if (typed !== 'RESET') { toast.error('Ακυρώθηκε'); return; }
+    setWiping(true);
+    const { error } = await (supabase.rpc as any)('admin_wipe_all_data');
+    setWiping(false);
+    if (error) { toast.error(error.message || 'Αποτυχία'); return; }
+    toast.success('Όλα τα δεδομένα διαγράφηκαν & μηδενίστηκαν');
+    queryClient.invalidateQueries();
+  };
+
 
 
 
