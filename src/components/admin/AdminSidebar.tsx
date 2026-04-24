@@ -161,7 +161,7 @@ function SidebarBody({
     .map(id => itemById.get(id))
     .filter((i): i is typeof allItems[number] => !!i && !hidden.has(i.id) && i.id !== activeSection);
 
-  const renderItem = (item: typeof allItems[number], opts?: { compact?: boolean }) => {
+  const renderItem = (item: { id: string; label: string; icon: any; badgeKey?: string }, opts?: { compact?: boolean }) => {
     const isActive = activeSection === item.id;
     const badgeCount = (item as any).badgeKey ? badges[(item as any).badgeKey] : 0;
     return (
