@@ -47,7 +47,10 @@ export default function DriverApp() {
   const { user } = useAuth();
   useEarnings();
 
-  // ─── 30-minute auto-offline inactivity timer ───
+  // ─── 2-hour auto-offline inactivity timer ───
+  // Drivers stay online indefinitely while interacting with the app.
+  // After 2 hours of zero activity (no taps, scrolls, or offer responses),
+  // we automatically toggle them offline so they don't appear available when AFK.
   const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const lastActivity = useRef<number>(Date.now());
 
@@ -56,7 +59,7 @@ export default function DriverApp() {
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
       return;
     }
-    const INACTIVITY_MS = 30 * 60 * 1000; // 30 minutes
+    const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
     const resetTimer = () => {
       lastActivity.current = Date.now();
       if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
