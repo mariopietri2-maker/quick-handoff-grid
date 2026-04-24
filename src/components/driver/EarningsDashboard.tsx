@@ -1,10 +1,36 @@
+import { useMemo } from 'react';
 import { Clock, Car, TrendingUp, Coins, Award } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useEarnings } from '@/hooks/useEarnings';
+import { useDriverState } from '@/hooks/useDriverState';
 
 export function EarningsDashboard() {
   const { today, week, weekBreakdown, loading } = useEarnings();
+  const { state: driverState } = useDriverState();
+
+  // Projection: extrapolate today's earnings to a 10h shift based on hourly pace since shift start (or midnight)
+  const projection = useMemo(() => {
+    const now = new Date();
+    const startOfDay = new Date();
+    startOfDay.setHours(0, 0, 0, 0);
+    const shiftStart = driverState?.shift_started_at
+      ? new Date(driverState.shift_started_at)
+      : startOfDay;
+    const elapsedHours = Math.max(0.25, (now.getTime() - shiftStart.getTime()) / 3_600_000);
+    const hourlyRate = today.total / elapsedHours;
+    // Assume a typical 10-hour shift; cap projection at 24h of pace
+    const projectedDay = hourlyRate * 10;
+    const goal = driverState?.daily_goal ? Number(driverState.daily_goal) : 0;
+    const onTrackForGoal = goal > 0 && projectedDay >= goal;
+    return {
+      hourlyRate,
+      projectedDay,
+      goal,
+      onTrackForGoal,
+      elapsedHours,
+    };
+  }, [today.total, driverState?.shift_started_at, driverState?.daily_goal]);
 
   if (loading) {
     return (
