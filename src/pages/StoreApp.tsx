@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap } from 'lucide-react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap, PackagePlus } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
@@ -10,6 +10,7 @@ import { PromoManager } from '@/components/store/PromoManager';
 import { InventoryControl } from '@/components/store/InventoryControl';
 import { StoreHoursManager } from '@/components/store/StoreHoursManager';
 import AutoAcceptRules from '@/components/store/AutoAcceptRules';
+import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderIngest';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -133,6 +134,10 @@ export default function StoreApp() {
                   </Badge>
                 )}
               </TabsTrigger>
+              <TabsTrigger value="external" className="flex-1 min-w-[100px] font-heading">
+                <PackagePlus className="h-4 w-4 mr-1.5" />
+                eFood/Wolt
+              </TabsTrigger>
               <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading">
                 <UtensilsCrossed className="h-4 w-4 mr-1.5" />
                 Μενού
@@ -184,6 +189,10 @@ export default function StoreApp() {
               ) : (
                 <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} storeName={store.name} />
               )}
+            </TabsContent>
+
+            <TabsContent value="external">
+              <StoreExternalOrderIngest storeId={store.id} />
             </TabsContent>
 
             <TabsContent value="menu">
