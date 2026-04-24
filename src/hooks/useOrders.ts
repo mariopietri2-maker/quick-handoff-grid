@@ -156,6 +156,9 @@ export function useDriverOrders() {
 
   useEffect(() => {
     fetchOrders();
+    // Poll every 20s so orders appear as their dispatch_at time arrives
+    const interval = setInterval(fetchOrders, 20_000);
+    return () => clearInterval(interval);
   }, [fetchOrders]);
 
   // Real-time: listen for new available orders
