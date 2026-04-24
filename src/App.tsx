@@ -5,6 +5,8 @@ import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AuthProvider } from "@/hooks/useAuth";
 import { CartProvider } from "@/hooks/useCart";
+import { ThemeProvider } from "@/hooks/useTheme";
+import { I18nProvider } from "@/lib/i18n";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import Index from "./pages/Index.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
@@ -26,57 +28,61 @@ const queryClient = new QueryClient();
 
 const App = () => (
   <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <CartProvider>
-            <MaintenanceBanner />
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/auth" element={<AuthPage />} />
-              <Route path="/order" element={<CustomerApp />} />
-              <Route path="/restaurant/:id" element={<RestaurantPage />} />
-              <Route path="/checkout" element={<CheckoutPage />} />
-              <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
-              <Route path="/orders" element={<MyOrdersPage />} />
-              <Route path="/profile" element={
-                <ProtectedRoute>
-                  <ProfilePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/driver" element={
-                <ProtectedRoute allowedRoles={['driver']}>
-                  <DriverApp />
-                </ProtectedRoute>
-              } />
-              <Route path="/driver/profile" element={
-                <ProtectedRoute allowedRoles={['driver']}>
-                  <DriverProfilePage />
-                </ProtectedRoute>
-              } />
-              <Route path="/store" element={
-                <ProtectedRoute allowedRoles={['store']}>
-                  <StoreApp />
-                </ProtectedRoute>
-              } />
-              <Route path="/admin" element={
-                <ProtectedRoute allowedRoles={['admin']}>
-                  <AdminApp />
-                </ProtectedRoute>
-              } />
-              <Route path="/support" element={
-                <ProtectedRoute allowedRoles={['support']}>
-                  <SupportApp />
-                </ProtectedRoute>
-              } />
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </CartProvider>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
+    <ThemeProvider>
+      <I18nProvider>
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
+            <AuthProvider>
+              <CartProvider>
+                <MaintenanceBanner />
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route path="/auth" element={<AuthPage />} />
+                  <Route path="/order" element={<CustomerApp />} />
+                  <Route path="/restaurant/:id" element={<RestaurantPage />} />
+                  <Route path="/checkout" element={<CheckoutPage />} />
+                  <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
+                  <Route path="/orders" element={<MyOrdersPage />} />
+                  <Route path="/profile" element={
+                    <ProtectedRoute>
+                      <ProfilePage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/driver" element={
+                    <ProtectedRoute allowedRoles={['driver']}>
+                      <DriverApp />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/driver/profile" element={
+                    <ProtectedRoute allowedRoles={['driver']}>
+                      <DriverProfilePage />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/store" element={
+                    <ProtectedRoute allowedRoles={['store']}>
+                      <StoreApp />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/admin" element={
+                    <ProtectedRoute allowedRoles={['admin']}>
+                      <AdminApp />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="/support" element={
+                    <ProtectedRoute allowedRoles={['support']}>
+                      <SupportApp />
+                    </ProtectedRoute>
+                  } />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </CartProvider>
+            </AuthProvider>
+          </BrowserRouter>
+        </TooltipProvider>
+      </I18nProvider>
+    </ThemeProvider>
   </QueryClientProvider>
 );
 
