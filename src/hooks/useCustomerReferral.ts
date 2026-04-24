@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 
 export interface CustomerReferral {
   id: string;
+  referrer_id: string;
   referral_code: string;
   status: string;
   reward_amount: number;
