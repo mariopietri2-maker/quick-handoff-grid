@@ -21,51 +21,41 @@ interface AdminSidebarProps {
 
 const navGroups = [
   {
-    label: 'Επισκόπηση',
+    label: 'Λειτουργίες',
     items: [
       { id: 'overview', label: 'Dashboard', icon: LayoutDashboard },
       { id: 'analytics', label: 'Αναλυτικά', icon: BarChart3 },
-      { id: 'activity', label: 'Activity Log', icon: Activity },
-    ],
-  },
-  {
-    label: 'Λειτουργίες',
-    items: [
       { id: 'orders', label: 'Παραγγελίες', icon: ShoppingBag },
       { id: 'external_orders', label: 'Εισαγωγή eFood/Wolt', icon: PackagePlus },
+      { id: 'map', label: 'Live Χάρτης', icon: MapPin },
+      { id: 'demand', label: 'Ζώνες Ζήτησης', icon: Flame },
       { id: 'stores', label: 'Καταστήματα', icon: Store },
       { id: 'drivers', label: 'Οδηγοί', icon: Users },
       { id: 'users', label: 'Χρήστες', icon: Shield },
       { id: 'support_roles', label: 'Support Agents', icon: Headphones },
-    ],
-  },
-  {
-    label: 'Οικονομικά & Υποστήριξη',
-    items: [
-      { id: 'financials', label: 'Οικονομικά', icon: Wallet },
-      { id: 'pricing', label: 'Τιμολόγηση', icon: DollarSign },
-      { id: 'store_billing', label: 'Χρέωση Καταστημάτων', icon: Receipt },
       { id: 'tickets', label: 'Support Tickets', icon: MessageSquare, badgeKey: 'pendingTickets' as const },
     ],
   },
   {
-    label: 'Εργαλεία',
+    label: 'Οικονομικά',
     items: [
-      { id: 'map', label: 'Live Χάρτης', icon: MapPin },
-      { id: 'driver_map_settings', label: 'Χάρτης Οδηγών', icon: Settings },
-      { id: 'demand', label: 'Ζώνες Ζήτησης', icon: Flame },
-      { id: 'reviews', label: 'Κριτικές', icon: Star },
-      { id: 'announcements', label: 'Ανακοινώσεις', icon: Megaphone },
+      { id: 'financials', label: 'Οικονομικά', icon: Wallet },
+      { id: 'pricing', label: 'Τιμολόγηση', icon: DollarSign },
+      { id: 'store_billing', label: 'Χρέωση Καταστημάτων', icon: Receipt },
     ],
   },
   {
     label: 'Πλατφόρμα',
     items: [
+      { id: 'activity', label: 'Activity Log', icon: Activity },
+      { id: 'audit_log', label: 'Audit Log', icon: ScrollText },
       { id: 'feature_flags', label: 'Feature Flags', icon: Flag },
       { id: 'overrides', label: 'Surge / Overrides', icon: Zap },
-      { id: 'remote_actions', label: 'Remote Actions', icon: UserCog },
       { id: 'admin_perms', label: 'Admin Permissions', icon: ShieldCheck },
-      { id: 'audit_log', label: 'Audit Log', icon: ScrollText },
+      { id: 'remote_actions', label: 'Remote Actions', icon: UserCog },
+      { id: 'driver_map_settings', label: 'Χάρτης Οδηγών', icon: Settings },
+      { id: 'announcements', label: 'Ανακοινώσεις', icon: Megaphone },
+      { id: 'reviews', label: 'Κριτικές', icon: Star },
       { id: 'canned_replies', label: 'Έτοιμες Απαντήσεις', icon: MessageSquare },
       { id: 'fraud', label: 'Σήματα Απάτης', icon: ShieldCheck },
     ],
