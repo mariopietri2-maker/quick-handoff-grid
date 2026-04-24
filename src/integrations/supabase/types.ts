@@ -912,6 +912,7 @@ export type Database = {
           delivery_fee: number | null
           delivery_latitude: number | null
           delivery_longitude: number | null
+          dispatch_at: string | null
           distance_km: number | null
           driver_id: string | null
           driver_payout: number
@@ -924,6 +925,7 @@ export type Database = {
           photo_verification_url: string | null
           pickup_checklist: Json | null
           platform_profit: number
+          predicted_prep_minutes: number | null
           refund_reason: string | null
           refunded_amount: number
           scheduled_for: string | null
@@ -944,6 +946,7 @@ export type Database = {
           delivery_fee?: number | null
           delivery_latitude?: number | null
           delivery_longitude?: number | null
+          dispatch_at?: string | null
           distance_km?: number | null
           driver_id?: string | null
           driver_payout?: number
@@ -956,6 +959,7 @@ export type Database = {
           photo_verification_url?: string | null
           pickup_checklist?: Json | null
           platform_profit?: number
+          predicted_prep_minutes?: number | null
           refund_reason?: string | null
           refunded_amount?: number
           scheduled_for?: string | null
@@ -976,6 +980,7 @@ export type Database = {
           delivery_fee?: number | null
           delivery_latitude?: number | null
           delivery_longitude?: number | null
+          dispatch_at?: string | null
           distance_km?: number | null
           driver_id?: string | null
           driver_payout?: number
@@ -988,6 +993,7 @@ export type Database = {
           photo_verification_url?: string | null
           pickup_checklist?: Json | null
           platform_profit?: number
+          predicted_prep_minutes?: number | null
           refund_reason?: string | null
           refunded_amount?: number
           scheduled_for?: string | null
@@ -1970,6 +1976,10 @@ export type Database = {
           store_id: string
         }[]
       }
+      get_store_avg_prep_minutes: {
+        Args: { p_store_id: string }
+        Returns: number
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
@@ -2000,6 +2010,14 @@ export type Database = {
       }
       request_wallet_withdrawal: {
         Args: { p_amount: number; p_driver_id: string }
+        Returns: undefined
+      }
+      set_order_dispatch: {
+        Args: {
+          p_dispatch_at: string
+          p_order_id: string
+          p_predicted_prep_minutes: number
+        }
         Returns: undefined
       }
     }
