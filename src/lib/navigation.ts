@@ -22,22 +22,49 @@ export async function openGoogleMapsNavigation(target: NavigationTarget) {
   const url = getGoogleMapsNavigationUrl(target);
   if (!url) return;
 
-  // On native (Capacitor), force-open in the OS — this triggers the Google Maps app via intent
   try {
     const { Capacitor } = await import('@capacitor/core');
+
     if (Capacitor.isNativePlatform()) {
-      // Prefer the geo: scheme on Android so the Maps app opens directly with route
-      if (Capacitor.getPlatform() === 'android' && target.lat != null && target.lng != null) {
-        const geoUrl = `google.navigation:q=${target.lat},${target.lng}&mode=d`;
-        // _system tells Capacitor to hand the URL to the OS — fires Android intent
-        window.open(geoUrl, '_system');
+      const platform = Capacitor.getPlatform();
+      const hasCoords = target.lat != null && target.lng != null;
+
+      // Build platform-specific URI that forces the OS to open the Google Maps app
+      let nativeUri: string | null = null;
+      if (platform === 'android') {
+        // Android intent that opens Google Maps with turn-by-turn navigation
+        nativeUri = hasCoords
+          ? `geo:${target.lat},${target.lng}?q=${target.lat},${target.lng}`
+          : target.address
+            ? `geo:0,0?q=${encodeURIComponent(target.address)}`
+            : null;
+      } else if (platform === 'ios') {
+        // comgooglemaps:// scheme — only works if Google Maps app is installed
+        nativeUri = hasCoords
+          ? `comgooglemaps://?daddr=${target.lat},${target.lng}&directionsmode=driving`
+          : target.address
+            ? `comgooglemaps://?q=${encodeURIComponent(target.address)}`
+            : null;
+      }
+
+      // Use Capacitor App plugin to fire the native intent / URL scheme
+      try {
+        const { App } = await import('@capacitor/app');
+        if (nativeUri) {
+          await App.openUrl({ url: nativeUri });
+          return;
+        }
+        // Fallback to https URL via App.openUrl (still uses external handler)
+        await App.openUrl({ url });
+        return;
+      } catch {
+        // App plugin failed — last resort
+        window.location.href = nativeUri ?? url;
         return;
       }
-      window.open(url, '_system');
-      return;
     }
   } catch {
-    // Capacitor not available — fall through to web behavior
+    // Capacitor not available — web behavior below
   }
 
   // Web fallback: open in a new tab
