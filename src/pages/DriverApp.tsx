@@ -30,7 +30,7 @@ import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
-  const { offers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders();
+  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders();
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   // Drivers always start OFFLINE — must opt-in each session
