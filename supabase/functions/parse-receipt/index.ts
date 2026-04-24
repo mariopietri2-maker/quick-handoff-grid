@@ -1,5 +1,8 @@
 // Parses pasted receipt text from eFood / Wolt / Box / generic into a structured order.
-import { corsHeaders } from "@supabase/supabase-js/cors";
+const corsHeaders = {
+  'Access-Control-Allow-Origin': '*',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+};
 
 const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
 
