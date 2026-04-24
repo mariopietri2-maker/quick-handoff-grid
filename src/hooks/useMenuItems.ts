@@ -1,6 +1,5 @@
 import { useEffect, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -57,6 +56,34 @@ export function useMenuItems(storeId: string | null) {
     }
   };
 
+  const bulkSetSnooze = async (ids: string[], snoozed: boolean) => {
+    if (ids.length === 0) return;
+    const { error } = await supabase
+      .from('menu_items')
+      .update({ is_snoozed: snoozed })
+      .in('id', ids);
+    if (error) {
+      toast.error('Bulk update failed');
+    } else {
+      toast.success(`${ids.length} προϊόντα ενημερώθηκαν`);
+      setItems(prev => prev.map(i => ids.includes(i.id) ? { ...i, is_snoozed: snoozed } : i));
+    }
+  };
+
+  const bulkSetAvailable = async (ids: string[], available: boolean) => {
+    if (ids.length === 0) return;
+    const { error } = await supabase
+      .from('menu_items')
+      .update({ is_available: available, is_snoozed: false })
+      .in('id', ids);
+    if (error) {
+      toast.error('Bulk update failed');
+    } else {
+      toast.success(`${ids.length} προϊόντα ενημερώθηκαν`);
+      setItems(prev => prev.map(i => ids.includes(i.id) ? { ...i, is_available: available, is_snoozed: false } : i));
+    }
+  };
+
   const addItem = async (item: { name: string; price: number; category: string; description?: string }) => {
     if (!storeId) return;
     const { error } = await supabase
@@ -70,5 +97,5 @@ export function useMenuItems(storeId: string | null) {
     }
   };
 
-  return { items, loading, toggleAvailable, toggleSnooze, addItem, refetch: fetchItems };
+  return { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem, refetch: fetchItems };
 }
