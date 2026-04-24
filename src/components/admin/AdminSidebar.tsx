@@ -39,7 +39,7 @@ const navGroups = [
       { id: 'analytics', label: 'Αναλυτικά', icon: BarChart3 },
       { id: 'orders', label: 'Παραγγελίες', icon: ShoppingBag },
       { id: 'external_orders', label: 'Εισαγωγή eFood/Wolt', icon: PackagePlus },
-      { id: 'map', label: 'Live Χάρτης', icon: MapPin },
+      
       { id: 'demand', label: 'Ζώνες Ζήτησης', icon: Flame },
       { id: 'stores', label: 'Καταστήματα', icon: Store },
       { id: 'drivers', label: 'Οδηγοί', icon: Users },

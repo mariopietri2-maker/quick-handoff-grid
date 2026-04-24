@@ -13,7 +13,7 @@ import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu } from 'l
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
-import AdminDriversMap from '@/components/admin/AdminDriversMap';
+
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
 import FinancialsManager from '@/components/admin/FinancialsManager';
 import PricingSettings from '@/components/admin/PricingSettings';
@@ -163,8 +163,6 @@ export default function AdminApp() {
         return <SupportRoleManager />;
       case 'tickets':
         return <SupportTicketsManager />;
-      case 'map':
-        return <AdminDriversMap />;
       case 'driver_map_settings':
         return <DriverMapSettings />;
       case 'demand':
