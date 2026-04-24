@@ -311,6 +311,38 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_offer_events: {
+        Row: {
+          action: string
+          created_at: string
+          driver_id: string
+          id: string
+          order_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          order_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          order_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_offer_events_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       driver_profiles: {
         Row: {
           account_holder: string | null
