@@ -102,7 +102,7 @@ export default function DriverApp() {
   const { stores: nearbyStores } = useNearbyStoresForDriver();
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
-  const handleDecline = (_id: string) => {};
+  const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
   const mapRef = useRef<DriverMapboxHandle>(null);
