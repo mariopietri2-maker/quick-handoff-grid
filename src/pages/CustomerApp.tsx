@@ -9,6 +9,7 @@ import { ShoppingBag, User } from 'lucide-react';
 import type { Database } from '@/integrations/supabase/types';
 import PromoBannerCarousel from '@/components/PromoBannerCarousel';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
+import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
@@ -31,6 +32,7 @@ export default function CustomerApp() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
+  useCustomerOrderNotifications();
 
   useEffect(() => {
     async function load() {

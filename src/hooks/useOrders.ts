@@ -180,8 +180,25 @@ export function useDriverOrders() {
     if (error) {
       toast.error('Failed to accept order');
     } else {
+      // Best-effort: log acceptance for analytics
+      supabase.from('driver_offer_events').insert({
+        driver_id: user.id,
+        order_id: orderId,
+        action: 'accepted',
+      }).then(() => {});
       fetchOrders();
     }
+  };
+
+  const declineOrder = async (orderId: string) => {
+    if (!user) return;
+    // Best-effort log — failure here should not block UX
+    supabase.from('driver_offer_events').insert({
+      driver_id: user.id,
+      order_id: orderId,
+      action: 'declined',
+    }).then(() => {});
+    setOffers(prev => prev.filter(o => o.id !== orderId));
   };
 
   const updateDeliveryStatus = async (orderId: string, newStatus: string) => {
@@ -200,7 +217,7 @@ export function useDriverOrders() {
     }
   };
 
-  return { offers, activeDelivery, loading, acceptOrder, updateDeliveryStatus, refetch: fetchOrders };
+  return { offers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, refetch: fetchOrders };
 }
 
 export function useUserStore() {
