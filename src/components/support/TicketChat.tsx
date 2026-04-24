@@ -43,7 +43,6 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState<Date>(new Date());
-  const [now, setNow] = useState<Date>(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const viewerIsAgent = isAdmin || profile?.role === 'support' || profile?.role === 'admin';
