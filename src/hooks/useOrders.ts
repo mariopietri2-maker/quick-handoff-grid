@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -111,11 +111,39 @@ export function useStoreOrders(storeId: string | null) {
   return { orders, loading, updateOrderStatus, refetch: fetchOrders };
 }
 
+const DECLINED_KEY = 'driver_declined_offers_v1';
+
+function loadDeclined(): Record<string, number> {
+  try {
+    const raw = localStorage.getItem(DECLINED_KEY);
+    if (!raw) return {};
+    const parsed = JSON.parse(raw) as Record<string, number>;
+    // Expire entries older than 2 hours so we don't grow forever
+    const cutoff = Date.now() - 2 * 60 * 60 * 1000;
+    const fresh: Record<string, number> = {};
+    for (const [id, ts] of Object.entries(parsed)) {
+      if (ts > cutoff) fresh[id] = ts;
+    }
+    return fresh;
+  } catch {
+    return {};
+  }
+}
+
+function saveDeclined(map: Record<string, number>) {
+  try {
+    localStorage.setItem(DECLINED_KEY, JSON.stringify(map));
+  } catch {
+    /* ignore */
+  }
+}
+
 export function useDriverOrders() {
   const { user } = useAuth();
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
+  const declinedRef = useRef<Record<string, number>>(loadDeclined());
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
@@ -148,7 +176,11 @@ export function useDriverOrders() {
       .limit(10);
 
     if (available) {
-      setOffers(available as OrderWithItems[]);
+      // Filter out offers the driver already declined this session
+      const filtered = (available as OrderWithItems[]).filter(
+        (o) => !declinedRef.current[o.id],
+      );
+      setOffers(filtered);
     }
 
     setLoading(false);
@@ -215,6 +247,9 @@ export function useDriverOrders() {
 
   const declineOrder = async (orderId: string) => {
     if (!user) return;
+    // Persist decline so subsequent fetches/realtime updates don't re-show it
+    declinedRef.current[orderId] = Date.now();
+    saveDeclined(declinedRef.current);
     // Best-effort log — failure here should not block UX
     supabase.from('driver_offer_events').insert({
       driver_id: user.id,
