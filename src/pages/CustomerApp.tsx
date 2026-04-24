@@ -58,14 +58,16 @@ export default function CustomerApp() {
     load();
   }, []);
 
-  const filtered = stores.filter(s => {
+  const filtered = useMemo(() => stores.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.address.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
     if (selectedCategory === 'all') return true;
     const cats = storeCategories[s.id] ?? [];
     return cats.some(c => c.includes(selectedCategory));
-  });
+  }), [stores, search, selectedCategory, storeCategories]);
+
+  const ratings = useStoreRatings(filtered.map(s => s.id));
 
   return (
     <div className="min-h-screen bg-background">
@@ -86,9 +88,10 @@ export default function CustomerApp() {
                   to="/orders"
                   className="text-xs font-medium text-muted-foreground hover:text-foreground px-2.5 py-1.5 rounded-full hover:bg-muted transition-colors"
                 >
-                  Παραγγελίες
+                  {t('customer.orders')}
                 </Link>
               )}
+              <LanguageToggle compact />
               {itemCount > 0 && (
                 <button
                   onClick={() => navigate('/checkout')}
@@ -103,11 +106,11 @@ export default function CustomerApp() {
                   to="/auth"
                   className="text-xs font-bold text-primary hover:text-primary/80 bg-primary/10 px-3 py-1.5 rounded-full transition-colors"
                 >
-                  Σύνδεση
+                  {t('customer.login')}
                 </Link>
               ) : (
                 <Link
-                  to="/orders"
+                  to="/profile"
                   className="h-8 w-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
                 >
                   <User className="h-4 w-4 text-muted-foreground" />
@@ -127,7 +130,7 @@ export default function CustomerApp() {
           <div className="relative">
             <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
             <Input
-              placeholder="Αναζήτηση καταστημάτων ή φαγητού"
+              placeholder={t('customer.search_placeholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
               className="pl-10 h-11 bg-muted border-0 rounded-full text-sm placeholder:text-muted-foreground/60 focus-visible:ring-1 focus-visible:ring-primary/30"
@@ -164,7 +167,7 @@ export default function CustomerApp() {
                     : 'text-muted-foreground group-hover:text-foreground'
                 }`}
               >
-                {cat.label}
+                {t(cat.labelKey)}
               </span>
             </button>
           ))}
@@ -175,7 +178,7 @@ export default function CustomerApp() {
       {!search && selectedCategory === 'all' && stores.length > 0 && (
         <div className="max-w-2xl mx-auto px-4 pb-2">
           <div className="flex items-center justify-between mb-3">
-            <h2 className="font-heading font-bold text-lg text-foreground">🔥 Δημοφιλή</h2>
+            <h2 className="font-heading font-bold text-lg text-foreground">🔥 {t('customer.popular')}</h2>
           </div>
           <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
             {stores.slice(0, 5).map(store => (
@@ -203,11 +206,15 @@ export default function CustomerApp() {
                     </span>
                   </div>
                   <div className="absolute top-2 right-2 bg-card/90 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
-                    <span className="text-[10px] font-bold text-foreground">⭐ 4.{5 + (store.name.length % 5)}</span>
+                    {ratings[store.id]?.count > 0 ? (
+                      <span className="text-[10px] font-bold text-foreground">⭐ {ratings[store.id].avg.toFixed(1)}</span>
+                    ) : (
+                      <span className="text-[10px] font-bold text-muted-foreground">Νέο</span>
+                    )}
                   </div>
                 </div>
                 <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span>{20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} λεπ</span>
+                  <span>{20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}</span>
                   <span>•</span>
                   <span>0,99€</span>
                 </div>
@@ -223,12 +230,12 @@ export default function CustomerApp() {
         <div className="flex items-center justify-between mb-3">
           <h2 className="font-heading font-bold text-lg text-foreground">
             {search
-              ? `Αποτελέσματα για "${search}"`
+              ? `${t('customer.results_for')} "${search}"`
               : selectedCategory !== 'all'
-                ? CATEGORY_FILTERS.find(c => c.value === selectedCategory)?.label ?? 'Εστιατόρια'
-                : 'Κοντινά Εστιατόρια'}
+                ? t(CATEGORY_FILTERS.find(c => c.value === selectedCategory)?.labelKey ?? 'cat.all')
+                : t('customer.nearby')}
           </h2>
-          <span className="text-xs text-muted-foreground">{filtered.length} καταστήματα</span>
+          <span className="text-xs text-muted-foreground">{filtered.length} {t('customer.stores_count')}</span>
         </div>
 
         {loading ? (
@@ -246,9 +253,9 @@ export default function CustomerApp() {
             <div className="h-16 w-16 rounded-full bg-muted flex items-center justify-center mx-auto mb-4">
               <MapPin className="h-7 w-7 text-muted-foreground" />
             </div>
-            <p className="font-heading font-semibold text-foreground">Δεν βρέθηκαν εστιατόρια</p>
+            <p className="font-heading font-semibold text-foreground">{t('customer.no_results')}</p>
             <p className="text-sm text-muted-foreground mt-1">
-              {search ? 'Δοκιμάστε διαφορετική αναζήτηση' : 'Ελέγξτε ξανά σύντομα'}
+              {search ? t('customer.try_search') : t('customer.check_back')}
             </p>
           </div>
         ) : (
@@ -277,12 +284,12 @@ export default function CustomerApp() {
                   <div className="absolute bottom-2 left-2 bg-card/95 backdrop-blur-sm rounded-md px-2 py-1 flex items-center gap-1 shadow-sm">
                     <Clock className="h-3 w-3 text-foreground" />
                     <span className="text-xs font-semibold text-foreground">
-                      {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} λεπ
+                      {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}
                     </span>
                   </div>
                   {store.busy_mode && (
                     <div className="absolute top-2 right-2 bg-warning/90 text-warning-foreground rounded-md px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide">
-                      Πολυάσχολο
+                      {t('customer.busy')}
                     </div>
                   )}
                   <div className="absolute top-2 left-2">
@@ -300,12 +307,21 @@ export default function CustomerApp() {
                       {store.address}
                     </p>
                     <div className="flex items-center gap-2 mt-1 text-xs text-muted-foreground">
-                      <span>0,99€ παράδοση</span>
+                      <span>0,99€ {t('customer.delivery')}</span>
                     </div>
                   </div>
-                  {/* Rating circle */}
-                  <div className="flex-shrink-0 h-8 w-8 rounded-full bg-muted flex items-center justify-center">
-                    <span className="text-xs font-bold text-foreground">4.{Math.floor(Math.random() * 5) + 5}</span>
+                  {/* Real rating */}
+                  <div className="flex-shrink-0 flex flex-col items-center gap-0.5">
+                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                      {ratings[store.id]?.count > 0 ? (
+                        <span className="text-xs font-bold text-foreground tabular-nums">{ratings[store.id].avg.toFixed(1)}</span>
+                      ) : (
+                        <Star className="h-3.5 w-3.5 text-muted-foreground" />
+                      )}
+                    </div>
+                    {ratings[store.id]?.count > 0 && (
+                      <span className="text-[9px] text-muted-foreground">({ratings[store.id].count})</span>
+                    )}
                   </div>
                 </div>
               </button>
