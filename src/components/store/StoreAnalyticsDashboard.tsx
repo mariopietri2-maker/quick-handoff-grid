@@ -194,6 +194,8 @@ export function StoreAnalyticsDashboard({ storeId }: StoreAnalyticsDashboardProp
           )}
         </CardContent>
       </Card>
+
+      <StoreRefunds storeId={storeId} />
     </div>
   );
 }
