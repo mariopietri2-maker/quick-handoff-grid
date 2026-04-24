@@ -78,10 +78,19 @@ export function useStoreOrders(storeId: string | null) {
     };
   }, [storeId, fetchOrders]);
 
-  const updateOrderStatus = async (orderId: string, newStatus: string) => {
+  const updateOrderStatus = async (
+    orderId: string,
+    newStatus: string,
+    options?: { estimatedPrepTime?: number },
+  ) => {
+    const patch: Record<string, unknown> = { status: newStatus };
+    if (typeof options?.estimatedPrepTime === 'number' && !Number.isNaN(options.estimatedPrepTime)) {
+      patch.estimated_prep_time = options.estimatedPrepTime;
+    }
     const { error } = await supabase
       .from('orders')
-      .update({ status: newStatus as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update(patch as any)
       .eq('id', orderId);
 
     if (error) {
