@@ -3,7 +3,7 @@ import {
   MessageSquare, Flame, Star, Megaphone, MapPin, Settings,
   Activity, ChevronLeft, ChevronRight, LayoutDashboard, DollarSign, Headphones,
   Flag, ShieldCheck, UserCog, Zap, ScrollText, PackagePlus, Receipt,
-  X, EyeOff, RotateCcw, Search, Clock,
+  X, EyeOff, RotateCcw, Search, Clock, UserCircle,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -284,6 +284,16 @@ function SidebarBody({
 
       {/* Footer */}
       <div className="border-t border-border p-2 shrink-0 space-y-1">
+        <Button
+          variant="ghost"
+          size="sm"
+          className="w-full justify-center gap-2"
+          onClick={() => { window.location.href = '/profile'; }}
+          title="Το προφίλ μου"
+        >
+          <UserCircle className="h-4 w-4" />
+          {!collapsed && <span className="text-xs">Το προφίλ μου</span>}
+        </Button>
         {hidden.size > 0 && (
           <Button
             variant="ghost"
