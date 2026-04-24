@@ -64,7 +64,7 @@ const roleLabels: Record<string, string> = {
 
 export default function AdminApp() {
   const { signOut } = useAuth();
-  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles } = useAdminData();
+  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates } = useAdminData();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -113,6 +113,13 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
   };
 
+  const handleResetDriverCash = async (userId: string, driverName: string) => {
+    if (!confirm(`Μηδενισμός ταμείου βάρδιας για ${driverName};`)) return;
+    const { error } = await (supabase.rpc as any)('admin_reset_driver_cash', { p_driver_id: userId });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success('Ταμείο μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-states'] }); }
+  };
+
 
 
 
@@ -152,7 +159,7 @@ export default function AdminApp() {
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
-        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} />;
+        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} />;
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
@@ -367,7 +374,7 @@ function StoresSection({ stores, allStores, filter, setFilter, onToggle }: any) 
   );
 }
 
-function DriversSection({ drivers, allDrivers, driverProfiles, filter, setFilter, onToggle }: any) {
+function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, filter, setFilter, onToggle, onResetCash }: any) {
   return (
     <div className="space-y-3">
       <SectionHeader title="Οδηγοί" count={allDrivers.length}>
@@ -386,21 +393,40 @@ function DriversSection({ drivers, allDrivers, driverProfiles, filter, setFilter
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Κωδικός</th><th>Όνομα</th><th>Τηλέφωνο</th><th className="w-20">Ενεργός</th><th>Εγγραφή</th></tr></thead>
+            <thead><tr><th>Κωδικός</th><th>Όνομα</th><th>Τηλέφωνο</th><th className="w-20">Ενεργός</th><th>Ταμείο</th><th>Εγγραφή</th></tr></thead>
             <tbody>
               {drivers.map((driver: any) => {
                 const dp = driverProfiles?.find((d: any) => d.user_id === driver.user_id);
+                const ds = driverStates?.find((s: any) => s.driver_id === driver.user_id);
+                const cash = Number(ds?.shift_cash_balance ?? 0);
                 return (
                   <tr key={driver.id}>
                     <td><span className="font-mono text-[11px] text-muted-foreground">{dp?.driver_code || '—'}</span></td>
                     <td className="font-medium">{driver.full_name || '—'}</td>
                     <td className="text-muted-foreground tabular-nums">{driver.phone || '—'}</td>
                     <td><Switch checked={dp?.is_active ?? true} onCheckedChange={() => dp && onToggle(driver.user_id, dp.is_active)} /></td>
+                    <td>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`tabular-nums font-medium ${cash > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
+                          €{cash.toFixed(2)}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+                          disabled={cash <= 0}
+                          onClick={() => onResetCash(driver.user_id, driver.full_name || 'οδηγό')}
+                          title="Μηδενισμός ταμείου"
+                        >
+                          Μηδενισμός
+                        </Button>
+                      </div>
+                    </td>
                     <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(driver.created_at), 'dd MMM yyyy')}</td>
                   </tr>
                 );
               })}
-              {!drivers.length && <tr><td colSpan={5} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
+              {!drivers.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
             </tbody>
           </table>
         </div>
