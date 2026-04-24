@@ -882,17 +882,22 @@ export type Database = {
           delivery_longitude: number | null
           distance_km: number | null
           driver_id: string | null
+          driver_payout: number
           estimated_prep_time: number | null
+          external_ref: string | null
           group_order_id: string | null
           id: string
           notes: string | null
           payment_method: string
           photo_verification_url: string | null
           pickup_checklist: Json | null
+          platform_profit: number
           refund_reason: string | null
           refunded_amount: number
           scheduled_for: string | null
+          source: string
           status: Database["public"]["Enums"]["order_status"]
+          store_charge: number
           store_id: string
           tip_amount: number | null
           total_amount: number
@@ -909,17 +914,22 @@ export type Database = {
           delivery_longitude?: number | null
           distance_km?: number | null
           driver_id?: string | null
+          driver_payout?: number
           estimated_prep_time?: number | null
+          external_ref?: string | null
           group_order_id?: string | null
           id?: string
           notes?: string | null
           payment_method?: string
           photo_verification_url?: string | null
           pickup_checklist?: Json | null
+          platform_profit?: number
           refund_reason?: string | null
           refunded_amount?: number
           scheduled_for?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["order_status"]
+          store_charge?: number
           store_id: string
           tip_amount?: number | null
           total_amount?: number
@@ -936,17 +946,22 @@ export type Database = {
           delivery_longitude?: number | null
           distance_km?: number | null
           driver_id?: string | null
+          driver_payout?: number
           estimated_prep_time?: number | null
+          external_ref?: string | null
           group_order_id?: string | null
           id?: string
           notes?: string | null
           payment_method?: string
           photo_verification_url?: string | null
           pickup_checklist?: Json | null
+          platform_profit?: number
           refund_reason?: string | null
           refunded_amount?: number
           scheduled_for?: string | null
+          source?: string
           status?: Database["public"]["Enums"]["order_status"]
+          store_charge?: number
           store_id?: string
           tip_amount?: number | null
           total_amount?: number
@@ -1409,6 +1424,10 @@ export type Database = {
           address: string
           busy_mode: boolean | null
           created_at: string
+          ext_billing_mode: string
+          ext_commission_pct: number
+          ext_flat_fee: number
+          ext_margin_pct: number
           holiday_dates: string[] | null
           id: string
           image_url: string | null
@@ -1428,6 +1447,10 @@ export type Database = {
           address: string
           busy_mode?: boolean | null
           created_at?: string
+          ext_billing_mode?: string
+          ext_commission_pct?: number
+          ext_flat_fee?: number
+          ext_margin_pct?: number
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -1447,6 +1470,10 @@ export type Database = {
           address?: string
           busy_mode?: boolean | null
           created_at?: string
+          ext_billing_mode?: string
+          ext_commission_pct?: number
+          ext_flat_fee?: number
+          ext_margin_pct?: number
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -1881,6 +1908,25 @@ export type Database = {
           p_tip?: number
         }
         Returns: undefined
+      }
+      create_external_order: {
+        Args: {
+          p_customer_name?: string
+          p_customer_phone?: string
+          p_delivery_address: string
+          p_delivery_lat?: number
+          p_delivery_lng?: number
+          p_distance_km?: number
+          p_driver_payout_override?: number
+          p_external_ref?: string
+          p_items_summary?: string
+          p_notes?: string
+          p_source: string
+          p_store_charge_override?: number
+          p_store_id: string
+          p_total_amount: number
+        }
+        Returns: string
       }
       get_public_reviews: {
         Args: { p_store_id?: string }
