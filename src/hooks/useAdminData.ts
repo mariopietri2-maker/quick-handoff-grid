@@ -86,5 +86,16 @@ export function useAdminData() {
     },
   });
 
-  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles };
+  const driverStates = useQuery({
+    queryKey: ['admin-driver-states'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('driver_state')
+        .select('driver_id, shift_cash_balance, shift_started_at, on_break');
+      if (error) throw error;
+      return (data ?? []) as { driver_id: string; shift_cash_balance: number; shift_started_at: string | null; on_break: boolean }[];
+    },
+  });
+
+  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates };
 }
