@@ -244,20 +244,32 @@ export function useDriverOrders() {
 
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
+    // If driver already has an active delivery, link the new order as stacked
+    const isStacking = !!activeDelivery && activeDelivery.id !== orderId;
+    const patch: Record<string, unknown> = {
+      driver_id: user.id,
+      status: 'accepted',
+    };
+    if (isStacking) {
+      patch.stacked_with_order_id = activeDelivery!.id;
+    }
     const { error } = await supabase
       .from('orders')
-      .update({ driver_id: user.id, status: 'accepted' as any })
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .update(patch as any)
       .eq('id', orderId);
 
     if (error) {
       toast.error('Failed to accept order');
     } else {
-      // Best-effort: log acceptance for analytics
       supabase.from('driver_offer_events').insert({
         driver_id: user.id,
         order_id: orderId,
         action: 'accepted',
       }).then(() => {});
+      if (isStacking) {
+        toast.success('🔗 Stacked: 2η παραγγελία στην ίδια διαδρομή');
+      }
       fetchOrders();
     }
   };
@@ -274,6 +286,7 @@ export function useDriverOrders() {
       action: 'declined',
     }).then(() => {});
     setOffers(prev => prev.filter(o => o.id !== orderId));
+    setStackedOffers(prev => prev.filter(o => o.id !== orderId));
   };
 
   const updateDeliveryStatus = async (orderId: string, newStatus: string) => {
