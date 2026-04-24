@@ -97,6 +97,14 @@ export function useStoreOrders(storeId: string | null) {
       toast.error('Failed to update order status');
     } else {
       toast.success(`Order updated → ${newStatus}`);
+      // Smart dispatch: trigger prediction when accepted/preparing
+      if (newStatus === 'accepted' || newStatus === 'preparing') {
+        supabase.functions.invoke('predict-dispatch-time', {
+          body: { order_id: orderId },
+        }).then(({ error: fnErr }) => {
+          if (fnErr) console.warn('Dispatch prediction failed:', fnErr);
+        });
+      }
     }
   };
 
@@ -128,11 +136,14 @@ export function useDriverOrders() {
     }
 
     // Fetch unassigned orders as offers (pending/placed without driver)
+    // Smart dispatch: only show orders whose dispatch_at has arrived (or null = legacy)
+    const nowIso = new Date().toISOString();
     const { data: available } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .is('driver_id', null)
-      .in('status', ['placed', 'accepted', 'preparing'])
+      .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+      .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
       .order('created_at', { ascending: false })
       .limit(10);
 
