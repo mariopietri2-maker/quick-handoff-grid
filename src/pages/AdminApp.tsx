@@ -9,8 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
-import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, AlertTriangle } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
@@ -128,23 +127,6 @@ export default function AdminApp() {
     else { toast.success('Πορτοφόλι μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
   };
 
-  const [wiping, setWiping] = useState(false);
-  const [wipeDialogOpen, setWipeDialogOpen] = useState(false);
-  const [wipeConfirmText, setWipeConfirmText] = useState('');
-  const handleWipeAll = async () => {
-    if (wipeConfirmText !== 'RESET') {
-      toast.error('Πληκτρολόγησε RESET για επιβεβαίωση');
-      return;
-    }
-    setWiping(true);
-    const { error } = await (supabase.rpc as any)('admin_wipe_all_data');
-    setWiping(false);
-    if (error) { toast.error(error.message || 'Αποτυχία'); return; }
-    toast.success('Όλα τα δεδομένα διαγράφηκαν & μηδενίστηκαν');
-    setWipeDialogOpen(false);
-    setWipeConfirmText('');
-    queryClient.invalidateQueries();
-  };
 
 
 
@@ -172,47 +154,6 @@ export default function AdminApp() {
       case 'overview':
         return (
           <div className="space-y-6">
-            <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
-              <div className="min-w-0">
-                <p className="text-sm font-semibold text-destructive">Επαναφορά πλατφόρμας</p>
-                <p className="text-[11px] text-muted-foreground">Διαγράφει όλες τις παραγγελίες, μενού, κριτικές, tickets και μηδενίζει πορτοφόλια & πόντους.</p>
-              </div>
-              <Button variant="destructive" size="sm" disabled={wiping} onClick={() => { setWipeConfirmText(''); setWipeDialogOpen(true); }}>
-                {wiping ? 'Διαγραφή…' : 'Reset All Data'}
-              </Button>
-            </div>
-            <AlertDialog open={wipeDialogOpen} onOpenChange={(o) => { setWipeDialogOpen(o); if (!o) setWipeConfirmText(''); }}>
-              <AlertDialogContent>
-                <AlertDialogHeader>
-                  <AlertDialogTitle className="flex items-center gap-2 text-destructive">
-                    <AlertTriangle className="h-5 w-5" /> Επαναφορά όλων των δεδομένων
-                  </AlertDialogTitle>
-                  <AlertDialogDescription>
-                    Θα διαγραφούν <strong>ΟΛΕΣ</strong> οι παραγγελίες, μενού, κριτικές, ανακοινώσεις, tickets, συναλλαγές
-                    και θα μηδενιστούν όλα τα πορτοφόλια & πόντοι. Η ενέργεια <strong>δεν αναιρείται</strong>.
-                  </AlertDialogDescription>
-                </AlertDialogHeader>
-                <div className="space-y-2">
-                  <p className="text-sm">Πληκτρολόγησε <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-destructive">RESET</code> για επιβεβαίωση:</p>
-                  <Input
-                    value={wipeConfirmText}
-                    onChange={(e) => setWipeConfirmText(e.target.value)}
-                    placeholder="RESET"
-                    autoFocus
-                  />
-                </div>
-                <AlertDialogFooter>
-                  <AlertDialogCancel disabled={wiping}>Ακύρωση</AlertDialogCancel>
-                  <AlertDialogAction
-                    disabled={wiping || wipeConfirmText !== 'RESET'}
-                    onClick={(e) => { e.preventDefault(); handleWipeAll(); }}
-                    className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                  >
-                    {wiping ? 'Διαγραφή…' : 'Διαγραφή όλων'}
-                  </AlertDialogAction>
-                </AlertDialogFooter>
-              </AlertDialogContent>
-            </AlertDialog>
             <LiveOpsKPI />
             <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
           </div>
