@@ -9,6 +9,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { Progress } from '@/components/ui/progress';
 import { ReviewForm } from '@/components/ReviewForm';
 import DriverLiveMap from '@/components/DriverLiveMap';
+import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -326,6 +327,15 @@ export default function OrderTrackingPage() {
         </Card>
 
         {!isDelivered && !isCancelled && <DeliveryCountdown order={order} />}
+
+        {isDelivered && order.driver_id && (
+          <PostDeliveryTipCard
+            orderId={order.id}
+            driverId={order.driver_id}
+            driverName={driverName}
+            initialTip={Number(order.tip_amount ?? 0)}
+          />
+        )}
 
         {isDelivered && !hasReviewed && (
           <ReviewForm

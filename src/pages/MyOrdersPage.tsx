@@ -8,6 +8,8 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { RewardsCard } from '@/components/customer/RewardsCard';
+import { CustomerWalletCard } from '@/components/customer/CustomerWalletCard';
+import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 
@@ -84,6 +86,8 @@ export default function MyOrdersPage() {
 
       <div className="max-w-lg mx-auto p-4 space-y-4">
         <RewardsCard />
+        <CustomerWalletCard />
+        <CustomerReferralCard />
         {loading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
