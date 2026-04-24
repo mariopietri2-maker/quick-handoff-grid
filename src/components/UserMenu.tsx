@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Bell, Settings, TrendingUp, Wallet,
-  LifeBuoy, Users, Share2, FileText, HelpCircle, Star,
+  LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -13,9 +13,11 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
 import { DriverSoundSettings } from '@/components/driver/DriverSoundSettings';
 import { DriverAppSettings } from '@/components/driver/DriverAppSettings';
+import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
 
 export function UserMenu() {
@@ -24,7 +26,31 @@ export function UserMenu() {
   const isDriver = profile?.role === 'driver';
   const [soundOpen, setSoundOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
+  const [breakOpen, setBreakOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { state: driverState, startBreak, endBreak } = useDriverState();
+  const onBreak = !!driverState?.on_break;
+
+  // Live tick so the countdown updates while menu is open
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    if (!onBreak) return;
+    const id = setInterval(() => setTick(t => t + 1), 1000);
+    return () => clearInterval(id);
+  }, [onBreak]);
+
+  // Auto-end break when timer expires
+  useEffect(() => {
+    if (onBreak && driverState?.break_until && new Date(driverState.break_until) <= new Date()) {
+      endBreak();
+    }
+  });
+
+  const breakRemaining = driverState?.break_until
+    ? Math.max(0, Math.floor((new Date(driverState.break_until).getTime() - Date.now()) / 1000))
+    : 0;
+  const mm = Math.floor(breakRemaining / 60).toString().padStart(2, '0');
+  const ss = (breakRemaining % 60).toString().padStart(2, '0');
 
   const itemClassName =
     'min-h-11 rounded-xl px-3 py-3 text-sm font-medium text-foreground cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground';
