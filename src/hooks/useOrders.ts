@@ -141,6 +141,7 @@ function saveDeclined(map: Record<string, number>) {
 export function useDriverOrders() {
   const { user } = useAuth();
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
+  const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
   const declinedRef = useRef<Record<string, number>>(loadDeclined());
@@ -175,12 +176,28 @@ export function useDriverOrders() {
       .order('created_at', { ascending: false })
       .limit(10);
 
-    if (available) {
-      // Filter out offers the driver already declined this session
-      const filtered = (available as OrderWithItems[]).filter(
-        (o) => !declinedRef.current[o.id],
+    const filteredAvailable = available
+      ? (available as OrderWithItems[]).filter((o) => !declinedRef.current[o.id])
+      : [];
+
+    if (active) {
+      // Driver has an active delivery — only surface "stacked" offers from the SAME store
+      // and only while we haven't picked up yet (so the second pickup is still on the path).
+      const sameStorePickupPending = ['accepted', 'preparing', 'ready', 'arrived'].includes(
+        (active as OrderWithItems).status as string,
       );
-      setOffers(filtered);
+      if (sameStorePickupPending) {
+        const sameStore = filteredAvailable.filter(
+          (o) => o.store_id === (active as OrderWithItems).store_id && o.id !== (active as OrderWithItems).id,
+        );
+        setStackedOffers(sameStore);
+      } else {
+        setStackedOffers([]);
+      }
+      setOffers([]);
+    } else {
+      setOffers(filteredAvailable);
+      setStackedOffers([]);
     }
 
     setLoading(false);
