@@ -13,6 +13,7 @@ import { StoreHoursManager } from '@/components/store/StoreHoursManager';
 import AutoAcceptRules from '@/components/store/AutoAcceptRules';
 import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderIngest';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
+import { StoreDailyGoalCard } from '@/components/store/StoreDailyGoalCard';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -124,6 +125,9 @@ export default function StoreApp() {
               </div>
             )}
             <AnnouncementsBanner audience="store_owners" />
+            <div className="mb-4">
+              <StoreDailyGoalCard storeId={store.id} />
+            </div>
             <Tabs defaultValue="orders">
             <TabsList className="w-full mb-4 flex-wrap h-auto gap-1">
               <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
