@@ -3,7 +3,7 @@ import {
   BarChart3, ShoppingBag, Store, Users, Shield, Wallet,
   MessageSquare, Flame, Star, Megaphone, MapPin, Settings,
   Activity, Bell, ChevronLeft, ChevronRight, LayoutDashboard, DollarSign, Headphones,
-  Flag, ShieldCheck, UserCog, Zap, ScrollText,
+  Flag, ShieldCheck, UserCog, Zap, ScrollText, PackagePlus, Receipt,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -32,6 +32,7 @@ const navGroups = [
     label: 'Λειτουργίες',
     items: [
       { id: 'orders', label: 'Παραγγελίες', icon: ShoppingBag },
+      { id: 'external_orders', label: 'Εισαγωγή eFood/Wolt', icon: PackagePlus },
       { id: 'stores', label: 'Καταστήματα', icon: Store },
       { id: 'drivers', label: 'Οδηγοί', icon: Users },
       { id: 'users', label: 'Χρήστες', icon: Shield },
@@ -43,6 +44,7 @@ const navGroups = [
     items: [
       { id: 'financials', label: 'Οικονομικά', icon: Wallet },
       { id: 'pricing', label: 'Τιμολόγηση', icon: DollarSign },
+      { id: 'store_billing', label: 'Χρέωση Καταστημάτων', icon: Receipt },
       { id: 'tickets', label: 'Support Tickets', icon: MessageSquare, badgeKey: 'pendingTickets' as const },
     ],
   },

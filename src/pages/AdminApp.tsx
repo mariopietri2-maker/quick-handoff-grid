@@ -33,6 +33,8 @@ import AdminAuditLog from '@/components/admin/AdminAuditLog';
 import LiveOpsKPI from '@/components/admin/LiveOpsKPI';
 import CannedRepliesManager from '@/components/admin/CannedRepliesManager';
 import FraudSignalsPanel from '@/components/admin/FraudSignalsPanel';
+import ExternalOrderIngest from '@/components/admin/ExternalOrderIngest';
+import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -185,6 +187,10 @@ export default function AdminApp() {
         return <CannedRepliesManager />;
       case 'fraud':
         return <FraudSignalsPanel />;
+      case 'external_orders':
+        return <ExternalOrderIngest />;
+      case 'store_billing':
+        return <StoreBillingSettings />;
       default:
         return null;
     }

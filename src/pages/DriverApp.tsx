@@ -11,7 +11,7 @@ import { DriverWallet } from '@/components/driver/DriverWallet';
 import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
-import DriverBreakButton from '@/components/driver/DriverBreakButton';
+
 import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
 import CashTracker from '@/components/driver/CashTracker';
 import { useDriverOrders } from '@/hooks/useOrders';
@@ -186,7 +186,6 @@ export default function DriverApp() {
                   <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
                 </div>
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
-                  {!activeDelivery && <DriverBreakButton />}
                   <DriverSupportButton orderId={activeDelivery?.id} />
                 </div>
               </div>
