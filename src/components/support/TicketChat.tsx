@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Timer, AlarmClock } from 'lucide-react';
+import { Loader2, Timer, AlarmClock, Sparkles } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
 import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
@@ -42,6 +42,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [suggesting, setSuggesting] = useState(false);
   const [now, setNow] = useState<Date>(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
@@ -188,6 +189,29 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
       : 'Αναμονή υποστήριξης'
     : 'Σε εκκρεμότητα';
 
+  const suggestReply = async () => {
+    if (suggesting) return;
+    setSuggesting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('support-ai', {
+        body: { ticketId, action: 'suggest_reply' },
+      });
+      if (error) throw error;
+      const result = (data as { result?: string })?.result?.trim();
+      if (result) {
+        setText(result);
+        toast.success('Πρόταση AI έτοιμη — μπορείτε να την επεξεργαστείτε');
+      } else {
+        toast.error('Καμία πρόταση από το AI');
+      }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Αποτυχία πρότασης AI';
+      toast.error(msg);
+    } finally {
+      setSuggesting(false);
+    }
+  };
+
   return (
     <div className="flex flex-col h-[480px] border rounded-lg bg-card">
       {/* Live response timer bar */}
@@ -244,6 +268,24 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
           })
         )}
       </div>
+      {viewerIsAgent && (
+        <div className="px-3 py-2 border-t bg-muted/20 flex items-center justify-between gap-2">
+          <button
+            type="button"
+            onClick={suggestReply}
+            disabled={suggesting}
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-semibold bg-primary/10 text-primary hover:bg-primary/15 disabled:opacity-50 transition-colors"
+          >
+            {suggesting ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {suggesting ? 'Δημιουργία...' : 'AI Πρόταση Απάντησης'}
+          </button>
+          <span className="text-[10px] text-muted-foreground">Powered by AI · επεξεργάσιμο</span>
+        </div>
+      )}
       <ChatComposer
         onSend={send}
         draft={text}
