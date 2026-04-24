@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
+import { CustomerProfilePanel } from '@/components/support/CustomerProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
 import { TeamChat } from '@/components/support/TeamChat';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
