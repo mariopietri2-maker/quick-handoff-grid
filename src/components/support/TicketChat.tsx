@@ -247,24 +247,6 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
           })
         )}
       </div>
-      {viewerIsAgent && (
-        <div className="px-3 py-2 border-t bg-muted/20 flex items-center justify-between gap-2">
-          <button
-            type="button"
-            onClick={suggestReply}
-            disabled={suggesting}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-heading font-semibold bg-primary/10 text-primary hover:bg-primary/15 disabled:opacity-50 transition-colors"
-          >
-            {suggesting ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            {suggesting ? 'Δημιουργία...' : 'AI Πρόταση Απάντησης'}
-          </button>
-          <span className="text-[10px] text-muted-foreground">Powered by AI · επεξεργάσιμο</span>
-        </div>
-      )}
       <ChatComposer
         onSend={send}
         draft={text}
