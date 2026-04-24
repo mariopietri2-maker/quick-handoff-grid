@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Search, MapPin, Clock, ChevronRight } from 'lucide-react';
+import { useState, useEffect, useMemo } from 'react';
+import { Search, MapPin, Clock, ChevronRight, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
@@ -10,20 +10,23 @@ import type { Database } from '@/integrations/supabase/types';
 import PromoBannerCarousel from '@/components/PromoBannerCarousel';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
+import { useStoreRatings } from '@/hooks/useStoreRatings';
+import { useT } from '@/lib/i18n';
+import { LanguageToggle } from '@/components/LanguageToggle';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
-const CATEGORY_FILTERS = [
-  { label: 'Όλα', value: 'all', emoji: '🍽️', bg: 'bg-muted' },
-  { label: 'Πίτσα', value: 'Πίτσες', emoji: '🍕', bg: 'bg-red-50' },
-  { label: 'Burgers', value: 'Burgers', emoji: '🍔', bg: 'bg-amber-50' },
-  { label: 'Κρέπες', value: 'Κρέπες', emoji: '🥞', bg: 'bg-yellow-50' },
-  { label: 'Ζυμαρικά', value: 'Ζυμαρικά', emoji: '🍝', bg: 'bg-orange-50' },
-  { label: 'Σουβλάκια', value: 'Σουβλάκια', emoji: '🥙', bg: 'bg-green-50' },
-  { label: 'Σαλάτες', value: 'Σαλάτες', emoji: '🥗', bg: 'bg-emerald-50' },
-];
-
 export default function CustomerApp() {
+  const t = useT();
+  const CATEGORY_FILTERS = [
+    { labelKey: 'cat.all', value: 'all', emoji: '🍽️', bg: 'bg-muted' },
+    { labelKey: 'cat.pizza', value: 'Πίτσες', emoji: '🍕', bg: 'bg-red-50' },
+    { labelKey: 'cat.burgers', value: 'Burgers', emoji: '🍔', bg: 'bg-amber-50' },
+    { labelKey: 'cat.crepes', value: 'Κρέπες', emoji: '🥞', bg: 'bg-yellow-50' },
+    { labelKey: 'cat.pasta', value: 'Ζυμαρικά', emoji: '🍝', bg: 'bg-orange-50' },
+    { labelKey: 'cat.gyros', value: 'Σουβλάκια', emoji: '🥙', bg: 'bg-green-50' },
+    { labelKey: 'cat.salads', value: 'Σαλάτες', emoji: '🥗', bg: 'bg-emerald-50' },
+  ];
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
