@@ -64,7 +64,7 @@ const roleLabels: Record<string, string> = {
 
 export default function AdminApp() {
   const { signOut } = useAuth();
-  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates } = useAdminData();
+  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets } = useAdminData();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
@@ -120,6 +120,13 @@ export default function AdminApp() {
     else { toast.success('Ταμείο μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-states'] }); }
   };
 
+  const handleResetDriverWallet = async (userId: string, driverName: string) => {
+    if (!confirm(`Μηδενισμός πορτοφολιού για ${driverName}; (διαθέσιμο + εκκρεμές → 0)`)) return;
+    const { error } = await (supabase.rpc as any)('admin_reset_driver_wallet', { p_driver_id: userId });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success('Πορτοφόλι μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
+  };
+
 
 
 
@@ -159,7 +166,7 @@ export default function AdminApp() {
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
-        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} />;
+        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} />;
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
@@ -374,7 +381,7 @@ function StoresSection({ stores, allStores, filter, setFilter, onToggle }: any) 
   );
 }
 
-function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, filter, setFilter, onToggle, onResetCash }: any) {
+function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, filter, setFilter, onToggle, onResetCash, onResetWallet }: any) {
   return (
     <div className="space-y-3">
       <SectionHeader title="Οδηγοί" count={allDrivers.length}>
@@ -393,12 +400,16 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, fil
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Κωδικός</th><th>Όνομα</th><th>Τηλέφωνο</th><th className="w-20">Ενεργός</th><th>Ταμείο</th><th>Εγγραφή</th></tr></thead>
+            <thead><tr><th>Κωδικός</th><th>Όνομα</th><th>Τηλέφωνο</th><th className="w-20">Ενεργός</th><th>Ταμείο Βάρδιας</th><th>Πορτοφόλι</th><th>Εγγραφή</th></tr></thead>
             <tbody>
               {drivers.map((driver: any) => {
                 const dp = driverProfiles?.find((d: any) => d.user_id === driver.user_id);
                 const ds = driverStates?.find((s: any) => s.driver_id === driver.user_id);
+                const dw = driverWallets?.find((w: any) => w.driver_id === driver.user_id);
                 const cash = Number(ds?.shift_cash_balance ?? 0);
+                const walletAvail = Number(dw?.available_balance ?? 0);
+                const walletPending = Number(dw?.pending_balance ?? 0);
+                const walletTotal = walletAvail + walletPending;
                 return (
                   <tr key={driver.id}>
                     <td><span className="font-mono text-[11px] text-muted-foreground">{dp?.driver_code || '—'}</span></td>
@@ -422,11 +433,28 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, fil
                         </Button>
                       </div>
                     </td>
+                    <td>
+                      <div className="flex items-center gap-1.5">
+                        <span className={`tabular-nums font-medium ${walletTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}`} title={`Διαθέσιμο €${walletAvail.toFixed(2)} • Εκκρεμές €${walletPending.toFixed(2)}`}>
+                          €{walletTotal.toFixed(2)}
+                        </span>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
+                          disabled={walletTotal <= 0}
+                          onClick={() => onResetWallet(driver.user_id, driver.full_name || 'οδηγό')}
+                          title="Μηδενισμός πορτοφολιού"
+                        >
+                          Μηδενισμός
+                        </Button>
+                      </div>
+                    </td>
                     <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(driver.created_at), 'dd MMM yyyy')}</td>
                   </tr>
                 );
               })}
-              {!drivers.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
+              {!drivers.length && <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
             </tbody>
           </table>
         </div>

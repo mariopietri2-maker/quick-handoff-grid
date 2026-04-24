@@ -97,5 +97,16 @@ export function useAdminData() {
     },
   });
 
-  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates };
+  const driverWallets = useQuery({
+    queryKey: ['admin-driver-wallets'],
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('driver_wallets')
+        .select('driver_id, available_balance, pending_balance, total_withdrawn');
+      if (error) throw error;
+      return (data ?? []) as { driver_id: string; available_balance: number; pending_balance: number; total_withdrawn: number }[];
+    },
+  });
+
+  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets };
 }
