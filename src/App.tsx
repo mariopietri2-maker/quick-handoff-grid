@@ -10,6 +10,7 @@ import Index from "./pages/Index.tsx";
 import AuthPage from "./pages/AuthPage.tsx";
 import DriverApp from "./pages/DriverApp.tsx";
 import DriverProfilePage from "./pages/DriverProfilePage.tsx";
+import ProfilePage from "./pages/ProfilePage.tsx";
 import StoreApp from "./pages/StoreApp.tsx";
 import AdminApp from "./pages/AdminApp.tsx";
 import SupportApp from "./pages/SupportApp.tsx";
@@ -40,6 +41,11 @@ const App = () => (
               <Route path="/checkout" element={<CheckoutPage />} />
               <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
               <Route path="/orders" element={<MyOrdersPage />} />
+              <Route path="/profile" element={
+                <ProtectedRoute>
+                  <ProfilePage />
+                </ProtectedRoute>
+              } />
               <Route path="/driver" element={
                 <ProtectedRoute allowedRoles={['driver']}>
                   <DriverApp />
