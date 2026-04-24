@@ -30,7 +30,7 @@ import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
-  const { offers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders();
+  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders();
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   // Drivers always start OFFLINE — must opt-in each session
@@ -275,6 +275,40 @@ export default function DriverApp() {
                   {activeDelivery && (
                     <>
                       <StackedOrderBanner orderId={activeDelivery.id} />
+
+                      {/* Stacked offers — same store, on the path */}
+                      {stackedOffers.length > 0 && (
+                        <div className="space-y-2 animate-slide-up">
+                          <div className="flex items-center justify-between px-1">
+                            <h3 className="font-heading font-bold text-xs text-[hsl(var(--driver-text))] uppercase tracking-wide">
+                              🔗 Επιπλέον στην ίδια διαδρομή
+                            </h3>
+                            <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5">
+                              +{stackedOffers.length}
+                            </Badge>
+                          </div>
+                          {stackedOffers.map((offer) => (
+                            <OrderOfferCard
+                              key={offer.id}
+                              offer={{
+                                id: offer.id,
+                                storeName: storeInfo?.name || 'Ίδιο κατάστημα',
+                                storeAddress: storeInfo?.address || 'Παραλαβή',
+                                deliveryAddress: offer.delivery_address || 'Πελάτης',
+                                estimatedPayout: Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0),
+                                basePay: Number(offer.delivery_fee ?? 0),
+                                tipAmount: Number(offer.tip_amount ?? 0),
+                                perKmRate: 0.50,
+                                totalDistance: 0,
+                                estimatedTime: offer.estimated_prep_time ?? 20,
+                                itemCount: offer.order_items?.length ?? 0,
+                              }}
+                              onAccept={acceptOrder}
+                              onDecline={handleDecline}
+                            />
+                          ))}
+                        </div>
+                      )}
                       {tracking && (
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20 driver-glass">
                           <Navigation className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))] animate-pulse" />
