@@ -409,6 +409,39 @@ export type Database = {
         }
         Relationships: []
       }
+      driver_notifications: {
+        Row: {
+          body: string
+          created_at: string
+          driver_id: string
+          id: string
+          read_at: string | null
+          sender_id: string | null
+          severity: string
+          title: string
+        }
+        Insert: {
+          body: string
+          created_at?: string
+          driver_id: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string | null
+          severity?: string
+          title: string
+        }
+        Update: {
+          body?: string
+          created_at?: string
+          driver_id?: string
+          id?: string
+          read_at?: string | null
+          sender_id?: string | null
+          severity?: string
+          title?: string
+        }
+        Relationships: []
+      }
       driver_offer_events: {
         Row: {
           action: string
@@ -2166,6 +2199,22 @@ export type Database = {
           p_order_id: string
           p_predicted_prep_minutes: number
         }
+        Returns: undefined
+      }
+      support_credit_wallet: {
+        Args: { p_amount: number; p_driver_id: string; p_reason: string }
+        Returns: undefined
+      }
+      support_grant_bonus: {
+        Args: { p_amount: number; p_driver_id: string; p_reason: string }
+        Returns: undefined
+      }
+      support_suspend_driver: {
+        Args: { p_driver_id: string; p_reason: string; p_suspend: boolean }
+        Returns: undefined
+      }
+      support_unassign_order: {
+        Args: { p_order_id: string }
         Returns: undefined
       }
     }
