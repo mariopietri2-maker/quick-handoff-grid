@@ -383,9 +383,14 @@ export default function SupportApp() {
             <Users className="h-3.5 w-3.5" /> Ομάδα
           </button>
         </div>
-        <Button variant="ghost" size="icon" onClick={handleSignOut}>
-          <LogOut className="h-4 w-4" />
-        </Button>
+        <div className="flex items-center gap-1">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Το προφίλ μου">
+            <Headphones className="h-4 w-4" />
+          </Button>
+          <Button variant="ghost" size="icon" onClick={handleSignOut} title="Αποσύνδεση">
+            <LogOut className="h-4 w-4" />
+          </Button>
+        </div>
       </header>
 
       {view === 'team' ? (
