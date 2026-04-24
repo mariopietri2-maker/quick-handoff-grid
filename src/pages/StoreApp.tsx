@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
 import { MenuControl } from '@/components/store/MenuControl';
 import { StoreSettings } from '@/components/store/StoreSettings';
+import { PrinterSettings } from '@/components/store/PrinterSettings';
 import { StoreAnalyticsDashboard } from '@/components/store/StoreAnalyticsDashboard';
 import { PromoManager } from '@/components/store/PromoManager';
 import { InventoryControl } from '@/components/store/InventoryControl';
@@ -219,8 +220,9 @@ export default function StoreApp() {
               <AutoAcceptRules storeId={store.id} />
             </TabsContent>
 
-            <TabsContent value="settings">
+            <TabsContent value="settings" className="space-y-4">
               <StoreSettings storeId={store.id} />
+              <PrinterSettings storeName={store.name} />
             </TabsContent>
           </Tabs>
           </>
