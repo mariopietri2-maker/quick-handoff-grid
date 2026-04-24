@@ -64,7 +64,7 @@ const roleLabels: Record<string, string> = {
 
 export default function AdminApp() {
   const { signOut } = useAuth();
-  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles } = useAdminData();
+  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates } = useAdminData();
   const queryClient = useQueryClient();
   const [activeSection, setActiveSection] = useState('overview');
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
