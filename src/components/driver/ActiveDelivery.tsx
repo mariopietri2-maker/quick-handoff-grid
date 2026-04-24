@@ -1,7 +1,8 @@
 import { useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin } from 'lucide-react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
+import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -142,15 +143,28 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           </div>
         </div>
 
-        {/* Navigate button — focuses the in-app map on the destination */}
+        {/* Navigate buttons — in-app focus + one-tap external Maps */}
         {(isGoingToStore || isGoingToCustomer) && (
-          <button
-            onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
-            className="w-full mt-4 h-11 rounded-xl gradient-primary text-white text-sm font-heading font-semibold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
-          >
-            <Navigation className="h-4 w-4" />
-            Εμφάνιση Διαδρομής στο Χάρτη
-          </button>
+          <div className="mt-4 grid grid-cols-2 gap-2">
+            <button
+              onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
+              className="h-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))] text-xs font-heading font-semibold flex items-center justify-center gap-1.5 hover:bg-[hsl(var(--driver-surface))] transition-all active:scale-[0.98]"
+            >
+              <Navigation className="h-4 w-4" />
+              Στον Χάρτη
+            </button>
+            <button
+              onClick={() => openGoogleMapsNavigation(
+                isGoingToStore
+                  ? { lat: delivery.storeLat ?? null, lng: delivery.storeLng ?? null, address: delivery.storeAddress }
+                  : { lat: delivery.deliveryLat ?? null, lng: delivery.deliveryLng ?? null, address: delivery.deliveryAddress }
+              )}
+              className="h-11 rounded-xl gradient-primary text-white text-xs font-heading font-semibold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
+            >
+              <ExternalLink className="h-4 w-4" />
+              Google Maps
+            </button>
+          </div>
         )}
       </div>
 
