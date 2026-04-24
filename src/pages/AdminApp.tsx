@@ -167,6 +167,15 @@ export default function AdminApp() {
       case 'overview':
         return (
           <div className="space-y-6">
+            <div className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-3">
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-destructive">Επαναφορά πλατφόρμας</p>
+                <p className="text-[11px] text-muted-foreground">Διαγράφει όλες τις παραγγελίες, μενού, κριτικές, tickets και μηδενίζει πορτοφόλια & πόντους.</p>
+              </div>
+              <Button variant="destructive" size="sm" disabled={wiping} onClick={handleWipeAll}>
+                {wiping ? 'Διαγραφή…' : 'Reset All Data'}
+              </Button>
+            </div>
             <LiveOpsKPI />
             <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
           </div>
