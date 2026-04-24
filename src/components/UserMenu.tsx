@@ -115,6 +115,27 @@ export function UserMenu() {
           {isDriver ? (
             <>
               <DropdownMenuSeparator />
+              <DropdownMenuLabel className={labelClassName}>Κατάσταση</DropdownMenuLabel>
+              {onBreak ? (
+                <DropdownMenuItem
+                  className={`${itemClassName} bg-warning/10 text-warning focus:bg-warning/15 focus:text-warning data-[highlighted]:bg-warning/15 data-[highlighted]:text-warning`}
+                  onSelect={(e) => { e.preventDefault(); endBreak(); setMenuOpen(false); }}
+                >
+                  <Pause className="mr-2 h-4 w-4 shrink-0" />
+                  <span className="flex-1">Λήξη Διαλείμματος</span>
+                  <span className="font-heading text-xs font-bold tabular-nums">{mm}:{ss}</span>
+                </DropdownMenuItem>
+              ) : (
+                <DropdownMenuItem
+                  className={itemClassName}
+                  onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setBreakOpen(true), 50); }}
+                >
+                  <Coffee className="mr-2 h-4 w-4 shrink-0" />
+                  Διάλειμμα
+                </DropdownMenuItem>
+              )}
+
+              <DropdownMenuSeparator />
               <DropdownMenuLabel className={labelClassName}>Λογαριασμός</DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver/profile')}>
                 <UserCircle className="mr-2 h-4 w-4 shrink-0" />
@@ -202,6 +223,23 @@ export function UserMenu() {
         <>
           <DriverSoundSettings open={soundOpen} onOpenChange={setSoundOpen} />
           <DriverAppSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
+          <Dialog open={breakOpen} onOpenChange={setBreakOpen}>
+            <DialogContent className="max-w-xs">
+              <DialogHeader>
+                <DialogTitle>Επιλέξτε διάρκεια διαλείμματος</DialogTitle>
+              </DialogHeader>
+              <div className="grid grid-cols-2 gap-2">
+                {[15, 30, 45, 60].map(m => (
+                  <Button key={m} onClick={() => { startBreak(m); setBreakOpen(false); }} variant="outline" className="h-12">
+                    {m} λεπτά
+                  </Button>
+                ))}
+              </div>
+              <p className="text-xs text-muted-foreground text-center">
+                Δεν θα λαμβάνεις νέες παραγγελίες κατά τη διάρκεια του διαλείμματος.
+              </p>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </>
