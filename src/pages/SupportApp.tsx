@@ -238,7 +238,11 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
-          <DriverProfilePanel driverId={activeTicket.driver_id} />
+          {activeTicket.requester_role === 'customer' && activeTicket.requester_id ? (
+            <CustomerProfilePanel userId={activeTicket.requester_id} />
+          ) : (
+            <DriverProfilePanel driverId={activeTicket.driver_id} />
+          )}
 
           <SupportAIPanel
             ticketId={activeTicket.id}
