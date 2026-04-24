@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Timer, AlarmClock, Sparkles } from 'lucide-react';
+import { Loader2, Timer, AlarmClock } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
 import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
@@ -42,7 +42,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [suggesting, setSuggesting] = useState(false);
+  const [now, setNow] = useState<Date>(new Date());
   const [now, setNow] = useState<Date>(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
