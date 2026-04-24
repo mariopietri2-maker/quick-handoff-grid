@@ -13,6 +13,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
+import { CustomerProfilePanel } from '@/components/support/CustomerProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
 import { TeamChat } from '@/components/support/TeamChat';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
@@ -237,7 +238,11 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
-          <DriverProfilePanel driverId={activeTicket.driver_id} />
+          {activeTicket.requester_role === 'customer' && activeTicket.requester_id ? (
+            <CustomerProfilePanel userId={activeTicket.requester_id} />
+          ) : (
+            <DriverProfilePanel driverId={activeTicket.driver_id} />
+          )}
 
           <SupportAIPanel
             ticketId={activeTicket.id}
