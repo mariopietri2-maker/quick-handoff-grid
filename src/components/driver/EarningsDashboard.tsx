@@ -59,6 +59,33 @@ export function EarningsDashboard() {
             <StatCard icon={Coins} label="Βασικά" value={`${today.basePay.toFixed(2)}€`} />
             <StatCard icon={Award} label="Tips" value={`${today.tips.toFixed(2)}€`} accent />
           </div>
+
+          {today.trips > 0 && projection.hourlyRate > 0 && (
+            <div className="rounded-2xl driver-glass p-4 space-y-2">
+              <div className="flex items-center gap-2">
+                <TrendingUp className={`h-4 w-4 ${projection.onTrackForGoal ? 'text-[hsl(var(--driver-accent))]' : 'text-primary'}`} />
+                <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Πρόβλεψη Ημέρας</h3>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-[10px] text-[hsl(var(--driver-text-muted))] uppercase tracking-wider">Ρυθμός / ώρα</p>
+                  <p className="font-heading font-bold text-lg text-[hsl(var(--driver-text))] tabular-nums">{projection.hourlyRate.toFixed(2)}€</p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-[hsl(var(--driver-text-muted))] uppercase tracking-wider">Πρόβλεψη 10ω</p>
+                  <p className={`font-heading font-bold text-lg tabular-nums ${projection.onTrackForGoal ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text))]'}`}>{projection.projectedDay.toFixed(2)}€</p>
+                </div>
+              </div>
+              {projection.goal > 0 && (
+                <p className={`text-xs font-heading ${projection.onTrackForGoal ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'}`}>
+                  {projection.onTrackForGoal
+                    ? `🎯 Με αυτόν τον ρυθμό θα πιάσετε τον στόχο των ${projection.goal}€!`
+                    : `Στόχος ${projection.goal}€ — χρειάζεστε ${(projection.goal / 10).toFixed(2)}€/ώρα`}
+                </p>
+              )}
+            </div>
+          )}
+
           {today.trips === 0 && (
             <p className="text-center text-sm text-[hsl(var(--driver-text-muted))] py-4">Δεν ολοκληρώθηκαν παραδόσεις σήμερα</p>
           )}
