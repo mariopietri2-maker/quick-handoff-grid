@@ -2070,6 +2070,7 @@ export type Database = {
         Args: { p_driver_id: string }
         Returns: undefined
       }
+      admin_wipe_all_data: { Args: never; Returns: undefined }
       count_active_support_agents: { Args: never; Returns: number }
       create_driver_earning: {
         Args: {
