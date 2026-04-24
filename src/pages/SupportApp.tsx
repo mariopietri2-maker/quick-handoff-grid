@@ -12,6 +12,7 @@ import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, A
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
+import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { CustomerProfilePanel } from '@/components/support/CustomerProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
@@ -248,6 +249,14 @@ export default function SupportApp() {
             ticketId={activeTicket.id}
             onUseReply={(t) => chatRef.current?.setDraft(t)}
           />
+
+          {activeTicket.driver_id && (
+            <SupportActionToolbox
+              ticket={activeTicket}
+              driver={driver}
+              onDriverChanged={() => queryClient.invalidateQueries({ queryKey: ['support-driver-profile', activeTicket.driver_id] })}
+            />
+          )}
 
           {/* Agent Toolbox */}
           <Card>

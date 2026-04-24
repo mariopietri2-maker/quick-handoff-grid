@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, Eye, EyeOff } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
+import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Badge } from '@/components/ui/badge';
@@ -46,6 +47,7 @@ export default function DriverApp() {
   };
   const { user } = useAuth();
   useEarnings();
+  useDriverNotifications();
 
   // ─── 2-hour auto-offline inactivity timer ───
   // Drivers stay online indefinitely while interacting with the app.
