@@ -1,21 +1,10 @@
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, Banknote, TrendingUp } from 'lucide-react';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, Lock, TrendingUp } from 'lucide-react';
 import { useDriverWallet } from '@/hooks/useDriverWallet';
 import { useEarnings } from '@/hooks/useEarnings';
-import { toast } from '@/hooks/use-toast';
 
 export function DriverWallet() {
-  const { wallet, transactions, loading, cashOut, cashingOut } = useDriverWallet();
+  const { wallet, transactions, loading } = useDriverWallet();
   const { today, week } = useEarnings();
-
-  const handleCashOut = async () => {
-    if (!wallet || wallet.available_balance <= 0) return;
-    const { error } = await cashOut(wallet.available_balance);
-    if (error) {
-      toast({ title: 'Σφάλμα', description: error, variant: 'destructive' });
-    } else {
-      toast({ title: 'Επιτυχία!', description: 'Αίτημα ανάληψης υποβλήθηκε' });
-    }
-  };
 
   if (loading) {
     return (
@@ -34,23 +23,24 @@ export function DriverWallet() {
     <div className="space-y-4">
       {/* Balance card */}
       <div className="rounded-2xl driver-gradient-earn p-6">
-        <div className="flex items-center gap-2 mb-1">
-          <Wallet className="h-4 w-4 text-white/60" />
-          <span className="text-white/60 text-[10px] font-heading uppercase tracking-[0.15em]">Διαθέσιμο Υπόλοιπο</span>
+        <div className="flex items-center justify-between mb-1">
+          <div className="flex items-center gap-2">
+            <Wallet className="h-4 w-4 text-white/60" />
+            <span className="text-white/60 text-[10px] font-heading uppercase tracking-[0.15em]">Μετρητά Εισπράξεων</span>
+          </div>
+          <span className="flex items-center gap-1 text-[9px] font-heading uppercase tracking-wider text-white/70 bg-white/10 px-2 py-1 rounded-md">
+            <Lock className="h-2.5 w-2.5" />
+            Read-only
+          </span>
         </div>
         <p className="font-heading font-extrabold text-4xl text-white tabular-nums">{balance.toFixed(2)}€</p>
         <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Εκκρεμές: {pending.toFixed(2)}€</span>
-          <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />Αναληφθέντα: {withdrawn.toFixed(2)}€</span>
+          <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />Παραδοθέντα: {withdrawn.toFixed(2)}€</span>
         </div>
-        <button
-          onClick={handleCashOut}
-          disabled={balance <= 0 || cashingOut}
-          className="w-full mt-4 h-11 rounded-xl text-sm font-heading font-bold bg-white text-emerald-700 hover:bg-white/90 transition-colors disabled:opacity-40 flex items-center justify-center gap-2"
-        >
-          <Banknote className="h-4 w-4" />
-          {cashingOut ? 'Επεξεργασία...' : `Ανάληψη ${balance.toFixed(2)}€`}
-        </button>
+        <p className="text-[11px] text-white/60 mt-3 leading-relaxed">
+          Μόνο η διαχείριση μπορεί να διορθώσει ή να μηδενίσει το ποσό κατά την παράδοση των μετρητών.
+        </p>
       </div>
 
       {/* Stats grid */}
