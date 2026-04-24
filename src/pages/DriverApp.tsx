@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, Eye, EyeOff } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
@@ -105,6 +105,13 @@ export default function DriverApp() {
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
+  const [showInlineNav, setShowInlineNav] = useState<boolean>(() => {
+    if (typeof localStorage === 'undefined') return true;
+    return localStorage.getItem('driver_show_inline_nav_v1') !== '0';
+  });
+  useEffect(() => {
+    try { localStorage.setItem('driver_show_inline_nav_v1', showInlineNav ? '1' : '0'); } catch {}
+  }, [showInlineNav]);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
@@ -241,13 +248,27 @@ export default function DriverApp() {
                       <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
                     </div>
                   )}
-                  {/* Inline Navigation Panel preview */}
+                  {/* Inline Navigation Panel preview (toggleable) */}
                   {routeInfo && navigatingTo && (
-                    <NavigationPanel
-                      route={routeInfo}
-                      destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
-                      destinationType={navigatingTo}
-                    />
+                    <div className="space-y-2">
+                      <div className="flex justify-end">
+                        <button
+                          onClick={() => setShowInlineNav(v => !v)}
+                          className="h-8 px-3 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-1.5 text-[11px] font-heading font-semibold text-[hsl(var(--driver-text))] hover:bg-[hsl(var(--driver-surface))] transition-colors active:scale-95"
+                          aria-label={showInlineNav ? 'Απόκρυψη πλοήγησης' : 'Εμφάνιση πλοήγησης'}
+                        >
+                          {showInlineNav ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
+                          {showInlineNav ? 'Απόκρυψη πλοήγησης' : 'Εμφάνιση πλοήγησης'}
+                        </button>
+                      </div>
+                      {showInlineNav && (
+                        <NavigationPanel
+                          route={routeInfo}
+                          destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
+                          destinationType={navigatingTo}
+                        />
+                      )}
+                    </div>
                   )}
 
                   {/* Active delivery card */}
