@@ -125,50 +125,78 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="relative h-10 w-10 rounded-full bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_38%)] border-0 shadow-primary text-white flex items-center justify-center transition-all duration-200 hover:brightness-110 hover:scale-105 active:scale-95"
+        className="group relative h-11 px-3 rounded-2xl bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_36%)] shadow-[0_8px_20px_-6px_hsl(var(--driver-accent)/0.55)] text-white flex items-center gap-2 transition-all duration-200 hover:brightness-110 hover:shadow-[0_10px_24px_-6px_hsl(var(--driver-accent)/0.7)] active:scale-[0.97]"
         aria-label="Υποστήριξη"
       >
-        <Headphones className="h-5 w-5" strokeWidth={2.25} />
+        <span className="relative h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
+          <Headphones className="h-3.5 w-3.5" strokeWidth={2.5} />
+        </span>
+        <span className="font-heading font-bold text-[11px] uppercase tracking-wider leading-none hidden sm:inline">
+          Βοήθεια
+        </span>
         {openCount > 0 ? (
-          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-red-500 text-white text-[10px] font-bold flex items-center justify-center ring-2 ring-white">
+          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[hsl(var(--driver-accent))] text-[10px] font-extrabold flex items-center justify-center shadow-sm">
             {openCount}
           </span>
         ) : (
-          <span className="absolute top-0 right-0 h-2.5 w-2.5 rounded-full bg-emerald-400 ring-2 ring-white animate-pulse" />
+          <span className="relative flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75 animate-ping" />
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 ring-1 ring-white" />
+          </span>
         )}
       </button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-        <DialogContent className="max-w-md mx-auto bg-card border border-border p-0 overflow-hidden shadow-2xl max-h-[92vh] flex flex-col">
-          <div className="px-5 pt-5 pb-3 bg-gradient-to-br from-[hsl(var(--driver-accent))]/15 to-transparent border-b border-[hsl(var(--driver-border))]">
-            <DialogHeader>
-              <DialogTitle className="font-heading text-lg text-[hsl(var(--driver-text))] flex items-center gap-2">
-                {(view === 'category' || view === 'chat') && (
-                  <button
-                    onClick={() => {
-                      if (view === 'chat') { setActiveTicket(null); setView('tickets'); }
-                      else setView('menu');
-                      setCategory(null);
-                    }}
-                    className="text-[hsl(var(--driver-text-muted))] hover:text-[hsl(var(--driver-text))]"
-                  >
-                    <ArrowLeft className="h-4 w-4" />
-                  </button>
-                )}
-                <LifeBuoy className="h-5 w-5 text-[hsl(var(--driver-accent))]" />
-                {view === 'chat' && activeTicket
-                  ? `Ticket #${activeTicket.id.slice(0, 6)}`
-                  : view === 'tickets'
-                  ? 'Οι Συνομιλίες μου'
-                  : 'Υποστήριξη Οδηγών'}
-              </DialogTitle>
-              <DialogDescription className="text-xs text-[hsl(var(--driver-text-muted))]">
-                {view === 'category' && category
-                  ? category.hint
-                  : view === 'chat'
-                  ? 'Συνομιλία σε πραγματικό χρόνο με την υποστήριξη'
-                  : 'Διαθέσιμοι 24/7 για άμεση βοήθεια.'}
-              </DialogDescription>
+        <DialogContent className="max-w-md mx-auto bg-card border border-border p-0 overflow-hidden shadow-2xl max-h-[92vh] flex flex-col rounded-2xl">
+          <div className="relative px-5 pt-5 pb-4 bg-gradient-to-br from-[hsl(var(--driver-accent))]/20 via-[hsl(var(--driver-accent))]/8 to-transparent border-b border-[hsl(var(--driver-border))]">
+            {/* Decorative ring */}
+            <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-[hsl(var(--driver-accent))]/15 blur-2xl pointer-events-none" />
+            <DialogHeader className="relative">
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-2.5">
+                  {(view === 'category' || view === 'chat') && (
+                    <button
+                      onClick={() => {
+                        if (view === 'chat') { setActiveTicket(null); setView('tickets'); }
+                        else setView('menu');
+                        setCategory(null);
+                      }}
+                      className="h-8 w-8 rounded-full bg-[hsl(var(--driver-bg))] border border-[hsl(var(--driver-border))] flex items-center justify-center text-[hsl(var(--driver-text-muted))] hover:text-[hsl(var(--driver-text))] hover:bg-[hsl(var(--driver-surface))] transition-colors active:scale-95"
+                      aria-label="Πίσω"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                    </button>
+                  )}
+                  <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_38%)] flex items-center justify-center shadow-md shrink-0">
+                    <LifeBuoy className="h-5 w-5 text-white" strokeWidth={2.25} />
+                  </div>
+                  <div className="min-w-0">
+                    <DialogTitle className="font-heading text-[15px] font-bold text-[hsl(var(--driver-text))] leading-tight">
+                      {view === 'chat' && activeTicket
+                        ? `Ticket #${activeTicket.id.slice(0, 6).toUpperCase()}`
+                        : view === 'tickets'
+                        ? 'Οι Συνομιλίες μου'
+                        : 'Υποστήριξη Οδηγών'}
+                    </DialogTitle>
+                    <DialogDescription className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 leading-snug">
+                      {view === 'category' && category
+                        ? category.hint
+                        : view === 'chat'
+                        ? 'Συνομιλία σε πραγματικό χρόνο'
+                        : 'Διαθέσιμοι 24/7 · μέσος χρόνος < 5 λ'}
+                    </DialogDescription>
+                  </div>
+                </div>
+                <div className="shrink-0 inline-flex items-center gap-1.5 px-2 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30">
+                  <span className="relative flex h-1.5 w-1.5">
+                    <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75 animate-ping" />
+                    <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500" />
+                  </span>
+                  <span className="text-[9px] font-heading font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400">
+                    Live
+                  </span>
+                </div>
+              </div>
             </DialogHeader>
           </div>
 

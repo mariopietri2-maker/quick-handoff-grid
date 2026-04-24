@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
-import { SupportAIPanel } from '@/components/support/SupportAIPanel';
+
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { CustomerProfilePanel } from '@/components/support/CustomerProfilePanel';
@@ -245,10 +245,6 @@ export default function SupportApp() {
             <DriverProfilePanel driverId={activeTicket.driver_id} />
           )}
 
-          <SupportAIPanel
-            ticketId={activeTicket.id}
-            onUseReply={(t) => chatRef.current?.setDraft(t)}
-          />
 
           {activeTicket.driver_id && (
             <SupportActionToolbox
