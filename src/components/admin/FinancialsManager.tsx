@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, TrendingUp, ArrowDownCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import MoneyBagsPanel from './MoneyBagsPanel';
 
 export default function FinancialsManager() {
   const queryClient = useQueryClient();
