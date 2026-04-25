@@ -12,6 +12,7 @@ import { InventoryControl } from '@/components/store/InventoryControl';
 import { StoreHoursManager } from '@/components/store/StoreHoursManager';
 import AutoAcceptRules from '@/components/store/AutoAcceptRules';
 import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderIngest';
+import StoreWalletCard from '@/components/store/StoreWalletCard';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { StoreDailyGoalCard } from '@/components/store/StoreDailyGoalCard';
 import { Badge } from '@/components/ui/badge';
