@@ -72,15 +72,18 @@ export default function StoreWalletCard({ storeId }: Props) {
           <p className="text-4xl font-heading font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">
             €{available.toFixed(2)}
           </p>
-          <p className="text-xs text-muted-foreground mt-1">Διαθέσιμο για πληρωμή (85% από κάθε παραγγελία)</p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {available >= 0 ? 'Διαθέσιμο για πληρωμή (85% από in-app παραγγελίες)' : 'Οφειλή προς την πλατφόρμα (external delivery)'}
+          </p>
           <div className="mt-3 flex items-center gap-2 text-xs">
             <TrendingUp className="h-3 w-3 text-muted-foreground" />
             <span className="text-muted-foreground">Συνολικά κέρδη: <span className="font-medium tabular-nums">€{lifetime.toFixed(2)}</span></span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
-            Η πλατφόρμα κρατά 15% (5% admin + 10% λειτουργίας).
-            Η πληρωμή γίνεται από τη διαχείριση.
+            <strong>In-app:</strong> κρατάμε 15% (5% admin + 10% λειτουργίας).<br/>
+            <strong>External (efood/wolt/box):</strong> χρεώνεστε το delivery fee του οδηγού.
           </p>
+
         </CardContent>
       </Card>
 
