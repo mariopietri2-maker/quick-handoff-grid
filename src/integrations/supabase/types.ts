@@ -95,6 +95,69 @@ export type Database = {
         }
         Relationships: []
       }
+      admin_treasury: {
+        Row: {
+          admin_balance: number
+          id: number
+          lifetime_admin_earned: number
+          lifetime_driver_topup: number
+          lifetime_platform_earned: number
+          platform_pool: number
+          updated_at: string
+        }
+        Insert: {
+          admin_balance?: number
+          id?: number
+          lifetime_admin_earned?: number
+          lifetime_driver_topup?: number
+          lifetime_platform_earned?: number
+          platform_pool?: number
+          updated_at?: string
+        }
+        Update: {
+          admin_balance?: number
+          id?: number
+          lifetime_admin_earned?: number
+          lifetime_driver_topup?: number
+          lifetime_platform_earned?: number
+          platform_pool?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      admin_treasury_ledger: {
+        Row: {
+          amount: number
+          bag: string
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          order_id: string | null
+          type: string
+        }
+        Insert: {
+          amount: number
+          bag: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type: string
+        }
+        Update: {
+          amount?: number
+          bag?: string
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string
@@ -376,6 +439,54 @@ export type Database = {
           order_count?: number
           radius_km?: number
           updated_at?: string
+        }
+        Relationships: []
+      }
+      driver_cash_debts: {
+        Row: {
+          admin_share: number
+          amount_owed: number
+          cash_collected: number
+          created_at: string
+          driver_id: string
+          driver_share: number
+          id: string
+          order_id: string | null
+          platform_share: number
+          settled: boolean
+          settled_at: string | null
+          settled_by: string | null
+          store_share: number
+        }
+        Insert: {
+          admin_share?: number
+          amount_owed?: number
+          cash_collected?: number
+          created_at?: string
+          driver_id: string
+          driver_share?: number
+          id?: string
+          order_id?: string | null
+          platform_share?: number
+          settled?: boolean
+          settled_at?: string | null
+          settled_by?: string | null
+          store_share?: number
+        }
+        Update: {
+          admin_share?: number
+          amount_owed?: number
+          cash_collected?: number
+          created_at?: string
+          driver_id?: string
+          driver_share?: number
+          id?: string
+          order_id?: string | null
+          platform_share?: number
+          settled?: boolean
+          settled_at?: string | null
+          settled_by?: string | null
+          store_share?: number
         }
         Relationships: []
       }
@@ -1616,6 +1727,69 @@ export type Database = {
           },
         ]
       }
+      store_wallet_ledger: {
+        Row: {
+          amount: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          order_id: string | null
+          store_id: string
+          type: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          store_id: string
+          type: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          order_id?: string | null
+          store_id?: string
+          type?: string
+        }
+        Relationships: []
+      }
+      store_wallets: {
+        Row: {
+          available_balance: number
+          created_at: string
+          id: string
+          lifetime_earnings: number
+          pending_balance: number
+          store_id: string
+          updated_at: string
+        }
+        Insert: {
+          available_balance?: number
+          created_at?: string
+          id?: string
+          lifetime_earnings?: number
+          pending_balance?: number
+          store_id: string
+          updated_at?: string
+        }
+        Update: {
+          available_balance?: number
+          created_at?: string
+          id?: string
+          lifetime_earnings?: number
+          pending_balance?: number
+          store_id?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       stores: {
         Row: {
           address: string
@@ -2095,12 +2269,20 @@ export type Database = {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
       }
+      admin_payout_store: {
+        Args: { p_amount: number; p_description?: string; p_store_id: string }
+        Returns: undefined
+      }
       admin_reset_driver_cash: {
         Args: { p_driver_id: string }
         Returns: undefined
       }
       admin_reset_driver_wallet: {
         Args: { p_driver_id: string }
+        Returns: undefined
+      }
+      admin_settle_driver_cash: {
+        Args: { p_debt_id: string }
         Returns: undefined
       }
       admin_wipe_all_data: { Args: never; Returns: undefined }

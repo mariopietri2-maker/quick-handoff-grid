@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap, PackagePlus } from 'lucide-react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap, PackagePlus, Wallet } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
@@ -12,6 +12,7 @@ import { InventoryControl } from '@/components/store/InventoryControl';
 import { StoreHoursManager } from '@/components/store/StoreHoursManager';
 import AutoAcceptRules from '@/components/store/AutoAcceptRules';
 import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderIngest';
+import StoreWalletCard from '@/components/store/StoreWalletCard';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { StoreDailyGoalCard } from '@/components/store/StoreDailyGoalCard';
 import { Badge } from '@/components/ui/badge';
@@ -159,6 +160,10 @@ export default function StoreApp() {
                 <BarChart3 className="h-4 w-4 mr-1.5" />
                 Στατιστικά
               </TabsTrigger>
+              <TabsTrigger value="wallet" className="flex-1 min-w-[90px] font-heading">
+                <Wallet className="h-4 w-4 mr-1.5" />
+                Πορτοφόλι
+              </TabsTrigger>
               <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading">
                 <Tag className="h-4 w-4 mr-1.5" />
                 Προσφορές
@@ -214,6 +219,10 @@ export default function StoreApp() {
 
             <TabsContent value="analytics">
               <StoreAnalyticsDashboard storeId={store.id} />
+            </TabsContent>
+
+            <TabsContent value="wallet">
+              <StoreWalletCard storeId={store.id} />
             </TabsContent>
 
             <TabsContent value="promos">

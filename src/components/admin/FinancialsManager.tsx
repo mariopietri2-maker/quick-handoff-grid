@@ -8,6 +8,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, TrendingUp, ArrowDownCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import MoneyBagsPanel from './MoneyBagsPanel';
 
 export default function FinancialsManager() {
   const queryClient = useQueryClient();
@@ -91,7 +92,9 @@ export default function FinancialsManager() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <MoneyBagsPanel />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
