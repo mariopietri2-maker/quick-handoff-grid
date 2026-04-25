@@ -160,6 +160,10 @@ export default function StoreApp() {
                 <BarChart3 className="h-4 w-4 mr-1.5" />
                 Στατιστικά
               </TabsTrigger>
+              <TabsTrigger value="wallet" className="flex-1 min-w-[90px] font-heading">
+                <Wallet className="h-4 w-4 mr-1.5" />
+                Πορτοφόλι
+              </TabsTrigger>
               <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading">
                 <Tag className="h-4 w-4 mr-1.5" />
                 Προσφορές
