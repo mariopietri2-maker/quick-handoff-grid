@@ -92,7 +92,9 @@ export default function FinancialsManager() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
+      <MoneyBagsPanel />
+
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
           <CardContent className="p-4 flex items-center gap-3">
