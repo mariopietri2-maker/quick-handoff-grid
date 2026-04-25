@@ -221,6 +221,10 @@ export default function StoreApp() {
               <StoreAnalyticsDashboard storeId={store.id} />
             </TabsContent>
 
+            <TabsContent value="wallet">
+              <StoreWalletCard storeId={store.id} />
+            </TabsContent>
+
             <TabsContent value="promos">
               <PromoManager storeId={store.id} />
             </TabsContent>
