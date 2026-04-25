@@ -69,7 +69,7 @@ export default function StoreWalletCard({ storeId }: Props) {
           </div>
         </CardHeader>
         <CardContent>
-          <p className="text-4xl font-heading font-extrabold tabular-nums text-emerald-600 dark:text-emerald-400">
+          <p className={`text-4xl font-heading font-extrabold tabular-nums ${available >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
             €{available.toFixed(2)}
           </p>
           <p className="text-xs text-muted-foreground mt-1">
