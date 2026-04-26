@@ -11,6 +11,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertTriangle, MapPin, Wallet, Gift, Ban, RotateCcw, BellRing, Siren, Phone, Loader2, Zap,
+  XCircle, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DriverLocationDialog } from './DriverLocationDialog';
@@ -21,7 +22,7 @@ interface Props {
   onDriverChanged?: () => void;
 }
 
-type DialogKey = null | 'location' | 'credit' | 'bonus' | 'suspend' | 'broadcast' | 'sos' | 'unassign';
+type DialogKey = null | 'location' | 'credit' | 'bonus' | 'suspend' | 'broadcast' | 'sos' | 'unassign' | 'cancel_order' | 'modify_order';
 
 export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props) {
   const [open, setOpen] = useState<DialogKey>(null);
@@ -35,11 +36,19 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
   const [severity, setSeverity] = useState<'info' | 'warning' | 'urgent'>('info');
   const [suspending, setSuspending] = useState(true);
 
+  // Order modify state
+  const [editTotal, setEditTotal] = useState('');
+  const [editFee, setEditFee] = useState('');
+  const [editTip, setEditTip] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editReason, setEditReason] = useState('');
+
   const driverId = ticket.driver_id as string;
   const orderId = ticket.order_id as string | null;
 
   const reset = () => {
     setAmount(''); setReason(''); setTitle(''); setBody(''); setSeverity('info'); setSuspending(true);
+    setEditTotal(''); setEditFee(''); setEditTip(''); setEditAddress(''); setEditReason('');
   };
 
   const close = () => { setOpen(null); reset(); setLoading(false); };
@@ -140,6 +149,54 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
     close();
   };
 
+  const submitCancelOrder = async () => {
+    if (!orderId) return;
+    if (!reason.trim()) return toast.error('Συμπλήρωσε λόγο ακύρωσης');
+    setLoading(true);
+    const { error } = await (supabase as any).rpc('support_cancel_order', {
+      p_order_id: orderId, p_reason: reason,
+    });
+    if (error) { toast.error(error.message); setLoading(false); return; }
+    await sendChatNote(`❌ Η παραγγελία #${orderId.slice(0, 8)} ακυρώθηκε από support: ${reason}`);
+    toast.success('Παραγγελία ακυρώθηκε');
+    close();
+  };
+
+  const openModifyDialog = async () => {
+    if (!orderId) return;
+    // Prefill from current order
+    const { data } = await (supabase as any)
+      .from('orders')
+      .select('total_amount, delivery_fee, tip_amount, delivery_address')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (data) {
+      setEditTotal(String(data.total_amount ?? ''));
+      setEditFee(String(data.delivery_fee ?? ''));
+      setEditTip(String(data.tip_amount ?? ''));
+      setEditAddress(data.delivery_address ?? '');
+    }
+    setOpen('modify_order');
+  };
+
+  const submitModifyOrder = async () => {
+    if (!orderId) return;
+    if (!editReason.trim()) return toast.error('Συμπλήρωσε λόγο τροποποίησης');
+    setLoading(true);
+    const { error } = await (supabase as any).rpc('support_modify_order', {
+      p_order_id: orderId,
+      p_total_amount:    editTotal === '' ? null : Number(editTotal),
+      p_delivery_fee:    editFee   === '' ? null : Number(editFee),
+      p_tip_amount:      editTip   === '' ? null : Number(editTip),
+      p_delivery_address: editAddress || null,
+      p_change_reason:   editReason,
+    });
+    if (error) { toast.error(error.message); setLoading(false); return; }
+    await sendChatNote(`✏️ Η παραγγελία #${orderId.slice(0, 8)} τροποποιήθηκε: ${editReason}`);
+    toast.success('Παραγγελία τροποποιήθηκε');
+    close();
+  };
+
   // ─── Render ─────────────────────────────────────────
   return (
     <Card>
@@ -159,6 +216,19 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
             label="Αλλαγή οδηγού"
             disabled={!orderId}
             onClick={() => setOpen('unassign')}
+          />
+          <ToolBtn
+            icon={Pencil}
+            label="Τροπ. παραγγελίας"
+            disabled={!orderId}
+            onClick={openModifyDialog}
+          />
+          <ToolBtn
+            icon={XCircle}
+            label="Ακύρωση παραγγ."
+            tone="danger"
+            disabled={!orderId}
+            onClick={() => setOpen('cancel_order')}
           />
           <ToolBtn icon={Siren} label="SOS κλιμάκωση" tone="danger" onClick={() => setOpen('sos')} />
         </div>
@@ -347,6 +417,75 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Cancel order */}
+        <Dialog open={open === 'cancel_order'} onOpenChange={(o) => !o && close()}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <XCircle className="h-5 w-5" /> Ακύρωση παραγγελίας
+              </DialogTitle>
+              <DialogDescription>
+                Η παραγγελία <b>#{orderId?.slice(0, 8)}</b> θα σημανθεί ως ακυρωμένη.
+                Δεν επιτρέπεται για παραδομένες παραγγελίες — εκεί χρησιμοποίησε επιστροφή χρημάτων.
+              </DialogDescription>
+            </DialogHeader>
+            <div>
+              <Label>Λόγος ακύρωσης</Label>
+              <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="π.χ. Πελάτης δεν απαντά, λάθος διεύθυνση, διπλή παραγγελία" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={close}>Άκυρο</Button>
+              <Button onClick={submitCancelOrder} variant="destructive" disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Ακύρωση
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modify order */}
+        <Dialog open={open === 'modify_order'} onOpenChange={(o) => !o && close()}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Pencil className="h-5 w-5" /> Τροποποίηση παραγγελίας
+              </DialogTitle>
+              <DialogDescription>
+                Άφησε κενά πεδία για να μην αλλάξουν. Δεν επιτρέπεται σε παραδομένες ή ακυρωμένες παραγγελίες.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">Σύνολο €</Label>
+                  <Input type="number" step="0.01" min="0" value={editTotal} onChange={(e) => setEditTotal(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Διανομή €</Label>
+                  <Input type="number" step="0.01" min="0" value={editFee} onChange={(e) => setEditFee(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Φιλοδώρ. €</Label>
+                  <Input type="number" step="0.01" min="0" value={editTip} onChange={(e) => setEditTip(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Διεύθυνση παράδοσης</Label>
+                <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} placeholder="Νέα διεύθυνση" />
+              </div>
+              <div>
+                <Label className="text-xs">Λόγος αλλαγής (υποχρεωτικό)</Label>
+                <Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="π.χ. Διόρθωση τιμής μετά από καταγγελία πελάτη" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={close}>Άκυρο</Button>
+              <Button onClick={submitModifyOrder} disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Αποθήκευση αλλαγών
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
@@ -370,7 +509,7 @@ function ToolBtn({
       variant="outline"
       onClick={onClick}
       disabled={disabled}
-      className={`h-9 text-[11px] justify-start ${cls}`}
+      className={`h-10 sm:h-9 text-[11px] justify-start ${cls}`}
     >
       <Icon className="h-3.5 w-3.5 mr-1.5" />
       {label}

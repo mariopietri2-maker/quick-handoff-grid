@@ -130,7 +130,7 @@ export default function StoreApp() {
               <StoreDailyGoalCard storeId={store.id} />
             </div>
             <Tabs defaultValue="orders">
-            <TabsList className="w-full mb-4 flex-wrap h-auto gap-1">
+            <TabsList className="w-full mb-4 h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin">
               <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
                 <ClipboardList className="h-4 w-4 mr-1.5" />
                 Παραγγελίες
