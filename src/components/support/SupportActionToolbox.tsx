@@ -11,6 +11,7 @@ import {
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
   AlertTriangle, MapPin, Wallet, Gift, Ban, RotateCcw, BellRing, Siren, Phone, Loader2, Zap,
+  XCircle, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { DriverLocationDialog } from './DriverLocationDialog';
@@ -21,7 +22,7 @@ interface Props {
   onDriverChanged?: () => void;
 }
 
-type DialogKey = null | 'location' | 'credit' | 'bonus' | 'suspend' | 'broadcast' | 'sos' | 'unassign';
+type DialogKey = null | 'location' | 'credit' | 'bonus' | 'suspend' | 'broadcast' | 'sos' | 'unassign' | 'cancel_order' | 'modify_order';
 
 export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props) {
   const [open, setOpen] = useState<DialogKey>(null);
@@ -35,11 +36,19 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
   const [severity, setSeverity] = useState<'info' | 'warning' | 'urgent'>('info');
   const [suspending, setSuspending] = useState(true);
 
+  // Order modify state
+  const [editTotal, setEditTotal] = useState('');
+  const [editFee, setEditFee] = useState('');
+  const [editTip, setEditTip] = useState('');
+  const [editAddress, setEditAddress] = useState('');
+  const [editReason, setEditReason] = useState('');
+
   const driverId = ticket.driver_id as string;
   const orderId = ticket.order_id as string | null;
 
   const reset = () => {
     setAmount(''); setReason(''); setTitle(''); setBody(''); setSeverity('info'); setSuspending(true);
+    setEditTotal(''); setEditFee(''); setEditTip(''); setEditAddress(''); setEditReason('');
   };
 
   const close = () => { setOpen(null); reset(); setLoading(false); };
