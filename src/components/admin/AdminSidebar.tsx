@@ -39,8 +39,6 @@ const navGroups = [
       { id: 'analytics', label: 'Αναλυτικά', icon: BarChart3 },
       { id: 'orders', label: 'Παραγγελίες', icon: ShoppingBag },
       { id: 'external_orders', label: 'Εισαγωγή eFood/Wolt', icon: PackagePlus },
-      
-      { id: 'demand', label: 'Ζώνες Ζήτησης', icon: Flame },
       { id: 'stores', label: 'Καταστήματα', icon: Store },
       { id: 'drivers', label: 'Οδηγοί', icon: Users },
       { id: 'users', label: 'Χρήστες', icon: Shield },
@@ -59,8 +57,7 @@ const navGroups = [
   {
     label: 'Πλατφόρμα',
     items: [
-      { id: 'activity', label: 'Activity Log', icon: Activity },
-      { id: 'audit_log', label: 'Audit Log', icon: ScrollText },
+      { id: 'audit', label: 'Activity & Audit', icon: ScrollText },
       { id: 'feature_flags', label: 'Feature Flags', icon: Flag },
       { id: 'overrides', label: 'Surge / Overrides', icon: Zap },
       { id: 'admin_perms', label: 'Admin Permissions', icon: ShieldCheck },
@@ -69,7 +66,6 @@ const navGroups = [
       { id: 'announcements', label: 'Ανακοινώσεις', icon: Megaphone },
       { id: 'reviews', label: 'Κριτικές', icon: Star },
       { id: 'canned_replies', label: 'Έτοιμες Απαντήσεις', icon: MessageSquare },
-      { id: 'fraud', label: 'Σήματα Απάτης', icon: ShieldCheck },
     ],
   },
 ];
