@@ -2383,12 +2383,30 @@ export type Database = {
         }
         Returns: undefined
       }
+      support_cancel_order: {
+        Args: { p_order_id: string; p_reason?: string }
+        Returns: undefined
+      }
       support_credit_wallet: {
         Args: { p_amount: number; p_driver_id: string; p_reason: string }
         Returns: undefined
       }
       support_grant_bonus: {
         Args: { p_amount: number; p_driver_id: string; p_reason: string }
+        Returns: undefined
+      }
+      support_modify_order: {
+        Args: {
+          p_change_reason?: string
+          p_delivery_address?: string
+          p_delivery_fee?: number
+          p_delivery_lat?: number
+          p_delivery_lng?: number
+          p_notes?: string
+          p_order_id: string
+          p_tip_amount?: number
+          p_total_amount?: number
+        }
         Returns: undefined
       }
       support_suspend_driver: {
