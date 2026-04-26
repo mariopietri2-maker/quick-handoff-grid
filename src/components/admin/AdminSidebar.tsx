@@ -1,7 +1,7 @@
 import {
   BarChart3, ShoppingBag, Store, Users, Shield, Wallet,
-  MessageSquare, Flame, Star, Megaphone, MapPin, Settings,
-  Activity, ChevronLeft, ChevronRight, LayoutDashboard, DollarSign, Headphones,
+  MessageSquare, Star, Megaphone, Settings,
+  ChevronLeft, ChevronRight, LayoutDashboard, DollarSign, Headphones,
   Flag, ShieldCheck, UserCog, Zap, ScrollText, PackagePlus, Receipt,
   X, EyeOff, RotateCcw, Search, Clock, UserCircle,
 } from 'lucide-react';
