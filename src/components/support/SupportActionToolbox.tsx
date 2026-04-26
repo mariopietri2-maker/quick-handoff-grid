@@ -509,7 +509,7 @@ function ToolBtn({
       variant="outline"
       onClick={onClick}
       disabled={disabled}
-      className={`h-9 text-[11px] justify-start ${cls}`}
+      className={`h-10 sm:h-9 text-[11px] justify-start ${cls}`}
     >
       <Icon className="h-3.5 w-3.5 mr-1.5" />
       {label}
