@@ -149,6 +149,54 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
     close();
   };
 
+  const submitCancelOrder = async () => {
+    if (!orderId) return;
+    if (!reason.trim()) return toast.error('Συμπλήρωσε λόγο ακύρωσης');
+    setLoading(true);
+    const { error } = await (supabase as any).rpc('support_cancel_order', {
+      p_order_id: orderId, p_reason: reason,
+    });
+    if (error) { toast.error(error.message); setLoading(false); return; }
+    await sendChatNote(`❌ Η παραγγελία #${orderId.slice(0, 8)} ακυρώθηκε από support: ${reason}`);
+    toast.success('Παραγγελία ακυρώθηκε');
+    close();
+  };
+
+  const openModifyDialog = async () => {
+    if (!orderId) return;
+    // Prefill from current order
+    const { data } = await (supabase as any)
+      .from('orders')
+      .select('total_amount, delivery_fee, tip_amount, delivery_address')
+      .eq('id', orderId)
+      .maybeSingle();
+    if (data) {
+      setEditTotal(String(data.total_amount ?? ''));
+      setEditFee(String(data.delivery_fee ?? ''));
+      setEditTip(String(data.tip_amount ?? ''));
+      setEditAddress(data.delivery_address ?? '');
+    }
+    setOpen('modify_order');
+  };
+
+  const submitModifyOrder = async () => {
+    if (!orderId) return;
+    if (!editReason.trim()) return toast.error('Συμπλήρωσε λόγο τροποποίησης');
+    setLoading(true);
+    const { error } = await (supabase as any).rpc('support_modify_order', {
+      p_order_id: orderId,
+      p_total_amount:    editTotal === '' ? null : Number(editTotal),
+      p_delivery_fee:    editFee   === '' ? null : Number(editFee),
+      p_tip_amount:      editTip   === '' ? null : Number(editTip),
+      p_delivery_address: editAddress || null,
+      p_change_reason:   editReason,
+    });
+    if (error) { toast.error(error.message); setLoading(false); return; }
+    await sendChatNote(`✏️ Η παραγγελία #${orderId.slice(0, 8)} τροποποιήθηκε: ${editReason}`);
+    toast.success('Παραγγελία τροποποιήθηκε');
+    close();
+  };
+
   // ─── Render ─────────────────────────────────────────
   return (
     <Card>
@@ -168,6 +216,19 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
             label="Αλλαγή οδηγού"
             disabled={!orderId}
             onClick={() => setOpen('unassign')}
+          />
+          <ToolBtn
+            icon={Pencil}
+            label="Τροπ. παραγγελίας"
+            disabled={!orderId}
+            onClick={openModifyDialog}
+          />
+          <ToolBtn
+            icon={XCircle}
+            label="Ακύρωση παραγγ."
+            tone="danger"
+            disabled={!orderId}
+            onClick={() => setOpen('cancel_order')}
           />
           <ToolBtn icon={Siren} label="SOS κλιμάκωση" tone="danger" onClick={() => setOpen('sos')} />
         </div>
