@@ -20,19 +20,16 @@ import PricingSettings from '@/components/admin/PricingSettings';
 import SupportRoleManager from '@/components/admin/SupportRoleManager';
 import WalletAdjustDialog from '@/components/admin/WalletAdjustDialog';
 import SuspendDialog from '@/components/admin/SuspendDialog';
-import DemandZonesManager from '@/components/admin/DemandZonesManager';
 import DriverMapSettings from '@/components/admin/DriverMapSettings';
 import AdminSidebar from '@/components/admin/AdminSidebar';
 import AdminOverview from '@/components/admin/AdminOverview';
-import AdminActivityLog from '@/components/admin/AdminActivityLog';
+import AdminAuditTab from '@/components/admin/AdminAuditTab';
 import FeatureFlagsManager from '@/components/admin/FeatureFlagsManager';
 import OperationalOverrides from '@/components/admin/OperationalOverrides';
 import RemoteUserActions from '@/components/admin/RemoteUserActions';
 import AdminPermissionsManager from '@/components/admin/AdminPermissionsManager';
-import AdminAuditLog from '@/components/admin/AdminAuditLog';
 import LiveOpsKPI from '@/components/admin/LiveOpsKPI';
 import CannedRepliesManager from '@/components/admin/CannedRepliesManager';
-import FraudSignalsPanel from '@/components/admin/FraudSignalsPanel';
 import ExternalOrderIngest from '@/components/admin/ExternalOrderIngest';
 import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
 import { Link } from 'react-router-dom';
@@ -160,8 +157,10 @@ export default function AdminApp() {
         );
       case 'analytics':
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
+      case 'audit':
       case 'activity':
-        return <AdminActivityLog />;
+      case 'audit_log':
+        return <AdminAuditTab />;
       case 'orders':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} />;
       case 'stores':
@@ -180,8 +179,6 @@ export default function AdminApp() {
         return <SupportTicketsManager />;
       case 'driver_map_settings':
         return <DriverMapSettings />;
-      case 'demand':
-        return <DemandZonesManager />;
       case 'reviews':
         return <ReviewsSection reviews={reviews.data} />;
       case 'announcements':
@@ -194,12 +191,8 @@ export default function AdminApp() {
         return <RemoteUserActions />;
       case 'admin_perms':
         return <AdminPermissionsManager />;
-      case 'audit_log':
-        return <AdminAuditLog />;
       case 'canned_replies':
         return <CannedRepliesManager />;
-      case 'fraud':
-        return <FraudSignalsPanel />;
       case 'external_orders':
         return <ExternalOrderIngest />;
       case 'store_billing':
