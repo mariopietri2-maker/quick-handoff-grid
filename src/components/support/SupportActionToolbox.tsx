@@ -417,6 +417,75 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
             </DialogFooter>
           </DialogContent>
         </Dialog>
+
+        {/* Cancel order */}
+        <Dialog open={open === 'cancel_order'} onOpenChange={(o) => !o && close()}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2 text-destructive">
+                <XCircle className="h-5 w-5" /> Ακύρωση παραγγελίας
+              </DialogTitle>
+              <DialogDescription>
+                Η παραγγελία <b>#{orderId?.slice(0, 8)}</b> θα σημανθεί ως ακυρωμένη.
+                Δεν επιτρέπεται για παραδομένες παραγγελίες — εκεί χρησιμοποίησε επιστροφή χρημάτων.
+              </DialogDescription>
+            </DialogHeader>
+            <div>
+              <Label>Λόγος ακύρωσης</Label>
+              <Textarea rows={3} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="π.χ. Πελάτης δεν απαντά, λάθος διεύθυνση, διπλή παραγγελία" />
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={close}>Άκυρο</Button>
+              <Button onClick={submitCancelOrder} variant="destructive" disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Ακύρωση
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+
+        {/* Modify order */}
+        <Dialog open={open === 'modify_order'} onOpenChange={(o) => !o && close()}>
+          <DialogContent className="max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="flex items-center gap-2">
+                <Pencil className="h-5 w-5" /> Τροποποίηση παραγγελίας
+              </DialogTitle>
+              <DialogDescription>
+                Άφησε κενά πεδία για να μην αλλάξουν. Δεν επιτρέπεται σε παραδομένες ή ακυρωμένες παραγγελίες.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-3">
+              <div className="grid grid-cols-3 gap-2">
+                <div>
+                  <Label className="text-xs">Σύνολο €</Label>
+                  <Input type="number" step="0.01" min="0" value={editTotal} onChange={(e) => setEditTotal(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Διανομή €</Label>
+                  <Input type="number" step="0.01" min="0" value={editFee} onChange={(e) => setEditFee(e.target.value)} />
+                </div>
+                <div>
+                  <Label className="text-xs">Φιλοδώρ. €</Label>
+                  <Input type="number" step="0.01" min="0" value={editTip} onChange={(e) => setEditTip(e.target.value)} />
+                </div>
+              </div>
+              <div>
+                <Label className="text-xs">Διεύθυνση παράδοσης</Label>
+                <Input value={editAddress} onChange={(e) => setEditAddress(e.target.value)} placeholder="Νέα διεύθυνση" />
+              </div>
+              <div>
+                <Label className="text-xs">Λόγος αλλαγής (υποχρεωτικό)</Label>
+                <Textarea rows={2} value={editReason} onChange={(e) => setEditReason(e.target.value)} placeholder="π.χ. Διόρθωση τιμής μετά από καταγγελία πελάτη" />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={close}>Άκυρο</Button>
+              <Button onClick={submitModifyOrder} disabled={loading}>
+                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Αποθήκευση αλλαγών
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </CardContent>
     </Card>
   );
