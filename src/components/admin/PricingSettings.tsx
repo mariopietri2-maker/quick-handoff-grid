@@ -141,19 +141,18 @@ export default function PricingSettings() {
           <Card>
             <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><Percent className="h-4 w-4 text-primary" />Προμήθεια Πλατφόρμας</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <Field label="Συνολική Προμήθεια %" value={pricing.default_commission_pct} onChange={v => setPricing(p => ({ ...p, default_commission_pct: v }))} hint="Default για όλα τα stores" icon={Percent} />
-                <Field label="Μερίδιο Admin %" value={pricing.admin_share_pct} onChange={v => setPricing(p => ({ ...p, admin_share_pct: v }))} hint="% της προμήθειας στο admin bag" icon={Percent} />
+              <Field label="Συνολική Προμήθεια %" value={pricing.default_commission_pct} onChange={v => setPricing(p => ({ ...p, default_commission_pct: v }))} hint="Default για όλα τα stores (μπορεί να γίνει override ανά κατάστημα)" icon={Percent} />
+
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm space-y-1">
+                <p className="text-xs text-muted-foreground mb-1">Διαχωρισμός σε παραγγελία €100 (food) + €{customerFee.toFixed(2)} delivery fee</p>
+                <p>🏪 Store κρατάει: <span className="font-bold">€{(100 - pricing.default_commission_pct).toFixed(2)}</span></p>
+                <p>🛡️ Admin bag (5% του delivery fee): <span className="font-bold text-amber-600">€{(customerFee * 0.05).toFixed(2)}</span></p>
+                <p>💼 Platform pool (commission): <span className="font-bold">€{pricing.default_commission_pct.toFixed(2)}</span></p>
+                <p className="text-[11px] text-muted-foreground pt-1 border-t border-border/50 mt-2">
+                  Σε κάθε παραγγελία ο admin κερδίζει <b>5% του delivery fee</b> εγγυημένα.
+                  Το υπόλοιπο της προμήθειας πάει στο platform pool (καλύπτει driver top-ups).
+                </p>
               </div>
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
-                <p className="text-xs text-muted-foreground mb-1">Διαχωρισμός σε παραγγελία €100</p>
-                <p>Store: <span className="font-bold">€{(100 - pricing.default_commission_pct).toFixed(2)}</span></p>
-                <p>Admin bag: <span className="font-bold">€{(pricing.default_commission_pct * pricing.admin_share_pct / 100).toFixed(2)}</span></p>
-                <p>Platform pool: <span className="font-bold">€{(pricing.default_commission_pct * (100 - pricing.admin_share_pct) / 100).toFixed(2)}</span></p>
-              </div>
-              <p className="text-[11px] text-muted-foreground">
-                Μπορείς να ορίσεις διαφορετικό % ανά κατάστημα στην καρτέλα <strong>Καταστήματα</strong>.
-              </p>
             </CardContent>
           </Card>
         </TabsContent>
