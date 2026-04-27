@@ -1294,6 +1294,7 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          admin_share_pct: number
           assignment_mode: string
           base_pay: number
           bike_multiplier: number
@@ -1334,6 +1335,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          admin_share_pct?: number
           assignment_mode?: string
           base_pay?: number
           bike_multiplier?: number
@@ -1374,6 +1376,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          admin_share_pct?: number
           assignment_mode?: string
           base_pay?: number
           bike_multiplier?: number
@@ -1794,6 +1797,7 @@ export type Database = {
         Row: {
           address: string
           busy_mode: boolean | null
+          commission_pct: number | null
           created_at: string
           ext_billing_mode: string
           ext_commission_pct: number
@@ -1817,6 +1821,7 @@ export type Database = {
         Insert: {
           address: string
           busy_mode?: boolean | null
+          commission_pct?: number | null
           created_at?: string
           ext_billing_mode?: string
           ext_commission_pct?: number
@@ -1840,6 +1845,7 @@ export type Database = {
         Update: {
           address?: string
           busy_mode?: boolean | null
+          commission_pct?: number | null
           created_at?: string
           ext_billing_mode?: string
           ext_commission_pct?: number

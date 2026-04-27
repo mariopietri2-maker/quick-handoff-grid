@@ -23,6 +23,7 @@ interface PricingRow {
   motorcycle_multiplier: number;
   car_multiplier: number;
   default_commission_pct: number;
+  admin_share_pct: number;
 }
 
 const DAYS = [
@@ -39,7 +40,7 @@ export default function PricingSettings() {
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
-    default_commission_pct: 15,
+    default_commission_pct: 15, admin_share_pct: 33.33,
   });
 
   useEffect(() => {
@@ -61,6 +62,7 @@ export default function PricingSettings() {
             motorcycle_multiplier: Number(d.motorcycle_multiplier ?? 1),
             car_multiplier: Number(d.car_multiplier ?? 1),
             default_commission_pct: Number(d.default_commission_pct ?? 15),
+            admin_share_pct: Number(d.admin_share_pct ?? 33.33),
           });
         }
         setLoading(false);
@@ -128,12 +130,30 @@ export default function PricingSettings() {
           <Card>
             <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Χρέωση Παράδοσης Πελάτη</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <Field label="Βασική Χρέωση (€)" value={pricing.customer_base_fee} onChange={v => setPricing(p => ({ ...p, customer_base_fee: v }))} hint="Πληρώνει ο πελάτης" />
                 <Field label="Χρέωση ανά χλμ (€)" value={pricing.customer_per_km_fee} onChange={v => setPricing(p => ({ ...p, customer_per_km_fee: v }))} hint="Επιπλέον €/km" icon={MapPin} />
-                <Field label="Προμήθεια Πλατφόρμας %" value={pricing.default_commission_pct} onChange={v => setPricing(p => ({ ...p, default_commission_pct: v }))} hint="Από κάθε παραγγελία" icon={Percent} />
               </div>
               <Preview label={`Παράδοση ${previewKm} χλμ`} amount={customerFee} note={`€${pricing.customer_base_fee.toFixed(2)} + ${previewKm} × €${pricing.customer_per_km_fee.toFixed(2)}`} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><Percent className="h-4 w-4 text-primary" />Προμήθεια Πλατφόρμας</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <Field label="Συνολική Προμήθεια %" value={pricing.default_commission_pct} onChange={v => setPricing(p => ({ ...p, default_commission_pct: v }))} hint="Default για όλα τα stores" icon={Percent} />
+                <Field label="Μερίδιο Admin %" value={pricing.admin_share_pct} onChange={v => setPricing(p => ({ ...p, admin_share_pct: v }))} hint="% της προμήθειας στο admin bag" icon={Percent} />
+              </div>
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm">
+                <p className="text-xs text-muted-foreground mb-1">Διαχωρισμός σε παραγγελία €100</p>
+                <p>Store: <span className="font-bold">€{(100 - pricing.default_commission_pct).toFixed(2)}</span></p>
+                <p>Admin bag: <span className="font-bold">€{(pricing.default_commission_pct * pricing.admin_share_pct / 100).toFixed(2)}</span></p>
+                <p>Platform pool: <span className="font-bold">€{(pricing.default_commission_pct * (100 - pricing.admin_share_pct) / 100).toFixed(2)}</span></p>
+              </div>
+              <p className="text-[11px] text-muted-foreground">
+                Μπορείς να ορίσεις διαφορετικό % ανά κατάστημα στην καρτέλα <strong>Καταστήματα</strong>.
+              </p>
             </CardContent>
           </Card>
         </TabsContent>
