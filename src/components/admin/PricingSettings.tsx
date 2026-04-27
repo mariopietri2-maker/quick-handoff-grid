@@ -40,7 +40,7 @@ export default function PricingSettings() {
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
-    default_commission_pct: 15,
+    default_commission_pct: 15, admin_share_pct: 33.33,
   });
 
   useEffect(() => {
