@@ -103,7 +103,7 @@ export default function MoneyBagsPanel() {
     <div className="space-y-6">
       <div>
         <h2 className="text-2xl font-heading font-bold">💰 Money Bags</h2>
-        <p className="text-sm text-muted-foreground">Driver fair pay · Store 85% · Admin 5% + platform 10% pool</p>
+        <p className="text-sm text-muted-foreground">Driver fair pay · Store keeps (100−commission)% · Admin gets 5% of delivery fee · Rest → platform pool</p>
       </div>
 
       {/* Three Money Bags */}
@@ -153,8 +153,8 @@ export default function MoneyBagsPanel() {
           <CardContent>
             <p className="text-3xl font-heading font-extrabold tabular-nums">{fmt(adminTotal)}</p>
             <div className="mt-2 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Admin (5%)</span><span className="font-medium tabular-nums">{fmt(treasury?.admin_balance)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Platform pool (10%)</span><span className="font-medium tabular-nums">{fmt(treasury?.platform_pool)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Admin (5% delivery fee)</span><span className="font-medium tabular-nums">{fmt(treasury?.admin_balance)}</span></div>
+              <div className="flex justify-between"><span className="text-muted-foreground">Platform pool (commission)</span><span className="font-medium tabular-nums">{fmt(treasury?.platform_pool)}</span></div>
               <div className="flex justify-between text-blue-600 dark:text-blue-400"><span>↳ Driver top-ups</span><span className="font-medium tabular-nums">{fmt(treasury?.lifetime_driver_topup)}</span></div>
             </div>
           </CardContent>

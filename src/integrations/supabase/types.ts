@@ -1093,6 +1093,48 @@ export type Database = {
           },
         ]
       }
+      monthly_reports: {
+        Row: {
+          admin_earned: number
+          closed_at: string
+          closed_by: string | null
+          delivered_revenue: number
+          driver_topup_total: number
+          id: string
+          orders_count: number
+          period_end: string
+          period_start: string
+          platform_earned: number
+          snapshot: Json
+        }
+        Insert: {
+          admin_earned?: number
+          closed_at?: string
+          closed_by?: string | null
+          delivered_revenue?: number
+          driver_topup_total?: number
+          id?: string
+          orders_count?: number
+          period_end: string
+          period_start: string
+          platform_earned?: number
+          snapshot?: Json
+        }
+        Update: {
+          admin_earned?: number
+          closed_at?: string
+          closed_by?: string | null
+          delivered_revenue?: number
+          driver_topup_total?: number
+          id?: string
+          orders_count?: number
+          period_end?: string
+          period_start?: string
+          platform_earned?: number
+          snapshot?: Json
+        }
+        Relationships: []
+      }
       order_item_modifiers: {
         Row: {
           group_name: string
@@ -2275,6 +2317,7 @@ export type Database = {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
       }
+      admin_close_month: { Args: { p_period_start?: string }; Returns: string }
       admin_payout_store: {
         Args: { p_amount: number; p_description?: string; p_store_id: string }
         Returns: undefined
@@ -2293,6 +2336,23 @@ export type Database = {
       }
       admin_wipe_all_data: { Args: never; Returns: undefined }
       count_active_support_agents: { Args: never; Returns: number }
+      create_custom_order: {
+        Args: {
+          p_customer_name?: string
+          p_customer_phone?: string
+          p_delivery_address: string
+          p_delivery_fee_override?: number
+          p_delivery_lat?: number
+          p_delivery_lng?: number
+          p_distance_km?: number
+          p_items_summary?: string
+          p_notes?: string
+          p_payment_method?: string
+          p_store_id: string
+          p_total_amount: number
+        }
+        Returns: string
+      }
       create_driver_earning: {
         Args: {
           p_base_pay: number
