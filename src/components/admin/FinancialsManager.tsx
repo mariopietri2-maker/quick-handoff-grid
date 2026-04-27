@@ -9,6 +9,8 @@ import { Wallet, TrendingUp, ArrowDownCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import MoneyBagsPanel from './MoneyBagsPanel';
+import MonthCloseCard from './MonthCloseCard';
+import CustomOrderDialog from './CustomOrderDialog';
 
 export default function FinancialsManager() {
   const queryClient = useQueryClient();
@@ -93,7 +95,11 @@ export default function FinancialsManager() {
 
   return (
     <div className="space-y-6">
+      <div className="flex justify-end">
+        <CustomOrderDialog />
+      </div>
       <MoneyBagsPanel />
+      <MonthCloseCard />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card>
