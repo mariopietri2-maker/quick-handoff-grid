@@ -222,38 +222,70 @@ export default function AdminApp() {
 
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Bar — slim, monospaced search, command-palette feel */}
-        <header className="h-12 border-b border-border bg-card/80 backdrop-blur flex items-center justify-between px-3 lg:px-4 shrink-0 sticky top-0 z-20">
-          <div className="flex items-center gap-2">
-            <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setMobileMenuOpen(true)}>
-              <Menu className="h-4 w-4" />
-            </Button>
-            <div className="relative hidden sm:block">
-              <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-              <Input
-                placeholder="Αναζήτηση παντού…"
-                value={searchQuery}
-                onChange={e => setSearchQuery(e.target.value)}
-                className="pl-8 w-72 h-8 bg-muted/50 border-border/60 text-[12.5px] focus-visible:ring-1"
-              />
-              <kbd className="hidden lg:inline-flex absolute right-2 top-1/2 -translate-y-1/2 h-5 px-1.5 items-center text-[10px] font-mono text-muted-foreground bg-background border border-border/60 rounded">⌘K</kbd>
+        {/* Top Bar */}
+        <header className="border-b border-border bg-card/80 backdrop-blur shrink-0 sticky top-0 z-20">
+          <div className="h-12 flex items-center justify-between px-3 lg:px-4">
+            <div className="flex items-center gap-2">
+              <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setMobileMenuOpen(true)}>
+                <Menu className="h-4 w-4" />
+              </Button>
+              <div className="relative hidden sm:block">
+                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+                <Input
+                  placeholder="Αναζήτηση…"
+                  value={searchQuery}
+                  onChange={e => setSearchQuery(e.target.value)}
+                  className="pl-8 w-64 h-8 bg-muted/50 border-border/60 text-[12.5px] focus-visible:ring-1"
+                />
+              </div>
+            </div>
+            <div className="flex items-center gap-1">
+              <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+                <Bell className="h-3.5 w-3.5" />
+              </Button>
+              <div className="h-5 w-px bg-border mx-1" />
+              <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
+                <LogOut className="h-3.5 w-3.5" />
+                <span className="hidden sm:inline">Αποσύνδεση</span>
+              </Button>
             </div>
           </div>
-          <div className="flex items-center gap-1">
-            <Button variant="ghost" size="icon" className="h-8 w-8 relative">
-              <Bell className="h-3.5 w-3.5" />
-            </Button>
-            <div className="h-5 w-px bg-border mx-1" />
-            <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
-              <LogOut className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Αποσύνδεση</span>
-            </Button>
-          </div>
+
+          {/* Sub-tab strip */}
+          {(() => {
+            const tabs = getTabsForSection(findParentSection(activeSection));
+            if (tabs.length <= 1) return null;
+            return (
+              <div className="px-3 lg:px-4 -mt-px border-t border-border/50 overflow-x-auto">
+                <div className="flex gap-1 py-1.5 min-w-max">
+                  {tabs.map(t => {
+                    const isActive = t.id === activeSection;
+                    return (
+                      <button
+                        key={t.id}
+                        onClick={() => setActiveSection(t.id)}
+                        className={cn(
+                          'px-3 h-7 rounded-md text-[12px] font-medium transition-colors whitespace-nowrap',
+                          isActive
+                            ? 'bg-primary/10 text-primary'
+                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                        )}
+                      >
+                        {t.label}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            );
+          })()}
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-3 lg:p-4 overflow-auto">
-          {renderContent()}
+        <main className="flex-1 p-3 lg:p-5 overflow-auto">
+          <div className="max-w-[1400px] mx-auto">
+            {renderContent()}
+          </div>
         </main>
       </div>
     </div>
