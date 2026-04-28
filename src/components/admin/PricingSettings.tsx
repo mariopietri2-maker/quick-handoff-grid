@@ -105,11 +105,12 @@ export default function PricingSettings() {
       </div>
 
       <Tabs defaultValue="driver">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full">
           <TabsTrigger value="driver">Οδηγός</TabsTrigger>
           <TabsTrigger value="customer">Πελάτης</TabsTrigger>
-          <TabsTrigger value="peak">Peak Hours</TabsTrigger>
+          <TabsTrigger value="peak">Peak</TabsTrigger>
           <TabsTrigger value="vehicle">Όχημα</TabsTrigger>
+          <TabsTrigger value="tiers">Tiers</TabsTrigger>
           <TabsTrigger value="stores">Καταστήματα</TabsTrigger>
         </TabsList>
 
