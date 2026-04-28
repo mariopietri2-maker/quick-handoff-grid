@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent } from 'lucide-react';
 import StorePricingOverrides from './StorePricingOverrides';
+import CommissionTiersPanel from './CommissionTiersPanel';
 
 interface PricingRow {
   base_pay: number;
@@ -104,11 +105,12 @@ export default function PricingSettings() {
       </div>
 
       <Tabs defaultValue="driver">
-        <TabsList className="grid grid-cols-2 sm:grid-cols-5 w-full">
+        <TabsList className="grid grid-cols-3 sm:grid-cols-6 w-full">
           <TabsTrigger value="driver">Οδηγός</TabsTrigger>
           <TabsTrigger value="customer">Πελάτης</TabsTrigger>
-          <TabsTrigger value="peak">Peak Hours</TabsTrigger>
+          <TabsTrigger value="peak">Peak</TabsTrigger>
           <TabsTrigger value="vehicle">Όχημα</TabsTrigger>
+          <TabsTrigger value="tiers">Tiers</TabsTrigger>
           <TabsTrigger value="stores">Καταστήματα</TabsTrigger>
         </TabsList>
 
@@ -189,6 +191,10 @@ export default function PricingSettings() {
               <Field label="Αυτοκίνητο ×" value={pricing.car_multiplier} onChange={v => setPricing(p => ({ ...p, car_multiplier: v }))} hint="Bonus για car" step="0.05" icon={Car} />
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="tiers" className="mt-4">
+          <CommissionTiersPanel />
         </TabsContent>
 
         <TabsContent value="stores" className="mt-4">
