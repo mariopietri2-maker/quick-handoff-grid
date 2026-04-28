@@ -248,6 +248,39 @@ export type Database = {
         }
         Relationships: []
       }
+      commission_tiers: {
+        Row: {
+          commission_pct: number
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string | null
+          max_amount: number | null
+          min_amount: number
+          updated_at: string
+        }
+        Insert: {
+          commission_pct: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          max_amount?: number | null
+          min_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          commission_pct?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string | null
+          max_amount?: number | null
+          min_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       customer_favorites: {
         Row: {
           created_at: string
@@ -2440,6 +2473,10 @@ export type Database = {
       request_wallet_withdrawal: {
         Args: { p_amount: number; p_driver_id: string }
         Returns: undefined
+      }
+      resolve_commission_pct: {
+        Args: { p_food_total: number; p_store_id: string }
+        Returns: number
       }
       set_order_dispatch: {
         Args: {
