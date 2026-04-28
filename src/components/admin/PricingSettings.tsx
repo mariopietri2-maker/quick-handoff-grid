@@ -193,6 +193,10 @@ export default function PricingSettings() {
           </Card>
         </TabsContent>
 
+        <TabsContent value="tiers" className="mt-4">
+          <CommissionTiersPanel />
+        </TabsContent>
+
         <TabsContent value="stores" className="mt-4">
           <StorePricingOverrides defaultCommission={pricing.default_commission_pct} />
         </TabsContent>
