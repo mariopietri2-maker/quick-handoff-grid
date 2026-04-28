@@ -8,6 +8,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent } from 'lucide-react';
 import StorePricingOverrides from './StorePricingOverrides';
+import CommissionTiersPanel from './CommissionTiersPanel';
 
 interface PricingRow {
   base_pay: number;
