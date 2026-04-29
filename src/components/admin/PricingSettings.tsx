@@ -39,6 +39,7 @@ export default function PricingSettings() {
   const [pricing, setPricing] = useState<PricingRow>({
     base_pay: 3, per_km_rate: 0.5, min_pay: 3,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
+    platform_service_fee: 0.99,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
