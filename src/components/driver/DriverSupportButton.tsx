@@ -129,14 +129,9 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
         aria-label="Υποστήριξη"
       >
         <Headphones className="h-5 w-5" strokeWidth={2.5} />
-        {openCount > 0 ? (
+        {openCount > 0 && (
           <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[hsl(var(--driver-accent))] text-[10px] font-extrabold flex items-center justify-center shadow-sm ring-2 ring-[hsl(var(--driver-bg))]">
             {openCount}
-          </span>
-        ) : (
-          <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
-            <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 ring-2 ring-[hsl(var(--driver-bg))]" />
           </span>
         )}
       </button>
