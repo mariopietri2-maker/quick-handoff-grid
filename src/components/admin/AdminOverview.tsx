@@ -388,10 +388,13 @@ function RecentOrdersTable({ orders, profiles }: { orders: any[]; profiles: any[
                   {h.l}{sort.key === h.k && <span className="ml-1 text-[10px]">{sort.dir === 'asc' ? '▲' : '▼'}</span>}
                 </th>
               ))}
+              <th className="text-right px-3 py-2 font-medium">Ενέργειες</th>
             </tr>
           </thead>
           <tbody>
-            {filtered.map((o, i) => (
+            {filtered.map((o, i) => {
+              const cancellable = !['delivered', 'cancelled'].includes(o.status);
+              return (
               <tr key={o.id} className={cn('border-t border-border/50', i % 2 && 'bg-muted/20', rowDelayed(o) && 'bg-red-500/5')}>
                 <td className="px-3 py-2 font-mono text-[11.5px] text-muted-foreground">#{o.id.slice(0, 8)}</td>
                 <td className="px-3 py-2 text-muted-foreground">{o.store_id?.slice(0, 6) ?? '—'}</td>
@@ -404,10 +407,44 @@ function RecentOrdersTable({ orders, profiles }: { orders: any[]; profiles: any[
                 </td>
                 <td className="px-3 py-2 font-semibold tabular-nums">€{Number(o.total_amount).toFixed(2)}</td>
                 <td className="px-3 py-2 text-muted-foreground tabular-nums">{format(new Date(o.created_at), 'dd MMM, HH:mm')}</td>
+                <td className="px-3 py-2 text-right">
+                  {cancellable && (
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" title="Ακύρωση παραγγελίας">
+                          <X className="h-3.5 w-3.5" />
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Ακύρωση #{o.id.slice(0, 8)};</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Η παραγγελία θα μαρκαριστεί ως ακυρωμένη.
+                            {o.driver_id && ' Έχει ανατεθεί σε οδηγό — βεβαιώσου ότι έχει ενημερωθεί.'}
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Όχι</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={async () => {
+                              const { error } = await supabase.from('orders').update({ status: 'cancelled' as any }).eq('id', o.id);
+                              if (error) toast.error('Αποτυχία ακύρωσης: ' + error.message);
+                              else toast.success('Παραγγελία ακυρώθηκε');
+                            }}
+                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          >
+                            Ναι, ακύρωση
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
+                  )}
+                </td>
               </tr>
-            ))}
+              );
+            })}
             {!filtered.length && (
-              <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Καμία παραγγελία</td></tr>
+              <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Καμία παραγγελία</td></tr>
             )}
           </tbody>
         </table>
