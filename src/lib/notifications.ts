@@ -65,30 +65,24 @@ export async function requestNotificationPermission(): Promise<boolean> {
  * Show a browser notification for a new order (store).
  */
 export function showOrderNotification(orderId: string, itemCount: number) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  const notification = new Notification('🔔 Νέα Παραγγελία!', {
+  void showOsNotification({
+    title: '🔔 Νέα Παραγγελία!',
     body: `Παραγγελία #${orderId.slice(0, 6)} — ${itemCount} προϊόν${itemCount !== 1 ? 'τα' : ''}`,
-    icon: '/placeholder.svg',
     tag: `order-${orderId}`,
-    requireInteraction: true,
+    vibrate: true,
   });
-  notification.onclick = () => { window.focus(); notification.close(); };
-  setTimeout(() => notification.close(), 30000);
 }
 
 /**
  * Show a browser notification for a new delivery offer (driver).
  */
 export function showDeliveryNotification(estimatedPayout: number) {
-  if (!('Notification' in window) || Notification.permission !== 'granted') return;
-  const notification = new Notification('📦 Νέα Παράδοση!', {
+  void showOsNotification({
+    title: '📦 Νέα Παράδοση!',
     body: `Εκτιμώμενη αμοιβή: €${estimatedPayout.toFixed(2)} — Πάτα για προβολή`,
-    icon: '/placeholder.svg',
     tag: `delivery-${Date.now()}`,
-    requireInteraction: true,
+    vibrate: true,
   });
-  notification.onclick = () => { window.focus(); notification.close(); };
-  setTimeout(() => notification.close(), 20000);
 }
 
 /**
@@ -111,13 +105,10 @@ const customerStatusLabels: Record<string, { title: string; body: string }> = {
 export function showOrderStatusNotification(orderId: string, status: string): boolean {
   const cfg = customerStatusLabels[status];
   if (!cfg) return false;
-  if (!('Notification' in window) || Notification.permission !== 'granted') return false;
-  const notification = new Notification(cfg.title, {
+  void showOsNotification({
+    title: cfg.title,
     body: `${cfg.body} (Παραγγελία #${orderId.slice(0, 6)})`,
-    icon: '/placeholder.svg',
     tag: `customer-order-${orderId}`,
   });
-  notification.onclick = () => { window.focus(); notification.close(); };
-  setTimeout(() => notification.close(), 15000);
   return true;
 }
