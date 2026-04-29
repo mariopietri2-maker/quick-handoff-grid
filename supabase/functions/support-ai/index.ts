@@ -1,5 +1,6 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit, rateLimitResponse, clientKey } from "../_shared/rate-limit.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -48,6 +49,10 @@ serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    // Rate limit: 30 AI calls per minute per support agent (burst 10)
+    const rl = rateLimit(clientKey(req, userData.user.id), { capacity: 10, refillPerMinute: 30 });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
 
     const { ticketId, action, customPrompt } = await req.json();
     if (!ticketId || !action) {
