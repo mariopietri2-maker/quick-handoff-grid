@@ -46,6 +46,8 @@ export default function AdminDriversMap() {
   const [locations, setLocations] = useState<DriverLocation[]>([]);
   const [driverInfos, setDriverInfos] = useState<Map<string, DriverInfo>>(new Map());
   const [stores, setStores] = useState<StoreMarker[]>([]);
+  const [missingCoords, setMissingCoords] = useState<{ id: string; name: string; address: string }[]>([]);
+  const [geocoding, setGeocoding] = useState(false);
   const [editStores, setEditStores] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const editStoresRef = useRef(false);
