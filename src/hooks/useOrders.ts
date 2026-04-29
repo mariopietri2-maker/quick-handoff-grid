@@ -361,6 +361,11 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
     const offerId = offerIds[orderId];
+    const target = offers.find((o) => o.id === orderId);
+    if (target && target.status !== 'ready') {
+      toast.info('Η παραγγελία δεν είναι ακόμη έτοιμη για παραλαβή');
+      return;
+    }
 
     // AUTO mode with offer → use atomic accept-offer edge function
     if (assignmentMode === 'auto' && offerId) {
