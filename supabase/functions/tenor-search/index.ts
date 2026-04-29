@@ -1,6 +1,7 @@
 // Tenor GIF search proxy. Uses TENOR_API_KEY if set, otherwise returns a
 // curated trending list so the GIF picker still works without a key.
 import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2.95.0/cors";
+import { rateLimit, rateLimitResponse, clientKey } from "../_shared/rate-limit.ts";
 
 const FALLBACK = [
   'https://media.tenor.com/x8v1oNUOmg4AAAAi/thumbs-up-thumbs.gif',
@@ -13,6 +14,10 @@ const FALLBACK = [
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
+
+  // Rate limit: 60 GIF searches/min per IP (burst 15)
+  const rl = rateLimit(clientKey(req), { capacity: 15, refillPerMinute: 60 });
+  if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
 
   try {
     const { q = "", limit = 24 } = await req.json().catch(() => ({}));

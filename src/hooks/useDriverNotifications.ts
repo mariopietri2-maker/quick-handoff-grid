@@ -2,6 +2,11 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import {
+  ensureNotificationPermission,
+  initNotificationChannels,
+  showOsNotification,
+} from '@/lib/push-notifications';
 
 /**
  * Subscribes the logged-in driver to support-pushed notifications.
@@ -13,6 +18,10 @@ export function useDriverNotifications() {
 
   useEffect(() => {
     if (!user) return;
+
+    // Initialize OS-level notifications (asks permission once)
+    void initNotificationChannels();
+    void ensureNotificationPermission();
 
     // 1) Catch-up on any unread (sent while app was closed)
     (async () => {
@@ -74,4 +83,12 @@ function showNotification(n: { title: string; body: string; severity: string }) 
     default:
       toast.info(`📢 ${n.title}`, opts);
   }
+  // Also fire an OS-level notification so the driver hears/sees it when app
+  // is in the background or screen is off.
+  void showOsNotification({
+    title: n.title,
+    body: n.body,
+    tag: 'driver-notif',
+    vibrate: n.severity === 'urgent' || n.severity === 'warning',
+  });
 }

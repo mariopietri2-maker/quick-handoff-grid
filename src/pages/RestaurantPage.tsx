@@ -9,6 +9,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { ReviewList, RatingBadge } from '@/components/ReviewList';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import GroupOrderShare from '@/components/customer/GroupOrderShare';
+import { MenuItemBadges } from '@/components/customer/MenuItemBadges';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
@@ -240,6 +241,14 @@ export default function RestaurantPage() {
                         {item.description && (
                           <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2 leading-relaxed">{item.description}</p>
                         )}
+                        <MenuItemBadges
+                          isVegan={(item as any).is_vegan}
+                          isVegetarian={(item as any).is_vegetarian}
+                          isGlutenFree={(item as any).is_gluten_free}
+                          spicyLevel={(item as any).spicy_level}
+                          allergens={(item as any).allergens}
+                          calories={(item as any).calories}
+                        />
                         <div className="flex items-center gap-2 mt-2">
                           <span className="text-sm font-bold text-foreground">
                             {Number(item.price).toFixed(2)}€
