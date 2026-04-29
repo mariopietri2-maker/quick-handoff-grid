@@ -8,7 +8,6 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Wallet, TrendingUp, ArrowDownCircle, CheckCircle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
-import MoneyBagsPanel from './MoneyBagsPanel';
 import MonthCloseCard from './MonthCloseCard';
 import CustomOrderDialog from './CustomOrderDialog';
 
@@ -98,7 +97,6 @@ export default function FinancialsManager() {
       <div className="flex justify-end">
         <CustomOrderDialog />
       </div>
-      <MoneyBagsPanel />
       <MonthCloseCard />
 
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
