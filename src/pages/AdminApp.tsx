@@ -181,6 +181,8 @@ export default function AdminApp() {
         return <SupportTicketsManager />;
       case 'driver_map_settings':
         return <DriverMapSettings />;
+      case 'driver_map_editor':
+        return <DriverMapEditor />;
       case 'reviews':
         return <ReviewsSection reviews={reviews.data} />;
       case 'announcements':
