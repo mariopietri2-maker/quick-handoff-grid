@@ -53,6 +53,7 @@ export default function DriverApp() {
     else { searchParams.set('tab', t); setSearchParams(searchParams); }
   };
   const { user } = useAuth();
+  // (isAdmin already destructured above for the orders hook)
   useEarnings();
   useDriverNotifications();
 
