@@ -124,6 +124,21 @@ function StatCard({
 /* ─────────────────────────  Main Overview  ────────────────────────────── */
 export default function AdminOverview({ orders, profiles }: Props) {
   const today = new Date();
+  const qcTop = useQueryClient();
+
+  /* Realtime: refetch treasury / store-owed / cash whenever the underlying tables change */
+  useEffect(() => {
+    const ch = supabase
+      .channel('admin-overview-realtime')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_treasury' },
+        () => qcTop.invalidateQueries({ queryKey: ['admin-treasury-overview'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'store_wallets' },
+        () => qcTop.invalidateQueries({ queryKey: ['admin-store-owed'] }))
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_state' },
+        () => qcTop.invalidateQueries({ queryKey: ['admin-cash-on-street'] }))
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [qcTop]);
 
   /* Treasury */
   const { data: treasury } = useQuery({
