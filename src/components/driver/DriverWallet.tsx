@@ -1,10 +1,8 @@
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, Lock, TrendingUp } from 'lucide-react';
+import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, TrendingUp, Banknote } from 'lucide-react';
 import { useDriverWallet } from '@/hooks/useDriverWallet';
-import { useEarnings } from '@/hooks/useEarnings';
 
 export function DriverWallet() {
   const { wallet, transactions, loading } = useDriverWallet();
-  const { today, week } = useEarnings();
 
   if (loading) {
     return (
