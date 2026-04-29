@@ -239,8 +239,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Σύνολο (€) *</Label>
-                  <Input type="number" step="0.01" min="0" value={form.total_amount} onChange={e => update('total_amount', e.target.value)} placeholder="18.40" />
+                  <Label className="text-xs">Σύνολο (€)</Label>
+                  <Input type="number" step="0.01" min="0" value={form.total_amount} onChange={e => update('total_amount', e.target.value)} placeholder="προαιρετικό" />
                 </div>
                 <div>
                   <Label className="text-xs">Απόσταση (km)</Label>
