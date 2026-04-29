@@ -151,16 +151,11 @@ export default function AdminApp() {
     switch (activeSection) {
       case 'overview':
         return (
-          <div className="space-y-3">
-            <LiveOpsKPI />
-            <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
-          </div>
+          <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
         );
       case 'analytics':
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'audit':
-      case 'activity':
-      case 'audit_log':
         return <AdminAuditTab />;
       case 'orders':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} />;
