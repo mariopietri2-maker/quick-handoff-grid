@@ -142,6 +142,16 @@ export default function StoreWalletCard({ storeId }: Props) {
             <strong>External (efood/wolt/box):</strong> χρεώνεστε το delivery fee του οδηγού.
           </p>
 
+          <Button
+            onClick={generateStatement}
+            disabled={generating}
+            variant="outline"
+            size="sm"
+            className="mt-4 w-full gap-2"
+          >
+            {generating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileDown className="h-3.5 w-3.5" />}
+            Δημιουργία Κατάστασης (30 ημέρες CSV)
+          </Button>
         </CardContent>
       </Card>
 
