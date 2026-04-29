@@ -75,14 +75,17 @@ export function useNearbyStoresForDriver() {
       });
 
       if (!mounted) return;
-      setStores(valid.map(s => ({
-        id: s.id,
-        name: s.name,
-        latitude: s.latitude as number,
-        longitude: s.longitude as number,
-        image_url: s.image_url ?? null,
-        pendingOrders: counts[s.id] ?? 0,
-      })));
+      // Drivers only see stores that currently have active orders
+      setStores(valid
+        .filter(s => (counts[s.id] ?? 0) > 0)
+        .map(s => ({
+          id: s.id,
+          name: s.name,
+          latitude: s.latitude as number,
+          longitude: s.longitude as number,
+          image_url: s.image_url ?? null,
+          pendingOrders: counts[s.id] ?? 0,
+        })));
     };
 
     fetchAll();
