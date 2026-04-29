@@ -29,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .from('profiles')
       .select('role, full_name')
       .eq('user_id', userId)
-      .single();
+      .maybeSingle();
     setProfile(data);
 
     // Check admin & support roles from user_roles table

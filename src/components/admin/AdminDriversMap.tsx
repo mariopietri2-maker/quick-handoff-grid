@@ -72,15 +72,26 @@ export default function AdminDriversMap() {
       setDriverInfos(map);
 
       if (storesData) {
-        // Show ALL active stores. If a store has no coords yet, place it at the
-        // map's default center (Άρτα) so the admin can drag it into position.
+        // Show ALL active stores. If a store has no coords yet, fan it out in a
+        // small ring around the default city center (Άρτα) so multiple
+        // uncoordinated stores don't stack on the exact same pin.
         const DEFAULT_LAT = 39.1600;
         const DEFAULT_LNG = 20.9853;
-        setStores(storesData.map(s => ({
-          ...s,
-          latitude: (s.latitude as number | null) ?? DEFAULT_LAT,
-          longitude: (s.longitude as number | null) ?? DEFAULT_LNG,
-        })) as StoreMarker[]);
+        let missing = 0;
+        setStores(storesData.map(s => {
+          if (s.latitude != null && s.longitude != null) {
+            return { ...s, latitude: s.latitude as number, longitude: s.longitude as number } as StoreMarker;
+          }
+          const i = missing++;
+          // ~80m ring; spreads up to ~24 pins visibly before overlapping
+          const angle = (i * 137.5) * (Math.PI / 180); // golden-angle spread
+          const r = 0.0008 + Math.floor(i / 12) * 0.0006;
+          return {
+            ...s,
+            latitude: DEFAULT_LAT + Math.sin(angle) * r,
+            longitude: DEFAULT_LNG + Math.cos(angle) * r,
+          } as StoreMarker;
+        }));
       }
     }
     load();

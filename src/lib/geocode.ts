@@ -9,7 +9,11 @@ async function getMapboxToken(): Promise<string | null> {
       .then(({ data, error }) => (!error && data?.token ? (data.token as string) : null))
       .catch(() => null);
   }
-  return tokenPromise;
+  const token = await tokenPromise;
+  // If the fetch failed, clear the cache so the next call retries instead of
+  // permanently returning null for the rest of the session.
+  if (!token) tokenPromise = null;
+  return token;
 }
 
 export interface GeocodeResult {
