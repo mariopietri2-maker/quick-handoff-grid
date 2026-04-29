@@ -151,7 +151,7 @@ export default function AdminApp() {
     switch (activeSection) {
       case 'overview':
         return (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <LiveOpsKPI />
             <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
           </div>
