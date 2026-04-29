@@ -1,8 +1,11 @@
 import { useState } from 'react';
 import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
+import ProofOfHandoff from './ProofOfHandoff';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -39,6 +42,7 @@ const statusSteps = [
 
 export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
+  const { user } = useAuth();
 
   const toggleChecklistItem = (index: number) => {
     setCheckedItems(prev => {
@@ -46,6 +50,14 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
       next.has(index) ? next.delete(index) : next.add(index);
       return next;
     });
+  };
+
+  const handleProofUploaded = async (path: string) => {
+    await (supabase as any)
+      .from('orders')
+      .update({ photo_verification_url: path })
+      .eq('id', delivery.id);
+    onStatusUpdate('delivered');
   };
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
@@ -218,8 +230,16 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
         <span className="font-heading font-extrabold text-xl text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
       </div>
 
-      {/* Main CTA */}
-      {nextAction && (
+      {/* Main CTA — for picked_up, require photo proof first */}
+      {delivery.status === 'picked_up' && user?.id && (
+        <ProofOfHandoff
+          orderId={delivery.id}
+          driverId={user.id}
+          onUploaded={handleProofUploaded}
+        />
+      )}
+
+      {nextAction && delivery.status !== 'picked_up' && (
         <button
           onClick={() => onStatusUpdate(nextAction.next)}
           className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
