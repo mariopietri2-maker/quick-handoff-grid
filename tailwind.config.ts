@@ -134,6 +134,10 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-6px)" },
         },
+        "marquee-right": {
+          "0%": { transform: "translateX(0)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -149,6 +153,7 @@ export default {
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "shimmer": "shimmer 2s infinite linear",
         "float": "float 3s ease-in-out infinite",
+        "marquee-right": "marquee-right 30s linear infinite",
         "enter": "fade-in 0.3s ease-out, scale-in 0.2s ease-out",
       },
     },
