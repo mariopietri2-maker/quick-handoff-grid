@@ -367,6 +367,28 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       return;
     }
 
+    // ADMIN PRIORITY: admins always win — they can claim/steal any order
+    // directly, even if a driver already has it. Bypass the offer-accept flow.
+    if (adminOverride) {
+      const patch: Record<string, unknown> = {
+        driver_id: user.id,
+        status: 'accepted',
+        stacked_with_order_id: null,
+      };
+      const { error } = await supabase
+        .from('orders')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(patch as any)
+        .eq('id', orderId);
+      if (error) {
+        toast.error('Failed to claim order');
+      } else {
+        toast.success('✓ Admin claimed order');
+        fetchOrders();
+      }
+      return;
+    }
+
     // AUTO mode with offer → use atomic accept-offer edge function
     if (assignmentMode === 'auto' && offerId) {
       const { data, error } = await supabase.functions.invoke('accept-offer', {
