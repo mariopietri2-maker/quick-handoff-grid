@@ -151,7 +151,7 @@ export default function AdminApp() {
     switch (activeSection) {
       case 'overview':
         return (
-          <div className="space-y-6">
+          <div className="space-y-3">
             <LiveOpsKPI />
             <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
           </div>
@@ -282,7 +282,7 @@ export default function AdminApp() {
         </header>
 
         {/* Page Content */}
-        <main className="flex-1 p-3 lg:p-5 overflow-auto">
+        <main className="flex-1 p-2.5 lg:p-3.5 overflow-auto">
           <div className="max-w-[1400px] mx-auto">
             {renderContent()}
           </div>
