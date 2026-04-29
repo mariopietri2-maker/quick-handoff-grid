@@ -5,6 +5,9 @@ import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { toast } from 'sonner';
 
 interface DriverLocation {
   driver_id: string;
@@ -40,6 +43,9 @@ export default function AdminDriversMap() {
   const [locations, setLocations] = useState<DriverLocation[]>([]);
   const [driverInfos, setDriverInfos] = useState<Map<string, DriverInfo>>(new Map());
   const [stores, setStores] = useState<StoreMarker[]>([]);
+  const [editStores, setEditStores] = useState(false);
+  const editStoresRef = useRef(false);
+  useEffect(() => { editStoresRef.current = editStores; }, [editStores]);
 
   // Load data
   useEffect(() => {
@@ -157,7 +163,7 @@ export default function AdminDriversMap() {
 
     stores.forEach(store => {
       const el = document.createElement('div');
-      el.innerHTML = `<div style="width:32px;height:32px;background:#f97316;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:pointer;">🏪</div>`;
+      el.innerHTML = `<div style="width:32px;height:32px;background:#f97316;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:${editStores ? 'grab' : 'pointer'};">🏪</div>`;
 
       const popup = new mapboxgl.Popup({ offset: 18 }).setHTML(`
         <div style="text-align:center;font-family:system-ui;padding:4px;">
@@ -167,10 +173,27 @@ export default function AdminDriversMap() {
         </div>
       `);
 
-      const marker = new mapboxgl.Marker({ element: el })
+      const marker = new mapboxgl.Marker({ element: el, draggable: editStores })
         .setLngLat([store.longitude, store.latitude])
         .setPopup(popup)
         .addTo(map);
+
+      if (editStores) {
+        marker.on('dragend', async () => {
+          const { lng, lat } = marker.getLngLat();
+          const { error } = await supabase
+            .from('stores')
+            .update({ latitude: lat, longitude: lng })
+            .eq('id', store.id);
+          if (error) {
+            toast.error(`Failed to move ${store.name}`);
+            marker.setLngLat([store.longitude, store.latitude]);
+          } else {
+            toast.success(`${store.name} moved`);
+            setStores(prev => prev.map(s => s.id === store.id ? { ...s, latitude: lat, longitude: lng } : s));
+          }
+        });
+      }
 
       storeMarkersRef.current.push(marker);
     });
@@ -185,7 +208,7 @@ export default function AdminDriversMap() {
       allPoints.forEach(p => bounds.extend(p));
       map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
     }
-  }, [stores, locations]);
+  }, [stores, locations, editStores]);
 
   if (tokenLoading) {
     return (
@@ -211,7 +234,13 @@ export default function AdminDriversMap() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-heading font-bold text-xl">Live Χάρτης</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
+            <Switch id="edit-stores" checked={editStores} onCheckedChange={setEditStores} />
+            <Label htmlFor="edit-stores" className="text-xs cursor-pointer">
+              Μετακίνηση καταστημάτων
+            </Label>
+          </div>
           <Badge variant="outline" className="gap-1.5">
             <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
             {locations.length} οδηγοί
