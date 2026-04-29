@@ -236,7 +236,7 @@ export function useDriverOrders() {
         .from('orders')
         .select('*, order_items(*)')
         .is('driver_id', null)
-        .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+        .eq('status', 'ready')
         .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
         .order('created_at', { ascending: false })
         .limit(10);
