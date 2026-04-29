@@ -356,8 +356,19 @@ export default function DriverApp() {
                     </>
                   )}
 
+              {/* Cash cap banner — blocks new offers */}
+              {!activeDelivery && isOnline && !onBreak && cashCapped && (
+                <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-4 animate-pop">
+                  <p className="font-heading font-bold text-sm text-destructive mb-1">🚫 Όριο μετρητών συμπληρώθηκε</p>
+                  <p className="text-xs text-foreground/80 leading-relaxed">
+                    Έχεις €{Number(driverState?.shift_cash_balance ?? 0).toFixed(2)} σε μετρητά (όριο €{maxCashCap}).
+                    Παρέδωσε τα χρήματα στον διαχειριστή για να ξεκινήσουν νέες παραγγελίες.
+                  </p>
+                </div>
+              )}
+
               {/* Order offer cards */}
-              {!activeDelivery && isOnline && !onBreak && !loading && offers.length > 0 && (
+              {!activeDelivery && isOnline && !onBreak && !cashCapped && !loading && offers.length > 0 && (
                 <div className="space-y-3 animate-slide-up">
                   <div className="flex items-center justify-between px-1">
                     <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
