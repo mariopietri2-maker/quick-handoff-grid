@@ -76,7 +76,7 @@ export default function CustomerApp() {
     return cats.some(c => c.includes(selectedCategory));
   }), [stores, search, selectedCategory, storeCategories]);
 
-  const ratings = useStoreRatings(filtered.map(s => s.id));
+  const ratings = useStoreRatings([...filtered.map(s => s.id), ...promotedStores.map(s => s.id)]);
 
   return (
     <div className="min-h-screen bg-background">
