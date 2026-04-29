@@ -33,6 +33,7 @@ import AdminPermissionsManager from '@/components/admin/AdminPermissionsManager'
 import CannedRepliesManager from '@/components/admin/CannedRepliesManager';
 import ExternalOrderIngest from '@/components/admin/ExternalOrderIngest';
 import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
+import SystemResetPanel from '@/components/admin/SystemResetPanel';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
