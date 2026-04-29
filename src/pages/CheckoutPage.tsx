@@ -65,6 +65,9 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const cardEnabled = isPaymentsConfigured();
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>(cardEnabled ? 'card' : 'cash');
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const [tipOption, setTipOption] = useState<number | 'custom'>(15);
   const [customTip, setCustomTip] = useState('');
