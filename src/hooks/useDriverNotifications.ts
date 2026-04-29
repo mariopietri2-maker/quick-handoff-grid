@@ -2,6 +2,11 @@ import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
+import {
+  ensureNotificationPermission,
+  initNotificationChannels,
+  showOsNotification,
+} from '@/lib/push-notifications';
 
 /**
  * Subscribes the logged-in driver to support-pushed notifications.
