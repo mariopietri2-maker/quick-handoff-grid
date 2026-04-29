@@ -39,7 +39,7 @@ function Sparkline({ values, color = 'hsl(var(--primary))' }: { values: number[]
     const y = h - pad - ((v - min) / range) * (h - pad * 2);
     return `${x},${y}`;
   }).join(' ');
-  const area = `M${pad},${h} L${pts.replaceAll(' ', ' L')} L${w - pad},${h} Z`;
+  const area = `M${pad},${h} L${pts.split(' ').join(' L')} L${w - pad},${h} Z`;
   return (
     <svg width={w} height={h} className="overflow-visible">
       <path d={area} fill={color} opacity={0.12} />
