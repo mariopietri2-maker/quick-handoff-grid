@@ -21,6 +21,7 @@ export function SlaSettingsPanel() {
   const [agentScaling, setAgentScaling] = useState(true);
   const [ticketsPerAgent, setTicketsPerAgent] = useState(5);
   const [saving, setSaving] = useState(false);
+  const { advise, AdvisorDialog } = useSettingAdvisor();
 
   useEffect(() => {
     if (data) {
