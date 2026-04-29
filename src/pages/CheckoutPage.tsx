@@ -405,6 +405,46 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
+        {/* Payment method */}
+        <Card className="shadow-[var(--shadow-md)]">
+          <CardContent className="p-4 space-y-3">
+            <h2 className="font-heading font-semibold text-foreground">Τρόπος πληρωμής</h2>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => cardEnabled && setPaymentMethod('card')}
+                disabled={!cardEnabled}
+                className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
+                  paymentMethod === 'card'
+                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
+                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                } ${!cardEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <CreditCard className="h-5 w-5" />
+                <span>Κάρτα</span>
+                {!cardEnabled && <span className="text-[10px] italic">Σύντομα διαθέσιμη</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
+                  paymentMethod === 'cash'
+                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
+                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                }`}
+              >
+                <Banknote className="h-5 w-5" />
+                <span>Μετρητά</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {paymentMethod === 'card'
+                ? 'Πληρώνετε με ασφάλεια online. Ο ΦΠΑ υπολογίζεται αυτόματα.'
+                : 'Πληρώνετε στον οδηγό κατά την παράδοση.'}
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Promo Code */}
         <Card className={`shadow-[var(--shadow-md)] ${appliedPromo ? 'border-success/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
