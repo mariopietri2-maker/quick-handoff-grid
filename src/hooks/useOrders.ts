@@ -198,7 +198,7 @@ export function useDriverOrders() {
           .select('*, order_items(*)')
           .is('driver_id', null)
           .in('source', ['manual', 'external'])
-          .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+          .eq('status', 'ready')
           .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
           .order('created_at', { ascending: false })
           .limit(20),
@@ -211,7 +211,8 @@ export function useDriverOrders() {
           .from('orders')
           .select('*, order_items(*)')
           .in('id', orderIds)
-          .is('driver_id', null);
+          .is('driver_id', null)
+          .eq('status', 'ready');
         offered = (ord as OrderWithItems[]) ?? [];
         for (const p of myPending ?? []) nextOfferIds[p.order_id] = p.id;
       }
@@ -235,7 +236,7 @@ export function useDriverOrders() {
         .from('orders')
         .select('*, order_items(*)')
         .is('driver_id', null)
-        .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+        .eq('status', 'ready')
         .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
         .order('created_at', { ascending: false })
         .limit(10);
@@ -254,7 +255,10 @@ export function useDriverOrders() {
       );
       if (sameStorePickupPending) {
         const sameStore = availableOrders.filter(
-          (o) => o.store_id === (active as OrderWithItems).store_id && o.id !== (active as OrderWithItems).id,
+          (o) =>
+            o.store_id === (active as OrderWithItems).store_id &&
+            o.id !== (active as OrderWithItems).id &&
+            o.status === 'ready',
         );
         setStackedOffers(sameStore);
       } else {
