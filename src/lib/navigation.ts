@@ -74,7 +74,16 @@ export async function openGoogleMapsNavigation(target: NavigationTarget) {
     // Capacitor not available — web behavior below
   }
 
-  // Web fallback: open in a new tab
-  const win = window.open(url, '_blank', 'noopener,noreferrer');
-  if (!win) window.location.href = url;
+  // Web fallback: ALWAYS open in a new tab — never navigate the current view.
+  // Using a synthetic <a> click is more reliable than window.open against
+  // popup blockers, sandboxed iframes, and embedded preview environments,
+  // and guarantees the link opens externally instead of replacing the app.
+  const a = document.createElement('a');
+  a.href = url;
+  a.target = '_blank';
+  a.rel = 'noopener noreferrer';
+  a.style.display = 'none';
+  document.body.appendChild(a);
+  a.click();
+  document.body.removeChild(a);
 }

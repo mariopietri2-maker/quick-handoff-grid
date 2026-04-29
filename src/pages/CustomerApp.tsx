@@ -39,6 +39,7 @@ export default function CustomerApp() {
   useCustomerOrderNotifications();
 
   useEffect(() => {
+    let cancelled = false;
     async function load() {
       const nowIso = new Date().toISOString();
       const [storesRes, menuRes, promoRes] = await Promise.all([
@@ -51,6 +52,7 @@ export default function CustomerApp() {
           .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
           .order('promotion_starts_at', { ascending: false }),
       ]);
+      if (cancelled) return;
       setStores(storesRes.data ?? []);
       setPromotedStores((promoRes.data ?? []) as StoreRow[]);
       const catMap: Record<string, string[]> = {};
@@ -65,7 +67,24 @@ export default function CustomerApp() {
       setLoading(false);
     }
     load();
+
+    // Realtime: when admins add/edit/remove a store, refresh the list immediately
+    // so customers see new restaurants without needing to reload the page.
+    const channel = supabase
+      .channel('customer-stores-feed')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'stores' },
+        () => { load(); },
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, []);
+
 
   const filtered = useMemo(() => stores.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
