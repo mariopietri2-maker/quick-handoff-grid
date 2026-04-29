@@ -148,7 +148,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     const { error } = await supabase.rpc('create_external_order' as any, {
       p_store_id: storeId,
       p_source: form.source,
-      p_total_amount: Number(form.total_amount),
+      p_total_amount: form.total_amount ? Number(form.total_amount) : 0,
       p_delivery_address: form.delivery_address,
       p_distance_km: form.distance_km ? Number(form.distance_km) : null,
       p_customer_name: form.customer_name || null,
