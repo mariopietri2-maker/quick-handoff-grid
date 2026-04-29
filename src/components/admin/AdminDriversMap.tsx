@@ -286,6 +286,13 @@ export default function AdminDriversMap() {
           </Badge>
         </div>
       </div>
+      {editStores && (
+        <div className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-foreground">
+          {selectedStoreId
+            ? <>📍 <strong>{stores.find(s => s.id === selectedStoreId)?.name}</strong> επιλέχθηκε — κλικ οπουδήποτε στον χάρτη για να το τοποθετήσεις.</>
+            : <>👉 Κλικ σε ένα 🏪 για να το επιλέξεις, μετά κλικ στον χάρτη για νέα θέση.</>}
+        </div>
+      )}
       <Card className="overflow-hidden">
         <div ref={mapContainer} className="h-[500px] w-full" />
       </Card>
