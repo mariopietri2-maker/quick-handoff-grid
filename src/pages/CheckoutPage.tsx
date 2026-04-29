@@ -530,10 +530,43 @@ export default function CheckoutPage() {
             disabled={submitting || !address.trim()}
             className="w-full h-14 gradient-primary shadow-primary text-primary-foreground font-heading text-lg rounded-2xl"
           >
-            {submitting ? 'Υποβολή Παραγγελίας...' : `Υποβολή Παραγγελίας — ${grandTotal.toFixed(2)}€`}
+            {submitting
+              ? 'Υποβολή Παραγγελίας...'
+              : paymentMethod === 'card'
+                ? `Πληρωμή — ${grandTotal.toFixed(2)}€`
+                : `Υποβολή Παραγγελίας — ${grandTotal.toFixed(2)}€`}
           </Button>
         </div>
       </div>
+
+      {/* Embedded Stripe checkout — opens after card order is created */}
+      <Dialog
+        open={!!pendingOrderId}
+        onOpenChange={(open) => {
+          if (!open) {
+            // User closed without paying. Order stays as `pending` and is
+            // never dispatched; admin can clean up later. Refresh cart so
+            // the user can retry.
+            setPendingOrderId(null);
+            toast.info('Η πληρωμή ακυρώθηκε. Δοκιμάστε ξανά για να ολοκληρώσετε.');
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-2">
+            <DialogTitle className="font-heading">Ασφαλής πληρωμή — {grandTotal.toFixed(2)}€</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6 max-h-[80vh] overflow-y-auto">
+            {pendingOrderId && (
+              <OrderCheckout
+                orderId={pendingOrderId}
+                returnPath={`/order-tracking/${pendingOrderId}`}
+                onError={(msg) => toast.error(msg)}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
