@@ -142,7 +142,6 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!form.total_amount || Number(form.total_amount) <= 0) return toast.error('Συμπλήρωσε σύνολο');
     if (!form.delivery_address.trim()) return toast.error('Συμπλήρωσε διεύθυνση');
 
     setSubmitting(true);
