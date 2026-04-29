@@ -244,10 +244,7 @@ export default function DriverApp() {
             ) : (
               <div className="divide-y divide-border">
                 {offers.map((offer) => {
-                  const isReady = offer.status === 'ready';
                   const isClaimed = !!offer.driver_id;
-                  // Admins can always claim, even orders already taken by a driver
-                  const canClick = isReady || isClaimed;
                   return (
                   <article key={offer.id} className="p-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div className="min-w-0 space-y-2">
@@ -257,11 +254,6 @@ export default function DriverApp() {
                         {isClaimed && (
                           <Badge variant="destructive" className="font-heading text-[10px] uppercase">
                             Σε οδηγό
-                          </Badge>
-                        )}
-                        {!isClaimed && !isReady && (
-                          <Badge variant="secondary" className="font-heading text-[10px] uppercase">
-                            {offer.status === 'preparing' ? 'Ετοιμάζεται' : offer.status === 'accepted' ? 'Αποδεκτή' : 'Νέα'}
                           </Badge>
                         )}
                       </div>
@@ -277,11 +269,10 @@ export default function DriverApp() {
                       </div>
                     </div>
                     <button
-                      onClick={() => canClick && acceptOrder(offer.id)}
-                      disabled={!canClick}
-                      className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                      onClick={() => acceptOrder(offer.id)}
+                      className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all"
                     >
-                      {isClaimed ? 'Ανάκτηση' : isReady ? 'Ανάληψη' : 'Αναμονή'}
+                      {isClaimed ? 'Ανάκτηση' : 'Ανάληψη'}
                     </button>
                   </article>
                   );
