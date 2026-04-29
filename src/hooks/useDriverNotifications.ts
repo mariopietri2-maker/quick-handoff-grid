@@ -19,6 +19,10 @@ export function useDriverNotifications() {
   useEffect(() => {
     if (!user) return;
 
+    // Initialize OS-level notifications (asks permission once)
+    void initNotificationChannels();
+    void ensureNotificationPermission();
+
     // 1) Catch-up on any unread (sent while app was closed)
     (async () => {
       const { data } = await (supabase as any)
