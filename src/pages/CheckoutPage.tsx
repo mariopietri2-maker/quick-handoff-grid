@@ -267,6 +267,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
+      <PaymentTestModeBanner />
       <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
         <button onClick={() => navigate(-1)} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
           <ArrowLeft className="h-5 w-5 text-foreground" />
