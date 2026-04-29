@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X, Banknote, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,10 @@ import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SavedAddresses } from '@/components/SavedAddresses';
 import ScheduledDeliveryPicker from '@/components/customer/ScheduledDeliveryPicker';
+import { OrderCheckout } from '@/components/OrderCheckout';
+import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
+import { isPaymentsConfigured } from '@/lib/stripe';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface AppliedPromo {
   id: string;
