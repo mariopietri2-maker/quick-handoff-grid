@@ -1892,6 +1892,12 @@ export type Database = {
           owner_id: string
           phone: string | null
           prep_buffer_minutes: number | null
+          promotion_amount_paid: number
+          promotion_approved_by: string | null
+          promotion_ends_at: string | null
+          promotion_requested_at: string | null
+          promotion_starts_at: string | null
+          promotion_status: string
           suspended_at: string | null
           suspension_reason: string | null
           updated_at: string
@@ -1916,6 +1922,12 @@ export type Database = {
           owner_id: string
           phone?: string | null
           prep_buffer_minutes?: number | null
+          promotion_amount_paid?: number
+          promotion_approved_by?: string | null
+          promotion_ends_at?: string | null
+          promotion_requested_at?: string | null
+          promotion_starts_at?: string | null
+          promotion_status?: string
           suspended_at?: string | null
           suspension_reason?: string | null
           updated_at?: string
@@ -1940,6 +1952,12 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           prep_buffer_minutes?: number | null
+          promotion_amount_paid?: number
+          promotion_approved_by?: string | null
+          promotion_ends_at?: string | null
+          promotion_requested_at?: string | null
+          promotion_starts_at?: string | null
+          promotion_status?: string
           suspended_at?: string | null
           suspension_reason?: string | null
           updated_at?: string
@@ -2367,6 +2385,10 @@ export type Database = {
         Returns: undefined
       }
       admin_reset_money_to_zero: { Args: never; Returns: Json }
+      admin_set_store_promotion: {
+        Args: { p_days?: number; p_status: string; p_store_id: string }
+        Returns: undefined
+      }
       admin_settle_driver_cash: {
         Args: { p_debt_id: string }
         Returns: undefined
@@ -2474,6 +2496,10 @@ export type Database = {
           p_refund_type?: string
         }
         Returns: string
+      }
+      request_store_promotion: {
+        Args: { p_amount: number; p_days: number; p_store_id: string }
+        Returns: undefined
       }
       request_wallet_withdrawal: {
         Args: { p_amount: number; p_driver_id: string }
