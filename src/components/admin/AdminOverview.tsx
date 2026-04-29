@@ -236,7 +236,7 @@ export default function AdminOverview({ orders, profiles }: Props) {
             Live · {format(today, 'EEE, dd MMM yyyy · HH:mm')}
           </p>
         </div>
-        <TaxSnapshotButton adminBal={adminBal} platformBal={platformBal} />
+        
       </div>
 
       {/* 3-COLUMN GRID */}
