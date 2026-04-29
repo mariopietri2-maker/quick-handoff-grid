@@ -138,8 +138,9 @@ function saveDeclined(map: Record<string, number>) {
   }
 }
 
-export function useDriverOrders() {
+export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const { user } = useAuth();
+  const adminOverride = !!opts.adminOverride;
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
   const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
