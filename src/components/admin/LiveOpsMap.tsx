@@ -54,6 +54,11 @@ export default function LiveOpsMap() {
   const [todayOrders, setTodayOrders] = useState<any[]>([]);
   const [todayEarnings, setTodayEarnings] = useState<any[]>([]);
   const [hoveredDriverId, setHoveredDriverId] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -385,6 +390,7 @@ export default function LiveOpsMap() {
             <div className="flex flex-col gap-1.5 text-[11px]">
               <LegendDot color="#22c55e" label="Driver moving" />
               <LegendDot color="#3b82f6" label="Driver idle" />
+              <LegendDot color="#f97316" label="GPS stale (>10min)" />
               <LegendDot color="#10b981" label="Store active" square />
               <LegendDot color="#f97316" label="Store busy" square />
             </div>
