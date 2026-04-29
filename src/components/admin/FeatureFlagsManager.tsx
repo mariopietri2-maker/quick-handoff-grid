@@ -7,6 +7,7 @@ import { Loader2, Flag, AlertTriangle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useSettingAdvisor } from '@/hooks/useSettingAdvisor';
 
 interface Flag {
   id: string;
