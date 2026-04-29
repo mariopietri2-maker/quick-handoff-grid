@@ -31,7 +31,8 @@ import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
-  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders();
+  const { user, isAdmin } = useAuth();
+  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders({ adminOverride: isAdmin });
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
@@ -51,7 +52,6 @@ export default function DriverApp() {
     if (t === 'home') { searchParams.delete('tab'); setSearchParams(searchParams); }
     else { searchParams.set('tab', t); setSearchParams(searchParams); }
   };
-  const { user } = useAuth();
   useEarnings();
   useDriverNotifications();
 
@@ -371,7 +371,16 @@ export default function DriverApp() {
               {!activeDelivery && isOnline && !onBreak && !cashCapped && !loading && offers.length > 0 && (
                 <div className="space-y-3 animate-slide-up">
                   <div className="flex items-center justify-between px-1">
-                    <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">
+                        {isAdmin ? 'Όλες οι Διαθέσιμες' : 'Νέες Παραγγελίες'}
+                      </h3>
+                      {isAdmin && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5">
+                          Ops
+                        </span>
+                      )}
+                    </div>
                     <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5 animate-pop">{offers.length}</Badge>
                   </div>
                   {offers.map((offer, i) => (
@@ -468,7 +477,14 @@ export default function DriverApp() {
               <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center animate-float">
                 <Zap className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">Fresh Delivery</span>
+              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">
+                Fresh Delivery
+                {isAdmin && (
+                  <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                    Ops
+                  </span>
+                )}
+              </span>
             </div>
             <div className="w-10" />
           </header>

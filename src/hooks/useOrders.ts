@@ -138,8 +138,9 @@ function saveDeclined(map: Record<string, number>) {
   }
 }
 
-export function useDriverOrders() {
+export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const { user } = useAuth();
+  const adminOverride = !!opts.adminOverride;
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
   const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
@@ -179,10 +180,24 @@ export function useDriverOrders() {
     let availableOrders: OrderWithItems[] = [];
     const nextOfferIds: Record<string, string> = {};
 
-    if (mode === 'auto') {
+    if (adminOverride) {
+      // ADMIN OVERRIDE: see every unassigned ready order, regardless of source
+      // or dispatch waves. Lets ops grab anything stuck in the queue.
+      const nowIso = new Date().toISOString();
+      const { data: all } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .is('driver_id', null)
+        .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+        .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
+        .order('created_at', { ascending: false })
+        .limit(50);
+      availableOrders = (all as OrderWithItems[]) ?? [];
+    } else if (mode === 'auto') {
       // AUTO MODE: show two buckets, merged into one list:
       //   (a) orders specifically OFFERED to this driver by the dispatcher
       //   (b) BROADCAST orders — manual/external custom orders that are open
+      //       to any online driver (first-come-first-served, like before).
       //       to any online driver (first-come-first-served, like before).
       const nowIso = new Date().toISOString();
 
