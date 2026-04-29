@@ -244,7 +244,6 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       }
     } else {
       // MANUAL MODE: legacy free-for-all
-      const nowIso = new Date().toISOString();
       const { data: available } = await supabase
         .from('orders')
         .select('*, order_items(*)')
