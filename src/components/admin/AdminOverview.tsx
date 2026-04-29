@@ -429,7 +429,116 @@ function RecentOrdersTable({ orders, profiles }: { orders: any[]; profiles: any[
   );
 }
 
-/* ─────────────────────────  Financial Settings  ─────────────────────────── */
+/* ─────────────────────────  Cancel Order Button  ───────────────────────── */
+function CancelOrderButton({ order }: { order: any }) {
+  const invalidate = useAdminInvalidate();
+  const [busy, setBusy] = useState(false);
+
+  const refundable = Number(order.total_amount ?? 0) - Number(order.refunded_amount ?? 0);
+  const isPaidCard = order.payment_method !== 'cash' && order.status !== 'pending';
+  const willRefund = isPaidCard && refundable > 0;
+
+  const handleCancel = async () => {
+    setBusy(true);
+    try {
+      // Refund first (so we never leave money owed if status update succeeds
+      // but refund fails). Uses the existing SECURITY DEFINER RPC which handles
+      // wallet credit + audit log atomically.
+      if (willRefund) {
+        const { error: refundErr } = await (supabase.rpc as any)('refund_order', {
+          p_order_id: order.id,
+          p_amount: refundable,
+          p_reason: 'Order cancelled by admin',
+          p_refund_type: 'wallet_credit',
+          p_notes: null,
+        });
+        if (refundErr) {
+          toast.error('Αποτυχία επιστροφής: ' + refundErr.message);
+          return;
+        }
+      }
+
+      const { error } = await supabase
+        .from('orders')
+        .update({ status: 'cancelled' as any })
+        .eq('id', order.id);
+      if (error) {
+        toast.error('Αποτυχία ακύρωσης: ' + error.message);
+        return;
+      }
+
+      // Best-effort audit entry (non-blocking; cash orders have no refund row)
+      await (supabase.rpc as any)('log_admin_action', {
+        p_action: 'cancel_order',
+        p_target_type: 'order',
+        p_target_id: order.id,
+        p_description: willRefund
+          ? `Cancelled & refunded €${refundable.toFixed(2)} to wallet`
+          : 'Cancelled order',
+        p_metadata: { refunded: willRefund, amount: willRefund ? refundable : 0 },
+      }).catch(() => {});
+
+      // Notify driver if assigned
+      if (order.driver_id) {
+        await (supabase.from as any)('driver_notifications').insert({
+          driver_id: order.driver_id,
+          title: 'Παραγγελία ακυρώθηκε',
+          body: `Η παραγγελία #${order.id.slice(0, 8)} ακυρώθηκε από την υποστήριξη.`,
+          severity: 'warning',
+        }).then(() => undefined).catch(() => undefined);
+      }
+
+      toast.success(willRefund
+        ? `Ακυρώθηκε και επιστράφηκαν €${refundable.toFixed(2)}`
+        : 'Παραγγελία ακυρώθηκε');
+      invalidate.orders();
+      invalidate.finances();
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" title="Ακύρωση παραγγελίας">
+          <X className="h-3.5 w-3.5" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Ακύρωση #{order.id.slice(0, 8)};</AlertDialogTitle>
+          <AlertDialogDescription className="space-y-2">
+            <span>Η παραγγελία θα μαρκαριστεί ως ακυρωμένη.</span>
+            {willRefund && (
+              <span className="block rounded-md border border-border bg-muted/40 p-2 text-xs text-foreground">
+                💰 Θα επιστραφούν αυτόματα <strong>€{refundable.toFixed(2)}</strong> στο πορτοφόλι του πελάτη.
+              </span>
+            )}
+            {!willRefund && order.payment_method === 'cash' && (
+              <span className="block text-xs italic">Πληρωμή σε μετρητά — δεν χρειάζεται επιστροφή.</span>
+            )}
+            {order.driver_id && (
+              <span className="block text-xs">Έχει ανατεθεί σε οδηγό — θα ειδοποιηθεί.</span>
+            )}
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={busy}>Όχι</AlertDialogCancel>
+          <AlertDialogAction
+            disabled={busy}
+            onClick={handleCancel}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {busy && <Loader2 className="h-3.5 w-3.5 mr-1.5 animate-spin" />}
+            Ναι, ακύρωση{willRefund && ' & επιστροφή'}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  );
+}
+
 function FinancialSettingsCard() {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
