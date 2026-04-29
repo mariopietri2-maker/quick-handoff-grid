@@ -135,8 +135,8 @@ export default {
           "50%": { transform: "translateY(-6px)" },
         },
         "marquee-right": {
-          "0%": { transform: "translateX(0)" },
-          "100%": { transform: "translateX(-50%)" },
+          "0%": { transform: "translateX(-50%)" },
+          "100%": { transform: "translateX(0)" },
         },
       },
       animation: {
