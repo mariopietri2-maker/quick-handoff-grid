@@ -52,14 +52,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
     });
   };
 
-  const handleProofUploaded = async (path: string) => {
-    await (supabase as any)
-      .from('orders')
-      .update({ photo_verification_url: path })
-      .eq('id', delivery.id);
-    onStatusUpdate('delivered');
-  };
-
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
 
