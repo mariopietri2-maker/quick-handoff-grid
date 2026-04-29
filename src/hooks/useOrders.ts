@@ -377,7 +377,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     if (!user) return;
     const offerId = offerIds[orderId];
     const target = offers.find((o) => o.id === orderId);
-    if (target && target.status !== 'ready') {
+    if (!adminOverride && target && target.status !== 'ready') {
       toast.info('Η παραγγελία δεν είναι ακόμη έτοιμη για παραλαβή');
       return;
     }
