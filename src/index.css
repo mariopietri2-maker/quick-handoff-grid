@@ -355,7 +355,7 @@
 
   /* Section header strip */
   .admin-section-header {
-    @apply flex items-center justify-between gap-3 mb-3;
+    @apply flex items-center justify-between gap-3 mb-2;
   }
   .admin-section-title {
     @apply text-[15px] font-bold tracking-tight;
