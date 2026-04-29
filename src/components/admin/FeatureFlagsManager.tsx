@@ -52,7 +52,7 @@ export default function FeatureFlagsManager() {
 
   useEffect(() => { load(); }, []);
 
-  const toggle = async (flag: Flag) => {
+  const applyToggle = async (flag: Flag) => {
     setBusy(flag.id);
     const { error } = await (supabase.from as any)('feature_flags')
       .update({ is_enabled: !flag.is_enabled, updated_at: new Date().toISOString() })
@@ -69,7 +69,21 @@ export default function FeatureFlagsManager() {
     toast.success('Αποθηκεύτηκε');
   };
 
-  const saveMaintenance = async () => {
+  const toggle = (flag: Flag) => {
+    advise(
+      {
+        setting_area: 'feature_flag',
+        setting_label: flag.label,
+        setting_key: flag.key,
+        current_value: flag.is_enabled ? 'ενεργό' : 'ανενεργό',
+        proposed_value: !flag.is_enabled ? 'ενεργό' : 'ανενεργό',
+        context: { category: flag.category, description: flag.description },
+      },
+      () => applyToggle(flag),
+    );
+  };
+
+  const applyMaintenance = async () => {
     setSavingMaint(true);
     const { error } = await (supabase.from as any)('platform_settings')
       .update({ maintenance_mode: maintenanceMode, maintenance_message: maintenanceMessage })
@@ -82,6 +96,19 @@ export default function FeatureFlagsManager() {
       p_description: maintenanceMode ? 'Ενεργοποίησε maintenance mode' : 'Απενεργοποίησε maintenance mode',
     });
     toast.success('Αποθηκεύτηκε');
+  };
+
+  const saveMaintenance = () => {
+    advise(
+      {
+        setting_area: 'maintenance_mode',
+        setting_label: 'Maintenance Mode',
+        current_value: maintenanceMode ? 'θα γίνει ενεργό' : 'θα απενεργοποιηθεί',
+        proposed_value: maintenanceMode ? 'ΕΝΕΡΓΟ — όλη η εφαρμογή σε συντήρηση' : 'απενεργοποιημένο',
+        context: { message: maintenanceMessage },
+      },
+      applyMaintenance,
+    );
   };
 
   if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
