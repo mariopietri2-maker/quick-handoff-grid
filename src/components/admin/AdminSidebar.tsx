@@ -102,6 +102,7 @@ export const NAV_SECTIONS = [
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
       { id: 'audit', label: 'Audit log' },
       { id: 'remote_actions', label: 'Remote actions' },
+      { id: 'system_reset', label: '⚠ System reset' },
     ],
   },
 ] as const;
