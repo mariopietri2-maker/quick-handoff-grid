@@ -16,6 +16,7 @@ interface PricingRow {
   min_pay: number;
   customer_base_fee: number;
   customer_per_km_fee: number;
+  platform_service_fee: number;
   peak_multiplier: number;
   peak_start_hour: number;
   peak_end_hour: number;
