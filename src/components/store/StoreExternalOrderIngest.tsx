@@ -142,14 +142,13 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   };
 
   const handleSubmit = async () => {
-    if (!form.total_amount || Number(form.total_amount) <= 0) return toast.error('Συμπλήρωσε σύνολο');
     if (!form.delivery_address.trim()) return toast.error('Συμπλήρωσε διεύθυνση');
 
     setSubmitting(true);
     const { error } = await supabase.rpc('create_external_order' as any, {
       p_store_id: storeId,
       p_source: form.source,
-      p_total_amount: Number(form.total_amount),
+      p_total_amount: form.total_amount ? Number(form.total_amount) : 0,
       p_delivery_address: form.delivery_address,
       p_distance_km: form.distance_km ? Number(form.distance_km) : null,
       p_customer_name: form.customer_name || null,
@@ -240,8 +239,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                   </Select>
                 </div>
                 <div>
-                  <Label className="text-xs">Σύνολο (€) *</Label>
-                  <Input type="number" step="0.01" min="0" value={form.total_amount} onChange={e => update('total_amount', e.target.value)} placeholder="18.40" />
+                  <Label className="text-xs">Σύνολο (€)</Label>
+                  <Input type="number" step="0.01" min="0" value={form.total_amount} onChange={e => update('total_amount', e.target.value)} placeholder="προαιρετικό" />
                 </div>
                 <div>
                   <Label className="text-xs">Απόσταση (km)</Label>
