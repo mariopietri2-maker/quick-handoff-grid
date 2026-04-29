@@ -41,12 +41,25 @@ export function useDriverLocation(isActive: boolean) {
       );
   }, [user]);
 
+  // Hard-offline: clear our location row so the dispatcher immediately
+  // stops considering us online. Used when the driver goes offline,
+  // closes the tab, or backgrounds the app.
+  const goHardOffline = useCallback(async () => {
+    if (!user) return;
+    try {
+      await supabase.from('driver_locations').delete().eq('driver_id', user.id);
+    } catch {
+      /* swallow — best effort on unload */
+    }
+  }, [user]);
+
   useEffect(() => {
     if (!isActive || !user) {
       cleanupRef.current?.();
       cleanupRef.current = null;
       lastPosRef.current = null;
       setTracking(false);
+      void goHardOffline();
       return;
     }
 
