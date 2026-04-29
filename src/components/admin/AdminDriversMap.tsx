@@ -234,7 +234,13 @@ export default function AdminDriversMap() {
     <div className="space-y-4">
       <div className="flex items-center justify-between">
         <h2 className="font-heading font-bold text-xl">Live Χάρτης</h2>
-        <div className="flex gap-2">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
+            <Switch id="edit-stores" checked={editStores} onCheckedChange={setEditStores} />
+            <Label htmlFor="edit-stores" className="text-xs cursor-pointer">
+              Μετακίνηση καταστημάτων
+            </Label>
+          </div>
           <Badge variant="outline" className="gap-1.5">
             <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
             {locations.length} οδηγοί
