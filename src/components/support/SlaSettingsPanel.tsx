@@ -33,11 +33,7 @@ export function SlaSettingsPanel() {
     }
   }, [data]);
 
-  const save = async () => {
-    if (warn >= urgent || urgent >= breach) {
-      toast.error('Πρέπει να ισχύει: Warn < Urgent < Breach');
-      return;
-    }
+  const applySave = async () => {
     setSaving(true);
     const { error } = await supabase
       .from('platform_settings')
@@ -57,6 +53,23 @@ export function SlaSettingsPanel() {
       qc.invalidateQueries({ queryKey: ['sla-settings'] });
       qc.invalidateQueries({ queryKey: ['support-load'] });
     }
+  };
+
+  const save = () => {
+    if (warn >= urgent || urgent >= breach) {
+      toast.error('Πρέπει να ισχύει: Warn < Urgent < Breach');
+      return;
+    }
+    advise(
+      {
+        setting_area: 'sla',
+        setting_label: 'Όρια SLA Support',
+        current_value: `warn ${data?.warn ?? '?'}s · urgent ${data?.urgent ?? '?'}s · breach ${data?.breach ?? '?'}s · ${data?.ticketsPerAgent ?? '?'} tickets/agent`,
+        proposed_value: `warn ${warn}s · urgent ${urgent}s · breach ${breach}s · ${ticketsPerAgent} tickets/agent · scaling ${agentScaling ? 'on' : 'off'}`,
+        context: { openTickets: load?.openTickets, agentCount: load?.agentCount },
+      },
+      applySave,
+    );
   };
 
   const capacity = Math.max(1, (load?.agentCount ?? 1) * ticketsPerAgent);
