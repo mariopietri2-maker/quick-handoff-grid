@@ -2,19 +2,15 @@ import { useEffect, useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   ShoppingBag, DollarSign, AlertTriangle, Users, Wallet, Banknote, Building2,
-  Coins, FileDown, Loader2, Save, Search, TrendingUp, Activity,
+  Coins, Loader2, Save, Search, TrendingUp, Activity,
 } from 'lucide-react';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
-} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 
@@ -236,7 +232,7 @@ export default function AdminOverview({ orders, profiles }: Props) {
             Live · {format(today, 'EEE, dd MMM yyyy · HH:mm')}
           </p>
         </div>
-        <TaxSnapshotButton adminBal={adminBal} platformBal={platformBal} />
+        
       </div>
 
       {/* 3-COLUMN GRID */}
@@ -498,84 +494,5 @@ function FinancialSettingsCard() {
         </Button>
       </div>
     </div>
-  );
-}
-
-/* ─────────────────────────  Tax Snapshot (kept)  ───────────────────────── */
-function TaxSnapshotButton({ adminBal, platformBal }: { adminBal: number; platformBal: number }) {
-  const [busy, setBusy] = useState(false);
-
-  const handleConfirm = async () => {
-    setBusy(true);
-    try {
-      const periodStart = format(startOfDay(new Date(new Date().getFullYear(), new Date().getMonth(), 1)), 'yyyy-MM-dd');
-      const periodEnd = format(new Date(), 'yyyy-MM-dd');
-
-      const { data: ledger, error: ledErr } = await (supabase as any)
-        .from('admin_treasury_ledger').select('*').gte('created_at', periodStart).order('created_at', { ascending: true });
-      if (ledErr) throw ledErr;
-
-      const { data: reportId, error: rpcErr } = await (supabase as any)
-        .rpc('admin_close_month', { p_period_start: periodStart });
-      if (rpcErr) throw rpcErr;
-
-      const csvRows = [
-        ['Tax Snapshot', `${periodStart} → ${periodEnd}`],
-        ['Generated', new Date().toISOString()],
-        ['Report ID', reportId ?? ''],
-        ['Admin balance (closed)', adminBal.toFixed(2)],
-        ['Platform pool (closed)', platformBal.toFixed(2)],
-        [],
-        ['Date', 'Type', 'Bag', 'Amount (€)', 'Order', 'Description'],
-        ...(ledger ?? []).map((r: any) => [
-          r.created_at, r.type, r.bag, Number(r.amount).toFixed(2), r.order_id ?? '', (r.description ?? '').replace(/[\r\n,]/g, ' '),
-        ]),
-      ];
-      const csv = csvRows.map(row => row.map(c => `"${String(c ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
-      const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url; a.download = `tax-snapshot-${periodStart}.csv`;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
-
-      toast.success('Snapshot αποθηκεύτηκε & ταμείο μηδενίστηκε');
-    } catch (e: any) {
-      toast.error(e?.message ?? 'Αποτυχία');
-    } finally { setBusy(false); }
-  };
-
-  return (
-    <AlertDialog>
-      <AlertDialogTrigger asChild>
-        <Button size="sm" variant="outline" className="h-9">
-          <FileDown className="h-3.5 w-3.5 mr-1.5" />
-          Snapshot Φόρου & Reset
-        </Button>
-      </AlertDialogTrigger>
-      <AlertDialogContent>
-        <AlertDialogHeader>
-          <AlertDialogTitle className="flex items-center gap-2">
-            <AlertTriangle className="h-5 w-5 text-yellow-500" />
-            Αποθήκευση δεδομένων φόρου
-          </AlertDialogTitle>
-          <AlertDialogDescription className="space-y-2">
-            <span className="block">Θα εκτελεστούν τα παρακάτω:</span>
-            <ul className="list-disc list-inside text-xs space-y-1 pl-2">
-              <li>Κατέβασμα CSV με όλες τις κινήσεις του τρέχοντα μήνα</li>
-              <li>Δημιουργία αρχειοθετημένης αναφοράς (Monthly Report)</li>
-              <li><strong>Μηδενισμός</strong> ταμείου admin (€{adminBal.toFixed(2)}) και πλατφόρμας (€{platformBal.toFixed(2)})</li>
-            </ul>
-          </AlertDialogDescription>
-        </AlertDialogHeader>
-        <AlertDialogFooter>
-          <AlertDialogCancel disabled={busy}>Άκυρο</AlertDialogCancel>
-          <AlertDialogAction onClick={handleConfirm} disabled={busy}>
-            {busy ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <FileDown className="h-4 w-4 mr-1" />}
-            Επιβεβαίωση
-          </AlertDialogAction>
-        </AlertDialogFooter>
-      </AlertDialogContent>
-    </AlertDialog>
   );
 }
