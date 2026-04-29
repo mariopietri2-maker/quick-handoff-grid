@@ -468,7 +468,14 @@ export default function DriverApp() {
               <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center animate-float">
                 <Zap className="h-3.5 w-3.5 text-white" />
               </div>
-              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">Fresh Delivery</span>
+              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">
+                Fresh Delivery
+                {isAdmin && (
+                  <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
+                    Ops
+                  </span>
+                )}
+              </span>
             </div>
             <div className="w-10" />
           </header>
