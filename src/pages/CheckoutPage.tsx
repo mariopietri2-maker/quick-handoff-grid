@@ -27,6 +27,16 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const [address, setAddress] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState(0.99);
+
+  useEffect(() => {
+    supabase.from('platform_settings').select('platform_service_fee').eq('id', 1).maybeSingle()
+      .then(({ data }) => {
+        if (data && (data as any).platform_service_fee != null) {
+          setDeliveryFee(Number((data as any).platform_service_fee));
+        }
+      });
+  }, []);
 
   useEffect(() => {
     if (!user) return;
