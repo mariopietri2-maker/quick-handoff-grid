@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X } from 'lucide-react';
+import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X, Banknote, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
@@ -13,6 +13,10 @@ import { toast } from 'sonner';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SavedAddresses } from '@/components/SavedAddresses';
 import ScheduledDeliveryPicker from '@/components/customer/ScheduledDeliveryPicker';
+import { OrderCheckout } from '@/components/OrderCheckout';
+import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
+import { isPaymentsConfigured } from '@/lib/stripe';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 
 interface AppliedPromo {
   id: string;
@@ -61,6 +65,9 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
+  const cardEnabled = isPaymentsConfigured();
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>(cardEnabled ? 'card' : 'cash');
+  const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   const [tipOption, setTipOption] = useState<number | 'custom'>(15);
   const [customTip, setCustomTip] = useState('');
@@ -184,7 +191,11 @@ export default function CheckoutPage() {
         .insert({
           customer_id: user.id,
           store_id: storeId,
-          status: 'placed' as any,
+          // Card orders start as `pending`. The Stripe webhook flips them
+          // to `placed` after payment succeeds, which kicks off dispatch.
+          // Cash orders go straight to `placed`.
+          status: (paymentMethod === 'card' ? 'pending' : 'placed') as any,
+          payment_method: paymentMethod,
           total_amount: Math.max(0, total - discount),
           delivery_fee: deliveryFee,
           tip_amount: tipAmount,
@@ -218,9 +229,16 @@ export default function CheckoutPage() {
         throw itemsError;
       }
 
-      clearCart();
-      toast.success('Η παραγγελία καταχωρήθηκε! 🎉');
-      navigate(`/order-tracking/${order.id}`);
+      if (paymentMethod === 'card') {
+        // Show embedded Stripe checkout — customer pays, webhook completes the order.
+        // Clear cart now: the order row exists; if they abandon, admin cleans up.
+        clearCart();
+        setPendingOrderId(order.id);
+      } else {
+        clearCart();
+        toast.success('Η παραγγελία καταχωρήθηκε! 🎉');
+        navigate(`/order-tracking/${order.id}`);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Αποτυχία υποβολής παραγγελίας');
     } finally {
@@ -251,6 +269,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
+      <PaymentTestModeBanner />
       <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
         <button onClick={() => navigate(-1)} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
           <ArrowLeft className="h-5 w-5 text-foreground" />
@@ -388,6 +407,46 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
+        {/* Payment method */}
+        <Card className="shadow-[var(--shadow-md)]">
+          <CardContent className="p-4 space-y-3">
+            <h2 className="font-heading font-semibold text-foreground">Τρόπος πληρωμής</h2>
+            <div className="grid grid-cols-2 gap-2">
+              <button
+                type="button"
+                onClick={() => cardEnabled && setPaymentMethod('card')}
+                disabled={!cardEnabled}
+                className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
+                  paymentMethod === 'card'
+                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
+                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                } ${!cardEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
+              >
+                <CreditCard className="h-5 w-5" />
+                <span>Κάρτα</span>
+                {!cardEnabled && <span className="text-[10px] italic">Σύντομα διαθέσιμη</span>}
+              </button>
+              <button
+                type="button"
+                onClick={() => setPaymentMethod('cash')}
+                className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
+                  paymentMethod === 'cash'
+                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
+                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                }`}
+              >
+                <Banknote className="h-5 w-5" />
+                <span>Μετρητά</span>
+              </button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              {paymentMethod === 'card'
+                ? 'Πληρώνετε με ασφάλεια online. Ο ΦΠΑ υπολογίζεται αυτόματα.'
+                : 'Πληρώνετε στον οδηγό κατά την παράδοση.'}
+            </p>
+          </CardContent>
+        </Card>
+
         {/* Promo Code */}
         <Card className={`shadow-[var(--shadow-md)] ${appliedPromo ? 'border-success/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
@@ -473,10 +532,43 @@ export default function CheckoutPage() {
             disabled={submitting || !address.trim()}
             className="w-full h-14 gradient-primary shadow-primary text-primary-foreground font-heading text-lg rounded-2xl"
           >
-            {submitting ? 'Υποβολή Παραγγελίας...' : `Υποβολή Παραγγελίας — ${grandTotal.toFixed(2)}€`}
+            {submitting
+              ? 'Υποβολή Παραγγελίας...'
+              : paymentMethod === 'card'
+                ? `Πληρωμή — ${grandTotal.toFixed(2)}€`
+                : `Υποβολή Παραγγελίας — ${grandTotal.toFixed(2)}€`}
           </Button>
         </div>
       </div>
+
+      {/* Embedded Stripe checkout — opens after card order is created */}
+      <Dialog
+        open={!!pendingOrderId}
+        onOpenChange={(open) => {
+          if (!open) {
+            // User closed without paying. Order stays as `pending` and is
+            // never dispatched; admin can clean up later. Refresh cart so
+            // the user can retry.
+            setPendingOrderId(null);
+            toast.info('Η πληρωμή ακυρώθηκε. Δοκιμάστε ξανά για να ολοκληρώσετε.');
+          }
+        }}
+      >
+        <DialogContent className="max-w-2xl p-0 overflow-hidden">
+          <DialogHeader className="px-6 pt-5 pb-2">
+            <DialogTitle className="font-heading">Ασφαλής πληρωμή — {grandTotal.toFixed(2)}€</DialogTitle>
+          </DialogHeader>
+          <div className="px-6 pb-6 max-h-[80vh] overflow-y-auto">
+            {pendingOrderId && (
+              <OrderCheckout
+                orderId={pendingOrderId}
+                returnPath={`/order-tracking/${pendingOrderId}`}
+                onError={(msg) => toast.error(msg)}
+              />
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
