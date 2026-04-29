@@ -33,6 +33,7 @@ import AdminPermissionsManager from '@/components/admin/AdminPermissionsManager'
 import CannedRepliesManager from '@/components/admin/CannedRepliesManager';
 import ExternalOrderIngest from '@/components/admin/ExternalOrderIngest';
 import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
+import StorePromotionsManager from '@/components/admin/StorePromotionsManager';
 import SystemResetPanel from '@/components/admin/SystemResetPanel';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -194,6 +195,8 @@ export default function AdminApp() {
         return <ExternalOrderIngest />;
       case 'store_billing':
         return <StoreBillingSettings />;
+      case 'promotions':
+        return <StorePromotionsManager />;
       case 'system_reset':
         return <SystemResetPanel />;
       default:
