@@ -231,6 +231,8 @@ export default function CheckoutPage() {
 
       if (paymentMethod === 'card') {
         // Show embedded Stripe checkout — customer pays, webhook completes the order.
+        // Clear cart now: the order row exists; if they abandon, admin cleans up.
+        clearCart();
         setPendingOrderId(order.id);
       } else {
         clearCart();
