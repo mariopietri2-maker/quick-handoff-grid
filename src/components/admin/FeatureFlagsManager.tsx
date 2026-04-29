@@ -58,7 +58,7 @@ export default function FeatureFlagsManager() {
       .update({ is_enabled: !flag.is_enabled, updated_at: new Date().toISOString() })
       .eq('id', flag.id);
     setBusy(null);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setFlags(prev => prev.map(x => x.id === flag.id ? { ...x, is_enabled: !x.is_enabled } : x));
     await (supabase.rpc as any)('log_admin_action', {
       p_action: 'toggle_feature_flag',
