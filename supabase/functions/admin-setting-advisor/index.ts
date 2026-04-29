@@ -1,6 +1,9 @@
 // Admin Setting Advisor — analyzes a proposed admin setting change with Lovable AI
 // and returns a structured impact assessment that the admin must review before applying.
 
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { rateLimit, rateLimitResponse, clientKey } from "../_shared/rate-limit.ts";
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers":
@@ -8,21 +11,63 @@ const corsHeaders = {
 };
 
 interface AdvisorRequest {
-  setting_area: string;        // e.g. "feature_flag", "sla", "maintenance_mode", "pricing", "commission"
-  setting_label: string;       // human label, e.g. "Auto-dispatch enabled"
-  setting_key?: string;        // technical key
+  setting_area: string;
+  setting_label: string;
+  setting_key?: string;
   current_value: unknown;
   proposed_value: unknown;
-  context?: Record<string, unknown>; // extra hints (counts, scope, etc.)
+  context?: Record<string, unknown>;
 }
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const body = (await req.json()) as AdvisorRequest;
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+
+    // --- AUTH: require admin role ---
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData?.user) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), {
+        status: 401, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    const { data: roles } = await supabase
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", userData.user.id);
+    const isAdmin = roles?.some((r: any) => r.role === "admin");
+    if (!isAdmin) {
+      return new Response(JSON.stringify({ error: "Forbidden" }), {
+        status: 403, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // --- Rate limit: 30/min per admin (burst 10) ---
+    const rl = rateLimit(clientKey(req, userData.user.id), { capacity: 10, refillPerMinute: 30 });
+    if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
+
+    const body = (await req.json()) as AdvisorRequest;
+    if (!body || typeof body.setting_area !== "string" || typeof body.setting_label !== "string") {
+      return new Response(JSON.stringify({ error: "Invalid payload" }), {
+        status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
     const systemPrompt = `Είσαι σύμβουλος για διαχειριστές πλατφόρμας delivery. Αναλύεις προτεινόμενες αλλαγές ρυθμίσεων.
 Πάντα απαντάς στα ελληνικά, σύντομα και πρακτικά. Επικεντρώσου σε:
@@ -62,33 +107,12 @@ ${body.context ? `Συμπληρωματικά: ${JSON.stringify(body.context)}`
               parameters: {
                 type: "object",
                 properties: {
-                  recommendation: {
-                    type: "string",
-                    enum: ["proceed", "caution", "block"],
-                  },
-                  summary: {
-                    type: "string",
-                    description: "1-2 πρόταση περίληψη του τι θα συμβεί",
-                  },
-                  affected: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Ποιοι επηρεάζονται (π.χ. 'οδηγοί', 'καταστήματα')",
-                  },
-                  impacts: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Bullet points αντικτύπων",
-                  },
-                  risks: {
-                    type: "array",
-                    items: { type: "string" },
-                    description: "Κίνδυνοι / παρενέργειες",
-                  },
-                  reason: {
-                    type: "string",
-                    description: "Γιατί η συγκεκριμένη σύσταση",
-                  },
+                  recommendation: { type: "string", enum: ["proceed", "caution", "block"] },
+                  summary: { type: "string" },
+                  affected: { type: "array", items: { type: "string" } },
+                  impacts: { type: "array", items: { type: "string" } },
+                  risks: { type: "array", items: { type: "string" } },
+                  reason: { type: "string" },
                 },
                 required: ["recommendation", "summary", "affected", "impacts", "risks", "reason"],
                 additionalProperties: false,
