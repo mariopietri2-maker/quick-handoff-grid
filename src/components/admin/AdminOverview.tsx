@@ -18,6 +18,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
+import { useAdminInvalidate } from '@/hooks/useAdminInvalidate';
+import { TableSkeleton } from '@/components/admin/TableSkeleton';
 
 interface Props {
   orders: any[];
@@ -408,43 +410,17 @@ function RecentOrdersTable({ orders, profiles }: { orders: any[]; profiles: any[
                 <td className="px-3 py-2 font-semibold tabular-nums">€{Number(o.total_amount).toFixed(2)}</td>
                 <td className="px-3 py-2 text-muted-foreground tabular-nums">{format(new Date(o.created_at), 'dd MMM, HH:mm')}</td>
                 <td className="px-3 py-2 text-right">
-                  {cancellable && (
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button size="sm" variant="ghost" className="h-7 w-7 p-0 text-destructive hover:bg-destructive/10" title="Ακύρωση παραγγελίας">
-                          <X className="h-3.5 w-3.5" />
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent>
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>Ακύρωση #{o.id.slice(0, 8)};</AlertDialogTitle>
-                          <AlertDialogDescription>
-                            Η παραγγελία θα μαρκαριστεί ως ακυρωμένη.
-                            {o.driver_id && ' Έχει ανατεθεί σε οδηγό — βεβαιώσου ότι έχει ενημερωθεί.'}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel>Όχι</AlertDialogCancel>
-                          <AlertDialogAction
-                            onClick={async () => {
-                              const { error } = await supabase.from('orders').update({ status: 'cancelled' as any }).eq('id', o.id);
-                              if (error) toast.error('Αποτυχία ακύρωσης: ' + error.message);
-                              else toast.success('Παραγγελία ακυρώθηκε');
-                            }}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                          >
-                            Ναι, ακύρωση
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
-                  )}
+                  {cancellable && <CancelOrderButton order={o} />}
                 </td>
               </tr>
               );
             })}
             {!filtered.length && (
-              <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Καμία παραγγελία</td></tr>
+              <tr><td colSpan={7} className="p-0">
+                {orders.length === 0
+                  ? <TableSkeleton rows={5} columns={6} />
+                  : <div className="text-center text-muted-foreground py-10">Καμία παραγγελία</div>}
+              </td></tr>
             )}
           </tbody>
         </table>
