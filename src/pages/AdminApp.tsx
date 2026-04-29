@@ -21,6 +21,7 @@ import SupportRoleManager from '@/components/admin/SupportRoleManager';
 import WalletAdjustDialog from '@/components/admin/WalletAdjustDialog';
 import SuspendDialog from '@/components/admin/SuspendDialog';
 import DriverMapSettings from '@/components/admin/DriverMapSettings';
+import DriverMapEditor from '@/components/admin/DriverMapEditor';
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import { cn } from '@/lib/utils';
 import AdminOverview from '@/components/admin/AdminOverview';
