@@ -389,10 +389,11 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       .subscribe();
 
     return () => {
+      if (pending) clearTimeout(pending);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(offersChannel);
     };
-  }, [user, fetchOrders]);
+  }, [user, fetchOrders, adminOverride]);
 
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
