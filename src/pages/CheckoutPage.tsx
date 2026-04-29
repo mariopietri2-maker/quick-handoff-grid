@@ -191,7 +191,11 @@ export default function CheckoutPage() {
         .insert({
           customer_id: user.id,
           store_id: storeId,
-          status: 'placed' as any,
+          // Card orders start as `pending`. The Stripe webhook flips them
+          // to `placed` after payment succeeds, which kicks off dispatch.
+          // Cash orders go straight to `placed`.
+          status: (paymentMethod === 'card' ? 'pending' : 'placed') as any,
+          payment_method: paymentMethod,
           total_amount: Math.max(0, total - discount),
           delivery_fee: deliveryFee,
           tip_amount: tipAmount,
@@ -225,9 +229,14 @@ export default function CheckoutPage() {
         throw itemsError;
       }
 
-      clearCart();
-      toast.success('Η παραγγελία καταχωρήθηκε! 🎉');
-      navigate(`/order-tracking/${order.id}`);
+      if (paymentMethod === 'card') {
+        // Show embedded Stripe checkout — customer pays, webhook completes the order.
+        setPendingOrderId(order.id);
+      } else {
+        clearCart();
+        toast.success('Η παραγγελία καταχωρήθηκε! 🎉');
+        navigate(`/order-tracking/${order.id}`);
+      }
     } catch (error: any) {
       toast.error(error.message || 'Αποτυχία υποβολής παραγγελίας');
     } finally {
