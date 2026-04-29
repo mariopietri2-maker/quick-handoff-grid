@@ -9,6 +9,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { ReviewList, RatingBadge } from '@/components/ReviewList';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import GroupOrderShare from '@/components/customer/GroupOrderShare';
+import { MenuItemBadges } from '@/components/customer/MenuItemBadges';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
