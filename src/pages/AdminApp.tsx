@@ -194,6 +194,8 @@ export default function AdminApp() {
         return <ExternalOrderIngest />;
       case 'store_billing':
         return <StoreBillingSettings />;
+      case 'system_reset':
+        return <SystemResetPanel />;
       default:
         return null;
     }
