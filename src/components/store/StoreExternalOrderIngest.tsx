@@ -276,6 +276,38 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                   <Label className="text-xs">Σύνολο (€)</Label>
                   <Input type="number" step="0.01" min="0" value={form.total_amount} onChange={e => update('total_amount', e.target.value)} placeholder="προαιρετικό" />
                 </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs">Τρόπος πληρωμής *</Label>
+                  <div className="grid grid-cols-2 gap-2 mt-1">
+                    <button
+                      type="button"
+                      onClick={() => update('payment_method', 'card')}
+                      className={`rounded-lg border px-3 py-2 text-sm font-heading transition ${
+                        form.payment_method === 'card'
+                          ? 'border-primary bg-primary/10 text-primary'
+                          : 'border-border bg-background text-muted-foreground hover:border-primary/50'
+                      }`}
+                    >
+                      💳 Κάρτα (πλήρωσε στην πλατφόρμα)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => update('payment_method', 'cash')}
+                      className={`rounded-lg border px-3 py-2 text-sm font-heading transition ${
+                        form.payment_method === 'cash'
+                          ? 'border-accent bg-accent/10 text-accent-foreground'
+                          : 'border-border bg-background text-muted-foreground hover:border-accent/50'
+                      }`}
+                    >
+                      💶 Μετρητά (εισπράττει ο οδηγός)
+                    </button>
+                  </div>
+                  {form.payment_method === 'cash' && (
+                    <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+                      Ο οδηγός θα εισπράξει €{(Number(form.total_amount) || 0).toFixed(2)} από τον πελάτη και θα τα παραδώσει στον admin (ή κατάθεση Εθνικής).
+                    </p>
+                  )}
+                </div>
                 <div>
                   <Label className="text-xs">Απόσταση (km)</Label>
                   <Input type="number" step="0.1" min="0" value={form.distance_km} onChange={e => update('distance_km', e.target.value)} placeholder="3.2" />
