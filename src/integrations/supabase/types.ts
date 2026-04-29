@@ -1367,6 +1367,48 @@ export type Database = {
           },
         ]
       }
+      pending_offers: {
+        Row: {
+          created_at: string
+          distance_km: number | null
+          driver_id: string
+          expires_at: string
+          id: string
+          offered_at: string
+          order_id: string
+          responded_at: string | null
+          score: number | null
+          status: string
+          wave: number
+        }
+        Insert: {
+          created_at?: string
+          distance_km?: number | null
+          driver_id: string
+          expires_at: string
+          id?: string
+          offered_at?: string
+          order_id: string
+          responded_at?: string | null
+          score?: number | null
+          status?: string
+          wave?: number
+        }
+        Update: {
+          created_at?: string
+          distance_km?: number | null
+          driver_id?: string
+          expires_at?: string
+          id?: string
+          offered_at?: string
+          order_id?: string
+          responded_at?: string | null
+          score?: number | null
+          status?: string
+          wave?: number
+        }
+        Relationships: []
+      }
       platform_settings: {
         Row: {
           admin_share_pct: number
@@ -2482,6 +2524,21 @@ export type Database = {
           p_target_type?: string
         }
         Returns: undefined
+      }
+      nearby_active_drivers: {
+        Args: {
+          _exclude_drivers?: string[]
+          _limit?: number
+          _order_value?: number
+          _store_lat: number
+          _store_lng: number
+        }
+        Returns: {
+          distance_km: number
+          driver_id: string
+          score: number
+          vehicle_type: string
+        }[]
       }
       redeem_wallet_credit: {
         Args: { p_amount: number; p_order_id: string }
