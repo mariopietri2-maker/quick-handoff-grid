@@ -144,10 +144,22 @@ export function useDriverOrders() {
   const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
   const [loading, setLoading] = useState(true);
+  // Map of order_id -> pending offer id (only set when assignment_mode='auto')
+  const [offerIds, setOfferIds] = useState<Record<string, string>>({});
+  const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
   const declinedRef = useRef<Record<string, number>>(loadDeclined());
 
   const fetchOrders = useCallback(async () => {
     if (!user) return;
+
+    // Load assignment mode (cheap, one column)
+    const { data: settings } = await supabase
+      .from('platform_settings')
+      .select('assignment_mode')
+      .eq('id', 1)
+      .maybeSingle();
+    const mode = (settings?.assignment_mode === 'manual' ? 'manual' : 'auto') as 'auto' | 'manual';
+    setAssignmentMode(mode);
 
     // Fetch assigned active orders
     const { data: active } = await supabase
@@ -164,21 +176,45 @@ export function useDriverOrders() {
       setActiveDelivery(null);
     }
 
-    // Fetch unassigned orders as offers (pending/placed without driver)
-    // Smart dispatch: only show orders whose dispatch_at has arrived (or null = legacy)
-    const nowIso = new Date().toISOString();
-    const { data: available } = await supabase
-      .from('orders')
-      .select('*, order_items(*)')
-      .is('driver_id', null)
-      .in('status', ['placed', 'accepted', 'preparing', 'ready'])
-      .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
-      .order('created_at', { ascending: false })
-      .limit(10);
+    let availableOrders: OrderWithItems[] = [];
+    const nextOfferIds: Record<string, string> = {};
 
-    const filteredAvailable = available
-      ? (available as OrderWithItems[]).filter((o) => !declinedRef.current[o.id])
-      : [];
+    if (mode === 'auto') {
+      // AUTO MODE: only show orders the dispatch engine has offered to THIS driver
+      const { data: myPending } = await supabase
+        .from('pending_offers')
+        .select('id, order_id, expires_at')
+        .eq('driver_id', user.id)
+        .eq('status', 'pending')
+        .gt('expires_at', new Date().toISOString());
+
+      const orderIds = (myPending ?? []).map((p) => p.order_id);
+      if (orderIds.length > 0) {
+        const { data: ord } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .in('id', orderIds)
+          .is('driver_id', null);
+        availableOrders = (ord as OrderWithItems[]) ?? [];
+        for (const p of myPending ?? []) nextOfferIds[p.order_id] = p.id;
+      }
+    } else {
+      // MANUAL MODE: legacy free-for-all
+      const nowIso = new Date().toISOString();
+      const { data: available } = await supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .is('driver_id', null)
+        .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+        .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
+        .order('created_at', { ascending: false })
+        .limit(10);
+      availableOrders = available
+        ? (available as OrderWithItems[]).filter((o) => !declinedRef.current[o.id])
+        : [];
+    }
+
+    setOfferIds(nextOfferIds);
 
     if (active) {
       // Driver has an active delivery — only surface "stacked" offers from the SAME store
@@ -187,7 +223,7 @@ export function useDriverOrders() {
         (active as OrderWithItems).status as string,
       );
       if (sameStorePickupPending) {
-        const sameStore = filteredAvailable.filter(
+        const sameStore = availableOrders.filter(
           (o) => o.store_id === (active as OrderWithItems).store_id && o.id !== (active as OrderWithItems).id,
         );
         setStackedOffers(sameStore);
@@ -196,7 +232,7 @@ export function useDriverOrders() {
       }
       setOffers([]);
     } else {
-      setOffers(filteredAvailable);
+      setOffers(availableOrders);
       setStackedOffers([]);
     }
 
