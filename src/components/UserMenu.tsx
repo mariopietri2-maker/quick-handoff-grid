@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Bell, Settings, TrendingUp, Wallet,
-  LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause,
+  LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause, PackageX,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,8 +29,46 @@ export function UserMenu() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [releaseOpen, setReleaseOpen] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [activeOrder, setActiveOrder] = useState<{ id: string; status: string } | null>(null);
   const { state: driverState, startBreak, endBreak } = useDriverState();
   const onBreak = !!driverState?.on_break;
+
+  // Track driver's active (releasable) order so we can offer "Unassign" under Break.
+  // Releasable = assigned to me and not yet picked up / delivered / canceled.
+  useEffect(() => {
+    if (!isDriver || !user) { setActiveOrder(null); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await (supabase as any)
+        .from('orders')
+        .select('id, status')
+        .eq('driver_id', user.id)
+        .not('status', 'in', '(picked_up,delivered,canceled,cancelled)')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setActiveOrder(data ?? null);
+    };
+    load();
+    const ch = supabase
+      .channel(`user-menu-active-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `driver_id=eq.${user.id}` }, load)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [isDriver, user]);
+
+  const handleReleaseOrder = async () => {
+    if (!activeOrder) return;
+    setReleasing(true);
+    const { error } = await (supabase as any).rpc('driver_release_order', { p_order_id: activeOrder.id });
+    setReleasing(false);
+    if (error) { toast.error(error.message || 'Αποτυχία απόθεσης παραγγελίας'); return; }
+    toast.success('Η παραγγελία επανεκχωρείται σε άλλον οδηγό');
+    setReleaseOpen(false);
+    setActiveOrder(null);
+  };
 
   // Live tick so the countdown updates while menu is open
   const [, setTick] = useState(0);
@@ -132,6 +171,17 @@ export function UserMenu() {
                 >
                   <Coffee className="mr-2 h-4 w-4 shrink-0" />
                   Διάλειμμα
+                </DropdownMenuItem>
+              )}
+
+              {/* Unassign current order — placed directly under Break */}
+              {activeOrder && (
+                <DropdownMenuItem
+                  className={`${itemClassName} text-destructive focus:bg-destructive/10 focus:text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive`}
+                  onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setReleaseOpen(true), 50); }}
+                >
+                  <PackageX className="mr-2 h-4 w-4 shrink-0" />
+                  Απόθεση Παραγγελίας
                 </DropdownMenuItem>
               )}
 
@@ -252,6 +302,26 @@ export function UserMenu() {
               <p className="text-xs text-muted-foreground text-center">
                 Δεν θα λαμβάνεις νέες παραγγελίες κατά τη διάρκεια του διαλείμματος.
               </p>
+            </DialogContent>
+          </Dialog>
+
+          <Dialog open={releaseOpen} onOpenChange={setReleaseOpen}>
+            <DialogContent className="max-w-xs">
+              <DialogHeader>
+                <DialogTitle>Απόθεση Παραγγελίας;</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Η παραγγελία θα επιστραφεί στο σύστημα και θα ανατεθεί άμεσα σε άλλον διαθέσιμο οδηγό.
+                Συχνές αποθέσεις μπορεί να επηρεάσουν το ποσοστό αποδοχής σου.
+              </p>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setReleaseOpen(false)} disabled={releasing}>
+                  Άκυρο
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={handleReleaseOrder} disabled={releasing}>
+                  {releasing ? 'Απόθεση…' : 'Απόθεση'}
+                </Button>
+              </div>
             </DialogContent>
           </Dialog>
         </>
