@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, Eye, EyeOff } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, Eye, EyeOff, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { useAuth } from '@/hooks/useAuth';
@@ -170,6 +170,112 @@ export default function DriverApp() {
   }
 
   void MapPin; // unused but kept for future
+
+  if (isAdmin) {
+    return (
+      <div className="min-h-[100dvh] driver-shell bg-background text-foreground overflow-y-auto">
+        <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-area-top">
+          <div className="px-4 py-3 flex items-center justify-between gap-3">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center shrink-0">
+                <ShieldCheck className="h-5 w-5 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-[11px] font-heading font-bold uppercase tracking-wider text-muted-foreground">Admin Driver Ops</p>
+                <h1 className="font-heading text-lg font-extrabold truncate">Έτοιμες Παραγγελίες</h1>
+              </div>
+            </div>
+            <div className="shrink-0 flex items-center gap-2">
+              <Badge className="bg-primary text-primary-foreground font-heading">{offers.length}</Badge>
+              <UserMenu />
+            </div>
+          </div>
+        </header>
+
+        <main className="px-4 py-4 space-y-4 max-w-3xl mx-auto">
+          {activeDelivery && (
+            <section className="space-y-3">
+              <div className="flex items-center gap-2 px-1">
+                <PackageCheck className="h-4 w-4 text-primary" />
+                <h2 className="font-heading font-bold text-sm">Παραγγελία που ανέλαβες</h2>
+              </div>
+              <ActiveDelivery
+                delivery={{
+                  id: activeDelivery.id,
+                  storeName: storeInfo?.name || activeDelivery.store_name || 'Σημείο Παραλαβής',
+                  storeAddress: storeInfo?.address || activeDelivery.store_address || 'Διεύθυνση',
+                  storePhone: storeInfo?.phone || null,
+                  storeLat: storeInfo?.latitude ?? null,
+                  storeLng: storeInfo?.longitude ?? null,
+                  deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
+                  deliveryLat: activeDelivery.delivery_latitude ?? null,
+                  deliveryLng: activeDelivery.delivery_longitude ?? null,
+                  customerName: customerInfo?.name || 'Πελάτης',
+                  customerPhone: customerInfo?.phone || null,
+                  status: activeDelivery.status ?? 'accepted',
+                  items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
+                  estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
+                  pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
+                }}
+                onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
+                onFocusDestination={() => {}}
+              />
+            </section>
+          )}
+
+          <section className="rounded-xl border border-border bg-card shadow-[var(--shadow-sm)] overflow-hidden">
+            <div className="px-4 py-3 border-b border-border flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2 min-w-0">
+                <ClipboardList className="h-4 w-4 text-primary shrink-0" />
+                <div className="min-w-0">
+                  <h2 className="font-heading font-bold text-sm truncate">Λίστα διαθέσιμων για ανάληψη</h2>
+                  <p className="text-xs text-muted-foreground">Μόνο παραγγελίες με κατάσταση έτοιμη για παραλαβή</p>
+                </div>
+              </div>
+              {loading && <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />}
+            </div>
+
+            {!loading && offers.length === 0 ? (
+              <div className="px-4 py-12 text-center">
+                <Radio className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
+                <p className="font-heading font-bold text-sm">Δεν υπάρχουν έτοιμες παραγγελίες</p>
+                <p className="text-xs text-muted-foreground mt-1">Μόλις ένα κατάστημα σημειώσει παραγγελία ως έτοιμη, θα εμφανιστεί εδώ.</p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {offers.map((offer) => (
+                  <article key={offer.id} className="p-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
+                    <div className="min-w-0 space-y-2">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <Badge variant="outline" className="font-heading text-[10px] uppercase">{offer.source}</Badge>
+                        <span className="text-xs font-heading font-bold text-primary">#{offer.id.slice(0, 8)}</span>
+                      </div>
+                      <div>
+                        <p className="font-heading font-bold text-base truncate">{offer.store_name || 'Κατάστημα'}</p>
+                        <p className="text-xs text-muted-foreground truncate">Παραλαβή: {offer.store_address || 'Διεύθυνση καταστήματος'}</p>
+                        <p className="text-xs text-muted-foreground truncate">Παράδοση: {offer.delivery_address || 'Πελάτης'}</p>
+                      </div>
+                      <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
+                        <span className="rounded-lg bg-muted px-2 py-1">{offer.order_items?.length ?? 0} τεμ.</span>
+                        <span className="rounded-lg bg-muted px-2 py-1">€{Number(offer.delivery_fee ?? offer.driver_payout ?? 0).toFixed(2)} οδηγός</span>
+                        {offer.distance_km != null && <span className="rounded-lg bg-muted px-2 py-1">{Number(offer.distance_km).toFixed(1)} χλμ</span>}
+                      </div>
+                    </div>
+                    <button
+                      onClick={() => acceptOrder(offer.id)}
+                      className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all"
+                    >
+                      Ανάληψη
+                    </button>
+                  </article>
+                ))}
+              </div>
+            )}
+          </section>
+        </main>
+      </div>
+    );
+  }
 
 
   return (

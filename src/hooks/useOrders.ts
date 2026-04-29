@@ -12,6 +12,7 @@ type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
 export interface OrderWithItems extends OrderRow {
   order_items: OrderItemRow[];
   store_name?: string;
+  store_address?: string | null;
 }
 
 export function useStoreOrders(storeId: string | null) {
@@ -181,15 +182,12 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const nextOfferIds: Record<string, string> = {};
 
     if (adminOverride) {
-      // ADMIN OVERRIDE: see every unassigned ready order, regardless of source
-      // or dispatch waves. Lets ops grab anything stuck in the queue.
-      const nowIso = new Date().toISOString();
+      // ADMIN OVERRIDE: ops queue shows only orders that are actually ready to pick up.
       const { data: all } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .is('driver_id', null)
-        .in('status', ['placed', 'accepted', 'preparing', 'ready'])
-        .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
+        .eq('status', 'ready')
         .order('created_at', { ascending: false })
         .limit(50);
       availableOrders = (all as OrderWithItems[]) ?? [];
@@ -212,11 +210,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           .from('orders')
           .select('*, order_items(*)')
           .is('driver_id', null)
-          // Anything NOT placed via the in-app customer flow is broadcast to all drivers
-          // (manual entry, external ingest, efood/wolt/box receipts, etc.)
-          .neq('source', 'in_app')
+          // External/manual ready orders are broadcast to all online drivers immediately.
+          .or('source.in.(manual,efood,wolt,box,other,external),payment_method.eq.external')
           .eq('status', 'ready')
-          .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
           .order('created_at', { ascending: false })
           .limit(20),
       ]);
@@ -248,18 +244,29 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       }
     } else {
       // MANUAL MODE: legacy free-for-all
-      const nowIso = new Date().toISOString();
       const { data: available } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .is('driver_id', null)
         .eq('status', 'ready')
-        .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
         .order('created_at', { ascending: false })
         .limit(10);
       availableOrders = available
         ? (available as OrderWithItems[]).filter((o) => !declinedRef.current[o.id])
         : [];
+    }
+
+    if (availableOrders.length > 0) {
+      const storeIds = Array.from(new Set(availableOrders.map((o) => o.store_id).filter(Boolean)));
+      const { data: stores } = await supabase
+        .from('stores')
+        .select('id, name, address')
+        .in('id', storeIds);
+      const storeMap = new Map((stores ?? []).map((s) => [s.id, s]));
+      availableOrders = availableOrders.map((order) => {
+        const store = storeMap.get(order.store_id);
+        return store ? { ...order, store_name: store.name, store_address: store.address } : order;
+      });
     }
 
     setOfferIds(nextOfferIds);
@@ -288,7 +295,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     }
 
     setLoading(false);
-  }, [user]);
+  }, [user, adminOverride]);
 
   useEffect(() => {
     fetchOrders();
