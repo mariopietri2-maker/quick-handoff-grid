@@ -172,11 +172,13 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       /* non-fatal */
     }
 
-    const { data: orderId, error } = await supabase.rpc('create_external_order' as any, {
+    const { error } = await supabase.rpc('create_external_order' as any, {
       p_store_id: storeId,
       p_source: form.source,
       p_total_amount: form.total_amount ? Number(form.total_amount) : 0,
       p_delivery_address: form.delivery_address,
+      p_delivery_lat: deliveryLat,
+      p_delivery_lng: deliveryLng,
       p_distance_km: distanceKm,
       p_customer_name: form.customer_name || null,
       p_customer_phone: form.customer_phone || null,
@@ -184,17 +186,6 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       p_external_ref: form.external_ref || null,
       p_items_summary: form.items_summary || null,
     });
-
-    // Patch coordinates onto the freshly created order so dispatch + map work.
-    if (!error && orderId && (deliveryLat != null || deliveryLng != null)) {
-      await supabase
-        .from('orders')
-        .update({
-          delivery_latitude: deliveryLat,
-          delivery_longitude: deliveryLng,
-        } as any)
-        .eq('id', orderId as unknown as string);
-    }
     setSubmitting(false);
     if (error) {
       toast.error(error.message);
