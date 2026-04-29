@@ -32,6 +32,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'overview',
     tabs: [
       { id: 'overview', label: 'Επισκόπηση' },
+      { id: 'live_ops', label: 'Live Map' },
       { id: 'analytics', label: 'Αναλυτικά' },
     ],
   },

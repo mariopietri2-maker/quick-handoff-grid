@@ -35,6 +35,7 @@ import ExternalOrderIngest from '@/components/admin/ExternalOrderIngest';
 import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
 import StorePromotionsManager from '@/components/admin/StorePromotionsManager';
 import SystemResetPanel from '@/components/admin/SystemResetPanel';
+import LiveOpsDashboard from '@/components/admin/LiveOpsDashboard';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -155,6 +156,8 @@ export default function AdminApp() {
         return (
           <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
         );
+      case 'live_ops':
+        return <LiveOpsDashboard />;
       case 'analytics':
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'audit':
