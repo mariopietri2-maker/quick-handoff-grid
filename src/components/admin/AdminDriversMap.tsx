@@ -239,7 +239,12 @@ export default function AdminDriversMap() {
       allPoints.forEach(p => bounds.extend(p));
       map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
     }
-  }, [stores, locations, editStores]);
+  }, [stores, locations, editStores, selectedStoreId]);
+
+  // Clear selection when leaving edit mode
+  useEffect(() => {
+    if (!editStores) setSelectedStoreId(null);
+  }, [editStores]);
 
   if (tokenLoading) {
     return (
