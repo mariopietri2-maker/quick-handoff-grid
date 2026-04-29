@@ -2517,6 +2517,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      driver_release_order: { Args: { p_order_id: string }; Returns: Json }
       get_public_reviews: {
         Args: { p_store_id?: string }
         Returns: {
