@@ -9,6 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Timer, Save, Loader2, Users } from 'lucide-react';
 import { toast } from 'sonner';
 import { useSlaSettings, useSupportLoad } from '@/hooks/useSlaSettings';
+import { useSettingAdvisor } from '@/hooks/useSettingAdvisor';
 
 export function SlaSettingsPanel() {
   const { data, isLoading } = useSlaSettings();
