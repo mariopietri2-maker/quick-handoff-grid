@@ -283,18 +283,18 @@
      customer / driver / store apps.
      ─────────────────────────────────────────────── */
   .admin-shell {
-    --admin-row-h: 36px;
+    --admin-row-h: 32px;
     --admin-radius: 6px;
     font-feature-settings: "ss01", "cv11";
   }
   .admin-shell {
-    font-size: 13px;
-    line-height: 1.45;
+    font-size: 12.5px;
+    line-height: 1.4;
     color: hsl(var(--foreground));
   }
-  .admin-shell h1 { font-size: 18px; font-weight: 700; letter-spacing: -0.01em; }
-  .admin-shell h2 { font-size: 14px; font-weight: 600; letter-spacing: -0.005em; }
-  .admin-shell h3 { font-size: 13px; font-weight: 600; }
+  .admin-shell h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.01em; }
+  .admin-shell h2 { font-size: 13.5px; font-weight: 600; letter-spacing: -0.005em; }
+  .admin-shell h3 { font-size: 12.5px; font-weight: 600; }
   .admin-shell .num,
   .admin-shell .tabular-nums { font-variant-numeric: tabular-nums; }
 
@@ -304,24 +304,24 @@
     box-shadow: 0 1px 0 hsl(var(--foreground) / 0.02);
   }
   .admin-card-header {
-    @apply flex items-center justify-between px-3 py-2 border-b border-border/70;
+    @apply flex items-center justify-between px-2.5 py-1.5 border-b border-border/70;
   }
   .admin-card-title {
-    @apply text-[12px] font-semibold uppercase tracking-wider text-muted-foreground;
+    @apply text-[11.5px] font-semibold uppercase tracking-wider text-muted-foreground;
   }
 
   /* KPI tile — Retool-flavored: small label up, big number, hairline divider strip */
   .admin-kpi {
-    @apply bg-card border border-border/70 rounded-md px-3 py-2.5 flex flex-col gap-0.5 relative overflow-hidden;
+    @apply bg-card border border-border/70 rounded-md px-2.5 py-2 flex flex-col gap-0.5 relative overflow-hidden;
   }
   .admin-kpi-label {
-    @apply text-[11px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5;
+    @apply text-[10.5px] font-medium uppercase tracking-wider text-muted-foreground flex items-center gap-1.5;
   }
   .admin-kpi-value {
-    @apply font-heading font-bold text-[20px] leading-tight tabular-nums tracking-tight;
+    @apply font-heading font-bold text-[19px] leading-tight tabular-nums tracking-tight;
   }
   .admin-kpi-sub {
-    @apply text-[11px] text-muted-foreground tabular-nums;
+    @apply text-[10.5px] text-muted-foreground tabular-nums;
   }
   .admin-kpi-accent {
     position: absolute;
@@ -331,13 +331,13 @@
 
   /* Dense table — flat, sticky header, hairline rows, hover-tinted */
   .admin-table {
-    @apply w-full text-[12.5px];
+    @apply w-full text-[12px];
   }
   .admin-table thead th {
-    @apply text-[11px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 px-3 py-2 text-left border-b border-border/70 sticky top-0 z-10;
+    @apply text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 px-2.5 py-1.5 text-left border-b border-border/70 sticky top-0 z-10;
   }
   .admin-table tbody td {
-    @apply px-3 py-2 border-b border-border/40 align-middle;
+    @apply px-2.5 py-1.5 border-b border-border/40 align-middle;
     height: var(--admin-row-h);
   }
   .admin-table tbody tr:hover td {
