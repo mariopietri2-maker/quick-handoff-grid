@@ -150,7 +150,7 @@
     height: 100dvh;
     max-height: 100dvh;
     overflow: hidden;
-    background: #1a1a2e;
+    background: hsl(220 25% 97%);
   }
 
   h1, h2, h3, h4, h5, h6 {
