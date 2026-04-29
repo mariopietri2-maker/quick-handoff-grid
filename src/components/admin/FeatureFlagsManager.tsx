@@ -181,6 +181,7 @@ export default function FeatureFlagsManager() {
           </Card>
         </div>
       ))}
+      {AdvisorDialog}
     </div>
   );
 }
