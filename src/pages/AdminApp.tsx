@@ -21,6 +21,7 @@ import SupportRoleManager from '@/components/admin/SupportRoleManager';
 import WalletAdjustDialog from '@/components/admin/WalletAdjustDialog';
 import SuspendDialog from '@/components/admin/SuspendDialog';
 import DriverMapSettings from '@/components/admin/DriverMapSettings';
+import DriverMapEditor from '@/components/admin/DriverMapEditor';
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import { cn } from '@/lib/utils';
 import AdminOverview from '@/components/admin/AdminOverview';
@@ -180,6 +181,8 @@ export default function AdminApp() {
         return <SupportTicketsManager />;
       case 'driver_map_settings':
         return <DriverMapSettings />;
+      case 'driver_map_editor':
+        return <DriverMapEditor />;
       case 'reviews':
         return <ReviewsSection reviews={reviews.data} />;
       case 'announcements':
