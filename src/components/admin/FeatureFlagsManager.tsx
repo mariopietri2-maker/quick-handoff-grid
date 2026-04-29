@@ -7,6 +7,7 @@ import { Loader2, Flag, AlertTriangle, Save } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { toast } from 'sonner';
+import { useSettingAdvisor } from '@/hooks/useSettingAdvisor';
 
 interface Flag {
   id: string;
@@ -35,6 +36,8 @@ export default function FeatureFlagsManager() {
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [savingMaint, setSavingMaint] = useState(false);
 
+  const { advise, AdvisorDialog } = useSettingAdvisor();
+
   const load = async () => {
     setLoading(true);
     const [f, s] = await Promise.all([
@@ -49,13 +52,13 @@ export default function FeatureFlagsManager() {
 
   useEffect(() => { load(); }, []);
 
-  const toggle = async (flag: Flag) => {
+  const applyToggle = async (flag: Flag) => {
     setBusy(flag.id);
     const { error } = await (supabase.from as any)('feature_flags')
       .update({ is_enabled: !flag.is_enabled, updated_at: new Date().toISOString() })
       .eq('id', flag.id);
     setBusy(null);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     setFlags(prev => prev.map(x => x.id === flag.id ? { ...x, is_enabled: !x.is_enabled } : x));
     await (supabase.rpc as any)('log_admin_action', {
       p_action: 'toggle_feature_flag',
@@ -66,19 +69,46 @@ export default function FeatureFlagsManager() {
     toast.success('Αποθηκεύτηκε');
   };
 
-  const saveMaintenance = async () => {
+  const toggle = (flag: Flag) => {
+    advise(
+      {
+        setting_area: 'feature_flag',
+        setting_label: flag.label,
+        setting_key: flag.key,
+        current_value: flag.is_enabled ? 'ενεργό' : 'ανενεργό',
+        proposed_value: !flag.is_enabled ? 'ενεργό' : 'ανενεργό',
+        context: { category: flag.category, description: flag.description },
+      },
+      () => applyToggle(flag),
+    );
+  };
+
+  const applyMaintenance = async () => {
     setSavingMaint(true);
     const { error } = await (supabase.from as any)('platform_settings')
       .update({ maintenance_mode: maintenanceMode, maintenance_message: maintenanceMessage })
       .eq('id', 1);
     setSavingMaint(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await (supabase.rpc as any)('log_admin_action', {
       p_action: maintenanceMode ? 'enable_maintenance' : 'disable_maintenance',
       p_target_type: 'platform',
       p_description: maintenanceMode ? 'Ενεργοποίησε maintenance mode' : 'Απενεργοποίησε maintenance mode',
     });
     toast.success('Αποθηκεύτηκε');
+  };
+
+  const saveMaintenance = () => {
+    advise(
+      {
+        setting_area: 'maintenance_mode',
+        setting_label: 'Maintenance Mode',
+        current_value: maintenanceMode ? 'θα γίνει ενεργό' : 'θα απενεργοποιηθεί',
+        proposed_value: maintenanceMode ? 'ΕΝΕΡΓΟ — όλη η εφαρμογή σε συντήρηση' : 'απενεργοποιημένο',
+        context: { message: maintenanceMessage },
+      },
+      applyMaintenance,
+    );
   };
 
   if (loading) return <div className="flex items-center justify-center py-12"><Loader2 className="h-6 w-6 animate-spin text-primary" /></div>;
@@ -151,6 +181,7 @@ export default function FeatureFlagsManager() {
           </Card>
         </div>
       ))}
+      {AdvisorDialog}
     </div>
   );
 }
