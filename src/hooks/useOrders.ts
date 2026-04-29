@@ -302,8 +302,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
   useEffect(() => {
     fetchOrders();
-    // Poll every 20s so orders appear as their dispatch_at time arrives
-    const interval = setInterval(fetchOrders, 20_000);
+    // Poll every 45s as a safety net for time-based dispatch.
+    // Realtime subscriptions handle the immediate updates.
+    const interval = setInterval(fetchOrders, 45_000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
@@ -320,9 +321,28 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     return () => clearInterval(id);
   }, [offers, activeDelivery]);
 
-  // Real-time: listen for new available orders + new pending offers
+  // Real-time: listen for new available orders + new pending offers.
+  // We debounce refetches so a burst of order updates doesn't cause a
+  // refetch storm (one update per row otherwise).
   useEffect(() => {
     if (!user) return;
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefetch = () => {
+      if (pending) return;
+      pending = setTimeout(() => {
+        pending = null;
+        fetchOrders();
+      }, 400);
+    };
+
+    const isRelevant = (row: Partial<OrderRow> | null | undefined) => {
+      if (!row) return false;
+      // Relevant if assigned to me, unassigned (claimable), or admin override
+      if (adminOverride) return true;
+      if (row.driver_id === user.id) return true;
+      if (row.driver_id == null) return true;
+      return false;
+    };
 
     const ordersChannel = supabase
       .channel('driver-orders')
@@ -330,8 +350,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
-          if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
-            fetchOrders();
+          if (payload.eventType === 'DELETE') return;
+          if (isRelevant(payload.new as OrderRow) || isRelevant(payload.old as OrderRow)) {
+            scheduleRefetch();
           }
         }
       )
@@ -368,10 +389,11 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       .subscribe();
 
     return () => {
+      if (pending) clearTimeout(pending);
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(offersChannel);
     };
-  }, [user, fetchOrders]);
+  }, [user, fetchOrders, adminOverride]);
 
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
