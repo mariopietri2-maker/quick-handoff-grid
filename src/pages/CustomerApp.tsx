@@ -28,6 +28,7 @@ export default function CustomerApp() {
     { labelKey: 'cat.salads', value: 'Σαλάτες', emoji: '🥗', bg: 'bg-emerald-50' },
   ];
   const [stores, setStores] = useState<StoreRow[]>([]);
+  const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,11 +40,19 @@ export default function CustomerApp() {
 
   useEffect(() => {
     async function load() {
-      const [storesRes, menuRes] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      const [storesRes, menuRes, promoRes] = await Promise.all([
         supabase.from('stores').select('*').eq('is_active', true).order('name'),
         supabase.from('menu_items').select('store_id, category').eq('is_available', true),
+        supabase.from('stores')
+          .select('*')
+          .eq('is_active', true)
+          .eq('promotion_status', 'active')
+          .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
+          .order('promotion_starts_at', { ascending: false }),
       ]);
       setStores(storesRes.data ?? []);
+      setPromotedStores((promoRes.data ?? []) as StoreRow[]);
       const catMap: Record<string, string[]> = {};
       (menuRes.data ?? []).forEach(item => {
         if (!item.category) return;
@@ -67,7 +76,7 @@ export default function CustomerApp() {
     return cats.some(c => c.includes(selectedCategory));
   }), [stores, search, selectedCategory, storeCategories]);
 
-  const ratings = useStoreRatings(filtered.map(s => s.id));
+  const ratings = useStoreRatings([...filtered.map(s => s.id), ...promotedStores.map(s => s.id)]);
 
   return (
     <div className="min-h-screen bg-background">
@@ -174,52 +183,65 @@ export default function CustomerApp() {
         </div>
       </div>
 
-      {/* Featured / Popular Section */}
-      {!search && selectedCategory === 'all' && stores.length > 0 && (
+      {/* Featured / Most Popular — only paid (admin-approved) promoted stores */}
+      {!search && selectedCategory === 'all' && promotedStores.length > 0 && (
         <div className="max-w-2xl mx-auto px-4 pb-2">
           <div className="flex items-center justify-between mb-3">
             <h2 className="font-heading font-bold text-lg text-foreground">🔥 {t('customer.popular')}</h2>
+            <span className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Sponsored</span>
           </div>
-          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-2">
-            {stores.slice(0, 5).map(store => (
+          <div
+            className="group relative overflow-hidden"
+            style={{ maskImage: 'linear-gradient(to right, transparent, #000 5%, #000 95%, transparent)' }}
+          >
+            <div
+              className="flex gap-3 w-max animate-marquee-right group-hover:[animation-play-state:paused]"
+              style={{ animationDuration: `${Math.max(20, promotedStores.length * 8)}s` }}
+            >
+              {[...promotedStores, ...promotedStores].map((store, idx) => (
                 <button
-                  key={store.id}
-                  className="flex-shrink-0 w-[200px] text-left group hover-lift"
-                onClick={() => navigate(`/restaurant/${store.id}`)}
-              >
-                <div className="relative h-28 rounded-xl overflow-hidden mb-2">
-                  {store.image_url ? (
-                    <img
-                      src={store.image_url}
-                      alt={store.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-muted flex items-center justify-center">
-                      <span className="text-3xl">🍽️</span>
-                    </div>
-                  )}
-                  <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
-                  <div className="absolute bottom-2 left-2 right-2">
-                    <span className="text-xs font-bold text-white drop-shadow-sm line-clamp-1">
-                      {store.name}
-                    </span>
-                  </div>
-                  <div className="absolute top-2 right-2 bg-card/90 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
-                    {ratings[store.id]?.count > 0 ? (
-                      <span className="text-[10px] font-bold text-foreground">⭐ {ratings[store.id].avg.toFixed(1)}</span>
+                  key={`${store.id}-${idx}`}
+                  className="flex-shrink-0 w-[200px] text-left group/card"
+                  onClick={() => navigate(`/restaurant/${store.id}`)}
+                >
+                  <div className="relative h-28 rounded-xl overflow-hidden mb-2">
+                    {store.image_url ? (
+                      <img
+                        src={store.image_url}
+                        alt={store.name}
+                        className="w-full h-full object-cover group-hover/card:scale-105 transition-transform duration-300"
+                        loading="lazy"
+                      />
                     ) : (
-                      <span className="text-[10px] font-bold text-muted-foreground">Νέο</span>
+                      <div className="w-full h-full bg-muted flex items-center justify-center">
+                        <span className="text-3xl">🍽️</span>
+                      </div>
                     )}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+                    <div className="absolute top-2 left-2 bg-warning/95 text-warning-foreground rounded-md px-1.5 py-0.5 text-[9px] font-bold uppercase tracking-wider shadow">
+                      Ad
+                    </div>
+                    <div className="absolute bottom-2 left-2 right-2">
+                      <span className="text-xs font-bold text-white drop-shadow-sm line-clamp-1">
+                        {store.name}
+                      </span>
+                    </div>
+                    <div className="absolute top-2 right-2 bg-card/90 backdrop-blur-sm rounded-md px-1.5 py-0.5 flex items-center gap-0.5">
+                      {ratings[store.id]?.count > 0 ? (
+                        <span className="text-[10px] font-bold text-foreground">⭐ {ratings[store.id].avg.toFixed(1)}</span>
+                      ) : (
+                        <span className="text-[10px] font-bold text-muted-foreground">Νέο</span>
+                      )}
+                    </div>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                  <span>{20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}</span>
-                  <span>•</span>
-                  <span>0,99€</span>
-                </div>
-              </button>
-            ))}
+                  <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
+                    <span>{20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}</span>
+                    <span>•</span>
+                    <span>0,99€</span>
+                  </div>
+                </button>
+              ))}
+            </div>
           </div>
         </div>
       )}
