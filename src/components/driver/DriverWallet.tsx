@@ -19,40 +19,32 @@ export function DriverWallet() {
 
   return (
     <div className="space-y-4">
-      {/* Balance card */}
+      {/* Balance card — payout wallet (earnings credited per delivery) */}
       <div className="rounded-2xl driver-gradient-earn p-6">
         <div className="flex items-center justify-between mb-1">
           <div className="flex items-center gap-2">
             <Wallet className="h-4 w-4 text-white/60" />
-            <span className="text-white/60 text-[10px] font-heading uppercase tracking-[0.15em]">Μετρητά Εισπράξεων</span>
+            <span className="text-white/60 text-[10px] font-heading uppercase tracking-[0.15em]">Διαθέσιμο για Ανάληψη</span>
           </div>
-          <span className="flex items-center gap-1 text-[9px] font-heading uppercase tracking-wider text-white/70 bg-white/10 px-2 py-1 rounded-md">
-            <Lock className="h-2.5 w-2.5" />
-            Read-only
-          </span>
         </div>
         <p className="font-heading font-extrabold text-4xl text-white tabular-nums">{balance.toFixed(2)}€</p>
         <div className="flex items-center gap-4 mt-2 text-xs text-white/50">
           <span className="flex items-center gap-1"><Clock className="h-3 w-3" />Εκκρεμές: {pending.toFixed(2)}€</span>
-          <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />Παραδοθέντα: {withdrawn.toFixed(2)}€</span>
+          <span className="flex items-center gap-1"><TrendingUp className="h-3 w-3" />Αναλήψεις: {withdrawn.toFixed(2)}€</span>
         </div>
         <p className="text-[11px] text-white/60 mt-3 leading-relaxed">
-          Μόνο η διαχείριση μπορεί να διορθώσει ή να μηδενίσει το ποσό κατά την παράδοση των μετρητών.
+          Το ποσό αυτό είναι τα κέρδη σου που έχουν πιστωθεί και είναι έτοιμα για ανάληψη. Δεν είναι τα μετρητά της βάρδιας.
         </p>
       </div>
 
-      {/* Stats grid */}
-      <div className="grid grid-cols-3 gap-2">
-        {[
-          { label: 'Σήμερα', value: `${today.total.toFixed(2)}€` },
-          { label: 'Εβδομάδα', value: `${week.total.toFixed(2)}€` },
-          { label: 'Διαδρομές', value: `${today.trips}` },
-        ].map(stat => (
-          <div key={stat.label} className="rounded-xl driver-glass p-3 text-center">
-            <p className="text-[9px] text-[hsl(var(--driver-text-muted))] font-heading uppercase tracking-wider">{stat.label}</p>
-            <p className="font-heading font-bold text-base text-[hsl(var(--driver-text))] tabular-nums mt-0.5">{stat.value}</p>
-          </div>
-        ))}
+      {/* Info note clarifying the difference */}
+      <div className="rounded-xl driver-glass p-3 flex items-start gap-2.5">
+        <div className="h-7 w-7 rounded-lg bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center shrink-0">
+          <Banknote className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))]" />
+        </div>
+        <p className="text-[11px] text-[hsl(var(--driver-text-muted))] leading-relaxed">
+          <span className="font-semibold text-[hsl(var(--driver-text))]">Πορτοφόλι ≠ Κέρδη.</span> Εδώ βλέπεις το <strong>πιστωμένο υπόλοιπο</strong> προς ανάληψη και τις συναλλαγές. Στην καρτέλα <strong>Κέρδη</strong> βλέπεις στατιστικά παραδόσεων (σήμερα/εβδομάδα/μήνα) και στόχους.
+        </p>
       </div>
 
       {/* Transaction history */}
