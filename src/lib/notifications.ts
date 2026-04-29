@@ -54,14 +54,11 @@ export function playStatusUpdateSound() {
 }
 
 /**
- * Request browser notification permission. Returns true if granted.
+ * Request notification permission. Returns true if granted.
+ * Uses Capacitor LocalNotifications on native, web Notification API in browser.
  */
 export async function requestNotificationPermission(): Promise<boolean> {
-  if (!('Notification' in window)) return false;
-  if (Notification.permission === 'granted') return true;
-  if (Notification.permission === 'denied') return false;
-  const result = await Notification.requestPermission();
-  return result === 'granted';
+  return ensureNotificationPermission();
 }
 
 /**
