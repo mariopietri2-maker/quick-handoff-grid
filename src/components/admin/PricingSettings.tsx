@@ -57,6 +57,7 @@ export default function PricingSettings() {
             min_pay: Number(d.min_pay ?? 3),
             customer_base_fee: Number(d.customer_base_fee ?? 1.5),
             customer_per_km_fee: Number(d.customer_per_km_fee ?? 0.8),
+            platform_service_fee: Number(d.platform_service_fee ?? 0.99),
             peak_multiplier: Number(d.peak_multiplier ?? 1),
             peak_start_hour: Number(d.peak_start_hour ?? 19),
             peak_end_hour: Number(d.peak_end_hour ?? 22),
