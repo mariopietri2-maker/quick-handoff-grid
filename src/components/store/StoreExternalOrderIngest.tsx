@@ -189,7 +189,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       p_notes: form.notes || null,
       p_external_ref: form.external_ref || null,
       p_items_summary: form.items_summary || null,
-    });
+      p_payment_method: form.payment_method,
+    } as any);
     setSubmitting(false);
     if (error) {
       toast.error(error.message);
