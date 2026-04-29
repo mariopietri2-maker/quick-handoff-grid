@@ -302,8 +302,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
   useEffect(() => {
     fetchOrders();
-    // Poll every 20s so orders appear as their dispatch_at time arrives
-    const interval = setInterval(fetchOrders, 20_000);
+    // Poll every 45s as a safety net for time-based dispatch.
+    // Realtime subscriptions handle the immediate updates.
+    const interval = setInterval(fetchOrders, 45_000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
