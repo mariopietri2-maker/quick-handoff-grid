@@ -89,7 +89,7 @@ export default function FeatureFlagsManager() {
       .update({ maintenance_mode: maintenanceMode, maintenance_message: maintenanceMessage })
       .eq('id', 1);
     setSavingMaint(false);
-    if (error) return toast.error(error.message);
+    if (error) { toast.error(error.message); return; }
     await (supabase.rpc as any)('log_admin_action', {
       p_action: maintenanceMode ? 'enable_maintenance' : 'disable_maintenance',
       p_target_type: 'platform',
