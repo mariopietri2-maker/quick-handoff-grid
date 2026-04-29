@@ -305,6 +305,19 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
+  // Persistent alert: keep ringing every ~3s while there are unaccepted
+  // offers waiting (no active delivery yet). Stops automatically when the
+  // list empties — i.e. once an admin or driver accepts/claims the order.
+  useEffect(() => {
+    if (activeDelivery) return;
+    const ringable = offers.filter((o) => o.status === 'ready');
+    if (ringable.length === 0) return;
+    // ring immediately, then every 3s
+    playOfferAlert();
+    const id = setInterval(() => playOfferAlert(), 3000);
+    return () => clearInterval(id);
+  }, [offers, activeDelivery]);
+
   // Real-time: listen for new available orders + new pending offers
   useEffect(() => {
     if (!user) return;
