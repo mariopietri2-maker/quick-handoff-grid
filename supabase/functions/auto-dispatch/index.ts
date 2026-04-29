@@ -167,13 +167,12 @@ Deno.serve(async (req) => {
       }
 
       const currentWave = waveByOrder.get(order.id) ?? 0;
-      if (currentWave >= s.dist_max_waves) {
-        dispatchResults.push({ order: order.id, skipped: "max waves reached" });
-        continue;
-      }
-
-      const nextWave = currentWave + 1;
-      const exclude = [...(triedDrivers.get(order.id) ?? [])];
+      // No order left behind: when we exhaust the configured wave count, we
+      // restart the cycle (wave 1 again with a fresh driver pool) instead of
+      // giving up. The order keeps re-offering until a driver accepts.
+      const cycleExhausted = currentWave >= s.dist_max_waves;
+      const nextWave = cycleExhausted ? 1 : currentWave + 1;
+      const exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
 
       const { data: candidateDrivers, error: rpcErr } = await admin.rpc("nearby_active_drivers", {
         _store_lat: anchorLat,
