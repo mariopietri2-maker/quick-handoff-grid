@@ -2366,11 +2366,13 @@ export type Database = {
         Args: { p_driver_id: string }
         Returns: undefined
       }
+      admin_reset_money_to_zero: { Args: never; Returns: Json }
       admin_settle_driver_cash: {
         Args: { p_debt_id: string }
         Returns: undefined
       }
       admin_wipe_all_data: { Args: never; Returns: undefined }
+      admin_wipe_transactions: { Args: never; Returns: Json }
       count_active_support_agents: { Args: never; Returns: number }
       create_custom_order: {
         Args: {
