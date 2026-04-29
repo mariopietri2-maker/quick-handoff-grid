@@ -76,20 +76,6 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
     close();
   };
 
-  const submitBonus = async () => {
-    const amt = parseFloat(amount);
-    if (!amt || amt <= 0 || amt > 10) return toast.error('Bonus 0–10€');
-    if (!reason.trim()) return toast.error('Συμπλήρωσε αιτιολογία');
-    setLoading(true);
-    const { error } = await (supabase as any).rpc('support_grant_bonus', {
-      p_driver_id: driverId, p_amount: amt, p_reason: reason,
-    });
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    await sendChatNote(`🎁 Σου δόθηκε bonus ${amt.toFixed(2)}€: ${reason}`);
-    toast.success('Bonus δόθηκε');
-    close();
-  };
-
   const submitSuspend = async () => {
     if (suspending && !reason.trim()) return toast.error('Συμπλήρωσε λόγο');
     setLoading(true);
