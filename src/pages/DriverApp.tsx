@@ -173,7 +173,7 @@ export default function DriverApp() {
 
   if (isAdmin) {
     return (
-      <div className="min-h-[100dvh] bg-background text-foreground overflow-y-auto">
+      <div className="min-h-[100dvh] driver-shell bg-background text-foreground overflow-y-auto">
         <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur supports-[backdrop-filter]:bg-card/80 safe-area-top">
           <div className="px-4 py-3 flex items-center justify-between gap-3">
             <div className="flex items-center gap-3 min-w-0">
