@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Bell, Settings, TrendingUp, Wallet,
-  LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause,
+  LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause, PackageX,
 } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import {
@@ -28,8 +29,46 @@ export function UserMenu() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const [releaseOpen, setReleaseOpen] = useState(false);
+  const [releasing, setReleasing] = useState(false);
+  const [activeOrder, setActiveOrder] = useState<{ id: string; status: string } | null>(null);
   const { state: driverState, startBreak, endBreak } = useDriverState();
   const onBreak = !!driverState?.on_break;
+
+  // Track driver's active (releasable) order so we can offer "Unassign" under Break.
+  // Releasable = assigned to me and not yet picked up / delivered / canceled.
+  useEffect(() => {
+    if (!isDriver || !user) { setActiveOrder(null); return; }
+    let cancelled = false;
+    const load = async () => {
+      const { data } = await (supabase as any)
+        .from('orders')
+        .select('id, status')
+        .eq('driver_id', user.id)
+        .not('status', 'in', '(picked_up,delivered,canceled,cancelled)')
+        .order('updated_at', { ascending: false })
+        .limit(1)
+        .maybeSingle();
+      if (!cancelled) setActiveOrder(data ?? null);
+    };
+    load();
+    const ch = supabase
+      .channel(`user-menu-active-${user.id}`)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `driver_id=eq.${user.id}` }, load)
+      .subscribe();
+    return () => { cancelled = true; supabase.removeChannel(ch); };
+  }, [isDriver, user]);
+
+  const handleReleaseOrder = async () => {
+    if (!activeOrder) return;
+    setReleasing(true);
+    const { error } = await (supabase as any).rpc('driver_release_order', { p_order_id: activeOrder.id });
+    setReleasing(false);
+    if (error) { toast.error(error.message || 'Αποτυχία απόθεσης παραγγελίας'); return; }
+    toast.success('Η παραγγελία επανεκχωρείται σε άλλον οδηγό');
+    setReleaseOpen(false);
+    setActiveOrder(null);
+  };
 
   // Live tick so the countdown updates while menu is open
   const [, setTick] = useState(0);
