@@ -245,13 +245,21 @@ export default function DriverApp() {
               <div className="divide-y divide-border">
                 {offers.map((offer) => {
                   const isReady = offer.status === 'ready';
+                  const isClaimed = !!offer.driver_id;
+                  // Admins can always claim, even orders already taken by a driver
+                  const canClick = isReady || isClaimed;
                   return (
                   <article key={offer.id} className="p-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div className="min-w-0 space-y-2">
                       <div className="flex items-center gap-2 flex-wrap">
                         <Badge variant="outline" className="font-heading text-[10px] uppercase">{offer.source}</Badge>
                         <span className="text-xs font-heading font-bold text-primary">#{offer.id.slice(0, 8)}</span>
-                        {!isReady && (
+                        {isClaimed && (
+                          <Badge variant="destructive" className="font-heading text-[10px] uppercase">
+                            Σε οδηγό
+                          </Badge>
+                        )}
+                        {!isClaimed && !isReady && (
                           <Badge variant="secondary" className="font-heading text-[10px] uppercase">
                             {offer.status === 'preparing' ? 'Ετοιμάζεται' : offer.status === 'accepted' ? 'Αποδεκτή' : 'Νέα'}
                           </Badge>
@@ -269,11 +277,11 @@ export default function DriverApp() {
                       </div>
                     </div>
                     <button
-                      onClick={() => isReady && acceptOrder(offer.id)}
-                      disabled={!isReady}
+                      onClick={() => canClick && acceptOrder(offer.id)}
+                      disabled={!canClick}
                       className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                      {isReady ? 'Ανάληψη' : 'Αναμονή'}
+                      {isClaimed ? 'Ανάκτηση' : isReady ? 'Ανάληψη' : 'Αναμονή'}
                     </button>
                   </article>
                   );
