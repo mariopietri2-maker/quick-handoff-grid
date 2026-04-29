@@ -195,7 +195,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
           <ToolBtn icon={MapPin} label="Θέση οδηγού" onClick={() => setOpen('location')} />
           <ToolBtn icon={BellRing} label="Push μήνυμα" onClick={() => setOpen('broadcast')} />
           <ToolBtn icon={Wallet} label="Πίστωση €" onClick={() => setOpen('credit')} />
-          <ToolBtn icon={Gift} label="Δώσε bonus" onClick={() => setOpen('bonus')} />
+          
           <ToolBtn icon={Ban} label="Αναστολή" tone="warn" onClick={() => setOpen('suspend')} />
           <ToolBtn
             icon={RotateCcw}
