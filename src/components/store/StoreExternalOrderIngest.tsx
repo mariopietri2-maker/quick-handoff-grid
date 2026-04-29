@@ -23,6 +23,8 @@ interface StoreInfo {
   ext_margin_pct: number;
 }
 
+type PaymentMethod = 'cash' | 'card';
+
 interface FormState {
   source: Source;
   total_amount: string;
@@ -33,6 +35,7 @@ interface FormState {
   notes: string;
   external_ref: string;
   items_summary: string;
+  payment_method: PaymentMethod;
 }
 
 const blankForm: FormState = {
@@ -45,6 +48,7 @@ const blankForm: FormState = {
   notes: '',
   external_ref: '',
   items_summary: '',
+  payment_method: 'card',
 };
 
 interface Props {
