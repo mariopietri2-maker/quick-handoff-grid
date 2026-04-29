@@ -44,8 +44,13 @@ export default function AdminDriversMap() {
   const [driverInfos, setDriverInfos] = useState<Map<string, DriverInfo>>(new Map());
   const [stores, setStores] = useState<StoreMarker[]>([]);
   const [editStores, setEditStores] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const editStoresRef = useRef(false);
+  const selectedStoreIdRef = useRef<string | null>(null);
+  const storesRef = useRef<StoreMarker[]>([]);
   useEffect(() => { editStoresRef.current = editStores; }, [editStores]);
+  useEffect(() => { selectedStoreIdRef.current = selectedStoreId; }, [selectedStoreId]);
+  useEffect(() => { storesRef.current = stores; }, [stores]);
 
   // Load data
   useEffect(() => {
@@ -119,6 +124,28 @@ export default function AdminDriversMap() {
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     mapRef.current = map;
 
+    // Click-to-place: when edit mode is on AND a store is selected,
+    // clicking the map relocates that store to the clicked coords.
+    map.on('click', async (e) => {
+      if (!editStoresRef.current) return;
+      const storeId = selectedStoreIdRef.current;
+      if (!storeId) return;
+      const store = storesRef.current.find(s => s.id === storeId);
+      if (!store) return;
+      const { lng, lat } = e.lngLat;
+      const { error } = await supabase
+        .from('stores')
+        .update({ latitude: lat, longitude: lng })
+        .eq('id', storeId);
+      if (error) {
+        toast.error(`Αποτυχία τοποθέτησης ${store.name}`);
+      } else {
+        toast.success(`${store.name}: νέα θέση αποθηκεύτηκε`);
+        setStores(prev => prev.map(s => s.id === storeId ? { ...s, latitude: lat, longitude: lng } : s));
+        setSelectedStoreId(null);
+      }
+    });
+
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
 
@@ -170,38 +197,34 @@ export default function AdminDriversMap() {
     storeMarkersRef.current = [];
 
     stores.forEach(store => {
+      const isSelected = editStores && selectedStoreId === store.id;
+      const ring = isSelected ? 'box-shadow:0 0 0 4px hsl(var(--primary)),0 2px 8px rgba(249,115,22,0.6);' : 'box-shadow:0 2px 8px rgba(249,115,22,0.4);';
       const el = document.createElement('div');
-      el.innerHTML = `<div style="width:32px;height:32px;background:#f97316;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:${editStores ? 'grab' : 'pointer'};">🏪</div>`;
+      el.innerHTML = `<div style="width:32px;height:32px;background:#f97316;border-radius:50%;border:3px solid white;${ring}display:flex;align-items:center;justify-content:center;font-size:14px;cursor:${editStores ? 'pointer' : 'pointer'};">🏪</div>`;
+
+      // Click on the marker selects the store (in edit mode).
+      // We stop propagation so the map's click handler doesn't fire.
+      el.addEventListener('click', (ev) => {
+        if (!editStoresRef.current) return;
+        ev.stopPropagation();
+        setSelectedStoreId(prev => prev === store.id ? null : store.id);
+      });
 
       const popup = new mapboxgl.Popup({ offset: 18 }).setHTML(`
         <div style="text-align:center;font-family:system-ui;padding:4px;">
           <strong>${store.name}</strong>
           <br/><span style="font-size:11px;opacity:0.7;">${store.address}</span>
           <br/><span style="font-size:11px;">${store.is_active ? '✅ Ενεργό' : '❌ Ανενεργό'}</span>
+          ${editStores ? `<br/><span style="font-size:11px;color:#f97316;font-weight:600;">${isSelected ? '👆 Κλικ στον χάρτη για τοποθέτηση' : 'Κλικ για επιλογή'}</span>` : ''}
         </div>
       `);
 
-      const marker = new mapboxgl.Marker({ element: el, draggable: editStores })
+      // Disable drag — we now use click-to-place instead (more reliable for stores
+      // that start at the default center and need to move long distances).
+      const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([store.longitude, store.latitude])
-        .setPopup(popup)
+        .setPopup(editStores && isSelected ? undefined : popup)
         .addTo(map);
-
-      if (editStores) {
-        marker.on('dragend', async () => {
-          const { lng, lat } = marker.getLngLat();
-          const { error } = await supabase
-            .from('stores')
-            .update({ latitude: lat, longitude: lng })
-            .eq('id', store.id);
-          if (error) {
-            toast.error(`Failed to move ${store.name}`);
-            marker.setLngLat([store.longitude, store.latitude]);
-          } else {
-            toast.success(`${store.name} moved`);
-            setStores(prev => prev.map(s => s.id === store.id ? { ...s, latitude: lat, longitude: lng } : s));
-          }
-        });
-      }
 
       storeMarkersRef.current.push(marker);
     });
@@ -216,7 +239,12 @@ export default function AdminDriversMap() {
       allPoints.forEach(p => bounds.extend(p));
       map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
     }
-  }, [stores, locations, editStores]);
+  }, [stores, locations, editStores, selectedStoreId]);
+
+  // Clear selection when leaving edit mode
+  useEffect(() => {
+    if (!editStores) setSelectedStoreId(null);
+  }, [editStores]);
 
   if (tokenLoading) {
     return (
@@ -258,6 +286,13 @@ export default function AdminDriversMap() {
           </Badge>
         </div>
       </div>
+      {editStores && (
+        <div className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-foreground">
+          {selectedStoreId
+            ? <>📍 <strong>{stores.find(s => s.id === selectedStoreId)?.name}</strong> επιλέχθηκε — κλικ οπουδήποτε στον χάρτη για να το τοποθετήσεις.</>
+            : <>👉 Κλικ σε ένα 🏪 για να το επιλέξεις, μετά κλικ στον χάρτη για νέα θέση.</>}
+        </div>
+      )}
       <Card className="overflow-hidden">
         <div ref={mapContainer} className="h-[500px] w-full" />
       </Card>
