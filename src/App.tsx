@@ -11,6 +11,7 @@ import { I18nProvider } from "@/lib/i18n";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import ConnectionStatus from "@/components/ConnectionStatus";
+import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import Index from "./pages/Index.tsx";
 
 // Lazy-load every non-landing route so the initial bundle stays small.
@@ -59,6 +60,7 @@ const App = () => (
                 <ConnectionStatus />
                 <MaintenanceBanner />
                 <Suspense fallback={<RouteFallback />}>
+                  <RouteErrorBoundary>
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<AuthPage />} />
@@ -99,6 +101,7 @@ const App = () => (
                     } />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </RouteErrorBoundary>
                 </Suspense>
               </CartProvider>
             </AuthProvider>

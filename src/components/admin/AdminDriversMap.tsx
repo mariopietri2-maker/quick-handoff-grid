@@ -5,8 +5,11 @@ import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { MapPin, Loader2 } from 'lucide-react';
+import { geocodeAddress } from '@/lib/geocode';
 import { toast } from 'sonner';
 
 interface DriverLocation {
@@ -43,6 +46,8 @@ export default function AdminDriversMap() {
   const [locations, setLocations] = useState<DriverLocation[]>([]);
   const [driverInfos, setDriverInfos] = useState<Map<string, DriverInfo>>(new Map());
   const [stores, setStores] = useState<StoreMarker[]>([]);
+  const [missingCoords, setMissingCoords] = useState<{ id: string; name: string; address: string }[]>([]);
+  const [geocoding, setGeocoding] = useState(false);
   const [editStores, setEditStores] = useState(false);
   const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const editStoresRef = useRef(false);
@@ -72,15 +77,26 @@ export default function AdminDriversMap() {
       setDriverInfos(map);
 
       if (storesData) {
-        // Show ALL active stores. If a store has no coords yet, place it at the
-        // map's default center (Άρτα) so the admin can drag it into position.
         const DEFAULT_LAT = 39.1600;
         const DEFAULT_LNG = 20.9853;
-        setStores(storesData.map(s => ({
-          ...s,
-          latitude: (s.latitude as number | null) ?? DEFAULT_LAT,
-          longitude: (s.longitude as number | null) ?? DEFAULT_LNG,
-        })) as StoreMarker[]);
+        const missingList: { id: string; name: string; address: string }[] = [];
+        let missing = 0;
+        const list = storesData.map(s => {
+          if (s.latitude != null && s.longitude != null) {
+            return { ...s, latitude: s.latitude as number, longitude: s.longitude as number } as StoreMarker;
+          }
+          missingList.push({ id: s.id, name: s.name, address: s.address ?? '' });
+          const i = missing++;
+          const angle = (i * 137.5) * (Math.PI / 180);
+          const r = 0.0008 + Math.floor(i / 12) * 0.0006;
+          return {
+            ...s,
+            latitude: DEFAULT_LAT + Math.sin(angle) * r,
+            longitude: DEFAULT_LNG + Math.cos(angle) * r,
+          } as StoreMarker;
+        });
+        setStores(list);
+        setMissingCoords(missingList);
       }
     }
     load();
@@ -266,11 +282,49 @@ export default function AdminDriversMap() {
     );
   }
 
+  const handleBulkGeocode = async () => {
+    if (geocoding || missingCoords.length === 0) return;
+    setGeocoding(true);
+    let ok = 0;
+    let fail = 0;
+    for (const s of missingCoords) {
+      if (!s.address?.trim()) { fail++; continue; }
+      const res = await geocodeAddress(s.address);
+      if (!res) { fail++; continue; }
+      const { error } = await supabase
+        .from('stores')
+        .update({ latitude: res.latitude, longitude: res.longitude })
+        .eq('id', s.id);
+      if (error) { fail++; continue; }
+      ok++;
+      setStores(prev => prev.map(x => x.id === s.id
+        ? { ...x, latitude: res.latitude, longitude: res.longitude } : x));
+    }
+    setMissingCoords(prev => prev.filter(s => !s.address?.trim() || fail === missingCoords.length));
+    setGeocoding(false);
+    if (ok > 0) toast.success(`Γεωκωδικοποίηση: ${ok} επιτυχία${fail ? `, ${fail} αποτυχία` : ''}`);
+    else toast.error('Δεν βρέθηκαν συντεταγμένες');
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="font-heading font-bold text-xl">Live Χάρτης</h2>
         <div className="flex flex-wrap items-center gap-3">
+          {missingCoords.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBulkGeocode}
+              disabled={geocoding}
+              className="gap-1.5 h-8"
+            >
+              {geocoding
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <MapPin className="h-3.5 w-3.5" />}
+              Αυτόματη τοποθέτηση ({missingCoords.length})
+            </Button>
+          )}
           <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
             <Switch id="edit-stores" checked={editStores} onCheckedChange={setEditStores} />
             <Label htmlFor="edit-stores" className="text-xs cursor-pointer">
