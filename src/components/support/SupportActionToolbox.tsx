@@ -253,32 +253,6 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
           </DialogContent>
         </Dialog>
 
-        {/* Bonus */}
-        <Dialog open={open === 'bonus'} onOpenChange={(o) => !o && close()}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2"><Gift className="h-5 w-5" /> Bonus επιβράβευσης</DialogTitle>
-              <DialogDescription>Έως 10€. Πιστώνεται άμεσα στο πορτοφόλι του οδηγού.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Ποσό (€)</Label>
-                <Input type="number" step="0.5" min="0" max="10" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="π.χ. 3.00" />
-              </div>
-              <div>
-                <Label>Λόγος</Label>
-                <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="π.χ. Μεγάλη αναμονή στο κατάστημα" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={close}>Άκυρο</Button>
-              <Button onClick={submitBonus} disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Δώσε bonus
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
         {/* Suspend / reactivate */}
         <Dialog open={open === 'suspend'} onOpenChange={(o) => !o && close()}>
           <DialogContent>
