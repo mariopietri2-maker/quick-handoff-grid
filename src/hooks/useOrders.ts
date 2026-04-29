@@ -305,6 +305,19 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
+  // Persistent alert: keep ringing every ~3s while there are unaccepted
+  // offers waiting (no active delivery yet). Stops automatically when the
+  // list empties — i.e. once an admin or driver accepts/claims the order.
+  useEffect(() => {
+    if (activeDelivery) return;
+    const ringable = offers.filter((o) => o.status === 'ready');
+    if (ringable.length === 0) return;
+    // ring immediately, then every 3s
+    playOfferAlert();
+    const id = setInterval(() => playOfferAlert(), 3000);
+    return () => clearInterval(id);
+  }, [offers, activeDelivery]);
+
   // Real-time: listen for new available orders + new pending offers
   useEffect(() => {
     if (!user) return;
@@ -364,6 +377,28 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const target = offers.find((o) => o.id === orderId);
     if (target && target.status !== 'ready') {
       toast.info('Η παραγγελία δεν είναι ακόμη έτοιμη για παραλαβή');
+      return;
+    }
+
+    // ADMIN PRIORITY: admins always win — they can claim/steal any order
+    // directly, even if a driver already has it. Bypass the offer-accept flow.
+    if (adminOverride) {
+      const patch: Record<string, unknown> = {
+        driver_id: user.id,
+        status: 'accepted',
+        stacked_with_order_id: null,
+      };
+      const { error } = await supabase
+        .from('orders')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .update(patch as any)
+        .eq('id', orderId);
+      if (error) {
+        toast.error('Failed to claim order');
+      } else {
+        toast.success('✓ Admin claimed order');
+        fetchOrders();
+      }
       return;
     }
 
