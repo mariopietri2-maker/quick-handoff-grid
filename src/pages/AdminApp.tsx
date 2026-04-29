@@ -29,7 +29,7 @@ import FeatureFlagsManager from '@/components/admin/FeatureFlagsManager';
 import OperationalOverrides from '@/components/admin/OperationalOverrides';
 import RemoteUserActions from '@/components/admin/RemoteUserActions';
 import AdminPermissionsManager from '@/components/admin/AdminPermissionsManager';
-import LiveOpsKPI from '@/components/admin/LiveOpsKPI';
+
 import CannedRepliesManager from '@/components/admin/CannedRepliesManager';
 import ExternalOrderIngest from '@/components/admin/ExternalOrderIngest';
 import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
