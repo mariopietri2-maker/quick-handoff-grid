@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { Loader2, Sparkles, ScanLine, FileText, TrendingUp, Send } from 'lucide-react';
+import { geocodeAddress, haversineKm } from '@/lib/geocode';
 
 type Source = 'manual' | 'efood' | 'wolt' | 'box' | 'other';
 
@@ -145,12 +146,40 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     if (!form.delivery_address.trim()) return toast.error('Συμπλήρωσε διεύθυνση');
 
     setSubmitting(true);
+
+    // Auto-geocode address + compute distance from store (best-effort).
+    let distanceKm = form.distance_km ? Number(form.distance_km) : null;
+    let deliveryLat: number | null = null;
+    let deliveryLng: number | null = null;
+    try {
+      const [geo, storeRow] = await Promise.all([
+        geocodeAddress(form.delivery_address),
+        supabase.from('stores').select('latitude, longitude').eq('id', storeId).maybeSingle(),
+      ]);
+      if (geo) {
+        deliveryLat = geo.latitude;
+        deliveryLng = geo.longitude;
+      }
+      const sLat = storeRow.data?.latitude;
+      const sLng = storeRow.data?.longitude;
+      if (geo && sLat != null && sLng != null && distanceKm == null) {
+        distanceKm = +haversineKm(
+          { latitude: sLat, longitude: sLng },
+          { latitude: geo.latitude, longitude: geo.longitude },
+        ).toFixed(2);
+      }
+    } catch {
+      /* non-fatal */
+    }
+
     const { error } = await supabase.rpc('create_external_order' as any, {
       p_store_id: storeId,
       p_source: form.source,
       p_total_amount: form.total_amount ? Number(form.total_amount) : 0,
       p_delivery_address: form.delivery_address,
-      p_distance_km: form.distance_km ? Number(form.distance_km) : null,
+      p_delivery_lat: deliveryLat,
+      p_delivery_lng: deliveryLng,
+      p_distance_km: distanceKm,
       p_customer_name: form.customer_name || null,
       p_customer_phone: form.customer_phone || null,
       p_notes: form.notes || null,

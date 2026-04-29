@@ -130,22 +130,39 @@ Deno.serve(async (req) => {
       triedDrivers.set(p.order_id, set);
     }
 
-    // 7) Load store locations for orders that need new offers
+    // 7) Load store + delivery locations. For external orders the store may
+    // not have coords yet — fall back to the customer's delivery coords as the
+    // dispatch anchor so we still produce offers.
     const ordersToDispatch = orders.filter((o) => !liveByOrder.has(o.id));
     const storeIds = [...new Set(ordersToDispatch.map((o) => o.store_id))];
-    const { data: stores } = await admin
-      .from("stores")
-      .select("id, latitude, longitude")
-      .in("id", storeIds);
+    const orderIdsToDispatch = ordersToDispatch.map((o) => o.id);
+    const [{ data: stores }, { data: orderLocs }] = await Promise.all([
+      admin.from("stores").select("id, latitude, longitude").in("id", storeIds),
+      admin
+        .from("orders")
+        .select("id, delivery_latitude, delivery_longitude")
+        .in("id", orderIdsToDispatch),
+    ]);
     const storeMap = new Map<string, StoreLoc>((stores ?? []).map((s: StoreLoc) => [s.id, s]));
+    const orderLocMap = new Map<string, { lat: number | null; lng: number | null }>(
+      (orderLocs ?? []).map(
+        (o: { id: string; delivery_latitude: number | null; delivery_longitude: number | null }) => [
+          o.id,
+          { lat: o.delivery_latitude, lng: o.delivery_longitude },
+        ],
+      ),
+    );
 
     let dispatched = 0;
     const dispatchResults: Record<string, unknown>[] = [];
 
     for (const order of ordersToDispatch) {
       const store = storeMap.get(order.store_id);
-      if (!store?.latitude || !store?.longitude) {
-        dispatchResults.push({ order: order.id, skipped: "no store location" });
+      const dropoff = orderLocMap.get(order.id);
+      const anchorLat = store?.latitude ?? dropoff?.lat ?? null;
+      const anchorLng = store?.longitude ?? dropoff?.lng ?? null;
+      if (anchorLat == null || anchorLng == null) {
+        dispatchResults.push({ order: order.id, skipped: "no anchor location (store + delivery both missing)" });
         continue;
       }
 
@@ -159,8 +176,8 @@ Deno.serve(async (req) => {
       const exclude = [...(triedDrivers.get(order.id) ?? [])];
 
       const { data: candidateDrivers, error: rpcErr } = await admin.rpc("nearby_active_drivers", {
-        _store_lat: store.latitude,
-        _store_lng: store.longitude,
+        _store_lat: anchorLat,
+        _store_lng: anchorLng,
         _order_value: Number(order.total_amount ?? 0),
         _exclude_drivers: exclude,
         _limit: s.dist_wave_size,
