@@ -31,7 +31,7 @@ import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
-  const { isAdmin } = useAuth();
+  const { user, isAdmin } = useAuth();
   const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders({ adminOverride: isAdmin });
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
