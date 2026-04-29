@@ -65,7 +65,6 @@ export default function CheckoutPage() {
   const [tipOption, setTipOption] = useState<number | 'custom'>(15);
   const [customTip, setCustomTip] = useState('');
 
-  const deliveryFee = 0.99;
   const subtotalAfterDiscount = Math.max(0, total - (appliedPromo
     ? appliedPromo.discount_type === 'percentage'
       ? Math.min(total, total * (appliedPromo.discount_value / 100))
