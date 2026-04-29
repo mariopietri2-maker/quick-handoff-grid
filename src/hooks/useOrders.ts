@@ -180,23 +180,53 @@ export function useDriverOrders() {
     const nextOfferIds: Record<string, string> = {};
 
     if (mode === 'auto') {
-      // AUTO MODE: only show orders the dispatch engine has offered to THIS driver
-      const { data: myPending } = await supabase
-        .from('pending_offers')
-        .select('id, order_id, expires_at')
-        .eq('driver_id', user.id)
-        .eq('status', 'pending')
-        .gt('expires_at', new Date().toISOString());
+      // AUTO MODE: show two buckets, merged into one list:
+      //   (a) orders specifically OFFERED to this driver by the dispatcher
+      //   (b) BROADCAST orders — manual/external custom orders that are open
+      //       to any online driver (first-come-first-served, like before).
+      const nowIso = new Date().toISOString();
+
+      const [{ data: myPending }, { data: broadcast }] = await Promise.all([
+        supabase
+          .from('pending_offers')
+          .select('id, order_id, expires_at')
+          .eq('driver_id', user.id)
+          .eq('status', 'pending')
+          .gt('expires_at', nowIso),
+        supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .is('driver_id', null)
+          .in('source', ['manual', 'external'])
+          .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+          .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
+          .order('created_at', { ascending: false })
+          .limit(20),
+      ]);
 
       const orderIds = (myPending ?? []).map((p) => p.order_id);
+      let offered: OrderWithItems[] = [];
       if (orderIds.length > 0) {
         const { data: ord } = await supabase
           .from('orders')
           .select('*, order_items(*)')
           .in('id', orderIds)
           .is('driver_id', null);
-        availableOrders = (ord as OrderWithItems[]) ?? [];
+        offered = (ord as OrderWithItems[]) ?? [];
         for (const p of myPending ?? []) nextOfferIds[p.order_id] = p.id;
+      }
+
+      const broadcastFiltered = ((broadcast as OrderWithItems[]) ?? []).filter(
+        (o) => !declinedRef.current[o.id],
+      );
+
+      // Merge, dedupe by id (offered takes precedence so we keep the offer id)
+      const seen = new Set<string>();
+      availableOrders = [];
+      for (const o of [...offered, ...broadcastFiltered]) {
+        if (seen.has(o.id)) continue;
+        seen.add(o.id);
+        availableOrders.push(o);
       }
     } else {
       // MANUAL MODE: legacy free-for-all
