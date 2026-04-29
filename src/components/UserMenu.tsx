@@ -174,6 +174,17 @@ export function UserMenu() {
                 </DropdownMenuItem>
               )}
 
+              {/* Unassign current order — placed directly under Break */}
+              {activeOrder && (
+                <DropdownMenuItem
+                  className={`${itemClassName} text-destructive focus:bg-destructive/10 focus:text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive`}
+                  onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setReleaseOpen(true), 50); }}
+                >
+                  <PackageX className="mr-2 h-4 w-4 shrink-0" />
+                  Απόθεση Παραγγελίας
+                </DropdownMenuItem>
+              )}
+
               <DropdownMenuSeparator />
               <DropdownMenuLabel className={labelClassName}>Λογαριασμός</DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver/profile')}>
