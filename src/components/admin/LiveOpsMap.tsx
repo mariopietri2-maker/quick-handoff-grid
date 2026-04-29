@@ -206,14 +206,17 @@ export default function LiveOpsMap() {
 
       const vehicleEmoji = info?.vehicle_type === 'car' ? '🚗' : info?.vehicle_type === 'bike' ? '🚲' : '🛵';
       const isMoving = (loc.speed ?? 0) > 1;
-      const ringColor = isMoving ? '#22c55e' : '#3b82f6';
+      const ageMs = Date.now() - new Date(loc.updated_at).getTime();
+      const isGhosting = ageMs > 10 * 60 * 1000; // >10 min stale GPS
+      const ringColor = isGhosting ? '#f97316' : isMoving ? '#22c55e' : '#3b82f6';
 
       const html = `
         <div style="position:relative;">
-          <div style="position:absolute;inset:-8px;border-radius:50%;background:${ringColor};opacity:0.25;animation:pulse 2s infinite;"></div>
+          <div style="position:absolute;inset:-8px;border-radius:50%;background:${ringColor};opacity:${isGhosting ? 0.45 : 0.25};animation:pulse 2s infinite;"></div>
           <div style="position:relative;width:40px;height:40px;background:hsl(222 47% 11%);border-radius:50%;border:3px solid ${ringColor};box-shadow:0 4px 16px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">
             ${vehicleEmoji}
           </div>
+          ${isGhosting ? `<div style="position:absolute;-bottom:-4px;left:50%;transform:translateX(-50%);background:#f97316;color:white;font-size:9px;font-weight:700;border-radius:4px;padding:1px 4px;white-space:nowrap;border:1px solid hsl(222 47% 11%);">GHOST</div>` : ''}
           ${stat && stat.deliveries > 0 ? `<div style="position:absolute;top:-4px;right:-4px;background:hsl(var(--primary));color:white;font-size:10px;font-weight:700;border-radius:9999px;min-width:18px;height:18px;padding:0 5px;display:flex;align-items:center;justify-content:center;border:2px solid hsl(222 47% 11%);">${stat.deliveries}</div>` : ''}
         </div>
       `;
