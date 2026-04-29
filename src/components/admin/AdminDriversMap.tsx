@@ -44,8 +44,13 @@ export default function AdminDriversMap() {
   const [driverInfos, setDriverInfos] = useState<Map<string, DriverInfo>>(new Map());
   const [stores, setStores] = useState<StoreMarker[]>([]);
   const [editStores, setEditStores] = useState(false);
+  const [selectedStoreId, setSelectedStoreId] = useState<string | null>(null);
   const editStoresRef = useRef(false);
+  const selectedStoreIdRef = useRef<string | null>(null);
+  const storesRef = useRef<StoreMarker[]>([]);
   useEffect(() => { editStoresRef.current = editStores; }, [editStores]);
+  useEffect(() => { selectedStoreIdRef.current = selectedStoreId; }, [selectedStoreId]);
+  useEffect(() => { storesRef.current = stores; }, [stores]);
 
   // Load data
   useEffect(() => {
