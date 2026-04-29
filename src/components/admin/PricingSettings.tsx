@@ -16,6 +16,7 @@ interface PricingRow {
   min_pay: number;
   customer_base_fee: number;
   customer_per_km_fee: number;
+  platform_service_fee: number;
   peak_multiplier: number;
   peak_start_hour: number;
   peak_end_hour: number;
@@ -38,6 +39,7 @@ export default function PricingSettings() {
   const [pricing, setPricing] = useState<PricingRow>({
     base_pay: 3, per_km_rate: 0.5, min_pay: 3,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
+    platform_service_fee: 0.99,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
@@ -55,6 +57,7 @@ export default function PricingSettings() {
             min_pay: Number(d.min_pay ?? 3),
             customer_base_fee: Number(d.customer_base_fee ?? 1.5),
             customer_per_km_fee: Number(d.customer_per_km_fee ?? 0.8),
+            platform_service_fee: Number(d.platform_service_fee ?? 0.99),
             peak_multiplier: Number(d.peak_multiplier ?? 1),
             peak_start_hour: Number(d.peak_start_hour ?? 19),
             peak_end_hour: Number(d.peak_end_hour ?? 22),
@@ -132,11 +135,12 @@ export default function PricingSettings() {
           <Card>
             <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Χρέωση Παράδοσης Πελάτη</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="Βασική Χρέωση (€)" value={pricing.customer_base_fee} onChange={v => setPricing(p => ({ ...p, customer_base_fee: v }))} hint="Πληρώνει ο πελάτης" />
                 <Field label="Χρέωση ανά χλμ (€)" value={pricing.customer_per_km_fee} onChange={v => setPricing(p => ({ ...p, customer_per_km_fee: v }))} hint="Επιπλέον €/km" icon={MapPin} />
+                <Field label="Service Fee Πλατφόρμας (€)" value={pricing.platform_service_fee} onChange={v => setPricing(p => ({ ...p, platform_service_fee: v }))} hint="Σταθερό fee ανά παραγγελία (πρώην 0,99€)" step="0.01" icon={Shield} />
               </div>
-              <Preview label={`Παράδοση ${previewKm} χλμ`} amount={customerFee} note={`€${pricing.customer_base_fee.toFixed(2)} + ${previewKm} × €${pricing.customer_per_km_fee.toFixed(2)}`} />
+              <Preview label={`Παράδοση ${previewKm} χλμ`} amount={customerFee + pricing.platform_service_fee} note={`€${pricing.customer_base_fee.toFixed(2)} + ${previewKm} × €${pricing.customer_per_km_fee.toFixed(2)} + €${pricing.platform_service_fee.toFixed(2)} service`} />
             </CardContent>
           </Card>
 

@@ -1444,6 +1444,7 @@ export type Database = {
           peak_start_hour: number
           peak_weekdays: number[]
           per_km_rate: number
+          platform_service_fee: number
           show_stores_on_driver_map: boolean
           sla_agent_scaling: boolean
           sla_breach_seconds: number
@@ -1486,6 +1487,7 @@ export type Database = {
           peak_start_hour?: number
           peak_weekdays?: number[]
           per_km_rate?: number
+          platform_service_fee?: number
           show_stores_on_driver_map?: boolean
           sla_agent_scaling?: boolean
           sla_breach_seconds?: number
@@ -1528,6 +1530,7 @@ export type Database = {
           peak_start_hour?: number
           peak_weekdays?: number[]
           per_km_rate?: number
+          platform_service_fee?: number
           show_stores_on_driver_map?: boolean
           sla_agent_scaling?: boolean
           sla_breach_seconds?: number

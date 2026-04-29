@@ -27,6 +27,16 @@ export default function CheckoutPage() {
   const { user } = useAuth();
   const [address, setAddress] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const [deliveryFee, setDeliveryFee] = useState(0.99);
+
+  useEffect(() => {
+    supabase.from('platform_settings').select('platform_service_fee').eq('id', 1).maybeSingle()
+      .then(({ data }) => {
+        if (data && (data as any).platform_service_fee != null) {
+          setDeliveryFee(Number((data as any).platform_service_fee));
+        }
+      });
+  }, []);
 
   useEffect(() => {
     if (!user) return;
@@ -55,7 +65,6 @@ export default function CheckoutPage() {
   const [tipOption, setTipOption] = useState<number | 'custom'>(15);
   const [customTip, setCustomTip] = useState('');
 
-  const deliveryFee = 0.99;
   const subtotalAfterDiscount = Math.max(0, total - (appliedPromo
     ? appliedPromo.discount_type === 'percentage'
       ? Math.min(total, total * (appliedPromo.discount_value / 100))
