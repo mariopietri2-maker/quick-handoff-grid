@@ -1394,6 +1394,7 @@ export type Database = {
           id: number
           maintenance_message: string | null
           maintenance_mode: boolean
+          max_cash_cap: number
           min_pay: number
           motorcycle_multiplier: number
           peak_end_hour: number
@@ -1435,6 +1436,7 @@ export type Database = {
           id?: number
           maintenance_message?: string | null
           maintenance_mode?: boolean
+          max_cash_cap?: number
           min_pay?: number
           motorcycle_multiplier?: number
           peak_end_hour?: number
@@ -1476,6 +1478,7 @@ export type Database = {
           id?: number
           maintenance_message?: string | null
           maintenance_mode?: boolean
+          max_cash_cap?: number
           min_pay?: number
           motorcycle_multiplier?: number
           peak_end_hour?: number
