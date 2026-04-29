@@ -413,6 +413,7 @@ export default function LiveOpsMap() {
             )}
             {leaderboard.map((d, i) => {
               const isOnMap = !!d.location;
+              const ghosting = isOnMap && d.location && (Date.now() - new Date(d.location.updated_at).getTime()) > 10 * 60 * 1000;
               const VehicleIcon = d.info?.vehicle_type === 'car' ? Car : Bike;
               return (
                 <button
@@ -420,20 +421,21 @@ export default function LiveOpsMap() {
                   onMouseEnter={() => setHoveredDriverId(d.id)}
                   onClick={() => setHoveredDriverId(d.id)}
                   disabled={!isOnMap}
-                  className="w-full text-left p-3 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                  className={`w-full text-left p-3 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 ${ghosting ? 'bg-orange-500/10 border-l-4 border-l-orange-500' : ''}`}
                 >
                   <div className="relative shrink-0">
                     <div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-600' : i === 1 ? 'bg-slate-400/20 text-slate-600' : i === 2 ? 'bg-orange-700/20 text-orange-700' : 'bg-muted text-muted-foreground'}`}>
                       #{i + 1}
                     </div>
                     {isOnMap && (
-                      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card" />
+                      <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${ghosting ? 'bg-orange-500 animate-pulse' : 'bg-emerald-500'}`} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <VehicleIcon className="h-3 w-3 text-muted-foreground shrink-0" />
                       <p className="text-sm font-semibold truncate">{d.info?.name}</p>
+                      {ghosting && <span className="text-[9px] font-bold text-orange-600 bg-orange-500/15 px-1.5 py-0.5 rounded">GHOST</span>}
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                       <span>{d.deliveries} 📦</span>
