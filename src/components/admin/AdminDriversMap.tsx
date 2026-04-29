@@ -5,8 +5,11 @@ import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
+import { MapPin, Loader2 } from 'lucide-react';
+import { geocodeAddress } from '@/lib/geocode';
 import { toast } from 'sonner';
 
 interface DriverLocation {
