@@ -67,7 +67,15 @@ export default function AdminDriversMap() {
       setDriverInfos(map);
 
       if (storesData) {
-        setStores(storesData.filter(s => s.latitude != null && s.longitude != null) as StoreMarker[]);
+        // Show ALL active stores. If a store has no coords yet, place it at the
+        // map's default center (Άρτα) so the admin can drag it into position.
+        const DEFAULT_LAT = 39.1600;
+        const DEFAULT_LNG = 20.9853;
+        setStores(storesData.map(s => ({
+          ...s,
+          latitude: (s.latitude as number | null) ?? DEFAULT_LAT,
+          longitude: (s.longitude as number | null) ?? DEFAULT_LNG,
+        })) as StoreMarker[]);
       }
     }
     load();
