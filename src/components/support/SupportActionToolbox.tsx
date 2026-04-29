@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  AlertTriangle, MapPin, Wallet, Gift, Ban, RotateCcw, BellRing, Siren, Phone, Loader2, Zap,
+  AlertTriangle, MapPin, Wallet, Ban, RotateCcw, BellRing, Siren, Phone, Loader2, Zap,
   XCircle, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
