@@ -304,6 +304,26 @@ export function UserMenu() {
               </p>
             </DialogContent>
           </Dialog>
+
+          <Dialog open={releaseOpen} onOpenChange={setReleaseOpen}>
+            <DialogContent className="max-w-xs">
+              <DialogHeader>
+                <DialogTitle>Απόθεση Παραγγελίας;</DialogTitle>
+              </DialogHeader>
+              <p className="text-sm text-muted-foreground">
+                Η παραγγελία θα επιστραφεί στο σύστημα και θα ανατεθεί άμεσα σε άλλον διαθέσιμο οδηγό.
+                Συχνές αποθέσεις μπορεί να επηρεάσουν το ποσοστό αποδοχής σου.
+              </p>
+              <div className="flex gap-2 pt-2">
+                <Button variant="outline" className="flex-1" onClick={() => setReleaseOpen(false)} disabled={releasing}>
+                  Άκυρο
+                </Button>
+                <Button variant="destructive" className="flex-1" onClick={handleReleaseOrder} disabled={releasing}>
+                  {releasing ? 'Απόθεση…' : 'Απόθεση'}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
         </>
       )}
     </>
