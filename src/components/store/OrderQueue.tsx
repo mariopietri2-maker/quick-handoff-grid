@@ -1,8 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import { Clock, User, Car, ChevronRight, Timer, Plus, Minus } from 'lucide-react';
+import { Clock, User, Car, ChevronRight, Timer, Plus, Minus, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import { PrintTicketButton, printOrderTicket } from './PrintOrderTicket';
 import { getPrinterPrefs } from '@/lib/printer-prefs';
 import type { OrderWithItems } from '@/hooks/useOrders';
@@ -99,6 +105,44 @@ export function OrderQueue({ orders, onStatusUpdate, storeName = 'Κατάστη
                     {getTimeSince(order.created_at)}
                   </span>
                   <PrintTicketButton order={order} storeName={storeName} />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        disabled={!!order.driver_id}
+                        title={order.driver_id ? 'Έχει ανατεθεί σε οδηγό — επικοινώνησε με υποστήριξη' : 'Ακύρωση παραγγελίας'}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>Ακύρωση παραγγελίας #{order.id.slice(0, 6)};</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          Η παραγγελία θα μαρκαριστεί ως ακυρωμένη και θα αφαιρεθεί από την ουρά.
+                          Αν ο πελάτης έχει χρεωθεί, χρησιμοποίησε επιστροφή χρημάτων ξεχωριστά.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Όχι</AlertDialogCancel>
+                        <AlertDialogAction
+                          onClick={async () => {
+                            const { error } = await supabase
+                              .from('orders')
+                              .update({ status: 'cancelled' as any })
+                              .eq('id', order.id);
+                            if (error) toast.error('Η ακύρωση απέτυχε');
+                            else toast.success('Παραγγελία ακυρώθηκε');
+                          }}
+                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                        >
+                          Ναι, ακύρωση
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
                 </div>
               </div>
 
