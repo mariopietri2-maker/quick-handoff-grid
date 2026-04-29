@@ -371,7 +371,16 @@ export default function DriverApp() {
               {!activeDelivery && isOnline && !onBreak && !cashCapped && !loading && offers.length > 0 && (
                 <div className="space-y-3 animate-slide-up">
                   <div className="flex items-center justify-between px-1">
-                    <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Νέες Παραγγελίες</h3>
+                    <div className="flex items-center gap-2">
+                      <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">
+                        {isAdmin ? 'Όλες οι Διαθέσιμες' : 'Νέες Παραγγελίες'}
+                      </h3>
+                      {isAdmin && (
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5">
+                          Ops
+                        </span>
+                      )}
+                    </div>
                     <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5 animate-pop">{offers.length}</Badge>
                   </div>
                   {offers.map((offer, i) => (
