@@ -8,7 +8,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
 } from '@/components/ui/alert-dialog';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { CalendarClock, Archive } from 'lucide-react';
+import { CalendarClock, Archive, Trash2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 
@@ -48,6 +48,21 @@ export default function MonthCloseCard() {
     }
   };
 
+  const deleteAllStats = async () => {
+    setBusy(true);
+    const { error } = await (supabase as any)
+      .from('monthly_reports')
+      .delete()
+      .not('id', 'is', null);
+    setBusy(false);
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Όλα τα μηνιαία στατιστικά διαγράφηκαν');
+      qc.invalidateQueries({ queryKey: ['monthly-reports'] });
+    }
+  };
+
   const currentMonth = format(new Date(), 'MMMM yyyy');
 
   return (
@@ -58,31 +73,58 @@ export default function MonthCloseCard() {
             <CalendarClock className="h-4 w-4 text-purple-500" />
             Μηνιαίο Κλείσιμο
           </CardTitle>
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button size="sm" variant="default" className="gap-2">
-                <Archive className="h-3.5 w-3.5" />
-                Κλείσιμο {currentMonth}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>Κλείσιμο μήνα — {currentMonth};</AlertDialogTitle>
-                <AlertDialogDescription>
-                  Αρχειοθετεί τα κέρδη του μήνα και μηδενίζει το <b>Admin Balance</b> και
-                  το <b>Platform Pool</b>. Τα lifetime totals και το ιστορικό παραμένουν.
-                  <br /><br />
-                  Δεν επηρεάζει: store wallets, driver wallets, παραγγελίες.
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>Άκυρο</AlertDialogCancel>
-                <AlertDialogAction onClick={closeMonth} disabled={busy}>
-                  {busy ? 'Κλείσιμο…' : 'Ναι, κλείσε τον μήνα'}
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
+          <div className="flex items-center gap-2">
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="default" className="gap-2">
+                  <Archive className="h-3.5 w-3.5" />
+                  Κλείσιμο {currentMonth}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Κλείσιμο μήνα — {currentMonth};</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Αρχειοθετεί τα κέρδη του μήνα και μηδενίζει το <b>Admin Balance</b> και
+                    το <b>Platform Pool</b>. Τα lifetime totals και το ιστορικό παραμένουν.
+                    <br /><br />
+                    Δεν επηρεάζει: store wallets, driver wallets, παραγγελίες.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Άκυρο</AlertDialogCancel>
+                  <AlertDialogAction onClick={closeMonth} disabled={busy}>
+                    {busy ? 'Κλείσιμο…' : 'Ναι, κλείσε τον μήνα'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button size="sm" variant="destructive" className="gap-2">
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Διαγραφή όλων
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Διαγραφή όλων των μηνιαίων στατιστικών;</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Διαγράφει όλο το αρχείο μηνιαίων κλεισιμάτων (snapshot, admin/platform earned, top-ups, παραγγελίες, τζίρος). Η ενέργεια <b>δεν αναιρείται</b>.
+                    <br /><br />
+                    Δεν επηρεάζει τρέχοντα balances, παραγγελίες ή πορτοφόλια.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Άκυρο</AlertDialogCancel>
+                  <AlertDialogAction onClick={deleteAllStats} disabled={busy}>
+                    {busy ? 'Διαγραφή…' : 'Ναι, διέγραψέ τα όλα'}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
         </div>
       </CardHeader>
       <CardContent>
