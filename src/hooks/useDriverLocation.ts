@@ -1,90 +1,172 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { Capacitor } from '@capacitor/core';
+import { Geolocation } from '@capacitor/geolocation';
 
 const UPDATE_INTERVAL_MS = 5_000; // push every 5 seconds
+
+interface NormalizedPos {
+  latitude: number;
+  longitude: number;
+  speed: number | null;
+  heading: number | null;
+}
+
+const isNative = Capacitor.isNativePlatform();
 
 export function useDriverLocation(isActive: boolean) {
   const { user } = useAuth();
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const watchIdRef = useRef<number | null>(null);
+  const watchIdRef = useRef<string | number | null>(null);
   const intervalRef = useRef<number | null>(null);
-  const lastPosRef = useRef<GeolocationPosition | null>(null);
-  const lastSentRef = useRef<number>(0);
+  const lastPosRef = useRef<NormalizedPos | null>(null);
+  const cleanupRef = useRef<(() => void) | null>(null);
 
-  const sendLocation = useCallback(async (pos: GeolocationPosition) => {
+  const sendLocation = useCallback(async (pos: NormalizedPos) => {
     if (!user) return;
-    lastSentRef.current = Date.now();
-
-    const payload = {
-      driver_id: user.id,
-      latitude: pos.coords.latitude,
-      longitude: pos.coords.longitude,
-      heading: pos.coords.heading,
-      speed: pos.coords.speed,
-      updated_at: new Date().toISOString(),
-    };
-
     await supabase
       .from('driver_locations')
-      .upsert(payload as any, { onConflict: 'driver_id' });
+      .upsert(
+        {
+          driver_id: user.id,
+          latitude: pos.latitude,
+          longitude: pos.longitude,
+          heading: pos.heading,
+          speed: pos.speed,
+          updated_at: new Date().toISOString(),
+        } as any,
+        { onConflict: 'driver_id' }
+      );
   }, [user]);
 
   useEffect(() => {
     if (!isActive || !user) {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-      if (intervalRef.current !== null) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      cleanupRef.current?.();
+      cleanupRef.current = null;
       lastPosRef.current = null;
       setTracking(false);
       return;
     }
 
-    if (!('geolocation' in navigator)) {
-      setError('Geolocation not supported');
-      return;
-    }
-
-    setTracking(true);
+    let cancelled = false;
     setError(null);
 
-    // Continuously cache the freshest position from the device
-    watchIdRef.current = navigator.geolocation.watchPosition(
-      (pos) => { lastPosRef.current = pos; },
-      (err) => { setError(err.message); setTracking(false); },
-      { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
-    );
+    const start = async () => {
+      try {
+        if (isNative) {
+          // Request fine-grained permission on native
+          const perm = await Geolocation.requestPermissions({ permissions: ['location'] });
+          if (perm.location !== 'granted') {
+            setError('Δεν δόθηκε άδεια τοποθεσίας');
+            return;
+          }
+          const id = await Geolocation.watchPosition(
+            { enableHighAccuracy: true, timeout: 15000 },
+            (pos, err) => {
+              if (err) {
+                setError(err.message);
+                return;
+              }
+              if (!pos) return;
+              lastPosRef.current = {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                speed: pos.coords.speed ?? null,
+                heading: pos.coords.heading ?? null,
+              };
+            }
+          );
+          if (cancelled) {
+            await Geolocation.clearWatch({ id });
+            return;
+          }
+          watchIdRef.current = id;
+        } else {
+          if (!('geolocation' in navigator)) {
+            setError('Geolocation not supported');
+            return;
+          }
+          const id = navigator.geolocation.watchPosition(
+            (pos) => {
+              lastPosRef.current = {
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                speed: pos.coords.speed ?? null,
+                heading: pos.coords.heading ?? null,
+              };
+            },
+            (err) => { setError(err.message); setTracking(false); },
+            { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+          );
+          watchIdRef.current = id;
+        }
 
-    // Push to backend every 5s using the most recent cached position
-    intervalRef.current = window.setInterval(() => {
-      const pos = lastPosRef.current;
-      if (!pos) {
-        // No watch fix yet — request a one-shot fix
-        navigator.geolocation.getCurrentPosition(
-          (p) => { lastPosRef.current = p; sendLocation(p); },
-          () => { /* ignore */ },
-          { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 }
-        );
-        return;
+        setTracking(true);
+
+        intervalRef.current = window.setInterval(async () => {
+          let pos = lastPosRef.current;
+          if (!pos) {
+            try {
+              if (isNative) {
+                const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 });
+                pos = {
+                  latitude: p.coords.latitude,
+                  longitude: p.coords.longitude,
+                  speed: p.coords.speed ?? null,
+                  heading: p.coords.heading ?? null,
+                };
+                lastPosRef.current = pos;
+              } else {
+                navigator.geolocation.getCurrentPosition(
+                  (p) => {
+                    const np = {
+                      latitude: p.coords.latitude,
+                      longitude: p.coords.longitude,
+                      speed: p.coords.speed ?? null,
+                      heading: p.coords.heading ?? null,
+                    };
+                    lastPosRef.current = np;
+                    sendLocation(np);
+                  },
+                  () => {},
+                  { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 }
+                );
+                return;
+              }
+            } catch {
+              return;
+            }
+          }
+          if (pos) sendLocation(pos);
+        }, UPDATE_INTERVAL_MS);
+
+        cleanupRef.current = () => {
+          if (watchIdRef.current !== null) {
+            if (isNative) {
+              Geolocation.clearWatch({ id: watchIdRef.current as string }).catch(() => {});
+            } else {
+              navigator.geolocation.clearWatch(watchIdRef.current as number);
+            }
+            watchIdRef.current = null;
+          }
+          if (intervalRef.current !== null) {
+            window.clearInterval(intervalRef.current);
+            intervalRef.current = null;
+          }
+        };
+      } catch (e: any) {
+        setError(e?.message ?? 'Σφάλμα τοποθεσίας');
       }
-      sendLocation(pos);
-    }, UPDATE_INTERVAL_MS);
+    };
+
+    start();
 
     return () => {
-      if (watchIdRef.current !== null) {
-        navigator.geolocation.clearWatch(watchIdRef.current);
-        watchIdRef.current = null;
-      }
-      if (intervalRef.current !== null) {
-        window.clearInterval(intervalRef.current);
-        intervalRef.current = null;
-      }
+      cancelled = true;
+      cleanupRef.current?.();
+      cleanupRef.current = null;
     };
   }, [isActive, user, sendLocation]);
 
