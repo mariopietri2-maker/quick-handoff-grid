@@ -182,12 +182,13 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const nextOfferIds: Record<string, string> = {};
 
     if (adminOverride) {
-      // ADMIN OVERRIDE: ops queue shows only orders that are actually ready to pick up.
+      // ADMIN OVERRIDE: ops queue shows everything unassigned, including
+      // external/manual orders that are still being prepared by the store.
       const { data: all } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .is('driver_id', null)
-        .eq('status', 'ready')
+        .in('status', ['placed', 'accepted', 'preparing', 'ready'])
         .order('created_at', { ascending: false })
         .limit(50);
       availableOrders = (all as OrderWithItems[]) ?? [];
@@ -195,8 +196,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       // AUTO MODE: show two buckets, merged into one list:
       //   (a) orders specifically OFFERED to this driver by the dispatcher
       //   (b) BROADCAST orders — manual/external custom orders that are open
-      //       to any online driver (first-come-first-served, like before).
-      //       to any online driver (first-come-first-served, like before).
+      //       to any online driver. Drivers see them as soon as the store
+      //       creates them (placed/accepted/preparing) so they can plan ahead,
+      //       but they can only actually claim once status === 'ready'.
       const nowIso = new Date().toISOString();
 
       const [{ data: myPending }, { data: broadcast }] = await Promise.all([
@@ -210,9 +212,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           .from('orders')
           .select('*, order_items(*)')
           .is('driver_id', null)
-          // External/manual ready orders are broadcast to all online drivers immediately.
           .or('source.in.(manual,efood,wolt,box,other,external),payment_method.eq.external')
-          .eq('status', 'ready')
+          .in('status', ['placed', 'accepted', 'preparing', 'ready'])
           .order('created_at', { ascending: false })
           .limit(20),
       ]);
@@ -360,6 +361,11 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
     const offerId = offerIds[orderId];
+    const target = offers.find((o) => o.id === orderId);
+    if (target && target.status !== 'ready') {
+      toast.info('Η παραγγελία δεν είναι ακόμη έτοιμη για παραλαβή');
+      return;
+    }
 
     // AUTO mode with offer → use atomic accept-offer edge function
     if (assignmentMode === 'auto' && offerId) {
