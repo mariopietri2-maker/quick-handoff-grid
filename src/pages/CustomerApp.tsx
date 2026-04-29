@@ -28,6 +28,7 @@ export default function CustomerApp() {
     { labelKey: 'cat.salads', value: 'Σαλάτες', emoji: '🥗', bg: 'bg-emerald-50' },
   ];
   const [stores, setStores] = useState<StoreRow[]>([]);
+  const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -39,11 +40,19 @@ export default function CustomerApp() {
 
   useEffect(() => {
     async function load() {
-      const [storesRes, menuRes] = await Promise.all([
+      const nowIso = new Date().toISOString();
+      const [storesRes, menuRes, promoRes] = await Promise.all([
         supabase.from('stores').select('*').eq('is_active', true).order('name'),
         supabase.from('menu_items').select('store_id, category').eq('is_available', true),
+        supabase.from('stores')
+          .select('*')
+          .eq('is_active', true)
+          .eq('promotion_status', 'active')
+          .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
+          .order('promotion_starts_at', { ascending: false }),
       ]);
       setStores(storesRes.data ?? []);
+      setPromotedStores((promoRes.data ?? []) as StoreRow[]);
       const catMap: Record<string, string[]> = {};
       (menuRes.data ?? []).forEach(item => {
         if (!item.category) return;
