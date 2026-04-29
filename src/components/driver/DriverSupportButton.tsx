@@ -125,23 +125,18 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
     <>
       <button
         onClick={() => setOpen(true)}
-        className="group relative h-11 px-3 rounded-2xl bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_36%)] shadow-[0_8px_20px_-6px_hsl(var(--driver-accent)/0.55)] text-white flex items-center gap-2 transition-all duration-200 hover:brightness-110 hover:shadow-[0_10px_24px_-6px_hsl(var(--driver-accent)/0.7)] active:scale-[0.97]"
+        className="group relative h-10 w-10 rounded-full bg-gradient-to-br from-[hsl(var(--driver-accent))] to-[hsl(160_60%_36%)] shadow-[0_8px_20px_-6px_hsl(var(--driver-accent)/0.55)] text-white flex items-center justify-center transition-all duration-200 hover:brightness-110 hover:shadow-[0_10px_24px_-6px_hsl(var(--driver-accent)/0.7)] hover:scale-105 active:scale-95"
         aria-label="Υποστήριξη"
       >
-        <span className="relative h-6 w-6 rounded-lg bg-white/20 flex items-center justify-center shrink-0">
-          <Headphones className="h-3.5 w-3.5" strokeWidth={2.5} />
-        </span>
-        <span className="font-heading font-bold text-[11px] uppercase tracking-wider leading-none hidden sm:inline">
-          Βοήθεια
-        </span>
+        <Headphones className="h-5 w-5" strokeWidth={2.5} />
         {openCount > 0 ? (
-          <span className="min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[hsl(var(--driver-accent))] text-[10px] font-extrabold flex items-center justify-center shadow-sm">
+          <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 rounded-full bg-white text-[hsl(var(--driver-accent))] text-[10px] font-extrabold flex items-center justify-center shadow-sm ring-2 ring-[hsl(var(--driver-bg))]">
             {openCount}
           </span>
         ) : (
-          <span className="relative flex h-2 w-2">
+          <span className="absolute -top-0.5 -right-0.5 flex h-2.5 w-2.5">
             <span className="absolute inline-flex h-full w-full rounded-full bg-emerald-300 opacity-75 animate-ping" />
-            <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400 ring-1 ring-white" />
+            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-emerald-400 ring-2 ring-[hsl(var(--driver-bg))]" />
           </span>
         )}
       </button>
