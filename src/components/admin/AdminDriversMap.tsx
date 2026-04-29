@@ -282,11 +282,49 @@ export default function AdminDriversMap() {
     );
   }
 
+  const handleBulkGeocode = async () => {
+    if (geocoding || missingCoords.length === 0) return;
+    setGeocoding(true);
+    let ok = 0;
+    let fail = 0;
+    for (const s of missingCoords) {
+      if (!s.address?.trim()) { fail++; continue; }
+      const res = await geocodeAddress(s.address);
+      if (!res) { fail++; continue; }
+      const { error } = await supabase
+        .from('stores')
+        .update({ latitude: res.latitude, longitude: res.longitude })
+        .eq('id', s.id);
+      if (error) { fail++; continue; }
+      ok++;
+      setStores(prev => prev.map(x => x.id === s.id
+        ? { ...x, latitude: res.latitude, longitude: res.longitude } : x));
+    }
+    setMissingCoords(prev => prev.filter(s => !s.address?.trim() || fail === missingCoords.length));
+    setGeocoding(false);
+    if (ok > 0) toast.success(`Γεωκωδικοποίηση: ${ok} επιτυχία${fail ? `, ${fail} αποτυχία` : ''}`);
+    else toast.error('Δεν βρέθηκαν συντεταγμένες');
+  };
+
   return (
     <div className="space-y-4">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="font-heading font-bold text-xl">Live Χάρτης</h2>
         <div className="flex flex-wrap items-center gap-3">
+          {missingCoords.length > 0 && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleBulkGeocode}
+              disabled={geocoding}
+              className="gap-1.5 h-8"
+            >
+              {geocoding
+                ? <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                : <MapPin className="h-3.5 w-3.5" />}
+              Αυτόματη τοποθέτηση ({missingCoords.length})
+            </Button>
+          )}
           <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
             <Switch id="edit-stores" checked={editStores} onCheckedChange={setEditStores} />
             <Label htmlFor="edit-stores" className="text-xs cursor-pointer">
