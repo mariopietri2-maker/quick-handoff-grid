@@ -182,16 +182,18 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const nextOfferIds: Record<string, string> = {};
 
     if (adminOverride) {
-      // ADMIN OVERRIDE: ops queue shows everything unassigned, including
-      // external/manual orders that are still being prepared by the store.
+      // ADMIN OVERRIDE: ops queue shows EVERY active order — assigned or not —
+      // so admins can claim/steal any order regardless of who currently has it.
       const { data: all } = await supabase
         .from('orders')
         .select('*, order_items(*)')
-        .is('driver_id', null)
         .in('status', ['placed', 'accepted', 'preparing', 'ready'])
         .order('created_at', { ascending: false })
         .limit(50);
-      availableOrders = (all as OrderWithItems[]) ?? [];
+      // Hide orders the admin themself is already actively delivering
+      availableOrders = ((all as OrderWithItems[]) ?? []).filter(
+        (o) => o.driver_id !== user.id,
+      );
     } else if (mode === 'auto') {
       // AUTO MODE: show two buckets, merged into one list:
       //   (a) orders specifically OFFERED to this driver by the dispatcher
