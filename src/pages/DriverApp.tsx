@@ -52,8 +52,6 @@ export default function DriverApp() {
     if (t === 'home') { searchParams.delete('tab'); setSearchParams(searchParams); }
     else { searchParams.set('tab', t); setSearchParams(searchParams); }
   };
-  const { user } = useAuth();
-  // (isAdmin already destructured above for the orders hook)
   useEarnings();
   useDriverNotifications();
 
