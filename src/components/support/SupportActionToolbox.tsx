@@ -22,7 +22,7 @@ interface Props {
   onDriverChanged?: () => void;
 }
 
-type DialogKey = null | 'location' | 'credit' | 'bonus' | 'suspend' | 'broadcast' | 'sos' | 'unassign' | 'cancel_order' | 'modify_order';
+type DialogKey = null | 'location' | 'credit' | 'suspend' | 'broadcast' | 'sos' | 'unassign' | 'cancel_order' | 'modify_order';
 
 export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props) {
   const [open, setOpen] = useState<DialogKey>(null);
