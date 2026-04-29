@@ -230,16 +230,8 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
         <span className="font-heading font-extrabold text-xl text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
       </div>
 
-      {/* Main CTA — for picked_up, require photo proof first */}
-      {delivery.status === 'picked_up' && user?.id && (
-        <ProofOfHandoff
-          orderId={delivery.id}
-          driverId={user.id}
-          onUploaded={handleProofUploaded}
-        />
-      )}
-
-      {nextAction && delivery.status !== 'picked_up' && (
+      {/* Main CTA */}
+      {nextAction && (
         <button
           onClick={() => onStatusUpdate(nextAction.next)}
           className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
