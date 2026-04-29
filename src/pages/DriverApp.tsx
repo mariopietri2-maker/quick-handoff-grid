@@ -34,6 +34,12 @@ export default function DriverApp() {
   const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders();
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
+  const [maxCashCap, setMaxCashCap] = useState<number>(200);
+  useEffect(() => {
+    (supabase as any).from('platform_settings').select('max_cash_cap').eq('id', 1).maybeSingle()
+      .then(({ data }: any) => { if (data?.max_cash_cap != null) setMaxCashCap(Number(data.max_cash_cap)); });
+  }, []);
+  const cashCapped = Number(driverState?.shift_cash_balance ?? 0) >= maxCashCap;
   // Drivers always start OFFLINE — must opt-in each session
   const [isOnline, setIsOnline] = useState(false);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
