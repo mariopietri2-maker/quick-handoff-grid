@@ -10,7 +10,7 @@ import {
 } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import {
-  AlertTriangle, MapPin, Wallet, Gift, Ban, RotateCcw, BellRing, Siren, Phone, Loader2, Zap,
+  AlertTriangle, MapPin, Wallet, Ban, RotateCcw, BellRing, Siren, Phone, Loader2, Zap,
   XCircle, Pencil,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -22,7 +22,7 @@ interface Props {
   onDriverChanged?: () => void;
 }
 
-type DialogKey = null | 'location' | 'credit' | 'bonus' | 'suspend' | 'broadcast' | 'sos' | 'unassign' | 'cancel_order' | 'modify_order';
+type DialogKey = null | 'location' | 'credit' | 'suspend' | 'broadcast' | 'sos' | 'unassign' | 'cancel_order' | 'modify_order';
 
 export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props) {
   const [open, setOpen] = useState<DialogKey>(null);
@@ -73,20 +73,6 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
     if (error) { toast.error(error.message); setLoading(false); return; }
     await sendChatNote(`💰 Πιστώθηκαν ${amt.toFixed(2)}€ στο πορτοφόλι σου: ${reason}`);
     toast.success('Πορτοφόλι πιστώθηκε');
-    close();
-  };
-
-  const submitBonus = async () => {
-    const amt = parseFloat(amount);
-    if (!amt || amt <= 0 || amt > 10) return toast.error('Bonus 0–10€');
-    if (!reason.trim()) return toast.error('Συμπλήρωσε αιτιολογία');
-    setLoading(true);
-    const { error } = await (supabase as any).rpc('support_grant_bonus', {
-      p_driver_id: driverId, p_amount: amt, p_reason: reason,
-    });
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    await sendChatNote(`🎁 Σου δόθηκε bonus ${amt.toFixed(2)}€: ${reason}`);
-    toast.success('Bonus δόθηκε');
     close();
   };
 
@@ -209,7 +195,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
           <ToolBtn icon={MapPin} label="Θέση οδηγού" onClick={() => setOpen('location')} />
           <ToolBtn icon={BellRing} label="Push μήνυμα" onClick={() => setOpen('broadcast')} />
           <ToolBtn icon={Wallet} label="Πίστωση €" onClick={() => setOpen('credit')} />
-          <ToolBtn icon={Gift} label="Δώσε bonus" onClick={() => setOpen('bonus')} />
+          
           <ToolBtn icon={Ban} label="Αναστολή" tone="warn" onClick={() => setOpen('suspend')} />
           <ToolBtn
             icon={RotateCcw}
@@ -262,32 +248,6 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
               <Button variant="outline" onClick={close}>Άκυρο</Button>
               <Button onClick={submitCredit} disabled={loading}>
                 {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Πίστωση
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Bonus */}
-        <Dialog open={open === 'bonus'} onOpenChange={(o) => !o && close()}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle className="flex items-center gap-2"><Gift className="h-5 w-5" /> Bonus επιβράβευσης</DialogTitle>
-              <DialogDescription>Έως 10€. Πιστώνεται άμεσα στο πορτοφόλι του οδηγού.</DialogDescription>
-            </DialogHeader>
-            <div className="space-y-3">
-              <div>
-                <Label>Ποσό (€)</Label>
-                <Input type="number" step="0.5" min="0" max="10" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="π.χ. 3.00" />
-              </div>
-              <div>
-                <Label>Λόγος</Label>
-                <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="π.χ. Μεγάλη αναμονή στο κατάστημα" />
-              </div>
-            </div>
-            <DialogFooter>
-              <Button variant="outline" onClick={close}>Άκυρο</Button>
-              <Button onClick={submitBonus} disabled={loading}>
-                {loading && <Loader2 className="h-4 w-4 animate-spin mr-2" />} Δώσε bonus
               </Button>
             </DialogFooter>
           </DialogContent>
