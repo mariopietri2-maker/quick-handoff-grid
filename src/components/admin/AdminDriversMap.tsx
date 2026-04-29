@@ -197,38 +197,34 @@ export default function AdminDriversMap() {
     storeMarkersRef.current = [];
 
     stores.forEach(store => {
+      const isSelected = editStores && selectedStoreId === store.id;
+      const ring = isSelected ? 'box-shadow:0 0 0 4px hsl(var(--primary)),0 2px 8px rgba(249,115,22,0.6);' : 'box-shadow:0 2px 8px rgba(249,115,22,0.4);';
       const el = document.createElement('div');
-      el.innerHTML = `<div style="width:32px;height:32px;background:#f97316;border-radius:50%;border:3px solid white;box-shadow:0 2px 8px rgba(249,115,22,0.4);display:flex;align-items:center;justify-content:center;font-size:14px;cursor:${editStores ? 'grab' : 'pointer'};">🏪</div>`;
+      el.innerHTML = `<div style="width:32px;height:32px;background:#f97316;border-radius:50%;border:3px solid white;${ring}display:flex;align-items:center;justify-content:center;font-size:14px;cursor:${editStores ? 'pointer' : 'pointer'};">🏪</div>`;
+
+      // Click on the marker selects the store (in edit mode).
+      // We stop propagation so the map's click handler doesn't fire.
+      el.addEventListener('click', (ev) => {
+        if (!editStoresRef.current) return;
+        ev.stopPropagation();
+        setSelectedStoreId(prev => prev === store.id ? null : store.id);
+      });
 
       const popup = new mapboxgl.Popup({ offset: 18 }).setHTML(`
         <div style="text-align:center;font-family:system-ui;padding:4px;">
           <strong>${store.name}</strong>
           <br/><span style="font-size:11px;opacity:0.7;">${store.address}</span>
           <br/><span style="font-size:11px;">${store.is_active ? '✅ Ενεργό' : '❌ Ανενεργό'}</span>
+          ${editStores ? `<br/><span style="font-size:11px;color:#f97316;font-weight:600;">${isSelected ? '👆 Κλικ στον χάρτη για τοποθέτηση' : 'Κλικ για επιλογή'}</span>` : ''}
         </div>
       `);
 
-      const marker = new mapboxgl.Marker({ element: el, draggable: editStores })
+      // Disable drag — we now use click-to-place instead (more reliable for stores
+      // that start at the default center and need to move long distances).
+      const marker = new mapboxgl.Marker({ element: el })
         .setLngLat([store.longitude, store.latitude])
-        .setPopup(popup)
+        .setPopup(editStores && isSelected ? undefined : popup)
         .addTo(map);
-
-      if (editStores) {
-        marker.on('dragend', async () => {
-          const { lng, lat } = marker.getLngLat();
-          const { error } = await supabase
-            .from('stores')
-            .update({ latitude: lat, longitude: lng })
-            .eq('id', store.id);
-          if (error) {
-            toast.error(`Failed to move ${store.name}`);
-            marker.setLngLat([store.longitude, store.latitude]);
-          } else {
-            toast.success(`${store.name} moved`);
-            setStores(prev => prev.map(s => s.id === store.id ? { ...s, latitude: lat, longitude: lng } : s));
-          }
-        });
-      }
 
       storeMarkersRef.current.push(marker);
     });
