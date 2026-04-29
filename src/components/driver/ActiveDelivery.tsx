@@ -39,7 +39,7 @@ const statusSteps = [
 
 export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
   const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
-  const { user } = useAuth();
+
 
   const toggleChecklistItem = (index: number) => {
     setCheckedItems(prev => {
