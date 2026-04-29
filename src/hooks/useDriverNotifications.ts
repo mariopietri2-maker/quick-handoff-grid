@@ -83,4 +83,12 @@ function showNotification(n: { title: string; body: string; severity: string }) 
     default:
       toast.info(`📢 ${n.title}`, opts);
   }
+  // Also fire an OS-level notification so the driver hears/sees it when app
+  // is in the background or screen is off.
+  void showOsNotification({
+    title: n.title,
+    body: n.body,
+    tag: 'driver-notif',
+    vibrate: n.severity === 'urgent' || n.severity === 'warning',
+  });
 }
