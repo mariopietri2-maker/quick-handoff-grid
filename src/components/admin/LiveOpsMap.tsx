@@ -54,6 +54,11 @@ export default function LiveOpsMap() {
   const [todayOrders, setTodayOrders] = useState<any[]>([]);
   const [todayEarnings, setTodayEarnings] = useState<any[]>([]);
   const [hoveredDriverId, setHoveredDriverId] = useState<string | null>(null);
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
 
   // Initial load
   useEffect(() => {
@@ -206,14 +211,17 @@ export default function LiveOpsMap() {
 
       const vehicleEmoji = info?.vehicle_type === 'car' ? '🚗' : info?.vehicle_type === 'bike' ? '🚲' : '🛵';
       const isMoving = (loc.speed ?? 0) > 1;
-      const ringColor = isMoving ? '#22c55e' : '#3b82f6';
+      const ageMs = Date.now() - new Date(loc.updated_at).getTime();
+      const isGhosting = ageMs > 10 * 60 * 1000; // >10 min stale GPS
+      const ringColor = isGhosting ? '#f97316' : isMoving ? '#22c55e' : '#3b82f6';
 
       const html = `
         <div style="position:relative;">
-          <div style="position:absolute;inset:-8px;border-radius:50%;background:${ringColor};opacity:0.25;animation:pulse 2s infinite;"></div>
+          <div style="position:absolute;inset:-8px;border-radius:50%;background:${ringColor};opacity:${isGhosting ? 0.45 : 0.25};animation:pulse 2s infinite;"></div>
           <div style="position:relative;width:40px;height:40px;background:hsl(222 47% 11%);border-radius:50%;border:3px solid ${ringColor};box-shadow:0 4px 16px rgba(0,0,0,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;cursor:pointer;">
             ${vehicleEmoji}
           </div>
+          ${isGhosting ? `<div style="position:absolute;-bottom:-4px;left:50%;transform:translateX(-50%);background:#f97316;color:white;font-size:9px;font-weight:700;border-radius:4px;padding:1px 4px;white-space:nowrap;border:1px solid hsl(222 47% 11%);">GHOST</div>` : ''}
           ${stat && stat.deliveries > 0 ? `<div style="position:absolute;top:-4px;right:-4px;background:hsl(var(--primary));color:white;font-size:10px;font-weight:700;border-radius:9999px;min-width:18px;height:18px;padding:0 5px;display:flex;align-items:center;justify-content:center;border:2px solid hsl(222 47% 11%);">${stat.deliveries}</div>` : ''}
         </div>
       `;
@@ -382,6 +390,7 @@ export default function LiveOpsMap() {
             <div className="flex flex-col gap-1.5 text-[11px]">
               <LegendDot color="#22c55e" label="Driver moving" />
               <LegendDot color="#3b82f6" label="Driver idle" />
+              <LegendDot color="#f97316" label="GPS stale (>10min)" />
               <LegendDot color="#10b981" label="Store active" square />
               <LegendDot color="#f97316" label="Store busy" square />
             </div>
@@ -404,6 +413,7 @@ export default function LiveOpsMap() {
             )}
             {leaderboard.map((d, i) => {
               const isOnMap = !!d.location;
+              const ghosting = isOnMap && d.location && (Date.now() - new Date(d.location.updated_at).getTime()) > 10 * 60 * 1000;
               const VehicleIcon = d.info?.vehicle_type === 'car' ? Car : Bike;
               return (
                 <button
@@ -411,20 +421,21 @@ export default function LiveOpsMap() {
                   onMouseEnter={() => setHoveredDriverId(d.id)}
                   onClick={() => setHoveredDriverId(d.id)}
                   disabled={!isOnMap}
-                  className="w-full text-left p-3 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3"
+                  className={`w-full text-left p-3 hover:bg-muted/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-3 ${ghosting ? 'bg-orange-500/10 border-l-4 border-l-orange-500' : ''}`}
                 >
                   <div className="relative shrink-0">
                     <div className={`h-9 w-9 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-500/20 text-amber-600' : i === 1 ? 'bg-slate-400/20 text-slate-600' : i === 2 ? 'bg-orange-700/20 text-orange-700' : 'bg-muted text-muted-foreground'}`}>
                       #{i + 1}
                     </div>
                     {isOnMap && (
-                      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full bg-emerald-500 border-2 border-card" />
+                      <span className={`absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-card ${ghosting ? 'bg-orange-500 animate-pulse' : 'bg-emerald-500'}`} />
                     )}
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
                       <VehicleIcon className="h-3 w-3 text-muted-foreground shrink-0" />
                       <p className="text-sm font-semibold truncate">{d.info?.name}</p>
+                      {ghosting && <span className="text-[9px] font-bold text-orange-600 bg-orange-500/15 px-1.5 py-0.5 rounded">GHOST</span>}
                     </div>
                     <div className="flex items-center gap-2 text-[11px] text-muted-foreground">
                       <span>{d.deliveries} 📦</span>
