@@ -255,7 +255,10 @@ export function useDriverOrders() {
       );
       if (sameStorePickupPending) {
         const sameStore = availableOrders.filter(
-          (o) => o.store_id === (active as OrderWithItems).store_id && o.id !== (active as OrderWithItems).id,
+          (o) =>
+            o.store_id === (active as OrderWithItems).store_id &&
+            o.id !== (active as OrderWithItems).id &&
+            o.status === 'ready',
         );
         setStackedOffers(sameStore);
       } else {
