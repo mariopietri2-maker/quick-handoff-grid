@@ -36,6 +36,8 @@ export default function FeatureFlagsManager() {
   const [maintenanceMessage, setMaintenanceMessage] = useState('');
   const [savingMaint, setSavingMaint] = useState(false);
 
+  const { advise, AdvisorDialog } = useSettingAdvisor();
+
   const load = async () => {
     setLoading(true);
     const [f, s] = await Promise.all([
