@@ -383,7 +383,7 @@ export function useDriverOrders() {
     }
   };
 
-  return { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, refetch: fetchOrders };
+  return { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, refetch: fetchOrders, assignmentMode, offerIds };
 }
 
 export function useUserStore() {
