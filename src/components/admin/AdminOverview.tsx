@@ -539,6 +539,7 @@ function CancelOrderButton({ order }: { order: any }) {
   );
 }
 
+/* ─────────────────────────  Financial Settings  ─────────────────────────── */
 function FinancialSettingsCard() {
   const qc = useQueryClient();
   const [busy, setBusy] = useState(false);
