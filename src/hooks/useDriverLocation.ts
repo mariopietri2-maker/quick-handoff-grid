@@ -176,12 +176,19 @@ export function useDriverLocation(isActive: boolean) {
 
     start();
 
+    // Auto-offline when the user closes the tab/app or backgrounds it
+    const handleHide = () => { void goHardOffline(); };
+    window.addEventListener('pagehide', handleHide);
+    window.addEventListener('beforeunload', handleHide);
+
     return () => {
       cancelled = true;
       cleanupRef.current?.();
       cleanupRef.current = null;
+      window.removeEventListener('pagehide', handleHide);
+      window.removeEventListener('beforeunload', handleHide);
     };
-  }, [isActive, user, sendLocation]);
+  }, [isActive, user, sendLocation, goHardOffline]);
 
   return { tracking, error };
 }
