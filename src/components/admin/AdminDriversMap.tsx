@@ -124,6 +124,28 @@ export default function AdminDriversMap() {
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     mapRef.current = map;
 
+    // Click-to-place: when edit mode is on AND a store is selected,
+    // clicking the map relocates that store to the clicked coords.
+    map.on('click', async (e) => {
+      if (!editStoresRef.current) return;
+      const storeId = selectedStoreIdRef.current;
+      if (!storeId) return;
+      const store = storesRef.current.find(s => s.id === storeId);
+      if (!store) return;
+      const { lng, lat } = e.lngLat;
+      const { error } = await supabase
+        .from('stores')
+        .update({ latitude: lat, longitude: lng })
+        .eq('id', storeId);
+      if (error) {
+        toast.error(`Αποτυχία τοποθέτησης ${store.name}`);
+      } else {
+        toast.success(`${store.name}: νέα θέση αποθηκεύτηκε`);
+        setStores(prev => prev.map(s => s.id === storeId ? { ...s, latitude: lat, longitude: lng } : s));
+        setSelectedStoreId(null);
+      }
+    });
+
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
 
