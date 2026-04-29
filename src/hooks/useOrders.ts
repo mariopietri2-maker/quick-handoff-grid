@@ -197,7 +197,9 @@ export function useDriverOrders() {
           .from('orders')
           .select('*, order_items(*)')
           .is('driver_id', null)
-          .in('source', ['manual', 'external'])
+          // Anything NOT placed via the in-app customer flow is broadcast to all drivers
+          // (manual entry, external ingest, efood/wolt/box receipts, etc.)
+          .neq('source', 'in_app')
           .eq('status', 'ready')
           .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
           .order('created_at', { ascending: false })
