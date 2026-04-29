@@ -246,49 +246,84 @@ export function useDriverOrders() {
     return () => clearInterval(interval);
   }, [fetchOrders]);
 
-  // Real-time: listen for new available orders
+  // Real-time: listen for new available orders + new pending offers
   useEffect(() => {
     if (!user) return;
 
-    const channel = supabase
+    const ordersChannel = supabase
       .channel('driver-orders')
       .on(
         'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'orders',
-        },
+        { event: '*', schema: 'public', table: 'orders' },
         (payload) => {
           if (payload.eventType === 'INSERT' || payload.eventType === 'UPDATE') {
             fetchOrders();
-            if (payload.eventType === 'INSERT') {
-              playOfferAlert();
-              const newOrder = payload.new as OrderRow;
-              showDeliveryNotification(Number(newOrder.delivery_fee ?? 0) + Number(newOrder.tip_amount ?? 0));
-              toast('📦 New delivery available!', { duration: 4000 });
-            }
           }
         }
       )
       .subscribe();
 
+    const offersChannel = supabase
+      .channel(`driver-offers-${user.id}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'pending_offers',
+          filter: `driver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          fetchOrders();
+          playOfferAlert();
+          const row = payload.new as { order_id: string };
+          // Best-effort enrich notification with payout
+          supabase
+            .from('orders')
+            .select('delivery_fee, tip_amount')
+            .eq('id', row.order_id)
+            .maybeSingle()
+            .then(({ data }) => {
+              if (data) {
+                showDeliveryNotification(Number(data.delivery_fee ?? 0) + Number(data.tip_amount ?? 0));
+              }
+            });
+          toast('📦 New delivery offer!', { duration: 4000 });
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(offersChannel);
     };
   }, [user, fetchOrders]);
 
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
-    // If driver already has an active delivery, link the new order as stacked
-    const isStacking = !!activeDelivery && activeDelivery.id !== orderId;
-    const patch: Record<string, unknown> = {
-      driver_id: user.id,
-      status: 'accepted',
-    };
-    if (isStacking) {
-      patch.stacked_with_order_id = activeDelivery!.id;
+    const offerId = offerIds[orderId];
+
+    // AUTO mode with offer → use atomic accept-offer edge function
+    if (assignmentMode === 'auto' && offerId) {
+      const { data, error } = await supabase.functions.invoke('accept-offer', {
+        body: { offer_id: offerId },
+      });
+      if (error || (data && (data as { error?: string }).error)) {
+        const msg = (data as { error?: string })?.error ?? error?.message ?? 'Failed to accept';
+        toast.error(msg === 'order already taken' ? 'Order already taken by another driver' : 'Failed to accept order');
+        fetchOrders();
+        return;
+      }
+      toast.success('✓ Order accepted');
+      fetchOrders();
+      return;
     }
+
+    // MANUAL mode (or stacked offer with no pending_offer) → legacy direct claim
+    const isStacking = !!activeDelivery && activeDelivery.id !== orderId;
+    const patch: Record<string, unknown> = { driver_id: user.id, status: 'accepted' };
+    if (isStacking) patch.stacked_with_order_id = activeDelivery!.id;
+
     const { error } = await supabase
       .from('orders')
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -303,19 +338,26 @@ export function useDriverOrders() {
         order_id: orderId,
         action: 'accepted',
       }).then(() => {});
-      if (isStacking) {
-        toast.success('🔗 Stacked: 2η παραγγελία στην ίδια διαδρομή');
-      }
+      if (isStacking) toast.success('🔗 Stacked: 2η παραγγελία στην ίδια διαδρομή');
       fetchOrders();
     }
   };
 
   const declineOrder = async (orderId: string) => {
     if (!user) return;
-    // Persist decline so subsequent fetches/realtime updates don't re-show it
+    const offerId = offerIds[orderId];
+
+    if (assignmentMode === 'auto' && offerId) {
+      // AUTO: tell the dispatcher so it can advance immediately
+      await supabase.functions.invoke('decline-offer', { body: { offer_id: offerId } });
+      setOffers(prev => prev.filter(o => o.id !== orderId));
+      setStackedOffers(prev => prev.filter(o => o.id !== orderId));
+      return;
+    }
+
+    // MANUAL: persist client-side decline + log event
     declinedRef.current[orderId] = Date.now();
     saveDeclined(declinedRef.current);
-    // Best-effort log — failure here should not block UX
     supabase.from('driver_offer_events').insert({
       driver_id: user.id,
       order_id: orderId,
