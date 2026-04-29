@@ -208,7 +208,7 @@ export default function AdminDriversMap() {
       allPoints.forEach(p => bounds.extend(p));
       map.fitBounds(bounds, { padding: 60, maxZoom: 15 });
     }
-  }, [stores, locations]);
+  }, [stores, locations, editStores]);
 
   if (tokenLoading) {
     return (
