@@ -1,11 +1,8 @@
 import { useState } from 'react';
 import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
-import ProofOfHandoff from './ProofOfHandoff';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
-import { supabase } from '@/integrations/supabase/client';
-import { useAuth } from '@/hooks/useAuth';
 
 interface DeliveryItem { name: string; quantity: number; }
 
