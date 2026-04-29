@@ -1,8 +1,11 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Wallet, TrendingUp, Lock, Banknote } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Wallet, TrendingUp, Lock, Banknote, FileDown, Loader2 } from 'lucide-react';
+import { toast } from 'sonner';
+import { format, subDays } from 'date-fns';
 
 interface Props {
   storeId: string;
@@ -10,6 +13,61 @@ interface Props {
 
 export default function StoreWalletCard({ storeId }: Props) {
   const qc = useQueryClient();
+  const [generating, setGenerating] = useState(false);
+
+  const generateStatement = async () => {
+    setGenerating(true);
+    try {
+      const since = subDays(new Date(), 30).toISOString();
+      const [{ data: ledger }, { data: store }] = await Promise.all([
+        (supabase as any).from('store_wallet_ledger')
+          .select('created_at, type, amount, description, order_id')
+          .eq('store_id', storeId)
+          .gte('created_at', since)
+          .order('created_at', { ascending: true }),
+        (supabase as any).from('stores').select('name').eq('id', storeId).maybeSingle(),
+      ]);
+
+      const rows = (ledger ?? []) as Array<any>;
+      const earnings = rows.filter(r => r.amount > 0).reduce((s, r) => s + Number(r.amount), 0);
+      const charges = rows.filter(r => r.amount < 0 && r.type !== 'payout').reduce((s, r) => s + Number(r.amount), 0);
+      const payouts = rows.filter(r => r.type === 'payout').reduce((s, r) => s + Number(r.amount), 0);
+      const net = earnings + charges + payouts;
+
+      const header = ['Ημερομηνία', 'Τύπος', 'Περιγραφή', 'Παραγγελία', 'Ποσό (€)'];
+      const csv = [
+        `Statement: ${store?.name ?? 'Store'}`,
+        `Περίοδος: ${format(subDays(new Date(), 30), 'dd/MM/yyyy')} - ${format(new Date(), 'dd/MM/yyyy')}`,
+        '',
+        `Συνολικά κέρδη,${earnings.toFixed(2)}`,
+        `Συνολικές χρεώσεις,${charges.toFixed(2)}`,
+        `Πληρωμές προς εσάς,${payouts.toFixed(2)}`,
+        `ΚΑΘΑΡΟ ΥΠΟΛΟΙΠΟ,${net.toFixed(2)}`,
+        '',
+        header.join(','),
+        ...rows.map(r => [
+          format(new Date(r.created_at), 'dd/MM/yyyy HH:mm'),
+          r.type,
+          `"${(r.description ?? '').replace(/"/g, '""')}"`,
+          r.order_id ?? '',
+          Number(r.amount).toFixed(2),
+        ].join(','))
+      ].join('\n');
+
+      const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `statement-${(store?.name ?? 'store').replace(/\s+/g, '-')}-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+      a.click();
+      URL.revokeObjectURL(url);
+      toast.success('Κατάσταση δημιουργήθηκε');
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Αποτυχία δημιουργίας');
+    } finally {
+      setGenerating(false);
+    }
+  };
 
   const { data: wallet } = useQuery({
     queryKey: ['store-wallet', storeId],
