@@ -116,7 +116,7 @@ const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: strin
 
 export default function LegalPage() {
   const { doc } = useParams<{ doc: string }>();
-  const { language } = useI18n();
+  const { lang: language } = useI18n();
   const key = doc as LegalKey;
 
   if (!CONTENT[key]) return <Navigate to="/" replace />;
