@@ -26,6 +26,7 @@ interface PricingRow {
   car_multiplier: number;
   default_commission_pct: number;
   admin_share_pct: number;
+  driver_pool_pct_of_subtotal: number;
 }
 
 const DAYS = [
@@ -43,7 +44,7 @@ export default function PricingSettings() {
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
-    default_commission_pct: 15, admin_share_pct: 33.33,
+    default_commission_pct: 15, admin_share_pct: 5, driver_pool_pct_of_subtotal: 10,
   });
 
   useEffect(() => {
@@ -65,8 +66,9 @@ export default function PricingSettings() {
             bike_multiplier: Number(d.bike_multiplier ?? 1),
             motorcycle_multiplier: Number(d.motorcycle_multiplier ?? 1),
             car_multiplier: Number(d.car_multiplier ?? 1),
-            default_commission_pct: Number(d.default_commission_pct ?? 15),
-            admin_share_pct: Number(d.admin_share_pct ?? 33.33),
+            default_commission_pct: Math.max(15, Number(d.default_commission_pct ?? 15)),
+            admin_share_pct: Math.max(5, Number(d.admin_share_pct ?? 5)),
+            driver_pool_pct_of_subtotal: Math.max(10, Number(d.driver_pool_pct_of_subtotal ?? 10)),
           });
         }
         setLoading(false);
