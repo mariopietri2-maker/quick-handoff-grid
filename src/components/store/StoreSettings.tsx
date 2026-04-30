@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { AlertTriangle, Clock, Zap } from 'lucide-react';
+import { AlertTriangle, Clock, Zap, Truck } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -87,6 +87,32 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
               </Badge>
             </div>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-[var(--shadow-md)]">
+        <CardContent className="p-4 space-y-3">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Truck className={`h-5 w-5 ${(store as any).covers_delivery_fee ? 'text-primary' : 'text-muted-foreground'}`} />
+              <div>
+                <h3 className="font-heading font-semibold text-foreground">Δωρεάν Παράδοση (Πληρώνω εγώ)</h3>
+                <p className="text-sm text-muted-foreground">Ο πελάτης βλέπει €0 delivery, εσύ καλύπτεις το κόστος του οδηγού.</p>
+              </div>
+            </div>
+            <Switch
+              checked={(store as any).covers_delivery_fee ?? false}
+              onCheckedChange={(checked) => updateStore({ covers_delivery_fee: checked } as any)}
+            />
+          </div>
+          {(store as any).covers_delivery_fee && (
+            <div className="bg-primary/10 rounded-lg p-3 flex items-start gap-2">
+              <AlertTriangle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground/80">
+                Το delivery fee θα χρεωθεί από το πορτοφόλι σου σε κάθε ολοκληρωμένη παραγγελία.
+              </p>
+            </div>
+          )}
         </CardContent>
       </Card>
 
