@@ -147,18 +147,25 @@ export default function PricingSettings() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><Percent className="h-4 w-4 text-primary" />Προμήθεια Πλατφόρμας</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><Percent className="h-4 w-4 text-primary" />Προμήθεια Πλατφόρμας (κλειδωμένο 85/10/5)</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <Field label="Συνολική Προμήθεια %" value={pricing.default_commission_pct} onChange={v => setPricing(p => ({ ...p, default_commission_pct: v }))} hint="Default για όλα τα stores (μπορεί να γίνει override ανά κατάστημα)" icon={Percent} />
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field label="Συνολική Προμήθεια %" value={pricing.default_commission_pct} onChange={v => setPricing(p => ({ ...p, default_commission_pct: Math.max(15, v) }))} hint="Min 15% — override ανά store" icon={Percent} />
+                <Field label="Admin bag %" value={pricing.admin_share_pct} onChange={v => setPricing(p => ({ ...p, admin_share_pct: Math.max(5, v) }))} hint="Min 5% του food subtotal" icon={Shield} />
+                <Field label="Driver pool %" value={pricing.driver_pool_pct_of_subtotal} onChange={v => setPricing(p => ({ ...p, driver_pool_pct_of_subtotal: Math.max(10, v) }))} hint="Min 10% — top-ups οδηγών" />
+              </div>
 
               <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm space-y-1">
-                <p className="text-xs text-muted-foreground mb-1">Διαχωρισμός σε παραγγελία €100 (food) + €{customerFee.toFixed(2)} delivery fee</p>
-                <p>🏪 Store κρατάει: <span className="font-bold">€{(100 - pricing.default_commission_pct).toFixed(2)}</span></p>
-                <p>🛡️ Admin bag (5% του delivery fee): <span className="font-bold text-amber-600">€{(customerFee * 0.05).toFixed(2)}</span></p>
-                <p>💼 Platform pool (commission): <span className="font-bold">€{pricing.default_commission_pct.toFixed(2)}</span></p>
+                <p className="text-xs text-muted-foreground mb-1">Διαχωρισμός σε παραγγελία €100 food subtotal</p>
+                <p>🏪 Store κρατάει: <span className="font-bold">€{(100 - pricing.default_commission_pct).toFixed(2)}</span> ({(100 - pricing.default_commission_pct).toFixed(0)}%)</p>
+                <p>🚴 Driver pool: <span className="font-bold text-emerald-700">€{pricing.driver_pool_pct_of_subtotal.toFixed(2)}</span> ({pricing.driver_pool_pct_of_subtotal}%)</p>
+                <p>🛡️ Admin bag: <span className="font-bold text-amber-600">€{pricing.admin_share_pct.toFixed(2)}</span> ({pricing.admin_share_pct}%)</p>
+                {pricing.default_commission_pct > pricing.admin_share_pct + pricing.driver_pool_pct_of_subtotal && (
+                  <p>💼 Extra (platform pool): <span className="font-bold">€{(pricing.default_commission_pct - pricing.admin_share_pct - pricing.driver_pool_pct_of_subtotal).toFixed(2)}</span></p>
+                )}
                 <p className="text-[11px] text-muted-foreground pt-1 border-t border-border/50 mt-2">
-                  Σε κάθε παραγγελία ο admin κερδίζει <b>5% του delivery fee</b> εγγυημένα.
-                  Το υπόλοιπο της προμήθειας πάει στο platform pool (καλύπτει driver top-ups).
+                  Ισχύει για όλες τις παραγγελίες (internal + external). Floor: 5% admin + 10% driver pool σε κάθε παραγγελία.
+                  Stores μπορούν να κάνουν toggle "Δωρεάν Παράδοση" — τότε χρεώνονται το delivery fee από το wallet τους.
                 </p>
               </div>
             </CardContent>
