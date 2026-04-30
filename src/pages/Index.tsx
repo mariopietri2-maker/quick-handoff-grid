@@ -168,7 +168,14 @@ const Index = () => {
 
       {/* ─── FOOTER ─── */}
       <footer className="border-t border-[hsl(220,20%,14%)] py-8">
-        <div className="max-w-6xl mx-auto px-4 text-center">
+        <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
+          <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
+            <a href="/legal/terms" className="text-[hsl(220,10%,55%)] hover:text-primary transition-smooth">Όροι Χρήσης</a>
+            <span className="text-[hsl(220,10%,25%)]">·</span>
+            <a href="/legal/privacy" className="text-[hsl(220,10%,55%)] hover:text-primary transition-smooth">Απόρρητο</a>
+            <span className="text-[hsl(220,10%,25%)]">·</span>
+            <a href="/legal/refunds" className="text-[hsl(220,10%,55%)] hover:text-primary transition-smooth">Επιστροφές</a>
+          </nav>
           <p className="text-sm text-[hsl(220,10%,40%)]">© 2026 Fresh Delivery. Με ❤️ για την Ελλάδα.</p>
         </div>
       </footer>

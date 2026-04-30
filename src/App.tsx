@@ -29,6 +29,7 @@ const CheckoutPage = lazy(() => import("./pages/CheckoutPage.tsx"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.tsx"));
 const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
+const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -99,6 +100,7 @@ const App = () => (
                         <SupportApp />
                       </ProtectedRoute>
                     } />
+                    <Route path="/legal/:doc" element={<LegalPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   </RouteErrorBoundary>
