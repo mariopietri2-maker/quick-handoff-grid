@@ -1241,6 +1241,7 @@ export type Database = {
         Row: {
           cash_received: number | null
           change_due: number | null
+          commission_settled_at: string | null
           created_at: string
           customer_id: string | null
           delivery_address: string | null
@@ -1276,6 +1277,7 @@ export type Database = {
         Insert: {
           cash_received?: number | null
           change_due?: number | null
+          commission_settled_at?: string | null
           created_at?: string
           customer_id?: string | null
           delivery_address?: string | null
@@ -1311,6 +1313,7 @@ export type Database = {
         Update: {
           cash_received?: number | null
           change_due?: number | null
+          commission_settled_at?: string | null
           created_at?: string
           customer_id?: string | null
           delivery_address?: string | null
@@ -1433,6 +1436,7 @@ export type Database = {
           dist_vehicle_rules_enabled: boolean
           dist_wave_size: number
           distribution_mode: string
+          driver_pool_pct_of_subtotal: number
           id: number
           maintenance_message: string | null
           maintenance_mode: boolean
@@ -1476,6 +1480,7 @@ export type Database = {
           dist_vehicle_rules_enabled?: boolean
           dist_wave_size?: number
           distribution_mode?: string
+          driver_pool_pct_of_subtotal?: number
           id?: number
           maintenance_message?: string | null
           maintenance_mode?: boolean
@@ -1519,6 +1524,7 @@ export type Database = {
           dist_vehicle_rules_enabled?: boolean
           dist_wave_size?: number
           distribution_mode?: string
+          driver_pool_pct_of_subtotal?: number
           id?: number
           maintenance_message?: string | null
           maintenance_mode?: boolean
@@ -1921,6 +1927,7 @@ export type Database = {
           address: string
           busy_mode: boolean | null
           commission_pct: number | null
+          covers_delivery_fee: boolean
           created_at: string
           ext_billing_mode: string
           ext_commission_pct: number
@@ -1951,6 +1958,7 @@ export type Database = {
           address: string
           busy_mode?: boolean | null
           commission_pct?: number | null
+          covers_delivery_fee?: boolean
           created_at?: string
           ext_billing_mode?: string
           ext_commission_pct?: number
@@ -1981,6 +1989,7 @@ export type Database = {
           address?: string
           busy_mode?: boolean | null
           commission_pct?: number | null
+          covers_delivery_fee?: boolean
           created_at?: string
           ext_billing_mode?: string
           ext_commission_pct?: number
@@ -2440,6 +2449,7 @@ export type Database = {
       }
       admin_wipe_all_data: { Args: never; Returns: undefined }
       admin_wipe_transactions: { Args: never; Returns: Json }
+      compute_order_split: { Args: { _order_id: string }; Returns: Json }
       count_active_support_agents: { Args: never; Returns: number }
       create_custom_order: {
         Args: {
