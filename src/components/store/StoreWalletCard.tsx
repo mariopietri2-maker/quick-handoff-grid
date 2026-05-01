@@ -115,6 +115,43 @@ export default function StoreWalletCard({ storeId }: Props) {
 
   return (
     <div className="space-y-4">
+      {/* Hero: Admin owes you */}
+      {available > 0 ? (
+        <Card className="border-2 border-emerald-500/40 bg-gradient-to-br from-emerald-500/10 via-emerald-500/5 to-transparent shadow-lg">
+          <CardContent className="p-6">
+            <p className="text-[10px] font-heading uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-400 mb-1">
+              Ο διαχειριστής σου χρωστάει
+            </p>
+            <p className="text-5xl font-heading font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
+              €{available.toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              Αυτό είναι το ποσό που θα σου καταβληθεί στην επόμενη πληρωμή.
+            </p>
+          </CardContent>
+        </Card>
+      ) : available < 0 ? (
+        <Card className="border-2 border-destructive/40 bg-gradient-to-br from-destructive/10 to-transparent shadow-lg">
+          <CardContent className="p-6">
+            <p className="text-[10px] font-heading uppercase tracking-[0.2em] text-destructive mb-1">
+              Οφείλεις στην πλατφόρμα
+            </p>
+            <p className="text-5xl font-heading font-extrabold tabular-nums text-destructive">
+              €{Math.abs(available).toFixed(2)}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              External παραγγελίες (efood/wolt/box) — θα συμψηφιστεί με μελλοντικά κέρδη.
+            </p>
+          </CardContent>
+        </Card>
+      ) : (
+        <Card className="border border-border bg-muted/30">
+          <CardContent className="p-6 text-center">
+            <p className="text-sm text-muted-foreground">Δεν υπάρχει εκκρεμές υπόλοιπο.</p>
+          </CardContent>
+        </Card>
+      )}
+
       <Card className="border-l-4 border-l-emerald-500 shadow-md">
         <CardHeader className="pb-2">
           <div className="flex items-center justify-between">
