@@ -130,8 +130,13 @@ export default function MoneyBagsPanel() {
           <CardContent>
             <p className="text-3xl font-heading font-extrabold tabular-nums">{fmt(driverTotal)}</p>
             <p className="text-xs text-muted-foreground mt-1">Total owed to drivers (available + pending)</p>
-            <div className="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium">
-              ⚖ Always paid fair (min pay guaranteed)
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">⚖ Always paid fair</span>
+              <ResetButton
+                label="Reset all driver wallets"
+                description="Zeros every driver's available + pending balance. Lifetime totals are preserved. This action is logged."
+                onConfirm={() => callReset('admin_reset_all_driver_wallets', {}, 'Driver wallets reset', ['admin-driver-wallets-summary'])}
+              />
             </div>
           </CardContent>
         </Card>
@@ -147,8 +152,13 @@ export default function MoneyBagsPanel() {
           <CardContent>
             <p className="text-3xl font-heading font-extrabold tabular-nums">{fmt(storeTotal)}</p>
             <p className="text-xs text-muted-foreground mt-1">Total owed to {storeWallets?.length ?? 0} stores (85% of orders)</p>
-            <div className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-              − 15% platform commission
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">− 15% platform commission</span>
+              <ResetButton
+                label="Reset all store wallets"
+                description="Zeros every store's available balance. Use after a manual payout cycle. Lifetime earnings are preserved."
+                onConfirm={() => callReset('admin_reset_all_store_wallets', {}, 'Store wallets reset', ['admin-store-wallets'])}
+              />
             </div>
           </CardContent>
         </Card>
@@ -164,8 +174,28 @@ export default function MoneyBagsPanel() {
           <CardContent>
             <p className="text-3xl font-heading font-extrabold tabular-nums">{fmt(adminTotal)}</p>
             <div className="mt-2 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Admin (5% delivery fee)</span><span className="font-medium tabular-nums">{fmt(treasury?.admin_balance)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Platform pool (commission)</span><span className="font-medium tabular-nums">{fmt(treasury?.platform_pool)}</span></div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Admin (5% delivery fee)</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium tabular-nums">{fmt(treasury?.admin_balance)}</span>
+                  <ResetButton
+                    label="Reset admin bag"
+                    description="Zeros the admin (5%) bag only. Logged on the treasury ledger."
+                    onConfirm={() => callReset('admin_reset_admin_bag', {}, 'Admin bag reset', ['admin-treasury'])}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Platform pool (commission)</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium tabular-nums">{fmt(treasury?.platform_pool)}</span>
+                  <ResetButton
+                    label="Reset platform pool"
+                    description="Zeros the platform pool (commission + driver top-ups) only. Logged on the treasury ledger."
+                    onConfirm={() => callReset('admin_reset_platform_pool', {}, 'Platform pool reset', ['admin-treasury'])}
+                  />
+                </div>
+              </div>
               <div className="flex justify-between text-blue-600 dark:text-blue-400"><span>↳ Driver top-ups</span><span className="font-medium tabular-nums">{fmt(treasury?.lifetime_driver_topup)}</span></div>
             </div>
           </CardContent>
