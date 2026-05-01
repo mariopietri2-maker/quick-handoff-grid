@@ -606,13 +606,13 @@ export default function DriverApp() {
           <div key={activeTab} className="flex-1 overflow-y-auto pb-6 animate-fade-in">
             {activeTab === 'earnings' && (
               <div className="px-4 py-4 space-y-4">
+                <DriverWallet />
                 <DriverGoalsCard />
-                <CashTracker />
                 <EarningsDashboard />
               </div>
             )}
             {activeTab === 'wallet' && (
-              <div className="px-4 py-4"><DriverWallet /></div>
+              <div className="px-4 py-4"><DriverCashWallet /></div>
             )}
             {activeTab === 'referral' && (
               <div className="px-4 py-4"><DriverReferral /></div>
