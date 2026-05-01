@@ -193,6 +193,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       p_external_ref: form.external_ref || null,
       p_items_summary: form.items_summary || null,
       p_payment_method: form.payment_method,
+      p_driver_payout_override: form.driver_payout_override ? Number(form.driver_payout_override) : null,
     } as any);
     setSubmitting(false);
     if (error) {
