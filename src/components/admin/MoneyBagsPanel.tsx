@@ -285,10 +285,17 @@ export default function MoneyBagsPanel() {
                     <TableCell className="text-right tabular-nums font-bold text-emerald-600">{fmt(w.available_balance)}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">{fmt(w.lifetime_earnings)}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="outline" disabled={w.available_balance <= 0}
-                        onClick={() => payoutStore(w.store_id, Number(w.available_balance))}>
-                        Payout all
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button size="sm" variant="outline" disabled={w.available_balance <= 0}
+                          onClick={() => payoutStore(w.store_id, Number(w.available_balance))}>
+                          Payout all
+                        </Button>
+                        <ResetButton
+                          label={`Reset ${w.stores?.name ?? 'this store'}'s wallet`}
+                          description={`Zeros the available balance for ${w.stores?.name ?? 'this store'} (currently ${fmt(w.available_balance)}). Lifetime earnings preserved. Logged on the store ledger.`}
+                          onConfirm={() => callReset('admin_reset_store_wallet', { p_store_id: w.store_id }, 'Store wallet reset', ['admin-store-wallets'])}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -300,5 +307,35 @@ export default function MoneyBagsPanel() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ResetButton({ label, description, onConfirm }: { label: string; description: string; onConfirm: () => void | Promise<void> }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          aria-label={label}
+          title={label}
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{label}?</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => onConfirm()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Reset to 0
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }
