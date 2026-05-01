@@ -36,6 +36,7 @@ interface FormState {
   external_ref: string;
   items_summary: string;
   payment_method: PaymentMethod;
+  driver_payout_override: string;
 }
 
 const blankForm: FormState = {
@@ -49,6 +50,7 @@ const blankForm: FormState = {
   external_ref: '',
   items_summary: '',
   payment_method: 'card',
+  driver_payout_override: '',
 };
 
 interface Props {
