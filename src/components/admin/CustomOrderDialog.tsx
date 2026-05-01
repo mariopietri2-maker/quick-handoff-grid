@@ -175,6 +175,22 @@ export default function CustomOrderDialog() {
             </div>
           </div>
 
+          <details className="rounded-lg border bg-muted/40 px-3 py-2">
+            <summary className="text-xs font-heading font-semibold cursor-pointer">Παράκαμψη πληρωμών (προαιρετικό)</summary>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div>
+                <Label className="text-xs">Πληρωμή Οδηγού (€)</Label>
+                <Input type="number" step="0.01" min="0" max="50" value={driverPayoutOverride} onChange={(e) => setDriverPayoutOverride(e.target.value)} placeholder="auto" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">0–50€ · Αυτό που θα πάρει ο οδηγός.</p>
+              </div>
+              <div>
+                <Label className="text-xs">Χρέωση Καταστήματος (€)</Label>
+                <Input type="number" step="0.01" min="0" max="1000" value={storeChargeOverride} onChange={(e) => setStoreChargeOverride(e.target.value)} placeholder="auto" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">Επιπλέον χρέωση πέρα από το 15% commission.</p>
+              </div>
+            </div>
+          </details>
+
           <div>
             <Label className="text-xs">Διεύθυνση παράδοσης</Label>
             <Input value={address} onChange={(e) => setAddress(e.target.value)} />
