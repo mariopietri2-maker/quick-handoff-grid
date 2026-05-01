@@ -103,6 +103,13 @@ export default function MoneyBagsPanel() {
     }
   };
 
+  const callReset = async (rpc: string, args: any, successMsg: string, invalidate: string[]) => {
+    const { error } = await (supabase as any).rpc(rpc, args);
+    if (error) { toast.error(error.message); return; }
+    toast.success(successMsg);
+    invalidate.forEach(k => qc.invalidateQueries({ queryKey: [k] }));
+  };
+
   return (
     <div className="space-y-6">
       <div>
