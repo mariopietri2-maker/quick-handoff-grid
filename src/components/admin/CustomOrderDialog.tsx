@@ -22,6 +22,8 @@ export default function CustomOrderDialog() {
   const [storeId, setStoreId] = useState<string>('');
   const [total, setTotal] = useState('');
   const [feeOverride, setFeeOverride] = useState('');
+  const [driverPayoutOverride, setDriverPayoutOverride] = useState('');
+  const [storeChargeOverride, setStoreChargeOverride] = useState('');
   const [distance, setDistance] = useState('');
   const [address, setAddress] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -42,6 +44,7 @@ export default function CustomOrderDialog() {
 
   const reset = () => {
     setReceiptText(''); setStoreId(''); setTotal(''); setFeeOverride('');
+    setDriverPayoutOverride(''); setStoreChargeOverride('');
     setDistance(''); setAddress(''); setCustomerName(''); setCustomerPhone('');
     setItems(''); setNotes(''); setPaymentMethod('cash');
   };
