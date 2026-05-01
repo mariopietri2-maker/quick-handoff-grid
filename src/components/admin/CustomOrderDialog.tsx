@@ -94,6 +94,8 @@ export default function CustomOrderDialog() {
       p_notes: notes || null,
       p_items_summary: items || null,
       p_delivery_fee_override: feeOverride ? Number(feeOverride) : null,
+      p_driver_payout_override: driverPayoutOverride ? Number(driverPayoutOverride) : null,
+      p_store_charge_override: storeChargeOverride ? Number(storeChargeOverride) : null,
     });
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
