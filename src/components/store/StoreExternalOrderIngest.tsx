@@ -321,6 +321,21 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                   <Input value={form.external_ref} onChange={e => update('external_ref', e.target.value)} placeholder="A12345" />
                 </div>
                 <div className="sm:col-span-2">
+                  <Label className="text-xs flex items-center justify-between">
+                    <span>Πληρωμή Οδηγού (override)</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">προαιρετικό · 0–50€</span>
+                  </Label>
+                  <Input
+                    type="number" step="0.01" min="0" max="50"
+                    value={form.driver_payout_override}
+                    onChange={e => update('driver_payout_override', e.target.value)}
+                    placeholder="auto από km"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Πόσο θα πάρει ο οδηγός για αυτή την παραγγελία. Άδειο = αυτόματος υπολογισμός.
+                  </p>
+                </div>
+                <div className="sm:col-span-2">
                   <Label className="text-xs">Διεύθυνση Παράδοσης *</Label>
                   <Input value={form.delivery_address} onChange={e => update('delivery_address', e.target.value)} placeholder="Ερμού 12, Αθήνα" />
                 </div>
