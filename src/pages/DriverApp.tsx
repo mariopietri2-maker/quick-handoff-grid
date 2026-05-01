@@ -10,6 +10,7 @@ import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
 import { DriverWallet } from '@/components/driver/DriverWallet';
+import DriverCashWallet from '@/components/driver/DriverCashWallet';
 import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
