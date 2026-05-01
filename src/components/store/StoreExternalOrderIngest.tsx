@@ -81,7 +81,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
 
   const preview = useMemo(() => {
     if (!store) return null;
-    const driverPay = Math.max(3, 3 + 0.5 * distanceKm);
+    const baseDriverPay = Math.max(3, 3 + 0.5 * distanceKm);
+    const driverPay = form.driver_payout_override ? Number(form.driver_payout_override) : baseDriverPay;
     let storeCharge: number;
     switch (store.ext_billing_mode) {
       case 'commission':
@@ -97,7 +98,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
         storeCharge = +(totalAmount * 0.15).toFixed(2);
     }
     return { driverPay: +driverPay.toFixed(2), storeCharge: +storeCharge.toFixed(2) };
-  }, [store, totalAmount, distanceKm]);
+  }, [store, totalAmount, distanceKm, form.driver_payout_override]);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(p => ({ ...p, [k]: v }));
 
