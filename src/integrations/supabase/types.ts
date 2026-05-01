@@ -2430,6 +2430,9 @@ export type Database = {
         Args: { p_amount: number; p_description?: string; p_store_id: string }
         Returns: undefined
       }
+      admin_reset_admin_bag: { Args: never; Returns: number }
+      admin_reset_all_driver_wallets: { Args: never; Returns: Json }
+      admin_reset_all_store_wallets: { Args: never; Returns: number }
       admin_reset_driver_cash: {
         Args: { p_driver_id: string }
         Returns: undefined
@@ -2439,6 +2442,11 @@ export type Database = {
         Returns: undefined
       }
       admin_reset_money_to_zero: { Args: never; Returns: Json }
+      admin_reset_platform_pool: { Args: never; Returns: number }
+      admin_reset_store_wallet: {
+        Args: { p_store_id: string }
+        Returns: number
+      }
       admin_set_store_promotion: {
         Args: { p_days?: number; p_status: string; p_store_id: string }
         Returns: undefined
@@ -2451,23 +2459,43 @@ export type Database = {
       admin_wipe_transactions: { Args: never; Returns: Json }
       compute_order_split: { Args: { _order_id: string }; Returns: Json }
       count_active_support_agents: { Args: never; Returns: number }
-      create_custom_order: {
-        Args: {
-          p_customer_name?: string
-          p_customer_phone?: string
-          p_delivery_address: string
-          p_delivery_fee_override?: number
-          p_delivery_lat?: number
-          p_delivery_lng?: number
-          p_distance_km?: number
-          p_items_summary?: string
-          p_notes?: string
-          p_payment_method?: string
-          p_store_id: string
-          p_total_amount: number
-        }
-        Returns: string
-      }
+      create_custom_order:
+        | {
+            Args: {
+              p_customer_name?: string
+              p_customer_phone?: string
+              p_delivery_address: string
+              p_delivery_fee_override?: number
+              p_delivery_lat?: number
+              p_delivery_lng?: number
+              p_distance_km?: number
+              p_items_summary?: string
+              p_notes?: string
+              p_payment_method?: string
+              p_store_id: string
+              p_total_amount: number
+            }
+            Returns: string
+          }
+        | {
+            Args: {
+              p_customer_name?: string
+              p_customer_phone?: string
+              p_delivery_address: string
+              p_delivery_fee_override?: number
+              p_delivery_lat?: number
+              p_delivery_lng?: number
+              p_distance_km?: number
+              p_driver_payout_override?: number
+              p_items_summary?: string
+              p_notes?: string
+              p_payment_method?: string
+              p_store_charge_override?: number
+              p_store_id: string
+              p_total_amount: number
+            }
+            Returns: string
+          }
       create_driver_earning: {
         Args: {
           p_base_pay: number

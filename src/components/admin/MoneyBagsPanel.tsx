@@ -5,7 +5,11 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
-import { Banknote, Building2, Shield, TrendingUp, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Banknote, Building2, Shield, TrendingUp, CheckCircle2, AlertCircle, RotateCcw } from 'lucide-react';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger,
+} from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 
 const fmt = (n: number | null | undefined) => `€${Number(n ?? 0).toFixed(2)}`;
@@ -99,6 +103,13 @@ export default function MoneyBagsPanel() {
     }
   };
 
+  const callReset = async (rpc: string, args: any, successMsg: string, invalidate: string[]) => {
+    const { error } = await (supabase as any).rpc(rpc, args);
+    if (error) { toast.error(error.message); return; }
+    toast.success(successMsg);
+    invalidate.forEach(k => qc.invalidateQueries({ queryKey: [k] }));
+  };
+
   return (
     <div className="space-y-6">
       <div>
@@ -119,8 +130,13 @@ export default function MoneyBagsPanel() {
           <CardContent>
             <p className="text-3xl font-heading font-extrabold tabular-nums">{fmt(driverTotal)}</p>
             <p className="text-xs text-muted-foreground mt-1">Total owed to drivers (available + pending)</p>
-            <div className="mt-3 text-xs text-blue-600 dark:text-blue-400 font-medium">
-              ⚖ Always paid fair (min pay guaranteed)
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-xs text-blue-600 dark:text-blue-400 font-medium">⚖ Always paid fair</span>
+              <ResetButton
+                label="Reset all driver wallets"
+                description="Zeros every driver's available + pending balance. Lifetime totals are preserved. This action is logged."
+                onConfirm={() => callReset('admin_reset_all_driver_wallets', {}, 'Driver wallets reset', ['admin-driver-wallets-summary'])}
+              />
             </div>
           </CardContent>
         </Card>
@@ -136,8 +152,13 @@ export default function MoneyBagsPanel() {
           <CardContent>
             <p className="text-3xl font-heading font-extrabold tabular-nums">{fmt(storeTotal)}</p>
             <p className="text-xs text-muted-foreground mt-1">Total owed to {storeWallets?.length ?? 0} stores (85% of orders)</p>
-            <div className="mt-3 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
-              − 15% platform commission
+            <div className="mt-3 flex items-center justify-between gap-2">
+              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-medium">− 15% platform commission</span>
+              <ResetButton
+                label="Reset all store wallets"
+                description="Zeros every store's available balance. Use after a manual payout cycle. Lifetime earnings are preserved."
+                onConfirm={() => callReset('admin_reset_all_store_wallets', {}, 'Store wallets reset', ['admin-store-wallets'])}
+              />
             </div>
           </CardContent>
         </Card>
@@ -153,8 +174,28 @@ export default function MoneyBagsPanel() {
           <CardContent>
             <p className="text-3xl font-heading font-extrabold tabular-nums">{fmt(adminTotal)}</p>
             <div className="mt-2 space-y-1 text-xs">
-              <div className="flex justify-between"><span className="text-muted-foreground">Admin (5% delivery fee)</span><span className="font-medium tabular-nums">{fmt(treasury?.admin_balance)}</span></div>
-              <div className="flex justify-between"><span className="text-muted-foreground">Platform pool (commission)</span><span className="font-medium tabular-nums">{fmt(treasury?.platform_pool)}</span></div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Admin (5% delivery fee)</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium tabular-nums">{fmt(treasury?.admin_balance)}</span>
+                  <ResetButton
+                    label="Reset admin bag"
+                    description="Zeros the admin (5%) bag only. Logged on the treasury ledger."
+                    onConfirm={() => callReset('admin_reset_admin_bag', {}, 'Admin bag reset', ['admin-treasury'])}
+                  />
+                </div>
+              </div>
+              <div className="flex items-center justify-between gap-2">
+                <span className="text-muted-foreground">Platform pool (commission)</span>
+                <div className="flex items-center gap-2">
+                  <span className="font-medium tabular-nums">{fmt(treasury?.platform_pool)}</span>
+                  <ResetButton
+                    label="Reset platform pool"
+                    description="Zeros the platform pool (commission + driver top-ups) only. Logged on the treasury ledger."
+                    onConfirm={() => callReset('admin_reset_platform_pool', {}, 'Platform pool reset', ['admin-treasury'])}
+                  />
+                </div>
+              </div>
               <div className="flex justify-between text-blue-600 dark:text-blue-400"><span>↳ Driver top-ups</span><span className="font-medium tabular-nums">{fmt(treasury?.lifetime_driver_topup)}</span></div>
             </div>
           </CardContent>
@@ -244,10 +285,17 @@ export default function MoneyBagsPanel() {
                     <TableCell className="text-right tabular-nums font-bold text-emerald-600">{fmt(w.available_balance)}</TableCell>
                     <TableCell className="text-right tabular-nums text-muted-foreground">{fmt(w.lifetime_earnings)}</TableCell>
                     <TableCell className="text-right">
-                      <Button size="sm" variant="outline" disabled={w.available_balance <= 0}
-                        onClick={() => payoutStore(w.store_id, Number(w.available_balance))}>
-                        Payout all
-                      </Button>
+                      <div className="flex items-center justify-end gap-2">
+                        <Button size="sm" variant="outline" disabled={w.available_balance <= 0}
+                          onClick={() => payoutStore(w.store_id, Number(w.available_balance))}>
+                          Payout all
+                        </Button>
+                        <ResetButton
+                          label={`Reset ${w.stores?.name ?? 'this store'}'s wallet`}
+                          description={`Zeros the available balance for ${w.stores?.name ?? 'this store'} (currently ${fmt(w.available_balance)}). Lifetime earnings preserved. Logged on the store ledger.`}
+                          onConfirm={() => callReset('admin_reset_store_wallet', { p_store_id: w.store_id }, 'Store wallet reset', ['admin-store-wallets'])}
+                        />
+                      </div>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -259,5 +307,35 @@ export default function MoneyBagsPanel() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+function ResetButton({ label, description, onConfirm }: { label: string; description: string; onConfirm: () => void | Promise<void> }) {
+  return (
+    <AlertDialog>
+      <AlertDialogTrigger asChild>
+        <Button
+          size="icon"
+          variant="ghost"
+          className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          aria-label={label}
+          title={label}
+        >
+          <RotateCcw className="h-3.5 w-3.5" />
+        </Button>
+      </AlertDialogTrigger>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>{label}?</AlertDialogTitle>
+          <AlertDialogDescription>{description}</AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel>Cancel</AlertDialogCancel>
+          <AlertDialogAction onClick={() => onConfirm()} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+            Reset to 0
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
   );
 }

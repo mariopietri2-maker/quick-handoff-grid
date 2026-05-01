@@ -36,6 +36,7 @@ interface FormState {
   external_ref: string;
   items_summary: string;
   payment_method: PaymentMethod;
+  driver_payout_override: string;
 }
 
 const blankForm: FormState = {
@@ -49,6 +50,7 @@ const blankForm: FormState = {
   external_ref: '',
   items_summary: '',
   payment_method: 'card',
+  driver_payout_override: '',
 };
 
 interface Props {
@@ -79,7 +81,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
 
   const preview = useMemo(() => {
     if (!store) return null;
-    const driverPay = Math.max(3, 3 + 0.5 * distanceKm);
+    const baseDriverPay = Math.max(3, 3 + 0.5 * distanceKm);
+    const driverPay = form.driver_payout_override ? Number(form.driver_payout_override) : baseDriverPay;
     let storeCharge: number;
     switch (store.ext_billing_mode) {
       case 'commission':
@@ -95,7 +98,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
         storeCharge = +(totalAmount * 0.15).toFixed(2);
     }
     return { driverPay: +driverPay.toFixed(2), storeCharge: +storeCharge.toFixed(2) };
-  }, [store, totalAmount, distanceKm]);
+  }, [store, totalAmount, distanceKm, form.driver_payout_override]);
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(p => ({ ...p, [k]: v }));
 
@@ -190,6 +193,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       p_external_ref: form.external_ref || null,
       p_items_summary: form.items_summary || null,
       p_payment_method: form.payment_method,
+      p_driver_payout_override: form.driver_payout_override ? Number(form.driver_payout_override) : null,
     } as any);
     setSubmitting(false);
     if (error) {
@@ -315,6 +319,21 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                 <div>
                   <Label className="text-xs">External Ref</Label>
                   <Input value={form.external_ref} onChange={e => update('external_ref', e.target.value)} placeholder="A12345" />
+                </div>
+                <div className="sm:col-span-2">
+                  <Label className="text-xs flex items-center justify-between">
+                    <span>Πληρωμή Οδηγού (override)</span>
+                    <span className="text-[10px] text-muted-foreground font-normal">προαιρετικό · 0–50€</span>
+                  </Label>
+                  <Input
+                    type="number" step="0.01" min="0" max="50"
+                    value={form.driver_payout_override}
+                    onChange={e => update('driver_payout_override', e.target.value)}
+                    placeholder="auto από km"
+                  />
+                  <p className="text-[11px] text-muted-foreground mt-1">
+                    Πόσο θα πάρει ο οδηγός για αυτή την παραγγελία. Άδειο = αυτόματος υπολογισμός.
+                  </p>
                 </div>
                 <div className="sm:col-span-2">
                   <Label className="text-xs">Διεύθυνση Παράδοσης *</Label>

@@ -22,6 +22,8 @@ export default function CustomOrderDialog() {
   const [storeId, setStoreId] = useState<string>('');
   const [total, setTotal] = useState('');
   const [feeOverride, setFeeOverride] = useState('');
+  const [driverPayoutOverride, setDriverPayoutOverride] = useState('');
+  const [storeChargeOverride, setStoreChargeOverride] = useState('');
   const [distance, setDistance] = useState('');
   const [address, setAddress] = useState('');
   const [customerName, setCustomerName] = useState('');
@@ -42,6 +44,7 @@ export default function CustomOrderDialog() {
 
   const reset = () => {
     setReceiptText(''); setStoreId(''); setTotal(''); setFeeOverride('');
+    setDriverPayoutOverride(''); setStoreChargeOverride('');
     setDistance(''); setAddress(''); setCustomerName(''); setCustomerPhone('');
     setItems(''); setNotes(''); setPaymentMethod('cash');
   };
@@ -91,6 +94,8 @@ export default function CustomOrderDialog() {
       p_notes: notes || null,
       p_items_summary: items || null,
       p_delivery_fee_override: feeOverride ? Number(feeOverride) : null,
+      p_driver_payout_override: driverPayoutOverride ? Number(driverPayoutOverride) : null,
+      p_store_charge_override: storeChargeOverride ? Number(storeChargeOverride) : null,
     });
     setSubmitting(false);
     if (error) { toast.error(error.message); return; }
@@ -169,6 +174,22 @@ export default function CustomOrderDialog() {
               <Input type="number" step="0.01" value={feeOverride} onChange={(e) => setFeeOverride(e.target.value)} placeholder="auto" />
             </div>
           </div>
+
+          <details className="rounded-lg border bg-muted/40 px-3 py-2">
+            <summary className="text-xs font-heading font-semibold cursor-pointer">Παράκαμψη πληρωμών (προαιρετικό)</summary>
+            <div className="grid grid-cols-2 gap-2 mt-3">
+              <div>
+                <Label className="text-xs">Πληρωμή Οδηγού (€)</Label>
+                <Input type="number" step="0.01" min="0" max="50" value={driverPayoutOverride} onChange={(e) => setDriverPayoutOverride(e.target.value)} placeholder="auto" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">0–50€ · Αυτό που θα πάρει ο οδηγός.</p>
+              </div>
+              <div>
+                <Label className="text-xs">Χρέωση Καταστήματος (€)</Label>
+                <Input type="number" step="0.01" min="0" max="1000" value={storeChargeOverride} onChange={(e) => setStoreChargeOverride(e.target.value)} placeholder="auto" />
+                <p className="text-[10px] text-muted-foreground mt-0.5">Επιπλέον χρέωση πέρα από το 15% commission.</p>
+              </div>
+            </div>
+          </details>
 
           <div>
             <Label className="text-xs">Διεύθυνση παράδοσης</Label>
