@@ -10,12 +10,13 @@ import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
 import { DriverWallet } from '@/components/driver/DriverWallet';
+import DriverCashWallet from '@/components/driver/DriverCashWallet';
 import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 
 import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
-import CashTracker from '@/components/driver/CashTracker';
+
 import { useDriverOrders } from '@/hooks/useOrders';
 import { useDriverState } from '@/hooks/useDriverState';
 import { useEarnings } from '@/hooks/useEarnings';
@@ -605,13 +606,13 @@ export default function DriverApp() {
           <div key={activeTab} className="flex-1 overflow-y-auto pb-6 animate-fade-in">
             {activeTab === 'earnings' && (
               <div className="px-4 py-4 space-y-4">
+                <DriverWallet />
                 <DriverGoalsCard />
-                <CashTracker />
                 <EarningsDashboard />
               </div>
             )}
             {activeTab === 'wallet' && (
-              <div className="px-4 py-4"><DriverWallet /></div>
+              <div className="px-4 py-4"><DriverCashWallet /></div>
             )}
             {activeTab === 'referral' && (
               <div className="px-4 py-4"><DriverReferral /></div>
