@@ -16,7 +16,7 @@ import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 
 import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
-import CashTracker from '@/components/driver/CashTracker';
+
 import { useDriverOrders } from '@/hooks/useOrders';
 import { useDriverState } from '@/hooks/useDriverState';
 import { useEarnings } from '@/hooks/useEarnings';
