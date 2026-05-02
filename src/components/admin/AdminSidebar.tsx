@@ -32,6 +32,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'overview',
     tabs: [
       { id: 'overview', label: 'Επισκόπηση' },
+      { id: 'money_bags', label: 'Ταμείο · Money Bags' },
       { id: 'live_ops', label: 'Live Map' },
       { id: 'analytics', label: 'Αναλυτικά' },
     ],
@@ -80,9 +81,8 @@ export const NAV_SECTIONS = [
     icon: Wallet,
     accent: 'text-success',
     accentBg: 'bg-success/10',
-    defaultTab: 'money_bags',
+    defaultTab: 'store_payables',
     tabs: [
-      { id: 'money_bags', label: 'Ταμείο · Money Bags' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
       { id: 'split_calc', label: 'Split Calculator' },
