@@ -23,7 +23,7 @@ import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
 
 export function UserMenu() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const isDriver = profile?.role === 'driver';
   const [soundOpen, setSoundOpen] = useState(false);
