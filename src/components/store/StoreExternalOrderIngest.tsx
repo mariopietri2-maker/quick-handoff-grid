@@ -443,100 +443,48 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
           </CardContent>
         </Card>
 
-        {/* Live transparent pricing preview (read-only, mirrors server) */}
+        {/* Simplified summary — auto-calculated, nothing to edit */}
         <div className="space-y-3">
           <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card lg:sticky lg:top-20">
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Απόσταση (οδική)</p>
-                {routing && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
-              </div>
-              <div className="flex items-baseline gap-2">
-                <Navigation className="h-4 w-4 text-primary" />
-                <span className="text-3xl font-heading font-bold tabular-nums">{km ?? '—'}</span>
-                <span className="text-sm text-muted-foreground">km</span>
-                {km != null && (
-                  <Badge variant="outline" className="ml-auto text-[10px] gap-1">
-                    <MapPin className="h-2.5 w-2.5" /> Mapbox
-                  </Badge>
-                )}
-              </div>
-              {km == null && !routing && (
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  Διάλεξε διεύθυνση παράδοσης για να μετρηθούν αυτόματα τα km.
-                </p>
-              )}
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Αμοιβή Οδηγού</p>
-                <Badge variant="secondary" className="text-[10px] gap-1">
-                  <Lock className="h-2.5 w-2.5" /> από km
-                </Badge>
-              </div>
-
-              <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 space-y-1">
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>Βασικό</span>
-                  <span className="tabular-nums">€{rates.base_pay.toFixed(2)}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs text-muted-foreground">
-                  <span>{distanceKm.toFixed(1)} km × €{rates.per_km_rate.toFixed(2)}</span>
-                  <span className="tabular-nums">€{(rates.per_km_rate * distanceKm).toFixed(2)}</span>
-                </div>
-                <Separator className="my-1" />
-                <div className="flex items-center justify-between text-sm">
-                  <span className="font-medium flex items-center gap-1.5">
-                    <Bike className="h-3.5 w-3.5 text-info" /> Driver παίρνει
-                  </span>
-                  <span className="font-heading font-bold tabular-nums text-info">€{driverPay.toFixed(2)}</span>
-                </div>
-                <p className="text-[10px] text-muted-foreground leading-snug">
-                  Ελάχιστο €{rates.min_pay.toFixed(2)} ανά παραγγελία.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-4 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Χρέωση Καταστήματος</p>
-                <Badge variant="secondary" className="text-[10px] gap-1">
-                  <Lock className="h-2.5 w-2.5" /> {billingMode === 'commission' ? 'commission' : billingMode === 'flat_fee' ? 'flat' : 'driver+margin'}
-                </Badge>
-              </div>
-
-              <p className="text-[11px] text-muted-foreground leading-snug">
-                {billingLabel[billingMode]}
-              </p>
-
-              <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 space-y-1.5">
-                <SplitRow icon={Building2}  label="Αξία παραγγελίας" pct=""           amount={totalAmount} tone="text-foreground" />
-                <SplitRow icon={Bike}       label="Αμοιβή οδηγού"    pct=""           amount={driverPay}   tone="text-info" />
-                <SplitRow icon={TrendingUp} label="Admin profit"     pct=""           amount={platformProfit} tone="text-success" />
+            <CardContent className="p-5 space-y-4">
+              {/* Distance — small chip on top */}
+              <div className="flex items-center justify-between text-xs">
+                <span className="flex items-center gap-1.5 text-muted-foreground">
+                  <Navigation className="h-3.5 w-3.5 text-primary" />
+                  Απόσταση
+                </span>
+                <span className="flex items-center gap-1.5 font-heading font-bold tabular-nums">
+                  {routing ? <Loader2 className="h-3 w-3 animate-spin text-primary" /> : null}
+                  {km ?? '—'} km
+                </span>
               </div>
 
               <Separator />
 
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Wallet className="h-3.5 w-3.5" /> Κρατάς (καθαρά)
+              {/* The two numbers the store actually cares about */}
+              <div className="space-y-2">
+                <div className="rounded-lg border border-border/60 bg-background px-3 py-3 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Wallet className="h-3.5 w-3.5" /> Κρατάς καθαρά
                   </span>
-                  <span className="font-bold tabular-nums">€{storeKeeps.toFixed(2)}</span>
+                  <span className="font-heading font-bold text-xl tabular-nums text-success">
+                    €{storeKeeps.toFixed(2)}
+                  </span>
                 </div>
-                <div className="flex items-center justify-between text-sm">
-                  <span className="text-muted-foreground">Θα χρεωθείς</span>
-                  <span className="font-bold tabular-nums text-primary">€{storeCharge.toFixed(2)}</span>
+
+                <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-3 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Building2 className="h-3.5 w-3.5 text-primary" /> Θα χρεωθείς
+                  </span>
+                  <span className="font-heading font-bold text-xl tabular-nums text-primary">
+                    €{storeCharge.toFixed(2)}
+                  </span>
                 </div>
               </div>
 
-              <p className="text-[10px] text-muted-foreground leading-snug pt-1 border-t">
-                Όλες οι τιμές υπολογίζονται από το σύστημα με βάση τις ρυθμίσεις χρέωσης του διαχειριστή.
+              <p className="text-[10px] text-muted-foreground leading-snug flex items-center gap-1 pt-1 border-t">
+                <Lock className="h-2.5 w-2.5" />
+                Αμοιβή οδηγού & χιλιόμετρα υπολογίζονται αυτόματα από το σύστημα.
               </p>
             </CardContent>
           </Card>
