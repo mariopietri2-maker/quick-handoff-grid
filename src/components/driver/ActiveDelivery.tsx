@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
-import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -176,15 +175,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
 
           {(isGoingToStore || isGoingToCustomer) && (
             <button
-              onClick={() => {
-                const target = isGoingToStore ? 'store' : 'customer';
-                onFocusDestination?.(target);
-                openGoogleMapsNavigation(
-                  target === 'store'
-                    ? { lat: delivery.storeLat ?? null, lng: delivery.storeLng ?? null, address: delivery.storeAddress }
-                    : { lat: delivery.deliveryLat ?? null, lng: delivery.deliveryLng ?? null, address: delivery.deliveryAddress }
-                );
-              }}
+              onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
               className="mt-4 w-full h-12 rounded-xl gradient-primary text-white text-sm font-heading font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
             >
               <Navigation className="h-4 w-4" />
