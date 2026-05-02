@@ -37,6 +37,7 @@ import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
 import StorePromotionsManager from '@/components/admin/StorePromotionsManager';
 import SystemResetPanel from '@/components/admin/SystemResetPanel';
 import LiveOpsDashboard from '@/components/admin/LiveOpsDashboard';
+import SplitCalculator from '@/components/admin/SplitCalculator';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
