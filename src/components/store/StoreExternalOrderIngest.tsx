@@ -9,8 +9,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Sparkles, ScanLine, FileText, TrendingUp, Send } from 'lucide-react';
+import { Loader2, Sparkles, ScanLine, FileText, TrendingUp, Send, Calculator } from 'lucide-react';
 import { geocodeAddress, haversineKm } from '@/lib/geocode';
+import StoreSplitCalculator from './StoreSplitCalculator';
 
 type Source = 'manual' | 'efood' | 'wolt' | 'box' | 'other';
 
