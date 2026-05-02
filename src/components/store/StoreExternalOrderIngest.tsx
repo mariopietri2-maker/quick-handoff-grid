@@ -90,18 +90,39 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const [parsing, setParsing] = useState(false);
   const [scanText, setScanText] = useState('');
 
+  const [rates, setRates] = useState<PayRates>({ base_pay: 3, per_km_rate: 0.5, min_pay: 3 });
+
   useEffect(() => {
     supabase
       .from('stores')
-      .select('id, name, address, latitude, longitude')
+      .select('id, name, address, latitude, longitude, ext_billing_mode, ext_commission_pct, ext_flat_fee, ext_margin_pct' as any)
       .eq('id', storeId)
       .maybeSingle()
-      .then(({ data }) => { if (data) setStore(data as StoreInfo); });
+      .then(({ data }) => { if (data) setStore(data as unknown as StoreInfo); });
+  }, [storeId]);
+
+  // Resolve effective driver-pay rates: store override -> platform default.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ data: ov }, { data: ps }] = await Promise.all([
+        supabase.from('store_pricing_overrides').select('base_pay, per_km_rate, min_pay').eq('store_id', storeId).maybeSingle() as any,
+        supabase.from('platform_settings').select('base_pay, per_km_rate, min_pay').eq('id', 1).maybeSingle() as any,
+      ]);
+      if (cancelled) return;
+      setRates({
+        base_pay: Number(ov?.base_pay ?? ps?.base_pay ?? 3),
+        per_km_rate: Number(ov?.per_km_rate ?? ps?.per_km_rate ?? 0.5),
+        min_pay: Number(ov?.min_pay ?? ps?.min_pay ?? 3),
+      });
+    })();
+    return () => { cancelled = true; };
   }, [storeId]);
 
   // Mapbox Directions: real driving km from store → dropoff.
   useEffect(() => {
     if (!mapboxToken || !store?.latitude || !store?.longitude || !form.delivery_lat || !form.delivery_lng) {
+      setKm(null);
       return;
     }
     let cancelled = false;
@@ -122,21 +143,36 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const totalAmount = Number(form.total_amount) || 0;
   const distanceKm = km ?? 0;
 
-  // Locked split — store CANNOT edit. 85 / 10 / 5.
-  const split = useMemo(() => ({
-    storeKeeps: +(totalAmount * 0.85).toFixed(2),
-    driverPool: +(totalAmount * 0.10).toFixed(2),
-    admin:      +(totalAmount * 0.05).toFixed(2),
-  }), [totalAmount]);
-
-  // Driver pay is system-computed (not store-editable).
+  // Driver pay mirrors server: GREATEST(min_pay, base_pay + per_km_rate * km)
   const driverPay = useMemo(
-    () => +Math.max(3, 3 + 0.5 * distanceKm).toFixed(2),
-    [distanceKm],
+    () => +Math.max(rates.min_pay, rates.base_pay + rates.per_km_rate * distanceKm).toFixed(2),
+    [rates, distanceKm],
   );
 
-  // What the store will be charged: driver pay + admin fee.
-  const storeCharge = +(driverPay + split.admin).toFixed(2);
+  // Store charge mirrors server's ext_billing_mode logic.
+  const billingMode = (store?.ext_billing_mode || 'commission') as
+    'commission' | 'flat_fee' | 'driver_plus_margin';
+  const commissionPct = Number(store?.ext_commission_pct ?? 15);
+  const flatFee = Number(store?.ext_flat_fee ?? 0);
+  const marginPct = Number(store?.ext_margin_pct ?? 0);
+
+  const storeCharge = useMemo(() => {
+    switch (billingMode) {
+      case 'commission':         return +(totalAmount * commissionPct / 100).toFixed(2);
+      case 'flat_fee':           return +flatFee.toFixed(2);
+      case 'driver_plus_margin': return +(driverPay * (1 + marginPct / 100)).toFixed(2);
+      default:                   return +(totalAmount * 0.15).toFixed(2);
+    }
+  }, [billingMode, totalAmount, commissionPct, flatFee, marginPct, driverPay]);
+
+  const platformProfit = +(storeCharge - driverPay).toFixed(2);
+  const storeKeeps = +(totalAmount - storeCharge).toFixed(2);
+
+  const billingLabel: Record<string, string> = {
+    commission: `Προμήθεια ${commissionPct}% επί παραγγελίας`,
+    flat_fee: `Σταθερό €${flatFee.toFixed(2)} ανά παραγγελία`,
+    driver_plus_margin: `Αμοιβή οδηγού + ${marginPct}% margin`,
+  };
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(p => ({ ...p, [k]: v }));
