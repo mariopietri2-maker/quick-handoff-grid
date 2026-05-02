@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
+import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 interface DeliveryItem { name: string; quantity: number; }
 
