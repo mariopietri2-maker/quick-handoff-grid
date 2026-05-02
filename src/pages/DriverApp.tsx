@@ -32,7 +32,19 @@ import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
 
 export default function DriverApp() {
-  const { user, isAdmin } = useAuth();
+  const { user, isAdmin: isAdminRole } = useAuth();
+  // Admins can toggle between "Admin Driver Ops" and the regular driver experience
+  const [adminAsDriver, setAdminAsDriver] = useState<boolean>(() => {
+    try { return localStorage.getItem('admin_as_driver') === '1'; } catch { return false; }
+  });
+  const isAdmin = isAdminRole && !adminAsDriver;
+  const toggleAdminView = () => {
+    setAdminAsDriver(prev => {
+      const next = !prev;
+      try { localStorage.setItem('admin_as_driver', next ? '1' : '0'); } catch {}
+      return next;
+    });
+  };
   const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders({ adminOverride: isAdmin });
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
