@@ -121,15 +121,30 @@ export default function DriverApp() {
   useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
   const isNavActive = navMode && !!navigatingTo;
 
+  // Geocoded fallback for delivery destination if order has no coords
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   useEffect(() => {
-    if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
+    if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); setDeliveryCoords(null); return; }
     supabase.from('stores').select('name, address, phone, latitude, longitude').eq('id', activeDelivery.store_id).single()
       .then(({ data }) => { if (data) setStoreInfo(data); });
     if (activeDelivery.customer_id) {
       supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
         .then(({ data }) => { if (data) setCustomerInfo({ name: data.full_name || 'Πελάτης', phone: data.phone }); });
     }
-  }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id]);
+
+    // If order is missing delivery coords, geocode the address so the route can be drawn
+    const hasCoords = activeDelivery.delivery_latitude != null && activeDelivery.delivery_longitude != null;
+    if (!hasCoords && activeDelivery.delivery_address) {
+      let cancelled = false;
+      geocodeAddress(activeDelivery.delivery_address).then((res) => {
+        if (!cancelled && res) setDeliveryCoords({ lat: res.latitude, lng: res.longitude });
+      });
+      return () => { cancelled = true; };
+    } else {
+      setDeliveryCoords(null);
+    }
+  }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id, activeDelivery?.delivery_address, activeDelivery?.delivery_latitude, activeDelivery?.delivery_longitude]);
 
   // Pending approval
   if (driverActive === false) {
