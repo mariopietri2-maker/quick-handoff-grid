@@ -594,3 +594,21 @@ function ReviewsSection({ reviews }: { reviews: any[] | undefined }) {
     </div>
   );
 }
+
+function KpiPill({
+  icon: Icon, label, value, tone, pulse,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; value: string; tone: string; pulse?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-2.5 h-8 rounded-md bg-card border border-border/60 shadow-sm shrink-0">
+      <span className={cn('relative flex items-center justify-center h-5 w-5 rounded bg-muted', tone)}>
+        <Icon className="h-3 w-3" />
+        {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+      </span>
+      <span className="text-[10.5px] uppercase tracking-wide text-muted-foreground font-medium">{label}</span>
+      <span className={cn('text-[12px] font-bold tabular-nums', tone)}>{value}</span>
+    </div>
+  );
+}
