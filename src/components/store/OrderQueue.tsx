@@ -92,25 +92,25 @@ export function OrderQueue({ orders, onStatusUpdate, storeName = 'Κατάστη
         return (
           <Card key={order.id} className={`border-2 ${config.bg} shadow-[var(--shadow-md)] overflow-hidden`}>
             <CardContent className="p-4">
-              <div className="flex items-center justify-between mb-3">
-                <div className="flex items-center gap-2">
-                  <Badge variant={config.variant} className="font-heading font-semibold">
+              <div className="flex items-center justify-between gap-2 mb-3 flex-wrap">
+                <div className="flex items-center gap-2 min-w-0">
+                  <Badge variant={config.variant} className="font-heading font-semibold flex-shrink-0">
                     {config.label}
                   </Badge>
-                  <span className="text-sm font-mono text-muted-foreground">#{order.id.slice(0, 6)}</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1">
+                  <span className="text-sm font-mono text-muted-foreground truncate">#{order.id.slice(0, 6)}</span>
+                  <span className="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
                     <Clock className="h-3.5 w-3.5" />
                     {getTimeSince(order.created_at)}
                   </span>
+                </div>
+                <div className="flex items-center gap-1 flex-shrink-0 ml-auto">
                   <PrintTicketButton order={order} storeName={storeName} />
                   <AlertDialog>
                     <AlertDialogTrigger asChild>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                        className="h-9 w-9 text-destructive hover:bg-destructive/10"
                         disabled={!!order.driver_id}
                         title={order.driver_id ? 'Έχει ανατεθεί σε οδηγό — επικοινώνησε με υποστήριξη' : 'Ακύρωση παραγγελίας'}
                       >

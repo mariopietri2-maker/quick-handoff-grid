@@ -189,16 +189,18 @@ export default function RestaurantPage() {
         </div>
       </div>
 
-      {/* Category Tabs (sticky) */}
+      {/* Category Tabs (sticky under the floating header on scroll) */}
       {categories.length > 1 && (
-        <div className="sticky top-0 z-40 bg-card border-b border-border">
+        <div className={`sticky z-40 bg-card border-b border-border transition-all duration-200 ${
+          showStickyHeader ? 'top-[52px]' : 'top-0'
+        }`}>
           <div className="max-w-2xl mx-auto">
             <div className="flex overflow-x-auto no-scrollbar">
               {categories.map(cat => (
                 <button
                   key={cat}
                   onClick={() => scrollToCategory(cat)}
-                  className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors ${
+                  className={`px-4 py-3 text-sm font-medium whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
                     activeCategory === cat
                       ? 'border-primary text-primary'
                       : 'border-transparent text-muted-foreground hover:text-foreground'

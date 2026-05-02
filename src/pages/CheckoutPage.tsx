@@ -287,26 +287,28 @@ export default function CheckoutPage() {
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τα Προϊόντα σας</h2>
             {items.map(item => (
-              <div key={item.menuItemId} className="flex items-center justify-between py-2 border-b border-border last:border-0">
-                <div className="flex-1">
-                  <p className="font-heading text-sm text-foreground">{item.name}</p>
+              <div key={item.menuItemId} className="flex items-center justify-between gap-2 py-2 border-b border-border last:border-0">
+                <div className="flex-1 min-w-0">
+                  <p className="font-heading text-sm text-foreground truncate">{item.name}</p>
                   <p className="text-xs text-muted-foreground">{item.price.toFixed(2)}€ το τεμάχιο</p>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex items-center gap-1.5 flex-shrink-0">
                   <button
                     onClick={() => updateQuantity(item.menuItemId, item.quantity - 1)}
-                    className="h-7 w-7 rounded-full bg-muted flex items-center justify-center"
+                    className="h-8 w-8 rounded-full bg-muted flex items-center justify-center"
+                    aria-label="Μείωση"
                   >
                     {item.quantity === 1 ? <Trash2 className="h-3.5 w-3.5 text-destructive" /> : <Minus className="h-3.5 w-3.5 text-foreground" />}
                   </button>
-                  <span className="font-heading font-bold text-sm w-5 text-center text-foreground">{item.quantity}</span>
+                  <span className="font-heading font-bold text-sm w-5 text-center text-foreground tabular-nums">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                    className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center"
+                    className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center"
+                    aria-label="Αύξηση"
                   >
                     <Plus className="h-3.5 w-3.5 text-primary-foreground" />
                   </button>
-                  <span className="font-heading font-semibold text-sm text-foreground w-14 text-right">
+                  <span className="font-heading font-semibold text-sm text-foreground w-14 text-right tabular-nums">
                     {(item.price * item.quantity).toFixed(2)}€
                   </span>
                 </div>
