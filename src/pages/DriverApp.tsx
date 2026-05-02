@@ -27,6 +27,7 @@ import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
+import { geocodeAddress } from '@/lib/geocode';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
