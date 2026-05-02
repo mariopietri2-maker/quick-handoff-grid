@@ -257,11 +257,17 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
       {/* Main CTA */}
       {nextAction && (
         <button
-          onClick={() => onStatusUpdate(nextAction.next)}
-          className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+          onClick={() => !nextAction.locked && onStatusUpdate(nextAction.next)}
+          disabled={nextAction.locked}
+          className={`w-full h-14 rounded-2xl text-base font-heading font-bold transition-all flex items-center justify-center gap-2 ${
+            nextAction.locked
+              ? 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))] cursor-not-allowed'
+              : 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 active:scale-[0.97]'
+          }`}
         >
+          {nextAction.locked ? <Lock className="h-5 w-5" /> : null}
           {nextAction.label}
-          <ChevronRight className="h-5 w-5" />
+          {!nextAction.locked && <ChevronRight className="h-5 w-5" />}
         </button>
       )}
     </div>
