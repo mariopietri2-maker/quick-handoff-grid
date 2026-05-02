@@ -98,27 +98,36 @@ export type Database = {
       admin_treasury: {
         Row: {
           admin_balance: number
+          external_buffer_balance: number
           id: number
           lifetime_admin_earned: number
           lifetime_driver_topup: number
+          lifetime_external_buffer_in: number
+          lifetime_external_buffer_out: number
           lifetime_platform_earned: number
           platform_pool: number
           updated_at: string
         }
         Insert: {
           admin_balance?: number
+          external_buffer_balance?: number
           id?: number
           lifetime_admin_earned?: number
           lifetime_driver_topup?: number
+          lifetime_external_buffer_in?: number
+          lifetime_external_buffer_out?: number
           lifetime_platform_earned?: number
           platform_pool?: number
           updated_at?: string
         }
         Update: {
           admin_balance?: number
+          external_buffer_balance?: number
           id?: number
           lifetime_admin_earned?: number
           lifetime_driver_topup?: number
+          lifetime_external_buffer_in?: number
+          lifetime_external_buffer_out?: number
           lifetime_platform_earned?: number
           platform_pool?: number
           updated_at?: string
@@ -1939,6 +1948,9 @@ export type Database = {
           ext_commission_pct: number
           ext_flat_fee: number
           ext_margin_pct: number
+          ext_smart_max_pct: number
+          ext_smart_min_pct: number
+          ext_smart_target_pct: number
           holiday_dates: string[] | null
           id: string
           image_url: string | null
@@ -1970,6 +1982,9 @@ export type Database = {
           ext_commission_pct?: number
           ext_flat_fee?: number
           ext_margin_pct?: number
+          ext_smart_max_pct?: number
+          ext_smart_min_pct?: number
+          ext_smart_target_pct?: number
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -2001,6 +2016,9 @@ export type Database = {
           ext_commission_pct?: number
           ext_flat_fee?: number
           ext_margin_pct?: number
+          ext_smart_max_pct?: number
+          ext_smart_min_pct?: number
+          ext_smart_target_pct?: number
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -2500,6 +2518,17 @@ export type Database = {
       admin_wipe_all_data: { Args: never; Returns: undefined }
       admin_wipe_transactions: { Args: never; Returns: Json }
       compute_order_split: { Args: { _order_id: string }; Returns: Json }
+      compute_smart_buffer_charge: {
+        Args: {
+          p_buffer_balance: number
+          p_driver_cost: number
+          p_max_pct: number
+          p_min_pct: number
+          p_target_pct: number
+          p_total: number
+        }
+        Returns: Json
+      }
       count_active_support_agents: { Args: never; Returns: number }
       create_custom_order:
         | {
