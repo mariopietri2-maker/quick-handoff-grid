@@ -1262,6 +1262,8 @@ export type Database = {
           pickup_checklist: Json | null
           platform_profit: number
           predicted_prep_minutes: number | null
+          predicted_ready_at: string | null
+          prep_minutes_actual: number | null
           refund_reason: string | null
           refunded_amount: number
           scheduled_for: string | null
@@ -1298,6 +1300,8 @@ export type Database = {
           pickup_checklist?: Json | null
           platform_profit?: number
           predicted_prep_minutes?: number | null
+          predicted_ready_at?: string | null
+          prep_minutes_actual?: number | null
           refund_reason?: string | null
           refunded_amount?: number
           scheduled_for?: string | null
@@ -1334,6 +1338,8 @@ export type Database = {
           pickup_checklist?: Json | null
           platform_profit?: number
           predicted_prep_minutes?: number | null
+          predicted_ready_at?: string | null
+          prep_minutes_actual?: number | null
           refund_reason?: string | null
           refunded_amount?: number
           scheduled_for?: string | null
@@ -2631,6 +2637,10 @@ export type Database = {
           score: number
           vehicle_type: string
         }[]
+      }
+      predict_ready_at: {
+        Args: { p_created_at?: string; p_store_id: string }
+        Returns: string
       }
       redeem_wallet_credit: {
         Args: { p_amount: number; p_order_id: string }
