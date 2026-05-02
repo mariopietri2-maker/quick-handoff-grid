@@ -550,7 +550,7 @@ function SplitRow({
   icon: Icon, label, pct, amount, tone,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  label: string; pct: string; amount: number; tone: string;
+  label: string; pct?: string; amount: number; tone: string;
 }) {
   return (
     <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
@@ -560,7 +560,7 @@ function SplitRow({
         </span>
         <div className="min-w-0">
           <p className="text-xs font-medium truncate">{label}</p>
-          <p className="text-[10px] text-muted-foreground">{pct}</p>
+          {pct ? <p className="text-[10px] text-muted-foreground">{pct}</p> : null}
         </div>
       </div>
       <span className={cn('font-heading font-bold text-sm tabular-nums', tone)}>
