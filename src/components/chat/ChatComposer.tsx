@@ -114,8 +114,9 @@ export function ChatComposer({
         .from('chat-attachments')
         .upload(path, file, { contentType: file.type, upsert: false });
       if (error) throw error;
-      const { data } = supabase.storage.from('chat-attachments').getPublicUrl(path);
-      setAttachment({ url: data.publicUrl, type: file.type === 'image/gif' ? 'gif' : 'image' });
+      // Bucket is private — store the storage path with a sentinel so ChatAttachment
+      // can resolve a fresh signed URL on render.
+      setAttachment({ url: `storage:chat-attachments/${path}`, type: file.type === 'image/gif' ? 'gif' : 'image' });
     } catch (e: any) {
       toast.error(e?.message ?? 'Αποτυχία ανεβάσματος');
     } finally {
