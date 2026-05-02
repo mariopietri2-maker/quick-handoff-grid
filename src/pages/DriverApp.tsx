@@ -27,6 +27,7 @@ import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
+import { geocodeAddress } from '@/lib/geocode';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
@@ -120,15 +121,30 @@ export default function DriverApp() {
   useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
   const isNavActive = navMode && !!navigatingTo;
 
+  // Geocoded fallback for delivery destination if order has no coords
+  const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
+
   useEffect(() => {
-    if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
+    if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); setDeliveryCoords(null); return; }
     supabase.from('stores').select('name, address, phone, latitude, longitude').eq('id', activeDelivery.store_id).single()
       .then(({ data }) => { if (data) setStoreInfo(data); });
     if (activeDelivery.customer_id) {
       supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
         .then(({ data }) => { if (data) setCustomerInfo({ name: data.full_name || 'Πελάτης', phone: data.phone }); });
     }
-  }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id]);
+
+    // If order is missing delivery coords, geocode the address so the route can be drawn
+    const hasCoords = activeDelivery.delivery_latitude != null && activeDelivery.delivery_longitude != null;
+    if (!hasCoords && activeDelivery.delivery_address) {
+      let cancelled = false;
+      geocodeAddress(activeDelivery.delivery_address).then((res) => {
+        if (!cancelled && res) setDeliveryCoords({ lat: res.latitude, lng: res.longitude });
+      });
+      return () => { cancelled = true; };
+    } else {
+      setDeliveryCoords(null);
+    }
+  }, [activeDelivery?.id, activeDelivery?.store_id, activeDelivery?.customer_id, activeDelivery?.delivery_address, activeDelivery?.delivery_latitude, activeDelivery?.delivery_longitude]);
 
   // Pending approval
   if (driverActive === false) {
@@ -205,8 +221,8 @@ export default function DriverApp() {
                   storeLat: storeInfo?.latitude ?? null,
                   storeLng: storeInfo?.longitude ?? null,
                   deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
-                  deliveryLat: activeDelivery.delivery_latitude ?? null,
-                  deliveryLng: activeDelivery.delivery_longitude ?? null,
+                  deliveryLat: activeDelivery.delivery_latitude ?? deliveryCoords?.lat ?? null,
+                  deliveryLng: activeDelivery.delivery_longitude ?? deliveryCoords?.lng ?? null,
                   customerName: customerInfo?.name || 'Πελάτης',
                   customerPhone: customerInfo?.phone || null,
                   status: activeDelivery.status ?? 'accepted',
@@ -295,8 +311,8 @@ export default function DriverApp() {
             storeLat={storeInfo?.latitude}
             storeLng={storeInfo?.longitude}
             storeName={storeInfo?.name}
-            customerLat={activeDelivery?.delivery_latitude}
-            customerLng={activeDelivery?.delivery_longitude}
+            customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
+            customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
             customerName={customerInfo?.name}
             customerAddress={activeDelivery?.delivery_address}
             navigatingTo={navigatingTo}
@@ -461,8 +477,8 @@ export default function DriverApp() {
                           storeLat: storeInfo?.latitude ?? null,
                           storeLng: storeInfo?.longitude ?? null,
                           deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
-                          deliveryLat: activeDelivery.delivery_latitude ?? null,
-                          deliveryLng: activeDelivery.delivery_longitude ?? null,
+                          deliveryLat: activeDelivery.delivery_latitude ?? deliveryCoords?.lat ?? null,
+                          deliveryLng: activeDelivery.delivery_longitude ?? deliveryCoords?.lng ?? null,
                           customerName: customerInfo?.name || 'Πελάτης',
                           customerPhone: customerInfo?.phone || null,
                           status: activeDelivery.status ?? 'accepted',
