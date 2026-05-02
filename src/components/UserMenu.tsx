@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Bell, Settings, TrendingUp, Wallet,
   LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause, PackageX,
+  Shield, Bike, ShoppingCart, Repeat,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,7 +23,7 @@ import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
 
 export function UserMenu() {
-  const { user, profile, signOut } = useAuth();
+  const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const isDriver = profile?.role === 'driver';
   const [soundOpen, setSoundOpen] = useState(false);
@@ -268,6 +269,29 @@ export function UserMenu() {
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/profile')}>
                 <UserCircle className="mr-2 h-4 w-4 shrink-0" />
                 Το Προφίλ μου
+              </DropdownMenuItem>
+            </>
+          )}
+
+          {isAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className={labelClassName}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Repeat className="h-3 w-3" /> Εναλλαγή προβολής (Admin)
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/admin')}>
+                <Shield className="mr-2 h-4 w-4 shrink-0" />
+                Admin Πίνακας
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver')}>
+                <Bike className="mr-2 h-4 w-4 shrink-0" />
+                Προβολή Οδηγού
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/')}>
+                <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
+                Προβολή Πελάτη
               </DropdownMenuItem>
             </>
           )}

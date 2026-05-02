@@ -1,6 +1,6 @@
 import {
   LayoutDashboard, ShoppingBag, Store, Users, Wallet, Settings2,
-  ChevronLeft, ChevronRight, LogOut, Shield, UserCircle,
+  ChevronLeft, ChevronRight, LogOut, Shield, UserCircle, Repeat, Bike, ShoppingCart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
@@ -8,6 +8,9 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Sheet, SheetContent } from '@/components/ui/sheet';
+import {
+  DropdownMenu, DropdownMenuTrigger, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator,
+} from '@/components/ui/dropdown-menu';
 
 interface AdminSidebarProps {
   activeSection: string;
@@ -207,6 +210,31 @@ function SidebarBody({
 
       {/* Footer */}
       <div className="border-t border-border p-2 shrink-0 space-y-1">
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button
+              variant="ghost" size="sm"
+              className={cn('w-full gap-2', collapsed ? 'justify-center px-0' : 'justify-start')}
+              title={collapsed ? 'Εναλλαγή προβολής' : undefined}
+            >
+              <Repeat className="h-4 w-4 shrink-0" />
+              {!collapsed && <span className="text-xs">Εναλλαγή προβολής</span>}
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" side="top" className="w-56">
+            <DropdownMenuLabel className="text-xs">Άνοιξε ως</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem onClick={() => { window.location.href = '/admin'; }}>
+              <Shield className="h-4 w-4 mr-2" /> Admin
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { window.location.href = '/driver'; }}>
+              <Bike className="h-4 w-4 mr-2" /> Οδηγός
+            </DropdownMenuItem>
+            <DropdownMenuItem onClick={() => { window.location.href = '/'; }}>
+              <ShoppingCart className="h-4 w-4 mr-2" /> Πελάτης
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
         <Button
           variant="ghost" size="sm"
           className={cn('w-full gap-2', collapsed ? 'justify-center px-0' : 'justify-start')}
