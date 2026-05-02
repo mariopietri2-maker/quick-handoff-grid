@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock, StickyNote } from 'lucide-react';
+import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
@@ -42,17 +42,7 @@ const statusSteps = [
   { key: 'delivered', label: 'Παραδόθηκε', icon: CheckCircle2 },
 ];
 
-export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
-
-
-  const toggleChecklistItem = (index: number) => {
-    setCheckedItems(prev => {
-      const next = new Set(prev);
-      next.has(index) ? next.delete(index) : next.add(index);
-      return next;
-    });
-  };
+export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps) {
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
