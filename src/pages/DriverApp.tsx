@@ -391,15 +391,6 @@ export default function DriverApp() {
                 </button>
               </div>
 
-              {/* In nav mode: ONLY show NavigationPanel */}
-              {isNavActive && (
-                <NavigationPanel
-                  route={routeInfo!}
-                  destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
-                  destinationType={navigatingTo!}
-                />
-              )}
-
               {/* Normal mode */}
               {!isNavActive && (
                 <>
@@ -409,28 +400,6 @@ export default function DriverApp() {
                   {onBreak && (
                     <div className="px-3 py-2.5 rounded-xl bg-warning/15 border border-warning/30 driver-glass flex items-center gap-2">
                       <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
-                    </div>
-                  )}
-                  {/* Inline Navigation Panel preview (toggleable) */}
-                  {routeInfo && navigatingTo && (
-                    <div className="space-y-2">
-                      <div className="flex justify-end">
-                        <button
-                          onClick={() => setShowInlineNav(v => !v)}
-                          className="h-8 px-3 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-1.5 text-[11px] font-heading font-semibold text-[hsl(var(--driver-text))] hover:bg-[hsl(var(--driver-surface))] transition-colors active:scale-95"
-                          aria-label={showInlineNav ? 'Απόκρυψη πλοήγησης' : 'Εμφάνιση πλοήγησης'}
-                        >
-                          {showInlineNav ? <EyeOff className="h-3.5 w-3.5" /> : <Eye className="h-3.5 w-3.5" />}
-                          {showInlineNav ? 'Απόκρυψη πλοήγησης' : 'Εμφάνιση πλοήγησης'}
-                        </button>
-                      </div>
-                      {showInlineNav && (
-                        <NavigationPanel
-                          route={routeInfo}
-                          destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
-                          destinationType={navigatingTo}
-                        />
-                      )}
                     </div>
                   )}
 
