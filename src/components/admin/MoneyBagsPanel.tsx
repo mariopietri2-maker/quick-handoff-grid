@@ -362,6 +362,34 @@ export default function MoneyBagsPanel() {
         />
       </div>
 
+      {/* External Buffer Bag */}
+      {(() => {
+        const buf = Number(treasury?.external_buffer_balance ?? 0);
+        const lifeIn = Number(treasury?.lifetime_external_buffer_in ?? 0);
+        const lifeOut = Number(treasury?.lifetime_external_buffer_out ?? 0);
+        const low = buf < 50;
+        return (
+          <Card className={low ? 'border-warning/40' : ''}>
+            <CardContent className="p-4">
+              <div className="flex items-center gap-2 mb-3">
+                <Activity className={`h-4 w-4 ${low ? 'text-warning' : 'text-primary'}`} />
+                <h3 className="text-sm font-heading font-semibold">External Buffer Bag</h3>
+                <Badge variant="outline" className="text-[10px] h-4 px-1.5">Smart 10–20%</Badge>
+                {low && <Badge className="text-[10px] h-4 px-1.5 bg-warning/20 text-warning border-warning/30 ml-auto">Χαμηλό</Badge>}
+              </div>
+              <p className="text-[11px] text-muted-foreground leading-relaxed mb-3">
+                Απορροφά τα ups & downs των external orders με Smart Buffer mode. Ποτέ δεν αγγίζει το Driver Pool.
+              </p>
+              <div className="grid grid-cols-3 gap-3">
+                <Stat label="Τρέχον υπόλοιπο" value={fmt(buf)} accent={low ? 'text-warning' : 'text-primary'} />
+                <Stat label="Lifetime εισροές" value={fmt(lifeIn)} accent="text-emerald-600" />
+                <Stat label="Lifetime εκροές" value={fmt(lifeOut)} accent="text-muted-foreground" />
+              </div>
+            </CardContent>
+          </Card>
+        );
+      })()}
+
       {/* Lifetime */}
       <Card>
         <CardContent className="p-4">
