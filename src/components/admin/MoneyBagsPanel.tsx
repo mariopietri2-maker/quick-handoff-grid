@@ -11,9 +11,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card as UICard, CardHeader, CardTitle } from '@/components/ui/card';
+import MonthCloseCard from './MonthCloseCard';
+import CustomOrderDialog from './CustomOrderDialog';
 import {
   Banknote, Building2, Shield, TrendingUp, CheckCircle2, AlertCircle,
-  RotateCcw, Wallet, Loader2, ArrowRight, Activity,
+  RotateCcw, Wallet, Loader2, ArrowRight, Activity, ArrowDownCircle,
 } from 'lucide-react';
 
 const fmt = (n: number | null | undefined) => `€${Number(n ?? 0).toFixed(2)}`;
@@ -135,6 +139,62 @@ export default function MoneyBagsPanel() {
     },
   });
 
+  // Withdrawals + wallets + earnings (merged from former Ταμείο tab)
+  const { data: wallets } = useQuery({
+    queryKey: ['admin-wallets'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('driver_wallets').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: transactions } = useQuery({
+    queryKey: ['admin-transactions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('wallet_transactions').select('*').order('created_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: earnings } = useQuery({
+    queryKey: ['admin-earnings'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('earnings').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const pendingWithdrawals = (transactions ?? []).filter((t: any) => t.type === 'withdrawal_request' && t.status === 'pending');
+
+  const handleApproveWithdrawal = async (txId: string, driverId: string, amount: number) => {
+    const { error } = await supabase.from('wallet_transactions').update({ status: 'completed' }).eq('id', txId);
+    if (error) { toast.error('Αποτυχία'); return; }
+    const w = wallets?.find((x: any) => x.driver_id === driverId);
+    await supabase.from('driver_wallets').update({
+      pending_balance: 0,
+      total_withdrawn: (w ? Number(w.total_withdrawn) : 0) + amount,
+    } as any).eq('driver_id', driverId);
+    toast.success('Ανάληψη εγκρίθηκε');
+    qc.invalidateQueries({ queryKey: ['admin-wallets'] });
+    qc.invalidateQueries({ queryKey: ['admin-transactions'] });
+  };
+
+  const handleRejectWithdrawal = async (txId: string, driverId: string, amount: number) => {
+    const { error } = await supabase.from('wallet_transactions').update({ status: 'rejected' }).eq('id', txId);
+    if (error) { toast.error('Αποτυχία'); return; }
+    const w = wallets?.find((x: any) => x.driver_id === driverId);
+    await supabase.from('driver_wallets').update({
+      available_balance: Number(w?.available_balance ?? 0) + amount,
+      pending_balance: Math.max(0, Number(w?.pending_balance ?? 0) - amount),
+    } as any).eq('driver_id', driverId);
+    toast.success('Ανάληψη απορρίφθηκε — ποσό επεστράφη');
+    qc.invalidateQueries({ queryKey: ['admin-wallets'] });
+    qc.invalidateQueries({ queryKey: ['admin-transactions'] });
+  };
+
   // Realtime
   useEffect(() => {
     const ch = supabase
@@ -191,14 +251,40 @@ export default function MoneyBagsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="admin-section-header">
+      <div className="admin-section-header flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="admin-section-title">Money Bags · Treasury</h2>
+          <h2 className="admin-section-title">Money Bags · Ταμείο</h2>
           <p className="admin-section-sub mt-0.5">
             85% Κατάστημα · 10% Driver pool · 5% Admin — ζωντανή κατανομή χρημάτων στην πλατφόρμα.
           </p>
         </div>
+        <CustomOrderDialog />
       </div>
+
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="overview">
+            <Activity className="h-3.5 w-3.5 mr-1" />Επισκόπηση
+          </TabsTrigger>
+          <TabsTrigger value="withdrawals">
+            <ArrowDownCircle className="h-3.5 w-3.5 mr-1" />Αναλήψεις
+            {pendingWithdrawals.length > 0 && (
+              <Badge className="ml-1.5 h-4 px-1.5 bg-warning/20 text-warning border-warning/30">
+                {pendingWithdrawals.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="wallets">
+            <Wallet className="h-3.5 w-3.5 mr-1" />Πορτοφόλια
+          </TabsTrigger>
+          <TabsTrigger value="earnings">
+            <TrendingUp className="h-3.5 w-3.5 mr-1" />Κέρδη
+          </TabsTrigger>
+          <TabsTrigger value="month">Κλείσιμο μήνα</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4 m-0">
+
 
       {/* Hero distribution */}
       <Card className="overflow-hidden">
@@ -352,8 +438,129 @@ export default function MoneyBagsPanel() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="withdrawals" className="m-0">
+          <UICard>
+            <CardHeader><CardTitle className="font-heading text-base">Εκκρεμή Αιτήματα Ανάληψης</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Οδηγός</TableHead>
+                    <TableHead className="text-right">Ποσό</TableHead>
+                    <TableHead className="hidden md:table-cell">Ημερομηνία</TableHead>
+                    <TableHead className="text-right">Ενέργειες</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingWithdrawals.map((tx: any) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="font-medium">{driverName(tx.driver_id)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-bold">{fmt(tx.amount)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
+                        {format(new Date(tx.created_at), 'dd MMM, HH:mm')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" className="h-8" onClick={() => handleApproveWithdrawal(tx.id, tx.driver_id, Number(tx.amount))}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" />Έγκριση
+                          </Button>
+                          <Button size="sm" variant="destructive" className="h-8" onClick={() => handleRejectWithdrawal(tx.id, tx.driver_id, Number(tx.amount))}>
+                            Απόρριψη
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!pendingWithdrawals.length && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Κανένα εκκρεμές αίτημα</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </UICard>
+        </TabsContent>
+
+        <TabsContent value="wallets" className="m-0">
+          <UICard>
+            <CardHeader><CardTitle className="font-heading text-base">Πορτοφόλια Οδηγών</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Οδηγός</TableHead>
+                    <TableHead className="text-right">Διαθέσιμο</TableHead>
+                    <TableHead className="text-right">Εκκρεμές</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Αναληφθέντα</TableHead>
+                    <TableHead className="hidden lg:table-cell">Τελ. Ενημέρωση</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(wallets ?? []).map((w: any) => (
+                    <TableRow key={w.id}>
+                      <TableCell className="font-medium">{driverName(w.driver_id)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-bold text-emerald-600">{fmt(w.available_balance)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-warning">{fmt(w.pending_balance)}</TableCell>
+                      <TableCell className="text-right tabular-nums hidden md:table-cell">{fmt(w.total_withdrawn)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden lg:table-cell">
+                        {format(new Date(w.updated_at), 'dd MMM, HH:mm')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!wallets?.length && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Κανένα πορτοφόλι</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </UICard>
+        </TabsContent>
+
+        <TabsContent value="earnings" className="m-0">
+          <UICard>
+            <CardHeader><CardTitle className="font-heading text-base">Πρόσφατα Κέρδη</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Οδηγός</TableHead>
+                    <TableHead className="text-right">Βάση</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Tips</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Bonus</TableHead>
+                    <TableHead className="text-right">Σύνολο</TableHead>
+                    <TableHead className="hidden lg:table-cell">Ημερομηνία</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(earnings ?? []).map((e: any) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">{driverName(e.driver_id)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmt(e.base_pay)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-primary hidden md:table-cell">{fmt(e.tip)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-warning hidden md:table-cell">{fmt(e.bonus)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-bold">{fmt(e.total)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden lg:table-cell">
+                        {format(new Date(e.created_at), 'dd MMM, HH:mm')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!earnings?.length && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Κανένα κέρδος</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </UICard>
+        </TabsContent>
+
+        <TabsContent value="month" className="m-0">
+          <MonthCloseCard />
+        </TabsContent>
+      </Tabs>
 
       {/* Reset confirm */}
+
       <AlertDialog open={!!pendingReset} onOpenChange={(v) => !v && setPendingReset(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>

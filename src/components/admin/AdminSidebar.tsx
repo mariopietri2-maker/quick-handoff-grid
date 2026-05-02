@@ -80,10 +80,9 @@ export const NAV_SECTIONS = [
     icon: Wallet,
     accent: 'text-success',
     accentBg: 'bg-success/10',
-    defaultTab: 'financials',
+    defaultTab: 'money_bags',
     tabs: [
-      { id: 'financials', label: 'Ταμείο' },
-      { id: 'money_bags', label: 'Money Bags' },
+      { id: 'money_bags', label: 'Ταμείο · Money Bags' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
       { id: 'split_calc', label: 'Split Calculator' },

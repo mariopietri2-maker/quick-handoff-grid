@@ -15,7 +15,7 @@ import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
 
 import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
-import FinancialsManager from '@/components/admin/FinancialsManager';
+// FinancialsManager merged into MoneyBagsPanel
 import PricingSettings from '@/components/admin/PricingSettings';
 import SupportRoleManager from '@/components/admin/SupportRoleManager';
 import WalletAdjustDialog from '@/components/admin/WalletAdjustDialog';
@@ -176,7 +176,8 @@ export default function AdminApp() {
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
-        return <FinancialsManager />;
+        // Legacy id — merged into Money Bags
+        return <MoneyBagsPanel />;
       case 'split_calc':
         return <SplitCalculator />;
       case 'store_payables':
