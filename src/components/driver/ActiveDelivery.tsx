@@ -90,6 +90,23 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
 
   return (
     <div className="space-y-3">
+      {/* Predicted ready banner — only before store flips to ready */}
+      {!isReady && delivery.predictedReadyAt && (
+        <div className="rounded-2xl driver-glass p-3 flex items-center gap-3 border border-[hsl(var(--driver-accent))]/25">
+          <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center shrink-0">
+            <Clock className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text))]">
+              {etaMin === 0 ? 'Έτοιμη όπου να ναι' : `Έτοιμη σε ~${etaMin} λεπτά`}
+            </p>
+            <p className="text-[10.5px] text-[hsl(var(--driver-text-muted))] leading-tight">
+              Πρόβλεψη ML — η παραλαβή ξεκλειδώνει μόλις το κατάστημα την ετοιμάσει
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Status stepper */}
       <div className="rounded-2xl driver-glass p-4">
         <div className="flex items-center justify-between mb-3">
