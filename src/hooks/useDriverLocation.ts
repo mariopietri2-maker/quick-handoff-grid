@@ -26,30 +26,42 @@ export function useDriverLocation(isActive: boolean) {
 
   const sendLocation = useCallback(async (pos: NormalizedPos) => {
     if (!user) return;
-    await supabase
-      .from('driver_locations')
-      .upsert(
-        {
-          driver_id: user.id,
-          latitude: pos.latitude,
-          longitude: pos.longitude,
-          heading: pos.heading,
-          speed: pos.speed,
-          updated_at: new Date().toISOString(),
-        } as any,
-        { onConflict: 'driver_id' }
-      );
+    // If we're offline, just keep the latest pos in lastPosRef and bail —
+    // the 'online' listener (and the next interval tick) will flush it.
+    if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+      lastPosRef.current = pos;
+      return;
+    }
+    try {
+      await supabase
+        .from('driver_locations')
+        .upsert(
+          {
+            driver_id: user.id,
+            latitude: pos.latitude,
+            longitude: pos.longitude,
+            heading: pos.heading,
+            speed: pos.speed,
+            updated_at: new Date().toISOString(),
+          } as any,
+          { onConflict: 'driver_id' }
+        );
+    } catch {
+      // Network blip — keep last pos for next tick / online event
+      lastPosRef.current = pos;
+    }
   }, [user]);
 
   // Hard-offline: clear our location row so the dispatcher immediately
-  // stops considering us online. Used when the driver goes offline,
-  // closes the tab, or backgrounds the app.
+  // stops considering us online. ONLY used when the driver explicitly
+  // toggles offline — not on tab close / background, so a driver who
+  // momentarily loses signal or backgrounds the app stays online.
   const goHardOffline = useCallback(async () => {
     if (!user) return;
     try {
       await supabase.from('driver_locations').delete().eq('driver_id', user.id);
     } catch {
-      /* swallow — best effort on unload */
+      /* swallow */
     }
   }, [user]);
 
@@ -59,6 +71,7 @@ export function useDriverLocation(isActive: boolean) {
       cleanupRef.current = null;
       lastPosRef.current = null;
       setTracking(false);
+      // Driver explicitly toggled offline (isActive=false) — clear row.
       void goHardOffline();
       return;
     }
