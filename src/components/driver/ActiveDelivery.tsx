@@ -24,6 +24,9 @@ interface ActiveDeliveryData {
   pickupChecklist: string[];
   /** ISO timestamp predicted by ML/heuristic when the store will mark the order ready */
   predictedReadyAt?: string | null;
+  /** Notes from customer or store (special instructions, allergies, gate codes, etc.) */
+  notes?: string | null;
+  storeNotes?: string | null;
 }
 
 interface ActiveDeliveryProps {
