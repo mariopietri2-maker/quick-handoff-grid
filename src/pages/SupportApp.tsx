@@ -176,9 +176,9 @@ export default function SupportApp() {
           </Button>
           <div className="flex-1 min-w-0">
             <p className="font-heading font-semibold truncate">
-              {driver?.full_name ?? activeTicket.driver_id.slice(0, 8)}
+              {driver?.full_name ?? (activeTicket.driver_id ? activeTicket.driver_id.slice(0, 8) : 'Άγνωστος')}
             </p>
-            <p className="text-xs text-muted-foreground">Ticket #{activeTicket.id.slice(0, 8)}</p>
+            <p className="text-xs text-muted-foreground">Ticket #{activeTicket.id?.slice(0, 8) ?? '—'}</p>
           </div>
           <Badge variant="outline" className={`${pcfg.color} text-[10px] gap-1`}>
             <PIcon className="h-3 w-3" /> {pcfg.label}
