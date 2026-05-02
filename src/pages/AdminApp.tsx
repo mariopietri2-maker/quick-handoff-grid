@@ -39,6 +39,7 @@ const SplitCalculator        = lazy(() => import('@/components/admin/SplitCalcul
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
 const MoneyBagsPanel         = lazy(() => import('@/components/admin/MoneyBagsPanel'));
+const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
