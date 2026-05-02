@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock, StickyNote } from 'lucide-react';
+import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
-import { openGoogleMapsNavigation } from '@/lib/navigation';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -42,7 +41,7 @@ const statusSteps = [
   { key: 'delivered', label: 'Παραδόθηκε', icon: CheckCircle2 },
 ];
 
-export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps) {
+export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
@@ -172,19 +171,15 @@ export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps
           </div>
         </div>
 
-        {/* Navigation — opens external Google Maps app */}
+        {/* Navigation — opens in-app navigation */}
         {(isGoingToStore || isGoingToCustomer) && (
           <div className="mt-4">
             <button
-              onClick={() => openGoogleMapsNavigation(
-                isGoingToStore
-                  ? { lat: delivery.storeLat ?? null, lng: delivery.storeLng ?? null, address: delivery.storeAddress }
-                  : { lat: delivery.deliveryLat ?? null, lng: delivery.deliveryLng ?? null, address: delivery.deliveryAddress }
-              )}
+              onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
               className="w-full h-12 rounded-xl gradient-primary text-white text-sm font-heading font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
             >
-              <ExternalLink className="h-4 w-4" />
-              Πλοήγηση με Google Maps
+              <Navigation className="h-4 w-4" />
+              Πλοήγηση
             </button>
           </div>
         )}

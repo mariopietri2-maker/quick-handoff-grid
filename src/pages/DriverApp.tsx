@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,7 +23,7 @@ import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
-
+import { NavigationPanel } from '@/components/driver/NavigationPanel';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
@@ -131,11 +131,16 @@ export default function DriverApp() {
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
+  const [navMode, setNavMode] = useState(false);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
     ? (['accepted', 'preparing', 'ready', 'arrived'].includes(activeDelivery.status ?? '') ? 'store' as const : activeDelivery.status === 'picked_up' ? 'customer' as const : null)
     : null;
+
+  // Auto-exit nav mode if delivery ends
+  useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
+  const isNavActive = navMode && !!routeInfo && !!navigatingTo;
 
   useEffect(() => {
     if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
@@ -319,10 +324,10 @@ export default function DriverApp() {
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
             nearbyStores={nearbyStores}
-            followMode={false}
+            followMode={isNavActive}
           />
 
-          {true && (
+          {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
               <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
@@ -351,6 +356,21 @@ export default function DriverApp() {
             </div>
           )}
 
+          {isNavActive && (
+            <div className="fixed top-0 left-0 right-0 z-30 safe-area-top animate-slide-down pointer-events-none">
+              <div className="px-4 pt-3 pb-2 flex items-center justify-end">
+                <button
+                  onClick={() => setNavMode(false)}
+                  className="h-10 px-4 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-2 shadow-lg active:scale-95 pointer-events-auto"
+                  aria-label="Κλείσιμο πλοήγησης"
+                >
+                  <X className="h-4 w-4 text-[hsl(var(--driver-text))]" />
+                  <span className="text-xs font-heading font-semibold text-[hsl(var(--driver-text))]">Έξοδος</span>
+                </button>
+              </div>
+            </div>
+          )}
+
 
           <div className="fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain">
             <div className="pointer-events-auto space-y-3 animate-slide-up">
@@ -366,7 +386,15 @@ export default function DriverApp() {
               </div>
 
               {/* Normal mode */}
-              {true && (
+              {isNavActive && (
+                <NavigationPanel
+                  route={routeInfo!}
+                  destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
+                  destinationType={navigatingTo!}
+                />
+              )}
+
+              {!isNavActive && (
                 <>
                   <AnnouncementsBanner audience="drivers" />
 
@@ -448,6 +476,7 @@ export default function DriverApp() {
                           notes: (activeDelivery as any).notes ?? null,
                         }}
                         onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
+                        onFocusDestination={(target) => { mapRef.current?.focusOn(target); setNavMode(true); }}
                       />
                     </>
                   )}
