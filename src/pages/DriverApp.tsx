@@ -243,6 +243,7 @@ export default function DriverApp() {
                   estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
                   pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
                   predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
+                  notes: (activeDelivery as any).notes ?? null,
                 }}
                 onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                 onFocusDestination={() => {}}
