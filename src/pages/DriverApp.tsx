@@ -118,7 +118,7 @@ export default function DriverApp() {
 
   // Auto-exit nav mode if delivery ends
   useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
-  const isNavActive = navMode && !!routeInfo && !!navigatingTo;
+  const isNavActive = navMode && !!navigatingTo;
 
   useEffect(() => {
     if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
@@ -365,11 +365,18 @@ export default function DriverApp() {
 
               {/* Normal mode */}
               {isNavActive && (
-                <NavigationPanel
-                  route={routeInfo!}
-                  destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
-                  destinationType={navigatingTo!}
-                />
+                routeInfo ? (
+                  <NavigationPanel
+                    route={routeInfo}
+                    destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
+                    destinationType={navigatingTo!}
+                  />
+                ) : (
+                  <div className="rounded-2xl driver-glass p-4 flex items-center gap-3 border border-[hsl(var(--driver-border))]">
+                    <div className="h-5 w-5 border-2 border-[hsl(var(--driver-accent))] border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-heading text-[hsl(var(--driver-text))]">Υπολογισμός διαδρομής…</p>
+                  </div>
+                )
               )}
 
               {!isNavActive && (
@@ -454,7 +461,7 @@ export default function DriverApp() {
                           notes: (activeDelivery as any).notes ?? null,
                         }}
                         onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
-                        onFocusDestination={(target) => { mapRef.current?.focusOn(target); setNavMode(true); }}
+                        onFocusDestination={() => { setNavMode(true); }}
                       />
                     </>
                   )}
