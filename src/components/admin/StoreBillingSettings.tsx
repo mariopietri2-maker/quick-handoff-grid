@@ -7,7 +7,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Save, Sparkles } from 'lucide-react';
+import { Loader2, Save, Layers } from 'lucide-react';
 
 interface Row {
   id: string;
@@ -16,9 +16,6 @@ interface Row {
   ext_commission_pct: number;
   ext_flat_fee: number;
   ext_margin_pct: number;
-  ext_smart_target_pct: number;
-  ext_smart_min_pct: number;
-  ext_smart_max_pct: number;
 }
 
 export default function StoreBillingSettings() {
@@ -29,7 +26,7 @@ export default function StoreBillingSettings() {
   useEffect(() => {
     supabase
       .from('stores')
-      .select('id, name, ext_billing_mode, ext_commission_pct, ext_flat_fee, ext_margin_pct, ext_smart_target_pct, ext_smart_min_pct, ext_smart_max_pct' as any)
+      .select('id, name, ext_billing_mode, ext_commission_pct, ext_flat_fee, ext_margin_pct' as any)
       .order('name')
       .then(({ data }) => {
         setRows((data as unknown as Row[]) ?? []);
@@ -49,9 +46,6 @@ export default function StoreBillingSettings() {
         ext_commission_pct: r.ext_commission_pct,
         ext_flat_fee: r.ext_flat_fee,
         ext_margin_pct: r.ext_margin_pct,
-        ext_smart_target_pct: r.ext_smart_target_pct,
-        ext_smart_min_pct: r.ext_smart_min_pct,
-        ext_smart_max_pct: r.ext_smart_max_pct,
       } as any)
       .eq('id', r.id);
     setSavingId(null);
@@ -71,13 +65,13 @@ export default function StoreBillingSettings() {
           Πώς πληρώνει κάθε κατάστημα την πλατφόρμα όταν χειρίζεσαι παραγγελίες από eFood / Wolt / Box.
         </p>
         <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-foreground/80 leading-relaxed">
-          <span className="font-heading font-bold text-primary">⚖️ Smart Buffer</span> — δυναμική χρέωση μεταξύ min–max με στόχο το target. Κερδοφόρες παραγγελίες χρεώνονται λιγότερο και η διαφορά πάει σε buffer· ζημιογόνες χρεώνονται περισσότερο και το έλλειμμα καλύπτεται από το buffer. Το Driver Pool δεν επηρεάζεται ποτέ.
+          <span className="font-heading font-bold text-primary">📊 Tiered (default)</span> — οι external χρεώνονται με τα ίδια commission tiers όπως οι internal παραγγελίες (πχ 15%). Η προμήθεια πάει στο ενοποιημένο Driver Pool που πληρώνει και τους οδηγούς. Μία τσάντα — απλό, σταθερό, χωρίς buffer.
         </div>
       </div>
 
       <div className="space-y-3">
         {rows.map(r => {
-          const isSmart = r.ext_billing_mode === 'smart_buffer';
+          const isTiered = r.ext_billing_mode === 'tiered' || !r.ext_billing_mode;
           return (
             <Card key={r.id}>
               <CardContent className="pt-5 space-y-3">
@@ -86,16 +80,16 @@ export default function StoreBillingSettings() {
                     <Label className="text-xs text-muted-foreground">Κατάστημα</Label>
                     <p className="font-heading font-bold text-sm mt-1 flex items-center gap-2">
                       {r.name}
-                      {isSmart && <Badge variant="outline" className="gap-1 border-primary/40 text-primary text-[10px]"><Sparkles className="h-3 w-3" /> Smart</Badge>}
+                      {isTiered && <Badge variant="outline" className="gap-1 border-primary/40 text-primary text-[10px]"><Layers className="h-3 w-3" /> Tiered</Badge>}
                     </p>
                   </div>
                   <div>
                     <Label className="text-xs">Μοντέλο</Label>
-                    <Select value={r.ext_billing_mode} onValueChange={v => update(r.id, { ext_billing_mode: v })}>
+                    <Select value={r.ext_billing_mode || 'tiered'} onValueChange={v => update(r.id, { ext_billing_mode: v })}>
                       <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="smart_buffer">⚖️ Smart Buffer (10–20%)</SelectItem>
-                        <SelectItem value="commission">Προμήθεια %</SelectItem>
+                        <SelectItem value="tiered">📊 Tiered (όπως internal)</SelectItem>
+                        <SelectItem value="commission">Σταθερή προμήθεια %</SelectItem>
                         <SelectItem value="flat_fee">Σταθερό €</SelectItem>
                         <SelectItem value="driver_plus_margin">Οδηγός + %</SelectItem>
                       </SelectContent>
@@ -106,25 +100,7 @@ export default function StoreBillingSettings() {
                   </Button>
                 </div>
 
-                {isSmart ? (
-                  <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/60">
-                    <div>
-                      <Label className="text-xs">Min %</Label>
-                      <Input type="number" step="0.5" min="5" max="30" value={r.ext_smart_min_pct}
-                        onChange={e => update(r.id, { ext_smart_min_pct: Number(e.target.value) })} className="h-9" />
-                    </div>
-                    <div>
-                      <Label className="text-xs text-primary">Target %</Label>
-                      <Input type="number" step="0.5" min="5" max="40" value={r.ext_smart_target_pct}
-                        onChange={e => update(r.id, { ext_smart_target_pct: Number(e.target.value) })} className="h-9 border-primary/40" />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Max %</Label>
-                      <Input type="number" step="0.5" min="5" max="40" value={r.ext_smart_max_pct}
-                        onChange={e => update(r.id, { ext_smart_max_pct: Number(e.target.value) })} className="h-9" />
-                    </div>
-                  </div>
-                ) : (
+                {!isTiered && (
                   <div className="grid grid-cols-3 gap-3 pt-2 border-t border-border/60">
                     <div>
                       <Label className="text-xs">Προμήθεια %</Label>
