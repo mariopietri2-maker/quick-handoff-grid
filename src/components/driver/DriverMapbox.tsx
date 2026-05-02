@@ -63,6 +63,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const lastRouteKey = useRef('');
   const followModeRef = useRef(followMode);
   useEffect(() => { followModeRef.current = followMode; }, [followMode]);
+  // When the user manually pans/zooms/rotates during follow mode, pause auto-camera until they recenter
+  const userInteractingRef = useRef(false);
 
   // Compute bearing between two coords (fallback when GPS heading unavailable, e.g. desktop)
   const bearingBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
