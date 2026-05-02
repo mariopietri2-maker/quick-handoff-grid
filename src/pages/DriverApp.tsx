@@ -234,7 +234,7 @@ export default function DriverApp() {
                   notes: (activeDelivery as any).notes ?? null,
                 }}
                 onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
-                onFocusDestination={() => {}}
+                
               />
             </section>
           )}
