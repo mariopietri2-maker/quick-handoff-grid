@@ -266,7 +266,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       <div>
         <h2 className="font-heading font-bold text-xl text-foreground">Νέα Custom Order</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Συμπλήρωσε τα στοιχεία της παραγγελίας. Τα χιλιόμετρα μετριούνται αυτόματα από τη διεύθυνση και η κατανομή <strong>85/10/5</strong> εφαρμόζεται κλειδωμένα.
+          Τα χιλιόμετρα μετριούνται αυτόματα από τη διεύθυνση. Η αμοιβή οδηγού & η χρέωση καταστήματος υπολογίζονται με βάση τις ρυθμίσεις χρέωσης που έχει ορίσει ο διαχειριστής για το κατάστημά σου.
         </p>
       </div>
 
