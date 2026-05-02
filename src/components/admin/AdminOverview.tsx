@@ -150,7 +150,7 @@ export default function AdminOverview({ orders, profiles }: Props) {
       const { data } = await (supabase as any).from('admin_treasury').select('*').eq('id', 1).maybeSingle();
       return data as { admin_balance: number; platform_pool: number; lifetime_admin_earned: number; lifetime_platform_earned: number } | null;
     },
-    refetchInterval: 30_000,
+    refetchInterval: 5000,
   });
 
   /* Pending store payouts */
@@ -160,7 +160,7 @@ export default function AdminOverview({ orders, profiles }: Props) {
       const { data } = await (supabase as any).from('store_wallets').select('available_balance');
       return (data ?? []).reduce((s: number, r: any) => s + Number(r.available_balance ?? 0), 0);
     },
-    refetchInterval: 60_000,
+    refetchInterval: 5000,
   });
 
   /* Cash on street (active drivers only) */
@@ -170,7 +170,7 @@ export default function AdminOverview({ orders, profiles }: Props) {
       const { data } = await (supabase as any).from('driver_state').select('shift_cash_balance, shift_started_at');
       return (data ?? []).filter((r: any) => r.shift_started_at).reduce((s: number, r: any) => s + Number(r.shift_cash_balance ?? 0), 0);
     },
-    refetchInterval: 30_000,
+    refetchInterval: 5000,
   });
 
   /* Active drivers count */
