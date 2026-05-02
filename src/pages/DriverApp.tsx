@@ -242,6 +242,7 @@ export default function DriverApp() {
                   items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
                   estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
                   pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
+                  predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
                 }}
                 onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                 onFocusDestination={() => {}}
@@ -499,6 +500,7 @@ export default function DriverApp() {
                           items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
                           estimatedPayout: Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0),
                           pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
+                          predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
                         }}
                         onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                         onFocusDestination={(target) => { mapRef.current?.focusOn(target); setNavMode(true); }}

@@ -46,13 +46,16 @@ Deno.serve(async (req) => {
       return json({ error: "offer expired" }, 410);
     }
 
-    // Atomic claim: only succeeds if order still unassigned
+    // Atomic claim: only succeeds if order still unassigned.
+    // We do NOT change the store-managed status (placed/accepted/preparing/ready):
+    // the driver is just RESERVING the order. They can only physically pick it
+    // up once the store flips it to 'ready'.
     const { data: claimed, error: claimErr } = await admin
       .from("orders")
-      .update({ driver_id: user.id, status: "accepted" })
+      .update({ driver_id: user.id })
       .eq("id", offer.order_id)
       .is("driver_id", null)
-      .select("id")
+      .select("id, status")
       .maybeSingle();
 
     if (claimErr) return json({ error: claimErr.message }, 500);
@@ -63,6 +66,15 @@ Deno.serve(async (req) => {
         .update({ status: "cancelled", responded_at: new Date().toISOString() })
         .eq("id", offerId);
       return json({ error: "order already taken" }, 409);
+    }
+
+    // If the order was still 'placed' (no store action yet), nudge it to
+    // 'accepted' so customer / store dashboards reflect that a courier is locked in.
+    if (claimed.status === "placed") {
+      await admin
+        .from("orders")
+        .update({ status: "accepted" })
+        .eq("id", offer.order_id);
     }
 
     // Mark this offer accepted, cancel siblings

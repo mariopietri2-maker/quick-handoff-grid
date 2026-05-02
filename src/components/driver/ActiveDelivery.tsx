@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
@@ -22,6 +22,8 @@ interface ActiveDeliveryData {
   items: DeliveryItem[];
   estimatedPayout: number;
   pickupChecklist: string[];
+  /** ISO timestamp predicted by ML/heuristic when the store will mark the order ready */
+  predictedReadyAt?: string | null;
 }
 
 interface ActiveDeliveryProps {
@@ -51,15 +53,31 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
+  const isReady = ['ready', 'arrived', 'picked_up', 'delivered'].includes(delivery.status);
 
-  const getNextAction = () => {
+  // Live countdown to predicted ready time (only meaningful pre-ready)
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (isReady) return;
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, [isReady]);
+  const etaMs = delivery.predictedReadyAt ? new Date(delivery.predictedReadyAt).getTime() - now : null;
+  const etaMin = etaMs != null ? Math.max(0, Math.round(etaMs / 60_000)) : null;
+
+  const getNextAction = (): { label: string; next: string; locked: boolean } | null => {
     switch (delivery.status) {
       case 'accepted': case 'preparing': case 'ready':
-        return { label: 'Έφτασα στο Κατάστημα', next: 'arrived' };
+        return { label: 'Έφτασα στο Κατάστημα', next: 'arrived', locked: false };
       case 'arrived':
-        return { label: 'Παρέλαβα την Παραγγελία', next: 'picked_up' };
+        // Pickup unlocks only when store has flipped status to ready (or beyond).
+        return {
+          label: isReady ? 'Παρέλαβα την Παραγγελία' : 'Αναμονή για ετοιμασία…',
+          next: 'picked_up',
+          locked: !isReady,
+        };
       case 'picked_up':
-        return { label: 'Ολοκλήρωση Παράδοσης', next: 'delivered' };
+        return { label: 'Ολοκλήρωση Παράδοσης', next: 'delivered', locked: false };
       default:
         return null;
     }
@@ -72,6 +90,23 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
 
   return (
     <div className="space-y-3">
+      {/* Predicted ready banner — only before store flips to ready */}
+      {!isReady && delivery.predictedReadyAt && (
+        <div className="rounded-2xl driver-glass p-3 flex items-center gap-3 border border-[hsl(var(--driver-accent))]/25">
+          <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center shrink-0">
+            <Clock className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text))]">
+              {etaMin === 0 ? 'Έτοιμη όπου να ναι' : `Έτοιμη σε ~${etaMin} λεπτά`}
+            </p>
+            <p className="text-[10.5px] text-[hsl(var(--driver-text-muted))] leading-tight">
+              Πρόβλεψη ML — η παραλαβή ξεκλειδώνει μόλις το κατάστημα την ετοιμάσει
+            </p>
+          </div>
+        </div>
+      )}
+
       {/* Status stepper */}
       <div className="rounded-2xl driver-glass p-4">
         <div className="flex items-center justify-between mb-3">
@@ -222,11 +257,17 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
       {/* Main CTA */}
       {nextAction && (
         <button
-          onClick={() => onStatusUpdate(nextAction.next)}
-          className="w-full h-14 rounded-2xl text-base font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.97] flex items-center justify-center gap-2"
+          onClick={() => !nextAction.locked && onStatusUpdate(nextAction.next)}
+          disabled={nextAction.locked}
+          className={`w-full h-14 rounded-2xl text-base font-heading font-bold transition-all flex items-center justify-center gap-2 ${
+            nextAction.locked
+              ? 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))] cursor-not-allowed'
+              : 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 active:scale-[0.97]'
+          }`}
         >
+          {nextAction.locked ? <Lock className="h-5 w-5" /> : null}
           {nextAction.label}
-          <ChevronRight className="h-5 w-5" />
+          {!nextAction.locked && <ChevronRight className="h-5 w-5" />}
         </button>
       )}
     </div>
