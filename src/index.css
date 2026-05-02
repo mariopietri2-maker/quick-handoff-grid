@@ -266,6 +266,16 @@
     scrollbar-width: thin;
     scrollbar-color: hsl(225 15% 25% / 0.5) transparent;
   }
+
+  /* Hide scrollbar visually but keep scrolling — used by horizontal
+     category strips on mobile (CustomerApp, RestaurantPage, etc.). */
+  .no-scrollbar {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
   .scrollbar-thin::-webkit-scrollbar {
     width: 4px;
   }
@@ -337,8 +347,11 @@
     @apply text-[10.5px] font-semibold uppercase tracking-wider text-muted-foreground bg-muted/40 px-2.5 py-1.5 text-left border-b border-border/70 sticky top-0 z-10;
   }
   .admin-table tbody td {
-    @apply px-2.5 py-1.5 border-b border-border/40 align-middle;
+    @apply px-2.5 py-1.5 border-b border-border/40 align-middle whitespace-nowrap;
     height: var(--admin-row-h);
+  }
+  .admin-table thead th {
+    white-space: nowrap;
   }
   .admin-table tbody tr:hover td {
     @apply bg-muted/30;
