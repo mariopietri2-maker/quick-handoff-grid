@@ -161,6 +161,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       });
     });
 
+    // Detect manual user interaction so the follow camera doesn't fight the user
+    const onUserMove = (e: any) => {
+      if (e?.originalEvent) userInteractingRef.current = true;
+    };
+    map.on('dragstart', onUserMove);
+    map.on('rotatestart', onUserMove);
+    map.on('pitchstart', onUserMove);
+    map.on('zoomstart', onUserMove);
+
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
