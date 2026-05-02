@@ -261,6 +261,27 @@ export default function AdminApp() {
             </div>
           </div>
 
+          {/* Live KPI strip */}
+          {(() => {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const todays = (orders.data ?? []).filter((o: any) => new Date(o.created_at) >= today);
+            const revenueToday = todays.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
+            const adminToday = todays.reduce((s: number, o: any) => s + Number(o.platform_profit || 0), 0);
+            const activeDrivers = (driverStates.data ?? []).filter((d: any) => !!d.shift_started_at && !d.on_break).length;
+            const live = todays.filter((o: any) => !['delivered', 'cancelled'].includes(o.status)).length;
+            return (
+              <div className="px-3 lg:px-4 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto">
+                <div className="flex gap-2 min-w-max">
+                  <KpiPill icon={Activity} label="Live παραγγελίες" value={String(live)} tone="text-primary" pulse={live > 0} />
+                  <KpiPill icon={ShoppingBag} label="Σήμερα" value={String(todays.length)} tone="text-info" />
+                  <KpiPill icon={TrendingUp} label="Τζίρος σήμερα" value={`€${revenueToday.toFixed(0)}`} tone="text-foreground" />
+                  <KpiPill icon={Wallet} label="Admin κερδίζει σήμερα" value={`€${adminToday.toFixed(2)}`} tone="text-success" />
+                  <KpiPill icon={Bike} label="Ενεργοί οδηγοί" value={String(activeDrivers)} tone="text-warning" />
+                </div>
+              </div>
+            );
+          })()}
+
           {/* Sub-tab strip */}
           {(() => {
             const tabs = getTabsForSection(findParentSection(activeSection));
