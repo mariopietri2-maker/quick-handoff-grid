@@ -38,6 +38,7 @@ import StorePromotionsManager from '@/components/admin/StorePromotionsManager';
 import SystemResetPanel from '@/components/admin/SystemResetPanel';
 import LiveOpsDashboard from '@/components/admin/LiveOpsDashboard';
 import SplitCalculator from '@/components/admin/SplitCalculator';
+import StorePayablesPanel from '@/components/admin/StorePayablesPanel';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -176,6 +177,8 @@ export default function AdminApp() {
         return <FinancialsManager />;
       case 'split_calc':
         return <SplitCalculator />;
+      case 'store_payables':
+        return <StorePayablesPanel />;
       case 'pricing':
         return <PricingSettings />;
       case 'support_roles':
