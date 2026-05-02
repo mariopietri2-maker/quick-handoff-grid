@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, Eye, EyeOff, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { useAuth } from '@/hooks/useAuth';
@@ -23,7 +23,7 @@ import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
-import { NavigationPanel } from '@/components/driver/NavigationPanel';
+
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
@@ -131,23 +131,11 @@ export default function DriverApp() {
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
-  const [navMode, setNavMode] = useState(false);
-  const [showInlineNav, setShowInlineNav] = useState<boolean>(() => {
-    if (typeof localStorage === 'undefined') return true;
-    return localStorage.getItem('driver_show_inline_nav_v1') !== '0';
-  });
-  useEffect(() => {
-    try { localStorage.setItem('driver_show_inline_nav_v1', showInlineNav ? '1' : '0'); } catch {}
-  }, [showInlineNav]);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
     ? (['accepted', 'preparing', 'ready', 'arrived'].includes(activeDelivery.status ?? '') ? 'store' as const : activeDelivery.status === 'picked_up' ? 'customer' as const : null)
     : null;
-
-  // Auto-exit nav mode if delivery ends
-  useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
-  const isNavActive = navMode && !!routeInfo && !!navigatingTo;
 
   useEffect(() => {
     if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
