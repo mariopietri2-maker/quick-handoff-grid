@@ -240,31 +240,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
       {/* Wait time bonus */}
       <WaitTimeBonusBanner orderId={delivery.id} status={delivery.status} />
 
-      {/* Pickup checklist */}
-      {delivery.status === 'arrived' && (
-        <div className="rounded-2xl driver-glass border-2 border-[hsl(var(--driver-accent))]/20 p-4">
-          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-3 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
-            Λίστα Ελέγχου Παραλαβής
-          </p>
-          {delivery.pickupChecklist.map((item, i) => (
-            <button
-              key={i}
-              onClick={() => toggleChecklistItem(i)}
-              className="flex items-center gap-3 w-full py-2.5 text-left"
-            >
-              {checkedItems.has(i) ? (
-                <CheckCircle2 className="h-5 w-5 text-[hsl(var(--driver-accent))] flex-shrink-0" />
-              ) : (
-                <Circle className="h-5 w-5 text-[hsl(var(--driver-text-muted))] flex-shrink-0" />
-              )}
-              <span className={`text-sm ${checkedItems.has(i) ? 'line-through text-[hsl(var(--driver-text-muted))]' : 'text-[hsl(var(--driver-text))]'}`}>
-                {item}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Payout */}
       <div className="rounded-2xl driver-glass p-4 flex items-center justify-between">
