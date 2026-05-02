@@ -1,60 +1,155 @@
-import { Car, Store, ArrowRight, Zap, Shield, BarChart3, ShoppingBag, MapPin, Clock, Users, Search, ClipboardList, Bike, CheckCircle, Headphones } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  Car, Store, ArrowRight, Zap, Shield, BarChart3, MapPin, Clock, Users,
+  Search, ClipboardList, Bike, CheckCircle, Headphones, Sparkles, Activity,
+  TrendingUp, Star,
+} from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+
+/* ─── tiny count-up hook ─── */
+function useCountUp(target: number, duration = 1600) {
+  const [val, setVal] = useState(0);
+  const ref = useRef<HTMLSpanElement>(null);
+  const started = useRef(false);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((e) => {
+        if (e.isIntersecting && !started.current) {
+          started.current = true;
+          const start = performance.now();
+          const tick = (now: number) => {
+            const p = Math.min(1, (now - start) / duration);
+            const eased = 1 - Math.pow(1 - p, 3);
+            setVal(Math.round(target * eased));
+            if (p < 1) requestAnimationFrame(tick);
+          };
+          requestAnimationFrame(tick);
+        }
+      });
+    }, { threshold: 0.3 });
+    io.observe(el);
+    return () => io.disconnect();
+  }, [target, duration]);
+  return { val, ref };
+}
+
+/* ─── live activity feed (rotates) ─── */
+const FEED = [
+  { city: 'Αθήνα',       text: 'παρέλαβε από Mama Pizza',     mins: 2  },
+  { city: 'Θεσσαλονίκη', text: 'ολοκλήρωσε παράδοση',          mins: 4  },
+  { city: 'Πάτρα',       text: 'νέα παραγγελία €18.40',        mins: 1  },
+  { city: 'Ηράκλειο',    text: 'ένα νέο κατάστημα συνδέθηκε',  mins: 6  },
+  { city: 'Λάρισα',      text: 'οδηγός online',                mins: 1  },
+  { city: 'Βόλος',       text: 'παράδοση σε 22 λεπτά ⚡',      mins: 3  },
+];
+
+function LiveTicker() {
+  const [i, setI] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setI((v) => (v + 1) % FEED.length), 2600);
+    return () => clearInterval(t);
+  }, []);
+  const item = FEED[i];
+  return (
+    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-card/80 backdrop-blur-sm shadow-sm">
+      <span className="relative flex h-2 w-2">
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+      </span>
+      <span key={i} className="text-xs font-medium text-foreground animate-fade-in">
+        <span className="text-primary font-semibold">{item.city}</span>
+        <span className="text-muted-foreground"> · {item.text}</span>
+        <span className="text-muted-foreground/70"> · {item.mins}'</span>
+      </span>
+    </div>
+  );
+}
 
 const Index = () => {
   const navigate = useNavigate();
   const { user, profile, isAdmin, isSupport } = useAuth();
 
   const handleNav = (target: 'driver' | 'store') => {
-    if (user && profile?.role === target) {
-      navigate(`/${target}`);
-    } else {
-      navigate('/auth');
-    }
+    if (user && profile?.role === target) navigate(`/${target}`);
+    else navigate('/auth');
   };
 
+  const stores  = useCountUp(520);
+  const drivers = useCountUp(2140);
+  const orders  = useCountUp(53000);
+  const rating  = useCountUp(49);
+
+  const partners = useMemo(
+    () => ['Mama Pizza', 'Souvlaki Bros', 'Green Bowl', 'Burger Lab', 'Kafé 23', 'Sushi Now', 'Bakery 1907', 'Taverna Mou'],
+    [],
+  );
+
   return (
-    <div className="min-h-screen bg-[hsl(220,20%,7%)] text-[hsl(220,14%,96%)]">
+    <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       {/* ─── NAVBAR ─── */}
-      <nav className="sticky top-0 z-50 border-b border-[hsl(220,20%,14%)] bg-[hsl(220,20%,7%)]/90 backdrop-blur-md">
+      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
-          <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
-          <Button
-            size="sm"
-            className="gradient-primary text-primary-foreground font-heading font-bold rounded-lg press-scale"
-            onClick={() => navigate('/auth')}
-          >
-            Σύνδεση
-          </Button>
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-xl gradient-primary flex items-center justify-center shadow-primary">
+              <Sparkles className="h-4 w-4 text-primary-foreground" />
+            </div>
+            <span className="font-heading font-extrabold text-lg tracking-tight">Fresh Delivery</span>
+          </div>
+          <div className="flex items-center gap-2">
+            <Button
+              size="sm" variant="ghost"
+              className="hidden sm:inline-flex font-heading font-semibold"
+              onClick={() => navigate('/auth')}
+            >
+              Σύνδεση
+            </Button>
+            <Button
+              size="sm"
+              className="gradient-primary text-primary-foreground font-heading font-bold rounded-lg press-scale shadow-primary"
+              onClick={() => navigate('/auth')}
+            >
+              Ξεκίνα
+              <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
+            </Button>
+          </div>
         </div>
       </nav>
 
       {/* ─── HERO ─── */}
-      <section className="relative overflow-hidden">
-        <div className="absolute inset-0" style={{
-          backgroundImage: 'linear-gradient(hsl(220,20%,14%) 1px, transparent 1px), linear-gradient(90deg, hsl(220,20%,14%) 1px, transparent 1px)',
-          backgroundSize: '60px 60px',
-          opacity: 0.4,
-        }} />
-        <div className="absolute inset-0" style={{
-          background: 'radial-gradient(ellipse 60% 50% at 50% 80%, hsl(0 85% 50% / 0.12), transparent)',
-        }} />
+      <section className="relative">
+        {/* animated gradient orbs */}
+        <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute -top-32 -left-20 h-[420px] w-[420px] rounded-full opacity-40 blur-3xl"
+               style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 70%)', animation: 'float 14s ease-in-out infinite' }} />
+          <div className="absolute -top-10 right-[-100px] h-[360px] w-[360px] rounded-full opacity-30 blur-3xl"
+               style={{ background: 'radial-gradient(circle, hsl(var(--accent) / 0.4), transparent 70%)', animation: 'float 18s ease-in-out infinite reverse' }} />
+          <div className="absolute inset-0 opacity-[0.05]"
+               style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+        </div>
 
-        <div className="relative max-w-4xl mx-auto px-4 pt-24 pb-20 text-center">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-primary/30 bg-primary/5 mb-8 animate-fade-in">
-            <span className="text-sm font-heading text-primary">Η πλατφόρμα delivery που αξίζεις</span>
+        <div className="relative max-w-5xl mx-auto px-4 pt-16 sm:pt-24 pb-16 text-center">
+          <div className="flex justify-center mb-6 animate-fade-in">
+            <LiveTicker />
           </div>
 
-          <h1 className="font-heading font-extrabold text-4xl sm:text-5xl md:text-7xl leading-tight mb-6 animate-fade-in" style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-            Delivery <span className="text-gradient-primary">Marketplace</span>
+          <h1 className="font-heading font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
+              style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
+            Φαγητό που φτάνει.<br />
+            <span className="text-gradient-primary">Πλατφόρμα που κινείται.</span>
           </h1>
-          <p className="text-[hsl(220,10%,55%)] text-lg max-w-lg mx-auto mb-10 animate-fade-in" style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-            Μια αγορά που συνδέει οδηγούς και εστιατόρια σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα, χωρίς περιττά βήματα.
+
+          <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto mb-10 animate-fade-in leading-relaxed"
+             style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
+            Συνδέουμε εστιατόρια, οδηγούς και πελάτες σε πραγματικό χρόνο. Διαφανείς προμήθειες,
+            άμεσες πληρωμές, μηδέν χάος.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-16 animate-fade-in" style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14 animate-fade-in"
+               style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
             <Button
               size="lg"
               className="h-14 px-8 text-base font-heading font-bold gradient-primary shadow-primary text-primary-foreground rounded-xl hover-lift press-scale"
@@ -64,162 +159,206 @@ const Index = () => {
               <ArrowRight className="ml-2 h-5 w-5" />
             </Button>
             <Button
-              size="lg"
-              variant="outline"
-              className="h-14 px-8 text-base font-heading font-semibold border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,12%)] bg-transparent rounded-xl press-scale"
+              size="lg" variant="outline"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
               onClick={() => handleNav('driver')}
             >
-              <Car className="mr-2 h-5 w-5" />
-              Εφαρμογή Οδηγού
+              <Car className="mr-2 h-5 w-5 text-primary" />
+              Γίνε Οδηγός
             </Button>
             <Button
-              size="lg"
-              variant="outline"
-              className="h-14 px-8 text-base font-heading font-semibold border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,12%)] bg-transparent rounded-xl press-scale"
+              size="lg" variant="outline"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
               onClick={() => handleNav('store')}
             >
-              <Store className="mr-2 h-5 w-5" />
-              Εφαρμογή Καταστήματος
+              <Store className="mr-2 h-5 w-5 text-primary" />
+              Σύνδεσε Κατάστημα
             </Button>
-            {isAdmin && (
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-8 text-base font-heading font-semibold border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,12%)] bg-transparent rounded-xl press-scale"
-                onClick={() => navigate('/admin')}
-              >
-                <Shield className="mr-2 h-5 w-5" />
-                Διαχείριση
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            )}
-            {(isSupport || isAdmin) && (
-              <Button
-                size="lg"
-                variant="outline"
-                className="h-14 px-8 text-base font-heading font-semibold border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,12%)] bg-transparent rounded-xl press-scale"
-                onClick={() => navigate('/support')}
-              >
-                <Headphones className="mr-2 h-5 w-5" />
-                Υποστήριξη
-                <ArrowRight className="ml-2 h-5 w-5" />
-              </Button>
-            )}
           </div>
 
-          <div className="flex justify-center gap-12 sm:gap-20 animate-fade-in" style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
-            <StatItem value="500+" label="Καταστήματα" />
-            <StatItem value="2K+" label="Οδηγοί" />
-            <StatItem value="50K+" label="Παραγγελίες/μήνα" />
+          {(isAdmin || isSupport) && (
+            <div className="flex flex-wrap gap-2 justify-center mb-10 animate-fade-in" style={{ animationDelay: '0.35s', animationFillMode: 'both' }}>
+              {isAdmin && (
+                <Button size="sm" variant="ghost" className="rounded-full font-heading" onClick={() => navigate('/admin')}>
+                  <Shield className="mr-1.5 h-3.5 w-3.5" /> Διαχείριση
+                </Button>
+              )}
+              {(isSupport || isAdmin) && (
+                <Button size="sm" variant="ghost" className="rounded-full font-heading" onClick={() => navigate('/support')}>
+                  <Headphones className="mr-1.5 h-3.5 w-3.5" /> Υποστήριξη
+                </Button>
+              )}
+            </div>
+          )}
+
+          {/* Live stat tiles */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto animate-fade-in"
+               style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
+            <StatTile icon={Store}      label="Καταστήματα"  countRef={stores.ref}  display={`${stores.val}+`} />
+            <StatTile icon={Bike}       label="Οδηγοί"        countRef={drivers.ref} display={`${(drivers.val/1000).toFixed(1)}K+`} />
+            <StatTile icon={Activity}   label="Παραγγελίες/μήνα" countRef={orders.ref}  display={`${Math.round(orders.val/1000)}K+`} />
+            <StatTile icon={Star}       label="Αξιολόγηση"    countRef={rating.ref}  display={`${(rating.val/10).toFixed(1)}★`} />
+          </div>
+        </div>
+
+        {/* Partner marquee */}
+        <div className="relative border-y border-border bg-card/40">
+          <div className="max-w-6xl mx-auto px-4 py-5 overflow-hidden">
+            <div className="flex gap-10 whitespace-nowrap animate-marquee">
+              {[...partners, ...partners].map((p, i) => (
+                <span key={i} className="text-sm font-heading font-semibold text-muted-foreground tracking-wide">
+                  {p}
+                </span>
+              ))}
+            </div>
           </div>
         </div>
       </section>
 
       {/* ─── FEATURES ─── */}
-      <section className="max-w-6xl mx-auto px-4 py-20">
-        <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-center mb-4">
-          Σχεδιασμένο για <span className="text-gradient-primary">Κλίμακα</span>
-        </h2>
-        <p className="text-center text-[hsl(220,10%,55%)] mb-12 max-w-md mx-auto">
-          Όλα τα εργαλεία που χρειάζεσαι σε μία πλατφόρμα
-        </p>
+      <section className="max-w-6xl mx-auto px-4 py-20 sm:py-24">
+        <div className="text-center mb-14">
+          <span className="inline-block text-xs font-heading font-bold uppercase tracking-widest text-primary mb-3">
+            Δυνατότητες
+          </span>
+          <h2 className="font-heading font-extrabold text-3xl md:text-4xl tracking-tight mb-3">
+            Σχεδιασμένο για <span className="text-gradient-primary">κλίμακα</span>
+          </h2>
+          <p className="text-muted-foreground max-w-md mx-auto">
+            Όλα τα εργαλεία που χρειάζεσαι σε μία πλατφόρμα.
+          </p>
+        </div>
         <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-          <FeatureCard icon={Zap} title="Ενημερώσεις σε Πραγματικό Χρόνο" description="Συγχρονισμός παραγγελιών μέσω WebSocket μεταξύ οδηγών και καταστημάτων." delay={0} />
-          <FeatureCard icon={Shield} title="Ασφαλές & Αξιόπιστο" description="Ασφάλεια σε επίπεδο γραμμής, πιστοποίηση και επίλυση συγκρούσεων." delay={1} />
-          <FeatureCard icon={BarChart3} title="Αναλυτικά" description="Παρακολούθηση κερδών, βελτιστοποίηση χρόνου προετοιμασίας και μετρήσεις απόδοσης." delay={2} />
-          <FeatureCard icon={MapPin} title="Έξυπνη Δρομολόγηση" description="Αλγόριθμοι AI για τη βέλτιστη ανάθεση παραγγελιών στους πλησιέστερους οδηγούς." delay={3} />
-          <FeatureCard icon={Clock} title="Γρήγορη Παράδοση" description="Μέσος χρόνος παράδοσης κάτω από 30 λεπτά σε όλη την πόλη." delay={4} />
-          <FeatureCard icon={Users} title="Υποστήριξη 24/7" description="Ζωντανή υποστήριξη για οδηγούς, καταστήματα και πελάτες όλο το εικοσιτετράωρο." delay={5} />
+          <FeatureCard icon={Zap}        title="Real-time συγχρονισμός"       description="WebSocket-based παραγγελίες, live tracking, instant updates." delay={0} />
+          <FeatureCard icon={Shield}     title="Ασφάλεια enterprise"           description="Row-level security, two-factor, audit logs σε κάθε ενέργεια." delay={1} />
+          <FeatureCard icon={BarChart3}  title="Πλήρη analytics"               description="Κέρδη, χρόνοι, peak hours — δες ό,τι κινεί την επιχείρηση." delay={2} />
+          <FeatureCard icon={MapPin}     title="Έξυπνη δρομολόγηση"            description="AI dispatch βρίσκει τον κοντινότερο διαθέσιμο οδηγό." delay={3} />
+          <FeatureCard icon={TrendingUp} title="Διαφανείς προμήθειες"          description="85/10/5 split — κατάστημα / οδηγός / πλατφόρμα. Πάντα." delay={4} />
+          <FeatureCard icon={Users}      title="Υποστήριξη 24/7"               description="Ζωντανή ομάδα για οδηγούς, καταστήματα και πελάτες." delay={5} />
         </div>
       </section>
 
       {/* ─── HOW IT WORKS ─── */}
-      <section className="max-w-4xl mx-auto px-4 py-20">
-        <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-center mb-16">
-          4 Απλά Βήματα
-        </h2>
-        <div className="grid grid-cols-2 gap-8 sm:gap-12 max-w-lg mx-auto">
-          <StepItem step={1} icon={Search} title="Βρες" description="Αναζήτησε εστιατόρια κοντά σου" />
-          <StepItem step={2} icon={ClipboardList} title="Παράγγειλε" description="Επίλεξε τα αγαπημένα σου πιάτα" />
-          <StepItem step={3} icon={Bike} title="Παράδοση" description="Ο οδηγός παραλαμβάνει & φέρνει" />
-          <StepItem step={4} icon={CheckCircle} title="Απόλαυσε" description="Φρέσκο φαγητό στην πόρτα σου" />
+      <section className="relative bg-card/50 border-y border-border">
+        <div className="max-w-5xl mx-auto px-4 py-20 sm:py-24">
+          <div className="text-center mb-14">
+            <span className="inline-block text-xs font-heading font-bold uppercase tracking-widest text-primary mb-3">
+              Πώς δουλεύει
+            </span>
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl tracking-tight">
+              4 απλά βήματα
+            </h2>
+          </div>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-4">
+            <StepItem step={1} icon={Search}        title="Βρες"        description="Εστιατόρια κοντά σου" />
+            <StepItem step={2} icon={ClipboardList} title="Παράγγειλε"  description="Επίλεξε αγαπημένα" />
+            <StepItem step={3} icon={Bike}          title="Παράδοση"    description="Real-time tracking" />
+            <StepItem step={4} icon={CheckCircle}   title="Απόλαυσε"    description="Φρέσκο στην πόρτα" />
+          </div>
         </div>
       </section>
 
       {/* ─── CTA ─── */}
-      <section className="mx-4 mb-12">
-        <div className="max-w-4xl mx-auto rounded-3xl gradient-primary p-12 text-center hover-lift transition-smooth">
-          <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-primary-foreground mb-4">
-            Ξεκίνα Σήμερα
-          </h2>
-          <p className="text-primary-foreground/80 text-lg mb-8 max-w-md mx-auto">
-            Γίνε μέλος της κοινότητας. Είτε είσαι οδηγός, κατάστημα ή πελάτης.
-          </p>
-          <Button
-            size="lg"
-            className="h-14 px-8 text-base font-heading font-bold bg-primary-foreground text-primary hover:bg-primary-foreground/90 rounded-xl press-scale"
-            onClick={() => navigate('/auth')}
-          >
-            Εγγραφή Δωρεάν
-            <ArrowRight className="ml-2 h-5 w-5" />
-          </Button>
+      <section className="px-4 py-20">
+        <div className="relative max-w-4xl mx-auto rounded-3xl gradient-primary p-10 sm:p-14 text-center overflow-hidden shadow-lg">
+          <div aria-hidden className="absolute inset-0 opacity-20"
+               style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, white 1px, transparent 1px), radial-gradient(circle at 80% 60%, white 1px, transparent 1px)', backgroundSize: '40px 40px, 60px 60px' }} />
+          <div className="relative">
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-primary-foreground mb-4 tracking-tight">
+              Ξεκίνα σήμερα
+            </h2>
+            <p className="text-primary-foreground/85 text-base sm:text-lg mb-8 max-w-md mx-auto">
+              Γίνε μέλος της κοινότητας — οδηγός, κατάστημα ή πελάτης.
+            </p>
+            <Button
+              size="lg"
+              className="h-14 px-8 text-base font-heading font-bold bg-card text-primary hover:bg-card/90 rounded-xl press-scale shadow-lg"
+              onClick={() => navigate('/auth')}
+            >
+              Εγγραφή Δωρεάν
+              <ArrowRight className="ml-2 h-5 w-5" />
+            </Button>
+          </div>
         </div>
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="border-t border-[hsl(220,20%,14%)] py-8">
-        <div className="max-w-6xl mx-auto px-4 text-center space-y-3">
+      <footer className="border-t border-border py-10 bg-card/30">
+        <div className="max-w-6xl mx-auto px-4 text-center space-y-4">
+          <div className="flex items-center justify-center gap-2">
+            <div className="h-6 w-6 rounded-md gradient-primary flex items-center justify-center">
+              <Sparkles className="h-3 w-3 text-primary-foreground" />
+            </div>
+            <span className="font-heading font-bold text-sm">Fresh Delivery</span>
+          </div>
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
-            <a href="/legal/terms" className="text-[hsl(220,10%,55%)] hover:text-primary transition-smooth">Όροι Χρήσης</a>
-            <span className="text-[hsl(220,10%,25%)]">·</span>
-            <a href="/legal/privacy" className="text-[hsl(220,10%,55%)] hover:text-primary transition-smooth">Απόρρητο</a>
-            <span className="text-[hsl(220,10%,25%)]">·</span>
-            <a href="/legal/refunds" className="text-[hsl(220,10%,55%)] hover:text-primary transition-smooth">Επιστροφές</a>
+            <a href="/legal/terms"   className="text-muted-foreground hover:text-primary transition-smooth">Όροι Χρήσης</a>
+            <span className="text-border">·</span>
+            <a href="/legal/privacy" className="text-muted-foreground hover:text-primary transition-smooth">Απόρρητο</a>
+            <span className="text-border">·</span>
+            <a href="/legal/refunds" className="text-muted-foreground hover:text-primary transition-smooth">Επιστροφές</a>
           </nav>
-          <p className="text-sm text-[hsl(220,10%,40%)]">© 2026 Fresh Delivery. Με ❤️ για την Ελλάδα.</p>
+          <p className="text-xs text-muted-foreground">© 2026 Fresh Delivery. Με ❤️ για την Ελλάδα.</p>
         </div>
       </footer>
     </div>
   );
 };
 
-function StatItem({ value, label }: { value: string; label: string }) {
+function StatTile({
+  icon: Icon, label, countRef, display,
+}: { icon: React.ElementType; label: string; countRef: React.RefObject<HTMLSpanElement>; display: string }) {
   return (
-    <div className="text-center">
-      <p className="font-heading font-extrabold text-3xl sm:text-4xl text-[hsl(220,14%,96%)]">{value}</p>
-      <p className="text-sm text-[hsl(220,10%,55%)] mt-1">{label}</p>
+    <div className="group relative rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-primary/30 transition-smooth">
+      <div className="flex items-center gap-2 mb-2">
+        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
+          <Icon className="h-4 w-4 text-primary" />
+        </div>
+      </div>
+      <p className="font-heading font-extrabold text-2xl sm:text-3xl text-foreground tracking-tight">
+        <span ref={countRef}>{display}</span>
+      </p>
+      <p className="text-xs text-muted-foreground mt-1 font-medium">{label}</p>
     </div>
   );
 }
 
-function FeatureCard({ icon: Icon, title, description, delay }: { icon: React.ElementType; title: string; description: string; delay: number }) {
+function FeatureCard({
+  icon: Icon, title, description, delay,
+}: { icon: React.ElementType; title: string; description: string; delay: number }) {
   return (
     <div
-      className="rounded-2xl border border-[hsl(220,20%,14%)] bg-[hsl(220,20%,10%)] p-6 hover:border-primary/30 hover-lift transition-smooth animate-fade-in"
-      style={{ animationDelay: `${0.1 * delay}s`, animationFillMode: 'both' }}
+      className="group relative rounded-2xl border border-border bg-card p-6 hover:border-primary/40 hover:shadow-lg transition-all duration-300 hover:-translate-y-1 animate-fade-in"
+      style={{ animationDelay: `${0.08 * delay}s`, animationFillMode: 'both' }}
     >
-      <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/20 flex items-center justify-center mb-4">
-        <Icon className="h-6 w-6 text-primary" />
+      <div className="absolute inset-0 rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+           style={{ background: 'radial-gradient(circle at top right, hsl(var(--primary) / 0.06), transparent 60%)' }} />
+      <div className="relative">
+        <div className="h-12 w-12 rounded-xl bg-primary/10 border border-primary/15 flex items-center justify-center mb-4 group-hover:scale-110 group-hover:rotate-3 transition-transform">
+          <Icon className="h-6 w-6 text-primary" />
+        </div>
+        <h3 className="font-heading font-bold text-foreground mb-2 tracking-tight">{title}</h3>
+        <p className="text-sm text-muted-foreground leading-relaxed">{description}</p>
       </div>
-      <h3 className="font-heading font-bold text-[hsl(220,14%,96%)] mb-2">{title}</h3>
-      <p className="text-sm text-[hsl(220,10%,55%)] leading-relaxed">{description}</p>
     </div>
   );
 }
 
-function StepItem({ step, icon: Icon, title, description }: { step: number; icon: React.ElementType; title: string; description: string }) {
+function StepItem({
+  step, icon: Icon, title, description,
+}: { step: number; icon: React.ElementType; title: string; description: string }) {
   return (
-    <div className="text-center animate-fade-in" style={{ animationDelay: `${0.15 * step}s`, animationFillMode: 'both' }}>
+    <div className="text-center animate-fade-in" style={{ animationDelay: `${0.12 * step}s`, animationFillMode: 'both' }}>
       <div className="relative inline-flex mb-4">
-        <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center hover-scale">
+        <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center shadow-primary hover:scale-110 transition-transform">
           <Icon className="h-7 w-7 text-primary-foreground" />
         </div>
-        <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-primary text-primary-foreground text-xs font-heading font-bold flex items-center justify-center">
+        <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-card border-2 border-primary text-primary text-xs font-heading font-extrabold flex items-center justify-center shadow-sm">
           {step}
         </span>
       </div>
-      <h3 className="font-heading font-bold text-lg text-[hsl(220,14%,96%)] mb-1">{title}</h3>
-      <p className="text-sm text-[hsl(220,10%,55%)]">{description}</p>
+      <h3 className="font-heading font-bold text-foreground mb-1 tracking-tight">{title}</h3>
+      <p className="text-sm text-muted-foreground">{description}</p>
     </div>
   );
 }
