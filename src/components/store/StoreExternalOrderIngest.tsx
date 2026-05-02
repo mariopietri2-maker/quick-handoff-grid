@@ -27,6 +27,16 @@ interface StoreInfo {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  ext_billing_mode: string | null;
+  ext_commission_pct: number | null;
+  ext_flat_fee: number | null;
+  ext_margin_pct: number | null;
+}
+
+interface PayRates {
+  base_pay: number;
+  per_km_rate: number;
+  min_pay: number;
 }
 
 interface FormState {
