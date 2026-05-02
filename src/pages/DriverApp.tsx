@@ -203,6 +203,16 @@ export default function DriverApp() {
             </div>
             <div className="shrink-0 flex items-center gap-2">
               <Badge className="bg-primary text-primary-foreground font-heading">{offers.length}</Badge>
+              {isAdminRole && (
+                <button
+                  onClick={toggleAdminView}
+                  className="h-8 px-2.5 rounded-lg text-[11px] font-heading font-bold border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5"
+                  title="Εναλλαγή σε προβολή κανονικού οδηγού"
+                >
+                  <Car className="h-3.5 w-3.5" />
+                  Driver view
+                </button>
+              )}
               <UserMenu />
             </div>
           </div>
