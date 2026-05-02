@@ -82,155 +82,154 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
 
   return (
     <div className="space-y-3">
-      {/* Predicted ready banner — only before store flips to ready */}
-      {!isReady && delivery.predictedReadyAt && (
-        <div className="rounded-2xl driver-glass p-3 flex items-center gap-3 border border-[hsl(var(--driver-accent))]/25">
-          <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center shrink-0">
-            <Clock className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+      {/* Unified delivery card */}
+      <div className="rounded-2xl driver-glass overflow-hidden">
+        {/* Predicted ready banner — only before store flips to ready */}
+        {!isReady && delivery.predictedReadyAt && (
+          <div className="px-4 py-3 flex items-center gap-3 bg-[hsl(var(--driver-accent))]/8 border-b border-[hsl(var(--driver-border))]">
+            <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center shrink-0">
+              <Clock className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text))]">
+                {etaMin === 0 ? 'Έτοιμη όπου να ναι' : `Έτοιμη σε ~${etaMin} λεπτά`}
+              </p>
+              <p className="text-[10.5px] text-[hsl(var(--driver-text-muted))] leading-tight">
+                Πρόβλεψη ML — η παραλαβή ξεκλειδώνει μόλις το κατάστημα την ετοιμάσει
+              </p>
+            </div>
           </div>
-          <div className="flex-1 min-w-0">
-            <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text))]">
-              {etaMin === 0 ? 'Έτοιμη όπου να ναι' : `Έτοιμη σε ~${etaMin} λεπτά`}
-            </p>
-            <p className="text-[10.5px] text-[hsl(var(--driver-text-muted))] leading-tight">
-              Πρόβλεψη ML — η παραλαβή ξεκλειδώνει μόλις το κατάστημα την ετοιμάσει
-            </p>
-          </div>
-        </div>
-      )}
+        )}
 
-      {/* Status stepper */}
-      <div className="rounded-2xl driver-glass p-4">
-        <div className="flex items-center justify-between mb-3">
-          {statusSteps.map((step, i) => {
-            const Icon = step.icon;
-            const isComplete = i <= effectiveStepIndex;
-            const isCurrent = i === effectiveStepIndex;
-            return (
-              <div key={step.key} className="flex items-center">
-                <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
-                  isComplete
-                    ? 'bg-[hsl(var(--driver-accent))] text-white'
-                    : 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
-                } ${isCurrent && delivery.status !== 'delivered' ? 'ring-3 ring-[hsl(var(--driver-accent))]/20 scale-110' : ''}`}>
-                  {i < effectiveStepIndex ? (
-                    <CheckCircle2 className="h-4 w-4" />
-                  ) : (
-                    <Icon className="h-4 w-4" />
+        {/* Status stepper */}
+        <div className="px-4 pt-4 pb-3 border-b border-[hsl(var(--driver-border))]">
+          <div className="flex items-center justify-between mb-3">
+            {statusSteps.map((step, i) => {
+              const Icon = step.icon;
+              const isComplete = i <= effectiveStepIndex;
+              const isCurrent = i === effectiveStepIndex;
+              return (
+                <div key={step.key} className="flex items-center">
+                  <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                    isComplete
+                      ? 'bg-[hsl(var(--driver-accent))] text-white'
+                      : 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
+                  } ${isCurrent && delivery.status !== 'delivered' ? 'ring-3 ring-[hsl(var(--driver-accent))]/20 scale-110' : ''}`}>
+                    {i < effectiveStepIndex ? (
+                      <CheckCircle2 className="h-4 w-4" />
+                    ) : (
+                      <Icon className="h-4 w-4" />
+                    )}
+                  </div>
+                  {i < statusSteps.length - 1 && (
+                    <div className={`h-0.5 w-4 sm:w-6 mx-0.5 rounded-full transition-colors ${
+                      i < effectiveStepIndex ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-border))]'
+                    }`} />
                   )}
                 </div>
-                {i < statusSteps.length - 1 && (
-                  <div className={`h-0.5 w-4 sm:w-6 mx-0.5 rounded-full transition-colors ${
-                    i < effectiveStepIndex ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-border))]'
-                  }`} />
+              );
+            })}
+          </div>
+          <p className="font-heading font-bold text-center text-[hsl(var(--driver-text))] text-sm tracking-wide">
+            {statusSteps[effectiveStepIndex]?.label}
+          </p>
+        </div>
+
+        {/* Route */}
+        <div className="px-4 py-4 border-b border-[hsl(var(--driver-border))]">
+          <div className="flex items-start gap-3">
+            <div className="flex flex-col items-center gap-1">
+              <div className="h-9 w-9 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
+                <Store className="h-4 w-4 text-orange-400" />
+              </div>
+              <div className="w-0.5 h-4 bg-[hsl(var(--driver-border))]" />
+              <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center border border-[hsl(var(--driver-accent))]/20">
+                <MapPin className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+              </div>
+            </div>
+            <div className="flex-1 min-w-0 space-y-2.5">
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.storeName}</p>
+                  <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.storeAddress)}</p>
+                </div>
+                {delivery.storePhone && (
+                  <a href={`tel:${delivery.storePhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
+                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
+                  </a>
                 )}
               </div>
-            );
-          })}
-        </div>
-        <p className="font-heading font-bold text-center text-[hsl(var(--driver-text))] text-sm tracking-wide">
-          {statusSteps[effectiveStepIndex]?.label}
-        </p>
-      </div>
-
-      {/* Route card */}
-      <div className="rounded-2xl driver-glass p-4">
-        <div className="flex items-start gap-3">
-          <div className="flex flex-col items-center gap-1">
-            <div className="h-9 w-9 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
-              <Store className="h-4 w-4 text-orange-400" />
-            </div>
-            <div className="w-0.5 h-4 bg-[hsl(var(--driver-border))]" />
-            <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center border border-[hsl(var(--driver-accent))]/20">
-              <MapPin className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+              <div className="flex items-center justify-between gap-2">
+                <div className="min-w-0">
+                  <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.customerName}</p>
+                  <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.deliveryAddress)}</p>
+                </div>
+                {delivery.customerPhone && (
+                  <a href={`tel:${delivery.customerPhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
+                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
+                  </a>
+                )}
+              </div>
             </div>
           </div>
-          <div className="flex-1 min-w-0 space-y-2.5">
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.storeName}</p>
-                <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.storeAddress)}</p>
-              </div>
-              {delivery.storePhone && (
-                <a href={`tel:${delivery.storePhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
-                  <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
-                </a>
-              )}
-            </div>
-            <div className="flex items-center justify-between gap-2">
-              <div className="min-w-0">
-                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.customerName}</p>
-                <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.deliveryAddress)}</p>
-              </div>
-              {delivery.customerPhone && (
-                <a href={`tel:${delivery.customerPhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
-                  <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
-                </a>
-              )}
-            </div>
-          </div>
-        </div>
 
-        {/* Navigation — opens in-app navigation */}
-        {(isGoingToStore || isGoingToCustomer) && (
-          <div className="mt-4">
+          {(isGoingToStore || isGoingToCustomer) && (
             <button
               onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
-              className="w-full h-12 rounded-xl gradient-primary text-white text-sm font-heading font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
+              className="mt-4 w-full h-12 rounded-xl gradient-primary text-white text-sm font-heading font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
             >
               <Navigation className="h-4 w-4" />
               Πλοήγηση
             </button>
-          </div>
-        )}
-      </div>
-
-      {/* Notes from customer / store */}
-      {(delivery.notes || delivery.storeNotes) && (
-        <div className="rounded-2xl driver-glass p-4 border border-amber-400/30 bg-amber-400/5">
-          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
-            <StickyNote className="h-4 w-4 text-amber-400" />
-            Σημειώσεις
-          </p>
-          {delivery.notes && (
-            <div className="mb-2">
-              <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από πελάτη</p>
-              <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.notes}</p>
-            </div>
-          )}
-          {delivery.storeNotes && (
-            <div>
-              <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από κατάστημα</p>
-              <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.storeNotes}</p>
-            </div>
           )}
         </div>
-      )}
 
-      {/* Order items */}
-      <div className="rounded-2xl driver-glass p-4">
-        <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
-          <Package className="h-4 w-4 text-primary" />
-          Παραγγελία ({delivery.items.length} τεμ.)
-        </p>
-        <div className="space-y-0">
-          {delivery.items.map((item, i) => (
-            <div key={i} className="flex items-center justify-between py-2 border-b border-[hsl(var(--driver-border))]/50 last:border-0">
-              <span className="text-sm text-[hsl(var(--driver-text))]">{item.quantity}× {item.name}</span>
-            </div>
-          ))}
+        {/* Notes */}
+        {(delivery.notes || delivery.storeNotes) && (
+          <div className="px-4 py-4 border-b border-[hsl(var(--driver-border))] bg-amber-400/5">
+            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
+              <StickyNote className="h-4 w-4 text-amber-400" />
+              Σημειώσεις
+            </p>
+            {delivery.notes && (
+              <div className="mb-2">
+                <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από πελάτη</p>
+                <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.notes}</p>
+              </div>
+            )}
+            {delivery.storeNotes && (
+              <div>
+                <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από κατάστημα</p>
+                <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.storeNotes}</p>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* Order items */}
+        <div className="px-4 py-4 border-b border-[hsl(var(--driver-border))]">
+          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
+            <Package className="h-4 w-4 text-primary" />
+            Παραγγελία ({delivery.items.length} τεμ.)
+          </p>
+          <div className="space-y-0">
+            {delivery.items.map((item, i) => (
+              <div key={i} className="flex items-center justify-between py-2 border-b border-[hsl(var(--driver-border))]/50 last:border-0">
+                <span className="text-sm text-[hsl(var(--driver-text))]">{item.quantity}× {item.name}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Payout */}
+        <div className="px-4 py-3 flex items-center justify-between bg-[hsl(var(--driver-surface-elevated))]/40">
+          <span className="text-[hsl(var(--driver-text-muted))] text-sm font-heading">Εκτιμώμενη Αμοιβή</span>
+          <span className="font-heading font-extrabold text-xl text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
         </div>
       </div>
 
       {/* Wait time bonus */}
       <WaitTimeBonusBanner orderId={delivery.id} status={delivery.status} />
-
-
-      {/* Payout */}
-      <div className="rounded-2xl driver-glass p-4 flex items-center justify-between">
-        <span className="text-[hsl(var(--driver-text-muted))] text-sm font-heading">Εκτιμώμενη Αμοιβή</span>
-        <span className="font-heading font-extrabold text-xl text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
-      </div>
 
       {/* Main CTA */}
       {nextAction && (
