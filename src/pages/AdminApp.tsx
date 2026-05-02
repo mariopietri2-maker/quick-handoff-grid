@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity } from 'lucide-react';
 import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
 import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
 import AssignmentSettings from '@/components/admin/AssignmentSettings';
@@ -37,6 +37,7 @@ import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
 import StorePromotionsManager from '@/components/admin/StorePromotionsManager';
 import SystemResetPanel from '@/components/admin/SystemResetPanel';
 import LiveOpsDashboard from '@/components/admin/LiveOpsDashboard';
+import SplitCalculator from '@/components/admin/SplitCalculator';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -173,6 +174,8 @@ export default function AdminApp() {
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
         return <FinancialsManager />;
+      case 'split_calc':
+        return <SplitCalculator />;
       case 'pricing':
         return <PricingSettings />;
       case 'support_roles':
@@ -257,6 +260,27 @@ export default function AdminApp() {
               </Button>
             </div>
           </div>
+
+          {/* Live KPI strip */}
+          {(() => {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const todays = (orders.data ?? []).filter((o: any) => new Date(o.created_at) >= today);
+            const revenueToday = todays.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
+            const adminToday = todays.reduce((s: number, o: any) => s + Number(o.platform_profit || 0), 0);
+            const activeDrivers = (driverStates.data ?? []).filter((d: any) => !!d.shift_started_at && !d.on_break).length;
+            const live = todays.filter((o: any) => !['delivered', 'cancelled'].includes(o.status)).length;
+            return (
+              <div className="px-3 lg:px-4 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto">
+                <div className="flex gap-2 min-w-max">
+                  <KpiPill icon={Activity} label="Live παραγγελίες" value={String(live)} tone="text-primary" pulse={live > 0} />
+                  <KpiPill icon={ShoppingBag} label="Σήμερα" value={String(todays.length)} tone="text-info" />
+                  <KpiPill icon={TrendingUp} label="Τζίρος σήμερα" value={`€${revenueToday.toFixed(0)}`} tone="text-foreground" />
+                  <KpiPill icon={Wallet} label="Admin κερδίζει σήμερα" value={`€${adminToday.toFixed(2)}`} tone="text-success" />
+                  <KpiPill icon={Bike} label="Ενεργοί οδηγοί" value={String(activeDrivers)} tone="text-warning" />
+                </div>
+              </div>
+            );
+          })()}
 
           {/* Sub-tab strip */}
           {(() => {
@@ -567,6 +591,24 @@ function ReviewsSection({ reviews }: { reviews: any[] | undefined }) {
           </table>
         </div>
       </div>
+    </div>
+  );
+}
+
+function KpiPill({
+  icon: Icon, label, value, tone, pulse,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; value: string; tone: string; pulse?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-2 px-2.5 h-8 rounded-md bg-card border border-border/60 shadow-sm shrink-0">
+      <span className={cn('relative flex items-center justify-center h-5 w-5 rounded bg-muted', tone)}>
+        <Icon className="h-3 w-3" />
+        {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+      </span>
+      <span className="text-[10.5px] uppercase tracking-wide text-muted-foreground font-medium">{label}</span>
+      <span className={cn('text-[12px] font-bold tabular-nums', tone)}>{value}</span>
     </div>
   );
 }
