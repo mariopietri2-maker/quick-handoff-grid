@@ -83,6 +83,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'financials',
     tabs: [
       { id: 'financials', label: 'Ταμείο' },
+      { id: 'split_calc', label: 'Split Calculator' },
       { id: 'pricing', label: 'Τιμολόγηση' },
       { id: 'store_billing', label: 'Χρέωση' },
       { id: 'tickets', label: 'Support', badgeKey: 'pendingTickets' as const },
