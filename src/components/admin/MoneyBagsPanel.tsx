@@ -71,6 +71,7 @@ export default function MoneyBagsPanel() {
       return data as {
         admin_balance: number; platform_pool: number;
         lifetime_admin_earned: number; lifetime_platform_earned: number; lifetime_driver_topup: number;
+        external_buffer_balance: number; lifetime_external_buffer_in: number; lifetime_external_buffer_out: number;
       } | null;
     },
   });
