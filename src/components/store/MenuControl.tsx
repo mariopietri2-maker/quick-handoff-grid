@@ -71,8 +71,8 @@ export function MenuControl({ storeId }: MenuControlProps) {
 
   return (
     <div className="space-y-4">
-      <div className="flex gap-2">
-        <div className="relative flex-1">
+      <div className="flex flex-wrap gap-2">
+        <div className="relative flex-1 min-w-[160px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input
             placeholder="Αναζήτηση προϊόντων..."
@@ -84,16 +84,16 @@ export function MenuControl({ storeId }: MenuControlProps) {
         <Button
           variant={selectMode ? 'default' : 'outline'}
           onClick={() => selectMode ? exitSelectMode() : setSelectMode(true)}
-          className="font-heading"
+          className="font-heading flex-shrink-0"
         >
           {selectMode ? <CheckSquare className="h-4 w-4 mr-1" /> : <Square className="h-4 w-4 mr-1" />}
-          {selectMode ? 'Άκυρο' : 'Επιλογή'}
+          <span className="hidden sm:inline">{selectMode ? 'Άκυρο' : 'Επιλογή'}</span>
         </Button>
         <Dialog open={addOpen} onOpenChange={setAddOpen}>
           <DialogTrigger asChild>
-            <Button className="gradient-primary text-primary-foreground shadow-primary">
-              <Plus className="h-4 w-4 mr-1" />
-              Προσθήκη
+            <Button className="gradient-primary text-primary-foreground shadow-primary flex-shrink-0">
+              <Plus className="h-4 w-4 sm:mr-1" />
+              <span className="hidden sm:inline">Προσθήκη</span>
             </Button>
           </DialogTrigger>
           <DialogContent>
@@ -168,16 +168,17 @@ export function MenuControl({ storeId }: MenuControlProps) {
                 <Card key={item.id} className={`shadow-[var(--shadow-sm)] ${
                   !item.is_available ? 'opacity-50' : item.is_snoozed ? 'border-warning/40' : ''
                 } ${selectMode && selectedIds.has(item.id) ? 'ring-2 ring-primary' : ''}`}>
-                  <CardContent className="p-3 flex items-center justify-between gap-2">
+                  <CardContent className="p-3 flex flex-wrap items-center justify-between gap-x-2 gap-y-2">
                     {selectMode && (
                       <Checkbox
                         checked={selectedIds.has(item.id)}
                         onCheckedChange={() => toggleSelected(item.id)}
+                        className="flex-shrink-0"
                       />
                     )}
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2">
-                        <span className="font-heading font-semibold text-foreground">{item.name}</span>
+                    <div className="flex-1 min-w-0 basis-[60%]">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <span className="font-heading font-semibold text-foreground truncate">{item.name}</span>
                         {item.is_snoozed && (
                           <Badge variant="outline" className="text-warning border-warning/30 text-xs">
                             <Moon className="h-3 w-3 mr-1" />
@@ -193,19 +194,20 @@ export function MenuControl({ storeId }: MenuControlProps) {
                       </div>
                       <span className="text-sm text-muted-foreground">€{Number(item.price).toFixed(2)}</span>
                       {item.description && (
-                        <p className="text-xs text-muted-foreground mt-0.5">{item.description}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5 line-clamp-2">{item.description}</p>
                       )}
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-shrink-0 ml-auto">
                       {item.is_available && (
                         <button
                           onClick={() => toggleSnooze(item.id)}
-                          className={`p-2 rounded-lg transition-colors ${
+                          className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${
                             item.is_snoozed
                               ? 'bg-warning/10 text-warning'
                               : 'bg-muted text-muted-foreground hover:text-warning'
                           }`}
                           title="Παύση προϊόντος"
+                          aria-label="Παύση"
                         >
                           <Moon className="h-4 w-4" />
                         </button>
