@@ -61,7 +61,7 @@ export function DriverProfilePanel({ driverId }: { driverId: string }) {
             <p className="font-heading font-bold text-sm truncate">{p?.full_name ?? 'Άγνωστο'}</p>
             <p className="text-[10px] text-muted-foreground flex items-center gap-1">
               <Hash className="h-3 w-3" />
-              {d?.driver_code ?? driverId.slice(0, 8)}
+              {d?.driver_code ?? (driverId ? driverId.slice(0, 8) : '—')}
             </p>
           </div>
           <div className="flex flex-col gap-1 items-end">
