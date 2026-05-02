@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
@@ -7,60 +7,74 @@ import { Textarea } from '@/components/ui/textarea';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Sparkles, ScanLine, FileText, TrendingUp, Send, Calculator } from 'lucide-react';
-import { geocodeAddress, haversineKm } from '@/lib/geocode';
-import StoreSplitCalculator from './StoreSplitCalculator';
+import {
+  Loader2, Sparkles, ScanLine, FileText, Send,
+  MapPin, Navigation, Building2, Bike, TrendingUp, Wallet, Lock,
+} from 'lucide-react';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { cn } from '@/lib/utils';
 
 type Source = 'manual' | 'efood' | 'wolt' | 'box' | 'other';
+type PaymentMethod = 'cash' | 'card';
 
 interface StoreInfo {
   id: string;
   name: string;
-  ext_billing_mode: string;
-  ext_commission_pct: number;
-  ext_flat_fee: number;
-  ext_margin_pct: number;
+  address: string | null;
+  latitude: number | null;
+  longitude: number | null;
 }
-
-type PaymentMethod = 'cash' | 'card';
 
 interface FormState {
   source: Source;
   total_amount: string;
   delivery_address: string;
-  distance_km: string;
+  delivery_lat: number | null;
+  delivery_lng: number | null;
   customer_name: string;
   customer_phone: string;
   notes: string;
   external_ref: string;
   items_summary: string;
   payment_method: PaymentMethod;
-  driver_payout_override: string;
 }
 
 const blankForm: FormState = {
   source: 'efood',
   total_amount: '',
   delivery_address: '',
-  distance_km: '',
+  delivery_lat: null,
+  delivery_lng: null,
   customer_name: '',
   customer_phone: '',
   notes: '',
   external_ref: '',
   items_summary: '',
   payment_method: 'card',
-  driver_payout_override: '',
 };
 
 interface Props {
   storeId: string;
 }
 
+/**
+ * Unified Custom Order flow for stores:
+ * - Pickup is locked to this store, dropoff via AddressAutocomplete.
+ * - Mapbox Directions auto-computes driving km.
+ * - Store edits all order info AND order price.
+ * - The 85/10/5 split & driver pay are READ-ONLY (computed, not editable).
+ * - AI / QR import auto-fills the form.
+ */
 export default function StoreExternalOrderIngest({ storeId }: Props) {
+  const { token: mapboxToken } = useMapboxToken();
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [form, setForm] = useState<FormState>(blankForm);
+  const [km, setKm] = useState<number | null>(null);
+  const [routing, setRouting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [parsing, setParsing] = useState(false);
@@ -69,39 +83,53 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   useEffect(() => {
     supabase
       .from('stores')
-      .select('id, name, ext_billing_mode, ext_commission_pct, ext_flat_fee, ext_margin_pct' as any)
+      .select('id, name, address, latitude, longitude')
       .eq('id', storeId)
       .maybeSingle()
-      .then(({ data }) => {
-        if (data) setStore(data as unknown as StoreInfo);
-      });
+      .then(({ data }) => { if (data) setStore(data as StoreInfo); });
   }, [storeId]);
 
-  const totalAmount = Number(form.total_amount) || 0;
-  const distanceKm = Number(form.distance_km) || 0;
-
-  const preview = useMemo(() => {
-    if (!store) return null;
-    const baseDriverPay = Math.max(3, 3 + 0.5 * distanceKm);
-    const driverPay = form.driver_payout_override ? Number(form.driver_payout_override) : baseDriverPay;
-    let storeCharge: number;
-    switch (store.ext_billing_mode) {
-      case 'commission':
-        storeCharge = +(totalAmount * store.ext_commission_pct / 100).toFixed(2);
-        break;
-      case 'flat_fee':
-        storeCharge = +Number(store.ext_flat_fee).toFixed(2);
-        break;
-      case 'driver_plus_margin':
-        storeCharge = +(driverPay * (1 + store.ext_margin_pct / 100)).toFixed(2);
-        break;
-      default:
-        storeCharge = +(totalAmount * 0.15).toFixed(2);
+  // Mapbox Directions: real driving km from store → dropoff.
+  useEffect(() => {
+    if (!mapboxToken || !store?.latitude || !store?.longitude || !form.delivery_lat || !form.delivery_lng) {
+      return;
     }
-    return { driverPay: +driverPay.toFixed(2), storeCharge: +storeCharge.toFixed(2) };
-  }, [store, totalAmount, distanceKm, form.driver_payout_override]);
+    let cancelled = false;
+    setRouting(true);
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${store.longitude},${store.latitude};${form.delivery_lng},${form.delivery_lat}?access_token=${mapboxToken}&overview=false`;
+    fetch(url)
+      .then((r) => r.json())
+      .then((d) => {
+        if (cancelled) return;
+        const meters = d?.routes?.[0]?.distance;
+        if (typeof meters === 'number') setKm(Math.round((meters / 1000) * 10) / 10);
+      })
+      .catch(() => {})
+      .finally(() => { if (!cancelled) setRouting(false); });
+    return () => { cancelled = true; };
+  }, [store, form.delivery_lat, form.delivery_lng, mapboxToken]);
 
-  const update = <K extends keyof FormState>(k: K, v: FormState[K]) => setForm(p => ({ ...p, [k]: v }));
+  const totalAmount = Number(form.total_amount) || 0;
+  const distanceKm = km ?? 0;
+
+  // Locked split — store CANNOT edit. 85 / 10 / 5.
+  const split = useMemo(() => ({
+    storeKeeps: +(totalAmount * 0.85).toFixed(2),
+    driverPool: +(totalAmount * 0.10).toFixed(2),
+    admin:      +(totalAmount * 0.05).toFixed(2),
+  }), [totalAmount]);
+
+  // Driver pay is system-computed (not store-editable).
+  const driverPay = useMemo(
+    () => +Math.max(3, 3 + 0.5 * distanceKm).toFixed(2),
+    [distanceKm],
+  );
+
+  // What the store will be charged: driver pay + admin fee.
+  const storeCharge = +(driverPay + split.admin).toFixed(2);
+
+  const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
+    setForm(p => ({ ...p, [k]: v }));
 
   const handleParse = async () => {
     if (!pasteText.trim()) return toast.error('Επικόλλησε κείμενο πρώτα');
@@ -152,49 +180,25 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
 
   const handleSubmit = async () => {
     if (!form.delivery_address.trim()) return toast.error('Συμπλήρωσε διεύθυνση');
+    if (!totalAmount) return toast.error('Συμπλήρωσε αξία παραγγελίας');
 
     setSubmitting(true);
-
-    // Auto-geocode address + compute distance from store (best-effort).
-    let distanceKm = form.distance_km ? Number(form.distance_km) : null;
-    let deliveryLat: number | null = null;
-    let deliveryLng: number | null = null;
-    try {
-      const [geo, storeRow] = await Promise.all([
-        geocodeAddress(form.delivery_address),
-        supabase.from('stores').select('latitude, longitude').eq('id', storeId).maybeSingle(),
-      ]);
-      if (geo) {
-        deliveryLat = geo.latitude;
-        deliveryLng = geo.longitude;
-      }
-      const sLat = storeRow.data?.latitude;
-      const sLng = storeRow.data?.longitude;
-      if (geo && sLat != null && sLng != null && distanceKm == null) {
-        distanceKm = +haversineKm(
-          { latitude: sLat, longitude: sLng },
-          { latitude: geo.latitude, longitude: geo.longitude },
-        ).toFixed(2);
-      }
-    } catch {
-      /* non-fatal */
-    }
-
     const { error } = await supabase.rpc('create_external_order' as any, {
       p_store_id: storeId,
       p_source: form.source,
-      p_total_amount: form.total_amount ? Number(form.total_amount) : 0,
+      p_total_amount: totalAmount,
       p_delivery_address: form.delivery_address,
-      p_delivery_lat: deliveryLat,
-      p_delivery_lng: deliveryLng,
-      p_distance_km: distanceKm,
+      p_delivery_lat: form.delivery_lat,
+      p_delivery_lng: form.delivery_lng,
+      p_distance_km: km,
       p_customer_name: form.customer_name || null,
       p_customer_phone: form.customer_phone || null,
       p_notes: form.notes || null,
       p_external_ref: form.external_ref || null,
       p_items_summary: form.items_summary || null,
       p_payment_method: form.payment_method,
-      p_driver_payout_override: form.driver_payout_override ? Number(form.driver_payout_override) : null,
+      // Driver pay is computed here from km — store cannot override.
+      p_driver_payout_override: driverPay,
     } as any);
     setSubmitting(false);
     if (error) {
@@ -202,224 +206,277 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     } else {
       toast.success('Παραγγελία εστάλη στους οδηγούς ✓');
       setForm(blankForm);
+      setKm(null);
       setPasteText('');
       setScanText('');
     }
   };
 
+  const ready = !!form.delivery_address.trim() && totalAmount > 0;
+  const noStoreCoords = !store?.latitude || !store?.longitude;
+
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-heading font-bold text-xl text-foreground">Εισαγωγή Παραγγελίας eFood / Wolt / Box</h2>
+        <h2 className="font-heading font-bold text-xl text-foreground">Νέα Custom Order</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Στείλε μια παραγγελία από εξωτερική πλατφόρμα στους οδηγούς μας — χειροκίνητα, με AI, με QR ή με τον υπολογιστή διαχωρισμού.
+          Συμπλήρωσε τα στοιχεία της παραγγελίας. Τα χιλιόμετρα μετριούνται αυτόματα από τη διεύθυνση και η κατανομή <strong>85/10/5</strong> εφαρμόζεται κλειδωμένα.
         </p>
       </div>
 
-      <Tabs defaultValue="ingest" className="space-y-4">
-        <TabsList className="grid grid-cols-2 w-full max-w-md">
-          <TabsTrigger value="ingest" className="gap-1.5"><FileText className="h-3.5 w-3.5" />Ingest</TabsTrigger>
-          <TabsTrigger value="split" className="gap-1.5"><Calculator className="h-3.5 w-3.5" />Split Calculator</TabsTrigger>
-        </TabsList>
+      {noStoreCoords && (
+        <div className="rounded-lg border border-warning/40 bg-warning/10 px-3 py-2 text-xs">
+          Το κατάστημα δεν έχει συντεταγμένες — τα km δεν θα υπολογιστούν αυτόματα. Ενημέρωσε τη διεύθυνση στις Ρυθμίσεις.
+        </div>
+      )}
 
-        <TabsContent value="split">
-          <StoreSplitCalculator storeId={storeId} />
-        </TabsContent>
-
-        <TabsContent value="ingest" className="space-y-4">
-          <div className="grid lg:grid-cols-[1fr,300px] gap-4">
+      <div className="grid lg:grid-cols-[1fr,320px] gap-4">
+        {/* Form column */}
         <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="font-heading text-base">Πηγή Παραγγελίας</CardTitle>
-          </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 sm:p-5 space-y-4">
+            {/* Pickup pinned card */}
+            <div className="rounded-lg border bg-muted/30 px-3 py-2.5">
+              <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Παραλαβή</p>
+              <p className="text-sm font-heading mt-0.5 flex items-center gap-1.5">
+                <MapPin className="h-3.5 w-3.5 text-primary" />
+                {store?.name ?? 'Το κατάστημά μου'}
+              </p>
+              {store?.address && (
+                <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{store.address}</p>
+              )}
+            </div>
+
+            {/* Import helpers */}
             <Tabs defaultValue="paste">
               <TabsList className="grid grid-cols-3 w-full">
-                <TabsTrigger value="paste" className="gap-1.5"><Sparkles className="h-3.5 w-3.5" />Επικόλληση + AI</TabsTrigger>
-                <TabsTrigger value="manual" className="gap-1.5"><FileText className="h-3.5 w-3.5" />Χειροκίνητα</TabsTrigger>
-                <TabsTrigger value="scan" className="gap-1.5"><ScanLine className="h-3.5 w-3.5" />QR</TabsTrigger>
+                <TabsTrigger value="paste" className="gap-1.5 text-xs"><Sparkles className="h-3.5 w-3.5" />AI</TabsTrigger>
+                <TabsTrigger value="manual" className="gap-1.5 text-xs"><FileText className="h-3.5 w-3.5" />Χειροκίνητα</TabsTrigger>
+                <TabsTrigger value="scan" className="gap-1.5 text-xs"><ScanLine className="h-3.5 w-3.5" />QR</TabsTrigger>
               </TabsList>
 
-              <TabsContent value="paste" className="mt-4 space-y-3">
-                <Label className="text-sm font-heading">Επικόλλησε email/SMS/απόδειξη από eFood / Wolt / Box</Label>
+              <TabsContent value="paste" className="mt-3 space-y-2">
                 <Textarea
                   value={pasteText}
                   onChange={e => setPasteText(e.target.value)}
-                  placeholder={'Νέα παραγγελία efood #A12345\nΣύνολο: 18.40€\nΔιεύθυνση: Ερμού 12, Αθήνα\nΓιάννης 6912345678\n2x Πίτσα Μαργαρίτα, 1x Κόκα Κόλα'}
-                  rows={6}
+                  placeholder={'Επικόλλησε email/SMS/απόδειξη eFood / Wolt / Box…'}
+                  rows={4}
                   className="text-xs font-mono"
                 />
-                <Button onClick={handleParse} disabled={parsing} className="w-full gap-2">
+                <Button onClick={handleParse} disabled={parsing} className="w-full gap-2" size="sm">
                   {parsing ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
                   Ανάλυση με AI
                 </Button>
               </TabsContent>
 
-              <TabsContent value="manual" className="mt-4">
-                <p className="text-xs text-muted-foreground">Συμπλήρωσε τα παρακάτω πεδία.</p>
+              <TabsContent value="manual" className="mt-3">
+                <p className="text-[11px] text-muted-foreground">Συμπλήρωσε τα πεδία παρακάτω.</p>
               </TabsContent>
 
-              <TabsContent value="scan" className="mt-4 space-y-3">
-                <Label className="text-sm font-heading">Σκανάρισε ή επικόλλησε QR / barcode</Label>
+              <TabsContent value="scan" className="mt-3 space-y-2">
                 <Input
                   value={scanText}
                   onChange={e => setScanText(e.target.value)}
                   placeholder='{"source":"efood","total":18.4,"address":"Ερμού 12"}'
                   className="text-xs font-mono"
                 />
-                <Button onClick={handleScanFill} variant="outline" className="w-full gap-2">
-                  <ScanLine className="h-4 w-4" /> Συμπλήρωση από κωδικό
+                <Button onClick={handleScanFill} variant="outline" size="sm" className="w-full gap-2">
+                  <ScanLine className="h-4 w-4" /> Συμπλήρωση από QR
                 </Button>
               </TabsContent>
             </Tabs>
 
-            <div className="space-y-3 mt-5 pt-5 border-t">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <Label className="text-xs">Πηγή *</Label>
-                  <Select value={form.source} onValueChange={v => update('source', v as Source)}>
-                    <SelectTrigger><SelectValue /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="efood">eFood</SelectItem>
-                      <SelectItem value="wolt">Wolt</SelectItem>
-                      <SelectItem value="box">Box</SelectItem>
-                      <SelectItem value="manual">Χειροκίνητη</SelectItem>
-                      <SelectItem value="other">Άλλη</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label className="text-xs">Σύνολο (€)</Label>
-                  <Input type="number" step="0.01" min="0" value={form.total_amount} onChange={e => update('total_amount', e.target.value)} placeholder="προαιρετικό" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Τρόπος πληρωμής *</Label>
-                  <div className="grid grid-cols-2 gap-2 mt-1">
-                    <button
-                      type="button"
-                      onClick={() => update('payment_method', 'card')}
-                      className={`rounded-lg border px-3 py-2 text-sm font-heading transition ${
-                        form.payment_method === 'card'
-                          ? 'border-primary bg-primary/10 text-primary'
-                          : 'border-border bg-background text-muted-foreground hover:border-primary/50'
-                      }`}
-                    >
-                      💳 Κάρτα (πλήρωσε στην πλατφόρμα)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => update('payment_method', 'cash')}
-                      className={`rounded-lg border px-3 py-2 text-sm font-heading transition ${
-                        form.payment_method === 'cash'
-                          ? 'border-accent bg-accent/10 text-accent-foreground'
-                          : 'border-border bg-background text-muted-foreground hover:border-accent/50'
-                      }`}
-                    >
-                      💶 Μετρητά (εισπράττει ο οδηγός)
-                    </button>
-                  </div>
-                  {form.payment_method === 'cash' && (
-                    <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
-                      Ο οδηγός θα εισπράξει €{(Number(form.total_amount) || 0).toFixed(2)} από τον πελάτη και θα τα παραδώσει στον admin (ή κατάθεση Εθνικής).
-                    </p>
-                  )}
-                </div>
-                <div>
-                  <Label className="text-xs">Απόσταση (km)</Label>
-                  <Input type="number" step="0.1" min="0" value={form.distance_km} onChange={e => update('distance_km', e.target.value)} placeholder="3.2" />
-                </div>
-                <div>
-                  <Label className="text-xs">External Ref</Label>
-                  <Input value={form.external_ref} onChange={e => update('external_ref', e.target.value)} placeholder="A12345" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-xs flex items-center justify-between">
-                    <span>Πληρωμή Οδηγού (override)</span>
-                    <span className="text-[10px] text-muted-foreground font-normal">προαιρετικό · 0–50€</span>
-                  </Label>
-                  <Input
-                    type="number" step="0.01" min="0" max="50"
-                    value={form.driver_payout_override}
-                    onChange={e => update('driver_payout_override', e.target.value)}
-                    placeholder="auto από km"
-                  />
-                  <p className="text-[11px] text-muted-foreground mt-1">
-                    Πόσο θα πάρει ο οδηγός για αυτή την παραγγελία. Άδειο = αυτόματος υπολογισμός.
-                  </p>
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Διεύθυνση Παράδοσης *</Label>
-                  <Input value={form.delivery_address} onChange={e => update('delivery_address', e.target.value)} placeholder="Ερμού 12, Αθήνα" />
-                </div>
-                <div>
-                  <Label className="text-xs">Όνομα πελάτη</Label>
-                  <Input value={form.customer_name} onChange={e => update('customer_name', e.target.value)} />
-                </div>
-                <div>
-                  <Label className="text-xs">Τηλέφωνο πελάτη</Label>
-                  <Input value={form.customer_phone} onChange={e => update('customer_phone', e.target.value)} placeholder="6912345678" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Σύνοψη προϊόντων</Label>
-                  <Input value={form.items_summary} onChange={e => update('items_summary', e.target.value)} placeholder="2x Πίτσα Μαργαρίτα, 1x Κόκα Κόλα" />
-                </div>
-                <div className="sm:col-span-2">
-                  <Label className="text-xs">Σημειώσεις</Label>
-                  <Input value={form.notes} onChange={e => update('notes', e.target.value)} placeholder="Χωρίς κρεμμύδι" />
-                </div>
+            <Separator />
+
+            {/* Editable fields */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div>
+                <Label className="text-xs">Πηγή</Label>
+                <Select value={form.source} onValueChange={v => update('source', v as Source)}>
+                  <SelectTrigger><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="efood">eFood</SelectItem>
+                    <SelectItem value="wolt">Wolt</SelectItem>
+                    <SelectItem value="box">Box</SelectItem>
+                    <SelectItem value="manual">Χειροκίνητη</SelectItem>
+                    <SelectItem value="other">Άλλη</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <div>
+                <Label className="text-xs">Αξία παραγγελίας (€) *</Label>
+                <Input
+                  type="number" step="0.01" min="0"
+                  value={form.total_amount}
+                  onChange={e => update('total_amount', e.target.value)}
+                  placeholder="0.00"
+                  className="font-semibold tabular-nums"
+                />
               </div>
 
-              <Button onClick={handleSubmit} disabled={submitting} className="w-full h-11 gap-2 gradient-primary text-primary-foreground font-heading">
-                {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-                Αποστολή στους Οδηγούς
-              </Button>
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Τρόπος πληρωμής</Label>
+                <div className="grid grid-cols-2 gap-2 mt-1">
+                  <button
+                    type="button"
+                    onClick={() => update('payment_method', 'card')}
+                    className={cn(
+                      'rounded-lg border px-3 py-2 text-sm font-heading transition',
+                      form.payment_method === 'card'
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-background text-muted-foreground hover:border-primary/50',
+                    )}
+                  >
+                    💳 Κάρτα
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => update('payment_method', 'cash')}
+                    className={cn(
+                      'rounded-lg border px-3 py-2 text-sm font-heading transition',
+                      form.payment_method === 'cash'
+                        ? 'border-accent bg-accent/10 text-accent-foreground'
+                        : 'border-border bg-background text-muted-foreground hover:border-accent/50',
+                    )}
+                  >
+                    💶 Μετρητά
+                  </button>
+                </div>
+                {form.payment_method === 'cash' && (
+                  <p className="text-[11px] text-muted-foreground mt-1.5 leading-snug">
+                    Ο οδηγός θα εισπράξει €{totalAmount.toFixed(2)} από τον πελάτη.
+                  </p>
+                )}
+              </div>
+
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Διεύθυνση παράδοσης *</Label>
+                <AddressAutocomplete
+                  value={form.delivery_address}
+                  onChange={(addr, lat, lon) => setForm(p => ({
+                    ...p,
+                    delivery_address: addr,
+                    delivery_lat: lat ?? null,
+                    delivery_lng: lon ?? null,
+                  }))}
+                  placeholder="Που πάει το delivery;"
+                />
+              </div>
+
+              <div>
+                <Label className="text-xs">Όνομα πελάτη</Label>
+                <Input value={form.customer_name} onChange={e => update('customer_name', e.target.value)} />
+              </div>
+              <div>
+                <Label className="text-xs">Τηλέφωνο</Label>
+                <Input value={form.customer_phone} onChange={e => update('customer_phone', e.target.value)} placeholder="6912345678" />
+              </div>
+
+              <div className="sm:col-span-2">
+                <Label className="text-xs">Σύνοψη προϊόντων</Label>
+                <Input value={form.items_summary} onChange={e => update('items_summary', e.target.value)} placeholder="2x Πίτσα Μαργαρίτα, 1x Κόκα Κόλα" />
+              </div>
+
+              <div>
+                <Label className="text-xs">External ref</Label>
+                <Input value={form.external_ref} onChange={e => update('external_ref', e.target.value)} placeholder="A12345" />
+              </div>
+              <div>
+                <Label className="text-xs">Σημειώσεις</Label>
+                <Input value={form.notes} onChange={e => update('notes', e.target.value)} placeholder="Χωρίς κρεμμύδι" />
+              </div>
             </div>
+
+            <Button
+              onClick={handleSubmit}
+              disabled={submitting || !ready}
+              className="w-full h-11 gap-2 gradient-primary text-primary-foreground font-heading"
+            >
+              {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
+              Αποστολή στους Οδηγούς
+            </Button>
           </CardContent>
         </Card>
 
+        {/* Live split preview (read-only) */}
         <div className="space-y-3">
-          <Card className="sticky top-20">
-            <CardHeader className="pb-3">
-              <CardTitle className="font-heading text-base flex items-center gap-2">
-                <TrendingUp className="h-4 w-4 text-primary" /> Προεπισκόπηση
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              {!store ? (
-                <p className="text-xs text-muted-foreground">Φόρτωση…</p>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted-foreground">Μοντέλο χρέωσης</span>
-                    <Badge variant="outline" className="font-heading text-[10px]">
-                      {store.ext_billing_mode === 'commission' && `Προμήθεια ${store.ext_commission_pct}%`}
-                      {store.ext_billing_mode === 'flat_fee' && `Σταθερό €${store.ext_flat_fee}`}
-                      {store.ext_billing_mode === 'driver_plus_margin' && `Οδηγός + ${store.ext_margin_pct}%`}
-                    </Badge>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Σύνολο παραγγελίας</span>
-                    <span className="font-mono">€{totalAmount.toFixed(2)}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm">
-                    <span className="text-muted-foreground">Πληρωμή οδηγού</span>
-                    <span className="font-mono">€{preview?.driverPay.toFixed(2) ?? '0.00'}</span>
-                  </div>
-                  <div className="flex items-center justify-between text-sm border-t pt-3">
-                    <span className="font-heading font-semibold">Θα χρεωθείτε</span>
-                    <span className="font-mono font-bold text-primary">€{preview?.storeCharge.toFixed(2) ?? '0.00'}</span>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground leading-snug pt-2 border-t">
-                    Η χρέωση καθορίζεται από τον admin για το κατάστημά σας. Ο οδηγός θα ειδοποιηθεί αμέσως.
-                  </p>
-                </>
-              )}
+          <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card lg:sticky lg:top-20">
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Απόσταση</p>
+                {routing && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
+              </div>
+              <div className="flex items-baseline gap-2">
+                <Navigation className="h-4 w-4 text-primary" />
+                <span className="text-3xl font-heading font-bold tabular-nums">{km ?? '—'}</span>
+                <span className="text-sm text-muted-foreground">km</span>
+                {km != null && (
+                  <Badge variant="outline" className="ml-auto text-[10px] gap-1">
+                    <MapPin className="h-2.5 w-2.5" /> Mapbox
+                  </Badge>
+                )}
+              </div>
             </CardContent>
           </Card>
-          </div>
+
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Κατανομή 85 / 10 / 5</p>
+                <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Lock className="h-2.5 w-2.5" /> κλειδωμένο
+                </Badge>
+              </div>
+
+              <SplitRow icon={Building2} label="Κρατάς" pct="85%" amount={split.storeKeeps} tone="text-foreground" />
+              <SplitRow icon={Bike}      label="Driver pool" pct="10%" amount={split.driverPool} tone="text-info" />
+              <SplitRow icon={TrendingUp} label="Admin" pct="5%" amount={split.admin} tone="text-success" />
+
+              <Separator />
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground flex items-center gap-1.5">
+                    <Wallet className="h-3.5 w-3.5" /> Driver παίρνει
+                  </span>
+                  <span className="font-bold tabular-nums">€{driverPay.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-muted-foreground">Θα χρεωθείς</span>
+                  <span className="font-bold tabular-nums text-primary">€{storeCharge.toFixed(2)}</span>
+                </div>
+              </div>
+
+              <p className="text-[10px] text-muted-foreground leading-snug pt-1 border-t">
+                Η αμοιβή οδηγού & η χρέωση υπολογίζονται από το σύστημα — δεν τροποποιούνται από το κατάστημα.
+              </p>
+            </CardContent>
+          </Card>
         </div>
-        </TabsContent>
-      </Tabs>
+      </div>
+    </div>
+  );
+}
+
+function SplitRow({
+  icon: Icon, label, pct, amount, tone,
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  label: string; pct: string; amount: number; tone: string;
+}) {
+  return (
+    <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
+      <div className="flex items-center gap-2 min-w-0">
+        <span className={cn('h-6 w-6 rounded-md bg-background flex items-center justify-center shrink-0', tone)}>
+          <Icon className="h-3 w-3" />
+        </span>
+        <div className="min-w-0">
+          <p className="text-xs font-medium truncate">{label}</p>
+          <p className="text-[10px] text-muted-foreground">{pct}</p>
+        </div>
+      </div>
+      <span className={cn('font-heading font-bold text-sm tabular-nums', tone)}>
+        €{amount.toFixed(2)}
+      </span>
     </div>
   );
 }
