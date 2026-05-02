@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock } from 'lucide-react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
@@ -24,6 +24,9 @@ interface ActiveDeliveryData {
   pickupChecklist: string[];
   /** ISO timestamp predicted by ML/heuristic when the store will mark the order ready */
   predictedReadyAt?: string | null;
+  /** Notes from customer or store (special instructions, allergies, gate codes, etc.) */
+  notes?: string | null;
+  storeNotes?: string | null;
 }
 
 interface ActiveDeliveryProps {
@@ -203,6 +206,28 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           </div>
         )}
       </div>
+
+      {/* Notes from customer / store */}
+      {(delivery.notes || delivery.storeNotes) && (
+        <div className="rounded-2xl driver-glass p-4 border border-amber-400/30 bg-amber-400/5">
+          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
+            <StickyNote className="h-4 w-4 text-amber-400" />
+            Σημειώσεις
+          </p>
+          {delivery.notes && (
+            <div className="mb-2">
+              <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από πελάτη</p>
+              <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.notes}</p>
+            </div>
+          )}
+          {delivery.storeNotes && (
+            <div>
+              <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από κατάστημα</p>
+              <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.storeNotes}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Order items */}
       <div className="rounded-2xl driver-glass p-4">
