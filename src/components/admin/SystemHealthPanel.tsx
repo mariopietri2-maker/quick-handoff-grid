@@ -85,16 +85,27 @@ export default function SystemHealthPanel() {
       results.push({ id: 'mapbox', label: 'Mapbox (χάρτες)', icon: MapPin, status: 'error', message: e?.message ?? 'Αποτυχία' });
     }
 
-    // Helper: ping an edge function via raw fetch so 4xx responses don't throw.
+    // Helper: ping an edge function via raw fetch so validation 4xx responses don't throw.
     const pingFn = async (name: string) => {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
       const t0 = performance.now();
+      const { data: sessionData } = await supabase.auth.getSession();
+      const accessToken = sessionData.session?.access_token;
+
+      if (!accessToken) {
+        return {
+          status: 0,
+          ms: Math.round(performance.now() - t0),
+          error: 'Δεν υπάρχει ενεργή σύνδεση διαχειριστή',
+        };
+      }
+
       const res = await fetch(url, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({ ping: true }),
       });
@@ -104,12 +115,12 @@ export default function SystemHealthPanel() {
 
     // 4. AI Gateway via support-ai ping (any HTTP response = reachable)
     try {
-      const { status, ms } = await pingFn('support-ai');
-      const reachable = status < 500;
+      const { status, ms, error } = await pingFn('support-ai');
+      const reachable = status > 0 && status < 500;
       results.push({
         id: 'ai', label: 'AI Gateway', icon: Sparkles,
         status: reachable ? 'ok' : 'warn',
-        message: reachable ? `Απόκριση ${ms}ms` : `HTTP ${status}`,
+        message: reachable ? `Απόκριση ${ms}ms` : (error ?? `HTTP ${status}`),
       });
     } catch (e: any) {
       results.push({ id: 'ai', label: 'AI Gateway', icon: Sparkles, status: 'warn', message: e?.message ?? 'Άγνωστο' });
@@ -117,12 +128,12 @@ export default function SystemHealthPanel() {
 
     // 5. Auto-dispatch edge function reachability (any HTTP response = reachable)
     try {
-      const { status, ms } = await pingFn('auto-dispatch');
-      const reachable = status < 500;
+      const { status, ms, error } = await pingFn('auto-dispatch');
+      const reachable = status > 0 && status < 500;
       results.push({
         id: 'dispatch', label: 'Auto-dispatch', icon: Zap,
         status: reachable ? 'ok' : 'warn',
-        message: reachable ? `Διαθέσιμη (${ms}ms)` : `HTTP ${status}`,
+        message: reachable ? `Διαθέσιμη (${ms}ms)` : (error ?? `HTTP ${status}`),
       });
     } catch (e: any) {
       results.push({ id: 'dispatch', label: 'Auto-dispatch', icon: Zap, status: 'warn', message: e?.message ?? 'Άγνωστο' });
