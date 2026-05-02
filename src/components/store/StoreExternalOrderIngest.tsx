@@ -27,6 +27,16 @@ interface StoreInfo {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
+  ext_billing_mode: string | null;
+  ext_commission_pct: number | null;
+  ext_flat_fee: number | null;
+  ext_margin_pct: number | null;
+}
+
+interface PayRates {
+  base_pay: number;
+  per_km_rate: number;
+  min_pay: number;
 }
 
 interface FormState {
@@ -80,18 +90,39 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const [parsing, setParsing] = useState(false);
   const [scanText, setScanText] = useState('');
 
+  const [rates, setRates] = useState<PayRates>({ base_pay: 3, per_km_rate: 0.5, min_pay: 3 });
+
   useEffect(() => {
     supabase
       .from('stores')
-      .select('id, name, address, latitude, longitude')
+      .select('id, name, address, latitude, longitude, ext_billing_mode, ext_commission_pct, ext_flat_fee, ext_margin_pct' as any)
       .eq('id', storeId)
       .maybeSingle()
-      .then(({ data }) => { if (data) setStore(data as StoreInfo); });
+      .then(({ data }) => { if (data) setStore(data as unknown as StoreInfo); });
+  }, [storeId]);
+
+  // Resolve effective driver-pay rates: store override -> platform default.
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [{ data: ov }, { data: ps }] = await Promise.all([
+        supabase.from('store_pricing_overrides').select('base_pay, per_km_rate, min_pay').eq('store_id', storeId).maybeSingle() as any,
+        supabase.from('platform_settings').select('base_pay, per_km_rate, min_pay').eq('id', 1).maybeSingle() as any,
+      ]);
+      if (cancelled) return;
+      setRates({
+        base_pay: Number(ov?.base_pay ?? ps?.base_pay ?? 3),
+        per_km_rate: Number(ov?.per_km_rate ?? ps?.per_km_rate ?? 0.5),
+        min_pay: Number(ov?.min_pay ?? ps?.min_pay ?? 3),
+      });
+    })();
+    return () => { cancelled = true; };
   }, [storeId]);
 
   // Mapbox Directions: real driving km from store → dropoff.
   useEffect(() => {
     if (!mapboxToken || !store?.latitude || !store?.longitude || !form.delivery_lat || !form.delivery_lng) {
+      setKm(null);
       return;
     }
     let cancelled = false;
@@ -112,21 +143,36 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const totalAmount = Number(form.total_amount) || 0;
   const distanceKm = km ?? 0;
 
-  // Locked split — store CANNOT edit. 85 / 10 / 5.
-  const split = useMemo(() => ({
-    storeKeeps: +(totalAmount * 0.85).toFixed(2),
-    driverPool: +(totalAmount * 0.10).toFixed(2),
-    admin:      +(totalAmount * 0.05).toFixed(2),
-  }), [totalAmount]);
-
-  // Driver pay is system-computed (not store-editable).
+  // Driver pay mirrors server: GREATEST(min_pay, base_pay + per_km_rate * km)
   const driverPay = useMemo(
-    () => +Math.max(3, 3 + 0.5 * distanceKm).toFixed(2),
-    [distanceKm],
+    () => +Math.max(rates.min_pay, rates.base_pay + rates.per_km_rate * distanceKm).toFixed(2),
+    [rates, distanceKm],
   );
 
-  // What the store will be charged: driver pay + admin fee.
-  const storeCharge = +(driverPay + split.admin).toFixed(2);
+  // Store charge mirrors server's ext_billing_mode logic.
+  const billingMode = (store?.ext_billing_mode || 'commission') as
+    'commission' | 'flat_fee' | 'driver_plus_margin';
+  const commissionPct = Number(store?.ext_commission_pct ?? 15);
+  const flatFee = Number(store?.ext_flat_fee ?? 0);
+  const marginPct = Number(store?.ext_margin_pct ?? 0);
+
+  const storeCharge = useMemo(() => {
+    switch (billingMode) {
+      case 'commission':         return +(totalAmount * commissionPct / 100).toFixed(2);
+      case 'flat_fee':           return +flatFee.toFixed(2);
+      case 'driver_plus_margin': return +(driverPay * (1 + marginPct / 100)).toFixed(2);
+      default:                   return +(totalAmount * 0.15).toFixed(2);
+    }
+  }, [billingMode, totalAmount, commissionPct, flatFee, marginPct, driverPay]);
+
+  const platformProfit = +(storeCharge - driverPay).toFixed(2);
+  const storeKeeps = +(totalAmount - storeCharge).toFixed(2);
+
+  const billingLabel: Record<string, string> = {
+    commission: `Προμήθεια ${commissionPct}% επί παραγγελίας`,
+    flat_fee: `Σταθερό €${flatFee.toFixed(2)} ανά παραγγελία`,
+    driver_plus_margin: `Αμοιβή οδηγού + ${marginPct}% margin`,
+  };
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(p => ({ ...p, [k]: v }));
@@ -220,7 +266,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       <div>
         <h2 className="font-heading font-bold text-xl text-foreground">Νέα Custom Order</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Συμπλήρωσε τα στοιχεία της παραγγελίας. Τα χιλιόμετρα μετριούνται αυτόματα από τη διεύθυνση και η κατανομή <strong>85/10/5</strong> εφαρμόζεται κλειδωμένα.
+          Τα χιλιόμετρα μετριούνται αυτόματα από τη διεύθυνση. Η αμοιβή οδηγού & η χρέωση καταστήματος υπολογίζονται με βάση τις ρυθμίσεις χρέωσης που έχει ορίσει ο διαχειριστής για το κατάστημά σου.
         </p>
       </div>
 
@@ -397,12 +443,12 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
           </CardContent>
         </Card>
 
-        {/* Live split preview (read-only) */}
+        {/* Live transparent pricing preview (read-only, mirrors server) */}
         <div className="space-y-3">
           <Card className="overflow-hidden border-primary/20 bg-gradient-to-br from-primary/5 via-card to-card lg:sticky lg:top-20">
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Απόσταση</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Απόσταση (οδική)</p>
                 {routing && <Loader2 className="h-3 w-3 animate-spin text-primary" />}
               </div>
               <div className="flex items-baseline gap-2">
@@ -415,30 +461,73 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                   </Badge>
                 )}
               </div>
+              {km == null && !routing && (
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Διάλεξε διεύθυνση παράδοσης για να μετρηθούν αυτόματα τα km.
+                </p>
+              )}
             </CardContent>
           </Card>
 
           <Card>
             <CardContent className="p-4 space-y-3">
               <div className="flex items-center justify-between">
-                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Κατανομή 85 / 10 / 5</p>
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Αμοιβή Οδηγού</p>
                 <Badge variant="secondary" className="text-[10px] gap-1">
-                  <Lock className="h-2.5 w-2.5" /> κλειδωμένο
+                  <Lock className="h-2.5 w-2.5" /> από km
                 </Badge>
               </div>
 
-              <SplitRow icon={Building2} label="Κρατάς" pct="85%" amount={split.storeKeeps} tone="text-foreground" />
-              <SplitRow icon={Bike}      label="Driver pool" pct="10%" amount={split.driverPool} tone="text-info" />
-              <SplitRow icon={TrendingUp} label="Admin" pct="5%" amount={split.admin} tone="text-success" />
+              <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 space-y-1">
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>Βασικό</span>
+                  <span className="tabular-nums">€{rates.base_pay.toFixed(2)}</span>
+                </div>
+                <div className="flex items-center justify-between text-xs text-muted-foreground">
+                  <span>{distanceKm.toFixed(1)} km × €{rates.per_km_rate.toFixed(2)}</span>
+                  <span className="tabular-nums">€{(rates.per_km_rate * distanceKm).toFixed(2)}</span>
+                </div>
+                <Separator className="my-1" />
+                <div className="flex items-center justify-between text-sm">
+                  <span className="font-medium flex items-center gap-1.5">
+                    <Bike className="h-3.5 w-3.5 text-info" /> Driver παίρνει
+                  </span>
+                  <span className="font-heading font-bold tabular-nums text-info">€{driverPay.toFixed(2)}</span>
+                </div>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Ελάχιστο €{rates.min_pay.toFixed(2)} ανά παραγγελία.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-4 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Χρέωση Καταστήματος</p>
+                <Badge variant="secondary" className="text-[10px] gap-1">
+                  <Lock className="h-2.5 w-2.5" /> {billingMode === 'commission' ? 'commission' : billingMode === 'flat_fee' ? 'flat' : 'driver+margin'}
+                </Badge>
+              </div>
+
+              <p className="text-[11px] text-muted-foreground leading-snug">
+                {billingLabel[billingMode]}
+              </p>
+
+              <div className="rounded-lg border border-border/60 bg-muted/30 px-3 py-2 space-y-1.5">
+                <SplitRow icon={Building2}  label="Αξία παραγγελίας" pct=""           amount={totalAmount} tone="text-foreground" />
+                <SplitRow icon={Bike}       label="Αμοιβή οδηγού"    pct=""           amount={driverPay}   tone="text-info" />
+                <SplitRow icon={TrendingUp} label="Admin profit"     pct=""           amount={platformProfit} tone="text-success" />
+              </div>
 
               <Separator />
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground flex items-center gap-1.5">
-                    <Wallet className="h-3.5 w-3.5" /> Driver παίρνει
+                    <Wallet className="h-3.5 w-3.5" /> Κρατάς (καθαρά)
                   </span>
-                  <span className="font-bold tabular-nums">€{driverPay.toFixed(2)}</span>
+                  <span className="font-bold tabular-nums">€{storeKeeps.toFixed(2)}</span>
                 </div>
                 <div className="flex items-center justify-between text-sm">
                   <span className="text-muted-foreground">Θα χρεωθείς</span>
@@ -447,7 +536,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
               </div>
 
               <p className="text-[10px] text-muted-foreground leading-snug pt-1 border-t">
-                Η αμοιβή οδηγού & η χρέωση υπολογίζονται από το σύστημα — δεν τροποποιούνται από το κατάστημα.
+                Όλες οι τιμές υπολογίζονται από το σύστημα με βάση τις ρυθμίσεις χρέωσης του διαχειριστή.
               </p>
             </CardContent>
           </Card>
@@ -461,7 +550,7 @@ function SplitRow({
   icon: Icon, label, pct, amount, tone,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  label: string; pct: string; amount: number; tone: string;
+  label: string; pct?: string; amount: number; tone: string;
 }) {
   return (
     <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
@@ -471,7 +560,7 @@ function SplitRow({
         </span>
         <div className="min-w-0">
           <p className="text-xs font-medium truncate">{label}</p>
-          <p className="text-[10px] text-muted-foreground">{pct}</p>
+          {pct ? <p className="text-[10px] text-muted-foreground">{pct}</p> : null}
         </div>
       </div>
       <span className={cn('font-heading font-bold text-sm tabular-nums', tone)}>
