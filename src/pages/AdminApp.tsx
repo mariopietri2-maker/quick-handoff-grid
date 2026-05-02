@@ -174,6 +174,8 @@ export default function AdminApp() {
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
         return <FinancialsManager />;
+      case 'split_calc':
+        return <SplitCalculator />;
       case 'pricing':
         return <PricingSettings />;
       case 'support_roles':
