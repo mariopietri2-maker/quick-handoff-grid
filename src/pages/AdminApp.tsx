@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { lazy, Suspense, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { supabase } from '@/integrations/supabase/client';
@@ -10,37 +10,36 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity } from 'lucide-react';
-import PlatformAnalytics from '@/components/admin/PlatformAnalytics';
-import AnnouncementsManager from '@/components/admin/AnnouncementsManager';
-import AssignmentSettings from '@/components/admin/AssignmentSettings';
-
-import SupportTicketsManager from '@/components/admin/SupportTicketsManager';
-// FinancialsManager merged into MoneyBagsPanel
-import PricingSettings from '@/components/admin/PricingSettings';
-import SupportRoleManager from '@/components/admin/SupportRoleManager';
-import WalletAdjustDialog from '@/components/admin/WalletAdjustDialog';
-import SuspendDialog from '@/components/admin/SuspendDialog';
-import DriverMapSettings from '@/components/admin/DriverMapSettings';
-import DriverMapEditor from '@/components/admin/DriverMapEditor';
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import { cn } from '@/lib/utils';
+// Eagerly load only the default landing tab — everything else is lazy.
 import AdminOverview from '@/components/admin/AdminOverview';
-import AdminAuditTab from '@/components/admin/AdminAuditTab';
-import FeatureFlagsManager from '@/components/admin/FeatureFlagsManager';
-import OperationalOverrides from '@/components/admin/OperationalOverrides';
-import RemoteUserActions from '@/components/admin/RemoteUserActions';
-import AdminPermissionsManager from '@/components/admin/AdminPermissionsManager';
 
-import CannedRepliesManager from '@/components/admin/CannedRepliesManager';
-import ExternalOrderIngest from '@/components/admin/ExternalOrderIngest';
-import StoreBillingSettings from '@/components/admin/StoreBillingSettings';
-import StorePromotionsManager from '@/components/admin/StorePromotionsManager';
-import SystemResetPanel from '@/components/admin/SystemResetPanel';
-import LiveOpsDashboard from '@/components/admin/LiveOpsDashboard';
-import SplitCalculator from '@/components/admin/SplitCalculator';
-import StorePayablesPanel from '@/components/admin/StorePayablesPanel';
-import DriverPayablesPanel from '@/components/admin/DriverPayablesPanel';
-import MoneyBagsPanel from '@/components/admin/MoneyBagsPanel';
+// Lazy-load every other admin panel so the admin shell stays small and fast.
+// Each panel only loads when its tab is opened.
+const PlatformAnalytics      = lazy(() => import('@/components/admin/PlatformAnalytics'));
+const AnnouncementsManager   = lazy(() => import('@/components/admin/AnnouncementsManager'));
+const SupportTicketsManager  = lazy(() => import('@/components/admin/SupportTicketsManager'));
+const PricingSettings        = lazy(() => import('@/components/admin/PricingSettings'));
+const SupportRoleManager     = lazy(() => import('@/components/admin/SupportRoleManager'));
+const DriverMapSettings      = lazy(() => import('@/components/admin/DriverMapSettings'));
+const DriverMapEditor        = lazy(() => import('@/components/admin/DriverMapEditor'));
+const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
+const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
+const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
+const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserActions'));
+const AdminPermissionsManager= lazy(() => import('@/components/admin/AdminPermissionsManager'));
+const CannedRepliesManager   = lazy(() => import('@/components/admin/CannedRepliesManager'));
+const ExternalOrderIngest    = lazy(() => import('@/components/admin/ExternalOrderIngest'));
+const StoreBillingSettings   = lazy(() => import('@/components/admin/StoreBillingSettings'));
+const StorePromotionsManager = lazy(() => import('@/components/admin/StorePromotionsManager'));
+const SystemResetPanel       = lazy(() => import('@/components/admin/SystemResetPanel'));
+const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDashboard'));
+const SplitCalculator        = lazy(() => import('@/components/admin/SplitCalculator'));
+const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
+const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
+const MoneyBagsPanel         = lazy(() => import('@/components/admin/MoneyBagsPanel'));
+const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -325,7 +324,13 @@ export default function AdminApp() {
         {/* Page Content */}
         <main className="flex-1 p-2.5 lg:p-3.5 overflow-auto">
           <div className="max-w-[1400px] mx-auto">
-            {renderContent()}
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-16">
+                <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            }>
+              {renderContent()}
+            </Suspense>
           </div>
         </main>
       </div>
