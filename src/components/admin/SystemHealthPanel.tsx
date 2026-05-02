@@ -63,7 +63,7 @@ export default function SystemHealthPanel() {
         status: on ? 'warn' : 'ok',
         message: on ? 'Ενεργή — οι χρήστες βλέπουν banner' : 'Απενεργοποιημένη',
         fix: on ? async () => {
-          const { error } = await supabase.from('platform_settings').update({ maintenance_mode: false } as any).neq('id', '00000000-0000-0000-0000-000000000000');
+          const { error } = await (supabase as any).from('platform_settings').update({ maintenance_mode: false }).not('id', 'is', null);
           if (error) throw error;
         } : undefined,
         fixLabel: 'Απενεργοποίηση',
