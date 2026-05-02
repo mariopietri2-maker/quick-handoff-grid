@@ -273,6 +273,29 @@ export function UserMenu() {
             </>
           )}
 
+          {isAdmin && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuLabel className={labelClassName}>
+                <span className="inline-flex items-center gap-1.5">
+                  <Repeat className="h-3 w-3" /> Εναλλαγή προβολής (Admin)
+                </span>
+              </DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/admin')}>
+                <Shield className="mr-2 h-4 w-4 shrink-0" />
+                Admin Πίνακας
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver')}>
+                <Bike className="mr-2 h-4 w-4 shrink-0" />
+                Προβολή Οδηγού
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/')}>
+                <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
+                Προβολή Πελάτη
+              </DropdownMenuItem>
+            </>
+          )}
+
           <DropdownMenuSeparator />
           <DropdownMenuItem
             onSelect={() => { setMenuOpen(false); handleSignOut(); }}
