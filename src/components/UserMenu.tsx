@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Bell, Settings, TrendingUp, Wallet,
   LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause, PackageX,
+  Shield, Bike, ShoppingCart, Repeat,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
