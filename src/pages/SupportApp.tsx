@@ -480,7 +480,7 @@ export default function SupportApp() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-heading font-semibold text-sm truncate">
-                            {driver?.full_name ?? ticket.driver_id.slice(0, 8)}
+                            {driver?.full_name ?? (ticket.driver_id ? ticket.driver_id.slice(0, 8) : 'Άγνωστος')}
                           </p>
                           <div className="flex items-center gap-1 shrink-0">
                             {(() => {
