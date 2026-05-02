@@ -324,7 +324,13 @@ export default function AdminApp() {
         {/* Page Content */}
         <main className="flex-1 p-2.5 lg:p-3.5 overflow-auto">
           <div className="max-w-[1400px] mx-auto">
-            {renderContent()}
+            <Suspense fallback={
+              <div className="flex items-center justify-center py-16">
+                <div className="h-6 w-6 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+              </div>
+            }>
+              {renderContent()}
+            </Suspense>
           </div>
         </main>
       </div>
