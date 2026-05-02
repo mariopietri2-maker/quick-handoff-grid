@@ -85,29 +85,44 @@ export default function SystemHealthPanel() {
       results.push({ id: 'mapbox', label: 'Mapbox (χάρτες)', icon: MapPin, status: 'error', message: e?.message ?? 'Αποτυχία' });
     }
 
-    // 4. AI Gateway via support-ai ping (a 400 = reachable, just rejects missing args)
-    try {
+    // Helper: ping an edge function via raw fetch so 4xx responses don't throw.
+    const pingFn = async (name: string) => {
+      const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
       const t0 = performance.now();
-      const { error } = await supabase.functions.invoke('support-ai', { body: { ping: true } });
-      const ms = Math.round(performance.now() - t0);
-      const reachable = !error || /400|ticketId|action required/i.test(error.message ?? '');
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
+          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY}`,
+        },
+        body: JSON.stringify({ ping: true }),
+      });
+      await res.text().catch(() => '');
+      return { status: res.status, ms: Math.round(performance.now() - t0) };
+    };
+
+    // 4. AI Gateway via support-ai ping (any HTTP response = reachable)
+    try {
+      const { status, ms } = await pingFn('support-ai');
+      const reachable = status < 500;
       results.push({
         id: 'ai', label: 'AI Gateway', icon: Sparkles,
         status: reachable ? 'ok' : 'warn',
-        message: reachable ? `Απόκριση ${ms}ms` : `Πρόβλημα: ${error!.message}`,
+        message: reachable ? `Απόκριση ${ms}ms` : `HTTP ${status}`,
       });
     } catch (e: any) {
       results.push({ id: 'ai', label: 'AI Gateway', icon: Sparkles, status: 'warn', message: e?.message ?? 'Άγνωστο' });
     }
 
-    // 5. Auto-dispatch edge function reachability (400 = reachable)
+    // 5. Auto-dispatch edge function reachability (any HTTP response = reachable)
     try {
-      const { error } = await supabase.functions.invoke('auto-dispatch', { body: { ping: true } });
-      const reachable = !error || /400|required|invalid/i.test(error.message ?? '');
+      const { status, ms } = await pingFn('auto-dispatch');
+      const reachable = status < 500;
       results.push({
         id: 'dispatch', label: 'Auto-dispatch', icon: Zap,
         status: reachable ? 'ok' : 'warn',
-        message: reachable ? 'Διαθέσιμη' : error!.message,
+        message: reachable ? `Διαθέσιμη (${ms}ms)` : `HTTP ${status}`,
       });
     } catch (e: any) {
       results.push({ id: 'dispatch', label: 'Auto-dispatch', icon: Zap, status: 'warn', message: e?.message ?? 'Άγνωστο' });
