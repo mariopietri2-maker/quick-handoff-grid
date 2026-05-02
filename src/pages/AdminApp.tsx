@@ -40,6 +40,7 @@ const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayabl
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
 const MoneyBagsPanel         = lazy(() => import('@/components/admin/MoneyBagsPanel'));
 const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
+const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -162,6 +163,8 @@ export default function AdminApp() {
         );
       case 'live_ops':
         return <LiveOpsDashboard />;
+      case 'system_health':
+        return <SystemHealthPanel />;
       case 'analytics':
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'audit':
