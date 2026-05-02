@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock, StickyNote } from 'lucide-react';
+import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
@@ -42,17 +42,7 @@ const statusSteps = [
   { key: 'delivered', label: 'Παραδόθηκε', icon: CheckCircle2 },
 ];
 
-export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
-  const [checkedItems, setCheckedItems] = useState<Set<number>>(new Set());
-
-
-  const toggleChecklistItem = (index: number) => {
-    setCheckedItems(prev => {
-      const next = new Set(prev);
-      next.has(index) ? next.delete(index) : next.add(index);
-      return next;
-    });
-  };
+export function ActiveDelivery({ delivery, onStatusUpdate }: ActiveDeliveryProps) {
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
@@ -182,26 +172,19 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           </div>
         </div>
 
-        {/* Navigate buttons — in-app focus + one-tap external Maps */}
+        {/* Navigation — opens external Google Maps app */}
         {(isGoingToStore || isGoingToCustomer) && (
-          <div className="mt-4 grid grid-cols-2 gap-2">
-            <button
-              onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
-              className="h-11 rounded-xl bg-[hsl(var(--driver-surface-elevated))] border border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))] text-xs font-heading font-semibold flex items-center justify-center gap-1.5 hover:bg-[hsl(var(--driver-surface))] transition-all active:scale-[0.98]"
-            >
-              <Navigation className="h-4 w-4" />
-              Στον Χάρτη
-            </button>
+          <div className="mt-4">
             <button
               onClick={() => openGoogleMapsNavigation(
                 isGoingToStore
                   ? { lat: delivery.storeLat ?? null, lng: delivery.storeLng ?? null, address: delivery.storeAddress }
                   : { lat: delivery.deliveryLat ?? null, lng: delivery.deliveryLng ?? null, address: delivery.deliveryAddress }
               )}
-              className="h-11 rounded-xl gradient-primary text-white text-xs font-heading font-semibold flex items-center justify-center gap-1.5 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
+              className="w-full h-12 rounded-xl gradient-primary text-white text-sm font-heading font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
             >
               <ExternalLink className="h-4 w-4" />
-              Google Maps
+              Πλοήγηση με Google Maps
             </button>
           </div>
         )}
@@ -247,31 +230,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
       {/* Wait time bonus */}
       <WaitTimeBonusBanner orderId={delivery.id} status={delivery.status} />
 
-      {/* Pickup checklist */}
-      {delivery.status === 'arrived' && (
-        <div className="rounded-2xl driver-glass border-2 border-[hsl(var(--driver-accent))]/20 p-4">
-          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-3 flex items-center gap-2">
-            <CheckCircle2 className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
-            Λίστα Ελέγχου Παραλαβής
-          </p>
-          {delivery.pickupChecklist.map((item, i) => (
-            <button
-              key={i}
-              onClick={() => toggleChecklistItem(i)}
-              className="flex items-center gap-3 w-full py-2.5 text-left"
-            >
-              {checkedItems.has(i) ? (
-                <CheckCircle2 className="h-5 w-5 text-[hsl(var(--driver-accent))] flex-shrink-0" />
-              ) : (
-                <Circle className="h-5 w-5 text-[hsl(var(--driver-text-muted))] flex-shrink-0" />
-              )}
-              <span className={`text-sm ${checkedItems.has(i) ? 'line-through text-[hsl(var(--driver-text-muted))]' : 'text-[hsl(var(--driver-text))]'}`}>
-                {item}
-              </span>
-            </button>
-          ))}
-        </div>
-      )}
 
       {/* Payout */}
       <div className="rounded-2xl driver-glass p-4 flex items-center justify-between">
