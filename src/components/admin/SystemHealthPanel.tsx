@@ -85,27 +85,29 @@ export default function SystemHealthPanel() {
       results.push({ id: 'mapbox', label: 'Mapbox (χάρτες)', icon: MapPin, status: 'error', message: e?.message ?? 'Αποτυχία' });
     }
 
-    // 4. AI Gateway via support-ai ping
+    // 4. AI Gateway via support-ai ping (a 400 = reachable, just rejects missing args)
     try {
       const t0 = performance.now();
       const { error } = await supabase.functions.invoke('support-ai', { body: { ping: true } });
       const ms = Math.round(performance.now() - t0);
+      const reachable = !error || /400|ticketId|action required/i.test(error.message ?? '');
       results.push({
         id: 'ai', label: 'AI Gateway', icon: Sparkles,
-        status: error ? 'warn' : 'ok',
-        message: error ? `Πρόβλημα: ${error.message}` : `Απόκριση ${ms}ms`,
+        status: reachable ? 'ok' : 'warn',
+        message: reachable ? `Απόκριση ${ms}ms` : `Πρόβλημα: ${error!.message}`,
       });
     } catch (e: any) {
       results.push({ id: 'ai', label: 'AI Gateway', icon: Sparkles, status: 'warn', message: e?.message ?? 'Άγνωστο' });
     }
 
-    // 5. Auto-dispatch edge function reachability
+    // 5. Auto-dispatch edge function reachability (400 = reachable)
     try {
       const { error } = await supabase.functions.invoke('auto-dispatch', { body: { ping: true } });
+      const reachable = !error || /400|required|invalid/i.test(error.message ?? '');
       results.push({
         id: 'dispatch', label: 'Auto-dispatch', icon: Zap,
-        status: error ? 'warn' : 'ok',
-        message: error ? error.message : 'Διαθέσιμη',
+        status: reachable ? 'ok' : 'warn',
+        message: reachable ? 'Διαθέσιμη' : error!.message,
       });
     } catch (e: any) {
       results.push({ id: 'dispatch', label: 'Auto-dispatch', icon: Zap, status: 'warn', message: e?.message ?? 'Άγνωστο' });
