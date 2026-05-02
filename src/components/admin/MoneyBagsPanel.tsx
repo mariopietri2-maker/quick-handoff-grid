@@ -438,8 +438,129 @@ export default function MoneyBagsPanel() {
           )}
         </CardContent>
       </Card>
+        </TabsContent>
+
+        <TabsContent value="withdrawals" className="m-0">
+          <UICard>
+            <CardHeader><CardTitle className="font-heading text-base">Εκκρεμή Αιτήματα Ανάληψης</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Οδηγός</TableHead>
+                    <TableHead className="text-right">Ποσό</TableHead>
+                    <TableHead className="hidden md:table-cell">Ημερομηνία</TableHead>
+                    <TableHead className="text-right">Ενέργειες</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {pendingWithdrawals.map((tx: any) => (
+                    <TableRow key={tx.id}>
+                      <TableCell className="font-medium">{driverName(tx.driver_id)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-bold">{fmt(tx.amount)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden md:table-cell">
+                        {format(new Date(tx.created_at), 'dd MMM, HH:mm')}
+                      </TableCell>
+                      <TableCell>
+                        <div className="flex gap-2 justify-end">
+                          <Button size="sm" className="h-8" onClick={() => handleApproveWithdrawal(tx.id, tx.driver_id, Number(tx.amount))}>
+                            <CheckCircle2 className="h-3 w-3 mr-1" />Έγκριση
+                          </Button>
+                          <Button size="sm" variant="destructive" className="h-8" onClick={() => handleRejectWithdrawal(tx.id, tx.driver_id, Number(tx.amount))}>
+                            Απόρριψη
+                          </Button>
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!pendingWithdrawals.length && (
+                    <TableRow><TableCell colSpan={4} className="text-center text-muted-foreground py-8">Κανένα εκκρεμές αίτημα</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </UICard>
+        </TabsContent>
+
+        <TabsContent value="wallets" className="m-0">
+          <UICard>
+            <CardHeader><CardTitle className="font-heading text-base">Πορτοφόλια Οδηγών</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Οδηγός</TableHead>
+                    <TableHead className="text-right">Διαθέσιμο</TableHead>
+                    <TableHead className="text-right">Εκκρεμές</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Αναληφθέντα</TableHead>
+                    <TableHead className="hidden lg:table-cell">Τελ. Ενημέρωση</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(wallets ?? []).map((w: any) => (
+                    <TableRow key={w.id}>
+                      <TableCell className="font-medium">{driverName(w.driver_id)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-bold text-emerald-600">{fmt(w.available_balance)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-warning">{fmt(w.pending_balance)}</TableCell>
+                      <TableCell className="text-right tabular-nums hidden md:table-cell">{fmt(w.total_withdrawn)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden lg:table-cell">
+                        {format(new Date(w.updated_at), 'dd MMM, HH:mm')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!wallets?.length && (
+                    <TableRow><TableCell colSpan={5} className="text-center text-muted-foreground py-8">Κανένα πορτοφόλι</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </UICard>
+        </TabsContent>
+
+        <TabsContent value="earnings" className="m-0">
+          <UICard>
+            <CardHeader><CardTitle className="font-heading text-base">Πρόσφατα Κέρδη</CardTitle></CardHeader>
+            <CardContent className="overflow-x-auto">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Οδηγός</TableHead>
+                    <TableHead className="text-right">Βάση</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Tips</TableHead>
+                    <TableHead className="text-right hidden md:table-cell">Bonus</TableHead>
+                    <TableHead className="text-right">Σύνολο</TableHead>
+                    <TableHead className="hidden lg:table-cell">Ημερομηνία</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {(earnings ?? []).map((e: any) => (
+                    <TableRow key={e.id}>
+                      <TableCell className="font-medium">{driverName(e.driver_id)}</TableCell>
+                      <TableCell className="text-right tabular-nums">{fmt(e.base_pay)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-primary hidden md:table-cell">{fmt(e.tip)}</TableCell>
+                      <TableCell className="text-right tabular-nums text-warning hidden md:table-cell">{fmt(e.bonus)}</TableCell>
+                      <TableCell className="text-right tabular-nums font-bold">{fmt(e.total)}</TableCell>
+                      <TableCell className="text-xs text-muted-foreground hidden lg:table-cell">
+                        {format(new Date(e.created_at), 'dd MMM, HH:mm')}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                  {!earnings?.length && (
+                    <TableRow><TableCell colSpan={6} className="text-center text-muted-foreground py-8">Κανένα κέρδος</TableCell></TableRow>
+                  )}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </UICard>
+        </TabsContent>
+
+        <TabsContent value="month" className="m-0">
+          <MonthCloseCard />
+        </TabsContent>
+      </Tabs>
 
       {/* Reset confirm */}
+
       <AlertDialog open={!!pendingReset} onOpenChange={(v) => !v && setPendingReset(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
