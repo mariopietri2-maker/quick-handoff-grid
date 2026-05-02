@@ -239,11 +239,11 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
-          {activeTicket.requester_role === 'customer' && activeTicket.requester_id ? (
+          {(activeTicket.requester_role === 'customer' || activeTicket.requester_role === 'store') && activeTicket.requester_id ? (
             <CustomerProfilePanel userId={activeTicket.requester_id} />
-          ) : (
+          ) : activeTicket.driver_id ? (
             <DriverProfilePanel driverId={activeTicket.driver_id} />
-          )}
+          ) : null}
 
 
           {activeTicket.driver_id && (
