@@ -416,8 +416,10 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
               )}
             </CardContent>
           </Card>
+          </div>
         </div>
-      </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
