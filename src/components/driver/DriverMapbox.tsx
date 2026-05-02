@@ -63,6 +63,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const lastRouteKey = useRef('');
   const followModeRef = useRef(followMode);
   useEffect(() => { followModeRef.current = followMode; }, [followMode]);
+  // When the user manually pans/zooms/rotates during follow mode, pause auto-camera until they recenter
+  const userInteractingRef = useRef(false);
 
   // Compute bearing between two coords (fallback when GPS heading unavailable, e.g. desktop)
   const bearingBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
@@ -110,12 +112,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       center: [pos?.lng ?? 20.8537, pos?.lat ?? 39.6650],
       zoom: 14,
       attributionControl: false,
-      pitchWithRotate: false,
-      dragRotate: false,
-      touchPitch: false,
     });
-    // Disable two-finger rotate gesture so map stays north-up unless in nav follow mode
-    map.touchZoomRotate.disableRotation();
 
     // GeolocateControl removed — custom recenter button used instead
 
@@ -164,6 +161,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       });
     });
 
+    // Detect manual user interaction so the follow camera doesn't fight the user
+    const onUserMove = (e: any) => {
+      if (e?.originalEvent) userInteractingRef.current = true;
+    };
+    map.on('dragstart', onUserMove);
+    map.on('rotatestart', onUserMove);
+    map.on('pitchstart', onUserMove);
+    map.on('zoomstart', onUserMove);
+
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
@@ -206,6 +212,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     if (!map || !pos) return;
 
     if (!followMode) return;
+    if (userInteractingRef.current) return;
 
     // Smooth heading transitions to avoid jitter
     const rawHeading = pos.heading;
@@ -434,7 +441,19 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   // Expose recenter method
   const recenter = useCallback(() => {
     const map = mapRef.current;
-    if (map && pos) {
+    if (!map || !pos) return;
+    // Resume follow camera tracking after a manual pan/zoom
+    userInteractingRef.current = false;
+    if (followModeRef.current) {
+      map.easeTo({
+        center: [pos.lng, pos.lat],
+        bearing: smoothedHeadingRef.current ?? pos.heading ?? 0,
+        pitch: 55,
+        zoom: Math.max(map.getZoom(), 17),
+        duration: 800,
+        essential: true,
+      });
+    } else {
       map.flyTo({ center: [pos.lng, pos.lat], zoom: 15, duration: 800 });
     }
   }, [pos]);
