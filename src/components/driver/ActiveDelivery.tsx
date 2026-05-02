@@ -171,19 +171,15 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           </div>
         </div>
 
-        {/* Navigation — opens external Google Maps app */}
+        {/* Navigation — opens in-app navigation */}
         {(isGoingToStore || isGoingToCustomer) && (
           <div className="mt-4">
             <button
-              onClick={() => openGoogleMapsNavigation(
-                isGoingToStore
-                  ? { lat: delivery.storeLat ?? null, lng: delivery.storeLng ?? null, address: delivery.storeAddress }
-                  : { lat: delivery.deliveryLat ?? null, lng: delivery.deliveryLng ?? null, address: delivery.deliveryAddress }
-              )}
+              onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
               className="w-full h-12 rounded-xl gradient-primary text-white text-sm font-heading font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
             >
-              <ExternalLink className="h-4 w-4" />
-              Πλοήγηση με Google Maps
+              <Navigation className="h-4 w-4" />
+              Πλοήγηση
             </button>
           </div>
         )}
