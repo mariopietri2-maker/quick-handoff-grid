@@ -1,5 +1,4 @@
-import { Navigation, Clock, ChevronUp, ChevronDown, CornerDownRight } from 'lucide-react';
-import { useState } from 'react';
+import { Navigation, Clock, CornerDownRight } from 'lucide-react';
 import type { RouteInfo } from './DriverMapbox';
 
 interface NavigationPanelProps {
