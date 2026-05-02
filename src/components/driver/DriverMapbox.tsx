@@ -212,6 +212,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     if (!map || !pos) return;
 
     if (!followMode) return;
+    if (userInteractingRef.current) return;
 
     // Smooth heading transitions to avoid jitter
     const rawHeading = pos.heading;
