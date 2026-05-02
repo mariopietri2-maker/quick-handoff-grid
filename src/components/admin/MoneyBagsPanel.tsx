@@ -251,14 +251,40 @@ export default function MoneyBagsPanel() {
 
   return (
     <div className="space-y-4">
-      <div className="admin-section-header">
+      <div className="admin-section-header flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="admin-section-title">Money Bags · Treasury</h2>
+          <h2 className="admin-section-title">Money Bags · Ταμείο</h2>
           <p className="admin-section-sub mt-0.5">
             85% Κατάστημα · 10% Driver pool · 5% Admin — ζωντανή κατανομή χρημάτων στην πλατφόρμα.
           </p>
         </div>
+        <CustomOrderDialog />
       </div>
+
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="flex flex-wrap h-auto gap-1">
+          <TabsTrigger value="overview">
+            <Activity className="h-3.5 w-3.5 mr-1" />Επισκόπηση
+          </TabsTrigger>
+          <TabsTrigger value="withdrawals">
+            <ArrowDownCircle className="h-3.5 w-3.5 mr-1" />Αναλήψεις
+            {pendingWithdrawals.length > 0 && (
+              <Badge className="ml-1.5 h-4 px-1.5 bg-warning/20 text-warning border-warning/30">
+                {pendingWithdrawals.length}
+              </Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="wallets">
+            <Wallet className="h-3.5 w-3.5 mr-1" />Πορτοφόλια
+          </TabsTrigger>
+          <TabsTrigger value="earnings">
+            <TrendingUp className="h-3.5 w-3.5 mr-1" />Κέρδη
+          </TabsTrigger>
+          <TabsTrigger value="month">Κλείσιμο μήνα</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-4 m-0">
+
 
       {/* Hero distribution */}
       <Card className="overflow-hidden">
