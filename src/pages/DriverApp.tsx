@@ -57,8 +57,15 @@ export default function DriverApp() {
       });
   }, []);
   const cashCapped = Number(driverState?.shift_cash_balance ?? 0) >= maxCashCap;
-  // Drivers always start OFFLINE — must opt-in each session
-  const [isOnline, setIsOnline] = useState(false);
+  // Drivers stay online persistently — once they go online they remain online
+  // across reloads, backgrounding, and tab close. Only an explicit toggle
+  // (or admin suspension) takes them offline.
+  const [isOnline, setIsOnline] = useState<boolean>(() => {
+    try { return localStorage.getItem('driver_is_online_v1') === '1'; } catch { return false; }
+  });
+  useEffect(() => {
+    try { localStorage.setItem('driver_is_online_v1', isOnline ? '1' : '0'); } catch {}
+  }, [isOnline]);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   
@@ -70,35 +77,6 @@ export default function DriverApp() {
   };
   useEarnings();
   useDriverNotifications();
-
-  // ─── 2-hour auto-offline inactivity timer ───
-  // Drivers stay online indefinitely while interacting with the app.
-  // After 2 hours of zero activity (no taps, scrolls, or offer responses),
-  // we automatically toggle them offline so they don't appear available when AFK.
-  const inactivityTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const lastActivity = useRef<number>(Date.now());
-
-  useEffect(() => {
-    if (!isOnline) {
-      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-      return;
-    }
-    const INACTIVITY_MS = 2 * 60 * 60 * 1000; // 2 hours
-    const resetTimer = () => {
-      lastActivity.current = Date.now();
-      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-      inactivityTimer.current = setTimeout(() => {
-        setIsOnline(false);
-      }, INACTIVITY_MS);
-    };
-    const events: (keyof WindowEventMap)[] = ['pointerdown', 'touchstart', 'keydown', 'scroll'];
-    events.forEach(e => window.addEventListener(e, resetTimer, { passive: true }));
-    resetTimer();
-    return () => {
-      events.forEach(e => window.removeEventListener(e, resetTimer));
-      if (inactivityTimer.current) clearTimeout(inactivityTimer.current);
-    };
-  }, [isOnline]);
 
   useEffect(() => {
     if (!user) return;
