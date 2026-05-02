@@ -7,11 +7,9 @@ export default function MaintenanceBanner() {
 
   useEffect(() => {
     const load = async () => {
-      const { data } = await (supabase.from as any)('platform_settings')
-        .select('maintenance_mode, maintenance_message')
-        .eq('id', 1)
-        .maybeSingle();
-      setData(data ?? null);
+      const { data } = await (supabase as any).rpc('get_platform_settings_public');
+      const row = Array.isArray(data) ? data[0] : data;
+      setData(row ? { maintenance_mode: !!row.maintenance_mode, maintenance_message: row.maintenance_message ?? null } : null);
     };
     load();
     const id = setInterval(load, 30_000);

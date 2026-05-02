@@ -2371,6 +2371,42 @@ export type Database = {
       }
     }
     Views: {
+      platform_settings_public: {
+        Row: {
+          assignment_mode: string | null
+          customer_base_fee: number | null
+          customer_per_km_fee: number | null
+          id: number | null
+          maintenance_message: string | null
+          maintenance_mode: boolean | null
+          max_cash_cap: number | null
+          platform_service_fee: number | null
+          show_stores_on_driver_map: boolean | null
+        }
+        Insert: {
+          assignment_mode?: string | null
+          customer_base_fee?: number | null
+          customer_per_km_fee?: number | null
+          id?: number | null
+          maintenance_message?: string | null
+          maintenance_mode?: boolean | null
+          max_cash_cap?: number | null
+          platform_service_fee?: number | null
+          show_stores_on_driver_map?: boolean | null
+        }
+        Update: {
+          assignment_mode?: string | null
+          customer_base_fee?: number | null
+          customer_per_km_fee?: number | null
+          id?: number | null
+          maintenance_message?: string | null
+          maintenance_mode?: boolean | null
+          max_cash_cap?: number | null
+          platform_service_fee?: number | null
+          show_stores_on_driver_map?: boolean | null
+        }
+        Relationships: []
+      }
       stores_public: {
         Row: {
           address: string | null
@@ -2556,6 +2592,19 @@ export type Database = {
         Returns: undefined
       }
       driver_release_order: { Args: { p_order_id: string }; Returns: Json }
+      get_platform_settings_public: {
+        Args: never
+        Returns: {
+          assignment_mode: string
+          customer_base_fee: number
+          customer_per_km_fee: number
+          maintenance_message: string
+          maintenance_mode: boolean
+          max_cash_cap: number
+          platform_service_fee: number
+          show_stores_on_driver_map: boolean
+        }[]
+      }
       get_public_reviews: {
         Args: { p_store_id?: string }
         Returns: {

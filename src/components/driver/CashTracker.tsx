@@ -11,12 +11,10 @@ export default function CashTracker() {
 
   useEffect(() => {
     (supabase as any)
-      .from('platform_settings')
-      .select('max_cash_cap')
-      .eq('id', 1)
-      .maybeSingle()
+      .rpc('get_platform_settings_public')
       .then(({ data }: any) => {
-        if (data?.max_cash_cap != null) setCap(Number(data.max_cash_cap));
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.max_cash_cap != null) setCap(Number(row.max_cash_cap));
       });
   }, []);
 

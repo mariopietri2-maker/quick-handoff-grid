@@ -24,12 +24,10 @@ export function useNearbyStoresForDriver() {
   useEffect(() => {
     let mounted = true;
     const load = async () => {
-      const { data } = await supabase
-        .from('platform_settings')
-        .select('show_stores_on_driver_map')
-        .eq('id', 1).maybeSingle();
+      const { data } = await (supabase as any).rpc('get_platform_settings_public');
+      const row = Array.isArray(data) ? data[0] : data;
       if (mounted) {
-        setEnabled(Boolean((data as { show_stores_on_driver_map?: boolean } | null)?.show_stores_on_driver_map ?? true));
+        setEnabled(Boolean(row?.show_stores_on_driver_map ?? true));
       }
     };
     load();
