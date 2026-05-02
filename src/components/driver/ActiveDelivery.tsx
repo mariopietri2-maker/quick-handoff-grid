@@ -53,15 +53,31 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
+  const isReady = ['ready', 'arrived', 'picked_up', 'delivered'].includes(delivery.status);
 
-  const getNextAction = () => {
+  // Live countdown to predicted ready time (only meaningful pre-ready)
+  const [now, setNow] = useState<number>(() => Date.now());
+  useEffect(() => {
+    if (isReady) return;
+    const t = setInterval(() => setNow(Date.now()), 15_000);
+    return () => clearInterval(t);
+  }, [isReady]);
+  const etaMs = delivery.predictedReadyAt ? new Date(delivery.predictedReadyAt).getTime() - now : null;
+  const etaMin = etaMs != null ? Math.max(0, Math.round(etaMs / 60_000)) : null;
+
+  const getNextAction = (): { label: string; next: string; locked: boolean } | null => {
     switch (delivery.status) {
       case 'accepted': case 'preparing': case 'ready':
-        return { label: 'Έφτασα στο Κατάστημα', next: 'arrived' };
+        return { label: 'Έφτασα στο Κατάστημα', next: 'arrived', locked: false };
       case 'arrived':
-        return { label: 'Παρέλαβα την Παραγγελία', next: 'picked_up' };
+        // Pickup unlocks only when store has flipped status to ready (or beyond).
+        return {
+          label: isReady ? 'Παρέλαβα την Παραγγελία' : 'Αναμονή για ετοιμασία…',
+          next: 'picked_up',
+          locked: !isReady,
+        };
       case 'picked_up':
-        return { label: 'Ολοκλήρωση Παράδοσης', next: 'delivered' };
+        return { label: 'Ολοκλήρωση Παράδοσης', next: 'delivered', locked: false };
       default:
         return null;
     }
