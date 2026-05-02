@@ -189,17 +189,24 @@ export function useDriverLocation(isActive: boolean) {
 
     start();
 
-    // Auto-offline when the user closes the tab/app or backgrounds it
-    const handleHide = () => { void goHardOffline(); };
-    window.addEventListener('pagehide', handleHide);
-    window.addEventListener('beforeunload', handleHide);
+    // When connectivity is restored, immediately flush the latest position
+    // so the dispatcher sees us as online again without waiting for the
+    // next 5s tick.
+    const handleOnline = () => {
+      if (lastPosRef.current) void sendLocation(lastPosRef.current);
+    };
+    window.addEventListener('online', handleOnline);
+
+    // NOTE: We intentionally do NOT clear the driver's location row on
+    // pagehide / beforeunload. If the driver closes or backgrounds the
+    // app while online, they stay online — the row TTL / heartbeat
+    // freshness check on the dispatcher side handles true disconnects.
 
     return () => {
       cancelled = true;
       cleanupRef.current?.();
       cleanupRef.current = null;
-      window.removeEventListener('pagehide', handleHide);
-      window.removeEventListener('beforeunload', handleHide);
+      window.removeEventListener('online', handleOnline);
     };
   }, [isActive, user, sendLocation, goHardOffline]);
 
