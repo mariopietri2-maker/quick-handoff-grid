@@ -2542,46 +2542,26 @@ export type Database = {
         }
         Returns: undefined
       }
-      create_external_order:
-        | {
-            Args: {
-              p_customer_name?: string
-              p_customer_phone?: string
-              p_delivery_address: string
-              p_delivery_lat?: number
-              p_delivery_lng?: number
-              p_distance_km?: number
-              p_driver_payout_override?: number
-              p_external_ref?: string
-              p_items_summary?: string
-              p_notes?: string
-              p_source: string
-              p_store_charge_override?: number
-              p_store_id: string
-              p_total_amount: number
-            }
-            Returns: string
-          }
-        | {
-            Args: {
-              p_customer_name?: string
-              p_customer_phone?: string
-              p_delivery_address: string
-              p_delivery_lat?: number
-              p_delivery_lng?: number
-              p_distance_km?: number
-              p_driver_payout_override?: number
-              p_external_ref?: string
-              p_items_summary?: string
-              p_notes?: string
-              p_payment_method?: string
-              p_source: string
-              p_store_charge_override?: number
-              p_store_id: string
-              p_total_amount: number
-            }
-            Returns: string
-          }
+      create_external_order: {
+        Args: {
+          p_customer_name?: string
+          p_customer_phone?: string
+          p_delivery_address: string
+          p_delivery_lat?: number
+          p_delivery_lng?: number
+          p_distance_km?: number
+          p_driver_payout_override?: number
+          p_external_ref?: string
+          p_items_summary?: string
+          p_notes?: string
+          p_payment_method?: string
+          p_source: string
+          p_store_charge_override?: number
+          p_store_id: string
+          p_total_amount: number
+        }
+        Returns: string
+      }
       credit_customer_wallet: {
         Args: {
           p_amount: number
