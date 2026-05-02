@@ -139,6 +139,62 @@ export default function MoneyBagsPanel() {
     },
   });
 
+  // Withdrawals + wallets + earnings (merged from former Ταμείο tab)
+  const { data: wallets } = useQuery({
+    queryKey: ['admin-wallets'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('driver_wallets').select('*').order('updated_at', { ascending: false });
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: transactions } = useQuery({
+    queryKey: ['admin-transactions'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('wallet_transactions').select('*').order('created_at', { ascending: false }).limit(100);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const { data: earnings } = useQuery({
+    queryKey: ['admin-earnings'],
+    queryFn: async () => {
+      const { data, error } = await supabase.from('earnings').select('*').order('created_at', { ascending: false }).limit(200);
+      if (error) throw error;
+      return data ?? [];
+    },
+  });
+
+  const pendingWithdrawals = (transactions ?? []).filter((t: any) => t.type === 'withdrawal_request' && t.status === 'pending');
+
+  const handleApproveWithdrawal = async (txId: string, driverId: string, amount: number) => {
+    const { error } = await supabase.from('wallet_transactions').update({ status: 'completed' }).eq('id', txId);
+    if (error) { toast.error('Αποτυχία'); return; }
+    const w = wallets?.find((x: any) => x.driver_id === driverId);
+    await supabase.from('driver_wallets').update({
+      pending_balance: 0,
+      total_withdrawn: (w ? Number(w.total_withdrawn) : 0) + amount,
+    } as any).eq('driver_id', driverId);
+    toast.success('Ανάληψη εγκρίθηκε');
+    qc.invalidateQueries({ queryKey: ['admin-wallets'] });
+    qc.invalidateQueries({ queryKey: ['admin-transactions'] });
+  };
+
+  const handleRejectWithdrawal = async (txId: string, driverId: string, amount: number) => {
+    const { error } = await supabase.from('wallet_transactions').update({ status: 'rejected' }).eq('id', txId);
+    if (error) { toast.error('Αποτυχία'); return; }
+    const w = wallets?.find((x: any) => x.driver_id === driverId);
+    await supabase.from('driver_wallets').update({
+      available_balance: Number(w?.available_balance ?? 0) + amount,
+      pending_balance: Math.max(0, Number(w?.pending_balance ?? 0) - amount),
+    } as any).eq('driver_id', driverId);
+    toast.success('Ανάληψη απορρίφθηκε — ποσό επεστράφη');
+    qc.invalidateQueries({ queryKey: ['admin-wallets'] });
+    qc.invalidateQueries({ queryKey: ['admin-transactions'] });
+  };
+
   // Realtime
   useEffect(() => {
     const ch = supabase
