@@ -335,8 +335,18 @@ export default function DriverApp() {
           {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
               <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-                <div className="shrink-0 pointer-events-auto">
+                <div className="shrink-0 pointer-events-auto flex items-center gap-2">
                   <UserMenu />
+                  {isAdminRole && adminAsDriver && (
+                    <button
+                      onClick={toggleAdminView}
+                      className="h-9 px-3 rounded-full text-[11px] font-heading font-bold border border-border bg-white/95 backdrop-blur-md shadow-lg hover:bg-white transition-colors flex items-center gap-1.5 text-foreground"
+                      title="Επιστροφή σε Admin Driver Ops"
+                    >
+                      <ShieldCheck className="h-3.5 w-3.5 text-primary" />
+                      Admin Ops
+                    </button>
+                  )}
                 </div>
                 <div className="bg-white/95 backdrop-blur-md rounded-full pl-1.5 pr-4 py-1 flex items-center gap-2 shrink-0 shadow-lg border border-white/40 hover-lift">
                   <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shadow-primary animate-float">
