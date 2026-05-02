@@ -22,6 +22,8 @@ interface ActiveDeliveryData {
   items: DeliveryItem[];
   estimatedPayout: number;
   pickupChecklist: string[];
+  /** ISO timestamp predicted by ML/heuristic when the store will mark the order ready */
+  predictedReadyAt?: string | null;
 }
 
 interface ActiveDeliveryProps {
