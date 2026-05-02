@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { Phone, CheckCircle2, Circle, ChevronRight, Navigation, Package, Store, MapPin, ExternalLink, Clock, Lock } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import { openGoogleMapsNavigation } from '@/lib/navigation';
