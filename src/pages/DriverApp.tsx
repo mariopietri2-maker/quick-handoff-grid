@@ -118,7 +118,7 @@ export default function DriverApp() {
 
   // Auto-exit nav mode if delivery ends
   useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
-  const isNavActive = navMode && !!routeInfo && !!navigatingTo;
+  const isNavActive = navMode && !!navigatingTo;
 
   useEffect(() => {
     if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); return; }
