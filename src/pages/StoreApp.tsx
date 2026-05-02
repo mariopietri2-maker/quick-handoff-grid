@@ -141,6 +141,13 @@ export default function StoreApp() {
             <div className="mb-4">
               <StoreDailyGoalCard storeId={store.id} />
             </div>
+            <Button
+              onClick={() => setActiveTab('external')}
+              className="w-full mb-4 h-12 gradient-primary text-primary-foreground font-heading gap-2 sm:hidden"
+            >
+              <PackagePlus className="h-4 w-4" />
+              Νέα Custom Order (eFood / Wolt / Box)
+            </Button>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList ref={tabsListRef} className="w-full mb-4 h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin">
               <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
