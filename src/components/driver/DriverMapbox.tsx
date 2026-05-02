@@ -232,18 +232,22 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     map.easeTo({
       center: [pos.lng, pos.lat],
       bearing: smoothedHeadingRef.current ?? map.getBearing(),
-      pitch: 55,
-      zoom: Math.max(map.getZoom(), 17),
+      // Don't override zoom on every position update — it causes the map to
+      // randomly snap back to 17 while the user is navigating.
       duration: 600,
       essential: true,
     });
   }, [pos, followMode]);
 
-  // When leaving followMode, reset bearing/pitch to flat north-up view
+  // When entering/leaving followMode, set pitch/zoom ONCE so subsequent
+  // position updates don't keep snapping the camera back.
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (!followMode) {
+    if (followMode) {
+      userInteractingRef.current = false;
+      map.easeTo({ pitch: 55, zoom: Math.max(map.getZoom(), 17), duration: 600 });
+    } else {
       smoothedHeadingRef.current = null;
       map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
     }
