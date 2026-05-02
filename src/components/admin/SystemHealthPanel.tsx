@@ -164,26 +164,25 @@ export default function SystemHealthPanel() {
       results.push({ id: 'stuck_orders', label: 'Παγωμένες παραγγελίες', icon: ShoppingBag, status: 'warn', message: e?.message ?? 'Άγνωστο' });
     }
 
-    // 7. Stale driver locations (online but no ping > 10min)
+    // 7. Stale driver locations (no ping > 10min — treated as offline)
     try {
       const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
       const { data, error } = await supabase
-        .from('driver_locations' as any)
-        .select('driver_id, updated_at, is_online')
-        .eq('is_online', true)
+        .from('driver_locations')
+        .select('driver_id, updated_at')
         .lt('updated_at', cutoff);
       if (error) throw error;
       const count = data?.length ?? 0;
       results.push({
         id: 'stale_drivers', label: 'Οδηγοί χωρίς σήμα', icon: Bike,
         status: count === 0 ? 'ok' : 'warn',
-        message: count === 0 ? 'Όλοι αναφέρουν θέση' : `${count} οδηγοί online >10min χωρίς ping`,
+        message: count === 0 ? 'Όλοι αναφέρουν θέση' : `${count} οδηγοί χωρίς ping >10min`,
         fix: count > 0 ? async () => {
           const ids = (data ?? []).map((d: any) => d.driver_id);
-          const { error: e2 } = await (supabase as any).from('driver_locations').update({ is_online: false }).in('driver_id', ids);
+          const { error: e2 } = await supabase.from('driver_locations').delete().in('driver_id', ids);
           if (e2) throw e2;
         } : undefined,
-        fixLabel: 'Σήμανση offline',
+        fixLabel: 'Εκκαθάριση',
       });
     } catch (e: any) {
       results.push({ id: 'stale_drivers', label: 'Οδηγοί χωρίς σήμα', icon: Bike, status: 'warn', message: e?.message ?? 'Άγνωστο' });
