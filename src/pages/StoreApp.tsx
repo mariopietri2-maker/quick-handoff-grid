@@ -140,9 +140,9 @@ export default function StoreApp() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="external" className="flex-1 min-w-[100px] font-heading">
+              <TabsTrigger value="external" className="flex-1 min-w-[110px] font-heading">
                 <PackagePlus className="h-4 w-4 mr-1.5" />
-                eFood/Wolt
+                Custom Order
               </TabsTrigger>
               <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading">
                 <UtensilsCrossed className="h-4 w-4 mr-1.5" />
