@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap, PackagePlus, Wallet } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -38,6 +38,18 @@ export default function StoreApp() {
   const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(store?.id ?? null);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState('orders');
+  const tabsListRef = useRef<HTMLDivElement>(null);
+
+  // Keep the active tab visible inside the horizontally scrolling tab strip on mobile.
+  useEffect(() => {
+    const list = tabsListRef.current;
+    if (!list) return;
+    const active = list.querySelector<HTMLElement>(`[data-state="active"]`);
+    if (active) {
+      active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [activeTab]);
 
   const newOrders = orders.filter(o => o.status === 'placed').length;
   const loading = storeLoading || ordersLoading;
@@ -129,8 +141,15 @@ export default function StoreApp() {
             <div className="mb-4">
               <StoreDailyGoalCard storeId={store.id} />
             </div>
-            <Tabs defaultValue="orders">
-            <TabsList className="w-full mb-4 h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin">
+            <Button
+              onClick={() => setActiveTab('external')}
+              className="w-full mb-4 h-12 gradient-primary text-primary-foreground font-heading gap-2 sm:hidden"
+            >
+              <PackagePlus className="h-4 w-4" />
+              Νέα Custom Order (eFood / Wolt / Box)
+            </Button>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+            <TabsList ref={tabsListRef} className="w-full mb-4 h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin">
               <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
                 <ClipboardList className="h-4 w-4 mr-1.5" />
                 Παραγγελίες
@@ -140,9 +159,9 @@ export default function StoreApp() {
                   </Badge>
                 )}
               </TabsTrigger>
-              <TabsTrigger value="external" className="flex-1 min-w-[100px] font-heading">
+              <TabsTrigger value="external" className="flex-1 min-w-[110px] font-heading">
                 <PackagePlus className="h-4 w-4 mr-1.5" />
-                eFood/Wolt
+                Custom Order
               </TabsTrigger>
               <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading">
                 <UtensilsCrossed className="h-4 w-4 mr-1.5" />
