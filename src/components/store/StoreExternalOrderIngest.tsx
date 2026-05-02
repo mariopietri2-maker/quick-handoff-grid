@@ -150,8 +150,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   );
 
   // Store charge mirrors server's ext_billing_mode logic.
-  const billingMode = (store?.ext_billing_mode || 'commission') as
-    'commission' | 'flat_fee' | 'driver_plus_margin';
+  const billingMode = (store?.ext_billing_mode || 'tiered') as
+    'tiered' | 'commission' | 'flat_fee' | 'driver_plus_margin';
   const commissionPct = Number(store?.ext_commission_pct ?? 15);
   const flatFee = Number(store?.ext_flat_fee ?? 0);
   const marginPct = Number(store?.ext_margin_pct ?? 0);
@@ -161,6 +161,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       case 'commission':         return +(totalAmount * commissionPct / 100).toFixed(2);
       case 'flat_fee':           return +flatFee.toFixed(2);
       case 'driver_plus_margin': return +(driverPay * (1 + marginPct / 100)).toFixed(2);
+      case 'tiered':
       default:                   return +(totalAmount * 0.15).toFixed(2);
     }
   }, [billingMode, totalAmount, commissionPct, flatFee, marginPct, driverPay]);
@@ -169,6 +170,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const storeKeeps = +(totalAmount - storeCharge).toFixed(2);
 
   const billingLabel: Record<string, string> = {
+    tiered: `Προμήθεια ~15% (commission tiers — ίδιο με internal)`,
     commission: `Προμήθεια ${commissionPct}% επί παραγγελίας`,
     flat_fee: `Σταθερό €${flatFee.toFixed(2)} ανά παραγγελία`,
     driver_plus_margin: `Αμοιβή οδηγού + ${marginPct}% margin`,
