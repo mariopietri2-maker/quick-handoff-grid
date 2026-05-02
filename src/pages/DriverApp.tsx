@@ -324,10 +324,10 @@ export default function DriverApp() {
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
             nearbyStores={nearbyStores}
-            followMode={false}
+            followMode={isNavActive}
           />
 
-          {true && (
+          {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
               <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
@@ -371,7 +371,15 @@ export default function DriverApp() {
               </div>
 
               {/* Normal mode */}
-              {true && (
+              {isNavActive && (
+                <NavigationPanel
+                  route={routeInfo!}
+                  destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
+                  destinationType={navigatingTo!}
+                />
+              )}
+
+              {!isNavActive && (
                 <>
                   <AnnouncementsBanner audience="drivers" />
 
@@ -453,6 +461,7 @@ export default function DriverApp() {
                           notes: (activeDelivery as any).notes ?? null,
                         }}
                         onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
+                        onFocusDestination={(target) => { mapRef.current?.focusOn(target); setNavMode(true); }}
                       />
                     </>
                   )}
