@@ -37,16 +37,6 @@ export function DriverWallet() {
         </p>
       </div>
 
-      {/* Info note */}
-      <div className="rounded-xl driver-glass p-3 flex items-start gap-2.5">
-        <div className="h-7 w-7 rounded-lg bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center shrink-0">
-          <Banknote className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))]" />
-        </div>
-        <p className="text-[11px] text-[hsl(var(--driver-text-muted))] leading-relaxed">
-          <span className="font-semibold text-[hsl(var(--driver-text))]">Κέρδη ≠ Ταμείο.</span> Εδώ είναι τα <strong>χρήματα που κερδίζεις</strong> και μπορείς να αναλάβεις. Τα μετρητά που εισπράττεις από πελάτες (cash orders) εμφανίζονται στην καρτέλα <strong>Ταμείο</strong>.
-        </p>
-      </div>
-
       {/* Transaction history */}
       <div className="rounded-2xl driver-glass overflow-hidden">
         <div className="px-4 py-3 border-b border-[hsl(var(--driver-border))]">
