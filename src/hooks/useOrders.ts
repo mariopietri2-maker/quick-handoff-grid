@@ -154,13 +154,10 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const fetchOrders = useCallback(async () => {
     if (!user) return;
 
-    // Load assignment mode (cheap, one column)
-    const { data: settings } = await supabase
-      .from('platform_settings')
-      .select('assignment_mode')
-      .eq('id', 1)
-      .maybeSingle();
-    const mode = (settings?.assignment_mode === 'manual' ? 'manual' : 'auto') as 'auto' | 'manual';
+    // Load assignment mode via public RPC (avoids exposing all platform_settings)
+    const { data: settings } = await (supabase as any).rpc('get_platform_settings_public');
+    const row = Array.isArray(settings) ? settings[0] : settings;
+    const mode = (row?.assignment_mode === 'manual' ? 'manual' : 'auto') as 'auto' | 'manual';
     setAssignmentMode(mode);
 
     // Fetch assigned active orders

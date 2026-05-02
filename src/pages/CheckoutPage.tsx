@@ -34,10 +34,11 @@ export default function CheckoutPage() {
   const [deliveryFee, setDeliveryFee] = useState(0.99);
 
   useEffect(() => {
-    supabase.from('platform_settings').select('platform_service_fee').eq('id', 1).maybeSingle()
-      .then(({ data }) => {
-        if (data && (data as any).platform_service_fee != null) {
-          setDeliveryFee(Number((data as any).platform_service_fee));
+    (supabase as any).rpc('get_platform_settings_public')
+      .then(({ data }: any) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row && row.platform_service_fee != null) {
+          setDeliveryFee(Number(row.platform_service_fee));
         }
       });
   }, []);

@@ -38,8 +38,11 @@ export default function DriverApp() {
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
   useEffect(() => {
-    (supabase as any).from('platform_settings').select('max_cash_cap').eq('id', 1).maybeSingle()
-      .then(({ data }: any) => { if (data?.max_cash_cap != null) setMaxCashCap(Number(data.max_cash_cap)); });
+    (supabase as any).rpc('get_platform_settings_public')
+      .then(({ data }: any) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.max_cash_cap != null) setMaxCashCap(Number(row.max_cash_cap));
+      });
   }, []);
   const cashCapped = Number(driverState?.shift_cash_balance ?? 0) >= maxCashCap;
   // Drivers always start OFFLINE — must opt-in each session
