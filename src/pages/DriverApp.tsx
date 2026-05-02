@@ -349,6 +349,18 @@ export default function DriverApp() {
             </div>
           )}
 
+          {/* Floating recenter button — prominent during navigation */}
+          {isNavActive && (
+            <button
+              onClick={() => mapRef.current?.recenter()}
+              className="fixed right-4 bottom-[40vh] z-30 h-14 w-14 rounded-full bg-[hsl(var(--driver-accent))] text-white flex items-center justify-center shadow-2xl driver-glow-green active:scale-90 hover:brightness-110 transition-all animate-pop"
+              aria-label="Επανακέντρωμα στη θέση μου"
+              title="Επανακέντρωμα στη θέση μου"
+            >
+              <Crosshair className="h-6 w-6" strokeWidth={2.5} />
+            </button>
+          )}
+
 
           <div className="fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain">
             <div className="pointer-events-auto space-y-3 animate-slide-up">
