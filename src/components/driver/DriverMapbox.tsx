@@ -441,7 +441,19 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   // Expose recenter method
   const recenter = useCallback(() => {
     const map = mapRef.current;
-    if (map && pos) {
+    if (!map || !pos) return;
+    // Resume follow camera tracking after a manual pan/zoom
+    userInteractingRef.current = false;
+    if (followModeRef.current) {
+      map.easeTo({
+        center: [pos.lng, pos.lat],
+        bearing: smoothedHeadingRef.current ?? pos.heading ?? 0,
+        pitch: 55,
+        zoom: Math.max(map.getZoom(), 17),
+        duration: 800,
+        essential: true,
+      });
+    } else {
       map.flyTo({ center: [pos.lng, pos.lat], zoom: 15, duration: 800 });
     }
   }, [pos]);
