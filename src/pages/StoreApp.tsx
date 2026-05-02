@@ -38,6 +38,18 @@ export default function StoreApp() {
   const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(store?.id ?? null);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
+  const [activeTab, setActiveTab] = useState('orders');
+  const tabsListRef = useRef<HTMLDivElement>(null);
+
+  // Keep the active tab visible inside the horizontally scrolling tab strip on mobile.
+  useEffect(() => {
+    const list = tabsListRef.current;
+    if (!list) return;
+    const active = list.querySelector<HTMLElement>(`[data-state="active"]`);
+    if (active) {
+      active.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    }
+  }, [activeTab]);
 
   const newOrders = orders.filter(o => o.status === 'placed').length;
   const loading = storeLoading || ordersLoading;
