@@ -461,7 +461,7 @@ export default function DriverApp() {
                           notes: (activeDelivery as any).notes ?? null,
                         }}
                         onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
-                        onFocusDestination={(target) => { mapRef.current?.focusOn(target); setNavMode(true); }}
+                        onFocusDestination={() => { setNavMode(true); }}
                       />
                     </>
                   )}
