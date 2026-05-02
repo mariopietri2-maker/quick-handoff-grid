@@ -11,9 +11,13 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Card as UICard, CardHeader, CardTitle } from '@/components/ui/card';
+import MonthCloseCard from './MonthCloseCard';
+import CustomOrderDialog from './CustomOrderDialog';
 import {
   Banknote, Building2, Shield, TrendingUp, CheckCircle2, AlertCircle,
-  RotateCcw, Wallet, Loader2, ArrowRight, Activity,
+  RotateCcw, Wallet, Loader2, ArrowRight, Activity, ArrowDownCircle,
 } from 'lucide-react';
 
 const fmt = (n: number | null | undefined) => `€${Number(n ?? 0).toFixed(2)}`;
