@@ -212,11 +212,22 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       <div>
         <h2 className="font-heading font-bold text-xl text-foreground">Εισαγωγή Παραγγελίας eFood / Wolt / Box</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Στείλε μια παραγγελία από εξωτερική πλατφόρμα στους οδηγούς μας — χειροκίνητα, με AI ή με QR.
+          Στείλε μια παραγγελία από εξωτερική πλατφόρμα στους οδηγούς μας — χειροκίνητα, με AI, με QR ή με τον υπολογιστή διαχωρισμού.
         </p>
       </div>
 
-      <div className="grid lg:grid-cols-[1fr,300px] gap-4">
+      <Tabs defaultValue="ingest" className="space-y-4">
+        <TabsList className="grid grid-cols-2 w-full max-w-md">
+          <TabsTrigger value="ingest" className="gap-1.5"><FileText className="h-3.5 w-3.5" />Ingest</TabsTrigger>
+          <TabsTrigger value="split" className="gap-1.5"><Calculator className="h-3.5 w-3.5" />Split Calculator</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="split">
+          <StoreSplitCalculator storeId={storeId} />
+        </TabsContent>
+
+        <TabsContent value="ingest" className="space-y-4">
+          <div className="grid lg:grid-cols-[1fr,300px] gap-4">
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="font-heading text-base">Πηγή Παραγγελίας</CardTitle>
