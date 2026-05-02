@@ -83,7 +83,9 @@ export const NAV_SECTIONS = [
     defaultTab: 'financials',
     tabs: [
       { id: 'financials', label: 'Ταμείο' },
+      { id: 'money_bags', label: 'Money Bags' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
+      { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
       { id: 'split_calc', label: 'Split Calculator' },
       { id: 'pricing', label: 'Τιμολόγηση' },
       { id: 'store_billing', label: 'Χρέωση' },

@@ -39,6 +39,8 @@ import SystemResetPanel from '@/components/admin/SystemResetPanel';
 import LiveOpsDashboard from '@/components/admin/LiveOpsDashboard';
 import SplitCalculator from '@/components/admin/SplitCalculator';
 import StorePayablesPanel from '@/components/admin/StorePayablesPanel';
+import DriverPayablesPanel from '@/components/admin/DriverPayablesPanel';
+import MoneyBagsPanel from '@/components/admin/MoneyBagsPanel';
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -179,6 +181,10 @@ export default function AdminApp() {
         return <SplitCalculator />;
       case 'store_payables':
         return <StorePayablesPanel />;
+      case 'driver_payables':
+        return <DriverPayablesPanel />;
+      case 'money_bags':
+        return <MoneyBagsPanel />;
       case 'pricing':
         return <PricingSettings />;
       case 'support_roles':
