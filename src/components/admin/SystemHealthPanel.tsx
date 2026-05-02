@@ -86,7 +86,7 @@ export default function SystemHealthPanel() {
     }
 
     // Helper: ping an edge function via raw fetch so validation 4xx responses don't throw.
-    const pingFn = async (name: string) => {
+    const pingFn = async (name: string, payload: Record<string, unknown> = { ping: true }) => {
       const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/${name}`;
       const t0 = performance.now();
       const { data: sessionData } = await supabase.auth.getSession();
@@ -107,7 +107,7 @@ export default function SystemHealthPanel() {
           apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,
           Authorization: `Bearer ${accessToken}`,
         },
-        body: JSON.stringify({ ping: true }),
+        body: JSON.stringify(payload),
       });
       await res.text().catch(() => '');
       return { status: res.status, ms: Math.round(performance.now() - t0) };
@@ -115,7 +115,7 @@ export default function SystemHealthPanel() {
 
     // 4. AI Gateway via support-ai ping (any HTTP response = reachable)
     try {
-      const { status, ms, error } = await pingFn('support-ai');
+      const { status, ms, error } = await pingFn('support-ai', { action: 'health_check' });
       const reachable = status > 0 && status < 500;
       results.push({
         id: 'ai', label: 'AI Gateway', icon: Sparkles,

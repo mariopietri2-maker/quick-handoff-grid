@@ -55,6 +55,13 @@ serve(async (req) => {
     if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
 
     const { ticketId, action, customPrompt } = await req.json();
+
+    if (action === "health_check") {
+      return new Response(JSON.stringify({ ok: true, service: "support-ai" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
     if (!ticketId || !action) {
       return new Response(JSON.stringify({ error: "ticketId and action required" }), {
         status: 400,
