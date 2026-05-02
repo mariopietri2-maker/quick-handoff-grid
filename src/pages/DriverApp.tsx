@@ -311,8 +311,8 @@ export default function DriverApp() {
             storeLat={storeInfo?.latitude}
             storeLng={storeInfo?.longitude}
             storeName={storeInfo?.name}
-            customerLat={activeDelivery?.delivery_latitude}
-            customerLng={activeDelivery?.delivery_longitude}
+            customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
+            customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
             customerName={customerInfo?.name}
             customerAddress={activeDelivery?.delivery_address}
             navigatingTo={navigatingTo}
