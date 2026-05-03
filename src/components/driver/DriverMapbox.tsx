@@ -62,6 +62,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   customerLat, customerLng, customerName, customerAddress,
   navigatingTo,
   onRouteUpdate,
+  onDriverPosUpdate,
   nearbyStores,
   followMode = false,
 }, ref) {
@@ -117,6 +118,10 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     );
     return () => { if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current); };
   }, []);
+
+  // Forward live driver position to parent (for in-app turn-by-turn UI)
+  useEffect(() => { onDriverPosUpdate?.(pos); }, [pos, onDriverPosUpdate]);
+
 
   // Init map
   useEffect(() => {
