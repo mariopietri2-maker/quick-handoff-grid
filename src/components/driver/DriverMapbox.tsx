@@ -8,11 +8,26 @@ export interface DriverMapboxHandle {
   focusOn: (target: 'store' | 'customer') => void;
 }
 
+export interface RouteStep {
+  instruction: string;
+  distance: number;
+  duration: number;
+  /** Maneuver type: turn, roundabout, merge, fork, arrive, depart, … */
+  maneuverType?: string;
+  /** Modifier: left, right, slight left, sharp right, straight, uturn, … */
+  modifier?: string;
+  /** Step start coordinate [lng, lat] */
+  location?: [number, number];
+  /** Name of the road the step ends on (for the next-street strip) */
+  name?: string;
+}
+
 export interface RouteInfo {
   distance: number; // meters
   duration: number; // seconds
-  steps: { instruction: string; distance: number; duration: number }[];
+  steps: RouteStep[];
 }
+
 
 interface NearbyStorePin {
   id: string;
@@ -405,11 +420,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         map.fitBounds(bounds, { padding: { top: 80, bottom: 200, left: 50, right: 50 }, maxZoom: 16 });
       }
 
-      // Parse steps
-      const steps = route.legs[0]?.steps?.map((s: any) => ({
+      // Parse steps with maneuver detail for in-app turn-by-turn UI
+      const steps: RouteStep[] = route.legs[0]?.steps?.map((s: any) => ({
         instruction: s.maneuver?.instruction || '',
         distance: s.distance,
         duration: s.duration,
+        maneuverType: s.maneuver?.type,
+        modifier: s.maneuver?.modifier,
+        location: s.maneuver?.location as [number, number] | undefined,
+        name: s.name || undefined,
       })) || [];
 
       onRouteUpdate?.({
