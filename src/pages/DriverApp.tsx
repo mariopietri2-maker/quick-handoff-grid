@@ -319,6 +319,7 @@ export default function DriverApp() {
             customerAddress={activeDelivery?.delivery_address}
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
+            onDriverPosUpdate={setDriverPos}
             nearbyStores={nearbyStores}
             followMode={isNavActive}
           />
