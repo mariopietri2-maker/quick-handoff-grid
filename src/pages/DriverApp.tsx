@@ -23,7 +23,8 @@ import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
-import { NavigationPanel } from '@/components/driver/NavigationPanel';
+import { TurnByTurnBanner } from '@/components/driver/TurnByTurnBanner';
+import { NavBottomCard } from '@/components/driver/NavBottomCard';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
@@ -111,6 +112,7 @@ export default function DriverApp() {
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
+  const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
