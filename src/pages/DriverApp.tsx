@@ -466,21 +466,7 @@ export default function DriverApp() {
                 </button>
               </div>
 
-              {/* Normal mode */}
-              {isNavActive && (
-                routeInfo ? (
-                  <NavigationPanel
-                    route={routeInfo}
-                    destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
-                    destinationType={navigatingTo!}
-                  />
-                ) : (
-                  <div className="rounded-2xl driver-glass p-4 flex items-center gap-3 border border-[hsl(var(--driver-border))]">
-                    <div className="h-5 w-5 border-2 border-[hsl(var(--driver-accent))] border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm font-heading text-[hsl(var(--driver-text))]">Υπολογισμός διαδρομής…</p>
-                  </div>
-                )
-              )}
+              {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
 
               {!isNavActive && (
                 <>
