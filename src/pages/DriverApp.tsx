@@ -453,7 +453,7 @@ export default function DriverApp() {
           )}
 
 
-          <div className="fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain">
+          <div className={`fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain ${isNavActive ? 'hidden' : ''}`}>
             <div className="pointer-events-auto space-y-3 animate-slide-up">
               {/* Recenter button (always visible) */}
               <div className="flex justify-end animate-pop stagger-1">
