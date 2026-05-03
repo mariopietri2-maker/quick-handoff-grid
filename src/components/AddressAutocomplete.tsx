@@ -69,15 +69,41 @@ export function AddressAutocomplete({
     setLoading(true);
     setNoResults(false);
     try {
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=5&bbox=${IOANNINA_BBOX}&proximity=${IOANNINA[0]},${IOANNINA[1]}&types=address,poi,place,locality,neighborhood`;
+      // Detect a house number in the user query (e.g. "Δημοκρατίας 12")
+      const numMatch = q.match(/\b(\d{1,4}[A-Za-zΑ-Ωα-ω]?)\b/);
+      const typedNumber = numMatch ? numMatch[1] : null;
+
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${IOANNINA_BBOX}&proximity=${IOANNINA[0]},${IOANNINA[1]}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
       const res = await fetch(url);
       const data = await res.json();
-      const features = (data.features ?? []) as Array<{ place_name: string; center: [number, number] }>;
-      const mapped: AddressResult[] = features.map(f => ({
-        display_name: f.place_name,
-        lon: f.center[0],
-        lat: f.center[1],
-      }));
+      const features = (data.features ?? []) as Array<{
+        place_name: string;
+        center: [number, number];
+        address?: string;
+        place_type?: string[];
+        text?: string;
+      }>;
+
+      // If user typed a number, prefer features that actually include it.
+      // Mapbox returns the house number in feature.address for "address" results.
+      const withNumber = typedNumber
+        ? features.filter(f => f.address && String(f.address) === typedNumber)
+        : features;
+
+      const chosen = withNumber.length > 0 ? withNumber : features;
+
+      const mapped: AddressResult[] = chosen.map(f => {
+        let label = f.place_name;
+        // If user typed a number but result doesn't have one, inject it for clarity
+        if (typedNumber && !f.address && f.place_type?.includes('address') && f.text) {
+          label = label.replace(f.text, `${f.text} ${typedNumber}`);
+        }
+        return {
+          display_name: label,
+          lon: f.center[0],
+          lat: f.center[1],
+        };
+      });
       setResults(mapped);
       setOpen(mapped.length > 0);
       setNoResults(mapped.length === 0 && q.length >= 3);
