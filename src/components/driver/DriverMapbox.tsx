@@ -49,6 +49,8 @@ interface DriverMapboxProps {
   customerAddress?: string | null;
   navigatingTo?: 'store' | 'customer' | null;
   onRouteUpdate?: (route: RouteInfo | null) => void;
+  /** Reports the driver's live position so callers can compute live distance to next maneuver, etc. */
+  onDriverPosUpdate?: (pos: { lat: number; lng: number; heading: number | null } | null) => void;
   nearbyStores?: NearbyStorePin[];
   /** When true: camera follows driver position with heading-up rotation + 3D tilt (like Google Maps nav) */
   followMode?: boolean;
