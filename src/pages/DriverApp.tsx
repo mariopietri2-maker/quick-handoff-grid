@@ -389,31 +389,67 @@ export default function DriverApp() {
             </div>
           )}
 
+          {/* In-app turn-by-turn: dark instruction banner pinned to the top */}
           {isNavActive && (
-            <div className="fixed top-0 left-0 right-0 z-30 safe-area-top animate-slide-down pointer-events-none">
-              <div className="px-4 pt-3 pb-2 flex items-center justify-end">
-                <button
-                  onClick={() => setNavMode(false)}
-                  className="h-10 px-4 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-2 shadow-lg active:scale-95 pointer-events-auto"
-                  aria-label="Κλείσιμο πλοήγησης"
-                >
-                  <X className="h-4 w-4 text-[hsl(var(--driver-text))]" />
-                  <span className="text-xs font-heading font-semibold text-[hsl(var(--driver-text))]">Έξοδος</span>
-                </button>
+            <div className="fixed top-0 left-0 right-0 z-30 safe-area-top px-3 pt-3 animate-slide-down pointer-events-none">
+              <div className="pointer-events-auto">
+                {navProgress && navProgress.step ? (
+                  <TurnByTurnBanner
+                    distanceToNext={navProgress.distanceToNext}
+                    step={navProgress.step}
+                    nextStreet={navProgress.nextStreet}
+                  />
+                ) : (
+                  <div className="rounded-2xl bg-[hsl(0,0%,12%)] text-white px-4 py-3 flex items-center gap-3 shadow-2xl">
+                    <div className="h-5 w-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-heading">Υπολογισμός διαδρομής…</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Floating recenter button — prominent during navigation */}
+          {/* Floating action stack — right side, in-app turn-by-turn (support / re-route / recenter) */}
           {isNavActive && (
-            <button
-              onClick={() => mapRef.current?.recenter()}
-              className="fixed right-4 bottom-[40vh] z-30 h-14 w-14 rounded-full bg-[hsl(var(--driver-accent))] text-white flex items-center justify-center shadow-2xl driver-glow-green active:scale-90 hover:brightness-110 transition-all animate-pop"
-              aria-label="Επανακέντρωμα στη θέση μου"
-              title="Επανακέντρωμα στη θέση μου"
-            >
-              <Crosshair className="h-6 w-6" strokeWidth={2.5} />
-            </button>
+            <div className="fixed right-3 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-3 pointer-events-auto animate-pop">
+              <DriverSupportButton orderId={activeDelivery?.id} />
+              <button
+                onClick={() => mapRef.current?.focusOn(navigatingTo!)}
+                className="h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center shadow-lg hover:bg-accent active:scale-90 transition-all"
+                aria-label="Προβολή ολόκληρης διαδρομής"
+                title="Προβολή ολόκληρης διαδρομής"
+              >
+                <Navigation className="h-5 w-5 text-foreground" strokeWidth={2.5} />
+              </button>
+              <button
+                onClick={() => mapRef.current?.recenter()}
+                className="h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center shadow-lg hover:bg-accent active:scale-90 transition-all"
+                aria-label="Επανακέντρωμα στη θέση μου"
+                title="Επανακέντρωμα στη θέση μου"
+              >
+                <Crosshair className="h-5 w-5 text-primary" strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
+
+          {/* Bottom sheet for in-app turn-by-turn — outside the scrollable column so it's always pinned */}
+          {isNavActive && (
+            <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-auto animate-slide-up safe-area-bottom">
+              <NavBottomCard
+                title={navigatingTo === 'store'
+                  ? (storeInfo?.name || 'Κατάστημα')
+                  : (customerInfo?.name || 'Πελάτης')}
+                subtitle={navigatingTo === 'store'
+                  ? (storeInfo?.address ?? null)
+                  : (activeDelivery?.delivery_address ?? null)}
+                durationSec={routeInfo?.duration ?? 0}
+                distanceMeters={routeInfo?.distance ?? 0}
+                phone={navigatingTo === 'store'
+                  ? (storeInfo?.phone ?? null)
+                  : (customerInfo?.phone ?? null)}
+                onExit={() => setNavMode(false)}
+              />
+            </div>
           )}
 
 
