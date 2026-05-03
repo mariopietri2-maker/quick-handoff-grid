@@ -23,7 +23,8 @@ import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
-import { NavigationPanel } from '@/components/driver/NavigationPanel';
+import { TurnByTurnBanner } from '@/components/driver/TurnByTurnBanner';
+import { NavBottomCard } from '@/components/driver/NavBottomCard';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
@@ -111,6 +112,7 @@ export default function DriverApp() {
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
+  const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
@@ -120,6 +122,42 @@ export default function DriverApp() {
   // Auto-exit nav mode if delivery ends
   useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
   const isNavActive = navMode && !!navigatingTo;
+
+  // Pick the upcoming maneuver step + live distance to it from the driver's GPS.
+  // Mapbox steps include a maneuver location; we find the closest upcoming one
+  // and project the remaining distance using the haversine formula.
+  const navProgress = (() => {
+    if (!routeInfo || !driverPos) return null;
+    const steps = routeInfo.steps || [];
+    if (!steps.length) return null;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const haversineM = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+      const R = 6371000;
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    };
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    steps.forEach((s, i) => {
+      if (!s.location) return;
+      const d = haversineM(driverPos, { lat: s.location[1], lng: s.location[0] });
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    });
+    // Prefer the *upcoming* step: if we're past the closest one (very near it),
+    // surface the next one as the active maneuver.
+    let activeIdx = bestIdx;
+    if (bestDist < 25 && bestIdx + 1 < steps.length) activeIdx = bestIdx + 1;
+    const active = steps[activeIdx];
+    let distanceToNext = 0;
+    if (active?.location) {
+      distanceToNext = haversineM(driverPos, { lat: active.location[1], lng: active.location[0] });
+    }
+    return { step: active, distanceToNext, nextStreet: steps[activeIdx + 1]?.name ?? active?.name ?? null };
+  })();
 
   // Geocoded fallback for delivery destination if order has no coords
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
@@ -317,6 +355,7 @@ export default function DriverApp() {
             customerAddress={activeDelivery?.delivery_address}
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
+            onDriverPosUpdate={setDriverPos}
             nearbyStores={nearbyStores}
             followMode={isNavActive}
           />
@@ -350,35 +389,71 @@ export default function DriverApp() {
             </div>
           )}
 
+          {/* In-app turn-by-turn: dark instruction banner pinned to the top */}
           {isNavActive && (
-            <div className="fixed top-0 left-0 right-0 z-30 safe-area-top animate-slide-down pointer-events-none">
-              <div className="px-4 pt-3 pb-2 flex items-center justify-end">
-                <button
-                  onClick={() => setNavMode(false)}
-                  className="h-10 px-4 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center gap-2 shadow-lg active:scale-95 pointer-events-auto"
-                  aria-label="Κλείσιμο πλοήγησης"
-                >
-                  <X className="h-4 w-4 text-[hsl(var(--driver-text))]" />
-                  <span className="text-xs font-heading font-semibold text-[hsl(var(--driver-text))]">Έξοδος</span>
-                </button>
+            <div className="fixed top-0 left-0 right-0 z-30 safe-area-top px-3 pt-3 animate-slide-down pointer-events-none">
+              <div className="pointer-events-auto">
+                {navProgress && navProgress.step ? (
+                  <TurnByTurnBanner
+                    distanceToNext={navProgress.distanceToNext}
+                    step={navProgress.step}
+                    nextStreet={navProgress.nextStreet}
+                  />
+                ) : (
+                  <div className="rounded-2xl bg-[hsl(0,0%,12%)] text-white px-4 py-3 flex items-center gap-3 shadow-2xl">
+                    <div className="h-5 w-5 border-2 border-white/70 border-t-transparent rounded-full animate-spin" />
+                    <p className="text-sm font-heading">Υπολογισμός διαδρομής…</p>
+                  </div>
+                )}
               </div>
             </div>
           )}
 
-          {/* Floating recenter button — prominent during navigation */}
+          {/* Floating action stack — right side, in-app turn-by-turn (support / re-route / recenter) */}
           {isNavActive && (
-            <button
-              onClick={() => mapRef.current?.recenter()}
-              className="fixed right-4 bottom-[40vh] z-30 h-14 w-14 rounded-full bg-[hsl(var(--driver-accent))] text-white flex items-center justify-center shadow-2xl driver-glow-green active:scale-90 hover:brightness-110 transition-all animate-pop"
-              aria-label="Επανακέντρωμα στη θέση μου"
-              title="Επανακέντρωμα στη θέση μου"
-            >
-              <Crosshair className="h-6 w-6" strokeWidth={2.5} />
-            </button>
+            <div className="fixed right-3 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-3 pointer-events-auto animate-pop">
+              <DriverSupportButton orderId={activeDelivery?.id} />
+              <button
+                onClick={() => mapRef.current?.focusOn(navigatingTo!)}
+                className="h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center shadow-lg hover:bg-accent active:scale-90 transition-all"
+                aria-label="Προβολή ολόκληρης διαδρομής"
+                title="Προβολή ολόκληρης διαδρομής"
+              >
+                <Navigation className="h-5 w-5 text-foreground" strokeWidth={2.5} />
+              </button>
+              <button
+                onClick={() => mapRef.current?.recenter()}
+                className="h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center shadow-lg hover:bg-accent active:scale-90 transition-all"
+                aria-label="Επανακέντρωμα στη θέση μου"
+                title="Επανακέντρωμα στη θέση μου"
+              >
+                <Crosshair className="h-5 w-5 text-primary" strokeWidth={2.5} />
+              </button>
+            </div>
+          )}
+
+          {/* Bottom sheet for in-app turn-by-turn — outside the scrollable column so it's always pinned */}
+          {isNavActive && (
+            <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-auto animate-slide-up safe-area-bottom">
+              <NavBottomCard
+                title={navigatingTo === 'store'
+                  ? (storeInfo?.name || 'Κατάστημα')
+                  : (customerInfo?.name || 'Πελάτης')}
+                subtitle={navigatingTo === 'store'
+                  ? (storeInfo?.address ?? null)
+                  : (activeDelivery?.delivery_address ?? null)}
+                durationSec={routeInfo?.duration ?? 0}
+                distanceMeters={routeInfo?.distance ?? 0}
+                phone={navigatingTo === 'store'
+                  ? (storeInfo?.phone ?? null)
+                  : (customerInfo?.phone ?? null)}
+                onExit={() => setNavMode(false)}
+              />
+            </div>
           )}
 
 
-          <div className="fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain">
+          <div className={`fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain ${isNavActive ? 'hidden' : ''}`}>
             <div className="pointer-events-auto space-y-3 animate-slide-up">
               {/* Recenter button (always visible) */}
               <div className="flex justify-end animate-pop stagger-1">
@@ -391,21 +466,7 @@ export default function DriverApp() {
                 </button>
               </div>
 
-              {/* Normal mode */}
-              {isNavActive && (
-                routeInfo ? (
-                  <NavigationPanel
-                    route={routeInfo}
-                    destination={navigatingTo === 'store' ? (storeInfo?.name || 'Κατάστημα') : (customerInfo?.name || 'Πελάτης')}
-                    destinationType={navigatingTo!}
-                  />
-                ) : (
-                  <div className="rounded-2xl driver-glass p-4 flex items-center gap-3 border border-[hsl(var(--driver-border))]">
-                    <div className="h-5 w-5 border-2 border-[hsl(var(--driver-accent))] border-t-transparent rounded-full animate-spin" />
-                    <p className="text-sm font-heading text-[hsl(var(--driver-text))]">Υπολογισμός διαδρομής…</p>
-                  </div>
-                )
-              )}
+              {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
 
               {!isNavActive && (
                 <>

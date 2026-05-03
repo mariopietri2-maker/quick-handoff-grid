@@ -8,11 +8,26 @@ export interface DriverMapboxHandle {
   focusOn: (target: 'store' | 'customer') => void;
 }
 
+export interface RouteStep {
+  instruction: string;
+  distance: number;
+  duration: number;
+  /** Maneuver type: turn, roundabout, merge, fork, arrive, depart, … */
+  maneuverType?: string;
+  /** Modifier: left, right, slight left, sharp right, straight, uturn, … */
+  modifier?: string;
+  /** Step start coordinate [lng, lat] */
+  location?: [number, number];
+  /** Name of the road the step ends on (for the next-street strip) */
+  name?: string;
+}
+
 export interface RouteInfo {
   distance: number; // meters
   duration: number; // seconds
-  steps: { instruction: string; distance: number; duration: number }[];
+  steps: RouteStep[];
 }
+
 
 interface NearbyStorePin {
   id: string;
@@ -34,6 +49,8 @@ interface DriverMapboxProps {
   customerAddress?: string | null;
   navigatingTo?: 'store' | 'customer' | null;
   onRouteUpdate?: (route: RouteInfo | null) => void;
+  /** Reports the driver's live position so callers can compute live distance to next maneuver, etc. */
+  onDriverPosUpdate?: (pos: { lat: number; lng: number; heading: number | null } | null) => void;
   nearbyStores?: NearbyStorePin[];
   /** When true: camera follows driver position with heading-up rotation + 3D tilt (like Google Maps nav) */
   followMode?: boolean;
@@ -45,6 +62,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   customerLat, customerLng, customerName, customerAddress,
   navigatingTo,
   onRouteUpdate,
+  onDriverPosUpdate,
   nearbyStores,
   followMode = false,
 }, ref) {
@@ -100,6 +118,10 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     );
     return () => { if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current); };
   }, []);
+
+  // Forward live driver position to parent (for in-app turn-by-turn UI)
+  useEffect(() => { onDriverPosUpdate?.(pos); }, [pos, onDriverPosUpdate]);
+
 
   // Init map
   useEffect(() => {
@@ -405,11 +427,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         map.fitBounds(bounds, { padding: { top: 80, bottom: 200, left: 50, right: 50 }, maxZoom: 16 });
       }
 
-      // Parse steps
-      const steps = route.legs[0]?.steps?.map((s: any) => ({
+      // Parse steps with maneuver detail for in-app turn-by-turn UI
+      const steps: RouteStep[] = route.legs[0]?.steps?.map((s: any) => ({
         instruction: s.maneuver?.instruction || '',
         distance: s.distance,
         duration: s.duration,
+        maneuverType: s.maneuver?.type,
+        modifier: s.maneuver?.modifier,
+        location: s.maneuver?.location as [number, number] | undefined,
+        name: s.name || undefined,
       })) || [];
 
       onRouteUpdate?.({
