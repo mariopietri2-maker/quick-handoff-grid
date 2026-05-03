@@ -123,6 +123,42 @@ export default function DriverApp() {
   useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
   const isNavActive = navMode && !!navigatingTo;
 
+  // Pick the upcoming maneuver step + live distance to it from the driver's GPS.
+  // Mapbox steps include a maneuver location; we find the closest upcoming one
+  // and project the remaining distance using the haversine formula.
+  const navProgress = (() => {
+    if (!routeInfo || !driverPos) return null;
+    const steps = routeInfo.steps || [];
+    if (!steps.length) return null;
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const haversineM = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+      const R = 6371000;
+      const dLat = toRad(b.lat - a.lat);
+      const dLng = toRad(b.lng - a.lng);
+      const lat1 = toRad(a.lat);
+      const lat2 = toRad(b.lat);
+      const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+      return 2 * R * Math.asin(Math.sqrt(h));
+    };
+    let bestIdx = 0;
+    let bestDist = Infinity;
+    steps.forEach((s, i) => {
+      if (!s.location) return;
+      const d = haversineM(driverPos, { lat: s.location[1], lng: s.location[0] });
+      if (d < bestDist) { bestDist = d; bestIdx = i; }
+    });
+    // Prefer the *upcoming* step: if we're past the closest one (very near it),
+    // surface the next one as the active maneuver.
+    let activeIdx = bestIdx;
+    if (bestDist < 25 && bestIdx + 1 < steps.length) activeIdx = bestIdx + 1;
+    const active = steps[activeIdx];
+    let distanceToNext = 0;
+    if (active?.location) {
+      distanceToNext = haversineM(driverPos, { lat: active.location[1], lng: active.location[0] });
+    }
+    return { step: active, distanceToNext, nextStreet: steps[activeIdx + 1]?.name ?? active?.name ?? null };
+  })();
+
   // Geocoded fallback for delivery destination if order has no coords
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lng: number } | null>(null);
 
