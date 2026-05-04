@@ -89,7 +89,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
-      { id: 'split_calc', label: 'Split Calculator' },
+      
       { id: 'pricing', label: 'Τιμολόγηση' },
       { id: 'store_billing', label: 'Χρέωση' },
       { id: 'tickets', label: 'Support', badgeKey: 'pendingTickets' as const },

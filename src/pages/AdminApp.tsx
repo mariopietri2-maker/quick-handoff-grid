@@ -35,7 +35,7 @@ const StoreBillingSettings   = lazy(() => import('@/components/admin/StoreBillin
 const StorePromotionsManager = lazy(() => import('@/components/admin/StorePromotionsManager'));
 const SystemResetPanel       = lazy(() => import('@/components/admin/SystemResetPanel'));
 const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDashboard'));
-const SplitCalculator        = lazy(() => import('@/components/admin/SplitCalculator'));
+
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
 const MoneyBagsPanel         = lazy(() => import('@/components/admin/MoneyBagsPanel'));
@@ -180,8 +180,6 @@ export default function AdminApp() {
       case 'financials':
         // Legacy id — merged into Money Bags
         return <MoneyBagsPanel />;
-      case 'split_calc':
-        return <SplitCalculator />;
       case 'store_payables':
         return <StorePayablesPanel />;
       case 'driver_payables':
