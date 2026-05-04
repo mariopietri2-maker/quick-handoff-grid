@@ -309,57 +309,89 @@ export default function MoneyBagsPanel() {
         </CardContent>
       </Card>
 
-      {/* Three bags */}
-      <div className="grid gap-3 md:grid-cols-3">
-        {/* Drivers */}
-        <BagCard
-          tone="primary"
-          icon={Banknote}
-          title="Drivers Bag"
-          subtitle={`${driverAgg?.count ?? 0} οδηγοί · 10% pool`}
-          headline={fmt(driverTotal)}
-          rows={[
-            { label: 'Διαθέσιμο', value: fmt(driverAgg?.available), tone: 'text-emerald-600' },
-            { label: 'Εκκρεμές', value: fmt(driverAgg?.pending), tone: 'text-muted-foreground' },
-            { label: 'Cash βάρδιας', value: fmt(driverAgg?.cash), tone: 'text-warning' },
-            { label: 'Συνολικά αναλήφθηκαν', value: fmt(driverAgg?.withdrawn), tone: 'text-muted-foreground' },
-          ]}
-          onReset={() => setPendingReset('drivers')}
-          resetLabel="Reset όλων"
-          busy={busy === 'drivers'}
-        />
+      {/* Unified Money Bag */}
+      <Card className="border-l-4 border-l-primary">
+        <CardContent className="p-5">
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2.5 min-w-0">
+              <div className="h-10 w-10 rounded-lg flex items-center justify-center shrink-0 bg-primary/10 text-primary">
+                <Wallet className="h-5 w-5" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-heading font-bold truncate">Money Bag</p>
+                <p className="text-[11px] text-muted-foreground truncate">
+                  {(driverAgg?.count ?? 0)} οδηγοί · {(storeAgg?.count ?? 0)} καταστήματα · 85/10/5
+                </p>
+              </div>
+            </div>
+          </div>
 
-        {/* Stores */}
-        <BagCard
-          tone="emerald"
-          icon={Building2}
-          title="Stores Bag"
-          subtitle={`${storeAgg?.count ?? 0} καταστήματα · 85% κρατά`}
-          headline={fmt(storeTotal)}
-          rows={[
-            { label: 'Admin χρωστάει', value: fmt(storeAgg?.owe), tone: 'text-emerald-600' },
-            { label: 'Καταστήματα χρωστούν', value: fmt(storeAgg?.debt), tone: 'text-destructive' },
-            { label: 'Lifetime κέρδη', value: fmt(storeAgg?.lifetime), tone: 'text-muted-foreground' },
-          ]}
-          onReset={() => setPendingReset('stores')}
-          resetLabel="Reset όλων"
-          busy={busy === 'stores'}
-        />
+          <p className="text-4xl font-heading font-extrabold tabular-nums">{fmt(grandTotal)}</p>
+          <p className="text-[11px] text-muted-foreground mt-0.5">Συνολικό υπόλοιπο πλατφόρμας</p>
 
-        {/* Admin */}
-        <BagCard
-          tone="amber"
-          icon={Shield}
-          title="Admin Treasury"
-          subtitle="5% admin · platform pool"
-          headline={fmt(adminTotal)}
-          rows={[
-            { label: 'Admin (5%)', value: fmt(adminBag), tone: 'text-amber-600', onReset: () => setPendingReset('admin') },
-            { label: 'Platform pool', value: fmt(platformPool), tone: 'text-muted-foreground', onReset: () => setPendingReset('pool') },
-            { label: 'Lifetime driver top-ups', value: fmt(treasury?.lifetime_driver_topup), tone: 'text-primary' },
-          ]}
-        />
-      </div>
+          {/* Three sections inside */}
+          <div className="mt-5 grid gap-3 sm:grid-cols-3">
+            {/* Drivers section */}
+            <div className="rounded-lg border border-border/60 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Banknote className="h-3.5 w-3.5 text-primary" />
+                  <span className="text-[11px] font-heading font-semibold">Οδηγοί</span>
+                </div>
+                <Button size="icon" variant="ghost"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setPendingReset('drivers')} disabled={busy === 'drivers'} title="Reset όλων">
+                  {busy === 'drivers' ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                </Button>
+              </div>
+              <p className="text-xl font-heading font-bold tabular-nums">{fmt(driverTotal)}</p>
+              <div className="space-y-1 pt-1.5 border-t border-border/50 text-[11px]">
+                <Row label="Διαθέσιμο" value={fmt(driverAgg?.available)} tone="text-emerald-600" />
+                <Row label="Εκκρεμές" value={fmt(driverAgg?.pending)} />
+                <Row label="Cash βάρδιας" value={fmt(driverAgg?.cash)} tone="text-warning" />
+                <Row label="Αναλήφθηκαν" value={fmt(driverAgg?.withdrawn)} />
+              </div>
+            </div>
+
+            {/* Stores section */}
+            <div className="rounded-lg border border-border/60 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Building2 className="h-3.5 w-3.5 text-emerald-600" />
+                  <span className="text-[11px] font-heading font-semibold">Καταστήματα</span>
+                </div>
+                <Button size="icon" variant="ghost"
+                  className="h-6 w-6 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                  onClick={() => setPendingReset('stores')} disabled={busy === 'stores'} title="Reset όλων">
+                  {busy === 'stores' ? <Loader2 className="h-3 w-3 animate-spin" /> : <RotateCcw className="h-3 w-3" />}
+                </Button>
+              </div>
+              <p className="text-xl font-heading font-bold tabular-nums">{fmt(storeTotal)}</p>
+              <div className="space-y-1 pt-1.5 border-t border-border/50 text-[11px]">
+                <Row label="Admin χρωστάει" value={fmt(storeAgg?.owe)} tone="text-emerald-600" />
+                <Row label="Καταστήματα χρωστούν" value={fmt(storeAgg?.debt)} tone="text-destructive" />
+                <Row label="Lifetime" value={fmt(storeAgg?.lifetime)} />
+              </div>
+            </div>
+
+            {/* Admin section */}
+            <div className="rounded-lg border border-border/60 p-3 space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5">
+                  <Shield className="h-3.5 w-3.5 text-amber-600" />
+                  <span className="text-[11px] font-heading font-semibold">Admin Treasury</span>
+                </div>
+              </div>
+              <p className="text-xl font-heading font-bold tabular-nums">{fmt(adminTotal)}</p>
+              <div className="space-y-1 pt-1.5 border-t border-border/50 text-[11px]">
+                <RowWithReset label="Admin (5%)" value={fmt(adminBag)} tone="text-amber-600" onReset={() => setPendingReset('admin')} />
+                <RowWithReset label="Platform pool" value={fmt(platformPool)} onReset={() => setPendingReset('pool')} />
+                <Row label="Driver top-ups" value={fmt(treasury?.lifetime_driver_topup)} tone="text-primary" />
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
 
       {/* Lifetime */}
       <Card>
