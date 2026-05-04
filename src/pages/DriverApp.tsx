@@ -453,18 +453,18 @@ export default function DriverApp() {
           )}
 
 
-          <div className={`fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain ${isNavActive ? 'hidden' : ''}`}>
-            <div className="pointer-events-auto space-y-3 animate-slide-up">
-              {/* Recenter button (always visible) */}
-              <div className="flex justify-end animate-pop stagger-1">
-                <button
-                  onClick={() => mapRef.current?.recenter()}
-                  className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90 hover:rotate-90"
-                  aria-label="Επανακέντρωμα"
-                >
-                  <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
-                </button>
-              </div>
+          <div className={`fixed bottom-0 left-0 right-0 z-20 max-h-[72vh] overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain ${isNavActive ? 'hidden' : ''}`}>
+            {/* Recenter button — pinned just above the sheet */}
+            <div className="flex justify-end pb-2 pointer-events-auto">
+              <button
+                onClick={() => mapRef.current?.recenter()}
+                className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90"
+                aria-label="Επανακέντρωμα"
+              >
+                <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
+              </button>
+            </div>
+            <div className="pointer-events-auto space-y-2.5 animate-slide-up">
 
               {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
 
