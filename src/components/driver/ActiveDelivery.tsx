@@ -109,12 +109,12 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
               const isComplete = i <= effectiveStepIndex;
               const isCurrent = i === effectiveStepIndex;
               return (
-                <div key={step.key} className="flex items-center">
-                  <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-300 ${
+                <div key={step.key} className="flex items-center flex-1 last:flex-none">
+                  <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0 ${
                     isComplete
-                      ? 'bg-[hsl(var(--driver-accent))] text-white'
+                      ? 'bg-[hsl(var(--driver-accent))] text-white shadow-md'
                       : 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
-                  } ${isCurrent && delivery.status !== 'delivered' ? 'ring-3 ring-[hsl(var(--driver-accent))]/20 scale-110' : ''}`}>
+                  } ${isCurrent && delivery.status !== 'delivered' ? 'ring-4 ring-[hsl(var(--driver-accent))]/25' : ''}`}>
                     {i < effectiveStepIndex ? (
                       <CheckCircle2 className="h-4 w-4" />
                     ) : (
@@ -122,7 +122,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
                     )}
                   </div>
                   {i < statusSteps.length - 1 && (
-                    <div className={`h-0.5 w-4 sm:w-6 mx-0.5 rounded-full transition-colors ${
+                    <div className={`h-1 flex-1 mx-1.5 rounded-full transition-colors ${
                       i < effectiveStepIndex ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-border))]'
                     }`} />
                   )}
