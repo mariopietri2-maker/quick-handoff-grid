@@ -41,7 +41,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
   const isUrgent = secondsLeft <= 15;
 
   return (
-    <div className="rounded-2xl overflow-hidden driver-glass animate-in slide-in-from-bottom-4">
+    <div className="rounded-2xl overflow-hidden driver-glass">
       {/* Top bar — payout + timer */}
       <div className="bg-[hsl(var(--driver-accent))] px-4 py-3 flex items-center justify-between">
         <span className="font-heading font-extrabold text-2xl text-white tabular-nums">
