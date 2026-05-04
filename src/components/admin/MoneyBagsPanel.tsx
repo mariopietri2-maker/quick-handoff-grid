@@ -643,77 +643,27 @@ function Stat({ label, value, accent }: { label: string; value: string; accent?:
   );
 }
 
-type BagTone = 'primary' | 'emerald' | 'amber';
-const TONE_BORDER: Record<BagTone, string> = {
-  primary: 'border-l-primary',
-  emerald: 'border-l-emerald-500',
-  amber: 'border-l-amber-500',
-};
-const TONE_BG: Record<BagTone, string> = {
-  primary: 'bg-primary/10 text-primary',
-  emerald: 'bg-emerald-500/10 text-emerald-600',
-  amber: 'bg-amber-500/10 text-amber-600',
-};
-
-function BagCard({
-  tone, icon: Icon, title, subtitle, headline, rows, onReset, resetLabel, busy,
-}: {
-  tone: BagTone;
-  icon: React.ComponentType<{ className?: string }>;
-  title: string;
-  subtitle: string;
-  headline: string;
-  rows: Array<{ label: string; value: string; tone?: string; onReset?: () => void }>;
-  onReset?: () => void;
-  resetLabel?: string;
-  busy?: boolean;
-}) {
+function Row({ label, value, tone }: { label: string; value: string; tone?: string }) {
   return (
-    <Card className={`border-l-4 ${TONE_BORDER[tone]}`}>
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between mb-2">
-          <div className="flex items-center gap-2 min-w-0">
-            <div className={`h-8 w-8 rounded-md flex items-center justify-center shrink-0 ${TONE_BG[tone]}`}>
-              <Icon className="h-4 w-4" />
-            </div>
-            <div className="min-w-0">
-              <p className="text-[12px] font-heading font-semibold truncate">{title}</p>
-              <p className="text-[10.5px] text-muted-foreground truncate">{subtitle}</p>
-            </div>
-          </div>
-          {onReset && (
-            <Button
-              size="icon" variant="ghost"
-              className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-              onClick={onReset} disabled={busy}
-              title={resetLabel}
-            >
-              {busy ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <RotateCcw className="h-3.5 w-3.5" />}
-            </Button>
-          )}
-        </div>
-        <p className="text-3xl font-heading font-extrabold tabular-nums">{headline}</p>
-        <div className="mt-3 space-y-1.5 border-t border-border/60 pt-2.5">
-          {rows.map((r, i) => (
-            <div key={i} className="flex items-center justify-between text-xs">
-              <span className="text-muted-foreground">{r.label}</span>
-              <div className="flex items-center gap-1.5">
-                <span className={`font-medium tabular-nums ${r.tone ?? ''}`}>{r.value}</span>
-                {r.onReset && (
-                  <Button
-                    size="icon" variant="ghost"
-                    className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
-                    onClick={r.onReset}
-                    title="Reset"
-                  >
-                    <RotateCcw className="h-2.5 w-2.5" />
-                  </Button>
-                )}
-              </div>
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </Card>
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <span className={`font-medium tabular-nums ${tone ?? ''}`}>{value}</span>
+    </div>
+  );
+}
+
+function RowWithReset({ label, value, tone, onReset }: { label: string; value: string; tone?: string; onReset: () => void }) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-muted-foreground">{label}</span>
+      <div className="flex items-center gap-1">
+        <span className={`font-medium tabular-nums ${tone ?? ''}`}>{value}</span>
+        <Button size="icon" variant="ghost"
+          className="h-5 w-5 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+          onClick={onReset} title="Reset">
+          <RotateCcw className="h-2.5 w-2.5" />
+        </Button>
+      </div>
+    </div>
   );
 }
