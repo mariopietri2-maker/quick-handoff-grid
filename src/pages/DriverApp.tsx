@@ -362,25 +362,25 @@ export default function DriverApp() {
 
           {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
-              <div className="px-4 pt-3 pb-2 flex items-center justify-between gap-3">
-                <div className="shrink-0 pointer-events-auto flex items-center gap-2">
+              <div className="px-3 pt-3 pb-2 flex items-center justify-between gap-2">
+                <div className="shrink-0 pointer-events-auto flex items-center gap-1.5">
                   <UserMenu />
                   {isAdminRole && adminAsDriver && (
                     <button
                       onClick={toggleAdminView}
-                      className="h-9 px-3 rounded-full text-[11px] font-heading font-bold border border-border bg-white/95 backdrop-blur-md shadow-lg hover:bg-white transition-colors flex items-center gap-1.5 text-foreground"
+                      className="h-9 px-2.5 rounded-full text-[10.5px] font-heading font-bold border border-border bg-card/95 backdrop-blur-md shadow-lg hover:bg-card transition-colors flex items-center gap-1 text-foreground"
                       title="Επιστροφή σε Admin Driver Ops"
                     >
                       <ShieldCheck className="h-3.5 w-3.5 text-primary" />
-                      Admin Ops
+                      Ops
                     </button>
                   )}
                 </div>
-                <div className="bg-white/95 backdrop-blur-md rounded-full pl-1.5 pr-4 py-1 flex items-center gap-2 shrink-0 shadow-lg border border-white/40 hover-lift">
-                  <div className="h-7 w-7 rounded-full gradient-primary flex items-center justify-center shadow-primary animate-float">
-                    <Zap className="h-4 w-4 text-white" strokeWidth={2.5} />
+                <div className="bg-card/95 backdrop-blur-md rounded-full pl-1 pr-3 py-1 flex items-center gap-1.5 min-w-0 shadow-lg border border-border/40 hover-lift">
+                  <div className="h-6 w-6 rounded-full gradient-primary flex items-center justify-center shadow-primary shrink-0">
+                    <Zap className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
                   </div>
-                  <span className="font-heading font-extrabold text-foreground text-sm tracking-tight">Fresh Delivery</span>
+                  <span className="font-heading font-extrabold text-foreground text-[12px] tracking-tight truncate">Fresh Delivery</span>
                 </div>
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
                   <DriverSupportButton orderId={activeDelivery?.id} />
@@ -453,18 +453,18 @@ export default function DriverApp() {
           )}
 
 
-          <div className={`fixed bottom-0 left-0 right-0 z-20 max-h-[60vh] overflow-y-auto px-4 pb-4 safe-area-bottom space-y-3 pointer-events-none scrollbar-thin overscroll-contain ${isNavActive ? 'hidden' : ''}`}>
-            <div className="pointer-events-auto space-y-3 animate-slide-up">
-              {/* Recenter button (always visible) */}
-              <div className="flex justify-end animate-pop stagger-1">
-                <button
-                  onClick={() => mapRef.current?.recenter()}
-                  className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90 hover:rotate-90"
-                  aria-label="Επανακέντρωμα"
-                >
-                  <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
-                </button>
-              </div>
+          <div className={`fixed bottom-0 left-0 right-0 z-20 max-h-[72vh] overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain ${isNavActive ? 'hidden' : ''}`}>
+            {/* Recenter button — pinned just above the sheet */}
+            <div className="flex justify-end pb-2 pointer-events-auto">
+              <button
+                onClick={() => mapRef.current?.recenter()}
+                className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90"
+                aria-label="Επανακέντρωμα"
+              >
+                <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
+              </button>
+            </div>
+            <div className="pointer-events-auto space-y-2.5 animate-slide-up">
 
               {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
 
