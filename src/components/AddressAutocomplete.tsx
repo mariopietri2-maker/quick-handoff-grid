@@ -120,7 +120,7 @@ export function AddressAutocomplete({
     onChange(val);
     setNoResults(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
-    debounceRef.current = setTimeout(() => search(val), 400);
+    debounceRef.current = setTimeout(() => search(val), 200);
   };
 
   const selectResult = (r: AddressResult) => {
