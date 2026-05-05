@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Navigation, Clock, Timer } from 'lucide-react';
+import { Store, User } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 
 interface OrderOffer {
@@ -15,6 +15,12 @@ interface OrderOffer {
   basePay?: number;
   deliveryFee?: number;
   tipAmount?: number;
+  /** Minutes to reach store (pickup leg) */
+  pickupEtaMin?: number;
+  /** Minutes from store to customer (delivery leg) */
+  dropoffEtaMin?: number;
+  /** Optional company / brand displayed under store address */
+  companyName?: string;
 }
 
 interface OrderOfferCardProps {
@@ -38,88 +44,94 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
   }, [secondsLeft, offer.id, onDecline]);
 
   const progress = (secondsLeft / OFFER_TIMEOUT_SECONDS) * 100;
-  const isUrgent = secondsLeft <= 15;
+  const pickupMin = offer.pickupEtaMin ?? Math.max(1, Math.round((offer.estimatedTime ?? 20) * 0.4));
+  const dropoffMin = offer.dropoffEtaMin ?? Math.max(1, Math.round((offer.estimatedTime ?? 20) * 0.6));
 
   return (
-    <div className="rounded-2xl overflow-hidden driver-glass">
-      {/* Top bar — payout + timer */}
-      <div className="bg-[hsl(var(--driver-accent))] px-4 py-3 flex items-center justify-between">
-        <span className="font-heading font-extrabold text-2xl text-white tabular-nums">
-          {offer.estimatedPayout.toFixed(2)}€
-        </span>
-        <div className={`flex items-center gap-1.5 rounded-full px-3 py-1.5 ${isUrgent ? 'bg-red-500/30' : 'bg-white/15'}`}>
-          <Timer className={`h-3.5 w-3.5 text-white ${isUrgent ? 'animate-pulse' : ''}`} />
-          <span className="font-mono font-bold text-sm text-white tabular-nums">
-            0:{String(secondsLeft).padStart(2, '0')}
-          </span>
+    <div className="rounded-t-3xl bg-card text-card-foreground overflow-hidden shadow-[0_-12px_32px_-12px_hsl(0,0%,0%,0.25)]">
+      {/* drag handle */}
+      <div className="flex justify-center pt-2.5 pb-1">
+        <div className="h-1.5 w-12 rounded-full bg-foreground/20" />
+      </div>
+
+      {/* Big payout */}
+      <div className="px-5 pt-5 pb-5 text-center">
+        <p className="font-heading font-extrabold text-[42px] leading-none text-emerald-500 tabular-nums tracking-tight">
+          {offer.estimatedPayout.toFixed(2).replace('.', ',')} €
+        </p>
+      </div>
+
+      <div className="h-px bg-border" />
+
+      {/* Route timeline */}
+      <div className="px-5 py-4">
+        <div className="flex gap-3">
+          {/* Icon column with connector */}
+          <div className="flex flex-col items-center pt-0.5">
+            <Store className="h-6 w-6 text-foreground" strokeWidth={1.75} />
+            <div className="w-px flex-1 bg-foreground/30 my-1.5 min-h-[40px]" />
+            <User className="h-6 w-6 text-foreground" strokeWidth={1.75} />
+          </div>
+
+          <div className="flex-1 min-w-0">
+            {/* Store row */}
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-heading font-extrabold text-[15px] uppercase tracking-tight text-foreground truncate">
+                {offer.storeName}
+              </p>
+              <span className="text-sm text-foreground/80 font-heading whitespace-nowrap shrink-0">
+                {pickupMin}λεπτά
+              </span>
+            </div>
+            <p className="text-sm text-foreground/85 mt-1 leading-snug uppercase">
+              {shortenAddress(offer.storeAddress)}
+            </p>
+            {offer.companyName && (
+              <p className="text-sm text-foreground/85 mt-0.5 uppercase">
+                Εταιρεία: {offer.companyName}
+              </p>
+            )}
+
+            <div className="h-4" />
+
+            {/* Customer row */}
+            <div className="flex items-start justify-between gap-3">
+              <p className="font-heading font-extrabold text-[15px] text-foreground">
+                Παράδοση
+              </p>
+              <span className="text-sm text-foreground/80 font-heading whitespace-nowrap shrink-0">
+                {dropoffMin}λεπτά
+              </span>
+            </div>
+            <p className="text-sm text-foreground/85 mt-1 leading-snug uppercase">
+              {shortenAddress(offer.deliveryAddress)}
+            </p>
+          </div>
         </div>
       </div>
 
-      {/* Progress bar */}
-      <div className="h-1 bg-[hsl(var(--driver-border))]">
+      {/* Countdown progress bar (orange) */}
+      <div className="h-1 bg-border">
         <div
-          className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? 'bg-destructive' : 'bg-[hsl(var(--driver-accent))]'}`}
+          className="h-full bg-orange-500 transition-all duration-1000 ease-linear"
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Route */}
-      <div className="px-4 pt-4 pb-4">
-        <div className="flex items-start gap-3">
-          <div className="flex flex-col items-center gap-1 pt-1">
-            <div className="h-3 w-3 rounded-full bg-orange-400 border-2 border-orange-300 shadow-[0_0_8px_rgba(251,146,60,0.4)]" />
-            <div className="w-0.5 h-7 bg-[hsl(var(--driver-border))]" />
-            <div className="h-3 w-3 rounded-full bg-[hsl(var(--driver-accent))] border-2 border-emerald-300 shadow-[0_0_8px_rgba(52,211,153,0.4)]" />
-          </div>
-          <div className="flex-1 space-y-2.5">
-            <div>
-              <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">{offer.storeName}</p>
-              <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-0.5">{shortenAddress(offer.storeAddress)}</p>
-            </div>
-            <div>
-              <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Παράδοση</p>
-              <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-0.5">{shortenAddress(offer.deliveryAddress)}</p>
-            </div>
-          </div>
-        </div>
-
-        {/* Info chips */}
-        <div className="flex items-center gap-2 mt-4 flex-wrap">
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
-            <Navigation className="h-3 w-3" />{offer.totalDistance || '—'} χλμ
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
-            <Clock className="h-3 w-3" />~{offer.estimatedTime} λεπ
-          </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-[hsl(var(--driver-surface))] text-xs text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]">
-            <Package className="h-3 w-3" />{offer.itemCount} τεμ.
-          </span>
-        </div>
-
-        {/* Payout breakdown */}
-        {offer.basePay !== undefined && (
-          <div className="mt-3 pt-3 border-t border-[hsl(var(--driver-border))] flex items-center justify-between text-xs text-[hsl(var(--driver-text-muted))]">
-            <span>Βασική: {(offer.basePay ?? 0).toFixed(2)}€</span>
-            <span>Tip: {(offer.tipAmount ?? 0).toFixed(2)}€</span>
-            <span className="text-[hsl(var(--driver-accent))] font-heading font-bold">{(offer.perKmRate ?? 0.50).toFixed(2)}€/χλμ</span>
-          </div>
-        )}
-
-        {/* Actions — clear separation with proper spacing */}
-        <div className="flex gap-3 mt-5">
-          <button
-            onClick={() => onDecline(offer.id)}
-            className="flex-1 h-12 rounded-xl text-sm font-heading font-bold border-2 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface))] transition-all active:scale-[0.97]"
-          >
-            Απόρριψη
-          </button>
-          <button
-            onClick={() => onAccept(offer.id)}
-            className="flex-[1.4] h-12 rounded-xl text-sm font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 transition-all active:scale-[0.97]"
-          >
-            Αποδοχή ✓
-          </button>
-        </div>
+      {/* Single full-width Accept CTA */}
+      <div className="px-4 pt-4 pb-5">
+        <button
+          onClick={() => onAccept(offer.id)}
+          className="w-full h-14 rounded-full bg-foreground text-background font-heading font-extrabold text-lg active:scale-[0.98] hover:opacity-90 transition-all"
+        >
+          Αποδοχή
+        </button>
+        <button
+          onClick={() => onDecline(offer.id)}
+          className="w-full mt-2 h-10 text-sm font-heading font-semibold text-muted-foreground hover:text-foreground transition-colors"
+        >
+          Απόρριψη ({secondsLeft}s)
+        </button>
       </div>
     </div>
   );
