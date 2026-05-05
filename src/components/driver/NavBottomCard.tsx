@@ -1,4 +1,4 @@
-import { Phone, X } from 'lucide-react';
+import { Phone, MessageSquare, X } from 'lucide-react';
 
 interface NavBottomCardProps {
   title: string;
@@ -9,66 +9,73 @@ interface NavBottomCardProps {
   distanceMeters: number;
   phone?: string | null;
   onExit: () => void;
+  onMessage?: () => void;
 }
 
-function formatDuration(seconds: number) {
+function formatEta(seconds: number) {
   const mins = Math.max(0, Math.round(seconds / 60));
-  if (mins < 60) return `${mins} λεπτά`;
+  if (mins < 60) return `Άφιξη σε ${mins} λεπτά`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return `${h}ω ${m}λ`;
-}
-
-function formatDistance(m: number) {
-  if (m < 1000) return `${Math.round(m)} μ`;
-  return `${(m / 1000).toFixed(1)} χλμ`;
+  return `Άφιξη σε ${h}ω ${m}λ`;
 }
 
 export function NavBottomCard({
-  title, subtitle, durationSec, distanceMeters, phone, onExit,
+  title, subtitle, durationSec, phone, onExit, onMessage,
 }: NavBottomCardProps) {
   return (
-    <div className="rounded-t-3xl bg-card border-t border-border shadow-[0_-8px_24px_-12px_hsl(0,0%,0%,0.25)] overflow-hidden">
-      {/* drag affordance */}
-      <div className="flex justify-center pt-2 pb-1">
-        <div className="h-1.5 w-10 rounded-full bg-foreground/15" />
+    <div className="rounded-t-3xl bg-card text-card-foreground border-t border-border shadow-[0_-12px_32px_-12px_hsl(0,0%,0%,0.25)] overflow-hidden">
+      {/* drag handle */}
+      <div className="flex justify-center pt-2.5 pb-1">
+        <div className="h-1.5 w-12 rounded-full bg-foreground/20" />
       </div>
 
-      <div className="px-5 pt-2 pb-4">
-        <div className="flex items-center gap-3">
+      <div className="px-5 pt-3 pb-5">
+        <div className="flex items-start gap-3">
           <div className="flex-1 min-w-0">
-            <p className="font-heading font-extrabold text-lg text-foreground leading-tight uppercase tracking-tight truncate">
+            <h2 className="font-heading font-extrabold text-[22px] leading-[1.05] uppercase tracking-tight text-foreground break-words">
               {title}
-            </p>
-            <p className="text-sm text-muted-foreground mt-0.5 tabular-nums">
-              {formatDuration(durationSec)} ({formatDistance(distanceMeters)})
+            </h2>
+            <p className="text-sm text-muted-foreground mt-1.5">
+              {formatEta(durationSec)}
             </p>
           </div>
 
-          {phone && (
-            <a
-              href={`tel:${phone}`}
-              className="h-12 w-12 rounded-full border border-destructive/30 flex items-center justify-center bg-card hover:bg-destructive/5 active:scale-95 transition-all"
-              aria-label="Κλήση"
-            >
-              <Phone className="h-5 w-5 text-destructive" strokeWidth={2.5} />
-            </a>
-          )}
-
-          <button
-            onClick={onExit}
-            className="h-12 px-5 rounded-full bg-destructive text-destructive-foreground font-heading font-bold text-base flex items-center gap-1.5 shadow-md hover:brightness-110 active:scale-95 transition-all"
-          >
-            <X className="h-4 w-4" strokeWidth={3} />
-            Έξοδος
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            {phone && (
+              <a
+                href={`tel:${phone}`}
+                className="h-12 w-12 rounded-full border-2 border-destructive/40 flex items-center justify-center bg-card hover:bg-destructive/5 active:scale-95 transition-all"
+                aria-label="Κλήση"
+              >
+                <Phone className="h-5 w-5 text-destructive" strokeWidth={2.25} />
+              </a>
+            )}
+            {onMessage && (
+              <button
+                onClick={onMessage}
+                className="h-12 w-12 rounded-full border-2 border-destructive/40 flex items-center justify-center bg-card hover:bg-destructive/5 active:scale-95 transition-all"
+                aria-label="Μήνυμα"
+              >
+                <MessageSquare className="h-5 w-5 text-destructive" strokeWidth={2.25} />
+              </button>
+            )}
+          </div>
         </div>
 
         {subtitle && (
-          <p className="mt-3 text-sm text-foreground/85 leading-snug">
+          <p className="mt-4 text-[15px] text-foreground leading-snug uppercase font-heading font-semibold">
             {subtitle}
           </p>
         )}
+
+        <button
+          onClick={onExit}
+          className="mt-5 w-full h-12 rounded-full border border-border bg-background text-foreground font-heading font-bold flex items-center justify-center gap-2 hover:bg-muted active:scale-[0.98] transition-all"
+        >
+          <X className="h-4 w-4" strokeWidth={3} />
+          Έξοδος από πλοήγηση
+        </button>
       </div>
     </div>
   );
