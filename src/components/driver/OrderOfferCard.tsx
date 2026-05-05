@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Navigation, Clock, Timer } from 'lucide-react';
+import { Store, User } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 
 interface OrderOffer {
