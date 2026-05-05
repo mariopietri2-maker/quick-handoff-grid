@@ -40,7 +40,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
   const progress = (secondsLeft / OFFER_TIMEOUT_SECONDS) * 100;
   const isUrgent = secondsLeft <= 15;
 
-  const acceptPct = Math.round(progress);
+  
 
   return (
     <div className="rounded-2xl overflow-hidden bg-card border border-[hsl(var(--driver-border))] shadow-lg">
