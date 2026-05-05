@@ -394,7 +394,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     }
     if (destLat == null || destLng == null) return;
 
-    const routeKey = `${pos.lat.toFixed(4)},${pos.lng.toFixed(4)}-${destLat},${destLng}`;
+    // Round driver pos to ~110m so small GPS jitter doesn't keep invalidating the route
+    const routeKey = `${pos.lat.toFixed(3)},${pos.lng.toFixed(3)}-${destLat},${destLng}`;
     if (routeKey === lastRouteKey.current) return;
     lastRouteKey.current = routeKey;
 
