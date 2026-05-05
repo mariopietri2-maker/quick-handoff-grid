@@ -449,11 +449,23 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     }
   }, [pos, navigatingTo, storeLat, storeLng, customerLat, customerLng, token, onRouteUpdate]);
 
-  // Fetch route on change (throttled)
+  // Fetch route on change — fire fast on destination/nav change, then keep route fresh
+  // without resetting the timer on every GPS tick (which used to delay routes indefinitely).
+  const fetchRouteRef = useRef(fetchRoute);
+  useEffect(() => { fetchRouteRef.current = fetchRoute; }, [fetchRoute]);
+
+  // Immediate fetch when destination or navigation target changes
   useEffect(() => {
-    const timer = setTimeout(fetchRoute, 1500);
-    return () => clearTimeout(timer);
-  }, [fetchRoute]);
+    const t = setTimeout(() => fetchRouteRef.current(), 150);
+    return () => clearTimeout(t);
+  }, [navigatingTo, storeLat, storeLng, customerLat, customerLng, token]);
+
+  // Periodic refresh while navigating (every 8s) instead of on every GPS update
+  useEffect(() => {
+    if (!navigatingTo) return;
+    const id = setInterval(() => fetchRouteRef.current(), 8000);
+    return () => clearInterval(id);
+  }, [navigatingTo]);
 
   // Clear route when not navigating
   useEffect(() => {
