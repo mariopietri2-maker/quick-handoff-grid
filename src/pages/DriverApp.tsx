@@ -664,19 +664,19 @@ export default function DriverApp() {
       ) : (
         /* ─── NON-MAP TABS ─── */
         <>
-          <header className="relative z-30 px-4 py-3 flex items-center justify-between driver-glass safe-area-top animate-slide-down">
+          <header className="relative z-30 px-4 py-3 flex items-center justify-between bg-[hsl(var(--driver-surface))]/95 backdrop-blur-xl border-b border-[hsl(var(--driver-border))] safe-area-top animate-slide-down">
             <button
               onClick={() => setActiveTab('home')}
-              className="h-10 w-10 rounded-full bg-white border-2 border-border shadow-md flex items-center justify-center hover:bg-accent transition-all duration-200 active:scale-90 hover:-translate-x-0.5"
+              className="h-10 w-10 rounded-full bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))] shadow-sm flex items-center justify-center hover:bg-[hsl(var(--driver-surface-muted))] transition-all duration-200 active:scale-90"
               aria-label="Πίσω"
             >
-              <ArrowLeft className="h-5 w-5 text-foreground" />
+              <ArrowLeft className="h-5 w-5 text-[hsl(var(--driver-text))]" />
             </button>
             <div className="flex items-center gap-2 animate-fade-in">
-              <div className="h-7 w-7 rounded-lg gradient-primary flex items-center justify-center animate-float">
-                <Zap className="h-3.5 w-3.5 text-white" />
+              <div className="h-7 w-7 rounded-full driver-gradient-earn flex items-center justify-center">
+                <Zap className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
               </div>
-              <span className="font-heading font-bold text-[hsl(var(--driver-text))] text-base tracking-tight">
+              <span className="font-heading font-extrabold text-[hsl(var(--driver-text))] text-[15px] tracking-tight">
                 Fresh Delivery
                 {isAdmin && (
                   <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
