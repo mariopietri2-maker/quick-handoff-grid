@@ -83,18 +83,18 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
   return (
     <div className="space-y-3">
       {/* Unified delivery card */}
-      <div className="rounded-2xl driver-glass overflow-hidden">
+      <div className="driver-card overflow-hidden">
         {/* Predicted ready banner — only before store flips to ready */}
         {!isReady && delivery.predictedReadyAt && (
-          <div className="px-4 py-3 flex items-center gap-3 bg-[hsl(var(--driver-accent))]/8 border-b border-[hsl(var(--driver-border))]">
-            <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center shrink-0">
+          <div className="px-5 py-3 flex items-center gap-3 bg-[hsl(var(--driver-accent))]/6 border-b border-[hsl(var(--driver-border))]">
+            <div className="h-9 w-9 rounded-full bg-[hsl(var(--driver-accent))]/12 flex items-center justify-center shrink-0">
               <Clock className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
             </div>
             <div className="flex-1 min-w-0">
-              <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text))]">
+              <p className="text-[13px] font-heading font-semibold text-[hsl(var(--driver-text))] leading-tight">
                 {etaMin === 0 ? 'Έτοιμη όπου να ναι' : `Έτοιμη σε ~${etaMin} λεπτά`}
               </p>
-              <p className="text-[10.5px] text-[hsl(var(--driver-text-muted))] leading-tight">
+              <p className="text-[11px] text-[hsl(var(--driver-text-muted))] leading-tight mt-0.5">
                 Πρόβλεψη ML — η παραλαβή ξεκλειδώνει μόλις το κατάστημα την ετοιμάσει
               </p>
             </div>
@@ -102,71 +102,73 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
         )}
 
         {/* Status stepper */}
-        <div className="px-4 pt-4 pb-3 border-b border-[hsl(var(--driver-border))]">
-          <div className="flex items-center justify-between mb-3">
+        <div className="px-5 pt-5 pb-4 border-b border-[hsl(var(--driver-border))]">
+          <div className="flex items-center justify-between mb-3.5">
             {statusSteps.map((step, i) => {
               const Icon = step.icon;
               const isComplete = i <= effectiveStepIndex;
               const isCurrent = i === effectiveStepIndex;
               return (
                 <div key={step.key} className="flex items-center flex-1 last:flex-none">
-                  <div className={`h-9 w-9 rounded-xl flex items-center justify-center transition-all duration-300 shrink-0 ${
+                  <div className={`h-9 w-9 rounded-full flex items-center justify-center transition-all duration-300 shrink-0 ${
                     isComplete
-                      ? 'bg-[hsl(var(--driver-accent))] text-white shadow-md'
-                      : 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
-                  } ${isCurrent && delivery.status !== 'delivered' ? 'ring-4 ring-[hsl(var(--driver-accent))]/25' : ''}`}>
+                      ? 'bg-[hsl(var(--driver-accent))] text-white'
+                      : 'bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))]'
+                  } ${isCurrent && delivery.status !== 'delivered' ? 'ring-[3px] ring-[hsl(var(--driver-accent))]/22 ring-offset-2 ring-offset-[hsl(var(--driver-surface))]' : ''}`}>
                     {i < effectiveStepIndex ? (
                       <CheckCircle2 className="h-4 w-4" />
                     ) : (
-                      <Icon className="h-4 w-4" />
+                      <Icon className="h-4 w-4" strokeWidth={2.25} />
                     )}
                   </div>
                   {i < statusSteps.length - 1 && (
-                    <div className={`h-1 flex-1 mx-1.5 rounded-full transition-colors ${
-                      i < effectiveStepIndex ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-border))]'
+                    <div className={`h-[3px] flex-1 mx-2 rounded-full transition-colors ${
+                      i < effectiveStepIndex ? 'bg-[hsl(var(--driver-accent))]' : 'bg-[hsl(var(--driver-surface-muted))]'
                     }`} />
                   )}
                 </div>
               );
             })}
           </div>
-          <p className="font-heading font-bold text-center text-[hsl(var(--driver-text))] text-sm tracking-wide">
+          <p className="font-heading font-bold text-center text-[hsl(var(--driver-text))] text-[13.5px] tracking-wide">
             {statusSteps[effectiveStepIndex]?.label}
           </p>
         </div>
 
         {/* Route */}
-        <div className="px-4 py-4 border-b border-[hsl(var(--driver-border))]">
-          <div className="flex items-start gap-3">
-            <div className="flex flex-col items-center gap-1">
-              <div className="h-9 w-9 rounded-xl bg-orange-500/15 flex items-center justify-center border border-orange-500/20">
-                <Store className="h-4 w-4 text-orange-400" />
+        <div className="px-5 py-4 border-b border-[hsl(var(--driver-border))]">
+          <div className="flex items-stretch gap-3">
+            <div className="flex flex-col items-center pt-1">
+              <div className="h-9 w-9 rounded-full bg-[hsl(var(--driver-warm))]/12 flex items-center justify-center border border-[hsl(var(--driver-warm))]/25">
+                <Store className="h-4 w-4 text-[hsl(var(--driver-warm))]" strokeWidth={2.25} />
               </div>
-              <div className="w-0.5 h-4 bg-[hsl(var(--driver-border))]" />
-              <div className="h-9 w-9 rounded-xl bg-[hsl(var(--driver-accent))]/15 flex items-center justify-center border border-[hsl(var(--driver-accent))]/20">
-                <MapPin className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+              <div className="w-px flex-1 bg-[hsl(var(--driver-border))] my-1.5" />
+              <div className="h-9 w-9 rounded-full bg-[hsl(var(--driver-accent))]/12 flex items-center justify-center border border-[hsl(var(--driver-accent))]/25">
+                <MapPin className="h-4 w-4 text-[hsl(var(--driver-accent))]" strokeWidth={2.25} />
               </div>
             </div>
-            <div className="flex-1 min-w-0 space-y-2.5">
+            <div className="flex-1 min-w-0 space-y-3">
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.storeName}</p>
-                  <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.storeAddress)}</p>
+                  <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παραλαβή</p>
+                  <p className="font-heading font-bold text-[14.5px] text-[hsl(var(--driver-text))] truncate leading-tight">{delivery.storeName}</p>
+                  <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.storeAddress)}</p>
                 </div>
                 {delivery.storePhone && (
-                  <a href={`tel:${delivery.storePhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
-                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
+                  <a href={`tel:${delivery.storePhone}`} className="h-10 w-10 rounded-full bg-[hsl(var(--driver-surface-muted))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-[hsl(var(--driver-info))]/10 hover:border-[hsl(var(--driver-info))]/30 transition-colors shrink-0">
+                    <Phone className="h-4 w-4 text-[hsl(var(--driver-info))]" />
                   </a>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0">
-                  <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] truncate">{delivery.customerName}</p>
-                  <p className="text-xs text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.deliveryAddress)}</p>
+                  <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παράδοση</p>
+                  <p className="font-heading font-bold text-[14.5px] text-[hsl(var(--driver-text))] truncate leading-tight">{delivery.customerName}</p>
+                  <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.deliveryAddress)}</p>
                 </div>
                 {delivery.customerPhone && (
-                  <a href={`tel:${delivery.customerPhone}`} className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-surface-elevated))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-primary/20 transition-colors shrink-0">
-                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-text))]" />
+                  <a href={`tel:${delivery.customerPhone}`} className="h-10 w-10 rounded-full bg-[hsl(var(--driver-surface-muted))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-[hsl(var(--driver-info))]/10 hover:border-[hsl(var(--driver-info))]/30 transition-colors shrink-0">
+                    <Phone className="h-4 w-4 text-[hsl(var(--driver-info))]" />
                   </a>
                 )}
               </div>
@@ -176,9 +178,9 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           {(isGoingToStore || isGoingToCustomer) && (
             <button
               onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
-              className="mt-4 w-full h-12 rounded-xl gradient-primary text-white text-sm font-heading font-bold flex items-center justify-center gap-2 hover:brightness-110 transition-all shadow-primary active:scale-[0.98]"
+              className="mt-4 w-full h-12 rounded-full bg-[hsl(var(--driver-info))] text-white text-[14px] font-heading font-bold flex items-center justify-center gap-2 hover:brightness-105 transition-all active:scale-[0.98] shadow-[0_6px_18px_-6px_hsl(200_75%_46%/0.45)]"
             >
-              <Navigation className="h-4 w-4" />
+              <Navigation className="h-4 w-4" strokeWidth={2.5} />
               Πλοήγηση
             </button>
           )}
@@ -186,45 +188,45 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
 
         {/* Notes */}
         {(delivery.notes || delivery.storeNotes) && (
-          <div className="px-4 py-4 border-b border-[hsl(var(--driver-border))] bg-amber-400/5">
-            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
-              <StickyNote className="h-4 w-4 text-amber-400" />
+          <div className="px-5 py-4 border-b border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-warm))]/5">
+            <p className="font-heading font-bold text-[13px] text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
+              <StickyNote className="h-4 w-4 text-[hsl(var(--driver-warm))]" />
               Σημειώσεις
             </p>
             {delivery.notes && (
               <div className="mb-2">
                 <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από πελάτη</p>
-                <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.notes}</p>
+                <p className="text-[13px] text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.notes}</p>
               </div>
             )}
             {delivery.storeNotes && (
               <div>
                 <p className="text-[10.5px] uppercase tracking-wide text-[hsl(var(--driver-text-muted))] mb-0.5">Από κατάστημα</p>
-                <p className="text-sm text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.storeNotes}</p>
+                <p className="text-[13px] text-[hsl(var(--driver-text))] whitespace-pre-wrap leading-relaxed">{delivery.storeNotes}</p>
               </div>
             )}
           </div>
         )}
 
         {/* Order items */}
-        <div className="px-4 py-4 border-b border-[hsl(var(--driver-border))]">
-          <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
-            <Package className="h-4 w-4 text-primary" />
+        <div className="px-5 py-4 border-b border-[hsl(var(--driver-border))]">
+          <p className="font-heading font-bold text-[13px] text-[hsl(var(--driver-text))] mb-2 flex items-center gap-2">
+            <Package className="h-4 w-4 text-[hsl(var(--driver-info))]" />
             Παραγγελία ({delivery.items.length} τεμ.)
           </p>
           <div className="space-y-0">
             {delivery.items.map((item, i) => (
-              <div key={i} className="flex items-center justify-between py-2 border-b border-[hsl(var(--driver-border))]/50 last:border-0">
-                <span className="text-sm text-[hsl(var(--driver-text))]">{item.quantity}× {item.name}</span>
+              <div key={i} className="flex items-center justify-between py-2 border-b border-[hsl(var(--driver-border))]/60 last:border-0">
+                <span className="text-[13px] text-[hsl(var(--driver-text))]"><span className="font-semibold tabular-nums text-[hsl(var(--driver-text-muted))]">{item.quantity}×</span> {item.name}</span>
               </div>
             ))}
           </div>
         </div>
 
         {/* Payout */}
-        <div className="px-4 py-3 flex items-center justify-between bg-[hsl(var(--driver-surface-elevated))]/40">
-          <span className="text-[hsl(var(--driver-text-muted))] text-sm font-heading">Εκτιμώμενη Αμοιβή</span>
-          <span className="font-heading font-extrabold text-xl text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
+        <div className="px-5 py-3.5 flex items-center justify-between">
+          <span className="text-[hsl(var(--driver-text-muted))] text-[12.5px] font-heading font-medium uppercase tracking-wider">Εκτιμώμενη Αμοιβή</span>
+          <span className="font-heading font-extrabold text-[22px] tabular-nums text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
         </div>
       </div>
 
@@ -236,10 +238,10 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
         <button
           onClick={() => !nextAction.locked && onStatusUpdate(nextAction.next)}
           disabled={nextAction.locked}
-          className={`w-full h-14 rounded-2xl text-base font-heading font-bold transition-all flex items-center justify-center gap-2 ${
+          className={`w-full h-14 rounded-full text-[15px] font-heading font-bold transition-all flex items-center justify-center gap-2 ${
             nextAction.locked
-              ? 'bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))] cursor-not-allowed'
-              : 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-110 active:scale-[0.97]'
+              ? 'bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))] cursor-not-allowed'
+              : 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-105 active:scale-[0.97]'
           }`}
         >
           {nextAction.locked ? <Lock className="h-5 w-5" /> : null}
