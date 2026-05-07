@@ -18,6 +18,7 @@ import CustomOrderDialog from './CustomOrderDialog';
 import {
   Banknote, Building2, Shield, TrendingUp, CheckCircle2, AlertCircle,
   RotateCcw, Wallet, Loader2, ArrowRight, Activity, ArrowDownCircle,
+  Sparkles, ChevronDown, ChevronUp, Info,
 } from 'lucide-react';
 
 const fmt = (n: number | null | undefined) => `€${Number(n ?? 0).toFixed(2)}`;
@@ -62,6 +63,32 @@ export default function MoneyBagsPanel() {
   const [pendingReset, setPendingReset] = useState<ResetKind | null>(null);
   const [busy, setBusy] = useState<ResetKind | null>(null);
   const [settling, setSettling] = useState<string | null>(null);
+  const [bulkSettling, setBulkSettling] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const { data: health } = useQuery({
+    queryKey: ['treasury-health'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('get_treasury_health');
+      if (error) throw error;
+      return data as {
+        pool_balance: number; pool_low: boolean; pool_negative: boolean; threshold: number;
+        open_cash_debts_total: number; open_cash_debts_count: number;
+      };
+    },
+    refetchInterval: 30_000,
+  });
+
+  const settleAllCash = async () => {
+    setBulkSettling(true);
+    const { data, error } = await (supabase as any).rpc('admin_settle_all_driver_cash');
+    setBulkSettling(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Συμψηφίστηκαν ${data?.settled ?? 0} χρέη (${fmt(Number(data?.total ?? 0))})`);
+    qc.invalidateQueries({ queryKey: ['mb-cash-debts'] });
+    qc.invalidateQueries({ queryKey: ['admin-treasury'] });
+    qc.invalidateQueries({ queryKey: ['treasury-health'] });
+  };
 
   const { data: treasury } = useQuery({
     queryKey: ['admin-treasury'],
@@ -286,6 +313,85 @@ export default function MoneyBagsPanel() {
         <TabsContent value="overview" className="space-y-4 m-0">
 
 
+      {/* Health alerts */}
+      {health?.pool_low && (
+        <Card className={health.pool_negative ? 'border-destructive bg-destructive/5' : 'border-warning bg-warning/5'}>
+          <CardContent className="p-4 flex items-start gap-3">
+            <AlertCircle className={`h-5 w-5 shrink-0 mt-0.5 ${health.pool_negative ? 'text-destructive' : 'text-warning'}`} />
+            <div className="flex-1 min-w-0">
+              <p className="font-heading font-bold text-sm">
+                {health.pool_negative ? 'Driver Pool στο κόκκινο' : 'Χαμηλό Driver Pool'}
+              </p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Τρέχον υπόλοιπο: <span className="font-bold tabular-nums">{fmt(health.pool_balance)}</span> ·
+                όριο ειδοποίησης {fmt(health.threshold)}. Τα driver top-ups πληρώνονται από εδώ — αν εξαντληθεί, οι εγγυημένες αμοιβές σπάνε.
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* How it works — collapsible help */}
+      <Card className="border-primary/30 bg-primary/[0.02]">
+        <button
+          onClick={() => setHelpOpen(v => !v)}
+          className="w-full flex items-center gap-2 p-4 text-left hover:bg-primary/[0.04] transition-colors"
+        >
+          <Info className="h-4 w-4 text-primary shrink-0" />
+          <span className="text-sm font-heading font-semibold flex-1">Πώς δουλεύει το Money Bags σύστημα</span>
+          {helpOpen ? <ChevronUp className="h-4 w-4 text-muted-foreground" /> : <ChevronDown className="h-4 w-4 text-muted-foreground" />}
+        </button>
+        {helpOpen && (
+          <CardContent className="pt-0 pb-4 px-4 text-sm space-y-4">
+            <div>
+              <p className="font-heading font-bold mb-1.5">Ροή κάθε παραγγελίας (split 85/10/5)</p>
+              <p className="text-muted-foreground text-[13px] leading-relaxed">
+                Όταν μια παραγγελία γίνει <code className="px-1 rounded bg-muted">delivered</code>, το trigger
+                <code className="px-1 rounded bg-muted">settle_order_money_bags</code> τρέχει αυτόματα και χωρίζει τα χρήματα:
+              </p>
+              <ul className="mt-2 space-y-1 text-[13px] pl-4 list-disc text-foreground">
+                <li><b>85% του φαγητού</b> → store wallet</li>
+                <li><b>10% του φαγητού</b> → Driver Pool (πληρώνει top-ups & μπόνους)</li>
+                <li><b>5% του delivery fee</b> → Admin bag (καθαρό κέρδος)</li>
+                <li><b>Delivery fee + tip</b> → driver wallet (με min-pay εγγύηση)</li>
+              </ul>
+            </div>
+
+            <div className="rounded-lg border border-border bg-background p-3">
+              <p className="font-heading font-bold text-[13px] mb-2 flex items-center gap-1.5">
+                <Sparkles className="h-3.5 w-3.5 text-primary" /> Παράδειγμα: παραγγελία 20€ + 2€ delivery + 1€ tip
+              </p>
+              <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-[12.5px] tabular-nums">
+                <span className="text-muted-foreground">Store παίρνει</span><span className="text-emerald-600 font-bold">+17.00€ (85% × 20)</span>
+                <span className="text-muted-foreground">Driver Pool</span><span className="text-primary font-bold">+2.00€ (10% × 20)</span>
+                <span className="text-muted-foreground">Admin bag</span><span className="text-amber-600 font-bold">+0.10€ (5% × 2)</span>
+                <span className="text-muted-foreground">Driver wallet</span><span className="font-bold">+3.00€ (2 fee + 1 tip)</span>
+                <span className="text-muted-foreground">Σύνολο commission</span><span>1.00€ (5% × 20)</span>
+              </div>
+            </div>
+
+            <div>
+              <p className="font-heading font-bold mb-1.5">Καθημερινή χρήση</p>
+              <ol className="space-y-1.5 text-[13px] pl-4 list-decimal">
+                <li><b>Cash παραγγελίες:</b> ο οδηγός μαζεύει μετρητά → εμφανίζεται στα «Εκκρεμείς ταμειακοί συμψηφισμοί». Όταν φέρει τα λεφτά, πάτα <kbd className="px-1.5 py-0.5 rounded bg-muted text-[11px] border">Settle all</kbd> για να συμψηφιστούν όλα μαζί.</li>
+                <li><b>Driver payouts:</b> έγκρινε αναλήψεις στην καρτέλα «Αναλήψεις». Lifetime totals διατηρούνται.</li>
+                <li><b>Store payouts:</b> πλήρωσε καταστήματα (banking) και μετά reset το store wallet τους.</li>
+                <li><b>Κλείσιμο μήνα:</b> τρέχει αυτόματα την 1η κάθε μήνα στις 03:00. Μπορείς και χειροκίνητα από την καρτέλα «Κλείσιμο μήνα».</li>
+              </ol>
+            </div>
+
+            <div>
+              <p className="font-heading font-bold mb-1.5">Αυτόματα προστατευτικά</p>
+              <ul className="space-y-1 text-[13px] pl-4 list-disc text-muted-foreground">
+                <li>Ειδοποίηση όταν το Driver Pool πέσει κάτω από το όριο (default {fmt(health?.threshold ?? 50)}).</li>
+                <li>Min-pay εγγύηση για κάθε οδηγό — top-up αυτόματα από το pool.</li>
+                <li>Όλες οι κινήσεις γράφονται στο <code className="px-1 rounded bg-muted">admin_treasury_ledger</code> για audit.</li>
+              </ul>
+            </div>
+          </CardContent>
+        )}
+      </Card>
+
       {/* Hero distribution */}
       <Card className="overflow-hidden">
         <CardContent className="p-5">
@@ -421,9 +527,20 @@ export default function MoneyBagsPanel() {
               Εκκρεμείς ταμειακοί συμψηφισμοί
             </h3>
             {cashDebts && cashDebts.length > 0 && (
-              <Badge className="ml-auto bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
-                {cashDebts.length}
-              </Badge>
+              <>
+                <Badge className="ml-auto bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
+                  {cashDebts.length}
+                </Badge>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={settleAllCash}
+                  disabled={bulkSettling}
+                >
+                  {bulkSettling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  Settle all ({fmt(health?.open_cash_debts_total ?? 0)})
+                </Button>
+              </>
             )}
           </div>
 

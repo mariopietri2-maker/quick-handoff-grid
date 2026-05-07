@@ -1444,6 +1444,7 @@ export type Database = {
           distribution_mode: string
           driver_pool_pct_of_subtotal: number
           id: number
+          low_pool_threshold: number
           maintenance_message: string | null
           maintenance_mode: boolean
           max_cash_cap: number
@@ -1488,6 +1489,7 @@ export type Database = {
           distribution_mode?: string
           driver_pool_pct_of_subtotal?: number
           id?: number
+          low_pool_threshold?: number
           maintenance_message?: string | null
           maintenance_mode?: boolean
           max_cash_cap?: number
@@ -1532,6 +1534,7 @@ export type Database = {
           distribution_mode?: string
           driver_pool_pct_of_subtotal?: number
           id?: number
+          low_pool_threshold?: number
           maintenance_message?: string | null
           maintenance_mode?: boolean
           max_cash_cap?: number
@@ -2467,6 +2470,7 @@ export type Database = {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
       }
+      admin_auto_close_previous_month: { Args: never; Returns: string }
       admin_close_month: { Args: { p_period_start?: string }; Returns: string }
       admin_payout_store: {
         Args: { p_amount: number; p_description?: string; p_store_id: string }
@@ -2493,6 +2497,7 @@ export type Database = {
         Args: { p_days?: number; p_status: string; p_store_id: string }
         Returns: undefined
       }
+      admin_settle_all_driver_cash: { Args: never; Returns: Json }
       admin_settle_driver_cash: {
         Args: { p_debt_id: string }
         Returns: undefined
@@ -2606,6 +2611,7 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: number
       }
+      get_treasury_health: { Args: never; Returns: Json }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
