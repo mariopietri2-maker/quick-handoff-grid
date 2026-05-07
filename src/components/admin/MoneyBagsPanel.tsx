@@ -18,6 +18,7 @@ import CustomOrderDialog from './CustomOrderDialog';
 import {
   Banknote, Building2, Shield, TrendingUp, CheckCircle2, AlertCircle,
   RotateCcw, Wallet, Loader2, ArrowRight, Activity, ArrowDownCircle,
+  Sparkles, ChevronDown, ChevronUp, Info,
 } from 'lucide-react';
 
 const fmt = (n: number | null | undefined) => `€${Number(n ?? 0).toFixed(2)}`;
