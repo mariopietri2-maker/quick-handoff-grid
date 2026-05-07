@@ -63,6 +63,32 @@ export default function MoneyBagsPanel() {
   const [pendingReset, setPendingReset] = useState<ResetKind | null>(null);
   const [busy, setBusy] = useState<ResetKind | null>(null);
   const [settling, setSettling] = useState<string | null>(null);
+  const [bulkSettling, setBulkSettling] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
+
+  const { data: health } = useQuery({
+    queryKey: ['treasury-health'],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any).rpc('get_treasury_health');
+      if (error) throw error;
+      return data as {
+        pool_balance: number; pool_low: boolean; pool_negative: boolean; threshold: number;
+        open_cash_debts_total: number; open_cash_debts_count: number;
+      };
+    },
+    refetchInterval: 30_000,
+  });
+
+  const settleAllCash = async () => {
+    setBulkSettling(true);
+    const { data, error } = await (supabase as any).rpc('admin_settle_all_driver_cash');
+    setBulkSettling(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Συμψηφίστηκαν ${data?.settled ?? 0} χρέη (${fmt(Number(data?.total ?? 0))})`);
+    qc.invalidateQueries({ queryKey: ['mb-cash-debts'] });
+    qc.invalidateQueries({ queryKey: ['admin-treasury'] });
+    qc.invalidateQueries({ queryKey: ['treasury-health'] });
+  };
 
   const { data: treasury } = useQuery({
     queryKey: ['admin-treasury'],
