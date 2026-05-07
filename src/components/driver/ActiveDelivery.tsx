@@ -136,39 +136,39 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
         </div>
 
         {/* Route */}
-        <div className="px-5 py-4 border-b border-[hsl(var(--driver-border))]">
-          <div className="flex items-stretch gap-3">
-            <div className="flex flex-col items-center pt-1">
-              <div className="h-9 w-9 rounded-full bg-[hsl(var(--driver-warm))]/12 flex items-center justify-center border border-[hsl(var(--driver-warm))]/25">
-                <Store className="h-4 w-4 text-[hsl(var(--driver-warm))]" strokeWidth={2.25} />
+        <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))]">
+          <div className="flex items-stretch gap-2.5">
+            <div className="flex flex-col items-center pt-0.5">
+              <div className="h-7 w-7 rounded-full bg-[hsl(var(--driver-warm))]/12 flex items-center justify-center border border-[hsl(var(--driver-warm))]/25 shrink-0">
+                <Store className="h-3.5 w-3.5 text-[hsl(var(--driver-warm))]" strokeWidth={2.25} />
               </div>
-              <div className="w-px flex-1 bg-[hsl(var(--driver-border))] my-1.5" />
-              <div className="h-9 w-9 rounded-full bg-[hsl(var(--driver-accent))]/12 flex items-center justify-center border border-[hsl(var(--driver-accent))]/25">
-                <MapPin className="h-4 w-4 text-[hsl(var(--driver-accent))]" strokeWidth={2.25} />
+              <div className="w-px flex-1 bg-[hsl(var(--driver-border))] my-1" />
+              <div className="h-7 w-7 rounded-full bg-[hsl(var(--driver-accent))]/12 flex items-center justify-center border border-[hsl(var(--driver-accent))]/25 shrink-0">
+                <MapPin className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))]" strokeWidth={2.25} />
               </div>
             </div>
-            <div className="flex-1 min-w-0 space-y-3">
+            <div className="flex-1 min-w-0 space-y-2.5">
               <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παραλαβή</p>
-                  <p className="font-heading font-bold text-[14.5px] text-[hsl(var(--driver-text))] truncate leading-tight">{delivery.storeName}</p>
-                  <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.storeAddress)}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παραλαβή</p>
+                  <p className="font-heading font-bold text-[13.5px] text-[hsl(var(--driver-text))] truncate leading-tight">{delivery.storeName}</p>
+                  <p className="text-[12px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.storeAddress)}</p>
                 </div>
                 {delivery.storePhone && (
-                  <a href={`tel:${delivery.storePhone}`} className="h-10 w-10 rounded-full bg-[hsl(var(--driver-surface-muted))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-[hsl(var(--driver-info))]/10 hover:border-[hsl(var(--driver-info))]/30 transition-colors shrink-0">
-                    <Phone className="h-4 w-4 text-[hsl(var(--driver-info))]" />
+                  <a href={`tel:${delivery.storePhone}`} className="h-8 w-8 rounded-full bg-[hsl(var(--driver-surface-muted))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-[hsl(var(--driver-info))]/10 hover:border-[hsl(var(--driver-info))]/30 transition-colors shrink-0">
+                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-info))]" />
                   </a>
                 )}
               </div>
               <div className="flex items-center justify-between gap-2">
-                <div className="min-w-0">
-                  <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παράδοση</p>
-                  <p className="font-heading font-bold text-[14.5px] text-[hsl(var(--driver-text))] truncate leading-tight">{delivery.customerName}</p>
-                  <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.deliveryAddress)}</p>
+                <div className="min-w-0 flex-1">
+                  <p className="text-[10px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παράδοση</p>
+                  <p className="font-heading font-bold text-[13.5px] text-[hsl(var(--driver-text))] truncate leading-tight">{delivery.customerName}</p>
+                  <p className="text-[12px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(delivery.deliveryAddress)}</p>
                 </div>
                 {delivery.customerPhone && (
-                  <a href={`tel:${delivery.customerPhone}`} className="h-10 w-10 rounded-full bg-[hsl(var(--driver-surface-muted))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-[hsl(var(--driver-info))]/10 hover:border-[hsl(var(--driver-info))]/30 transition-colors shrink-0">
-                    <Phone className="h-4 w-4 text-[hsl(var(--driver-info))]" />
+                  <a href={`tel:${delivery.customerPhone}`} className="h-8 w-8 rounded-full bg-[hsl(var(--driver-surface-muted))] flex items-center justify-center border border-[hsl(var(--driver-border))] hover:bg-[hsl(var(--driver-info))]/10 hover:border-[hsl(var(--driver-info))]/30 transition-colors shrink-0">
+                    <Phone className="h-3.5 w-3.5 text-[hsl(var(--driver-info))]" />
                   </a>
                 )}
               </div>
@@ -178,7 +178,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           {(isGoingToStore || isGoingToCustomer) && (
             <button
               onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
-              className="mt-4 w-full h-12 rounded-full bg-[hsl(var(--driver-info))] text-white text-[14px] font-heading font-bold flex items-center justify-center gap-2 hover:brightness-105 transition-all active:scale-[0.98] shadow-[0_6px_18px_-6px_hsl(200_75%_46%/0.45)]"
+              className="mt-3.5 w-full h-11 rounded-full bg-[hsl(var(--driver-info))] text-white text-[13.5px] font-heading font-bold flex items-center justify-center gap-2 hover:brightness-105 transition-all active:scale-[0.98] shadow-[0_6px_18px_-6px_hsl(200_75%_46%/0.45)]"
             >
               <Navigation className="h-4 w-4" strokeWidth={2.5} />
               Πλοήγηση

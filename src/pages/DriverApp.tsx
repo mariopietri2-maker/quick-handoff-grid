@@ -517,12 +517,6 @@ export default function DriverApp() {
                           ))}
                         </div>
                       )}
-                      {tracking && (
-                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/20 driver-glass">
-                          <Navigation className="h-3.5 w-3.5 text-[hsl(var(--driver-accent))] animate-pulse" />
-                          <span className="text-xs font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή τοποθεσία</span>
-                        </div>
-                      )}
                       {locError && (
                         <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
                           <Navigation className="h-3.5 w-3.5 text-destructive" />
