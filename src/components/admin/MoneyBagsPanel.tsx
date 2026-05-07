@@ -527,9 +527,20 @@ export default function MoneyBagsPanel() {
               Εκκρεμείς ταμειακοί συμψηφισμοί
             </h3>
             {cashDebts && cashDebts.length > 0 && (
-              <Badge className="ml-auto bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
-                {cashDebts.length}
-              </Badge>
+              <>
+                <Badge className="ml-auto bg-warning/15 text-warning border-warning/30 hover:bg-warning/20">
+                  {cashDebts.length}
+                </Badge>
+                <Button
+                  size="sm"
+                  className="h-8 gap-1.5"
+                  onClick={settleAllCash}
+                  disabled={bulkSettling}
+                >
+                  {bulkSettling ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
+                  Settle all ({fmt(health?.open_cash_debts_total ?? 0)})
+                </Button>
+              </>
             )}
           </div>
 
