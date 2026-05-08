@@ -38,7 +38,7 @@ const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDash
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
-const MoneyBagsPanel         = lazy(() => import('@/components/admin/MoneyBagsPanel'));
+const MoneyBagsPanel         = lazy(() => import('@/components/admin/LedgerPanel'));
 const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
 import { Link } from 'react-router-dom';

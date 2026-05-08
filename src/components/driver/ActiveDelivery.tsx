@@ -223,11 +223,8 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           </div>
         </div>
 
-        {/* Payout */}
-        <div className="px-5 py-3.5 flex items-center justify-between">
-          <span className="text-[hsl(var(--driver-text-muted))] text-[12.5px] font-heading font-medium uppercase tracking-wider">Εκτιμώμενη Αμοιβή</span>
-          <span className="font-heading font-extrabold text-[22px] tabular-nums text-[hsl(var(--driver-accent))]">{delivery.estimatedPayout.toFixed(2)}€</span>
-        </div>
+        {/* Payout intentionally hidden — driver already saw it on the offer card before accepting */}
+
       </div>
 
       {/* Wait time bonus */}
