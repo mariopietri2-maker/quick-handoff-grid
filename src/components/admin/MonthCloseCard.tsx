@@ -53,7 +53,7 @@ export default function MonthCloseCard() {
     const { error } = await (supabase as any)
       .from('monthly_reports')
       .delete()
-      .not('id', 'is', null);
+      .gte('period_start', '1900-01-01');
     setBusy(false);
     if (error) {
       toast.error(error.message);
