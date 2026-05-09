@@ -10,6 +10,7 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import PricingModelExplainer from './PricingModelExplainer';
 
 /**
  * Two destructive admin actions:
@@ -141,6 +142,9 @@ export default function SystemResetPanel() {
           </p>
         </div>
       </div>
+
+      <PricingModelExplainer />
+
 
       {/* Reset money to zero */}
       <div className="admin-card border-warning/40">
