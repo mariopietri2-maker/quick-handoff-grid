@@ -2464,6 +2464,30 @@ export type Database = {
         }
         Relationships: []
       }
+      v_pricing_model: {
+        Row: {
+          admin_pct: number | null
+          default_commission_pct: number | null
+          default_store_keeps_pct: number | null
+          driver_pool_pct: number | null
+          id: number | null
+        }
+        Insert: {
+          admin_pct?: never
+          default_commission_pct?: never
+          default_store_keeps_pct?: never
+          driver_pool_pct?: never
+          id?: number | null
+        }
+        Update: {
+          admin_pct?: never
+          default_commission_pct?: never
+          default_store_keeps_pct?: never
+          driver_pool_pct?: never
+          id?: number | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       admin_adjust_wallet: {
