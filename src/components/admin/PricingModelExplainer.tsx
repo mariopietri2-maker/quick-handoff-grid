@@ -60,7 +60,7 @@ export default function PricingModelExplainer() {
               <Store className="h-3.5 w-3.5 text-emerald-600" />
               <span className="text-[12px] font-semibold">Κατάστημα</span>
               <Badge variant="secondary" className="ml-auto text-[11px]">{storeKeeps}%</Badge>
-            </name>
+            </div>
             <p className="text-[11.5px] text-muted-foreground leading-snug">
               Κρατά {storeKeeps}% του food subtotal. Πληρώνει {commPct}% προμήθεια στην πλατφόρμα.
             </p>
