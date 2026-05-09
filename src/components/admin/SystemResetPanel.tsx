@@ -142,6 +142,9 @@ export default function SystemResetPanel() {
         </div>
       </div>
 
+      <PricingModelExplainer />
+
+
       {/* Reset money to zero */}
       <div className="admin-card border-warning/40">
         <div className="p-3.5 flex items-start gap-3">
