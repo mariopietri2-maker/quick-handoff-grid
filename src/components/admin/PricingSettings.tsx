@@ -121,8 +121,19 @@ export default function PricingSettings() {
   }
 
   const previewKm = 3;
-  const driverPay = Math.max(pricing.min_pay, pricing.base_pay + pricing.per_km_rate * previewKm);
+  const driverDeliveryPay = Math.max(pricing.min_pay, pricing.base_pay + pricing.per_km_rate * previewKm);
   const customerFee = pricing.customer_base_fee + pricing.customer_per_km_fee * previewKm;
+
+  // Live preview of pool-health bonus formula
+  const rawBonus = pricing.base_pay + pricing.per_km_rate * previewKm;
+  const clampedBonus = Math.min(Math.max(rawBonus, pricing.min_pay), pricing.max_pay);
+  let healthLabel: 'υγιές'|'κανονικό'|'χαμηλό'|'κρίσιμο' = 'κανονικό';
+  let mult = 1.0;
+  if (poolBalance >= pricing.pool_healthy_threshold) { healthLabel = 'υγιές'; mult = 1; }
+  else if (poolBalance >= pricing.low_pool_threshold) { healthLabel = 'κανονικό'; mult = 1; }
+  else if (poolBalance >= pricing.pool_critical_threshold) { healthLabel = 'χαμηλό'; mult = pricing.pool_low_multiplier; }
+  else { healthLabel = 'κρίσιμο'; mult = pricing.pool_critical_multiplier; }
+  const finalBonus = Math.max(clampedBonus * mult, pricing.min_pay);
 
   return (
     <div className="space-y-4 max-w-4xl">
