@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import MonthCloseCard from './MonthCloseCard';
 import CustomOrderDialog from './CustomOrderDialog';
+import PoolHealthDashboard from './PoolHealthDashboard';
 import {
   TrendingUp, TrendingDown, Activity, ArrowDownCircle, Wallet,
   CheckCircle2, Loader2, Search, Download, AlertCircle, Info,
@@ -196,6 +197,7 @@ export default function LedgerPanel() {
       <Tabs defaultValue="overview" className="space-y-4">
         <TabsList className="flex flex-wrap h-auto gap-1">
           <TabsTrigger value="overview"><Activity className="h-3.5 w-3.5 mr-1" />Επισκόπηση</TabsTrigger>
+          <TabsTrigger value="pool"><TrendingUp className="h-3.5 w-3.5 mr-1" />Pool Health</TabsTrigger>
           <TabsTrigger value="ledger"><Wallet className="h-3.5 w-3.5 mr-1" />Κινήσεις</TabsTrigger>
           <TabsTrigger value="cash"><ArrowDownCircle className="h-3.5 w-3.5 mr-1" />Cash συμψηφισμοί
             {cashDebts && cashDebts.length > 0 && (
@@ -204,6 +206,10 @@ export default function LedgerPanel() {
           </TabsTrigger>
           <TabsTrigger value="month">Κλείσιμο μήνα</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="pool" className="m-0">
+          <PoolHealthDashboard />
+        </TabsContent>
 
         {/* OVERVIEW */}
         <TabsContent value="overview" className="space-y-4 m-0">
