@@ -46,14 +46,18 @@ export default function PricingSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState<PricingRow>({
-    base_pay: 3, per_km_rate: 0.5, min_pay: 3,
+    base_pay: 3, per_km_rate: 0.5, min_pay: 3, max_pay: 12,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
     platform_service_fee: 0.99,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
     default_commission_pct: 15, admin_share_pct: 5, driver_pool_pct_of_subtotal: 10,
+    pool_healthy_threshold: 500, low_pool_threshold: 50, pool_critical_threshold: 20,
+    pool_low_multiplier: 0.85, pool_critical_multiplier: 0.6,
+    subsidize_min_pay: false, pool_alert_enabled: true,
   });
+  const [poolBalance, setPoolBalance] = useState<number>(0);
 
   useEffect(() => {
     supabase.from('platform_settings').select('*').eq('id', 1).maybeSingle()
@@ -64,6 +68,7 @@ export default function PricingSettings() {
             base_pay: Number(d.base_pay ?? 3),
             per_km_rate: Number(d.per_km_rate ?? 0.5),
             min_pay: Number(d.min_pay ?? 3),
+            max_pay: Number(d.max_pay ?? 12),
             customer_base_fee: Number(d.customer_base_fee ?? 1.5),
             customer_per_km_fee: Number(d.customer_per_km_fee ?? 0.8),
             platform_service_fee: Number(d.platform_service_fee ?? 0.99),
@@ -77,10 +82,19 @@ export default function PricingSettings() {
             default_commission_pct: Math.max(15, Number(d.default_commission_pct ?? 15)),
             admin_share_pct: Math.max(5, Number(d.admin_share_pct ?? 5)),
             driver_pool_pct_of_subtotal: Math.max(10, Number(d.driver_pool_pct_of_subtotal ?? 10)),
+            pool_healthy_threshold: Number(d.pool_healthy_threshold ?? 500),
+            low_pool_threshold: Number(d.low_pool_threshold ?? 50),
+            pool_critical_threshold: Number(d.pool_critical_threshold ?? 20),
+            pool_low_multiplier: Number(d.pool_low_multiplier ?? 0.85),
+            pool_critical_multiplier: Number(d.pool_critical_multiplier ?? 0.6),
+            subsidize_min_pay: !!d.subsidize_min_pay,
+            pool_alert_enabled: d.pool_alert_enabled !== false,
           });
         }
         setLoading(false);
       });
+    (supabase as any).from('admin_treasury').select('platform_pool').eq('id', 1).maybeSingle()
+      .then(({ data }: any) => { if (data) setPoolBalance(Number(data.platform_pool ?? 0)); });
   }, []);
 
   const handleSave = async () => {
