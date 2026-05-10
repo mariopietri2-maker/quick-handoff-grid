@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent } from 'lucide-react';
+import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent, Activity, AlertTriangle } from 'lucide-react';
 import StorePricingOverrides from './StorePricingOverrides';
 import CommissionTiersPanel from './CommissionTiersPanel';
 
