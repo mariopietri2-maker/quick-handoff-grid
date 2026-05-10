@@ -14,6 +14,7 @@ interface PricingRow {
   base_pay: number;
   per_km_rate: number;
   min_pay: number;
+  max_pay: number;
   customer_base_fee: number;
   customer_per_km_fee: number;
   platform_service_fee: number;
@@ -27,6 +28,13 @@ interface PricingRow {
   default_commission_pct: number;
   admin_share_pct: number;
   driver_pool_pct_of_subtotal: number;
+  pool_healthy_threshold: number;
+  low_pool_threshold: number;
+  pool_critical_threshold: number;
+  pool_low_multiplier: number;
+  pool_critical_multiplier: number;
+  subsidize_min_pay: boolean;
+  pool_alert_enabled: boolean;
 }
 
 const DAYS = [
