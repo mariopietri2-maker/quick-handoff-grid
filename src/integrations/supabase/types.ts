@@ -1252,6 +1252,7 @@ export type Database = {
           distance_km: number | null
           driver_id: string | null
           driver_payout: number
+          driver_pool_bonus: number
           estimated_prep_time: number | null
           external_ref: string | null
           group_order_id: string | null
@@ -1290,6 +1291,7 @@ export type Database = {
           distance_km?: number | null
           driver_id?: string | null
           driver_payout?: number
+          driver_pool_bonus?: number
           estimated_prep_time?: number | null
           external_ref?: string | null
           group_order_id?: string | null
@@ -1328,6 +1330,7 @@ export type Database = {
           distance_km?: number | null
           driver_id?: string | null
           driver_payout?: number
+          driver_pool_bonus?: number
           estimated_prep_time?: number | null
           external_ref?: string | null
           group_order_id?: string | null
@@ -1448,6 +1451,7 @@ export type Database = {
           maintenance_message: string | null
           maintenance_mode: boolean
           max_cash_cap: number
+          max_pay: number
           min_pay: number
           motorcycle_multiplier: number
           peak_end_hour: number
@@ -1456,12 +1460,18 @@ export type Database = {
           peak_weekdays: number[]
           per_km_rate: number
           platform_service_fee: number
+          pool_alert_enabled: boolean
+          pool_critical_multiplier: number
+          pool_critical_threshold: number
+          pool_healthy_threshold: number
+          pool_low_multiplier: number
           show_stores_on_driver_map: boolean
           sla_agent_scaling: boolean
           sla_breach_seconds: number
           sla_tickets_per_agent: number
           sla_urgent_seconds: number
           sla_warn_seconds: number
+          subsidize_min_pay: boolean
           updated_at: string
         }
         Insert: {
@@ -1493,6 +1503,7 @@ export type Database = {
           maintenance_message?: string | null
           maintenance_mode?: boolean
           max_cash_cap?: number
+          max_pay?: number
           min_pay?: number
           motorcycle_multiplier?: number
           peak_end_hour?: number
@@ -1501,12 +1512,18 @@ export type Database = {
           peak_weekdays?: number[]
           per_km_rate?: number
           platform_service_fee?: number
+          pool_alert_enabled?: boolean
+          pool_critical_multiplier?: number
+          pool_critical_threshold?: number
+          pool_healthy_threshold?: number
+          pool_low_multiplier?: number
           show_stores_on_driver_map?: boolean
           sla_agent_scaling?: boolean
           sla_breach_seconds?: number
           sla_tickets_per_agent?: number
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
+          subsidize_min_pay?: boolean
           updated_at?: string
         }
         Update: {
@@ -1538,6 +1555,7 @@ export type Database = {
           maintenance_message?: string | null
           maintenance_mode?: boolean
           max_cash_cap?: number
+          max_pay?: number
           min_pay?: number
           motorcycle_multiplier?: number
           peak_end_hour?: number
@@ -1546,12 +1564,18 @@ export type Database = {
           peak_weekdays?: number[]
           per_km_rate?: number
           platform_service_fee?: number
+          pool_alert_enabled?: boolean
+          pool_critical_multiplier?: number
+          pool_critical_threshold?: number
+          pool_healthy_threshold?: number
+          pool_low_multiplier?: number
           show_stores_on_driver_map?: boolean
           sla_agent_scaling?: boolean
           sla_breach_seconds?: number
           sla_tickets_per_agent?: number
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
+          subsidize_min_pay?: boolean
           updated_at?: string
         }
         Relationships: []
@@ -2529,6 +2553,7 @@ export type Database = {
       admin_wipe_all_data: { Args: never; Returns: undefined }
       admin_wipe_transactions: { Args: never; Returns: Json }
       commission_pct_for_amount: { Args: { p_amount: number }; Returns: number }
+      compute_driver_pool_bonus: { Args: { _order_id: string }; Returns: Json }
       compute_order_split: { Args: { _order_id: string }; Returns: Json }
       count_active_support_agents: { Args: never; Returns: number }
       create_custom_order:

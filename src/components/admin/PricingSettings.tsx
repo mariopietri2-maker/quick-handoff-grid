@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent } from 'lucide-react';
+import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent, Activity, AlertTriangle } from 'lucide-react';
 import StorePricingOverrides from './StorePricingOverrides';
 import CommissionTiersPanel from './CommissionTiersPanel';
 
@@ -14,6 +14,7 @@ interface PricingRow {
   base_pay: number;
   per_km_rate: number;
   min_pay: number;
+  max_pay: number;
   customer_base_fee: number;
   customer_per_km_fee: number;
   platform_service_fee: number;
@@ -27,6 +28,13 @@ interface PricingRow {
   default_commission_pct: number;
   admin_share_pct: number;
   driver_pool_pct_of_subtotal: number;
+  pool_healthy_threshold: number;
+  low_pool_threshold: number;
+  pool_critical_threshold: number;
+  pool_low_multiplier: number;
+  pool_critical_multiplier: number;
+  subsidize_min_pay: boolean;
+  pool_alert_enabled: boolean;
 }
 
 const DAYS = [
@@ -38,14 +46,18 @@ export default function PricingSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState<PricingRow>({
-    base_pay: 3, per_km_rate: 0.5, min_pay: 3,
+    base_pay: 3, per_km_rate: 0.5, min_pay: 3, max_pay: 12,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
     platform_service_fee: 0.99,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
     peak_weekdays: [1, 2, 3, 4, 5, 6, 7],
     bike_multiplier: 1.0, motorcycle_multiplier: 1.0, car_multiplier: 1.0,
     default_commission_pct: 15, admin_share_pct: 5, driver_pool_pct_of_subtotal: 10,
+    pool_healthy_threshold: 500, low_pool_threshold: 50, pool_critical_threshold: 20,
+    pool_low_multiplier: 0.85, pool_critical_multiplier: 0.6,
+    subsidize_min_pay: false, pool_alert_enabled: true,
   });
+  const [poolBalance, setPoolBalance] = useState<number>(0);
 
   useEffect(() => {
     supabase.from('platform_settings').select('*').eq('id', 1).maybeSingle()
@@ -56,6 +68,7 @@ export default function PricingSettings() {
             base_pay: Number(d.base_pay ?? 3),
             per_km_rate: Number(d.per_km_rate ?? 0.5),
             min_pay: Number(d.min_pay ?? 3),
+            max_pay: Number(d.max_pay ?? 12),
             customer_base_fee: Number(d.customer_base_fee ?? 1.5),
             customer_per_km_fee: Number(d.customer_per_km_fee ?? 0.8),
             platform_service_fee: Number(d.platform_service_fee ?? 0.99),
@@ -69,10 +82,19 @@ export default function PricingSettings() {
             default_commission_pct: Math.max(15, Number(d.default_commission_pct ?? 15)),
             admin_share_pct: Math.max(5, Number(d.admin_share_pct ?? 5)),
             driver_pool_pct_of_subtotal: Math.max(10, Number(d.driver_pool_pct_of_subtotal ?? 10)),
+            pool_healthy_threshold: Number(d.pool_healthy_threshold ?? 500),
+            low_pool_threshold: Number(d.low_pool_threshold ?? 50),
+            pool_critical_threshold: Number(d.pool_critical_threshold ?? 20),
+            pool_low_multiplier: Number(d.pool_low_multiplier ?? 0.85),
+            pool_critical_multiplier: Number(d.pool_critical_multiplier ?? 0.6),
+            subsidize_min_pay: !!d.subsidize_min_pay,
+            pool_alert_enabled: d.pool_alert_enabled !== false,
           });
         }
         setLoading(false);
       });
+    (supabase as any).from('admin_treasury').select('platform_pool').eq('id', 1).maybeSingle()
+      .then(({ data }: any) => { if (data) setPoolBalance(Number(data.platform_pool ?? 0)); });
   }, []);
 
   const handleSave = async () => {
@@ -99,8 +121,19 @@ export default function PricingSettings() {
   }
 
   const previewKm = 3;
-  const driverPay = Math.max(pricing.min_pay, pricing.base_pay + pricing.per_km_rate * previewKm);
+  const driverDeliveryPay = Math.max(pricing.min_pay, pricing.base_pay + pricing.per_km_rate * previewKm);
   const customerFee = pricing.customer_base_fee + pricing.customer_per_km_fee * previewKm;
+
+  // Live preview of pool-health bonus formula
+  const rawBonus = pricing.base_pay + pricing.per_km_rate * previewKm;
+  const clampedBonus = Math.min(Math.max(rawBonus, pricing.min_pay), pricing.max_pay);
+  let healthLabel: 'υγιές'|'κανονικό'|'χαμηλό'|'κρίσιμο' = 'κανονικό';
+  let mult = 1.0;
+  if (poolBalance >= pricing.pool_healthy_threshold) { healthLabel = 'υγιές'; mult = 1; }
+  else if (poolBalance >= pricing.low_pool_threshold) { healthLabel = 'κανονικό'; mult = 1; }
+  else if (poolBalance >= pricing.pool_critical_threshold) { healthLabel = 'χαμηλό'; mult = pricing.pool_low_multiplier; }
+  else { healthLabel = 'κρίσιμο'; mult = pricing.pool_critical_multiplier; }
+  const finalBonus = Math.max(clampedBonus * mult, pricing.min_pay);
 
   return (
     <div className="space-y-4 max-w-4xl">
@@ -121,14 +154,66 @@ export default function PricingSettings() {
 
         <TabsContent value="driver" className="space-y-4 mt-4">
           <Card>
-            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Αμοιβή Οδηγού</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Αμοιβή Οδηγού (delivery fee)</CardTitle></CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
                 <Field label="Βασική Αμοιβή (€)" value={pricing.base_pay} onChange={v => setPricing(p => ({ ...p, base_pay: v }))} hint="Σταθερό ανά παράδοση" />
                 <Field label="Χρέωση ανά χλμ (€)" value={pricing.per_km_rate} onChange={v => setPricing(p => ({ ...p, per_km_rate: v }))} hint="Επιπλέον €/km" icon={MapPin} />
                 <Field label="Ελάχιστη Αμοιβή (€)" value={pricing.min_pay} onChange={v => setPricing(p => ({ ...p, min_pay: v }))} hint="Εγγυημένο ελάχιστο" icon={Shield} />
+                <Field label="Μέγιστη Αμοιβή (€)" value={pricing.max_pay} onChange={v => setPricing(p => ({ ...p, max_pay: v }))} hint="Cap ανά παράδοση" />
               </div>
-              <Preview label={`Παράδοση ${previewKm} χλμ`} amount={driverPay} note={`€${pricing.base_pay.toFixed(2)} + ${previewKm} × €${pricing.per_km_rate.toFixed(2)}`} />
+              <Preview label={`Delivery fee — ${previewKm} χλμ`} amount={driverDeliveryPay} note={`€${pricing.base_pay.toFixed(2)} + ${previewKm} × €${pricing.per_km_rate.toFixed(2)}`} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading text-base flex items-center gap-2">
+                <Activity className="h-4 w-4 text-primary" />
+                Bonus από Driver Pool — Self-Balancing
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="rounded-lg border border-border bg-muted/40 p-3 text-xs leading-relaxed text-muted-foreground">
+                Πέρα από το delivery fee, κάθε ολοκληρωμένη παράδοση πληρώνει στον οδηγό ένα <b>bonus</b> από το 10% Driver Pool.
+                Ο τύπος είναι <code>(base + per_km × χλμ)</code>, clamped σε [min, max], πολλαπλασιασμένο επί τον <b>pool-health multiplier</b>.
+                Όταν το pool αδυνατίζει, τα bonus μειώνονται αυτόματα — ποτέ όμως κάτω από το <b>Ελάχιστη Αμοιβή</b> που ορίζεις.
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-4">
+                <Field label="Healthy threshold (€)" value={pricing.pool_healthy_threshold} onChange={v => setPricing(p => ({ ...p, pool_healthy_threshold: v }))} hint="Πάνω από αυτό = full payout" />
+                <Field label="Low threshold (€)" value={pricing.low_pool_threshold} onChange={v => setPricing(p => ({ ...p, low_pool_threshold: v }))} hint="Κάτω από αυτό = alert + scaling" icon={AlertTriangle} />
+                <Field label="Critical threshold (€)" value={pricing.pool_critical_threshold} onChange={v => setPricing(p => ({ ...p, pool_critical_threshold: v }))} hint="Κάτω από αυτό = critical multiplier" />
+                <Field label="Low ×" value={pricing.pool_low_multiplier} onChange={v => setPricing(p => ({ ...p, pool_low_multiplier: v }))} hint="0–1, π.χ. 0.85" step="0.05" />
+                <Field label="Critical ×" value={pricing.pool_critical_multiplier} onChange={v => setPricing(p => ({ ...p, pool_critical_multiplier: v }))} hint="0–1, π.χ. 0.6" step="0.05" />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <label className="flex items-start gap-2 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/40">
+                  <input type="checkbox" className="mt-1" checked={pricing.subsidize_min_pay} onChange={e => setPricing(p => ({ ...p, subsidize_min_pay: e.target.checked }))} />
+                  <div className="text-xs">
+                    <p className="font-bold text-foreground">Admin καλύπτει το min όταν αδειάζει το pool</p>
+                    <p className="text-muted-foreground mt-0.5">Αν το pool δεν φτάνει, το admin bag πληρώνει τη διαφορά μέχρι το ελάχιστο. Καταγράφεται ως subsidy.</p>
+                  </div>
+                </label>
+                <label className="flex items-start gap-2 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/40">
+                  <input type="checkbox" className="mt-1" checked={pricing.pool_alert_enabled} onChange={e => setPricing(p => ({ ...p, pool_alert_enabled: e.target.checked }))} />
+                  <div className="text-xs">
+                    <p className="font-bold text-foreground">Ενεργοποίηση alert χαμηλού pool</p>
+                    <p className="text-muted-foreground mt-0.5">Στέλνει εγγραφή στο Activity Log όταν το pool πέφτει κάτω από το low threshold (max 1 ανά 24h).</p>
+                  </div>
+                </label>
+              </div>
+
+              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm space-y-1.5">
+                <p className="text-xs text-muted-foreground">Live preview — πραγματικό pool: <b className="text-foreground">€{poolBalance.toFixed(2)}</b> · κατάσταση: <b className={
+                  healthLabel === 'υγιές' ? 'text-emerald-600' :
+                  healthLabel === 'κανονικό' ? 'text-foreground' :
+                  healthLabel === 'χαμηλό' ? 'text-amber-600' : 'text-destructive'
+                }>{healthLabel}</b> · multiplier: <b>×{mult.toFixed(2)}</b></p>
+                <p>Παράδοση {previewKm} χλμ → bonus = clamp(€{rawBonus.toFixed(2)}, €{pricing.min_pay}, €{pricing.max_pay}) × {mult.toFixed(2)} = <b className="text-primary">€{finalBonus.toFixed(2)}</b></p>
+                <p className="text-[11px] text-muted-foreground">Σύνολο για τον οδηγό: delivery fee €{driverDeliveryPay.toFixed(2)} + bonus €{finalBonus.toFixed(2)} + tip = <b>€{(driverDeliveryPay + finalBonus).toFixed(2)}</b> (χωρίς tip).</p>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
