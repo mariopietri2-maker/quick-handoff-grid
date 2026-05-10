@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/select';
 import MonthCloseCard from './MonthCloseCard';
 import CustomOrderDialog from './CustomOrderDialog';
+import PoolHealthDashboard from './PoolHealthDashboard';
 import {
   TrendingUp, TrendingDown, Activity, ArrowDownCircle, Wallet,
   CheckCircle2, Loader2, Search, Download, AlertCircle, Info,
