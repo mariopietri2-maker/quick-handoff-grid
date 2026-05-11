@@ -492,6 +492,12 @@ export default function MoneyBagsPanel() {
               <div className="space-y-1 pt-1.5 border-t border-border/50 text-[11px]">
                 <RowWithReset label="Admin (5%)" value={fmt(adminBag)} tone="text-amber-600" onReset={() => setPendingReset('admin')} />
                 <RowWithReset label="Platform pool" value={fmt(platformPool)} onReset={() => setPendingReset('pool')} />
+                <div className="pt-1">
+                  <PoolInjectControl onDone={() => {
+                    qc.invalidateQueries({ queryKey: ['admin-treasury'] });
+                    qc.invalidateQueries({ queryKey: ['treasury-health'] });
+                  }} />
+                </div>
                 <Row label="Driver top-ups" value={fmt(treasury?.lifetime_driver_topup)} tone="text-primary" />
               </div>
             </div>
