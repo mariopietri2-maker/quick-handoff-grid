@@ -492,6 +492,12 @@ export default function MoneyBagsPanel() {
               <div className="space-y-1 pt-1.5 border-t border-border/50 text-[11px]">
                 <RowWithReset label="Admin (5%)" value={fmt(adminBag)} tone="text-amber-600" onReset={() => setPendingReset('admin')} />
                 <RowWithReset label="Platform pool" value={fmt(platformPool)} onReset={() => setPendingReset('pool')} />
+                <div className="pt-1">
+                  <PoolInjectControl onDone={() => {
+                    qc.invalidateQueries({ queryKey: ['admin-treasury'] });
+                    qc.invalidateQueries({ queryKey: ['treasury-health'] });
+                  }} />
+                </div>
                 <Row label="Driver top-ups" value={fmt(treasury?.lifetime_driver_topup)} tone="text-primary" />
               </div>
             </div>
@@ -784,3 +790,54 @@ function RowWithReset({ label, value, tone, onReset }: { label: string; value: s
     </div>
   );
 }
+
+function PoolInjectControl({ onDone }: { onDone: () => void }) {
+  const [open, setOpen] = useState(false);
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [busy, setBusy] = useState(false);
+
+  const submit = async (sign: 1 | -1) => {
+    const n = parseFloat(amount);
+    if (!isFinite(n) || n <= 0) { toast.error('Δώσε έγκυρο ποσό'); return; }
+    setBusy(true);
+    const { data, error } = await (supabase as any).rpc('admin_inject_pool', {
+      p_amount: sign * n,
+      p_note: note?.trim() || null,
+    });
+    setBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(`Νέο υπόλοιπο pool: €${Number(data?.new_balance ?? 0).toFixed(2)}`);
+    setAmount(''); setNote(''); setOpen(false);
+    onDone();
+  };
+
+  if (!open) {
+    return (
+      <Button size="sm" variant="outline" className="w-full h-7 text-[11px] gap-1"
+        onClick={() => setOpen(true)}>
+        <Banknote className="h-3 w-3" /> Inject ποσό στο Driver Pool
+      </Button>
+    );
+  }
+  return (
+    <div className="rounded-md border border-border bg-muted/30 p-2 space-y-1.5">
+      <input type="number" min="0" step="0.01" placeholder="Ποσό €"
+        value={amount} onChange={e => setAmount(e.target.value)}
+        className="w-full h-7 px-2 text-xs rounded border border-border bg-background tabular-nums" />
+      <input type="text" placeholder="Σημείωση (προαιρ.)"
+        value={note} onChange={e => setNote(e.target.value)}
+        className="w-full h-7 px-2 text-xs rounded border border-border bg-background" />
+      <div className="flex gap-1">
+        <Button size="sm" className="flex-1 h-7 text-[11px]" disabled={busy} onClick={() => submit(1)}>
+          {busy ? <Loader2 className="h-3 w-3 animate-spin" /> : '+ Add'}
+        </Button>
+        <Button size="sm" variant="outline" className="flex-1 h-7 text-[11px]" disabled={busy} onClick={() => submit(-1)}>
+          − Withdraw
+        </Button>
+        <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => setOpen(false)}>×</Button>
+      </div>
+    </div>
+  );
+}
+

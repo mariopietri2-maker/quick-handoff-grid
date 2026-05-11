@@ -2520,6 +2520,10 @@ export type Database = {
       }
       admin_auto_close_previous_month: { Args: never; Returns: string }
       admin_close_month: { Args: { p_period_start?: string }; Returns: string }
+      admin_inject_pool: {
+        Args: { p_amount: number; p_note?: string }
+        Returns: Json
+      }
       admin_payout_store: {
         Args: { p_amount: number; p_description?: string; p_store_id: string }
         Returns: undefined
