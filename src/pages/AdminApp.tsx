@@ -13,7 +13,9 @@ import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, Trending
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import { cn } from '@/lib/utils';
 // Eagerly load only the default landing tab — everything else is lazy.
-import AdminOverview from '@/components/admin/AdminOverview';
+import OpsHome from '@/components/admin/OpsHome';
+const AdminOverview = lazy(() => import('@/components/admin/AdminOverview'));
+const OrdersKanban  = lazy(() => import('@/components/admin/OrdersKanban'));
 
 // Lazy-load every other admin panel so the admin shell stays small and fast.
 // Each panel only loads when its tab is opened.
@@ -158,6 +160,8 @@ export default function AdminApp() {
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
+        return <OpsHome />;
+      case 'overview_legacy':
         return (
           <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
         );
@@ -170,6 +174,8 @@ export default function AdminApp() {
       case 'audit':
         return <AdminAuditTab />;
       case 'orders':
+        return <OrdersKanban />;
+      case 'orders_table':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} />;
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
