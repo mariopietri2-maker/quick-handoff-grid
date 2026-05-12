@@ -160,6 +160,8 @@ export default function AdminApp() {
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
+        return <OpsHome />;
+      case 'overview_legacy':
         return (
           <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
         );
@@ -172,6 +174,8 @@ export default function AdminApp() {
       case 'audit':
         return <AdminAuditTab />;
       case 'orders':
+        return <OrdersKanban />;
+      case 'orders_table':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} />;
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;

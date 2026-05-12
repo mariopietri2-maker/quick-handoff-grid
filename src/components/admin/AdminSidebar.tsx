@@ -34,7 +34,8 @@ export const NAV_SECTIONS = [
     accentBg: 'bg-info/10',
     defaultTab: 'overview',
     tabs: [
-      { id: 'overview', label: 'Επισκόπηση' },
+      { id: 'overview', label: 'Live Ops' },
+      { id: 'overview_legacy', label: 'Επισκόπηση' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },
       { id: 'money_bags', label: 'Ταμείο · Money Bags' },
       { id: 'live_ops', label: 'Live Map' },
@@ -49,7 +50,8 @@ export const NAV_SECTIONS = [
     accentBg: 'bg-primary/10',
     defaultTab: 'orders',
     tabs: [
-      { id: 'orders', label: 'Λίστα' },
+      { id: 'orders', label: 'Pipeline (Kanban)' },
+      { id: 'orders_table', label: 'Πίνακας' },
       { id: 'external_orders', label: 'eFood / Wolt' },
     ],
   },
