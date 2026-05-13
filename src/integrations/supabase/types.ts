@@ -3080,6 +3080,7 @@ export type Database = {
         Returns: number
       }
       run_basket_distribution: { Args: { _rule_id: string }; Returns: Json }
+      run_due_basket_distributions: { Args: never; Returns: number }
       set_order_dispatch: {
         Args: {
           p_dispatch_at: string

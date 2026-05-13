@@ -93,10 +93,10 @@ export default function SurgeMap() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3">
             <div className="lg:col-span-2">
               <Label className="text-xs">Ζώνη</Label>
-              <Select value={zoneId} onValueChange={setZoneId}>
+              <Select value={zoneId || '__all__'} onValueChange={(v) => setZoneId(v === '__all__' ? '' : v)}>
                 <SelectTrigger className="h-9 mt-1"><SelectValue placeholder="Όλες οι ζώνες" /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">Όλες οι ζώνες</SelectItem>
+                  <SelectItem value="__all__">Όλες οι ζώνες</SelectItem>
                   {(zones.data ?? []).map(z => <SelectItem key={z.id} value={z.id}>{z.name}</SelectItem>)}
                 </SelectContent>
               </Select>
