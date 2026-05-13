@@ -43,7 +43,7 @@ export function useStoreOrders(storeId: string | null) {
     if (!storeId) return;
 
     const channel = supabase
-      .channel('store-orders')
+      .channel(`store-orders-${storeId}`)
       .on(
         'postgres_changes',
         {
