@@ -43,7 +43,7 @@ export function useStoreOrders(storeId: string | null) {
     if (!storeId) return;
 
     const channel = supabase
-      .channel('store-orders')
+      .channel(`store-orders-${storeId}`)
       .on(
         'postgres_changes',
         {
@@ -342,7 +342,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     };
 
     const ordersChannel = supabase
-      .channel('driver-orders')
+      .channel(`driver-orders-${user.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
