@@ -15,6 +15,38 @@ interface StoreSettingsProps {
 
 export function StoreSettings({ storeId }: StoreSettingsProps) {
   const { store, updateStore } = useStore();
+  const [draft, setDraft] = useState({ name: '', address: '', phone: '', image_url: '' });
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (store) {
+      setDraft({
+        name: store.name ?? '',
+        address: store.address ?? '',
+        phone: store.phone ?? '',
+        image_url: store.image_url ?? '',
+      });
+    }
+  }, [store?.id, store?.name, store?.address, store?.phone, store?.image_url]);
+
+  const dirty = !!store && (
+    draft.name !== (store.name ?? '') ||
+    draft.address !== (store.address ?? '') ||
+    draft.phone !== (store.phone ?? '') ||
+    draft.image_url !== (store.image_url ?? '')
+  );
+
+  const handleSave = async () => {
+    if (!dirty) return;
+    setSaving(true);
+    await updateStore({
+      name: draft.name.trim(),
+      address: draft.address.trim(),
+      phone: draft.phone.trim() || null,
+      image_url: draft.image_url.trim() || null,
+    } as any);
+    setSaving(false);
+  };
 
   if (!store) {
     return (
