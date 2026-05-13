@@ -146,15 +146,15 @@ function SidebarBody({
 
   return (
     <>
-      {/* Brand */}
-      <div className="h-14 flex items-center px-4 border-b border-border shrink-0">
-        <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center shrink-0 shadow-sm">
-          <Shield className="h-4 w-4 text-primary-foreground" />
+      {/* Brand — corporate wordmark */}
+      <div className="h-16 flex items-center px-4 border-b border-border shrink-0 bg-gradient-to-b from-card to-muted/20">
+        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary via-primary to-primary/60 flex items-center justify-center shrink-0 shadow-md ring-1 ring-primary/20">
+          <Shield className="h-[18px] w-[18px] text-primary-foreground" strokeWidth={2.5} />
         </div>
         {!collapsed && (
           <div className="ml-3 overflow-hidden">
-            <p className="font-heading font-bold text-sm leading-tight truncate">Admin</p>
-            <p className="text-[10.5px] text-muted-foreground truncate leading-tight">Πλατφόρμα</p>
+            <p className="font-heading font-extrabold text-[13.5px] leading-tight tracking-tight truncate">FRESH DELIVERY</p>
+            <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground truncate leading-tight font-semibold mt-0.5">Control Center</p>
           </div>
         )}
       </div>
