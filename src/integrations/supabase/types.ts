@@ -215,6 +215,145 @@ export type Database = {
         }
         Relationships: []
       }
+      basket_distribution_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          distribution_id: string
+          driver_id: string
+          id: string
+          metadata: Json
+          reason: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          distribution_id: string
+          driver_id: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          distribution_id?: string
+          driver_id?: string
+          id?: string
+          metadata?: Json
+          reason?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "basket_distribution_payouts_distribution_id_fkey"
+            columns: ["distribution_id"]
+            isOneToOne: false
+            referencedRelation: "basket_distributions"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      basket_distribution_rules: {
+        Row: {
+          amount_mode: string
+          amount_value: number
+          config: Json
+          created_at: string
+          created_by: string | null
+          id: string
+          is_active: boolean
+          kind: string
+          last_run_at: string | null
+          name: string
+          next_run_at: string | null
+          schedule: string
+          updated_at: string
+        }
+        Insert: {
+          amount_mode?: string
+          amount_value?: number
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          kind: string
+          last_run_at?: string | null
+          name: string
+          next_run_at?: string | null
+          schedule?: string
+          updated_at?: string
+        }
+        Update: {
+          amount_mode?: string
+          amount_value?: number
+          config?: Json
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          is_active?: boolean
+          kind?: string
+          last_run_at?: string | null
+          name?: string
+          next_run_at?: string | null
+          schedule?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      basket_distributions: {
+        Row: {
+          basket_balance_after: number | null
+          basket_balance_before: number | null
+          created_at: string
+          created_by: string | null
+          id: string
+          notes: string | null
+          recipient_count: number
+          rule_id: string | null
+          rule_name: string | null
+          snapshot: Json
+          total_amount: number
+          triggered_by: string
+        }
+        Insert: {
+          basket_balance_after?: number | null
+          basket_balance_before?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          recipient_count?: number
+          rule_id?: string | null
+          rule_name?: string | null
+          snapshot?: Json
+          total_amount?: number
+          triggered_by?: string
+        }
+        Update: {
+          basket_balance_after?: number | null
+          basket_balance_before?: number | null
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          notes?: string | null
+          recipient_count?: number
+          rule_id?: string | null
+          rule_name?: string | null
+          snapshot?: Json
+          total_amount?: number
+          triggered_by?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "basket_distributions_rule_id_fkey"
+            columns: ["rule_id"]
+            isOneToOne: false
+            referencedRelation: "basket_distribution_rules"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       canned_replies: {
         Row: {
           body: string
@@ -2578,6 +2717,33 @@ export type Database = {
       }
     }
     Views: {
+      basket_health: {
+        Row: {
+          current_balance: number | null
+          distributed_30d: number | null
+          distributed_7d: number | null
+          last_distribution_at: string | null
+          lifetime_distributed: number | null
+          lifetime_in: number | null
+        }
+        Insert: {
+          current_balance?: number | null
+          distributed_30d?: never
+          distributed_7d?: never
+          last_distribution_at?: never
+          lifetime_distributed?: never
+          lifetime_in?: number | null
+        }
+        Update: {
+          current_balance?: number | null
+          distributed_30d?: never
+          distributed_7d?: never
+          last_distribution_at?: never
+          lifetime_distributed?: never
+          lifetime_in?: number | null
+        }
+        Relationships: []
+      }
       platform_settings_public: {
         Row: {
           assignment_mode: string | null
@@ -2913,6 +3079,7 @@ export type Database = {
         Args: { p_food_total: number; p_store_id: string }
         Returns: number
       }
+      run_basket_distribution: { Args: { _rule_id: string }; Returns: Json }
       set_order_dispatch: {
         Args: {
           p_dispatch_at: string
