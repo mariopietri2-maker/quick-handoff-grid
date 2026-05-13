@@ -35,10 +35,6 @@ export const NAV_SECTIONS = [
     defaultTab: 'overview',
     tabs: [
       { id: 'overview', label: 'Live Ops' },
-      { id: 'overview_legacy', label: 'Επισκόπηση' },
-      { id: 'system_health', label: 'Κατάσταση συστήματος' },
-      { id: 'money_bags', label: 'Ταμείο · Money Bags' },
-      { id: 'live_ops', label: 'Live Map' },
       { id: 'analytics', label: 'Αναλυτικά' },
     ],
   },
@@ -77,8 +73,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'drivers',
     tabs: [
       { id: 'drivers', label: 'Οδηγοί' },
-      { id: 'driver_map_settings', label: 'Χάρτης' },
-      { id: 'driver_map_editor', label: 'Επεξεργασία Χάρτη' },
+      { id: 'driver_map_editor', label: 'Χάρτης οδηγών' },
     ],
   },
   {
@@ -111,7 +106,8 @@ export const NAV_SECTIONS = [
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
       { id: 'feature_flags', label: 'Feature flags' },
-      { id: 'overrides', label: 'Surge / Overrides' },
+      { id: 'overrides', label: 'Operational overrides' },
+      { id: 'system_health', label: 'Κατάσταση συστήματος' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
       { id: 'audit', label: 'Audit log' },
