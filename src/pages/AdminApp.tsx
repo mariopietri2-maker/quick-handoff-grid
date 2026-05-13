@@ -195,6 +195,12 @@ export default function AdminApp() {
         return <DriverPayablesPanel />;
       case 'money_bags':
         return <MoneyBagsPanel />;
+      case 'ledger':
+        return <LedgerExplorer />;
+      case 'driver_basket':
+        return <BasketDashboard />;
+      case 'surge':
+        return <SurgeMap />;
       case 'pricing':
         return <PricingSettings />;
       case 'support_roles':
