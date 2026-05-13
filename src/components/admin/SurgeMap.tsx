@@ -60,7 +60,7 @@ export default function SurgeMap() {
     if (!dur || dur < 5) return toast.error('Διάρκεια ≥ 5 λεπτά');
     const ends = new Date(Date.now() + dur * 60_000).toISOString();
     const { error } = await (supabase as any).from('surge_overrides').insert({
-      zone_id: zoneId || null, multiplier: m, ends_at: ends, reason: reason || null,
+      zone_id: zoneId || null, multiplier: m, expires_at: ends, reason: reason || null,
     });
     if (error) return toast.error(error.message);
     toast.success('Surge override ενεργό');
@@ -75,7 +75,7 @@ export default function SurgeMap() {
     qc.invalidateQueries({ queryKey: ['surge-overrides'] });
   };
 
-  const activeOverrides = (overrides.data ?? []).filter((o: any) => !o.ends_at || new Date(o.ends_at) > new Date());
+  const activeOverrides = (overrides.data ?? []).filter((o: any) => !o.expires_at || new Date(o.expires_at) > new Date());
 
   return (
     <div className="space-y-3">
@@ -139,7 +139,7 @@ export default function SurgeMap() {
                     <div className="flex items-center gap-2 flex-wrap">
                       <span className="text-sm font-semibold">{zoneName(o.zone_id)}</span>
                       <Badge className="bg-warning/15 text-warning border-warning/30">×{Number(o.multiplier).toFixed(2)}</Badge>
-                      {o.ends_at && <Badge variant="outline" className="text-[10px]">λήγει {formatDistanceToNow(new Date(o.ends_at), { addSuffix: true })}</Badge>}
+                      {o.expires_at && <Badge variant="outline" className="text-[10px]">λήγει {formatDistanceToNow(new Date(o.expires_at), { addSuffix: true })}</Badge>}
                     </div>
                     {o.reason && <p className="text-[11px] text-muted-foreground mt-0.5">{o.reason}</p>}
                   </div>
