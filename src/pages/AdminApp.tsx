@@ -10,7 +10,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
 import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity } from 'lucide-react';
-import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from '@/components/admin/AdminSidebar';
+import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
 // Eagerly load only the default landing tab — everything else is lazy.
