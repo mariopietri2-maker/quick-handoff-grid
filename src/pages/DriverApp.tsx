@@ -21,6 +21,7 @@ import { useDriverOrders } from '@/hooks/useOrders';
 import { useDriverState } from '@/hooks/useDriverState';
 import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
+import SurgeStatusBadge from '@/components/driver/SurgeStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
 import { TurnByTurnBanner } from '@/components/driver/TurnByTurnBanner';
