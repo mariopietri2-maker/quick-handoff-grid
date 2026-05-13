@@ -1983,6 +1983,39 @@ export type Database = {
         }
         Relationships: []
       }
+      service_zones: {
+        Row: {
+          center_latitude: number
+          center_longitude: number
+          city: string
+          created_at: string
+          id: string
+          is_active: boolean
+          radius_km: number
+          updated_at: string
+        }
+        Insert: {
+          center_latitude: number
+          center_longitude: number
+          city: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          radius_km?: number
+          updated_at?: string
+        }
+        Update: {
+          center_latitude?: number
+          center_longitude?: number
+          city?: string
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          radius_km?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       store_auto_accept_rules: {
         Row: {
           default_prep_minutes: number
@@ -3020,6 +3053,10 @@ export type Database = {
           _role: Database["public"]["Enums"]["app_role"]
           _user_id: string
         }
+        Returns: boolean
+      }
+      is_point_in_any_zone: {
+        Args: { p_lat: number; p_lng: number }
         Returns: boolean
       }
       is_support_or_admin: { Args: { _user_id: string }; Returns: boolean }
