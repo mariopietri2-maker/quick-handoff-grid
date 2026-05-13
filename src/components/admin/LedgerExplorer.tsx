@@ -65,6 +65,8 @@ export default function LedgerExplorer() {
 
   return (
     <div className="space-y-3">
+      <ReconciliationPanel />
+
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <SummaryCard label="Κινήσεις (τελευταίες 300)" value={String(data?.length ?? 0)} tone="text-foreground" />
         <SummaryCard label="Σύνολο εισροών" value={`€${totals.in.toFixed(2)}`} tone="text-success" />
