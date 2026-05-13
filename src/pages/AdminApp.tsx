@@ -264,15 +264,17 @@ export default function AdminApp() {
               <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setMobileMenuOpen(true)}>
                 <Menu className="h-4 w-4" />
               </Button>
-              <div className="relative hidden sm:block">
-                <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-                <Input
-                  placeholder="Αναζήτηση…"
-                  value={searchQuery}
-                  onChange={e => setSearchQuery(e.target.value)}
-                  className="pl-8 w-64 h-8 bg-muted/50 border-border/60 text-[12.5px] focus-visible:ring-1"
-                />
-              </div>
+              <button
+                onClick={() => setPaletteOpen(true)}
+                className="relative hidden sm:flex items-center gap-2 pl-2.5 pr-2 h-8 w-64 rounded-md bg-muted/50 border border-border/60 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                <Search className="h-3.5 w-3.5" />
+                <span className="flex-1 text-left">Αναζήτηση & μετάβαση…</span>
+                <kbd className="hidden md:inline-flex h-5 px-1.5 items-center rounded border border-border bg-background text-[10px] font-mono text-muted-foreground">⌘K</kbd>
+              </button>
+              <Button variant="ghost" size="icon" className="sm:hidden h-8 w-8" onClick={() => setPaletteOpen(true)}>
+                <Search className="h-4 w-4" />
+              </Button>
             </div>
             <div className="flex items-center gap-1">
               <Button variant="ghost" size="icon" className="h-8 w-8 relative">
