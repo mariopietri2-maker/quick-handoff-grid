@@ -87,11 +87,13 @@ export const NAV_SECTIONS = [
     icon: Wallet,
     accent: 'text-success',
     accentBg: 'bg-success/10',
-    defaultTab: 'store_payables',
+    defaultTab: 'ledger',
     tabs: [
+      { id: 'ledger', label: 'Καθολικό κινήσεων' },
+      { id: 'driver_basket', label: 'Driver Basket' },
+      { id: 'surge', label: 'Surge' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
-      
       { id: 'pricing', label: 'Τιμολόγηση' },
       { id: 'store_billing', label: 'Χρέωση' },
       { id: 'tickets', label: 'Support', badgeKey: 'pendingTickets' as const },
