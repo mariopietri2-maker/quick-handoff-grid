@@ -22,29 +22,66 @@ export interface GeocodeResult {
   formatted: string;
 }
 
+/** In-memory cache for the current session (shared across calls). */
+const memCache = new Map<string, GeocodeResult | null>();
+const LS_PREFIX = 'geo:v1:';
+
+function readLS(key: string): GeocodeResult | null | undefined {
+  try {
+    const raw = localStorage.getItem(LS_PREFIX + key);
+    if (!raw) return undefined;
+    return JSON.parse(raw);
+  } catch { return undefined; }
+}
+function writeLS(key: string, val: GeocodeResult | null) {
+  try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); } catch { /* quota */ }
+}
+
+/** Pre-warm the Mapbox token. Call once at app boot to remove first-use latency. */
+export function warmMapboxToken(): void { void getMapboxToken(); }
+
 /**
  * Forward-geocode an address using Mapbox. Returns null if not found / no token.
- * Biased to Greece (GR) since the platform operates locally.
+ * Biased to Greece (GR). Cached in memory + localStorage so repeat lookups are instant.
+ * Falls back from limit=1 to a 5-result search if the first attempt is empty.
  */
 export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
   const q = address?.trim();
   if (!q) return null;
+  const key = q.toLowerCase();
+
+  if (memCache.has(key)) return memCache.get(key) ?? null;
+  const cached = readLS(key);
+  if (cached !== undefined) {
+    memCache.set(key, cached);
+    return cached;
+  }
+
   const token = await getMapboxToken();
   if (!token) return null;
-  try {
+
+  const fetchOnce = async (limit: number) => {
     const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
       q,
-    )}.json?access_token=${token}&country=gr&limit=1&language=el`;
+    )}.json?access_token=${token}&country=gr&limit=${limit}&language=el&autocomplete=true`;
     const res = await fetch(url);
     if (!res.ok) return null;
     const json = await res.json();
     const feat = json?.features?.[0];
     if (!feat?.center) return null;
     const [lng, lat] = feat.center as [number, number];
-    return { latitude: lat, longitude: lng, formatted: feat.place_name ?? q };
-  } catch {
-    return null;
-  }
+    return { latitude: lat, longitude: lng, formatted: feat.place_name ?? q } as GeocodeResult;
+  };
+
+  let result: GeocodeResult | null = null;
+  try {
+    result = await fetchOnce(1);
+    if (!result) result = await fetchOnce(5); // wider net for partial / fuzzy addresses
+  } catch { result = null; }
+
+  memCache.set(key, result);
+  writeLS(key, result);
+  return result;
 }
 
 /** Haversine distance in km between two coordinates. */
