@@ -54,7 +54,7 @@ export function useStore() {
     return data;
   };
 
-  const updateStore = async (updates: Partial<Pick<StoreRow, 'is_active' | 'busy_mode' | 'prep_buffer_minutes' | 'name' | 'address' | 'phone'>>) => {
+  const updateStore = async (updates: Partial<Pick<StoreRow, 'is_active' | 'busy_mode' | 'prep_buffer_minutes' | 'name' | 'address' | 'phone' | 'image_url'>>) => {
     if (!store) return;
 
     // If the address changed, re-geocode so map markers stay correct.
