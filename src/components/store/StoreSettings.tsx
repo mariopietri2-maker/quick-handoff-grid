@@ -152,12 +152,89 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
       </Card>
 
       <Card className="shadow-[var(--shadow-md)]">
-        <CardContent className="p-4 space-y-2">
-          <h3 className="font-heading font-semibold text-foreground">Στοιχεία Καταστήματος</h3>
-          <div className="text-sm space-y-1">
-            <p className="text-muted-foreground">Όνομα: <span className="text-foreground">{store.name}</span></p>
-            <p className="text-muted-foreground">Διεύθυνση: <span className="text-foreground">{store.address}</span></p>
-            {store.phone && <p className="text-muted-foreground">Τηλέφωνο: <span className="text-foreground">{store.phone}</span></p>}
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-heading font-semibold text-foreground">Στοιχεία Καταστήματος</h3>
+            {dirty && <Badge variant="outline" className="text-warning border-warning/40">Μη αποθηκευμένα</Badge>}
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="store-name" className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                <StoreIcon className="h-3.5 w-3.5" /> Όνομα Καταστήματος
+              </Label>
+              <Input
+                id="store-name"
+                value={draft.name}
+                onChange={(e) => setDraft(p => ({ ...p, name: e.target.value }))}
+                maxLength={120}
+                placeholder="π.χ. Pizza Express"
+              />
+            </div>
+
+            <div className="space-y-1.5">
+              <Label htmlFor="store-address" className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                <MapPin className="h-3.5 w-3.5" /> Διεύθυνση
+              </Label>
+              <Input
+                id="store-address"
+                value={draft.address}
+                onChange={(e) => setDraft(p => ({ ...p, address: e.target.value }))}
+                maxLength={200}
+                placeholder="Οδός 123, Πόλη"
+              />
+              <p className="text-[11px] text-muted-foreground/80">
+                Με την αποθήκευση η διεύθυνση επανατοποθετείται αυτόματα στον χάρτη για οδηγούς & πελάτες.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="store-phone" className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                  <Phone className="h-3.5 w-3.5" /> Τηλέφωνο
+                </Label>
+                <Input
+                  id="store-phone"
+                  value={draft.phone}
+                  onChange={(e) => setDraft(p => ({ ...p, phone: e.target.value }))}
+                  maxLength={32}
+                  inputMode="tel"
+                  placeholder="+30 210 1234567"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="store-image" className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                  <ImageIcon className="h-3.5 w-3.5" /> Εικόνα (URL)
+                </Label>
+                <Input
+                  id="store-image"
+                  value={draft.image_url}
+                  onChange={(e) => setDraft(p => ({ ...p, image_url: e.target.value }))}
+                  maxLength={500}
+                  placeholder="https://..."
+                />
+              </div>
+            </div>
+
+            {draft.image_url && (
+              <div className="rounded-lg overflow-hidden border border-border h-28 bg-muted/30">
+                <img
+                  src={draft.image_url}
+                  alt="Προεπισκόπηση"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+              </div>
+            )}
+
+            <Button
+              onClick={handleSave}
+              disabled={!dirty || saving || !draft.name.trim() || !draft.address.trim()}
+              className="w-full"
+            >
+              {saving ? <Loader2 className="h-4 w-4 mr-2 animate-spin" /> : <Save className="h-4 w-4 mr-2" />}
+              Αποθήκευση Στοιχείων
+            </Button>
           </div>
         </CardContent>
       </Card>
