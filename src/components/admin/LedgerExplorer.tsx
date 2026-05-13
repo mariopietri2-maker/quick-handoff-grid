@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Skeleton } from '@/components/ui/skeleton';
 import { format } from 'date-fns';
 import { ArrowDownRight, ArrowUpRight, Search } from 'lucide-react';
+import ReconciliationPanel from './ReconciliationPanel';
 
 type Tx = {
   id: string;
