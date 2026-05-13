@@ -65,7 +65,7 @@ export default function BasketDashboard() {
 
   const runRule = async (id: string, name: string) => {
     if (!confirm(`Εκτέλεση διανομής: "${name}"; Αυτή η ενέργεια θα χρεώσει το Driver Basket.`)) return;
-    const { error } = await (supabase as any).rpc('run_basket_distribution', { p_rule_id: id });
+    const { error } = await (supabase as any).rpc('run_basket_distribution', { _rule_id: id });
     if (error) toast.error(error.message);
     else {
       toast.success('Η διανομή εκτελέστηκε');
