@@ -342,7 +342,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     };
 
     const ordersChannel = supabase
-      .channel('driver-orders')
+      .channel(`driver-orders-${user.id}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
