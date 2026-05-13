@@ -659,20 +659,47 @@ function ReviewsSection({ reviews }: { reviews: any[] | undefined }) {
   );
 }
 
-function KpiPill({
-  icon: Icon, label, value, tone, pulse,
+function KpiTile({
+  icon: Icon, label, value, accent, pulse, delta,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  label: string; value: string; tone: string; pulse?: boolean;
+  label: string;
+  value: string;
+  accent: 'primary' | 'success' | 'info' | 'warning' | 'foreground';
+  pulse?: boolean;
+  delta?: number | null;
 }) {
+  const accentMap = {
+    primary:    { text: 'text-primary',    bg: 'bg-primary/10',    bar: 'bg-primary' },
+    success:    { text: 'text-success',    bg: 'bg-success/10',    bar: 'bg-success' },
+    info:       { text: 'text-info',       bg: 'bg-info/10',       bar: 'bg-info' },
+    warning:    { text: 'text-warning',    bg: 'bg-warning/10',    bar: 'bg-warning' },
+    foreground: { text: 'text-foreground', bg: 'bg-muted',         bar: 'bg-foreground/40' },
+  } as const;
+  const a = accentMap[accent];
+  const showDelta = typeof delta === 'number' && isFinite(delta);
+  const deltaUp = showDelta && delta! >= 0;
   return (
-    <div className="flex items-center gap-2 px-2.5 h-8 rounded-md bg-card border border-border/60 shadow-sm shrink-0">
-      <span className={cn('relative flex items-center justify-center h-5 w-5 rounded bg-muted', tone)}>
-        <Icon className="h-3 w-3" />
-        {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+    <div className="relative flex items-center gap-2.5 pl-3 pr-3.5 h-11 rounded-lg bg-card border border-border/70 shadow-[0_1px_0_0_hsl(var(--border)/0.5)] hover:border-border transition-colors shrink-0 overflow-hidden">
+      <span className={cn('absolute left-0 top-0 bottom-0 w-[2px]', a.bar)} />
+      <span className={cn('relative flex items-center justify-center h-6 w-6 rounded-md', a.bg, a.text)}>
+        <Icon className="h-3.5 w-3.5" />
+        {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse ring-2 ring-card" />}
       </span>
-      <span className="text-[10.5px] uppercase tracking-wide text-muted-foreground font-medium">{label}</span>
-      <span className={cn('text-[12px] font-bold tabular-nums', tone)}>{value}</span>
+      <div className="flex flex-col leading-tight">
+        <span className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground font-semibold">{label}</span>
+        <div className="flex items-baseline gap-1.5">
+          <span className={cn('text-[14px] font-bold tabular-nums', a.text)}>{value}</span>
+          {showDelta && (
+            <span className={cn(
+              'text-[10px] font-semibold tabular-nums',
+              deltaUp ? 'text-success' : 'text-destructive',
+            )}>
+              {deltaUp ? '▲' : '▼'} {Math.abs(delta!).toFixed(0)}%
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
