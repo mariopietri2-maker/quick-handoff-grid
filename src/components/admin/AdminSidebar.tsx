@@ -171,26 +171,29 @@ function SidebarBody({
                 onClick={() => onSectionChange(sec.defaultTab)}
                 title={collapsed ? sec.label : undefined}
                 className={cn(
-                  'group w-full flex items-center gap-3 rounded-lg transition-all',
+                  'group relative w-full flex items-center gap-3 rounded-lg transition-all',
                   collapsed ? 'h-10 px-2 justify-center' : 'h-11 px-3',
                   isActive
-                    ? 'bg-card border border-border shadow-sm'
+                    ? 'bg-gradient-to-r from-primary/[0.08] via-card to-card border border-border shadow-sm'
                     : 'hover:bg-muted/60',
                 )}
               >
+                {isActive && !collapsed && (
+                  <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary" />
+                )}
                 <span
                   className={cn(
                     'h-8 w-8 rounded-md flex items-center justify-center shrink-0 transition-colors',
                     isActive ? sec.accentBg : 'bg-transparent group-hover:bg-muted',
                   )}
                 >
-                  <sec.icon className={cn('h-4 w-4', isActive ? sec.accent : 'text-muted-foreground')} />
+                  <sec.icon className={cn('h-4 w-4', isActive ? sec.accent : 'text-muted-foreground')} strokeWidth={isActive ? 2.25 : 2} />
                 </span>
                 {!collapsed && (
                   <>
                     <span className={cn(
-                      'flex-1 text-left text-[13px] font-medium truncate',
-                      isActive ? 'text-foreground' : 'text-muted-foreground',
+                      'flex-1 text-left text-[13px] truncate',
+                      isActive ? 'text-foreground font-semibold' : 'text-muted-foreground font-medium',
                     )}>
                       {sec.label}
                     </span>
