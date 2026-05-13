@@ -10,7 +10,7 @@ type Row = { label: string; wallet_total: number; ledger_total: number };
 async function fetchTotals(): Promise<Row[]> {
   const [drv, str, cus, treas, basket] = await Promise.all([
     (supabase as any).from('driver_wallets').select('available_balance, pending_balance'),
-    (supabase as any).from('store_wallets').select('balance'),
+    (supabase as any).from('store_wallets').select('available_balance'),
     (supabase as any).from('customer_wallets').select('balance'),
     (supabase as any).from('admin_treasury').select('admin_balance, platform_pool').maybeSingle(),
     (supabase as any).from('basket_health').select('current_balance').maybeSingle(),
@@ -33,7 +33,7 @@ async function fetchTotals(): Promise<Row[]> {
 
   return [
     { label: 'Οδηγοί',         wallet_total: driverWallet,                                   ledger_total: lDrv },
-    { label: 'Καταστήματα',    wallet_total: sum(str.data, 'balance'),                       ledger_total: lStr },
+    { label: 'Καταστήματα',    wallet_total: sum(str.data, 'available_balance'),             ledger_total: lStr },
     { label: 'Πελάτες',        wallet_total: sum(cus.data, 'balance'),                       ledger_total: lCus },
     { label: 'Admin',          wallet_total: Number(treas.data?.admin_balance ?? 0),         ledger_total: lAdm },
     { label: 'Driver Basket',  wallet_total: Number(basket.data?.current_balance ?? 0),      ledger_total: lBkt },
