@@ -1570,7 +1570,10 @@ export type Database = {
         Row: {
           admin_share_pct: number
           assignment_mode: string
+          auto_balance_enabled: boolean
           base_pay: number
+          basket_max_surcharge_pct: number
+          basket_target_balance: number
           bike_multiplier: number
           car_multiplier: number
           customer_base_fee: number
@@ -1630,7 +1633,10 @@ export type Database = {
         Insert: {
           admin_share_pct?: number
           assignment_mode?: string
+          auto_balance_enabled?: boolean
           base_pay?: number
+          basket_max_surcharge_pct?: number
+          basket_target_balance?: number
           bike_multiplier?: number
           car_multiplier?: number
           customer_base_fee?: number
@@ -1690,7 +1696,10 @@ export type Database = {
         Update: {
           admin_share_pct?: number
           assignment_mode?: string
+          auto_balance_enabled?: boolean
           base_pay?: number
+          basket_max_surcharge_pct?: number
+          basket_target_balance?: number
           bike_multiplier?: number
           car_multiplier?: number
           customer_base_fee?: number
