@@ -29,7 +29,7 @@ import { NavBottomCard } from '@/components/driver/NavBottomCard';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
-import { geocodeAddress } from '@/lib/geocode';
+import { geocodeAddress, warmMapboxToken } from '@/lib/geocode';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
@@ -52,6 +52,8 @@ export default function DriverApp() {
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
+  useEffect(() => { warmMapboxToken(); }, []);
+
   useEffect(() => {
     (supabase as any).rpc('get_platform_settings_public')
       .then(({ data }: any) => {

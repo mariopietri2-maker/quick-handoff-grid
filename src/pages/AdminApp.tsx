@@ -27,6 +27,7 @@ const PricingSettings        = lazy(() => import('@/components/admin/PricingSett
 const SupportRoleManager     = lazy(() => import('@/components/admin/SupportRoleManager'));
 const DriverMapSettings      = lazy(() => import('@/components/admin/DriverMapSettings'));
 const DriverMapEditor        = lazy(() => import('@/components/admin/DriverMapEditor'));
+const ServiceZonesEditor     = lazy(() => import('@/components/admin/ServiceZonesEditor'));
 const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
 const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
@@ -216,6 +217,8 @@ export default function AdminApp() {
         return <DriverMapSettings />;
       case 'driver_map_editor':
         return <DriverMapEditor />;
+      case 'service_zones':
+        return <ServiceZonesEditor />;
       case 'reviews':
         return <ReviewsSection reviews={reviews.data} />;
       case 'announcements':
