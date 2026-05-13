@@ -1,9 +1,12 @@
-import { useEffect } from 'react';
-import { AlertTriangle, Clock, Zap, Truck } from 'lucide-react';
+import { useEffect, useState } from 'react';
+import { AlertTriangle, Clock, Zap, Truck, MapPin, Save, Image as ImageIcon, Phone, Store as StoreIcon, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
 import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Button } from '@/components/ui/button';
 import { useStore } from '@/hooks/useStore';
 
 interface StoreSettingsProps {
