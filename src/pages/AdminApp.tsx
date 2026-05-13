@@ -353,6 +353,12 @@ export default function AdminApp() {
           </div>
         </main>
       </div>
+
+      <AdminCommandPalette
+        open={paletteOpen}
+        onOpenChange={setPaletteOpen}
+        onJump={(id) => setActiveSection(id)}
+      />
     </div>
   );
 }
