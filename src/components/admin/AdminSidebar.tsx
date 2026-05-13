@@ -35,10 +35,6 @@ export const NAV_SECTIONS = [
     defaultTab: 'overview',
     tabs: [
       { id: 'overview', label: 'Live Ops' },
-      { id: 'overview_legacy', label: 'Επισκόπηση' },
-      { id: 'system_health', label: 'Κατάσταση συστήματος' },
-      { id: 'money_bags', label: 'Ταμείο · Money Bags' },
-      { id: 'live_ops', label: 'Live Map' },
       { id: 'analytics', label: 'Αναλυτικά' },
     ],
   },
