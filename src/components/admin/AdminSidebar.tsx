@@ -74,6 +74,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'drivers', label: 'Οδηγοί' },
       { id: 'driver_map_editor', label: 'Χάρτης οδηγών' },
+      { id: 'service_zones', label: 'Ζώνες παράδοσης' },
     ],
   },
   {
