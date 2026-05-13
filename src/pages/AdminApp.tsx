@@ -43,6 +43,9 @@ const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayab
 const MoneyBagsPanel         = lazy(() => import('@/components/admin/LedgerPanel'));
 const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
+const LedgerExplorer         = lazy(() => import('@/components/admin/LedgerExplorer'));
+const BasketDashboard        = lazy(() => import('@/components/admin/BasketDashboard'));
+const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
