@@ -263,7 +263,7 @@ export default function AdminApp() {
       {/* Main Content */}
       <div className="flex-1 flex flex-col min-w-0">
         {/* Top Bar */}
-        <header className="border-b border-border bg-card/80 backdrop-blur shrink-0 sticky top-0 z-20">
+        <header className="border-b border-border bg-card/90 backdrop-blur-md shrink-0 sticky top-0 z-20 shadow-[0_1px_0_0_hsl(var(--border)/0.6)]">
           <div className="h-12 flex items-center justify-between px-3 lg:px-4">
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="icon" className="md:hidden h-8 w-8" onClick={() => setMobileMenuOpen(true)}>
@@ -271,7 +271,7 @@ export default function AdminApp() {
               </Button>
               <button
                 onClick={() => setPaletteOpen(true)}
-                className="relative hidden sm:flex items-center gap-2 pl-2.5 pr-2 h-8 w-64 rounded-md bg-muted/50 border border-border/60 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="relative hidden sm:flex items-center gap-2 pl-2.5 pr-2 h-8 w-72 rounded-md bg-muted/40 border border-border/60 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className="flex-1 text-left">Αναζήτηση & μετάβαση…</span>
@@ -281,11 +281,21 @@ export default function AdminApp() {
                 <Search className="h-4 w-4" />
               </Button>
             </div>
-            <div className="flex items-center gap-1">
+            <div className="flex items-center gap-2">
+              {/* Environment + system status chip */}
+              <div className="hidden md:flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-md border border-border/70 bg-muted/30">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-success/60 animate-ping opacity-50" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+                </span>
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-muted-foreground">Production</span>
+                <span className="h-3 w-px bg-border mx-0.5" />
+                <span className="text-[10.5px] font-medium tabular-nums text-foreground/80">v2.4</span>
+              </div>
               <Button variant="ghost" size="icon" className="h-8 w-8 relative">
                 <Bell className="h-3.5 w-3.5" />
               </Button>
-              <div className="h-5 w-px bg-border mx-1" />
+              <div className="h-5 w-px bg-border mx-0.5" />
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
                 <LogOut className="h-3.5 w-3.5" />
                 <span className="hidden sm:inline">Αποσύνδεση</span>
@@ -293,34 +303,41 @@ export default function AdminApp() {
             </div>
           </div>
 
-          {/* Live KPI strip */}
+          {/* Live KPI strip — premium tiles with delta */}
           {(() => {
             const today = new Date(); today.setHours(0,0,0,0);
+            const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
             const todays = (orders.data ?? []).filter((o: any) => new Date(o.created_at) >= today);
+            const yesterdays = (orders.data ?? []).filter((o: any) => {
+              const d = new Date(o.created_at); return d >= yesterday && d < today;
+            });
             const revenueToday = todays.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
+            const revenueYesterday = yesterdays.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
             const adminToday = todays.reduce((s: number, o: any) => s + Number(o.platform_profit || 0), 0);
             const activeDrivers = (driverStates.data ?? []).filter((d: any) => !!d.shift_started_at && !d.on_break).length;
             const live = todays.filter((o: any) => !['delivered', 'cancelled'].includes(o.status)).length;
+            const orderDelta = yesterdays.length > 0 ? ((todays.length - yesterdays.length) / yesterdays.length) * 100 : null;
+            const revDelta = revenueYesterday > 0 ? ((revenueToday - revenueYesterday) / revenueYesterday) * 100 : null;
             return (
-              <div className="px-3 lg:px-4 py-2 border-t border-border/40 bg-muted/20 overflow-x-auto">
+              <div className="px-3 lg:px-4 py-2 border-t border-border/40 bg-gradient-to-b from-muted/10 to-transparent overflow-x-auto">
                 <div className="flex gap-2 min-w-max">
-                  <KpiPill icon={Activity} label="Live παραγγελίες" value={String(live)} tone="text-primary" pulse={live > 0} />
-                  <KpiPill icon={ShoppingBag} label="Σήμερα" value={String(todays.length)} tone="text-info" />
-                  <KpiPill icon={TrendingUp} label="Τζίρος σήμερα" value={`€${revenueToday.toFixed(0)}`} tone="text-foreground" />
-                  <KpiPill icon={Wallet} label="Admin κερδίζει σήμερα" value={`€${adminToday.toFixed(2)}`} tone="text-success" />
-                  <KpiPill icon={Bike} label="Ενεργοί οδηγοί" value={String(activeDrivers)} tone="text-warning" />
+                  <KpiTile icon={Activity} label="Live παραγγελίες" value={String(live)} accent="primary" pulse={live > 0} />
+                  <KpiTile icon={ShoppingBag} label="Σήμερα" value={String(todays.length)} accent="info" delta={orderDelta} />
+                  <KpiTile icon={TrendingUp} label="Τζίρος σήμερα" value={`€${revenueToday.toFixed(0)}`} accent="foreground" delta={revDelta} />
+                  <KpiTile icon={Wallet} label="Admin κερδίζει" value={`€${adminToday.toFixed(2)}`} accent="success" />
+                  <KpiTile icon={Bike} label="Ενεργοί οδηγοί" value={String(activeDrivers)} accent="warning" />
                 </div>
               </div>
             );
           })()}
 
-          {/* Sub-tab strip */}
+          {/* Sub-tab strip — underline style */}
           {(() => {
             const tabs = getTabsForSection(findParentSection(activeSection));
             if (tabs.length <= 1) return null;
             return (
-              <div className="px-3 lg:px-4 -mt-px border-t border-border/50 overflow-x-auto">
-                <div className="flex gap-1 py-1.5 min-w-max">
+              <div className="px-3 lg:px-4 border-t border-border/50 overflow-x-auto bg-card">
+                <div className="flex gap-0 min-w-max">
                   {tabs.map(t => {
                     const isActive = t.id === activeSection;
                     return (
@@ -328,13 +345,16 @@ export default function AdminApp() {
                         key={t.id}
                         onClick={() => setActiveSection(t.id)}
                         className={cn(
-                          'px-3 h-7 rounded-md text-[12px] font-medium transition-colors whitespace-nowrap',
+                          'relative px-3 h-9 text-[12px] font-medium transition-colors whitespace-nowrap',
                           isActive
-                            ? 'bg-primary/10 text-primary'
-                            : 'text-muted-foreground hover:bg-muted hover:text-foreground',
+                            ? 'text-foreground'
+                            : 'text-muted-foreground hover:text-foreground',
                         )}
                       >
                         {t.label}
+                        {isActive && (
+                          <span className="absolute left-2 right-2 -bottom-px h-[2px] rounded-t bg-primary" />
+                        )}
                       </button>
                     );
                   })}
@@ -639,20 +659,47 @@ function ReviewsSection({ reviews }: { reviews: any[] | undefined }) {
   );
 }
 
-function KpiPill({
-  icon: Icon, label, value, tone, pulse,
+function KpiTile({
+  icon: Icon, label, value, accent, pulse, delta,
 }: {
   icon: React.ComponentType<{ className?: string }>;
-  label: string; value: string; tone: string; pulse?: boolean;
+  label: string;
+  value: string;
+  accent: 'primary' | 'success' | 'info' | 'warning' | 'foreground';
+  pulse?: boolean;
+  delta?: number | null;
 }) {
+  const accentMap = {
+    primary:    { text: 'text-primary',    bg: 'bg-primary/10',    bar: 'bg-primary' },
+    success:    { text: 'text-success',    bg: 'bg-success/10',    bar: 'bg-success' },
+    info:       { text: 'text-info',       bg: 'bg-info/10',       bar: 'bg-info' },
+    warning:    { text: 'text-warning',    bg: 'bg-warning/10',    bar: 'bg-warning' },
+    foreground: { text: 'text-foreground', bg: 'bg-muted',         bar: 'bg-foreground/40' },
+  } as const;
+  const a = accentMap[accent];
+  const showDelta = typeof delta === 'number' && isFinite(delta);
+  const deltaUp = showDelta && delta! >= 0;
   return (
-    <div className="flex items-center gap-2 px-2.5 h-8 rounded-md bg-card border border-border/60 shadow-sm shrink-0">
-      <span className={cn('relative flex items-center justify-center h-5 w-5 rounded bg-muted', tone)}>
-        <Icon className="h-3 w-3" />
-        {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />}
+    <div className="relative flex items-center gap-2.5 pl-3 pr-3.5 h-11 rounded-lg bg-card border border-border/70 shadow-[0_1px_0_0_hsl(var(--border)/0.5)] hover:border-border transition-colors shrink-0 overflow-hidden">
+      <span className={cn('absolute left-0 top-0 bottom-0 w-[2px]', a.bar)} />
+      <span className={cn('relative flex items-center justify-center h-6 w-6 rounded-md', a.bg, a.text)}>
+        <Icon className="h-3.5 w-3.5" />
+        {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse ring-2 ring-card" />}
       </span>
-      <span className="text-[10.5px] uppercase tracking-wide text-muted-foreground font-medium">{label}</span>
-      <span className={cn('text-[12px] font-bold tabular-nums', tone)}>{value}</span>
+      <div className="flex flex-col leading-tight">
+        <span className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground font-semibold">{label}</span>
+        <div className="flex items-baseline gap-1.5">
+          <span className={cn('text-[14px] font-bold tabular-nums', a.text)}>{value}</span>
+          {showDelta && (
+            <span className={cn(
+              'text-[10px] font-semibold tabular-nums',
+              deltaUp ? 'text-success' : 'text-destructive',
+            )}>
+              {deltaUp ? '▲' : '▼'} {Math.abs(delta!).toFixed(0)}%
+            </span>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
