@@ -29,7 +29,7 @@ import { NavBottomCard } from '@/components/driver/NavBottomCard';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
-import { geocodeAddress } from '@/lib/geocode';
+import { geocodeAddress, warmMapboxToken } from '@/lib/geocode';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
