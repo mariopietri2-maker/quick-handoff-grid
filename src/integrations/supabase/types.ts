@@ -1273,6 +1273,8 @@ export type Database = {
           status: Database["public"]["Enums"]["order_status"]
           store_charge: number
           store_id: string
+          surge_event_id: string | null
+          surge_multiplier_used: number
           tip_amount: number | null
           total_amount: number
           updated_at: string
@@ -1312,6 +1314,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           store_charge?: number
           store_id: string
+          surge_event_id?: string | null
+          surge_multiplier_used?: number
           tip_amount?: number | null
           total_amount?: number
           updated_at?: string
@@ -1351,6 +1355,8 @@ export type Database = {
           status?: Database["public"]["Enums"]["order_status"]
           store_charge?: number
           store_id?: string
+          surge_event_id?: string | null
+          surge_multiplier_used?: number
           tip_amount?: number | null
           total_amount?: number
           updated_at?: string
@@ -1472,6 +1478,14 @@ export type Database = {
           sla_urgent_seconds: number
           sla_warn_seconds: number
           subsidize_min_pay: boolean
+          surge_default_multiplier: number
+          surge_enabled: boolean
+          surge_floor_multiplier: number
+          surge_ratio_extreme_multiplier: number
+          surge_ratio_high_multiplier: number
+          surge_ratio_high_threshold: number
+          surge_ratio_low_threshold: number
+          surge_time_peak_multiplier: number
           updated_at: string
         }
         Insert: {
@@ -1524,6 +1538,14 @@ export type Database = {
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
           subsidize_min_pay?: boolean
+          surge_default_multiplier?: number
+          surge_enabled?: boolean
+          surge_floor_multiplier?: number
+          surge_ratio_extreme_multiplier?: number
+          surge_ratio_high_multiplier?: number
+          surge_ratio_high_threshold?: number
+          surge_ratio_low_threshold?: number
+          surge_time_peak_multiplier?: number
           updated_at?: string
         }
         Update: {
@@ -1576,6 +1598,14 @@ export type Database = {
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
           subsidize_min_pay?: boolean
+          surge_default_multiplier?: number
+          surge_enabled?: boolean
+          surge_floor_multiplier?: number
+          surge_ratio_extreme_multiplier?: number
+          surge_ratio_high_multiplier?: number
+          surge_ratio_high_threshold?: number
+          surge_ratio_low_threshold?: number
+          surge_time_peak_multiplier?: number
           updated_at?: string
         }
         Relationships: []
@@ -2213,6 +2243,97 @@ export type Database = {
           },
         ]
       }
+      surge_events: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          ends_at: string | null
+          id: string
+          multiplier: number
+          reason: string | null
+          source: string
+          started_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          multiplier?: number
+          reason?: string | null
+          source: string
+          started_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          ends_at?: string | null
+          id?: string
+          multiplier?: number
+          reason?: string | null
+          source?: string
+          started_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surge_events_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "demand_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      surge_overrides: {
+        Row: {
+          created_at: string
+          created_by: string | null
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          mode: string
+          multiplier: number
+          reason: string | null
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          mode?: string
+          multiplier?: number
+          reason?: string | null
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string | null
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          mode?: string
+          multiplier?: number
+          reason?: string | null
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "surge_overrides_zone_id_fkey"
+            columns: ["zone_id"]
+            isOneToOne: false
+            referencedRelation: "demand_zones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       surge_zones: {
         Row: {
           created_at: string
@@ -2292,6 +2413,59 @@ export type Database = {
             columns: ["ticket_id"]
             isOneToOne: false
             referencedRelation: "support_tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      transactions: {
+        Row: {
+          amount: number
+          balance_after: number | null
+          created_at: string
+          created_by: string | null
+          description: string | null
+          id: string
+          metadata: Json
+          order_id: string | null
+          surge_event_id: string | null
+          type: string
+          wallet_kind: string
+          wallet_owner_id: string | null
+        }
+        Insert: {
+          amount: number
+          balance_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          surge_event_id?: string | null
+          type: string
+          wallet_kind: string
+          wallet_owner_id?: string | null
+        }
+        Update: {
+          amount?: number
+          balance_after?: number | null
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          id?: string
+          metadata?: Json
+          order_id?: string | null
+          surge_event_id?: string | null
+          type?: string
+          wallet_kind?: string
+          wallet_owner_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "transactions_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
             referencedColumns: ["id"]
           },
         ]
@@ -2636,6 +2810,7 @@ export type Database = {
         }
         Returns: undefined
       }
+      current_surge_for_zone: { Args: { _zone_id: string }; Returns: Json }
       driver_release_order: { Args: { p_order_id: string }; Returns: Json }
       get_platform_settings_public: {
         Args: never
@@ -2697,6 +2872,16 @@ export type Database = {
           score: number
           vehicle_type: string
         }[]
+      }
+      open_surge_event: {
+        Args: {
+          _ends_at?: string
+          _multiplier: number
+          _reason: string
+          _source: string
+          _zone_id: string
+        }
+        Returns: string
       }
       predict_ready_at: {
         Args: { p_created_at?: string; p_store_id: string }
@@ -2768,6 +2953,19 @@ export type Database = {
       }
       support_unassign_order: {
         Args: { p_order_id: string }
+        Returns: undefined
+      }
+      tx_append: {
+        Args: {
+          _amount: number
+          _balance_after: number
+          _description: string
+          _kind: string
+          _meta?: Json
+          _order_id: string
+          _owner: string
+          _type: string
+        }
         Returns: undefined
       }
     }
