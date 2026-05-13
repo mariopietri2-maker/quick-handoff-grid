@@ -472,6 +472,7 @@ export default function DriverApp() {
               {!isNavActive && (
                 <>
                   <AnnouncementsBanner audience="drivers" />
+                  <SurgeStatusBadge />
 
                   {/* On-break banner */}
                   {onBreak && (
