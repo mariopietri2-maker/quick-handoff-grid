@@ -46,6 +46,7 @@ const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentS
 const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
 const LedgerExplorer         = lazy(() => import('@/components/admin/LedgerExplorer'));
 const BasketDashboard        = lazy(() => import('@/components/admin/BasketDashboard'));
+const MoneyEnginePanel       = lazy(() => import('@/components/admin/MoneyEnginePanel'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
