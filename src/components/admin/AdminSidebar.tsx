@@ -82,8 +82,9 @@ export const NAV_SECTIONS = [
     icon: Wallet,
     accent: 'text-success',
     accentBg: 'bg-success/10',
-    defaultTab: 'ledger',
+    defaultTab: 'money_engine',
     tabs: [
+      { id: 'money_engine', label: 'Money Engine' },
       { id: 'ledger', label: 'Καθολικό κινήσεων' },
       { id: 'driver_basket', label: 'Driver Basket' },
       { id: 'surge', label: 'Surge' },
