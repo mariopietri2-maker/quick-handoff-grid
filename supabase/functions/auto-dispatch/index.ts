@@ -286,11 +286,10 @@ async function loadAnyOnlineDrivers(
 ): Promise<CandidateDriver[]> {
   const { data } = await admin
     .from("driver_profiles")
-    .select("user_id, driver_locations!inner(latitude, longitude, updated_at), driver_state(on_break)")
+    .select("user_id, driver_locations(latitude, longitude, updated_at), driver_state(on_break, is_online)")
     .eq("is_active", true)
     .is("suspended_at", null)
-    .gt("driver_locations.updated_at", new Date(Date.now() - 5 * 60_000).toISOString())
-    .limit(Math.max(limit * 4, limit));
+    .limit(Math.max(limit * 8, limit));
 
   return (data ?? [])
     .filter((row: any) => !exclude.includes(row.user_id) && !row.driver_state?.on_break)
