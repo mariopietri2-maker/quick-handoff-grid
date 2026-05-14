@@ -177,10 +177,30 @@ export default function DriverMapEditor() {
         </div>
       `);
 
-      const marker = new mapboxgl.Marker({ element: el })
+      const marker = new mapboxgl.Marker({ element: el, draggable: editMode })
         .setLngLat([lng, lat])
         .setPopup(isSelected ? undefined : popup)
         .addTo(map);
+
+      if (editMode) {
+        marker.on('dragend', async () => {
+          const { lng: nLng, lat: nLat } = marker.getLngLat();
+          if (distKm(nLat, nLng) > MAX_KM) {
+            toast.error('Εκτός Ιωαννίνων (>15 χλμ) — δεν θα είναι ορατό στους οδηγούς');
+          }
+          const { error } = await supabase
+            .from('stores')
+            .update({ latitude: nLat, longitude: nLng })
+            .eq('id', store.id);
+          if (error) {
+            toast.error(`Αποτυχία: ${error.message}`);
+            marker.setLngLat([lng, lat]);
+          } else {
+            toast.success(`${store.name} μετακινήθηκε`);
+            setStores(prev => prev.map(s => s.id === store.id ? { ...s, latitude: nLat, longitude: nLng } : s));
+          }
+        });
+      }
 
       markersRef.current.push(marker);
     });
