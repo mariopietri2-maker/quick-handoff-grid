@@ -58,7 +58,22 @@ export function useNearbyStoresForDriver() {
         .eq('is_active', true);
       if (!storeRows || !mounted) return;
 
-      const valid = storeRows.filter(s => s.latitude != null && s.longitude != null);
+      // Filter to Ioannina city only (~15km around city center 39.6650, 20.8537)
+      const IOANNINA_LAT = 39.6650;
+      const IOANNINA_LNG = 20.8537;
+      const MAX_KM = 15;
+      const distKm = (lat: number, lng: number) => {
+        const toRad = (d: number) => (d * Math.PI) / 180;
+        const dLat = toRad(lat - IOANNINA_LAT);
+        const dLng = toRad(lng - IOANNINA_LNG);
+        const a = Math.sin(dLat/2)**2 + Math.cos(toRad(IOANNINA_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng/2)**2;
+        return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      };
+
+      const valid = storeRows.filter(s =>
+        s.latitude != null && s.longitude != null &&
+        distKm(s.latitude as number, s.longitude as number) <= MAX_KM
+      );
       if (valid.length === 0) { setStores([]); return; }
 
       const { data: orderRows } = await supabase
@@ -73,9 +88,8 @@ export function useNearbyStoresForDriver() {
       });
 
       if (!mounted) return;
-      // Drivers only see stores that currently have active orders
+      // Show ALL Ioannina stores; badge reflects current active order count
       setStores(valid
-        .filter(s => (counts[s.id] ?? 0) > 0)
         .map(s => ({
           id: s.id,
           name: s.name,
