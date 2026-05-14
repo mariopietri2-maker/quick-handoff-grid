@@ -25,7 +25,11 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=gr&language=el&components=country:GR&key=${key}`;
+    // Bias results to Ioannina region (city is the only operating area). The
+    // `bounds` rectangle is a soft hint; `components=locality:Ioannina` would
+    // be too strict, so we keep country:GR and rely on the bounds + proximity.
+    const bounds = "39.55,20.70|39.78,21.00";
+    const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=gr&language=el&components=country:GR&bounds=${encodeURIComponent(bounds)}&key=${key}`;
     const res = await fetch(gUrl);
     const json = await res.json();
     const r = json?.results?.[0];
