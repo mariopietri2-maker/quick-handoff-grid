@@ -101,13 +101,12 @@ Deno.serve(async (req) => {
     //    - dispatch_at <= now (or null)
     //    - status placed/accepted/preparing/ready
     //    - NOT already covered by a live pending offer
-    const nowIso = new Date().toISOString();
+    // Always offer immediately — don't sit on orders. dispatch_at is informational only.
     const { data: candidates } = await admin
       .from("orders")
       .select("id, store_id, driver_id, total_amount, status, dispatch_at")
       .is("driver_id", null)
       .in("status", ["placed", "accepted", "preparing", "ready"])
-      .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
       .order("created_at", { ascending: true })
       .limit(50);
 
@@ -287,17 +286,21 @@ async function loadAnyOnlineDrivers(
 ): Promise<CandidateDriver[]> {
   const { data } = await admin
     .from("driver_profiles")
-    .select("user_id, driver_locations!inner(latitude, longitude, updated_at), driver_state(on_break)")
+    .select("user_id, driver_locations(latitude, longitude, updated_at), driver_state(on_break, is_online)")
     .eq("is_active", true)
     .is("suspended_at", null)
-    .gt("driver_locations.updated_at", new Date(Date.now() - 5 * 60_000).toISOString())
-    .limit(Math.max(limit * 4, limit));
+    .limit(Math.max(limit * 8, limit));
 
   return (data ?? [])
     .filter((row: any) => !exclude.includes(row.user_id) && !row.driver_state?.on_break)
     .map((row: any) => {
       const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
-      const distance = haversineKm(anchorLat, anchorLng, Number(loc.latitude), Number(loc.longitude));
+      const lat = loc?.latitude != null ? Number(loc.latitude) : null;
+      const lng = loc?.longitude != null ? Number(loc.longitude) : null;
+      // If no recent GPS, still offer (assume far) so order doesn't sit unassigned.
+      const distance = lat != null && lng != null
+        ? haversineKm(anchorLat, anchorLng, lat, lng)
+        : 9999;
       return { driver_id: row.user_id, distance_km: Number(distance.toFixed(2)), score: Number(distance.toFixed(3)) };
     })
     .sort((a: CandidateDriver, b: CandidateDriver) => a.score - b.score)
