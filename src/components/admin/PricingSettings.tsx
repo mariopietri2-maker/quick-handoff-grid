@@ -192,7 +192,14 @@ export default function PricingSettings() {
                 <Field label="Critical ×" value={pricing.pool_critical_multiplier} onChange={v => setPricing(p => ({ ...p, pool_critical_multiplier: v }))} hint="0–1, π.χ. 0.6" step="0.05" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label className="flex items-start gap-2 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/40">
+                  <input type="checkbox" className="mt-1" checked={pricing.pause_bonus_when_critical} onChange={e => setPricing(p => ({ ...p, pause_bonus_when_critical: e.target.checked }))} />
+                  <div className="text-xs">
+                    <p className="font-bold text-foreground">Auto-pause bonus σε κρίσιμο basket</p>
+                    <p className="text-muted-foreground mt-0.5">Όταν το basket πέσει κάτω από το critical threshold, το bonus γίνεται €0 μέχρι να γεμίσει ξανά. Ο οδηγός παίρνει μόνο delivery fee + tip.</p>
+                  </div>
+                </label>
                 <label className="flex items-start gap-2 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/40">
                   <input type="checkbox" className="mt-1" checked={pricing.subsidize_min_pay} onChange={e => setPricing(p => ({ ...p, subsidize_min_pay: e.target.checked }))} />
                   <div className="text-xs">
