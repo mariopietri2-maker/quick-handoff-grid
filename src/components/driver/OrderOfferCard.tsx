@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Navigation, Clock, Timer, Store, MapPin } from 'lucide-react';
+import { Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard, MessageSquare } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 
 interface OrderOffer {
@@ -15,7 +15,12 @@ interface OrderOffer {
   basePay?: number;
   deliveryFee?: number;
   tipAmount?: number;
+  poolBonus?: number;
+  paymentMethod?: string | null;
+  cashToCollect?: number | null;
+  customerNotes?: string | null;
 }
+
 
 interface OrderOfferCardProps {
   offer: OrderOffer;
@@ -88,9 +93,12 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
   const progress = (secondsLeft / OFFER_TIMEOUT_SECONDS) * 100;
   const isUrgent = secondsLeft <= 15;
 
+  const isCash = offer.paymentMethod === 'cash';
+  const isCard = offer.paymentMethod === 'card' || offer.paymentMethod === 'wallet' || offer.paymentMethod === 'paid';
+
   return (
     <div className="driver-card overflow-hidden">
-      {/* Header — clean white, payout primary, timer secondary */}
+      {/* Header — payout primary, timer secondary */}
       <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10.5px] font-heading font-semibold uppercase tracking-[0.08em] text-[hsl(var(--driver-text-muted))]">
@@ -100,6 +108,18 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
             {offer.estimatedPayout.toFixed(2)}
             <span className="text-[20px] font-bold text-[hsl(var(--driver-text-muted))] ml-0.5">€</span>
           </p>
+          {/* Payment method badge */}
+          {(isCash || isCard) && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[11px] font-heading font-bold border"
+              style={isCash
+                ? { background: 'hsl(var(--driver-warm) / 0.12)', borderColor: 'hsl(var(--driver-warm) / 0.35)', color: 'hsl(var(--driver-warm))' }
+                : { background: 'hsl(var(--driver-accent) / 0.12)', borderColor: 'hsl(var(--driver-accent) / 0.35)', color: 'hsl(var(--driver-accent))' }}>
+              {isCash
+                ? <><Banknote className="h-3 w-3" /> ΜΕΤΡΗΤΑ {offer.cashToCollect ? `· ${offer.cashToCollect.toFixed(2)}€` : ''}</>
+                : <><CreditCard className="h-3 w-3" /> ΠΛΗΡΩΜΕΝΟ</>
+              }
+            </div>
+          )}
         </div>
         <div className={`flex items-center gap-1.5 rounded-full px-3 h-8 border ${
           isUrgent
@@ -160,11 +180,29 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
         </div>
 
         {/* Payout breakdown */}
-        {offer.basePay !== undefined && (
-          <div className="mt-3 pt-3 border-t border-[hsl(var(--driver-border))] flex items-center justify-between text-[11.5px]">
-            <span className="text-[hsl(var(--driver-text-muted))]">Βασική <span className="text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.basePay ?? 0).toFixed(2)}€</span></span>
-            <span className="text-[hsl(var(--driver-text-muted))]">Tip <span className="text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.tipAmount ?? 0).toFixed(2)}€</span></span>
-            <span className="text-[hsl(var(--driver-accent))] font-heading font-bold tabular-nums">{(offer.perKmRate ?? 0.50).toFixed(2)}€/χλμ</span>
+        {(offer.basePay !== undefined || offer.poolBonus) && (
+          <div className="mt-3 pt-3 border-t border-[hsl(var(--driver-border))] grid grid-cols-2 gap-y-1.5 text-[11.5px]">
+            <span className="text-[hsl(var(--driver-text-muted))]">Βασική</span>
+            <span className="text-right text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.basePay ?? 0).toFixed(2)}€</span>
+            {(offer.poolBonus ?? 0) > 0 && (<>
+              <span className="text-[hsl(var(--driver-text-muted))]">Bonus pool</span>
+              <span className="text-right text-[hsl(var(--driver-accent))] font-semibold tabular-nums">+{(offer.poolBonus ?? 0).toFixed(2)}€</span>
+            </>)}
+            <span className="text-[hsl(var(--driver-text-muted))]">Tip</span>
+            <span className="text-right text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.tipAmount ?? 0).toFixed(2)}€</span>
+            <span className="text-[hsl(var(--driver-text-muted))]">Ανά χλμ</span>
+            <span className="text-right text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.perKmRate ?? 0.50).toFixed(2)}€/χλμ</span>
+          </div>
+        )}
+
+        {/* Customer notes */}
+        {offer.customerNotes && offer.customerNotes.trim().length > 0 && (
+          <div className="mt-3 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex gap-2">
+            <MessageSquare className="h-3.5 w-3.5 mt-0.5 text-[hsl(var(--driver-info))] flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Σημείωση πελάτη</p>
+              <p className="text-[12.5px] text-[hsl(var(--driver-text))] leading-snug mt-0.5 break-words">{offer.customerNotes}</p>
+            </div>
           </div>
         )}
 
