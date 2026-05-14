@@ -229,8 +229,8 @@ export default function AdminDriversMap() {
 
       const popup = new mapboxgl.Popup({ offset: 18 }).setHTML(`
         <div style="text-align:center;font-family:system-ui;padding:4px;">
-          <strong>${store.name}</strong>
-          <br/><span style="font-size:11px;opacity:0.7;">${store.address}</span>
+          <strong>${escapeHtml(store.name)}</strong>
+          <br/><span style="font-size:11px;opacity:0.7;">${escapeHtml(store.address)}</span>
           <br/><span style="font-size:11px;">${store.is_active ? '✅ Ενεργό' : '❌ Ανενεργό'}</span>
           ${editStores ? `<br/><span style="font-size:11px;color:#f97316;font-weight:600;">${isSelected ? '👆 Κλικ στον χάρτη για τοποθέτηση' : 'Κλικ για επιλογή'}</span>` : ''}
         </div>
