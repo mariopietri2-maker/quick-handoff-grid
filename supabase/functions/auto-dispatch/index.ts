@@ -174,8 +174,8 @@ Deno.serve(async (req) => {
 
       const currentWave = waveByOrder.get(order.id) ?? 0;
       // No order left behind: when we exhaust the configured wave count, we
-      // restart the cycle (wave 1 again with a fresh driver pool) instead of
-      // giving up. The order keeps re-offering until a driver accepts.
+      // restart with a fresh driver pool but keep wave numbers increasing so
+      // repeated offers do not collide with the unique offer history.
       let cycleExhausted = currentWave >= s.dist_max_waves;
       let nextWave = currentWave + 1;
       let exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
