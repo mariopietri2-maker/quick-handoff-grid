@@ -35,6 +35,7 @@ interface PricingRow {
   pool_critical_multiplier: number;
   subsidize_min_pay: boolean;
   pool_alert_enabled: boolean;
+  pause_bonus_when_critical: boolean;
 }
 
 const DAYS = [
