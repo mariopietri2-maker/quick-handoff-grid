@@ -306,7 +306,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       el.innerHTML = `<div style="width:40px;height:40px;background:#22c55e;border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(34,197,94,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">📍</div>`;
       customerMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([customerLng, customerLat])
-        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${customerName || 'Παράδοση'}</strong><br/><span style="font-size:11px;">${customerAddress || ''}</span>`))
+        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${escapeHtml(customerName || 'Παράδοση')}</strong><br/><span style="font-size:11px;">${escapeHtml(customerAddress || '')}</span>`))
         .addTo(map);
     }
   }, [customerLat, customerLng, customerName, customerAddress, navigatingTo]);
