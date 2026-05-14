@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Package, Navigation, Clock, Timer, Store, MapPin } from 'lucide-react';
+import { Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard, MessageSquare } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 
 interface OrderOffer {
@@ -15,7 +15,12 @@ interface OrderOffer {
   basePay?: number;
   deliveryFee?: number;
   tipAmount?: number;
+  poolBonus?: number;
+  paymentMethod?: string | null;
+  cashToCollect?: number | null;
+  customerNotes?: string | null;
 }
+
 
 interface OrderOfferCardProps {
   offer: OrderOffer;
