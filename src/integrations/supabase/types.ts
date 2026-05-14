@@ -1602,6 +1602,7 @@ export type Database = {
           max_pay: number
           min_pay: number
           motorcycle_multiplier: number
+          pause_bonus_when_critical: boolean
           peak_end_hour: number
           peak_multiplier: number
           peak_start_hour: number
@@ -1665,6 +1666,7 @@ export type Database = {
           max_pay?: number
           min_pay?: number
           motorcycle_multiplier?: number
+          pause_bonus_when_critical?: boolean
           peak_end_hour?: number
           peak_multiplier?: number
           peak_start_hour?: number
@@ -1728,6 +1730,7 @@ export type Database = {
           max_pay?: number
           min_pay?: number
           motorcycle_multiplier?: number
+          pause_bonus_when_critical?: boolean
           peak_end_hour?: number
           peak_multiplier?: number
           peak_start_hour?: number
