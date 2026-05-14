@@ -289,7 +289,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       el.innerHTML = `<div style="width:40px;height:40px;background:${isTarget ? '#f97316' : '#f97316'};border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(249,115,22,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">🏪</div>`;
       storeMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([storeLng, storeLat])
-        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${storeName || 'Κατάστημα'}</strong>`))
+        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${escapeHtml(storeName || 'Κατάστημα')}</strong>`))
         .addTo(map);
     }
   }, [storeLat, storeLng, storeName, navigatingTo]);
