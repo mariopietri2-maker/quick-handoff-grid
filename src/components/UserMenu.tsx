@@ -129,7 +129,9 @@ export function UserMenu() {
           <Button
             variant="ghost"
             size="icon"
-            className="h-10 w-10 rounded-full gradient-primary text-white border-0 shadow-primary hover:brightness-110 hover:scale-105 transition-all"
+            className={`h-10 w-10 rounded-full text-white border-0 shadow-lg hover:brightness-110 hover:scale-105 transition-all ${
+              isDriver ? 'driver-gradient-earn' : 'gradient-primary shadow-primary'
+            }`}
           >
             <User className="h-5 w-5" />
           </Button>
@@ -138,24 +140,32 @@ export function UserMenu() {
           align="start"
           sideOffset={8}
           collisionPadding={12}
-          className="z-[200] w-72 max-w-[calc(100vw-2rem)] max-h-[70vh] overflow-y-auto rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-2xl"
+          className="z-[200] w-72 max-w-[calc(100vw-2rem)] max-h-[75vh] overflow-y-auto rounded-2xl border border-border bg-popover p-2 text-popover-foreground shadow-2xl"
         >
-          <div className="mb-1 rounded-xl border border-border bg-muted/60 px-3 py-3">
-            <p className="text-sm font-heading font-bold text-foreground truncate">
-              {profile?.full_name || 'Χρήστης'}
-            </p>
-            <p className="text-xs text-muted-foreground truncate">{user.email}</p>
-            {isDriver && (
-              <span className="mt-2 inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-1 text-[10px] font-heading font-semibold text-primary">
-                <Star className="h-2.5 w-2.5" /> DRIVER
+          {/* Identity card */}
+          <div className="mb-1 rounded-xl border border-border bg-muted/60 px-3 py-3 flex items-center gap-3">
+            <div className={`h-10 w-10 rounded-full flex items-center justify-center text-white shrink-0 ${isDriver ? 'driver-gradient-earn' : 'gradient-primary'}`}>
+              <span className="font-heading font-bold text-sm">
+                {(profile?.full_name || user.email || '?').slice(0, 1).toUpperCase()}
               </span>
-            )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-heading font-bold text-foreground truncate">
+                {profile?.full_name || 'Χρήστης'}
+              </p>
+              <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
+              {isDriver && (
+                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-accent))]/15 px-2 py-0.5 text-[9.5px] font-heading font-bold text-[hsl(var(--driver-accent))] uppercase tracking-wider">
+                  <Star className="h-2.5 w-2.5" /> Driver
+                </span>
+              )}
+            </div>
           </div>
 
           {isDriver ? (
             <>
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className={labelClassName}>Κατάσταση</DropdownMenuLabel>
+              {/* SHIFT */}
+              <DropdownMenuLabel className={labelClassName}>Βάρδια</DropdownMenuLabel>
               {onBreak ? (
                 <DropdownMenuItem
                   className={`${itemClassName} bg-warning/10 text-warning focus:bg-warning/15 focus:text-warning data-[highlighted]:bg-warning/15 data-[highlighted]:text-warning`}
@@ -174,8 +184,6 @@ export function UserMenu() {
                   Διάλειμμα
                 </DropdownMenuItem>
               )}
-
-              {/* Unassign current order — placed directly under Break */}
               {activeOrder && (
                 <DropdownMenuItem
                   className={`${itemClassName} text-destructive focus:bg-destructive/10 focus:text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive`}
@@ -186,67 +194,58 @@ export function UserMenu() {
                 </DropdownMenuItem>
               )}
 
-              <DropdownMenuSeparator />
-              <DropdownMenuLabel className={labelClassName}>Λογαριασμός</DropdownMenuLabel>
-              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver/profile')}>
-                <UserCircle className="mr-2 h-4 w-4 shrink-0" />
-                Προφίλ Οδηγού
-              </DropdownMenuItem>
+              <DropdownMenuSeparator className="my-1" />
+
+              {/* EARNINGS */}
+              <DropdownMenuLabel className={labelClassName}>Έσοδα</DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=earnings')}>
-                <TrendingUp className="mr-2 h-4 w-4 shrink-0" />
+                <TrendingUp className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
                 Κέρδη & Στατιστικά
               </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=wallet')}>
-                <Wallet className="mr-2 h-4 w-4 shrink-0" />
+                <Wallet className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
                 Πορτοφόλι
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1" />
+
+              {/* ACCOUNT */}
+              <DropdownMenuLabel className={labelClassName}>Λογαριασμός</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver/profile')}>
+                <UserCircle className="mr-2 h-4 w-4 shrink-0" />
+                Προφίλ & Έγγραφα
               </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=referral')}>
                 <Users className="mr-2 h-4 w-4 shrink-0" />
                 Πρόσκληση Οδηγών
               </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="my-1" />
+
+              {/* SETTINGS */}
               <DropdownMenuLabel className={labelClassName}>Ρυθμίσεις</DropdownMenuLabel>
               <DropdownMenuItem
                 className={itemClassName}
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setMenuOpen(false);
-                  setTimeout(() => setSettingsOpen(true), 50);
-                }}
+                onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setSettingsOpen(true), 50); }}
               >
                 <Settings className="mr-2 h-4 w-4 shrink-0" />
                 Ρυθμίσεις Εφαρμογής
               </DropdownMenuItem>
               <DropdownMenuItem
                 className={itemClassName}
-                onSelect={(e) => {
-                  e.preventDefault();
-                  setMenuOpen(false);
-                  setTimeout(() => setSoundOpen(true), 50);
-                }}
+                onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setSoundOpen(true), 50); }}
               >
                 <Bell className="mr-2 h-4 w-4 shrink-0" />
                 Ήχος Ειδοποιήσεων
               </DropdownMenuItem>
 
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="my-1" />
+
+              {/* HELP */}
               <DropdownMenuLabel className={labelClassName}>Βοήθεια</DropdownMenuLabel>
-              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver/profile?tab=support')}>
-                <LifeBuoy className="mr-2 h-4 w-4 shrink-0" />
-                Υποστήριξη
-              </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => { setMenuOpen(false); handleShare(); }}>
                 <Share2 className="mr-2 h-4 w-4 shrink-0" />
                 Μοιραστείτε την εφαρμογή
-              </DropdownMenuItem>
-              <DropdownMenuItem className={itemClassName} onSelect={() => window.open('https://quick-handoff-grid.lovable.app', '_blank')}>
-                <HelpCircle className="mr-2 h-4 w-4 shrink-0" />
-                Συχνές Ερωτήσεις
-              </DropdownMenuItem>
-              <DropdownMenuItem className={itemClassName} onSelect={() => window.open('https://quick-handoff-grid.lovable.app', '_blank')}>
-                <FileText className="mr-2 h-4 w-4 shrink-0" />
-                Όροι & Πολιτική
               </DropdownMenuItem>
             </>
           ) : (
@@ -263,22 +262,12 @@ export function UserMenu() {
             </>
           )}
 
-          {isDriver && (
-            <>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem className={itemClassName} onSelect={() => go('/profile')}>
-                <UserCircle className="mr-2 h-4 w-4 shrink-0" />
-                Το Προφίλ μου
-              </DropdownMenuItem>
-            </>
-          )}
-
           {isAdmin && (
             <>
-              <DropdownMenuSeparator />
+              <DropdownMenuSeparator className="my-1" />
               <DropdownMenuLabel className={labelClassName}>
                 <span className="inline-flex items-center gap-1.5">
-                  <Repeat className="h-3 w-3" /> Εναλλαγή προβολής (Admin)
+                  <Repeat className="h-3 w-3" /> Εναλλαγή Προβολής (Admin)
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/admin')}>
@@ -296,7 +285,7 @@ export function UserMenu() {
             </>
           )}
 
-          <DropdownMenuSeparator />
+          <DropdownMenuSeparator className="my-1" />
           <DropdownMenuItem
             onSelect={() => { setMenuOpen(false); handleSignOut(); }}
             className="min-h-11 rounded-xl px-3 py-3 text-sm font-medium text-destructive cursor-pointer transition-colors focus:bg-destructive/10 focus:text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive"
