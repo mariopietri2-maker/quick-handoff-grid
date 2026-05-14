@@ -93,9 +93,12 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
   const progress = (secondsLeft / OFFER_TIMEOUT_SECONDS) * 100;
   const isUrgent = secondsLeft <= 15;
 
+  const isCash = offer.paymentMethod === 'cash';
+  const isCard = offer.paymentMethod === 'card' || offer.paymentMethod === 'wallet' || offer.paymentMethod === 'paid';
+
   return (
     <div className="driver-card overflow-hidden">
-      {/* Header — clean white, payout primary, timer secondary */}
+      {/* Header — payout primary, timer secondary */}
       <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10.5px] font-heading font-semibold uppercase tracking-[0.08em] text-[hsl(var(--driver-text-muted))]">
@@ -105,6 +108,18 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
             {offer.estimatedPayout.toFixed(2)}
             <span className="text-[20px] font-bold text-[hsl(var(--driver-text-muted))] ml-0.5">€</span>
           </p>
+          {/* Payment method badge */}
+          {(isCash || isCard) && (
+            <div className="mt-2 inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[11px] font-heading font-bold border"
+              style={isCash
+                ? { background: 'hsl(var(--driver-warm) / 0.12)', borderColor: 'hsl(var(--driver-warm) / 0.35)', color: 'hsl(var(--driver-warm))' }
+                : { background: 'hsl(var(--driver-accent) / 0.12)', borderColor: 'hsl(var(--driver-accent) / 0.35)', color: 'hsl(var(--driver-accent))' }}>
+              {isCash
+                ? <><Banknote className="h-3 w-3" /> ΜΕΤΡΗΤΑ {offer.cashToCollect ? `· ${offer.cashToCollect.toFixed(2)}€` : ''}</>
+                : <><CreditCard className="h-3 w-3" /> ΠΛΗΡΩΜΕΝΟ</>
+              }
+            </div>
+          )}
         </div>
         <div className={`flex items-center gap-1.5 rounded-full px-3 h-8 border ${
           isUrgent
