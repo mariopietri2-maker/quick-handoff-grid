@@ -176,43 +176,47 @@ Deno.serve(async (req) => {
       // No order left behind: when we exhaust the configured wave count, we
       // restart the cycle (wave 1 again with a fresh driver pool) instead of
       // giving up. The order keeps re-offering until a driver accepts.
-      const cycleExhausted = currentWave >= s.dist_max_waves;
-      const nextWave = cycleExhausted ? 1 : currentWave + 1;
-      const exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
+      let cycleExhausted = currentWave >= s.dist_max_waves;
+      let nextWave = cycleExhausted ? 1 : currentWave + 1;
+      let exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
 
-      let candidateDrivers: CandidateDriver[] = [];
-      const { data: primaryDrivers, error: rpcErr } = await admin.rpc("nearby_active_drivers", {
-        _store_lat: anchorLat,
-        _store_lng: anchorLng,
-        _order_value: Number(order.total_amount ?? 0),
-        _exclude_drivers: exclude,
-        _limit: s.dist_wave_size,
-      });
-
-      if (rpcErr) {
-        dispatchResults.push({ order: order.id, error: rpcErr.message });
-        continue;
-      }
-
-      candidateDrivers = (primaryDrivers ?? []) as CandidateDriver[];
-
-      // If store coordinates are wrong/missing for the real pickup area, retry
-      // around the delivery point so ready orders still reach nearby online drivers.
-      if (candidateDrivers.length === 0 && dropoff?.lat != null && dropoff?.lng != null) {
-        const { data: dropoffDrivers } = await admin.rpc("nearby_active_drivers", {
-          _store_lat: dropoff.lat,
-          _store_lng: dropoff.lng,
+      const fetchCandidates = async (excludeList: string[]): Promise<CandidateDriver[]> => {
+        let list: CandidateDriver[] = [];
+        const { data: primary } = await admin.rpc("nearby_active_drivers", {
+          _store_lat: anchorLat,
+          _store_lng: anchorLng,
           _order_value: Number(order.total_amount ?? 0),
-          _exclude_drivers: exclude,
+          _exclude_drivers: excludeList,
           _limit: s.dist_wave_size,
         });
-        candidateDrivers = (dropoffDrivers ?? []) as CandidateDriver[];
-      }
+        list = (primary ?? []) as CandidateDriver[];
 
-      // Last resort: "no order left behind" — offer to any fresh online driver,
-      // ordered by distance, even if normal radius/vehicle rules reject them.
-      if (candidateDrivers.length === 0) {
-        candidateDrivers = await loadAnyOnlineDrivers(admin, anchorLat, anchorLng, exclude, s.dist_wave_size);
+        if (list.length === 0 && dropoff?.lat != null && dropoff?.lng != null) {
+          const { data: dropoffDrivers } = await admin.rpc("nearby_active_drivers", {
+            _store_lat: dropoff.lat,
+            _store_lng: dropoff.lng,
+            _order_value: Number(order.total_amount ?? 0),
+            _exclude_drivers: excludeList,
+            _limit: s.dist_wave_size,
+          });
+          list = (dropoffDrivers ?? []) as CandidateDriver[];
+        }
+
+        if (list.length === 0) {
+          list = await loadAnyOnlineDrivers(admin, anchorLat, anchorLng, excludeList, s.dist_wave_size);
+        }
+        return list;
+      };
+
+      let candidateDrivers = await fetchCandidates(exclude);
+
+      // If exclude list ate up all online drivers, reset the cycle immediately
+      // and re-offer to everyone again (don't wait for max_waves).
+      if (candidateDrivers.length === 0 && exclude.length > 0) {
+        exclude = [];
+        nextWave = 1;
+        cycleExhausted = true;
+        candidateDrivers = await fetchCandidates(exclude);
       }
 
       if (!candidateDrivers || candidateDrivers.length === 0) {
