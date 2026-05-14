@@ -1,5 +1,3 @@
-import { supabase } from '@/integrations/supabase/client';
-
 export interface GeocodeResult {
   latitude: number;
   longitude: number;
@@ -8,7 +6,7 @@ export interface GeocodeResult {
 
 /** In-memory cache for the current session (shared across calls). */
 const memCache = new Map<string, GeocodeResult | null>();
-const LS_PREFIX = 'geo:v1:';
+const LS_PREFIX = 'geo:v2:';
 
 function readLS(key: string): GeocodeResult | null | undefined {
   try {
@@ -21,12 +19,12 @@ function writeLS(key: string, val: GeocodeResult | null) {
   try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); } catch { /* quota */ }
 }
 
-/** No-op kept for backwards compat (Google is invoked on-demand via edge function). */
-export function warmMapboxToken(): void { /* deprecated — kept to avoid breaking imports */ }
+/** No-op kept for backwards compat with old DriverApp boot warmup. */
+export function warmMapboxToken(): void { /* Google API is invoked on demand */ }
 
 /**
- * Forward-geocode an address using Google Geocoding API (via secure edge function).
- * Biased to Greece (GR). Cached in memory + localStorage so repeat lookups are instant.
+ * Forward-geocode an address via the secure `google-geocode` edge function
+ * (Google Geocoding API, biased to Greece). Cached in memory + localStorage.
  */
 export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
   const q = address?.trim();
@@ -42,36 +40,15 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
 
   let result: GeocodeResult | null = null;
   try {
-    const { data, error } = await supabase.functions.invoke('google-geocode', {
-      method: 'GET' as any,
-      body: undefined,
-      headers: {},
-      // supabase-js doesn't natively support GET query params — fall back to fetch
-    } as any);
-    if (error || !data) {
-      // Fallback: direct fetch with query string
-      const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-geocode?q=${encodeURIComponent(q)}`;
-      const res = await fetch(base, {
-        headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
-      });
+    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-geocode?q=${encodeURIComponent(q)}`;
+    const res = await fetch(url, {
+      headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
+    });
+    if (res.ok) {
       const json = await res.json();
       result = json?.result ?? null;
-    } else {
-      result = (data as any)?.result ?? null;
     }
   } catch { result = null; }
-
-  // Always retry via direct fetch with query param to ensure correctness
-  if (!result) {
-    try {
-      const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-geocode?q=${encodeURIComponent(q)}`;
-      const res = await fetch(base, {
-        headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
-      });
-      const json = await res.json();
-      result = json?.result ?? null;
-    } catch { /* ignore */ }
-  }
 
   memCache.set(key, result);
   writeLS(key, result);
