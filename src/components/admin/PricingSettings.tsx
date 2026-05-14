@@ -221,8 +221,10 @@ export default function PricingSettings() {
                   healthLabel === 'υγιές' ? 'text-emerald-600' :
                   healthLabel === 'κανονικό' ? 'text-foreground' :
                   healthLabel === 'χαμηλό' ? 'text-amber-600' : 'text-destructive'
-                }>{healthLabel}</b> · multiplier: <b>×{mult.toFixed(2)}</b></p>
-                <p>Παράδοση {previewKm} χλμ → bonus = clamp(€{rawBonus.toFixed(2)}, €{pricing.min_pay}, €{pricing.max_pay}) × {mult.toFixed(2)} = <b className="text-primary">€{finalBonus.toFixed(2)}</b></p>
+                }>{healthLabel}</b> · multiplier: <b>×{mult.toFixed(2)}</b>{isPaused && <> · <b className="text-destructive">PAUSED</b></>}</p>
+                {isPaused
+                  ? <p>Bonus σε pause → <b className="text-destructive">€{finalBonus.toFixed(2)}</b> {pricing.subsidize_min_pay && <span className="text-[11px]">(admin subsidy)</span>}</p>
+                  : <p>Παράδοση {previewKm} χλμ → bonus = clamp(€{rawBonus.toFixed(2)}, €{pricing.min_pay}, €{pricing.max_pay}) × {mult.toFixed(2)} = <b className="text-primary">€{finalBonus.toFixed(2)}</b></p>}
                 <p className="text-[11px] text-muted-foreground">Σύνολο για τον οδηγό: delivery fee €{driverDeliveryPay.toFixed(2)} + bonus €{finalBonus.toFixed(2)} + tip = <b>€{(driverDeliveryPay + finalBonus).toFixed(2)}</b> (χωρίς tip).</p>
               </div>
             </CardContent>
