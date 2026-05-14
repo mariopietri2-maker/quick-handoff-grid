@@ -198,7 +198,7 @@ export default function LiveOpsDashboard() {
       const wrap = document.createElement('div');
       wrap.innerHTML = `<div style="width:28px;height:28px;background:${s.is_active ? '#f97316' : '#cbd5e1'};border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.2);display:flex;align-items:center;justify-content:center;font-size:13px;">🏪</div>`;
       const popup = new mapboxgl.Popup({ offset: 16 }).setHTML(`
-        <div style="font-family:system-ui;padding:4px;"><strong>${s.name}</strong></div>
+        <div style="font-family:system-ui;padding:4px;"><strong>${escapeHtml(s.name)}</strong></div>
       `);
       const m = new mapboxgl.Marker({ element: wrap })
         .setLngLat([s.longitude, s.latitude])
