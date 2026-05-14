@@ -301,6 +301,7 @@ export default function DriverApp() {
               <div className="divide-y divide-border">
                 {offers.map((offer) => {
                   const isClaimed = !!offer.driver_id;
+                  const isReady = offer.status === 'ready';
                   return (
                   <article key={offer.id} className="p-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div className="min-w-0 space-y-2">
@@ -310,6 +311,11 @@ export default function DriverApp() {
                         {isClaimed && (
                           <Badge variant="destructive" className="font-heading text-[10px] uppercase">
                             Σε οδηγό
+                          </Badge>
+                        )}
+                        {!isReady && (
+                          <Badge variant="secondary" className="font-heading text-[10px] uppercase">
+                            Προετοιμασία
                           </Badge>
                         )}
                       </div>
@@ -326,9 +332,10 @@ export default function DriverApp() {
                     </div>
                     <button
                       onClick={() => acceptOrder(offer.id)}
-                      className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all"
+                      className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+                      disabled={!isReady}
                     >
-                      {isClaimed ? 'Ανάκτηση' : 'Ανάληψη'}
+                      {isReady ? (isClaimed ? 'Ανάκτηση' : 'Ανάληψη') : 'Αναμονή'}
                     </button>
                   </article>
                   );
