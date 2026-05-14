@@ -180,11 +180,29 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
         </div>
 
         {/* Payout breakdown */}
-        {offer.basePay !== undefined && (
-          <div className="mt-3 pt-3 border-t border-[hsl(var(--driver-border))] flex items-center justify-between text-[11.5px]">
-            <span className="text-[hsl(var(--driver-text-muted))]">Βασική <span className="text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.basePay ?? 0).toFixed(2)}€</span></span>
-            <span className="text-[hsl(var(--driver-text-muted))]">Tip <span className="text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.tipAmount ?? 0).toFixed(2)}€</span></span>
-            <span className="text-[hsl(var(--driver-accent))] font-heading font-bold tabular-nums">{(offer.perKmRate ?? 0.50).toFixed(2)}€/χλμ</span>
+        {(offer.basePay !== undefined || offer.poolBonus) && (
+          <div className="mt-3 pt-3 border-t border-[hsl(var(--driver-border))] grid grid-cols-2 gap-y-1.5 text-[11.5px]">
+            <span className="text-[hsl(var(--driver-text-muted))]">Βασική</span>
+            <span className="text-right text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.basePay ?? 0).toFixed(2)}€</span>
+            {(offer.poolBonus ?? 0) > 0 && (<>
+              <span className="text-[hsl(var(--driver-text-muted))]">Bonus pool</span>
+              <span className="text-right text-[hsl(var(--driver-accent))] font-semibold tabular-nums">+{(offer.poolBonus ?? 0).toFixed(2)}€</span>
+            </>)}
+            <span className="text-[hsl(var(--driver-text-muted))]">Tip</span>
+            <span className="text-right text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.tipAmount ?? 0).toFixed(2)}€</span>
+            <span className="text-[hsl(var(--driver-text-muted))]">Ανά χλμ</span>
+            <span className="text-right text-[hsl(var(--driver-text))] font-semibold tabular-nums">{(offer.perKmRate ?? 0.50).toFixed(2)}€/χλμ</span>
+          </div>
+        )}
+
+        {/* Customer notes */}
+        {offer.customerNotes && offer.customerNotes.trim().length > 0 && (
+          <div className="mt-3 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex gap-2">
+            <MessageSquare className="h-3.5 w-3.5 mt-0.5 text-[hsl(var(--driver-info))] flex-shrink-0" />
+            <div className="min-w-0">
+              <p className="text-[10px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Σημείωση πελάτη</p>
+              <p className="text-[12.5px] text-[hsl(var(--driver-text))] leading-snug mt-0.5 break-words">{offer.customerNotes}</p>
+            </div>
           </div>
         )}
 
