@@ -231,8 +231,8 @@ export default function LiveOpsMap() {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <span style="font-size:18px;">${vehicleEmoji}</span>
             <div>
-              <div style="font-weight:700;font-size:13px;">${info?.name || loc.driver_id.slice(0, 8)}</div>
-              ${info?.code ? `<div style="font-size:10px;opacity:0.6;">${info.code}</div>` : ''}
+              <div style="font-weight:700;font-size:13px;">${escapeHtml(info?.name || loc.driver_id.slice(0, 8))}</div>
+              ${info?.code ? `<div style="font-size:10px;opacity:0.6;">${escapeHtml(info.code)}</div>` : ''}
             </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11px;">
