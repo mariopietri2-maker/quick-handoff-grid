@@ -39,6 +39,7 @@ const StoreBillingSettings   = lazy(() => import('@/components/admin/StoreBillin
 const StorePromotionsManager = lazy(() => import('@/components/admin/StorePromotionsManager'));
 const SystemResetPanel       = lazy(() => import('@/components/admin/SystemResetPanel'));
 const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDashboard'));
+const DispatchDiagnostics    = lazy(() => import('@/components/admin/DispatchDiagnostics'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
@@ -235,6 +236,8 @@ export default function AdminApp() {
         return <CannedRepliesManager />;
       case 'external_orders':
         return <ExternalOrderIngest />;
+      case 'dispatch_debug':
+        return <DispatchDiagnostics />;
       case 'store_billing':
         return <StoreBillingSettings />;
       case 'promotions':

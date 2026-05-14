@@ -49,6 +49,7 @@ export const NAV_SECTIONS = [
       { id: 'orders', label: 'Pipeline (Kanban)' },
       { id: 'orders_table', label: 'Πίνακας' },
       { id: 'external_orders', label: 'eFood / Wolt' },
+      { id: 'dispatch_debug', label: '🔧 Dispatch debug' },
     ],
   },
   {
