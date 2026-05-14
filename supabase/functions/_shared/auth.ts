@@ -28,10 +28,10 @@ export async function getAuthedUser(req: Request): Promise<AuthedUser | null> {
     Deno.env.get("SUPABASE_ANON_KEY")!,
   );
 
-  const { data: claimsData, error: claimsErr } = await supabase.auth.getClaims(token);
-  if (claimsErr || !claimsData?.claims?.sub) return null;
-  const userId = claimsData.claims.sub as string;
-  const email = (claimsData.claims.email as string | undefined) ?? null;
+  const { data: userData, error: userErr } = await supabase.auth.getUser(token);
+  if (userErr || !userData?.user?.id) return null;
+  const userId = userData.user.id;
+  const email = userData.user.email ?? null;
 
   // Fetch role flags from user_roles using service role (bypass RLS).
   const admin = createClient(
