@@ -177,7 +177,7 @@ Deno.serve(async (req) => {
       // restart the cycle (wave 1 again with a fresh driver pool) instead of
       // giving up. The order keeps re-offering until a driver accepts.
       let cycleExhausted = currentWave >= s.dist_max_waves;
-      let nextWave = cycleExhausted ? 1 : currentWave + 1;
+      let nextWave = currentWave + 1;
       let exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
 
       const fetchCandidates = async (excludeList: string[]): Promise<CandidateDriver[]> => {
@@ -214,7 +214,6 @@ Deno.serve(async (req) => {
       // and re-offer to everyone again (don't wait for max_waves).
       if (candidateDrivers.length === 0 && exclude.length > 0) {
         exclude = [];
-        nextWave = 1;
         cycleExhausted = true;
         candidateDrivers = await fetchCandidates(exclude);
       }
