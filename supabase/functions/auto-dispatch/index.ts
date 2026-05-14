@@ -295,7 +295,12 @@ async function loadAnyOnlineDrivers(
     .filter((row: any) => !exclude.includes(row.user_id) && !row.driver_state?.on_break)
     .map((row: any) => {
       const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
-      const distance = haversineKm(anchorLat, anchorLng, Number(loc.latitude), Number(loc.longitude));
+      const lat = loc?.latitude != null ? Number(loc.latitude) : null;
+      const lng = loc?.longitude != null ? Number(loc.longitude) : null;
+      // If no recent GPS, still offer (assume far) so order doesn't sit unassigned.
+      const distance = lat != null && lng != null
+        ? haversineKm(anchorLat, anchorLng, lat, lng)
+        : 9999;
       return { driver_id: row.user_id, distance_km: Number(distance.toFixed(2)), score: Number(distance.toFixed(3)) };
     })
     .sort((a: CandidateDriver, b: CandidateDriver) => a.score - b.score)
