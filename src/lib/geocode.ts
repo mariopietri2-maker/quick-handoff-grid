@@ -1,21 +1,5 @@
 import { supabase } from '@/integrations/supabase/client';
 
-let tokenPromise: Promise<string | null> | null = null;
-
-async function getMapboxToken(): Promise<string | null> {
-  if (!tokenPromise) {
-    tokenPromise = supabase.functions
-      .invoke('get-mapbox-token')
-      .then(({ data, error }) => (!error && data?.token ? (data.token as string) : null))
-      .catch(() => null);
-  }
-  const token = await tokenPromise;
-  // If the fetch failed, clear the cache so the next call retries instead of
-  // permanently returning null for the rest of the session.
-  if (!token) tokenPromise = null;
-  return token;
-}
-
 export interface GeocodeResult {
   latitude: number;
   longitude: number;
@@ -37,13 +21,12 @@ function writeLS(key: string, val: GeocodeResult | null) {
   try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); } catch { /* quota */ }
 }
 
-/** Pre-warm the Mapbox token. Call once at app boot to remove first-use latency. */
-export function warmMapboxToken(): void { void getMapboxToken(); }
+/** No-op kept for backwards compat (Google is invoked on-demand via edge function). */
+export function warmMapboxToken(): void { /* deprecated — kept to avoid breaking imports */ }
 
 /**
- * Forward-geocode an address using Mapbox. Returns null if not found / no token.
+ * Forward-geocode an address using Google Geocoding API (via secure edge function).
  * Biased to Greece (GR). Cached in memory + localStorage so repeat lookups are instant.
- * Falls back from limit=1 to a 5-result search if the first attempt is empty.
  */
 export async function geocodeAddress(address: string): Promise<GeocodeResult | null> {
   const q = address?.trim();
@@ -57,27 +40,38 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
     return cached;
   }
 
-  const token = await getMapboxToken();
-  if (!token) return null;
-
-  const fetchOnce = async (limit: number) => {
-    const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(
-      q,
-    )}.json?access_token=${token}&country=gr&limit=${limit}&language=el&autocomplete=true`;
-    const res = await fetch(url);
-    if (!res.ok) return null;
-    const json = await res.json();
-    const feat = json?.features?.[0];
-    if (!feat?.center) return null;
-    const [lng, lat] = feat.center as [number, number];
-    return { latitude: lat, longitude: lng, formatted: feat.place_name ?? q } as GeocodeResult;
-  };
-
   let result: GeocodeResult | null = null;
   try {
-    result = await fetchOnce(1);
-    if (!result) result = await fetchOnce(5); // wider net for partial / fuzzy addresses
+    const { data, error } = await supabase.functions.invoke('google-geocode', {
+      method: 'GET' as any,
+      body: undefined,
+      headers: {},
+      // supabase-js doesn't natively support GET query params — fall back to fetch
+    } as any);
+    if (error || !data) {
+      // Fallback: direct fetch with query string
+      const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-geocode?q=${encodeURIComponent(q)}`;
+      const res = await fetch(base, {
+        headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
+      });
+      const json = await res.json();
+      result = json?.result ?? null;
+    } else {
+      result = (data as any)?.result ?? null;
+    }
   } catch { result = null; }
+
+  // Always retry via direct fetch with query param to ensure correctness
+  if (!result) {
+    try {
+      const base = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-geocode?q=${encodeURIComponent(q)}`;
+      const res = await fetch(base, {
+        headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
+      });
+      const json = await res.json();
+      result = json?.result ?? null;
+    } catch { /* ignore */ }
+  }
 
   memCache.set(key, result);
   writeLS(key, result);
