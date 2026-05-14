@@ -40,13 +40,12 @@ export async function geocodeAddress(address: string): Promise<GeocodeResult | n
 
   let result: GeocodeResult | null = null;
   try {
-    const url = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/google-geocode?q=${encodeURIComponent(q)}`;
-    const res = await fetch(url, {
-      headers: { apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as string },
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await supabase.functions.invoke('google-geocode', {
+      body: { q },
     });
-    if (res.ok) {
-      const json = await res.json();
-      result = json?.result ?? null;
+    if (!error) {
+      result = (data as any)?.result ?? null;
     }
   } catch { result = null; }
 
