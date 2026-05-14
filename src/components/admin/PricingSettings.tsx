@@ -35,6 +35,7 @@ interface PricingRow {
   pool_critical_multiplier: number;
   subsidize_min_pay: boolean;
   pool_alert_enabled: boolean;
+  pause_bonus_when_critical: boolean;
 }
 
 const DAYS = [
@@ -55,7 +56,7 @@ export default function PricingSettings() {
     default_commission_pct: 15, admin_share_pct: 5, driver_pool_pct_of_subtotal: 10,
     pool_healthy_threshold: 500, low_pool_threshold: 50, pool_critical_threshold: 20,
     pool_low_multiplier: 0.85, pool_critical_multiplier: 0.6,
-    subsidize_min_pay: false, pool_alert_enabled: true,
+    subsidize_min_pay: false, pool_alert_enabled: true, pause_bonus_when_critical: false,
   });
   const [poolBalance, setPoolBalance] = useState<number>(0);
 
@@ -89,6 +90,7 @@ export default function PricingSettings() {
             pool_critical_multiplier: Number(d.pool_critical_multiplier ?? 0.6),
             subsidize_min_pay: !!d.subsidize_min_pay,
             pool_alert_enabled: d.pool_alert_enabled !== false,
+            pause_bonus_when_critical: !!d.pause_bonus_when_critical,
           });
         }
         setLoading(false);
@@ -133,7 +135,9 @@ export default function PricingSettings() {
   else if (poolBalance >= pricing.low_pool_threshold) { healthLabel = 'κανονικό'; mult = 1; }
   else if (poolBalance >= pricing.pool_critical_threshold) { healthLabel = 'χαμηλό'; mult = pricing.pool_low_multiplier; }
   else { healthLabel = 'κρίσιμο'; mult = pricing.pool_critical_multiplier; }
-  const finalBonus = Math.max(clampedBonus * mult, pricing.min_pay);
+  let finalBonus = Math.max(clampedBonus * mult, pricing.min_pay);
+  const isPaused = healthLabel === 'κρίσιμο' && pricing.pause_bonus_when_critical;
+  if (isPaused) finalBonus = pricing.subsidize_min_pay ? pricing.min_pay : 0;
 
   return (
     <div className="space-y-4 max-w-4xl">
@@ -188,7 +192,14 @@ export default function PricingSettings() {
                 <Field label="Critical ×" value={pricing.pool_critical_multiplier} onChange={v => setPricing(p => ({ ...p, pool_critical_multiplier: v }))} hint="0–1, π.χ. 0.6" step="0.05" />
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <label className="flex items-start gap-2 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/40">
+                  <input type="checkbox" className="mt-1" checked={pricing.pause_bonus_when_critical} onChange={e => setPricing(p => ({ ...p, pause_bonus_when_critical: e.target.checked }))} />
+                  <div className="text-xs">
+                    <p className="font-bold text-foreground">Auto-pause bonus σε κρίσιμο basket</p>
+                    <p className="text-muted-foreground mt-0.5">Όταν το basket πέσει κάτω από το critical threshold, το bonus γίνεται €0 μέχρι να γεμίσει ξανά. Ο οδηγός παίρνει μόνο delivery fee + tip.</p>
+                  </div>
+                </label>
                 <label className="flex items-start gap-2 rounded-lg border border-border p-3 cursor-pointer hover:bg-muted/40">
                   <input type="checkbox" className="mt-1" checked={pricing.subsidize_min_pay} onChange={e => setPricing(p => ({ ...p, subsidize_min_pay: e.target.checked }))} />
                   <div className="text-xs">
@@ -210,8 +221,10 @@ export default function PricingSettings() {
                   healthLabel === 'υγιές' ? 'text-emerald-600' :
                   healthLabel === 'κανονικό' ? 'text-foreground' :
                   healthLabel === 'χαμηλό' ? 'text-amber-600' : 'text-destructive'
-                }>{healthLabel}</b> · multiplier: <b>×{mult.toFixed(2)}</b></p>
-                <p>Παράδοση {previewKm} χλμ → bonus = clamp(€{rawBonus.toFixed(2)}, €{pricing.min_pay}, €{pricing.max_pay}) × {mult.toFixed(2)} = <b className="text-primary">€{finalBonus.toFixed(2)}</b></p>
+                }>{healthLabel}</b> · multiplier: <b>×{mult.toFixed(2)}</b>{isPaused && <> · <b className="text-destructive">PAUSED</b></>}</p>
+                {isPaused
+                  ? <p>Bonus σε pause → <b className="text-destructive">€{finalBonus.toFixed(2)}</b> {pricing.subsidize_min_pay && <span className="text-[11px]">(admin subsidy)</span>}</p>
+                  : <p>Παράδοση {previewKm} χλμ → bonus = clamp(€{rawBonus.toFixed(2)}, €{pricing.min_pay}, €{pricing.max_pay}) × {mult.toFixed(2)} = <b className="text-primary">€{finalBonus.toFixed(2)}</b></p>}
                 <p className="text-[11px] text-muted-foreground">Σύνολο για τον οδηγό: delivery fee €{driverDeliveryPay.toFixed(2)} + bonus €{finalBonus.toFixed(2)} + tip = <b>€{(driverDeliveryPay + finalBonus).toFixed(2)}</b> (χωρίς tip).</p>
               </div>
             </CardContent>
