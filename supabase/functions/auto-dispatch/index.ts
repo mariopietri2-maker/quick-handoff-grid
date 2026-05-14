@@ -46,8 +46,11 @@ interface CandidateDriver {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Restrict to internal cron callers (CRON_SECRET) or admin users (SystemHealthPanel ping).
-  if (!hasCronSecret(req)) {
+  // Allow internal callers: pg_cron job (sends apikey == anon key), CRON_SECRET, or admin user.
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+  const apikeyHeader = req.headers.get("apikey");
+  const isInternalCron = !!anonKey && apikeyHeader === anonKey && !req.headers.get("Authorization");
+  if (!isInternalCron && !hasCronSecret(req)) {
     const user = await getAuthedUser(req);
     if (!user?.isAdmin) return unauthorized(corsHeaders);
   }
