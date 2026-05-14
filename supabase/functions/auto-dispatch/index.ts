@@ -101,13 +101,12 @@ Deno.serve(async (req) => {
     //    - dispatch_at <= now (or null)
     //    - status placed/accepted/preparing/ready
     //    - NOT already covered by a live pending offer
-    const nowIso = new Date().toISOString();
+    // Always offer immediately — don't sit on orders. dispatch_at is informational only.
     const { data: candidates } = await admin
       .from("orders")
       .select("id, store_id, driver_id, total_amount, status, dispatch_at")
       .is("driver_id", null)
       .in("status", ["placed", "accepted", "preparing", "ready"])
-      .or(`dispatch_at.is.null,dispatch_at.lte.${nowIso}`)
       .order("created_at", { ascending: true })
       .limit(50);
 
