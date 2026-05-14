@@ -20,8 +20,17 @@ interface StoreRow {
 }
 
 const ACTIVE_STATUSES = ['placed', 'accepted', 'preparing', 'ready'];
-const DEFAULT_LAT = 39.1600; // Άρτα
-const DEFAULT_LNG = 20.9853;
+const DEFAULT_LAT = 39.6650; // Ιωάννινα (matches driver map)
+const DEFAULT_LNG = 20.8537;
+const MAX_KM = 15;
+
+function distKm(lat: number, lng: number) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat - DEFAULT_LAT);
+  const dLng = toRad(lng - DEFAULT_LNG);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(DEFAULT_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng/2)**2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 
 /**
  * Driver Map Editor — admin-only.
