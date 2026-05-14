@@ -36,6 +36,12 @@ interface StoreLoc {
   longitude: number | null;
 }
 
+interface CandidateDriver {
+  driver_id: string;
+  distance_km: number;
+  score: number;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -174,7 +180,8 @@ Deno.serve(async (req) => {
       const nextWave = cycleExhausted ? 1 : currentWave + 1;
       const exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
 
-      const { data: candidateDrivers, error: rpcErr } = await admin.rpc("nearby_active_drivers", {
+      let candidateDrivers: CandidateDriver[] = [];
+      const { data: primaryDrivers, error: rpcErr } = await admin.rpc("nearby_active_drivers", {
         _store_lat: anchorLat,
         _store_lng: anchorLng,
         _order_value: Number(order.total_amount ?? 0),
@@ -187,13 +194,34 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      candidateDrivers = (primaryDrivers ?? []) as CandidateDriver[];
+
+      // If store coordinates are wrong/missing for the real pickup area, retry
+      // around the delivery point so ready orders still reach nearby online drivers.
+      if (candidateDrivers.length === 0 && dropoff?.lat != null && dropoff?.lng != null) {
+        const { data: dropoffDrivers } = await admin.rpc("nearby_active_drivers", {
+          _store_lat: dropoff.lat,
+          _store_lng: dropoff.lng,
+          _order_value: Number(order.total_amount ?? 0),
+          _exclude_drivers: exclude,
+          _limit: s.dist_wave_size,
+        });
+        candidateDrivers = (dropoffDrivers ?? []) as CandidateDriver[];
+      }
+
+      // Last resort: "no order left behind" — offer to any fresh online driver,
+      // ordered by distance, even if normal radius/vehicle rules reject them.
+      if (candidateDrivers.length === 0) {
+        candidateDrivers = await loadAnyOnlineDrivers(admin, anchorLat, anchorLng, exclude, s.dist_wave_size);
+      }
+
       if (!candidateDrivers || candidateDrivers.length === 0) {
         dispatchResults.push({ order: order.id, skipped: `no eligible drivers (wave ${nextWave})` });
         continue;
       }
 
       const expiresAt = new Date(Date.now() + s.dist_offer_timeout_seconds * 1000).toISOString();
-      const offers = candidateDrivers.map((d: { driver_id: string; distance_km: number; score: number }) => ({
+      const offers = candidateDrivers.map((d: CandidateDriver) => ({
         order_id: order.id,
         driver_id: d.driver_id,
         wave: nextWave,
