@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHand
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { escapeHtml, safeHttpsUrl } from '@/lib/escape-html';
 
 export interface DriverMapboxHandle {
   recenter: () => void;
@@ -288,7 +289,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       el.innerHTML = `<div style="width:40px;height:40px;background:${isTarget ? '#f97316' : '#f97316'};border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(249,115,22,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">🏪</div>`;
       storeMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([storeLng, storeLat])
-        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${storeName || 'Κατάστημα'}</strong>`))
+        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${escapeHtml(storeName || 'Κατάστημα')}</strong>`))
         .addTo(map);
     }
   }, [storeLat, storeLng, storeName, navigatingTo]);
@@ -305,7 +306,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       el.innerHTML = `<div style="width:40px;height:40px;background:#22c55e;border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(34,197,94,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">📍</div>`;
       customerMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([customerLng, customerLat])
-        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${customerName || 'Παράδοση'}</strong><br/><span style="font-size:11px;">${customerAddress || ''}</span>`))
+        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${escapeHtml(customerName || 'Παράδοση')}</strong><br/><span style="font-size:11px;">${escapeHtml(customerAddress || '')}</span>`))
         .addTo(map);
     }
   }, [customerLat, customerLng, customerName, customerAddress, navigatingTo]);
@@ -337,13 +338,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         return;
       }
 
-      const safeName = s.name.replace(/[<>"]/g, '');
-      const initials = safeName.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '🏪';
+      const safeName = escapeHtml(s.name);
+      const initials = String(s.name).split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '🏪';
+      const safeInitials = escapeHtml(initials);
       const badgeColor = s.pendingOrders > 0 ? '#ef4444' : '#6b7280';
       const badge = `<div style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;background:${badgeColor};color:white;border-radius:10px;border:2px solid white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${s.pendingOrders}</div>`;
-      const imgInner = s.image_url
-        ? `<img src="${s.image_url}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerText:'${initials}',style:'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);'}))" />`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);">${initials}</div>`;
+      const safeImg = safeHttpsUrl(s.image_url);
+      const imgInner = safeImg
+        ? `<img src="${safeImg}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" />`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);">${safeInitials}</div>`;
 
       const html = `
         <div style="position:relative;cursor:pointer;">

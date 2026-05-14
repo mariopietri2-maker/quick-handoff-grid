@@ -1,5 +1,6 @@
 // Parses pasted receipt text from eFood / Wolt / Box / generic into a structured order.
 import { rateLimit, rateLimitResponse, clientKey } from "../_shared/rate-limit.ts";
+import { getAuthedUser, unauthorized } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -38,8 +39,14 @@ Deno.serve(async (req) => {
   try {
     if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY not configured");
 
-    // Rate limit: 20 parses/min per IP (burst 5) — receipt parsing is expensive
-    const rl = rateLimit(clientKey(req), { capacity: 5, refillPerMinute: 20 });
+    // Require an authenticated store/admin user — receipt parsing is an operator workflow.
+    const user = await getAuthedUser(req);
+    if (!user || !(user.isAdmin || user.isSupport || user.isStore)) {
+      return unauthorized(corsHeaders);
+    }
+
+    // Rate limit: 20 parses/min per user (burst 5) — receipt parsing is expensive
+    const rl = rateLimit(`u:${user.id}`, { capacity: 5, refillPerMinute: 20 });
     if (!rl.allowed) return rateLimitResponse(rl.retryAfter, corsHeaders);
 
     const body = (await req.json()) as ParseRequest;

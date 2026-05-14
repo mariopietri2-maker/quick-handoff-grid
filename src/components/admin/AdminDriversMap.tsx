@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { supabase } from '@/integrations/supabase/client';
+import { escapeHtml } from '@/lib/escape-html';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -188,8 +189,8 @@ export default function AdminDriversMap() {
         
         const popup = new mapboxgl.Popup({ offset: 20 }).setHTML(`
           <div style="text-align:center;font-family:system-ui;padding:4px;">
-            <strong>${info?.name || loc.driver_id.slice(0, 8)}</strong>
-            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${info.code}</span>` : ''}
+            <strong>${escapeHtml(info?.name || loc.driver_id.slice(0, 8))}</strong>
+            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${escapeHtml(info.code)}</span>` : ''}
             ${loc.speed != null && loc.speed > 0 ? `<br/><span style="font-size:11px;">${(loc.speed * 3.6).toFixed(0)} km/h</span>` : ''}
           </div>
         `);
@@ -228,8 +229,8 @@ export default function AdminDriversMap() {
 
       const popup = new mapboxgl.Popup({ offset: 18 }).setHTML(`
         <div style="text-align:center;font-family:system-ui;padding:4px;">
-          <strong>${store.name}</strong>
-          <br/><span style="font-size:11px;opacity:0.7;">${store.address}</span>
+          <strong>${escapeHtml(store.name)}</strong>
+          <br/><span style="font-size:11px;opacity:0.7;">${escapeHtml(store.address)}</span>
           <br/><span style="font-size:11px;">${store.is_active ? '✅ Ενεργό' : '❌ Ανενεργό'}</span>
           ${editStores ? `<br/><span style="font-size:11px;color:#f97316;font-weight:600;">${isSelected ? '👆 Κλικ στον χάρτη για τοποθέτηση' : 'Κλικ για επιλογή'}</span>` : ''}
         </div>

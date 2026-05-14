@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { supabase } from '@/integrations/supabase/client';
+import { escapeHtml } from '@/lib/escape-html';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Activity, Bike, Car, MapPin, Package, Store as StoreIcon, TrendingUp, Users, Zap } from 'lucide-react';
@@ -231,8 +232,8 @@ export default function LiveOpsMap() {
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
             <span style="font-size:18px;">${vehicleEmoji}</span>
             <div>
-              <div style="font-weight:700;font-size:13px;">${info?.name || loc.driver_id.slice(0, 8)}</div>
-              ${info?.code ? `<div style="font-size:10px;opacity:0.6;">${info.code}</div>` : ''}
+              <div style="font-weight:700;font-size:13px;">${escapeHtml(info?.name || loc.driver_id.slice(0, 8))}</div>
+              ${info?.code ? `<div style="font-size:10px;opacity:0.6;">${escapeHtml(info.code)}</div>` : ''}
             </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:6px;font-size:11px;">
@@ -285,8 +286,8 @@ export default function LiveOpsMap() {
       `;
       const popup = new mapboxgl.Popup({ offset: 18, closeButton: false }).setHTML(`
         <div style="font-family:system-ui;padding:4px;min-width:160px;">
-          <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${store.name}</div>
-          <div style="font-size:10px;opacity:0.7;margin-bottom:6px;">${store.address}</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${escapeHtml(store.name)}</div>
+          <div style="font-size:10px;opacity:0.7;margin-bottom:6px;">${escapeHtml(store.address)}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;">
             <span style="font-size:10px;padding:2px 6px;background:${store.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(107,114,128,0.15)'};color:${store.is_active ? '#10b981' : '#6b7280'};border-radius:4px;font-weight:600;">${store.is_active ? 'Active' : 'Inactive'}</span>
             ${store.busy_mode ? `<span style="font-size:10px;padding:2px 6px;background:rgba(249,115,22,0.15);color:#f97316;border-radius:4px;font-weight:600;">Busy</span>` : ''}

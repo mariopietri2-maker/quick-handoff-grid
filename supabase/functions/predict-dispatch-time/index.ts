@@ -1,8 +1,9 @@
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { getAuthedUser, hasCronSecret, unauthorized } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 // Travel speed assumptions (km/h) by vehicle / general avg
@@ -21,6 +22,13 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
+    // Require either an authenticated user (any role — customers call this right
+    // after creating their order) OR a valid CRON_SECRET for internal callers.
+    if (!hasCronSecret(req)) {
+      const user = await getAuthedUser(req);
+      if (!user) return unauthorized(corsHeaders);
+    }
+
     const { order_id } = (await req.json()) as RequestBody;
     if (!order_id) throw new Error("order_id required");
 

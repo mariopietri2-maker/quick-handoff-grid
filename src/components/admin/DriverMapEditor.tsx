@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { supabase } from '@/integrations/supabase/client';
+import { escapeHtml } from '@/lib/escape-html';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
@@ -164,8 +165,8 @@ export default function DriverMapEditor() {
 
       const popup = new mapboxgl.Popup({ offset: 22 }).setHTML(`
         <div style="font-family:system-ui;padding:6px;min-width:160px;">
-          <strong style="font-size:13px;">${store.name}</strong>
-          <div style="font-size:11px;opacity:0.7;margin-top:2px;">${store.address ?? ''}</div>
+          <strong style="font-size:13px;">${escapeHtml(store.name)}</strong>
+          <div style="font-size:11px;opacity:0.7;margin-top:2px;">${escapeHtml(store.address ?? '')}</div>
           <div style="font-size:11px;margin-top:6px;">
             ${activeCount > 0 ? `🔴 <strong>${activeCount}</strong> ενεργές παραγγελίες` : '⚪ Καμία ενεργή παραγγελία'}
           </div>
