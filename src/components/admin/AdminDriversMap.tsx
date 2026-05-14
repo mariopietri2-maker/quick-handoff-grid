@@ -189,8 +189,8 @@ export default function AdminDriversMap() {
         
         const popup = new mapboxgl.Popup({ offset: 20 }).setHTML(`
           <div style="text-align:center;font-family:system-ui;padding:4px;">
-            <strong>${info?.name || loc.driver_id.slice(0, 8)}</strong>
-            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${info.code}</span>` : ''}
+            <strong>${escapeHtml(info?.name || loc.driver_id.slice(0, 8))}</strong>
+            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${escapeHtml(info.code)}</span>` : ''}
             ${loc.speed != null && loc.speed > 0 ? `<br/><span style="font-size:11px;">${(loc.speed * 3.6).toFixed(0)} km/h</span>` : ''}
           </div>
         `);
