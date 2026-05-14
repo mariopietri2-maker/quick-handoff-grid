@@ -100,7 +100,7 @@ export default function DriverLiveMap({ driverId, deliveryLat, deliveryLng, deli
       el.innerHTML = `<div style="width:36px;height:36px;background:#22c55e;border-radius:50%;border:3px solid white;box-shadow:0 2px 12px rgba(34,197,94,0.4);display:flex;align-items:center;justify-content:center;font-size:18px;">📍</div>`;
       deliveryMarkerRef.current = new mapboxgl.Marker({ element: el })
         .setLngLat([deliveryLng, deliveryLat])
-        .setPopup(new mapboxgl.Popup({ offset: 20 }).setHTML(`<strong>${deliveryAddress || 'Παράδοση'}</strong>`))
+        .setPopup(new mapboxgl.Popup({ offset: 20 }).setHTML(`<strong>${escapeHtml(deliveryAddress || 'Παράδοση')}</strong>`))
         .addTo(map);
     }
   }, [deliveryLat, deliveryLng, deliveryAddress]);
