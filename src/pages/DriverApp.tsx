@@ -285,7 +285,7 @@ export default function DriverApp() {
                 <ClipboardList className="h-4 w-4 text-primary shrink-0" />
                 <div className="min-w-0">
                   <h2 className="font-heading font-bold text-sm truncate">Λίστα διαθέσιμων για ανάληψη</h2>
-                  <p className="text-xs text-muted-foreground">Μόνο παραγγελίες με κατάσταση έτοιμη για παραλαβή</p>
+                  <p className="text-xs text-muted-foreground">Προσφορές dispatch και έτοιμες παραγγελίες</p>
                 </div>
               </div>
               {loading && <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />}
@@ -295,7 +295,7 @@ export default function DriverApp() {
               <div className="px-4 py-12 text-center">
                 <Radio className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
                 <p className="font-heading font-bold text-sm">Δεν υπάρχουν έτοιμες παραγγελίες</p>
-                <p className="text-xs text-muted-foreground mt-1">Μόλις ένα κατάστημα σημειώσει παραγγελία ως έτοιμη, θα εμφανιστεί εδώ.</p>
+                <p className="text-xs text-muted-foreground mt-1">Μόλις γίνει dispatch σε οδηγό, η παραγγελία θα εμφανιστεί εδώ.</p>
               </div>
             ) : (
               <div className="divide-y divide-border">
