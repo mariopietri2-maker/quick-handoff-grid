@@ -56,7 +56,7 @@ export default function PricingSettings() {
     default_commission_pct: 15, admin_share_pct: 5, driver_pool_pct_of_subtotal: 10,
     pool_healthy_threshold: 500, low_pool_threshold: 50, pool_critical_threshold: 20,
     pool_low_multiplier: 0.85, pool_critical_multiplier: 0.6,
-    subsidize_min_pay: false, pool_alert_enabled: true,
+    subsidize_min_pay: false, pool_alert_enabled: true, pause_bonus_when_critical: false,
   });
   const [poolBalance, setPoolBalance] = useState<number>(0);
 
