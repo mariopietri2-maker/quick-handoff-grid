@@ -1,5 +1,6 @@
 // Parses pasted receipt text from eFood / Wolt / Box / generic into a structured order.
 import { rateLimit, rateLimitResponse, clientKey } from "../_shared/rate-limit.ts";
+import { getAuthedUser, unauthorized } from "../_shared/auth.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
