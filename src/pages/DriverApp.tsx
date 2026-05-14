@@ -285,7 +285,7 @@ export default function DriverApp() {
                 <ClipboardList className="h-4 w-4 text-primary shrink-0" />
                 <div className="min-w-0">
                   <h2 className="font-heading font-bold text-sm truncate">Λίστα διαθέσιμων για ανάληψη</h2>
-                  <p className="text-xs text-muted-foreground">Μόνο παραγγελίες με κατάσταση έτοιμη για παραλαβή</p>
+                  <p className="text-xs text-muted-foreground">Προσφορές dispatch και έτοιμες παραγγελίες</p>
                 </div>
               </div>
               {loading && <div className="h-5 w-5 border-2 border-primary border-t-transparent rounded-full animate-spin shrink-0" />}
@@ -295,12 +295,13 @@ export default function DriverApp() {
               <div className="px-4 py-12 text-center">
                 <Radio className="h-8 w-8 text-muted-foreground mx-auto mb-3" />
                 <p className="font-heading font-bold text-sm">Δεν υπάρχουν έτοιμες παραγγελίες</p>
-                <p className="text-xs text-muted-foreground mt-1">Μόλις ένα κατάστημα σημειώσει παραγγελία ως έτοιμη, θα εμφανιστεί εδώ.</p>
+                <p className="text-xs text-muted-foreground mt-1">Μόλις γίνει dispatch σε οδηγό, η παραγγελία θα εμφανιστεί εδώ.</p>
               </div>
             ) : (
               <div className="divide-y divide-border">
                 {offers.map((offer) => {
                   const isClaimed = !!offer.driver_id;
+                  const isReady = offer.status === 'ready';
                   return (
                   <article key={offer.id} className="p-4 grid gap-3 sm:grid-cols-[1fr_auto] sm:items-center">
                     <div className="min-w-0 space-y-2">
@@ -310,6 +311,11 @@ export default function DriverApp() {
                         {isClaimed && (
                           <Badge variant="destructive" className="font-heading text-[10px] uppercase">
                             Σε οδηγό
+                          </Badge>
+                        )}
+                        {!isReady && (
+                          <Badge variant="secondary" className="font-heading text-[10px] uppercase">
+                            Προετοιμασία
                           </Badge>
                         )}
                       </div>
@@ -326,9 +332,10 @@ export default function DriverApp() {
                     </div>
                     <button
                       onClick={() => acceptOrder(offer.id)}
-                      className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all"
+                      className="h-11 px-5 rounded-xl bg-primary text-primary-foreground font-heading font-bold shadow-primary hover:opacity-90 active:scale-[0.98] transition-all disabled:opacity-50 disabled:active:scale-100"
+                      disabled={!isReady}
                     >
-                      {isClaimed ? 'Ανάκτηση' : 'Ανάληψη'}
+                      {isReady ? (isClaimed ? 'Ανάκτηση' : 'Ανάληψη') : 'Αναμονή'}
                     </button>
                   </article>
                   );

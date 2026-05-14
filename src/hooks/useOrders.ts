@@ -225,7 +225,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           .select('*, order_items(*)')
           .in('id', orderIds)
           .is('driver_id', null)
-          .eq('status', 'ready');
+          .in('status', ['placed', 'accepted', 'preparing', 'ready']);
         offered = (ord as OrderWithItems[]) ?? [];
         for (const p of myPending ?? []) nextOfferIds[p.order_id] = p.id;
       }
