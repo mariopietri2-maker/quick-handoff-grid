@@ -90,6 +90,7 @@ export default function PricingSettings() {
             pool_critical_multiplier: Number(d.pool_critical_multiplier ?? 0.6),
             subsidize_min_pay: !!d.subsidize_min_pay,
             pool_alert_enabled: d.pool_alert_enabled !== false,
+            pause_bonus_when_critical: !!d.pause_bonus_when_critical,
           });
         }
         setLoading(false);
