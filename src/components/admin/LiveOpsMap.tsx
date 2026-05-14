@@ -286,8 +286,8 @@ export default function LiveOpsMap() {
       `;
       const popup = new mapboxgl.Popup({ offset: 18, closeButton: false }).setHTML(`
         <div style="font-family:system-ui;padding:4px;min-width:160px;">
-          <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${store.name}</div>
-          <div style="font-size:10px;opacity:0.7;margin-bottom:6px;">${store.address}</div>
+          <div style="font-weight:700;font-size:13px;margin-bottom:2px;">${escapeHtml(store.name)}</div>
+          <div style="font-size:10px;opacity:0.7;margin-bottom:6px;">${escapeHtml(store.address)}</div>
           <div style="display:flex;gap:4px;flex-wrap:wrap;">
             <span style="font-size:10px;padding:2px 6px;background:${store.is_active ? 'rgba(16,185,129,0.15)' : 'rgba(107,114,128,0.15)'};color:${store.is_active ? '#10b981' : '#6b7280'};border-radius:4px;font-weight:600;">${store.is_active ? 'Active' : 'Inactive'}</span>
             ${store.busy_mode ? `<span style="font-size:10px;padding:2px 6px;background:rgba(249,115,22,0.15);color:#f97316;border-radius:4px;font-weight:600;">Busy</span>` : ''}
