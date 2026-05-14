@@ -20,8 +20,17 @@ interface StoreRow {
 }
 
 const ACTIVE_STATUSES = ['placed', 'accepted', 'preparing', 'ready'];
-const DEFAULT_LAT = 39.1600; // Άρτα
-const DEFAULT_LNG = 20.9853;
+const DEFAULT_LAT = 39.6650; // Ιωάννινα (matches driver map)
+const DEFAULT_LNG = 20.8537;
+const MAX_KM = 15;
+
+function distKm(lat: number, lng: number) {
+  const toRad = (d: number) => (d * Math.PI) / 180;
+  const dLat = toRad(lat - DEFAULT_LAT);
+  const dLng = toRad(lng - DEFAULT_LNG);
+  const a = Math.sin(dLat/2)**2 + Math.cos(toRad(DEFAULT_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng/2)**2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+}
 
 /**
  * Driver Map Editor — admin-only.
@@ -62,7 +71,13 @@ export default function DriverMapEditor() {
         counts[o.store_id] = (counts[o.store_id] ?? 0) + 1;
       });
       setOrderCounts(counts);
-      setStores((storeRows ?? []) as StoreRow[]);
+      // Match driver-map: only active stores; either no coords yet, or within Ioannina range
+      const filtered = ((storeRows ?? []) as StoreRow[]).filter(s => {
+        if (s.is_active === false) return false;
+        if (s.latitude == null || s.longitude == null) return true;
+        return distKm(s.latitude, s.longitude) <= MAX_KM;
+      });
+      setStores(filtered);
     };
     load();
 
@@ -162,10 +177,30 @@ export default function DriverMapEditor() {
         </div>
       `);
 
-      const marker = new mapboxgl.Marker({ element: el })
+      const marker = new mapboxgl.Marker({ element: el, draggable: editMode })
         .setLngLat([lng, lat])
         .setPopup(isSelected ? undefined : popup)
         .addTo(map);
+
+      if (editMode) {
+        marker.on('dragend', async () => {
+          const { lng: nLng, lat: nLat } = marker.getLngLat();
+          if (distKm(nLat, nLng) > MAX_KM) {
+            toast.error('Εκτός Ιωαννίνων (>15 χλμ) — δεν θα είναι ορατό στους οδηγούς');
+          }
+          const { error } = await supabase
+            .from('stores')
+            .update({ latitude: nLat, longitude: nLng })
+            .eq('id', store.id);
+          if (error) {
+            toast.error(`Αποτυχία: ${error.message}`);
+            marker.setLngLat([lng, lat]);
+          } else {
+            toast.success(`${store.name} μετακινήθηκε`);
+            setStores(prev => prev.map(s => s.id === store.id ? { ...s, latitude: nLat, longitude: nLng } : s));
+          }
+        });
+      }
 
       markersRef.current.push(marker);
     });
