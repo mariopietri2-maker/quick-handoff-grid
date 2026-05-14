@@ -264,3 +264,37 @@ function json(body: unknown, status = 200) {
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
 }
+
+async function loadAnyOnlineDrivers(
+  admin: ReturnType<typeof createClient>,
+  anchorLat: number,
+  anchorLng: number,
+  exclude: string[],
+  limit: number,
+): Promise<CandidateDriver[]> {
+  const { data } = await admin
+    .from("driver_profiles")
+    .select("user_id, driver_locations!inner(latitude, longitude, updated_at), driver_state(on_break)")
+    .eq("is_active", true)
+    .is("suspended_at", null)
+    .gt("driver_locations.updated_at", new Date(Date.now() - 5 * 60_000).toISOString())
+    .limit(Math.max(limit * 4, limit));
+
+  return (data ?? [])
+    .filter((row: any) => !exclude.includes(row.user_id) && !row.driver_state?.on_break)
+    .map((row: any) => {
+      const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
+      const distance = haversineKm(anchorLat, anchorLng, Number(loc.latitude), Number(loc.longitude));
+      return { driver_id: row.user_id, distance_km: Number(distance.toFixed(2)), score: Number(distance.toFixed(3)) };
+    })
+    .sort((a: CandidateDriver, b: CandidateDriver) => a.score - b.score)
+    .slice(0, limit);
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const toRad = (n: number) => (n * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+}
