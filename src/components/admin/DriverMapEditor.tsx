@@ -71,7 +71,13 @@ export default function DriverMapEditor() {
         counts[o.store_id] = (counts[o.store_id] ?? 0) + 1;
       });
       setOrderCounts(counts);
-      setStores((storeRows ?? []) as StoreRow[]);
+      // Match driver-map: only active stores; either no coords yet, or within Ioannina range
+      const filtered = ((storeRows ?? []) as StoreRow[]).filter(s => {
+        if (s.is_active === false) return false;
+        if (s.latitude == null || s.longitude == null) return true;
+        return distKm(s.latitude, s.longitude) <= MAX_KM;
+      });
+      setStores(filtered);
     };
     load();
 
