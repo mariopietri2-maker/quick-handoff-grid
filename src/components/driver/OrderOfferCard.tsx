@@ -25,8 +25,56 @@ interface OrderOfferCardProps {
 
 const OFFER_TIMEOUT_SECONDS = 60;
 
+// DoorDash-style two-tone offer chime via WebAudio (no asset needed)
+function playOfferChime(ctx: AudioContext) {
+  const now = ctx.currentTime;
+  const tones = [
+    { f: 880, t: 0 },     // A5
+    { f: 1318.5, t: 0.18 } // E6
+  ];
+  tones.forEach(({ f, t }) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(f, now + t);
+    gain.gain.setValueAtTime(0, now + t);
+    gain.gain.linearRampToValueAtTime(0.6, now + t + 0.02);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.32);
+    osc.connect(gain).connect(ctx.destination);
+    osc.start(now + t);
+    osc.stop(now + t + 0.35);
+  });
+}
+
 export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardProps) {
   const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMEOUT_SECONDS);
+
+  // Play repeating DoorDash-like chime + vibrate while offer is visible
+  useEffect(() => {
+    let ctx: AudioContext | null = null;
+    try {
+      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
+      if (AC) {
+        ctx = new AC();
+        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+        playOfferChime(ctx);
+        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+      }
+    } catch {}
+    const interval = setInterval(() => {
+      if (ctx) {
+        try {
+          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
+          playOfferChime(ctx);
+        } catch {}
+      }
+      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
+    }, 2500);
+    return () => {
+      clearInterval(interval);
+      if (ctx) ctx.close().catch(() => {});
+    };
+  }, [offer.id]);
 
   useEffect(() => {
     if (secondsLeft <= 0) {
