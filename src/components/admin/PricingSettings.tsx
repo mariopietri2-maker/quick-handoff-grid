@@ -135,7 +135,9 @@ export default function PricingSettings() {
   else if (poolBalance >= pricing.low_pool_threshold) { healthLabel = 'κανονικό'; mult = 1; }
   else if (poolBalance >= pricing.pool_critical_threshold) { healthLabel = 'χαμηλό'; mult = pricing.pool_low_multiplier; }
   else { healthLabel = 'κρίσιμο'; mult = pricing.pool_critical_multiplier; }
-  const finalBonus = Math.max(clampedBonus * mult, pricing.min_pay);
+  let finalBonus = Math.max(clampedBonus * mult, pricing.min_pay);
+  const isPaused = healthLabel === 'κρίσιμο' && pricing.pause_bonus_when_critical;
+  if (isPaused) finalBonus = pricing.subsidize_min_pay ? pricing.min_pay : 0;
 
   return (
     <div className="space-y-4 max-w-4xl">
