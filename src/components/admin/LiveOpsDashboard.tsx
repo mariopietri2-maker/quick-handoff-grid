@@ -173,8 +173,8 @@ export default function LiveOpsDashboard() {
         wrap.innerHTML = `<div style="width:34px;height:34px;background:${color};border-radius:50%;border:3px solid white;box-shadow:0 2px 12px rgba(0,0,0,0.25);display:flex;align-items:center;justify-content:center;font-size:15px;cursor:pointer;transition:background 200ms;">🛵</div>`;
         const popup = new mapboxgl.Popup({ offset: 20 }).setHTML(`
           <div style="text-align:center;font-family:system-ui;padding:4px;">
-            <strong>${info?.name ?? loc.driver_id.slice(0, 8)}</strong>
-            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${info.code}</span>` : ''}
+            <strong>${escapeHtml(info?.name ?? loc.driver_id.slice(0, 8))}</strong>
+            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${escapeHtml(info.code)}</span>` : ''}
             ${loc.speed != null && loc.speed > 0 ? `<br/><span style="font-size:11px;">${(loc.speed * 3.6).toFixed(0)} km/h</span>` : ''}
           </div>
         `);
