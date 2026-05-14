@@ -339,9 +339,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
       const safeName = s.name.replace(/[<>"]/g, '');
       const initials = safeName.split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '🏪';
-      const badge = s.pendingOrders > 0
-        ? `<div style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;background:#ef4444;color:white;border-radius:10px;border:2px solid white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${s.pendingOrders}</div>`
-        : '';
+      const badgeColor = s.pendingOrders > 0 ? '#ef4444' : '#6b7280';
+      const badge = `<div style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;background:${badgeColor};color:white;border-radius:10px;border:2px solid white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${s.pendingOrders}</div>`;
       const imgInner = s.image_url
         ? `<img src="${s.image_url}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.replaceWith(Object.assign(document.createElement('div'),{innerText:'${initials}',style:'width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);'}))" />`
         : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);">${initials}</div>`;
