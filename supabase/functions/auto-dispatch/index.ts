@@ -36,6 +36,12 @@ interface StoreLoc {
   longitude: number | null;
 }
 
+interface CandidateDriver {
+  driver_id: string;
+  distance_km: number;
+  score: number;
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
@@ -174,7 +180,8 @@ Deno.serve(async (req) => {
       const nextWave = cycleExhausted ? 1 : currentWave + 1;
       const exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
 
-      const { data: candidateDrivers, error: rpcErr } = await admin.rpc("nearby_active_drivers", {
+      let candidateDrivers: CandidateDriver[] = [];
+      const { data: primaryDrivers, error: rpcErr } = await admin.rpc("nearby_active_drivers", {
         _store_lat: anchorLat,
         _store_lng: anchorLng,
         _order_value: Number(order.total_amount ?? 0),
@@ -187,13 +194,34 @@ Deno.serve(async (req) => {
         continue;
       }
 
+      candidateDrivers = (primaryDrivers ?? []) as CandidateDriver[];
+
+      // If store coordinates are wrong/missing for the real pickup area, retry
+      // around the delivery point so ready orders still reach nearby online drivers.
+      if (candidateDrivers.length === 0 && dropoff?.lat != null && dropoff?.lng != null) {
+        const { data: dropoffDrivers } = await admin.rpc("nearby_active_drivers", {
+          _store_lat: dropoff.lat,
+          _store_lng: dropoff.lng,
+          _order_value: Number(order.total_amount ?? 0),
+          _exclude_drivers: exclude,
+          _limit: s.dist_wave_size,
+        });
+        candidateDrivers = (dropoffDrivers ?? []) as CandidateDriver[];
+      }
+
+      // Last resort: "no order left behind" — offer to any fresh online driver,
+      // ordered by distance, even if normal radius/vehicle rules reject them.
+      if (candidateDrivers.length === 0) {
+        candidateDrivers = await loadAnyOnlineDrivers(admin, anchorLat, anchorLng, exclude, s.dist_wave_size);
+      }
+
       if (!candidateDrivers || candidateDrivers.length === 0) {
         dispatchResults.push({ order: order.id, skipped: `no eligible drivers (wave ${nextWave})` });
         continue;
       }
 
       const expiresAt = new Date(Date.now() + s.dist_offer_timeout_seconds * 1000).toISOString();
-      const offers = candidateDrivers.map((d: { driver_id: string; distance_km: number; score: number }) => ({
+      const offers = candidateDrivers.map((d: CandidateDriver) => ({
         order_id: order.id,
         driver_id: d.driver_id,
         wave: nextWave,
@@ -235,4 +263,38 @@ function json(body: unknown, status = 200) {
     status,
     headers: { ...corsHeaders, "Content-Type": "application/json" },
   });
+}
+
+async function loadAnyOnlineDrivers(
+  admin: ReturnType<typeof createClient>,
+  anchorLat: number,
+  anchorLng: number,
+  exclude: string[],
+  limit: number,
+): Promise<CandidateDriver[]> {
+  const { data } = await admin
+    .from("driver_profiles")
+    .select("user_id, driver_locations!inner(latitude, longitude, updated_at), driver_state(on_break)")
+    .eq("is_active", true)
+    .is("suspended_at", null)
+    .gt("driver_locations.updated_at", new Date(Date.now() - 5 * 60_000).toISOString())
+    .limit(Math.max(limit * 4, limit));
+
+  return (data ?? [])
+    .filter((row: any) => !exclude.includes(row.user_id) && !row.driver_state?.on_break)
+    .map((row: any) => {
+      const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
+      const distance = haversineKm(anchorLat, anchorLng, Number(loc.latitude), Number(loc.longitude));
+      return { driver_id: row.user_id, distance_km: Number(distance.toFixed(2)), score: Number(distance.toFixed(3)) };
+    })
+    .sort((a: CandidateDriver, b: CandidateDriver) => a.score - b.score)
+    .slice(0, limit);
+}
+
+function haversineKm(lat1: number, lng1: number, lat2: number, lng2: number) {
+  const toRad = (n: number) => (n * Math.PI) / 180;
+  const dLat = toRad(lat2 - lat1);
+  const dLng = toRad(lng2 - lng1);
+  const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
+  return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
