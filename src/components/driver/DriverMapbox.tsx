@@ -2,6 +2,7 @@ import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHand
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { escapeHtml, safeHttpsUrl } from '@/lib/escape-html';
 
 export interface DriverMapboxHandle {
   recenter: () => void;
