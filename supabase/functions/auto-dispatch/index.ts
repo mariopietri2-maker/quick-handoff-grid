@@ -46,6 +46,12 @@ interface CandidateDriver {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
+  // Restrict to internal cron callers (CRON_SECRET) or admin users (SystemHealthPanel ping).
+  if (!hasCronSecret(req)) {
+    const user = await getAuthedUser(req);
+    if (!user?.isAdmin) return unauthorized(corsHeaders);
+  }
+
   const admin = createClient(supabaseUrl, serviceKey);
 
   try {
