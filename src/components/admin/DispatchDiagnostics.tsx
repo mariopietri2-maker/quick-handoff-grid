@@ -142,7 +142,7 @@ export default function DispatchDiagnostics() {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); void loadAuto(); }, []);
 
   const forceDispatch = async () => {
     setBusy('dispatch');
