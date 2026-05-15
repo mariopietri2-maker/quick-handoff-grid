@@ -79,19 +79,19 @@ export default function DriverCashWallet() {
         )}
 
         <div className="space-y-2">
-          {debts.length === 0 ? (
+          {unsettled.length === 0 ? (
             <p className="text-xs text-[hsl(var(--driver-text-muted))] text-center py-6">
-              Δεν υπάρχουν εισπράξεις μετρητών ακόμα.
+              ✓ Όλες οι οφειλές έχουν εκκαθαριστεί.
             </p>
           ) : (
-            debts.map(d => (
+            unsettled.map(d => (
               <div key={d.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-surface))]">
-                <div className={`h-9 w-9 rounded-xl flex items-center justify-center ${d.settled ? 'bg-emerald-500/15' : 'bg-amber-500/15'}`}>
-                  <Banknote className={`h-4 w-4 ${d.settled ? 'text-emerald-500' : 'text-amber-500'}`} />
+                <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-amber-500/15">
+                  <Banknote className="h-4 w-4 text-amber-500" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-[hsl(var(--driver-text))] truncate">
-                    {d.settled ? 'Παραδόθηκε στον διαχειριστή' : 'Σε αναμονή παράδοσης'}
+                    Σε αναμονή παράδοσης
                   </p>
                   <p className="text-[10px] text-[hsl(var(--driver-text-muted))]">
                     {new Date(d.created_at).toLocaleDateString('el-GR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
