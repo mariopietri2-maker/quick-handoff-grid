@@ -197,6 +197,21 @@ export default function DispatchDiagnostics() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-between gap-3 mb-4 p-3 rounded-lg border border-border bg-muted/40">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <Timer className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <Label className="text-sm font-heading font-semibold">Auto-dispatch ανά λεπτό</Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Όταν ενεργό, ο cron τρέχει το dispatch κάθε λεπτό. Όταν ανενεργό, μόνο το «Force dispatch» δουλεύει.
+                </p>
+              </div>
+            </div>
+            {autoEnabled === null || savingAuto
+              ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
+              : <Switch checked={autoEnabled} onCheckedChange={toggleAuto} />}
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <Stat label="Undispatched orders" value={orders.length} />
             <Stat label="Online (5min)" value={online.length} />
