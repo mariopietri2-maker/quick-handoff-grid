@@ -55,6 +55,33 @@ export default function DispatchDiagnostics() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [creds, setCreds] = useState<{ email: string; password: string; role: string } | null>(null);
+  const [autoEnabled, setAutoEnabled] = useState<boolean | null>(null);
+  const [savingAuto, setSavingAuto] = useState(false);
+
+  const loadAuto = async () => {
+    const { data } = await supabase
+      .from('platform_settings')
+      .select('auto_dispatch_enabled' as never)
+      .eq('id', 1)
+      .maybeSingle();
+    if (data) setAutoEnabled(Boolean((data as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled ?? true));
+  };
+
+  const toggleAuto = async (v: boolean) => {
+    setSavingAuto(true);
+    setAutoEnabled(v);
+    const { error } = await supabase
+      .from('platform_settings')
+      .update({ auto_dispatch_enabled: v } as never)
+      .eq('id', 1);
+    setSavingAuto(false);
+    if (error) {
+      toast.error('Αποτυχία αποθήκευσης');
+      setAutoEnabled(!v);
+    } else {
+      toast.success(v ? 'Auto-dispatch ενεργό (ανά λεπτό)' : 'Auto-dispatch απενεργοποιήθηκε');
+    }
+  };
 
   const load = async () => {
     setLoading(true);
