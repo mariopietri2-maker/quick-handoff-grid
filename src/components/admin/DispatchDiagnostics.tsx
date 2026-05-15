@@ -3,9 +3,11 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, RefreshCw, Zap, UserPlus, Copy } from 'lucide-react';
+import { Loader2, RefreshCw, Zap, UserPlus, Copy, Timer } from 'lucide-react';
 import { format } from 'date-fns';
 
 interface OrderRow {
@@ -53,6 +55,33 @@ export default function DispatchDiagnostics() {
   const [loading, setLoading] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
   const [creds, setCreds] = useState<{ email: string; password: string; role: string } | null>(null);
+  const [autoEnabled, setAutoEnabled] = useState<boolean | null>(null);
+  const [savingAuto, setSavingAuto] = useState(false);
+
+  const loadAuto = async () => {
+    const { data } = await supabase
+      .from('platform_settings')
+      .select('auto_dispatch_enabled' as never)
+      .eq('id', 1)
+      .maybeSingle();
+    if (data) setAutoEnabled(Boolean((data as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled ?? true));
+  };
+
+  const toggleAuto = async (v: boolean) => {
+    setSavingAuto(true);
+    setAutoEnabled(v);
+    const { error } = await supabase
+      .from('platform_settings')
+      .update({ auto_dispatch_enabled: v } as never)
+      .eq('id', 1);
+    setSavingAuto(false);
+    if (error) {
+      toast.error('Αποτυχία αποθήκευσης');
+      setAutoEnabled(!v);
+    } else {
+      toast.success(v ? 'Auto-dispatch ενεργό (ανά λεπτό)' : 'Auto-dispatch απενεργοποιήθηκε');
+    }
+  };
 
   const load = async () => {
     setLoading(true);
@@ -113,7 +142,7 @@ export default function DispatchDiagnostics() {
     }
   };
 
-  useEffect(() => { void load(); }, []);
+  useEffect(() => { void load(); void loadAuto(); }, []);
 
   const forceDispatch = async () => {
     setBusy('dispatch');
@@ -168,6 +197,21 @@ export default function DispatchDiagnostics() {
           </div>
         </CardHeader>
         <CardContent>
+          <div className="flex items-center justify-between gap-3 mb-4 p-3 rounded-lg border border-border bg-muted/40">
+            <div className="flex items-start gap-2.5 min-w-0">
+              <Timer className="h-4 w-4 text-primary mt-0.5 shrink-0" />
+              <div className="min-w-0">
+                <Label className="text-sm font-heading font-semibold">Auto-dispatch ανά λεπτό</Label>
+                <p className="text-[11px] text-muted-foreground mt-0.5">
+                  Όταν ενεργό, ο cron τρέχει το dispatch κάθε λεπτό. Όταν ανενεργό, μόνο το «Force dispatch» δουλεύει.
+                </p>
+              </div>
+            </div>
+            {autoEnabled === null || savingAuto
+              ? <Loader2 className="h-5 w-5 animate-spin text-muted-foreground shrink-0" />
+              : <Switch checked={autoEnabled} onCheckedChange={toggleAuto} />}
+          </div>
+
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4">
             <Stat label="Undispatched orders" value={orders.length} />
             <Stat label="Online (5min)" value={online.length} />

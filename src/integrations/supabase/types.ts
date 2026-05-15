@@ -1571,6 +1571,7 @@ export type Database = {
           admin_share_pct: number
           assignment_mode: string
           auto_balance_enabled: boolean
+          auto_dispatch_enabled: boolean
           base_pay: number
           basket_max_surcharge_pct: number
           basket_target_balance: number
@@ -1635,6 +1636,7 @@ export type Database = {
           admin_share_pct?: number
           assignment_mode?: string
           auto_balance_enabled?: boolean
+          auto_dispatch_enabled?: boolean
           base_pay?: number
           basket_max_surcharge_pct?: number
           basket_target_balance?: number
@@ -1699,6 +1701,7 @@ export type Database = {
           admin_share_pct?: number
           assignment_mode?: string
           auto_balance_enabled?: boolean
+          auto_dispatch_enabled?: boolean
           base_pay?: number
           basket_max_surcharge_pct?: number
           basket_target_balance?: number

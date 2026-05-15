@@ -61,9 +61,18 @@ Deno.serve(async (req) => {
     // 1) Load settings
     const { data: settings } = await admin
       .from("platform_settings")
-      .select("assignment_mode, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves")
+      .select("assignment_mode, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, auto_dispatch_enabled")
       .eq("id", 1)
       .single();
+
+    // Admin kill-switch: cron-driven calls early-exit when disabled.
+    // Manual "Force dispatch" from the admin panel always runs (carries Authorization header).
+    if (isInternalCron && settings && (settings as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled === false) {
+      return new Response(
+        JSON.stringify({ ok: true, dispatched: 0, skipped: "auto_dispatch_disabled" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
+      );
+    }
 
     const s: Settings = {
       assignment_mode: settings?.assignment_mode ?? "auto",
