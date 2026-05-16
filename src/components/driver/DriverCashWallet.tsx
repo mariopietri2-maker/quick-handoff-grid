@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import CashTracker from './CashTracker';
-import { Banknote, Receipt, AlertCircle } from 'lucide-react';
+import { Banknote, Receipt } from 'lucide-react';
 
 interface CashDebt {
   id: string;
@@ -44,62 +44,53 @@ export default function DriverCashWallet() {
     return () => { supabase.removeChannel(ch); };
   }, [user, qc]);
 
-  const unsettled = debts.filter(d => !d.settled);
-  const totalOwed = unsettled.reduce((s, d) => s + Number(d.amount_owed), 0);
 
   return (
     <div className="space-y-4">
       {/* Cash tracker — shift cash balance */}
       <CashTracker />
 
-      {/* What you owe admin */}
+      {/* Cash collected list */}
       <div className="rounded-2xl driver-glass p-4">
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-center gap-2">
             <Receipt className="h-4 w-4 text-[hsl(var(--driver-text-muted))]" />
-            <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Οφειλές προς διαχειριστή</h3>
+            <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Εισπράξεις μετρητών</h3>
           </div>
-          {unsettled.length > 0 && (
-            <span className="text-[10px] font-heading uppercase tracking-wider px-2 py-1 rounded-md bg-amber-500/15 text-amber-600 dark:text-amber-400">
-              {unsettled.length} εκκρεμή
+          {debts.length > 0 && (
+            <span className="text-[10px] font-heading uppercase tracking-wider px-2 py-1 rounded-md bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))]">
+              {debts.length}
             </span>
           )}
         </div>
 
-        {totalOwed > 0 && (
-          <div className="rounded-xl bg-amber-500/10 border border-amber-500/30 p-3 mb-3 flex items-start gap-2.5">
-            <AlertCircle className="h-4 w-4 text-amber-600 shrink-0 mt-0.5" />
-            <div className="text-xs leading-relaxed">
-              <p className="font-bold text-amber-700 dark:text-amber-400">Οφείλεις €{totalOwed.toFixed(2)}</p>
-              <p className="text-[hsl(var(--driver-text-muted))] mt-0.5">
-                Είναι μετρητά που εισέπραξες από πελάτες αντί της πλατφόρμας. Παρέδωσέ τα στον διαχειριστή για να εκκαθαριστούν.
-              </p>
-            </div>
-          </div>
-        )}
-
         <div className="space-y-2">
-          {unsettled.length === 0 ? (
+          {debts.length === 0 ? (
             <p className="text-xs text-[hsl(var(--driver-text-muted))] text-center py-6">
-              ✓ Όλες οι οφειλές έχουν εκκαθαριστεί.
+              Δεν υπάρχουν εισπράξεις μετρητών.
             </p>
           ) : (
-            unsettled.map(d => (
+            debts.map(d => (
               <div key={d.id} className="flex items-center gap-3 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-surface))]">
                 <div className="h-9 w-9 rounded-xl flex items-center justify-center bg-amber-500/15">
                   <Banknote className="h-4 w-4 text-amber-500" />
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-[hsl(var(--driver-text))] truncate">
-                    Σε αναμονή παράδοσης
+                  <p className="text-xs font-mono text-[hsl(var(--driver-text))] truncate">
+                    #{d.order_id.slice(0, 8).toUpperCase()}
                   </p>
                   <p className="text-[10px] text-[hsl(var(--driver-text-muted))]">
-                    {new Date(d.created_at).toLocaleDateString('el-GR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}
+                    {new Date(d.created_at).toLocaleString('el-GR', { day: '2-digit', month: 'short', year: '2-digit', hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
-                <span className="font-heading font-bold text-sm tabular-nums text-[hsl(var(--driver-text))]">
-                  €{Number(d.amount_owed).toFixed(2)}
-                </span>
+                <div className="text-right">
+                  <span className="font-heading font-bold text-sm tabular-nums text-[hsl(var(--driver-text))]">
+                    €{Number(d.cash_collected).toFixed(2)}
+                  </span>
+                  {!d.settled && (
+                    <p className="text-[9px] font-heading uppercase tracking-wider text-amber-600 dark:text-amber-400">εκκρεμεί</p>
+                  )}
+                </div>
               </div>
             ))
           )}
