@@ -44,8 +44,6 @@ export default function DriverCashWallet() {
     return () => { supabase.removeChannel(ch); };
   }, [user, qc]);
 
-  const unsettled = debts.filter(d => !d.settled);
-  const totalOwed = unsettled.reduce((s, d) => s + Number(d.amount_owed), 0);
 
   return (
     <div className="space-y-4">
