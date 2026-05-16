@@ -49,7 +49,10 @@ Deno.serve(async (req) => {
   // Allow internal callers: pg_cron job (sends apikey == anon key), CRON_SECRET, or admin user.
   const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
   const apikeyHeader = req.headers.get("apikey");
-  const isInternalCron = !!anonKey && apikeyHeader === anonKey && !req.headers.get("Authorization");
+  const authHeader = req.headers.get("Authorization");
+  const isInternalCron = !!anonKey
+    && apikeyHeader === anonKey
+    && (!authHeader || authHeader === `Bearer ${anonKey}`);
   if (!isInternalCron && !hasCronSecret(req)) {
     const user = await getAuthedUser(req);
     if (!user?.isAdmin) return unauthorized(corsHeaders);
