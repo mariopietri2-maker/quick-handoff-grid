@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import CashTracker from './CashTracker';
-import { Banknote, Receipt, AlertCircle } from 'lucide-react';
+import { Banknote, Receipt } from 'lucide-react';
 
 interface CashDebt {
   id: string;
