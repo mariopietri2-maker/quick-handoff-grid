@@ -27,6 +27,7 @@ const PricingSettings        = lazy(() => import('@/components/admin/PricingSett
 const SupportRoleManager     = lazy(() => import('@/components/admin/SupportRoleManager'));
 const DriverMapSettings      = lazy(() => import('@/components/admin/DriverMapSettings'));
 const DriverMapEditor        = lazy(() => import('@/components/admin/DriverMapEditor'));
+const AdminLiveDriversMap    = lazy(() => import('@/components/admin/AdminLiveDriversMap'));
 const ServiceZonesEditor     = lazy(() => import('@/components/admin/ServiceZonesEditor'));
 const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
