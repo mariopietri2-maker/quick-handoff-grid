@@ -87,7 +87,9 @@ export default function DriverCashWallet() {
                   <span className="font-heading font-bold text-sm tabular-nums text-[hsl(var(--driver-text))]">
                     €{Number(d.cash_collected).toFixed(2)}
                   </span>
-                  {!d.settled && (
+                  {d.settled ? (
+                    <p className="text-[9px] font-heading uppercase tracking-wider text-emerald-600 dark:text-emerald-400">εισπράχθηκε</p>
+                  ) : (
                     <p className="text-[9px] font-heading uppercase tracking-wider text-amber-600 dark:text-amber-400">εκκρεμεί</p>
                   )}
                 </div>
