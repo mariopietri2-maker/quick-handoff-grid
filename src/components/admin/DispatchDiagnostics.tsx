@@ -7,8 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, RefreshCw, Zap, UserPlus, Copy, Timer } from 'lucide-react';
-import { format } from 'date-fns';
+import { Loader2, RefreshCw, Zap, UserPlus, Copy, Timer, Activity, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 
 interface OrderRow {
   id: string;
@@ -35,6 +35,18 @@ interface OnlineDriver {
   lng: number | null;
 }
 
+interface DispatchRun {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  source: string;
+  success: boolean;
+  dispatched: number;
+  expired: number;
+  duration_ms: number | null;
+  error: string | null;
+}
+
 function diagnose(o: OrderRow, online: OnlineDriver[]): { reason: string; tone: 'ok' | 'warn' | 'err' } {
   if (o.driver_id) return { reason: 'Έχει ήδη οδηγό', tone: 'ok' };
   const live = o.pending_offers?.filter(p => p.status === 'pending') ?? [];
@@ -57,6 +69,17 @@ export default function DispatchDiagnostics() {
   const [creds, setCreds] = useState<{ email: string; password: string; role: string } | null>(null);
   const [autoEnabled, setAutoEnabled] = useState<boolean | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
+  const [runs, setRuns] = useState<DispatchRun[]>([]);
+
+  const loadRuns = async () => {
+    const { data } = await supabase
+      .from('dispatch_runs' as never)
+      .select('id, started_at, finished_at, source, success, dispatched, expired, duration_ms, error')
+      .order('started_at', { ascending: false })
+      .limit(20);
+    setRuns((data ?? []) as unknown as DispatchRun[]);
+  };
+
 
   const loadAuto = async () => {
     const { data } = await supabase
@@ -142,7 +165,13 @@ export default function DispatchDiagnostics() {
     }
   };
 
-  useEffect(() => { void load(); void loadAuto(); }, []);
+  useEffect(() => {
+    void load();
+    void loadAuto();
+    void loadRuns();
+    const id = setInterval(() => { void loadRuns(); }, 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   const forceDispatch = async () => {
     setBusy('dispatch');
@@ -151,6 +180,7 @@ export default function DispatchDiagnostics() {
       if (error) throw error;
       toast.success(`Dispatch τρέξε: ${data?.dispatched ?? 0} νέες προσφορές`);
       await load();
+      void loadRuns();
     } catch (e: any) {
       toast.error(e?.message ?? 'Dispatch failed');
     } finally {
@@ -176,8 +206,101 @@ export default function DispatchDiagnostics() {
 
   const eligible = online.filter(d => d.is_active && !d.on_break);
 
+  const lastRun = runs[0] ?? null;
+  const lastSuccess = runs.find((r) => r.success) ?? null;
+  const lastFailure = runs.find((r) => !r.success && r.finished_at) ?? null;
+
   return (
     <div className="space-y-4">
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base flex items-center gap-2">
+            <Activity className="h-4 w-4 text-primary" /> Κατάσταση auto-dispatch
+          </CardTitle>
+          <p className="text-xs text-muted-foreground mt-1">
+            Ζωντανή εικόνα του cron που τρέχει το dispatch κάθε 10 δευτερόλεπτα.
+          </p>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-3">
+            <StatusTile
+              label="Auto-dispatch"
+              value={autoEnabled === null ? '—' : autoEnabled ? 'Ενεργό' : 'Ανενεργό'}
+              tone={autoEnabled ? 'ok' : 'err'}
+              icon={<Activity className="h-3.5 w-3.5" />}
+            />
+            <StatusTile
+              label="Τελευταίο run"
+              value={lastRun ? formatDistanceToNow(new Date(lastRun.started_at), { addSuffix: true }) : '—'}
+              hint={lastRun ? format(new Date(lastRun.started_at), 'HH:mm:ss') : undefined}
+              tone={lastRun && Date.now() - new Date(lastRun.started_at).getTime() < 60_000 ? 'ok' : 'warn'}
+              icon={<Clock className="h-3.5 w-3.5" />}
+            />
+            <StatusTile
+              label="Τελευταίο επιτυχές"
+              value={lastSuccess ? formatDistanceToNow(new Date(lastSuccess.started_at), { addSuffix: true }) : 'Κανένα'}
+              hint={lastSuccess ? `${lastSuccess.dispatched} dispatched · ${lastSuccess.expired} expired` : undefined}
+              tone="ok"
+              icon={<CheckCircle2 className="h-3.5 w-3.5" />}
+            />
+            <StatusTile
+              label="Τελευταίο σφάλμα"
+              value={lastFailure ? formatDistanceToNow(new Date(lastFailure.started_at), { addSuffix: true }) : 'Κανένα'}
+              hint={lastFailure?.error ?? undefined}
+              tone={lastFailure ? 'err' : 'ok'}
+              icon={<XCircle className="h-3.5 w-3.5" />}
+            />
+          </div>
+
+          <div>
+            <div className="text-[10px] uppercase tracking-wide text-muted-foreground font-semibold mb-2">
+              Πρόσφατα runs
+            </div>
+            <div className="rounded-lg border border-border bg-card overflow-hidden">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-32">Ώρα</TableHead>
+                    <TableHead>Πηγή</TableHead>
+                    <TableHead>Αποτέλεσμα</TableHead>
+                    <TableHead className="text-right">Dispatched</TableHead>
+                    <TableHead className="text-right">Expired</TableHead>
+                    <TableHead className="text-right">Διάρκεια</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {runs.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={6} className="text-center text-muted-foreground py-4 text-xs">
+                        Δεν υπάρχουν runs ακόμα.
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {runs.map((r) => (
+                    <TableRow key={r.id}>
+                      <TableCell className="text-xs font-mono">{format(new Date(r.started_at), 'HH:mm:ss')}</TableCell>
+                      <TableCell><Badge variant="outline" className="text-[10px]">{r.source}</Badge></TableCell>
+                      <TableCell>
+                        {r.finished_at == null
+                          ? <Badge variant="secondary">running…</Badge>
+                          : r.success
+                            ? <Badge>OK</Badge>
+                            : <Badge variant="destructive" title={r.error ?? undefined}>FAIL</Badge>}
+                      </TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{r.dispatched}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums">{r.expired}</TableCell>
+                      <TableCell className="text-right text-xs tabular-nums text-muted-foreground">
+                        {r.duration_ms != null ? `${r.duration_ms} ms` : '—'}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       <Card>
         <CardHeader className="flex flex-row items-center justify-between gap-3">
           <div>
@@ -310,6 +433,25 @@ function Stat({ label, value, tone = 'ok' }: { label: string; value: number; ton
     </div>
   );
 }
+
+function StatusTile({
+  label, value, hint, tone = 'ok', icon,
+}: { label: string; value: string; hint?: string; tone?: 'ok' | 'warn' | 'err'; icon?: React.ReactNode }) {
+  const toneClass =
+    tone === 'err' ? 'text-destructive' :
+    tone === 'warn' ? 'text-amber-600 dark:text-amber-400' :
+    'text-foreground';
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+        {icon}{label}
+      </div>
+      <div className={`text-base font-heading font-semibold mt-1 ${toneClass}`}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-0.5 truncate" title={hint}>{hint}</div>}
+    </div>
+  );
+}
+
 
 function CredRow({ label, value, onCopy }: { label: string; value: string; onCopy: () => void }) {
   return (

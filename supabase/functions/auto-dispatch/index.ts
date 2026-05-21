@@ -59,6 +59,32 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(supabaseUrl, serviceKey);
+  const startedAt = new Date();
+  const source = isInternalCron ? "cron" : "manual";
+  let runId: string | null = null;
+  try {
+    const { data: runRow } = await admin
+      .from("dispatch_runs")
+      .insert({ source, started_at: startedAt.toISOString() })
+      .select("id")
+      .single();
+    runId = runRow?.id ?? null;
+  } catch (_) { /* logging best-effort */ }
+
+  const logFinish = async (payload: Record<string, unknown>, success: boolean, errorMsg?: string) => {
+    if (!runId) return;
+    try {
+      await admin.from("dispatch_runs").update({
+        finished_at: new Date().toISOString(),
+        success,
+        dispatched: Number(payload.dispatched ?? 0),
+        expired: Number(payload.expired ?? 0),
+        duration_ms: Date.now() - startedAt.getTime(),
+        error: errorMsg ?? null,
+        details: payload,
+      }).eq("id", runId);
+    } catch (_) { /* ignore */ }
+  };
 
   try {
     // 1) Load settings
@@ -71,10 +97,11 @@ Deno.serve(async (req) => {
     // Admin kill-switch: cron-driven calls early-exit when disabled.
     // Manual "Force dispatch" from the admin panel always runs (carries Authorization header).
     if (isInternalCron && settings && (settings as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled === false) {
-      return new Response(
-        JSON.stringify({ ok: true, dispatched: 0, skipped: "auto_dispatch_disabled" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      const payload = { ok: true, dispatched: 0, skipped: "auto_dispatch_disabled" };
+      await logFinish(payload, true);
+      return new Response(JSON.stringify(payload), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const s: Settings = {
@@ -105,7 +132,9 @@ Deno.serve(async (req) => {
 
     // 3) In manual mode we still expire offers above but stop here
     if (s.assignment_mode !== "auto") {
-      return json({ ok: true, mode: "manual", expired: expired?.length ?? 0 });
+      const payload = { ok: true, mode: "manual", expired: expired?.length ?? 0 };
+      await logFinish(payload, true);
+      return json(payload);
     }
 
     // 4) Find orders needing dispatch:
@@ -124,7 +153,9 @@ Deno.serve(async (req) => {
 
     const orders = (candidates ?? []) as OrderRow[];
     if (orders.length === 0) {
-      return json({ ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0 });
+      const payload = { ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0 };
+      await logFinish(payload, true);
+      return json(payload);
     }
 
     // 5) Filter out orders that already have a live pending offer
@@ -284,16 +315,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({
+    const payload = {
       ok: true,
       mode: "auto",
       expired: expired?.length ?? 0,
       dispatched,
       details: dispatchResults,
-    });
+    };
+    await logFinish(payload, true);
+    return json(payload);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return json({ ok: false, error: msg }, 500);
+    const payload = { ok: false, error: msg };
+    await logFinish(payload, false, msg);
+    return json(payload, 500);
   }
 });
 
