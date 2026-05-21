@@ -370,7 +370,7 @@ export default function DriverApp() {
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
             onDriverPosUpdate={setDriverPos}
-            nearbyStores={activeDelivery ? [] : nearbyStores}
+            nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
             followMode={isNavActive}
           />
 
