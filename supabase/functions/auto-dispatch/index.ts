@@ -165,6 +165,9 @@ Deno.serve(async (req) => {
       .is("driver_id", null)
       .in("status", ["placed", "accepted", "preparing", "ready"])
       .or(`status.eq.ready,predicted_ready_at.lte.${leadCutoffIso}`)
+      // Prioritize orders that will be ready soonest (fast stores first),
+      // so quick-prep restaurants don't queue behind slow ones.
+      .order("predicted_ready_at", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true })
       .limit(50);
 
