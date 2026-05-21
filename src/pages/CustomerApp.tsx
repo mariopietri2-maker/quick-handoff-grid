@@ -188,46 +188,50 @@ export default function CustomerApp() {
 
       <main className="max-w-2xl mx-auto">
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
-        <div className="px-4 pt-4">
-          <div className="grid grid-cols-4 gap-2.5">
-            {QUICK_TILES.map(tile => (
-              <button
-                key={tile.label}
-                onClick={() => setSelectedCategory(tile.value)}
-                className={`${tile.tone} aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform shadow-sm`}
-              >
-                <span className="text-2xl leading-none">{tile.emoji}</span>
-                <span className="text-[11px] font-extrabold">{tile.label}</span>
-              </button>
-            ))}
+        {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
+          <div className="px-4 pt-4">
+            <div className="grid grid-cols-4 gap-2.5">
+              {QUICK_TILES.map(tile => (
+                <button
+                  key={tile.label}
+                  onClick={() => setSelectedCategory(tile.value)}
+                  className={`${tile.tone} aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform shadow-sm`}
+                >
+                  <span className="text-2xl leading-none">{tile.emoji}</span>
+                  <span className="text-[11px] font-extrabold">{tile.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Promo carousel ─────────────────────────────── */}
-        <PromoBannerCarousel />
+        {cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── Category chips strip ───────────────────────── */}
-        <div className="px-4 pt-5">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            {CATEGORY_CHIPS.map(cat => {
-              const active = selectedCategory === cat.value;
-              return (
-                <button
-                  key={cat.value}
-                  onClick={() => setSelectedCategory(cat.value)}
-                  className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-bold transition-colors ${
-                    active
-                      ? 'c-bg-accent shadow-sm'
-                      : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
-                  }`}
-                >
-                  <span className="text-sm">{cat.emoji}</span>
-                  {t(cat.labelKey)}
-                </button>
-              );
-            })}
+        {cfg.sections.show_categories && (
+          <div className="px-4 pt-5">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {CATEGORY_CHIPS.map(cat => {
+                const active = selectedCategory === cat.value;
+                return (
+                  <button
+                    key={cat.value}
+                    onClick={() => setSelectedCategory(cat.value)}
+                    className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-bold transition-colors ${
+                      active
+                        ? 'c-bg-accent shadow-sm'
+                        : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
+                    }`}
+                  >
+                    <span className="text-sm">{cat.emoji}</span>
+                    {t(cat.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Sponsored / Popular row ────────────────────── */}
         {!search && selectedCategory === 'all' && promotedStores.length > 0 && (
