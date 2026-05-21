@@ -30,6 +30,8 @@ import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 import { geocodeAddress, warmMapboxToken } from '@/lib/geocode';
+import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
+import { DriverPrefsApplier } from '@/components/driver/DriverPrefsApplier';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
