@@ -234,7 +234,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Sponsored / Popular row ────────────────────── */}
-        {!search && selectedCategory === 'all' && promotedStores.length > 0 && (
+        {cfg.sections.show_promoted && !search && selectedCategory === 'all' && promotedStores.length > 0 && (
           <section className="pt-5">
             <div className="px-4 flex items-end justify-between mb-3">
               <div>
