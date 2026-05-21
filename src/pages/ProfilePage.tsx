@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette,
+  FileText, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
