@@ -160,7 +160,7 @@ Deno.serve(async (req) => {
       .from("orders")
       .select("id, store_id, driver_id, total_amount, status, dispatch_at")
       .is("driver_id", null)
-      .in("status", ["placed", "accepted", "preparing", "ready"])
+      .in("status", ["ready"])
       .order("created_at", { ascending: true })
       .limit(50);
 
