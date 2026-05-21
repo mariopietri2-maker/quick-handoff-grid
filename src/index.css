@@ -310,6 +310,50 @@
   }
 
   /* ───────────────────────────────────────────────
+     Customer shell — DoorDash-style: bold red accent,
+     crisp white surfaces, heavy headings, generous radius.
+     Scoped to .customer-shell so the brand-blue token
+     stays the source of truth everywhere else.
+     ─────────────────────────────────────────────── */
+  .customer-shell {
+    --c-bg: 0 0% 100%;
+    --c-surface: 0 0% 100%;
+    --c-surface-muted: 0 0% 96%;
+    --c-border: 0 0% 90%;
+    --c-text: 0 0% 9%;
+    --c-text-muted: 0 0% 38%;
+    --c-accent: 4 90% 47%;            /* DoorDash red */
+    --c-accent-soft: 4 90% 47% / 0.10;
+    --c-accent-dark: 4 90% 38%;
+    --c-radius: 14px;
+    background: hsl(var(--c-bg));
+    color: hsl(var(--c-text));
+  }
+  .customer-shell .c-accent { color: hsl(var(--c-accent)); }
+  .customer-shell .c-bg-accent { background: hsl(var(--c-accent)); color: #fff; }
+  .customer-shell .c-bg-accent-soft { background: hsl(var(--c-accent-soft)); color: hsl(var(--c-accent-dark)); }
+  .customer-shell .c-card {
+    background: hsl(var(--c-surface));
+    border: 1px solid hsl(var(--c-border));
+    border-radius: var(--c-radius);
+  }
+  .customer-shell .c-muted { color: hsl(var(--c-text-muted)); }
+  .customer-shell .c-chip {
+    background: hsl(var(--c-surface-muted));
+    border-radius: 999px;
+  }
+  .customer-shell .c-gradient-hero {
+    background: linear-gradient(120deg, hsl(4 90% 47%), hsl(14 95% 55%) 60%, hsl(28 95% 58%));
+  }
+  .customer-shell .c-gradient-dark {
+    background: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 18%));
+  }
+  .customer-shell h1, .customer-shell h2, .customer-shell h3 {
+    letter-spacing: -0.02em;
+  }
+
+
+  /* ───────────────────────────────────────────────
      Admin "Notion / Retool" utility-dense shell
      Scoped to .admin-shell so it doesn't leak into
      customer / driver / store apps.
