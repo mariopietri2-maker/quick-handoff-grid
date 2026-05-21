@@ -59,6 +59,32 @@ Deno.serve(async (req) => {
   }
 
   const admin = createClient(supabaseUrl, serviceKey);
+  const startedAt = new Date();
+  const source = isInternalCron ? "cron" : "manual";
+  let runId: string | null = null;
+  try {
+    const { data: runRow } = await admin
+      .from("dispatch_runs")
+      .insert({ source, started_at: startedAt.toISOString() })
+      .select("id")
+      .single();
+    runId = runRow?.id ?? null;
+  } catch (_) { /* logging best-effort */ }
+
+  const logFinish = async (payload: Record<string, unknown>, success: boolean, errorMsg?: string) => {
+    if (!runId) return;
+    try {
+      await admin.from("dispatch_runs").update({
+        finished_at: new Date().toISOString(),
+        success,
+        dispatched: Number(payload.dispatched ?? 0),
+        expired: Number(payload.expired ?? 0),
+        duration_ms: Date.now() - startedAt.getTime(),
+        error: errorMsg ?? null,
+        details: payload,
+      }).eq("id", runId);
+    } catch (_) { /* ignore */ }
+  };
 
   try {
     // 1) Load settings
