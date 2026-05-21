@@ -42,6 +42,7 @@ const SystemResetPanel       = lazy(() => import('@/components/admin/SystemReset
 const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDashboard'));
 const DispatchDiagnostics    = lazy(() => import('@/components/admin/DispatchDiagnostics'));
 const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerAppCustomization'));
+const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
