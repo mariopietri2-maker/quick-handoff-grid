@@ -399,6 +399,7 @@ export default function CustomerApp() {
             </div>
           )}
         </section>
+        )}
       </main>
 
       {/* ── Bottom tab bar ─────────────────────────────── */}
