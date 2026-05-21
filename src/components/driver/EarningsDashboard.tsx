@@ -97,12 +97,12 @@ export function EarningsDashboard() {
         <TabsContent value="week" className="space-y-3 mt-4">
           <div className="rounded-2xl driver-gradient-earn p-6 text-center">
             <p className="text-white/70 text-xs font-heading uppercase tracking-widest">Εβδομαδιαία Κέρδη</p>
-            <p className="font-heading font-extrabold text-4xl text-white mt-1 tabular-nums">{week.total.toFixed(2)}€</p>
+            <p className="font-heading font-extrabold text-4xl text-white mt-1 tabular-nums">{mask(`${week.total.toFixed(2)}€`)}</p>
           </div>
           <div className="grid grid-cols-3 gap-2">
             <StatCard icon={Car} label="Διαδρομές" value={week.trips.toString()} />
-            <StatCard icon={Coins} label="Βασικά" value={`${week.basePay.toFixed(2)}€`} />
-            <StatCard icon={Award} label="Tips" value={`${week.tips.toFixed(2)}€`} accent />
+            <StatCard icon={Coins} label="Βασικά" value={mask(`${week.basePay.toFixed(2)}€`)} />
+            <StatCard icon={Award} label="Tips" value={mask(`${week.tips.toFixed(2)}€`)} accent />
           </div>
 
           <div className="rounded-2xl driver-glass p-4">
