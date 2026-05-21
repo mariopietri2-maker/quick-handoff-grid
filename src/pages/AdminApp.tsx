@@ -219,6 +219,8 @@ export default function AdminApp() {
         return <DriverMapSettings />;
       case 'driver_map_editor':
         return <DriverMapEditor />;
+      case 'drivers_live_map':
+        return <AdminLiveDriversMap />;
       case 'service_zones':
         return <ServiceZonesEditor />;
       case 'reviews':
