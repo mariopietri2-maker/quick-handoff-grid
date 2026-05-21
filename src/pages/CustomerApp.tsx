@@ -118,7 +118,14 @@ export default function CustomerApp() {
   ));
 
   return (
-    <div className="customer-shell min-h-screen pb-24">
+    <div
+      className="customer-shell min-h-screen pb-24"
+      style={{
+        ['--c-accent' as any]: cfg.branding.accent_hsl,
+        ['--c-accent-dark' as any]: cfg.branding.accent_dark_hsl,
+        ['--c-accent-soft' as any]: `${cfg.branding.accent_hsl} / 0.10`,
+      }}
+    >
       {/* ── Header ─────────────────────────────────────── */}
       <header
         className="sticky top-0 z-50 bg-white border-b border-[hsl(0,0%,93%)]"
