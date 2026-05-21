@@ -614,6 +614,45 @@ export type Database = {
         }
         Relationships: []
       }
+      dispatch_runs: {
+        Row: {
+          details: Json | null
+          dispatched: number
+          duration_ms: number | null
+          error: string | null
+          expired: number
+          finished_at: string | null
+          id: string
+          source: string
+          started_at: string
+          success: boolean
+        }
+        Insert: {
+          details?: Json | null
+          dispatched?: number
+          duration_ms?: number | null
+          error?: string | null
+          expired?: number
+          finished_at?: string | null
+          id?: string
+          source?: string
+          started_at?: string
+          success?: boolean
+        }
+        Update: {
+          details?: Json | null
+          dispatched?: number
+          duration_ms?: number | null
+          error?: string | null
+          expired?: number
+          finished_at?: string | null
+          id?: string
+          source?: string
+          started_at?: string
+          success?: boolean
+        }
+        Relationships: []
+      }
       driver_cash_debts: {
         Row: {
           admin_share: number
@@ -2944,6 +2983,7 @@ export type Database = {
       }
       admin_wipe_all_data: { Args: never; Returns: undefined }
       admin_wipe_transactions: { Args: never; Returns: Json }
+      cleanup_dispatch_runs: { Args: never; Returns: undefined }
       commission_pct_for_amount: { Args: { p_amount: number }; Returns: number }
       compute_driver_pool_bonus: { Args: { _order_id: string }; Returns: Json }
       compute_order_split: { Args: { _order_id: string }; Returns: Json }
