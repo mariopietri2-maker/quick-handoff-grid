@@ -247,6 +247,23 @@ export function UserMenu() {
                 <Share2 className="mr-2 h-4 w-4 shrink-0" />
                 Μοιραστείτε την εφαρμογή
               </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1" />
+
+              {/* LEGAL */}
+              <DropdownMenuLabel className={labelClassName}>Νομικά Έγγραφα</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/terms')}>
+                <FileText className="mr-2 h-4 w-4 shrink-1" />
+                Όροι Χρήσης
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/privacy')}>
+                <Shield className="mr-2 h-4 w-4 shrink-1" />
+                Απορρήτου
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/refunds')}>
+                <RefreshCw className="mr-2 h-4 w-4 shrink-1" />
+                Επιστροφών
+              </DropdownMenuItem>
             </>
           ) : (
             <>
@@ -258,6 +275,23 @@ export function UserMenu() {
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/')}>
                 <Home className="mr-2 h-4 w-4 shrink-0" />
                 Αρχική
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1" />
+
+              {/* LEGAL (non-driver) */}
+              <DropdownMenuLabel className={labelClassName}>Νομικά Έγγραφα</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/terms')}>
+                <FileText className="mr-2 h-4 w-4 shrink-0" />
+                Όροι Χρήσης
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/privacy')}>
+                <Shield className="mr-2 h-4 w-4 shrink-0" />
+                Απορρήτου
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/refunds')}>
+                <RefreshCw className="mr-2 h-4 w-4 shrink-0" />
+                Επιστροφών
               </DropdownMenuItem>
             </>
           )}
