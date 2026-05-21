@@ -36,10 +36,9 @@ export function DriverPrefsApplier({ isOnline, onForceOffline, hasActiveDelivery
     let cancelled = false;
     async function acquire() {
       try {
-        // @ts-expect-error - wakeLock isn't in all TS lib versions
-        if (!prefs.keepScreenOn || !isOnline || !navigator.wakeLock) return;
-        // @ts-expect-error
-        const lock = await navigator.wakeLock.request('screen');
+        const nav = navigator as any;
+        if (!prefs.keepScreenOn || !isOnline || !nav.wakeLock) return;
+        const lock = await nav.wakeLock.request('screen');
         if (cancelled) { lock.release?.(); return; }
         wakeLockRef.current = lock;
         lock.addEventListener?.('release', () => { wakeLockRef.current = null; });
