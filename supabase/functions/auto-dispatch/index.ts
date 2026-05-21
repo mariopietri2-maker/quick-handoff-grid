@@ -157,6 +157,17 @@ Deno.serve(async (req) => {
       triedDrivers.set(p.order_id, set);
     }
 
+    // 6b) Per-driver 10s cooldown after declining/expiring ANY offer.
+    // Gives someone else a chance and avoids spamming the same driver.
+    const COOLDOWN_MS = 10_000;
+    const cooldownSince = new Date(Date.now() - COOLDOWN_MS).toISOString();
+    const { data: recentEvents } = await admin
+      .from("driver_offer_events")
+      .select("driver_id, created_at, action")
+      .in("action", ["declined", "expired"])
+      .gte("created_at", cooldownSince);
+    const cooledOff = new Set<string>((recentEvents ?? []).map((e: any) => e.driver_id));
+
     // 7) Load store + delivery locations. For external orders the store may
     // not have coords yet — fall back to the customer's delivery coords as the
     // dispatch anchor so we still produce offers.
@@ -199,7 +210,11 @@ Deno.serve(async (req) => {
       // repeated offers do not collide with the unique offer history.
       let cycleExhausted = currentWave >= s.dist_max_waves;
       let nextWave = currentWave + 1;
-      let exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
+      // Always exclude drivers in the 10s cooldown window so the same driver
+      // is not re-spammed right after declining/expiring an offer.
+      const orderTried = cycleExhausted ? new Set<string>() : new Set(triedDrivers.get(order.id) ?? []);
+      for (const d of cooledOff) orderTried.add(d);
+      let exclude = [...orderTried];
 
       const fetchCandidates = async (excludeList: string[]): Promise<CandidateDriver[]> => {
         let list: CandidateDriver[] = [];
@@ -232,9 +247,9 @@ Deno.serve(async (req) => {
       let candidateDrivers = await fetchCandidates(exclude);
 
       // If exclude list ate up all online drivers, reset the cycle immediately
-      // and re-offer to everyone again (don't wait for max_waves).
+      // and re-offer to everyone again (but still respect the 10s cooldown).
       if (candidateDrivers.length === 0 && exclude.length > 0) {
-        exclude = [];
+        exclude = [...cooledOff];
         cycleExhausted = true;
         candidateDrivers = await fetchCandidates(exclude);
       }

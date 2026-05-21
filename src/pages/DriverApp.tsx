@@ -522,7 +522,7 @@ export default function DriverApp() {
                                 cashToCollect: (offer as any).payment_method === 'cash' ? Number((offer as any).total_amount ?? 0) : null,
                                 customerNotes: (offer as any).notes ?? null,
                                 perKmRate: 0.50,
-                                totalDistance: 0,
+                                totalDistance: Number(offer.distance_km ?? 0),
                                 estimatedTime: offer.estimated_prep_time ?? 20,
                                 itemCount: offer.order_items?.length ?? 0,
                               }}
@@ -607,7 +607,7 @@ export default function DriverApp() {
                           cashToCollect: (offer as any).payment_method === 'cash' ? Number((offer as any).total_amount ?? 0) : null,
                           customerNotes: (offer as any).notes ?? null,
                           perKmRate: 0.50,
-                          totalDistance: 0,
+                          totalDistance: Number((offer as any).distance_km ?? 0),
                           estimatedTime: offer.estimated_prep_time ?? 20,
                           itemCount: offer.order_items?.length ?? 0,
                         }}
