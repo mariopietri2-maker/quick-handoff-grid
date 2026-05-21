@@ -315,16 +315,20 @@ Deno.serve(async (req) => {
       });
     }
 
-    return json({
+    const payload = {
       ok: true,
       mode: "auto",
       expired: expired?.length ?? 0,
       dispatched,
       details: dispatchResults,
-    });
+    };
+    await logFinish(payload, true);
+    return json(payload);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    return json({ ok: false, error: msg }, 500);
+    const payload = { ok: false, error: msg };
+    await logFinish(payload, false, msg);
+    return json(payload, 500);
   }
 });
 
