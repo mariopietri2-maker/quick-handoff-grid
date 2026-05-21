@@ -35,6 +35,18 @@ interface OnlineDriver {
   lng: number | null;
 }
 
+interface DispatchRun {
+  id: string;
+  started_at: string;
+  finished_at: string | null;
+  source: string;
+  success: boolean;
+  dispatched: number;
+  expired: number;
+  duration_ms: number | null;
+  error: string | null;
+}
+
 function diagnose(o: OrderRow, online: OnlineDriver[]): { reason: string; tone: 'ok' | 'warn' | 'err' } {
   if (o.driver_id) return { reason: 'Έχει ήδη οδηγό', tone: 'ok' };
   const live = o.pending_offers?.filter(p => p.status === 'pending') ?? [];
