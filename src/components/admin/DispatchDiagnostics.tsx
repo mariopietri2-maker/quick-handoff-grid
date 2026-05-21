@@ -165,7 +165,13 @@ export default function DispatchDiagnostics() {
     }
   };
 
-  useEffect(() => { void load(); void loadAuto(); }, []);
+  useEffect(() => {
+    void load();
+    void loadAuto();
+    void loadRuns();
+    const id = setInterval(() => { void loadRuns(); }, 15_000);
+    return () => clearInterval(id);
+  }, []);
 
   const forceDispatch = async () => {
     setBusy('dispatch');
