@@ -30,6 +30,8 @@ import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
 import { geocodeAddress, warmMapboxToken } from '@/lib/geocode';
+import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
+import { DriverPrefsApplier } from '@/components/driver/DriverPrefsApplier';
 
 
 type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
@@ -110,6 +112,7 @@ export default function DriverApp() {
 
   const { tracking, error: locError } = useDriverLocation(isOnline);
   const { stores: nearbyStores } = useNearbyStoresForDriver();
+  const driverPrefs = useDriverAppPrefs();
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (id: string) => { declineOrder(id); };
@@ -352,6 +355,11 @@ export default function DriverApp() {
 
   return (
     <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden overscroll-none">
+      <DriverPrefsApplier
+        isOnline={isOnline}
+        onForceOffline={() => setIsOnline(false)}
+        hasActiveDelivery={!!activeDelivery}
+      />
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
           <DriverMapbox
@@ -367,7 +375,7 @@ export default function DriverApp() {
             navigatingTo={navigatingTo}
             onRouteUpdate={setRouteInfo}
             onDriverPosUpdate={setDriverPos}
-            nearbyStores={activeDelivery ? [] : nearbyStores}
+            nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
             followMode={isNavActive}
           />
 

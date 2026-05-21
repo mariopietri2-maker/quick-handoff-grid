@@ -1,3 +1,5 @@
+import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
+
 export interface NavigationTarget {
   lat?: number | null;
   lng?: number | null;
@@ -5,6 +7,21 @@ export interface NavigationTarget {
 }
 
 export function getGoogleMapsNavigationUrl({ lat, lng, address }: NavigationTarget) {
+  const prefs = (() => { try { return loadDriverAppPrefs(); } catch { return null; } })();
+  const app = prefs?.navApp ?? 'google';
+
+  if (app === 'waze' && lat != null && lng != null) {
+    return `https://waze.com/ul?ll=${lat}%2C${lng}&navigate=yes`;
+  }
+  if (app === 'apple') {
+    if (lat != null && lng != null) {
+      return `https://maps.apple.com/?daddr=${lat},${lng}&dirflg=d`;
+    }
+    if (address?.trim()) {
+      return `https://maps.apple.com/?q=${encodeURIComponent(address.trim())}`;
+    }
+  }
+
   if (lat != null && lng != null) {
     const destination = encodeURIComponent(`${lat},${lng}`);
     return `https://www.google.com/maps/dir/?api=1&destination=${destination}&travelmode=driving`;

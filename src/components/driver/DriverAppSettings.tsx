@@ -5,6 +5,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { loadDriverAppPrefs, saveDriverAppPrefs, type DriverAppPrefs } from '@/lib/driver-app-prefs';
+import { useTheme } from '@/hooks/useTheme';
+import { useI18n } from '@/lib/i18n';
 
 interface Props {
   open: boolean;
@@ -13,6 +15,8 @@ interface Props {
 
 export function DriverAppSettings({ open, onOpenChange }: Props) {
   const [prefs, setPrefs] = useState<DriverAppPrefs>(() => loadDriverAppPrefs());
+  const { setTheme } = useTheme();
+  const { setLang } = useI18n();
 
   useEffect(() => { if (open) setPrefs(loadDriverAppPrefs()); }, [open]);
 
@@ -20,6 +24,9 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
     const next = { ...prefs, ...patch };
     setPrefs(next);
     saveDriverAppPrefs(next);
+    // Apply global side effects immediately
+    if (patch.theme) setTheme(patch.theme);
+    if (patch.language) setLang(patch.language);
   };
 
   const Section = ({ title, children }: { title: string; children: React.ReactNode }) => (
