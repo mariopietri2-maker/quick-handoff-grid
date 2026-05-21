@@ -7,8 +7,8 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { toast } from 'sonner';
-import { Loader2, RefreshCw, Zap, UserPlus, Copy, Timer } from 'lucide-react';
-import { format } from 'date-fns';
+import { Loader2, RefreshCw, Zap, UserPlus, Copy, Timer, Activity, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { format, formatDistanceToNow } from 'date-fns';
 
 interface OrderRow {
   id: string;
