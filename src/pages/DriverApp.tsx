@@ -112,6 +112,7 @@ export default function DriverApp() {
 
   const { tracking, error: locError } = useDriverLocation(isOnline);
   const { stores: nearbyStores } = useNearbyStoresForDriver();
+  const driverPrefs = useDriverAppPrefs();
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (id: string) => { declineOrder(id); };
