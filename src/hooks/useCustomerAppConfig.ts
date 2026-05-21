@@ -72,7 +72,7 @@ export function useCustomerAppConfig(): CustomerAppConfig {
     };
     load();
     const channel = supabase
-      .channel('customer-app-config')
+      .channel(`customer-app-config-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, load)
       .subscribe();
     return () => {
