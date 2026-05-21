@@ -9,6 +9,7 @@ import {
 } from '@/lib/notifications';
 
 const statusToastLabels: Record<string, string> = {
+  accepted: 'Η παραγγελία σου έγινε δεκτή ✅',
   preparing: 'Ετοιμάζεται 👨‍🍳',
   ready: 'Έτοιμη — αναμένει οδηγό 📦',
   picked_up: 'Ο οδηγός είναι καθ’ οδόν 🛵',

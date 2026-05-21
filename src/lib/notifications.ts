@@ -90,6 +90,7 @@ export function showDeliveryNotification(estimatedPayout: number) {
  * Customer-facing labels for order status push notifications.
  */
 const customerStatusLabels: Record<string, { title: string; body: string }> = {
+  accepted:  { title: '✅ Παραγγελία αποδεκτή', body: 'Το κατάστημα έλαβε την παραγγελία σου.' },
   preparing: { title: '👨‍🍳 Ετοιμάζεται',         body: 'Η παραγγελία σου ετοιμάζεται.' },
   ready:     { title: '📦 Έτοιμη για παραλαβή',  body: 'Έτοιμη — αναμένει τον οδηγό.' },
   picked_up: { title: '🛵 Σε μεταφορά',           body: 'Ο οδηγός είναι καθ’ οδόν!' },
