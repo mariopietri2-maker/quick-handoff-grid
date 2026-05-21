@@ -434,6 +434,25 @@ function Stat({ label, value, tone = 'ok' }: { label: string; value: number; ton
   );
 }
 
+function StatusTile({
+  label, value, hint, tone = 'ok', icon,
+}: { label: string; value: string; hint?: string; tone?: 'ok' | 'warn' | 'err'; icon?: React.ReactNode }) {
+  const toneClass =
+    tone === 'err' ? 'text-destructive' :
+    tone === 'warn' ? 'text-amber-600 dark:text-amber-400' :
+    'text-foreground';
+  return (
+    <div className="rounded-lg border border-border bg-card p-3">
+      <div className="flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-muted-foreground font-semibold">
+        {icon}{label}
+      </div>
+      <div className={`text-base font-heading font-semibold mt-1 ${toneClass}`}>{value}</div>
+      {hint && <div className="text-[11px] text-muted-foreground mt-0.5 truncate" title={hint}>{hint}</div>}
+    </div>
+  );
+}
+
+
 function CredRow({ label, value, onCopy }: { label: string; value: string; onCopy: () => void }) {
   return (
     <div className="flex items-center gap-2">
