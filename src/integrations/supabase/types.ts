@@ -2113,6 +2113,7 @@ export type Database = {
         Row: {
           base_pay: number | null
           commission_pct: number | null
+          max_pay: number | null
           min_pay: number | null
           per_km_rate: number | null
           store_id: string
@@ -2121,6 +2122,7 @@ export type Database = {
         Insert: {
           base_pay?: number | null
           commission_pct?: number | null
+          max_pay?: number | null
           min_pay?: number | null
           per_km_rate?: number | null
           store_id: string
@@ -2129,6 +2131,7 @@ export type Database = {
         Update: {
           base_pay?: number | null
           commission_pct?: number | null
+          max_pay?: number | null
           min_pay?: number | null
           per_km_rate?: number | null
           store_id?: string
