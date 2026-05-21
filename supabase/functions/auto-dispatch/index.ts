@@ -150,17 +150,21 @@ Deno.serve(async (req) => {
       return json(payload);
     }
 
-    // 4) Find orders needing dispatch:
-    //    - unassigned
-    //    - dispatch_at <= now (or null)
-    //    - status placed/accepted/preparing/ready
-    //    - NOT already covered by a live pending offer
-    // Always offer immediately — don't sit on orders. dispatch_at is informational only.
+    // 4) Find orders needing dispatch (predictive).
+    //    Offer when EITHER:
+    //      - status = 'ready' (offer immediately), OR
+    //      - predicted_ready_at <= now() + lead_minutes (so the driver
+    //        arrives at the store right as the food is ready).
+    //    Lead minutes = typical pickup ETA. Fast stores get offered later,
+    //    slow stores get offered earlier — keeping handoff tight.
+    const LEAD_MIN = Number(s.dispatch_lead_minutes ?? 8);
+    const leadCutoffIso = new Date(Date.now() + LEAD_MIN * 60_000).toISOString();
     const { data: candidates } = await admin
       .from("orders")
-      .select("id, store_id, driver_id, total_amount, status, dispatch_at")
+      .select("id, store_id, driver_id, total_amount, status, dispatch_at, predicted_ready_at")
       .is("driver_id", null)
-      .in("status", ["ready"])
+      .in("status", ["placed", "accepted", "preparing", "ready"])
+      .or(`status.eq.ready,predicted_ready_at.lte.${leadCutoffIso}`)
       .order("created_at", { ascending: true })
       .limit(50);
 
