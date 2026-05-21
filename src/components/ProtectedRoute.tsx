@@ -9,7 +9,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, profile, isAdmin, isSupport } = useAuth();
 
-  if (loading) {
+  if (loading || (user && !profile)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -19,6 +19,7 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
       </div>
     );
   }
+
 
   if (!user) {
     return <Navigate to="/auth" replace />;
