@@ -494,7 +494,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       .eq('id', orderId);
 
     if (error) {
-      toast.error('Failed to update status');
+      console.error('[updateDeliveryStatus]', { orderId, newStatus, error });
+      toast.error(`Σφάλμα: ${error.message ?? 'Failed to update status'}`);
     } else {
       if (newStatus === 'delivered') {
         setActiveDelivery(null);
