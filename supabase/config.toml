@@ -5,3 +5,10 @@ verify_jwt = false
 
 [functions.payments-webhook]
 verify_jwt = false
+
+[functions.auto-dispatch]
+verify_jwt = false
+
+[functions.get-mapbox-token]
+verify_jwt = false
+
