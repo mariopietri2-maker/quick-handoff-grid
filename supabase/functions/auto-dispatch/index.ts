@@ -132,7 +132,9 @@ Deno.serve(async (req) => {
 
     // 3) In manual mode we still expire offers above but stop here
     if (s.assignment_mode !== "auto") {
-      return json({ ok: true, mode: "manual", expired: expired?.length ?? 0 });
+      const payload = { ok: true, mode: "manual", expired: expired?.length ?? 0 };
+      await logFinish(payload, true);
+      return json(payload);
     }
 
     // 4) Find orders needing dispatch:
