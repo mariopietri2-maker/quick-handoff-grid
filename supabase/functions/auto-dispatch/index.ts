@@ -46,17 +46,30 @@ interface CandidateDriver {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Allow internal callers: pg_cron job (sends apikey == anon key), CRON_SECRET, or admin user.
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const apikeyHeader = req.headers.get("apikey");
-  const authHeader = req.headers.get("Authorization");
-  const isInternalCron = !!anonKey
-    && apikeyHeader === anonKey
-    && (!authHeader || authHeader === `Bearer ${anonKey}`);
+  // Allow internal callers: pg_cron job (sends apikey header), CRON_SECRET, or admin user.
+  // We treat any request that carries the project's anon/publishable key in
+  // either `apikey` or `Authorization: Bearer <key>` as an internal cron-like call.
+  const anonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+  const publishableKey = Deno.env.get("SUPABASE_PUBLISHABLE_KEY") ?? "";
+  const knownKeys = new Set([anonKey, publishableKey].filter(Boolean));
+  const apikeyHeader = req.headers.get("apikey") ?? "";
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  const isInternalCron =
+    (knownKeys.has(apikeyHeader) && (bearerToken === "" || knownKeys.has(bearerToken)))
+    || (!apikeyHeader && knownKeys.has(bearerToken));
   if (!isInternalCron && !hasCronSecret(req)) {
     const user = await getAuthedUser(req);
-    if (!user?.isAdmin) return unauthorized(corsHeaders);
+    if (!user?.isAdmin) {
+      console.warn("auto-dispatch unauthorized", {
+        hasApikey: !!apikeyHeader,
+        hasAuth: !!authHeader,
+        knownKeysLoaded: knownKeys.size,
+      });
+      return unauthorized(corsHeaders);
+    }
   }
+
 
   const admin = createClient(supabaseUrl, serviceKey);
   const startedAt = new Date();
