@@ -291,6 +291,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Store list ─────────────────────────────────── */}
+        {cfg.sections.show_nearby && (
         <section className="pt-6 px-4">
           <div className="flex items-end justify-between mb-3">
             <h2 className="font-heading font-black text-[20px] text-[hsl(0,0%,9%)] leading-none">
