@@ -46,25 +46,12 @@ Deno.serve(async (req) => {
       return json({ error: "offer expired" }, 410);
     }
 
-    // Gate: order must be 'ready' before a driver can accept.
-    const { data: orderRow } = await admin
-      .from("orders")
-      .select("id, status, driver_id")
-      .eq("id", offer.order_id)
-      .single();
-
-    if (!orderRow) return json({ error: "order not found" }, 404);
-    if (orderRow.driver_id) return json({ error: "order already taken" }, 409);
-    if (orderRow.status !== "ready") {
-      return json({ error: "order not ready yet", status: orderRow.status }, 409);
-    }
-
-    // Atomic claim: only succeeds if order still unassigned AND still ready.
+    // Atomic claim (soft reservation): only succeeds if order still unassigned.
+    // Physical pickup is gated elsewhere until the store flips status to 'ready'.
     const { data: claimed, error: claimErr } = await admin
       .from("orders")
       .update({ driver_id: user.id })
       .eq("id", offer.order_id)
-      .eq("status", "ready")
       .is("driver_id", null)
       .select("id, status")
       .maybeSingle();
@@ -75,7 +62,15 @@ Deno.serve(async (req) => {
         .from("pending_offers")
         .update({ status: "cancelled", responded_at: new Date().toISOString() })
         .eq("id", offerId);
-      return json({ error: "order already taken or not ready" }, 409);
+      return json({ error: "order already taken" }, 409);
+    }
+
+    // Nudge stale 'placed' → 'accepted' so dashboards reflect a courier is locked in.
+    if (claimed.status === "placed") {
+      await admin
+        .from("orders")
+        .update({ status: "accepted" })
+        .eq("id", offer.order_id);
     }
 
     // Mark this offer accepted, cancel siblings
