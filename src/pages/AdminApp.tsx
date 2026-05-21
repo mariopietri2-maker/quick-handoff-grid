@@ -251,6 +251,8 @@ export default function AdminApp() {
         return <SystemResetPanel />;
       case 'customer_app_config':
         return <CustomerAppCustomization />;
+      case 'aade_compliance':
+        return <AadeCompliance />;
       default:
         return null;
     }
