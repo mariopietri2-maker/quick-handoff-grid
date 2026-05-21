@@ -53,14 +53,15 @@ export default function CustomerApp() {
     async function load() {
       const nowIso = new Date().toISOString();
       const [storesRes, menuRes, promoRes] = await Promise.all([
-        supabase.from('stores').select('*').eq('is_active', true).order('name'),
+        (supabase as any).from('stores_public').select('*').eq('is_active', true).order('name'),
         supabase.from('menu_items').select('store_id, category').eq('is_available', true),
-        supabase.from('stores')
+        (supabase as any).from('stores_public')
           .select('*')
           .eq('is_active', true)
           .eq('promotion_status', 'active')
           .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
           .order('promotion_starts_at', { ascending: false }),
+
       ]);
       if (cancelled) return;
       setStores(storesRes.data ?? []);
