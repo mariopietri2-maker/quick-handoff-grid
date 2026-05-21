@@ -3292,6 +3292,14 @@ export type Database = {
         Returns: undefined
       }
       current_surge_for_zone: { Args: { _zone_id: string }; Returns: Json }
+      customer_has_order_at_store: {
+        Args: { _store: string; _user: string }
+        Returns: boolean
+      }
+      driver_has_active_order_at_store: {
+        Args: { _store: string; _user: string }
+        Returns: boolean
+      }
       driver_release_order: { Args: { p_order_id: string }; Returns: Json }
       get_platform_settings_public: {
         Args: never
