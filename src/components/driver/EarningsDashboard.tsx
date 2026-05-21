@@ -4,10 +4,13 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
 import { useEarnings } from '@/hooks/useEarnings';
 import { useDriverState } from '@/hooks/useDriverState';
+import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 
 export function EarningsDashboard() {
   const { today, week, weekBreakdown, loading } = useEarnings();
   const { state: driverState } = useDriverState();
+  const { hideEarningsOnHome } = useDriverAppPrefs();
+  const mask = (v: string) => hideEarningsOnHome ? '••••' : v;
 
   // Projection: extrapolate today's earnings to a 10h shift based on hourly pace since shift start (or midnight)
   const projection = useMemo(() => {
