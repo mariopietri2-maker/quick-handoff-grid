@@ -1619,6 +1619,7 @@ export type Database = {
           customer_base_fee: number
           customer_per_km_fee: number
           default_commission_pct: number
+          dispatch_lead_minutes: number
           dist_bike_max_km: number
           dist_car_min_value: number
           dist_distance_weight: number
@@ -1684,6 +1685,7 @@ export type Database = {
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
+          dispatch_lead_minutes?: number
           dist_bike_max_km?: number
           dist_car_min_value?: number
           dist_distance_weight?: number
@@ -1749,6 +1751,7 @@ export type Database = {
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
+          dispatch_lead_minutes?: number
           dist_bike_max_km?: number
           dist_car_min_value?: number
           dist_distance_weight?: number
