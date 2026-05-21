@@ -368,10 +368,20 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         },
         (payload) => {
           fetchOrders();
+          // OS-level alert so driver hears it even when app is minimized / screen off
+          void import('@/lib/push-notifications').then(({ showOsNotification }) => {
+            showOsNotification({
+              title: '🚨 Νέα παραγγελία!',
+              body: 'Έχεις νέα προσφορά παράδοσης — πάτα για άνοιγμα.',
+              tag: 'driver-offer',
+              vibrate: true,
+            });
+          });
         }
 
       )
       .subscribe();
+
 
     return () => {
       if (pending) clearTimeout(pending);
