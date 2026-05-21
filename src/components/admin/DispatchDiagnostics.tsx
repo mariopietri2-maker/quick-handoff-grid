@@ -69,6 +69,17 @@ export default function DispatchDiagnostics() {
   const [creds, setCreds] = useState<{ email: string; password: string; role: string } | null>(null);
   const [autoEnabled, setAutoEnabled] = useState<boolean | null>(null);
   const [savingAuto, setSavingAuto] = useState(false);
+  const [runs, setRuns] = useState<DispatchRun[]>([]);
+
+  const loadRuns = async () => {
+    const { data } = await supabase
+      .from('dispatch_runs' as never)
+      .select('id, started_at, finished_at, source, success, dispatched, expired, duration_ms, error')
+      .order('started_at', { ascending: false })
+      .limit(20);
+    setRuns((data ?? []) as unknown as DispatchRun[]);
+  };
+
 
   const loadAuto = async () => {
     const { data } = await supabase
