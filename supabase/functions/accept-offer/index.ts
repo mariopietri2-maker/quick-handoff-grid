@@ -46,35 +46,36 @@ Deno.serve(async (req) => {
       return json({ error: "offer expired" }, 410);
     }
 
-    // Atomic claim: only succeeds if order still unassigned.
-    // We do NOT change the store-managed status (placed/accepted/preparing/ready):
-    // the driver is just RESERVING the order. They can only physically pick it
-    // up once the store flips it to 'ready'.
+    // Gate: order must be 'ready' before a driver can accept.
+    const { data: orderRow } = await admin
+      .from("orders")
+      .select("id, status, driver_id")
+      .eq("id", offer.order_id)
+      .single();
+
+    if (!orderRow) return json({ error: "order not found" }, 404);
+    if (orderRow.driver_id) return json({ error: "order already taken" }, 409);
+    if (orderRow.status !== "ready") {
+      return json({ error: "order not ready yet", status: orderRow.status }, 409);
+    }
+
+    // Atomic claim: only succeeds if order still unassigned AND still ready.
     const { data: claimed, error: claimErr } = await admin
       .from("orders")
       .update({ driver_id: user.id })
       .eq("id", offer.order_id)
+      .eq("status", "ready")
       .is("driver_id", null)
       .select("id, status")
       .maybeSingle();
 
     if (claimErr) return json({ error: claimErr.message }, 500);
     if (!claimed) {
-      // Lost the race — mark this offer cancelled
       await admin
         .from("pending_offers")
         .update({ status: "cancelled", responded_at: new Date().toISOString() })
         .eq("id", offerId);
-      return json({ error: "order already taken" }, 409);
-    }
-
-    // If the order was still 'placed' (no store action yet), nudge it to
-    // 'accepted' so customer / store dashboards reflect that a courier is locked in.
-    if (claimed.status === "placed") {
-      await admin
-        .from("orders")
-        .update({ status: "accepted" })
-        .eq("id", offer.order_id);
+      return json({ error: "order already taken or not ready" }, 409);
     }
 
     // Mark this offer accepted, cancel siblings
