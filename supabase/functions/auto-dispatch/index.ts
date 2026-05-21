@@ -247,9 +247,9 @@ Deno.serve(async (req) => {
       let candidateDrivers = await fetchCandidates(exclude);
 
       // If exclude list ate up all online drivers, reset the cycle immediately
-      // and re-offer to everyone again (don't wait for max_waves).
+      // and re-offer to everyone again (but still respect the 10s cooldown).
       if (candidateDrivers.length === 0 && exclude.length > 0) {
-        exclude = [];
+        exclude = [...cooledOff];
         cycleExhausted = true;
         candidateDrivers = await fetchCandidates(exclude);
       }
