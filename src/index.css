@@ -329,6 +329,11 @@
     background: hsl(var(--c-bg));
     color: hsl(var(--c-text));
   }
+  /* Make status-bar safe area match the white header instead of showing body grey */
+  html:has(.customer-shell),
+  body:has(.customer-shell) {
+    background-color: #fff;
+  }
   .customer-shell .c-accent { color: hsl(var(--c-accent)); }
   .customer-shell .c-bg-accent { background: hsl(var(--c-accent)); color: #fff; }
   .customer-shell .c-bg-accent-soft { background: hsl(var(--c-accent-soft)); color: hsl(var(--c-accent-dark)); }
