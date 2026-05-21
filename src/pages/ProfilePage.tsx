@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
@@ -10,6 +10,7 @@ import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette,
+  FileText, RefreshCw,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -188,6 +189,39 @@ export default function ProfilePage() {
               <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> Θέμα</Label>
               <ThemeToggle />
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Legal */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-heading">
+              <FileText className="h-5 w-5 text-primary" />
+              Νομικά Έγγραφα
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            <Link
+              to="/legal/terms"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Όροι Χρήσης
+            </Link>
+            <Link
+              to="/legal/privacy"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              Πολιτική Απορρήτου
+            </Link>
+            <Link
+              to="/legal/refunds"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              Πολιτική Επιστροφών
+            </Link>
           </CardContent>
         </Card>
 
