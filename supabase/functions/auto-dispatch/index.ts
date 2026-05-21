@@ -97,10 +97,11 @@ Deno.serve(async (req) => {
     // Admin kill-switch: cron-driven calls early-exit when disabled.
     // Manual "Force dispatch" from the admin panel always runs (carries Authorization header).
     if (isInternalCron && settings && (settings as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled === false) {
-      return new Response(
-        JSON.stringify({ ok: true, dispatched: 0, skipped: "auto_dispatch_disabled" }),
-        { headers: { ...corsHeaders, "Content-Type": "application/json" } },
-      );
+      const payload = { ok: true, dispatched: 0, skipped: "auto_dispatch_disabled" };
+      await logFinish(payload, true);
+      return new Response(JSON.stringify(payload), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     const s: Settings = {
