@@ -192,6 +192,39 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Legal */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-heading">
+              <FileText className="h-5 w-5 text-primary" />
+              Νομικά Έγγραφα
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            <Link
+              to="/legal/terms"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <FileText className="h-4 w-4 text-muted-foreground" />
+              Όροι Χρήσης
+            </Link>
+            <Link
+              to="/legal/privacy"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <Shield className="h-4 w-4 text-muted-foreground" />
+              Πολιτική Απορρήτου
+            </Link>
+            <Link
+              to="/legal/refunds"
+              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
+            >
+              <RefreshCw className="h-4 w-4 text-muted-foreground" />
+              Πολιτική Επιστροφών
+            </Link>
+          </CardContent>
+        </Card>
+
         {/* Sign out */}
         <Card>
           <CardContent className="pt-6">
