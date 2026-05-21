@@ -140,7 +140,7 @@ export default function CustomerApp() {
               <div className="text-left leading-tight">
                 <div className="text-[10px] uppercase tracking-wider c-muted font-bold">Παράδοση</div>
                 <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)]">
-                  Ιωάννινα <ChevronDown className="h-3.5 w-3.5" />
+                  {cfg.branding.city_label} <ChevronDown className="h-3.5 w-3.5" />
                 </div>
               </div>
             </button>
