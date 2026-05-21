@@ -157,6 +157,17 @@ Deno.serve(async (req) => {
       triedDrivers.set(p.order_id, set);
     }
 
+    // 6b) Per-driver 10s cooldown after declining/expiring ANY offer.
+    // Gives someone else a chance and avoids spamming the same driver.
+    const COOLDOWN_MS = 10_000;
+    const cooldownSince = new Date(Date.now() - COOLDOWN_MS).toISOString();
+    const { data: recentEvents } = await admin
+      .from("driver_offer_events")
+      .select("driver_id, created_at, action")
+      .in("action", ["declined", "expired"])
+      .gte("created_at", cooldownSince);
+    const cooledOff = new Set<string>((recentEvents ?? []).map((e: any) => e.driver_id));
+
     // 7) Load store + delivery locations. For external orders the store may
     // not have coords yet — fall back to the customer's delivery coords as the
     // dispatch anchor so we still produce offers.
