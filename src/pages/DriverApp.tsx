@@ -355,6 +355,11 @@ export default function DriverApp() {
 
   return (
     <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden overscroll-none">
+      <DriverPrefsApplier
+        isOnline={isOnline}
+        onForceOffline={() => setIsOnline(false)}
+        hasActiveDelivery={!!activeDelivery}
+      />
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
           <DriverMapbox
