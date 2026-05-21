@@ -29,7 +29,7 @@ export default function RestaurantPage() {
   useEffect(() => {
     if (!id) return;
     Promise.all([
-      supabase.from('stores').select('*').eq('id', id).single(),
+      (supabase as any).from('stores_public').select('*').eq('id', id).single(),
       supabase.from('menu_items').select('*').eq('store_id', id).eq('is_available', true).eq('is_snoozed', false).order('category').order('name'),
     ]).then(([storeRes, menuRes]) => {
       setStore(storeRes.data);

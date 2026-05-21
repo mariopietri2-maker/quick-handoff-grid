@@ -2877,46 +2877,61 @@ export type Database = {
         Row: {
           address: string | null
           busy_mode: boolean | null
+          covers_delivery_fee: boolean | null
           created_at: string | null
+          holiday_dates: string[] | null
           id: string | null
           image_url: string | null
           is_active: boolean | null
           latitude: number | null
           longitude: number | null
           name: string | null
+          opening_hours: Json | null
           owner_id: string | null
-          phone: string | null
           prep_buffer_minutes: number | null
+          promotion_ends_at: string | null
+          promotion_starts_at: string | null
+          promotion_status: string | null
           updated_at: string | null
         }
         Insert: {
           address?: string | null
           busy_mode?: boolean | null
+          covers_delivery_fee?: boolean | null
           created_at?: string | null
+          holiday_dates?: string[] | null
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string | null
+          opening_hours?: Json | null
           owner_id?: string | null
-          phone?: string | null
           prep_buffer_minutes?: number | null
+          promotion_ends_at?: string | null
+          promotion_starts_at?: string | null
+          promotion_status?: string | null
           updated_at?: string | null
         }
         Update: {
           address?: string | null
           busy_mode?: boolean | null
+          covers_delivery_fee?: boolean | null
           created_at?: string | null
+          holiday_dates?: string[] | null
           id?: string | null
           image_url?: string | null
           is_active?: boolean | null
           latitude?: number | null
           longitude?: number | null
           name?: string | null
+          opening_hours?: Json | null
           owner_id?: string | null
-          phone?: string | null
           prep_buffer_minutes?: number | null
+          promotion_ends_at?: string | null
+          promotion_starts_at?: string | null
+          promotion_status?: string | null
           updated_at?: string | null
         }
         Relationships: []
@@ -3099,6 +3114,17 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: number
       }
+      get_store_contact: {
+        Args: { _store_id: string }
+        Returns: {
+          address: string
+          id: string
+          latitude: number
+          longitude: number
+          name: string
+          phone: string
+        }[]
+      }
       get_treasury_health: { Args: never; Returns: Json }
       has_role: {
         Args: {
@@ -3144,6 +3170,23 @@ export type Database = {
           _reason: string
           _source: string
           _zone_id: string
+        }
+        Returns: string
+      }
+      place_order: {
+        Args: {
+          p_delivery_address: string
+          p_delivery_fee: number
+          p_delivery_latitude: number
+          p_delivery_longitude: number
+          p_distance_km: number
+          p_items: Json
+          p_notes: string
+          p_payment_method: string
+          p_promo_code: string
+          p_scheduled_for: string
+          p_store_id: string
+          p_tip_amount: number
         }
         Returns: string
       }

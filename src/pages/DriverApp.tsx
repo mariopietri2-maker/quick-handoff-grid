@@ -167,8 +167,9 @@ export default function DriverApp() {
 
   useEffect(() => {
     if (!activeDelivery) { setStoreInfo(null); setCustomerInfo(null); setDeliveryCoords(null); return; }
-    supabase.from('stores').select('name, address, phone, latitude, longitude').eq('id', activeDelivery.store_id).single()
-      .then(({ data }) => { if (data) setStoreInfo(data); });
+    (supabase as any).rpc('get_store_contact', { _store_id: activeDelivery.store_id })
+      .then(({ data }: any) => { if (data && data[0]) setStoreInfo(data[0]); });
+
     if (activeDelivery.customer_id) {
       supabase.from('profiles').select('full_name, phone').eq('user_id', activeDelivery.customer_id).single()
         .then(({ data }) => { if (data) setCustomerInfo({ name: data.full_name || 'Πελάτης', phone: data.phone }); });

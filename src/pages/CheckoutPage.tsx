@@ -187,48 +187,27 @@ export default function CheckoutPage() {
         // non-fatal: continue without distance
       }
 
-      const { data: order, error: orderError } = await supabase
-        .from('orders')
-        .insert({
-          customer_id: user.id,
-          store_id: storeId,
-          // Card orders start as `pending`. The Stripe webhook flips them
-          // to `placed` after payment succeeds, which kicks off dispatch.
-          // Cash orders go straight to `placed`.
-          status: (paymentMethod === 'card' ? 'pending' : 'placed') as any,
-          payment_method: paymentMethod,
-          total_amount: Math.max(0, total - discount),
-          delivery_fee: deliveryFee,
-          tip_amount: tipAmount,
-          delivery_address: address,
-          delivery_latitude: deliveryCoords?.lat ?? null,
-          delivery_longitude: deliveryCoords?.lon ?? null,
-          distance_km: distanceKm,
-          notes: notes || null,
-          scheduled_for: scheduledFor,
-        } as any)
-        .select()
-        .single();
+      // Server-side place_order: recomputes totals from authoritative menu prices.
+      const { data: orderId, error: orderError } = await (supabase as any).rpc('place_order', {
+        p_store_id: storeId,
+        p_items: items.map(i => ({ menu_item_id: i.menuItemId, quantity: i.quantity })),
+        p_delivery_address: address,
+        p_delivery_latitude: deliveryCoords?.lat ?? null,
+        p_delivery_longitude: deliveryCoords?.lon ?? null,
+        p_payment_method: paymentMethod,
+        p_tip_amount: tipAmount,
+        p_delivery_fee: deliveryFee,
+        p_notes: notes || null,
+        p_scheduled_for: scheduledFor,
+        p_distance_km: distanceKm,
+        p_promo_code: appliedPromo?.code ?? null,
+      });
 
-      if (orderError || !order) {
+      if (orderError || !orderId) {
         throw orderError || new Error('Αποτυχία δημιουργίας παραγγελίας');
       }
+      const order = { id: orderId as string };
 
-      const orderItems = items.map(item => ({
-        order_id: order.id,
-        menu_item_id: item.menuItemId,
-        name: item.name,
-        quantity: item.quantity,
-        unit_price: item.price,
-      }));
-
-      const { error: itemsError } = await supabase
-        .from('order_items')
-        .insert(orderItems);
-
-      if (itemsError) {
-        throw itemsError;
-      }
 
       if (paymentMethod === 'card') {
         // Show embedded Stripe checkout — customer pays, webhook completes the order.
