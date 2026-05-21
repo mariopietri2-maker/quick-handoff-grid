@@ -2,8 +2,9 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { playOrderSound, showOrderNotification, showDeliveryNotification } from '@/lib/notifications';
+import { playOrderSound, showOrderNotification } from '@/lib/notifications';
 import { playOfferAlert } from '@/lib/driver-sound-prefs';
+
 import type { Database } from '@/integrations/supabase/types';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -367,21 +368,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         },
         (payload) => {
           fetchOrders();
-          playOfferAlert();
-          const row = payload.new as { order_id: string };
-          // Best-effort enrich notification with payout
-          supabase
-            .from('orders')
-            .select('delivery_fee, tip_amount')
-            .eq('id', row.order_id)
-            .maybeSingle()
-            .then(({ data }) => {
-              if (data) {
-                showDeliveryNotification(Number(data.delivery_fee ?? 0) + Number(data.tip_amount ?? 0));
-              }
-            });
-          toast('📦 New delivery offer!', { duration: 4000 });
         }
+
       )
       .subscribe();
 
