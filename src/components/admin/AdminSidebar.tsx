@@ -110,6 +110,7 @@ export const NAV_SECTIONS = [
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
       { id: 'customer_app_config', label: '🎨 Customer app' },
+      { id: 'aade_compliance', label: '🇬🇷 ΑΑΔΕ / myDATA' },
       { id: 'feature_flags', label: 'Feature flags' },
       { id: 'overrides', label: 'Operational overrides' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },

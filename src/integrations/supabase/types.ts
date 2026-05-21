@@ -14,6 +14,158 @@ export type Database = {
   }
   public: {
     Tables: {
+      aade_delivery_reports: {
+        Row: {
+          created_at: string
+          delivery_at: string | null
+          driver_afm: string | null
+          driver_payout: number | null
+          dropoff_address: string | null
+          error_message: string | null
+          gross_amount: number | null
+          id: string
+          mydata_mark: string | null
+          mydata_uid: string | null
+          net_amount: number | null
+          order_id: string | null
+          order_number: string | null
+          payload: Json | null
+          payment_method: string | null
+          pickup_address: string | null
+          platform_commission: number | null
+          sent_at: string | null
+          status: string
+          store_afm: string | null
+          updated_at: string
+          vat_amount: number | null
+        }
+        Insert: {
+          created_at?: string
+          delivery_at?: string | null
+          driver_afm?: string | null
+          driver_payout?: number | null
+          dropoff_address?: string | null
+          error_message?: string | null
+          gross_amount?: number | null
+          id?: string
+          mydata_mark?: string | null
+          mydata_uid?: string | null
+          net_amount?: number | null
+          order_id?: string | null
+          order_number?: string | null
+          payload?: Json | null
+          payment_method?: string | null
+          pickup_address?: string | null
+          platform_commission?: number | null
+          sent_at?: string | null
+          status?: string
+          store_afm?: string | null
+          updated_at?: string
+          vat_amount?: number | null
+        }
+        Update: {
+          created_at?: string
+          delivery_at?: string | null
+          driver_afm?: string | null
+          driver_payout?: number | null
+          dropoff_address?: string | null
+          error_message?: string | null
+          gross_amount?: number | null
+          id?: string
+          mydata_mark?: string | null
+          mydata_uid?: string | null
+          net_amount?: number | null
+          order_id?: string | null
+          order_number?: string | null
+          payload?: Json | null
+          payment_method?: string | null
+          pickup_address?: string | null
+          platform_commission?: number | null
+          sent_at?: string | null
+          status?: string
+          store_afm?: string | null
+          updated_at?: string
+          vat_amount?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "aade_delivery_reports_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      aade_platform_config: {
+        Row: {
+          afm: string | null
+          created_at: string
+          doy: string | null
+          iban: string | null
+          id: string
+          kad: string | null
+          legal_address: string | null
+          legal_city: string | null
+          legal_name: string | null
+          legal_postal_code: string | null
+          mydata_base_url: string | null
+          mydata_environment: string
+          mydata_subscription_key: string | null
+          mydata_user_id: string | null
+          platform_registration_number: string | null
+          platform_reporting_enabled: boolean
+          representative_afm: string | null
+          representative_name: string | null
+          trade_name: string | null
+          updated_at: string
+        }
+        Insert: {
+          afm?: string | null
+          created_at?: string
+          doy?: string | null
+          iban?: string | null
+          id?: string
+          kad?: string | null
+          legal_address?: string | null
+          legal_city?: string | null
+          legal_name?: string | null
+          legal_postal_code?: string | null
+          mydata_base_url?: string | null
+          mydata_environment?: string
+          mydata_subscription_key?: string | null
+          mydata_user_id?: string | null
+          platform_registration_number?: string | null
+          platform_reporting_enabled?: boolean
+          representative_afm?: string | null
+          representative_name?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Update: {
+          afm?: string | null
+          created_at?: string
+          doy?: string | null
+          iban?: string | null
+          id?: string
+          kad?: string | null
+          legal_address?: string | null
+          legal_city?: string | null
+          legal_name?: string | null
+          legal_postal_code?: string | null
+          mydata_base_url?: string | null
+          mydata_environment?: string
+          mydata_subscription_key?: string | null
+          mydata_user_id?: string | null
+          platform_registration_number?: string | null
+          platform_reporting_enabled?: boolean
+          representative_afm?: string | null
+          representative_name?: string | null
+          trade_name?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       admin_audit_log: {
         Row: {
           action: string
@@ -1838,8 +1990,12 @@ export type Database = {
       }
       profiles: {
         Row: {
+          afm: string | null
+          amka: string | null
           avatar_url: string | null
+          contract_type: string | null
           created_at: string
+          efka_ama: string | null
           full_name: string | null
           id: string
           phone: string | null
@@ -1848,8 +2004,12 @@ export type Database = {
           user_id: string
         }
         Insert: {
+          afm?: string | null
+          amka?: string | null
           avatar_url?: string | null
+          contract_type?: string | null
           created_at?: string
+          efka_ama?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -1858,8 +2018,12 @@ export type Database = {
           user_id: string
         }
         Update: {
+          afm?: string | null
+          amka?: string | null
           avatar_url?: string | null
+          contract_type?: string | null
           created_at?: string
+          efka_ama?: string | null
           full_name?: string | null
           id?: string
           phone?: string | null
@@ -2250,10 +2414,12 @@ export type Database = {
       stores: {
         Row: {
           address: string
+          afm: string | null
           busy_mode: boolean | null
           commission_pct: number | null
           covers_delivery_fee: boolean
           created_at: string
+          doy: string | null
           ext_billing_mode: string
           ext_commission_pct: number
           ext_flat_fee: number
@@ -2262,7 +2428,9 @@ export type Database = {
           id: string
           image_url: string | null
           is_active: boolean | null
+          kad: string | null
           latitude: number | null
+          legal_name: string | null
           longitude: number | null
           name: string
           opening_hours: Json | null
@@ -2281,10 +2449,12 @@ export type Database = {
         }
         Insert: {
           address: string
+          afm?: string | null
           busy_mode?: boolean | null
           commission_pct?: number | null
           covers_delivery_fee?: boolean
           created_at?: string
+          doy?: string | null
           ext_billing_mode?: string
           ext_commission_pct?: number
           ext_flat_fee?: number
@@ -2293,7 +2463,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          kad?: string | null
           latitude?: number | null
+          legal_name?: string | null
           longitude?: number | null
           name: string
           opening_hours?: Json | null
@@ -2312,10 +2484,12 @@ export type Database = {
         }
         Update: {
           address?: string
+          afm?: string | null
           busy_mode?: boolean | null
           commission_pct?: number | null
           covers_delivery_fee?: boolean
           created_at?: string
+          doy?: string | null
           ext_billing_mode?: string
           ext_commission_pct?: number
           ext_flat_fee?: number
@@ -2324,7 +2498,9 @@ export type Database = {
           id?: string
           image_url?: string | null
           is_active?: boolean | null
+          kad?: string | null
           latitude?: number | null
+          legal_name?: string | null
           longitude?: number | null
           name?: string
           opening_hours?: Json | null
