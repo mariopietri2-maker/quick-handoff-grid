@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, User, Car, FileText, Landmark, Save, Loader2, Phone, Camera, Globe, Calendar, ShieldAlert } from 'lucide-react';
+import { ArrowLeft, User, Car, FileText, Landmark, Save, Loader2, Phone, Camera, Globe, Calendar, ShieldAlert, Shield, RefreshCw } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
