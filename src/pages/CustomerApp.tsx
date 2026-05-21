@@ -12,6 +12,7 @@ import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotificat
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
