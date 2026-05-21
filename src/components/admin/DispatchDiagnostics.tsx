@@ -180,6 +180,7 @@ export default function DispatchDiagnostics() {
       if (error) throw error;
       toast.success(`Dispatch τρέξε: ${data?.dispatched ?? 0} νέες προσφορές`);
       await load();
+      void loadRuns();
     } catch (e: any) {
       toast.error(e?.message ?? 'Dispatch failed');
     } finally {
