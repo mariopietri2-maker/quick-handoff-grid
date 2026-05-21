@@ -112,7 +112,7 @@ export default function CustomerApp() {
   return (
     <div className="min-h-screen bg-background">
       {/* DoorDash-style Header */}
-      <header className="bg-card sticky top-0 z-50 border-b border-border">
+      <header className="bg-card sticky top-0 z-50 border-b border-border" style={{ paddingTop: 'env(safe-area-inset-top)' }}>
         <div className="max-w-2xl mx-auto px-4 py-3">
           {/* Top row: Logo + Actions */}
           <div className="flex items-center justify-between mb-2.5">
