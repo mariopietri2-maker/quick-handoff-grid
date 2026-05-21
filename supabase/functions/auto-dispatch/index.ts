@@ -46,17 +46,30 @@ interface CandidateDriver {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Allow internal callers: pg_cron job (sends apikey == anon key), CRON_SECRET, or admin user.
-  const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
-  const apikeyHeader = req.headers.get("apikey");
-  const authHeader = req.headers.get("Authorization");
-  const isInternalCron = !!anonKey
-    && apikeyHeader === anonKey
-    && (!authHeader || authHeader === `Bearer ${anonKey}`);
+  // Allow internal callers: pg_cron job (sends our project's anon JWT in apikey),
+  // CRON_SECRET, or admin user.
+  const apikeyHeader = req.headers.get("apikey") ?? "";
+  const authHeader = req.headers.get("Authorization") ?? "";
+  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
+  const projectRef = (Deno.env.get("SUPABASE_URL") ?? "").match(/https?:\/\/([^.]+)\./)?.[1] ?? "";
+  const looksLikeProjectAnonJwt = (token: string): boolean => {
+    if (!token || token.split(".").length !== 3) return false;
+    try {
+      const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
+      return payload?.ref === projectRef && (payload?.role === "anon" || payload?.role === "service_role");
+    } catch { return false; }
+  };
+  const isInternalCron = looksLikeProjectAnonJwt(apikeyHeader)
+    && (bearerToken === "" || looksLikeProjectAnonJwt(bearerToken));
   if (!isInternalCron && !hasCronSecret(req)) {
     const user = await getAuthedUser(req);
-    if (!user?.isAdmin) return unauthorized(corsHeaders);
+    if (!user?.isAdmin) {
+      console.warn("auto-dispatch unauthorized", { hasApikey: !!apikeyHeader, hasAuth: !!authHeader, projectRef });
+      return unauthorized(corsHeaders);
+    }
   }
+
+
 
   const admin = createClient(supabaseUrl, serviceKey);
   const startedAt = new Date();
