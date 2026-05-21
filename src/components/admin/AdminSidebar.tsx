@@ -109,6 +109,7 @@ export const NAV_SECTIONS = [
       { id: 'users', label: 'Χρήστες' },
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
+      { id: 'customer_app_config', label: '🎨 Customer app' },
       { id: 'feature_flags', label: 'Feature flags' },
       { id: 'overrides', label: 'Operational overrides' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },

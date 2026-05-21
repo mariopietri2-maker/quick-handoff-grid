@@ -41,6 +41,7 @@ const StorePromotionsManager = lazy(() => import('@/components/admin/StorePromot
 const SystemResetPanel       = lazy(() => import('@/components/admin/SystemResetPanel'));
 const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDashboard'));
 const DispatchDiagnostics    = lazy(() => import('@/components/admin/DispatchDiagnostics'));
+const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerAppCustomization'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
@@ -247,6 +248,8 @@ export default function AdminApp() {
         return <StorePromotionsManager />;
       case 'system_reset':
         return <SystemResetPanel />;
+      case 'customer_app_config':
+        return <CustomerAppCustomization />;
       default:
         return null;
     }

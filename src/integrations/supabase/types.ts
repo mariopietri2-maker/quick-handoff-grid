@@ -420,6 +420,36 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_app_config: {
+        Row: {
+          draft_config: Json
+          id: boolean
+          published_at: string | null
+          published_by: string | null
+          published_config: Json
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          draft_config?: Json
+          id?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          published_config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          draft_config?: Json
+          id?: boolean
+          published_at?: string | null
+          published_by?: string | null
+          published_config?: Json
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       customer_favorites: {
         Row: {
           created_at: string

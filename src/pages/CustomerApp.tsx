@@ -12,19 +12,27 @@ import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotificat
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
+import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
 export default function CustomerApp() {
   const t = useT();
+  const cfg = useCustomerAppConfig();
 
-  // Quick-action tiles — efood-style row but cleaner DoorDash aesthetic
-  const QUICK_TILES = [
-    { label: 'Φαγητό', emoji: '🍔', tone: 'bg-[hsl(4,90%,47%)] text-white', value: 'all' },
-    { label: 'Πίτσα', emoji: '🍕', tone: 'bg-[hsl(36,100%,95%)] text-[hsl(0,0%,9%)]', value: 'Πίτσες' },
-    { label: 'Καφές', emoji: '☕', tone: 'bg-[hsl(28,40%,92%)] text-[hsl(0,0%,9%)]', value: 'Καφέδες' },
-    { label: 'Γλυκά', emoji: '🍰', tone: 'bg-[hsl(330,80%,95%)] text-[hsl(0,0%,9%)]', value: 'Γλυκά' },
+  // Quick-action tiles (admin-configurable)
+  const QUICK_TILE_TONES = [
+    'bg-[hsl(var(--c-accent))] text-white',
+    'bg-[hsl(36,100%,95%)] text-[hsl(0,0%,9%)]',
+    'bg-[hsl(28,40%,92%)] text-[hsl(0,0%,9%)]',
+    'bg-[hsl(330,80%,95%)] text-[hsl(0,0%,9%)]',
   ];
+  const QUICK_TILES = cfg.tiles.map((tile, i) => ({
+    label: tile.label,
+    emoji: tile.emoji,
+    value: tile.category,
+    tone: QUICK_TILE_TONES[i % QUICK_TILE_TONES.length],
+  }));
 
   const CATEGORY_CHIPS = [
     { labelKey: 'cat.all', value: 'all', emoji: '🍽️' },
@@ -110,7 +118,14 @@ export default function CustomerApp() {
   ));
 
   return (
-    <div className="customer-shell min-h-screen pb-24">
+    <div
+      className="customer-shell min-h-screen pb-24"
+      style={{
+        ['--c-accent' as any]: cfg.branding.accent_hsl,
+        ['--c-accent-dark' as any]: cfg.branding.accent_dark_hsl,
+        ['--c-accent-soft' as any]: `${cfg.branding.accent_hsl} / 0.10`,
+      }}
+    >
       {/* ── Header ─────────────────────────────────────── */}
       <header
         className="sticky top-0 z-50 bg-white border-b border-[hsl(0,0%,93%)]"
@@ -125,7 +140,7 @@ export default function CustomerApp() {
               <div className="text-left leading-tight">
                 <div className="text-[10px] uppercase tracking-wider c-muted font-bold">Παράδοση</div>
                 <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)]">
-                  Ιωάννινα <ChevronDown className="h-3.5 w-3.5" />
+                  {cfg.branding.city_label} <ChevronDown className="h-3.5 w-3.5" />
                 </div>
               </div>
             </button>
@@ -173,49 +188,53 @@ export default function CustomerApp() {
 
       <main className="max-w-2xl mx-auto">
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
-        <div className="px-4 pt-4">
-          <div className="grid grid-cols-4 gap-2.5">
-            {QUICK_TILES.map(tile => (
-              <button
-                key={tile.label}
-                onClick={() => setSelectedCategory(tile.value)}
-                className={`${tile.tone} aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform shadow-sm`}
-              >
-                <span className="text-2xl leading-none">{tile.emoji}</span>
-                <span className="text-[11px] font-extrabold">{tile.label}</span>
-              </button>
-            ))}
+        {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
+          <div className="px-4 pt-4">
+            <div className="grid grid-cols-4 gap-2.5">
+              {QUICK_TILES.map(tile => (
+                <button
+                  key={tile.label}
+                  onClick={() => setSelectedCategory(tile.value)}
+                  className={`${tile.tone} aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform shadow-sm`}
+                >
+                  <span className="text-2xl leading-none">{tile.emoji}</span>
+                  <span className="text-[11px] font-extrabold">{tile.label}</span>
+                </button>
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Promo carousel ─────────────────────────────── */}
-        <PromoBannerCarousel />
+        {cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── Category chips strip ───────────────────────── */}
-        <div className="px-4 pt-5">
-          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
-            {CATEGORY_CHIPS.map(cat => {
-              const active = selectedCategory === cat.value;
-              return (
-                <button
-                  key={cat.value}
-                  onClick={() => setSelectedCategory(cat.value)}
-                  className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-bold transition-colors ${
-                    active
-                      ? 'c-bg-accent shadow-sm'
-                      : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
-                  }`}
-                >
-                  <span className="text-sm">{cat.emoji}</span>
-                  {t(cat.labelKey)}
-                </button>
-              );
-            })}
+        {cfg.sections.show_categories && (
+          <div className="px-4 pt-5">
+            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+              {CATEGORY_CHIPS.map(cat => {
+                const active = selectedCategory === cat.value;
+                return (
+                  <button
+                    key={cat.value}
+                    onClick={() => setSelectedCategory(cat.value)}
+                    className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-bold transition-colors ${
+                      active
+                        ? 'c-bg-accent shadow-sm'
+                        : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
+                    }`}
+                  >
+                    <span className="text-sm">{cat.emoji}</span>
+                    {t(cat.labelKey)}
+                  </button>
+                );
+              })}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* ── Sponsored / Popular row ────────────────────── */}
-        {!search && selectedCategory === 'all' && promotedStores.length > 0 && (
+        {cfg.sections.show_promoted && !search && selectedCategory === 'all' && promotedStores.length > 0 && (
           <section className="pt-5">
             <div className="px-4 flex items-end justify-between mb-3">
               <div>
@@ -272,6 +291,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Store list ─────────────────────────────────── */}
+        {cfg.sections.show_nearby && (
         <section className="pt-6 px-4">
           <div className="flex items-end justify-between mb-3">
             <h2 className="font-heading font-black text-[20px] text-[hsl(0,0%,9%)] leading-none">
@@ -379,6 +399,7 @@ export default function CustomerApp() {
             </div>
           )}
         </section>
+        )}
       </main>
 
       {/* ── Bottom tab bar ─────────────────────────────── */}
