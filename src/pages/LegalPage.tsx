@@ -118,6 +118,7 @@ const CONTENT: Record<LegalKey, { icon: any; el: { title: string; updated: strin
 export default function LegalPage() {
   const { doc } = useParams<{ doc: string }>();
   const { lang: language } = useI18n();
+  const { profile } = useAuth();
   const key = doc as LegalKey;
 
   if (!CONTENT[key]) return <Navigate to="/" replace />;
@@ -127,12 +128,21 @@ export default function LegalPage() {
   const c = data[lang];
   const Icon = data.icon;
 
+  const roleHome: Record<string, { path: string; el: string; en: string }> = {
+    customer: { path: "/order", el: "Παραγγελία", en: "Order" },
+    store:    { path: "/store",  el: "Κατάστημα", en: "Store" },
+    driver:   { path: "/driver", el: "Οδηγός",    en: "Driver" },
+    admin:    { path: "/admin",  el: "Διαχείριση", en: "Admin" },
+    support:  { path: "/support", el: "Υποστήριξη", en: "Support" },
+  };
+  const home = (profile?.role && roleHome[profile.role]) || { path: "/", el: "Αρχική", en: "Home" };
+
   return (
     <div className="min-h-screen bg-background">
       <header className="border-b border-border bg-card">
         <div className="max-w-3xl mx-auto px-4 py-4 flex items-center gap-3">
           <Button asChild variant="ghost" size="sm">
-            <Link to="/"><ArrowLeft className="h-4 w-4 mr-1" />{lang === "el" ? "Αρχική" : "Home"}</Link>
+            <Link to={home.path}><ArrowLeft className="h-4 w-4 mr-1" />{home[lang]}</Link>
           </Button>
           <div className="flex items-center gap-2 ml-auto">
             <div className="h-9 w-9 rounded-lg bg-primary/10 grid place-items-center">
