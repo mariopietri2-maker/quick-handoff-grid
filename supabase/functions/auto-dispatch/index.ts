@@ -153,7 +153,9 @@ Deno.serve(async (req) => {
 
     const orders = (candidates ?? []) as OrderRow[];
     if (orders.length === 0) {
-      return json({ ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0 });
+      const payload = { ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0 };
+      await logFinish(payload, true);
+      return json(payload);
     }
 
     // 5) Filter out orders that already have a live pending offer
