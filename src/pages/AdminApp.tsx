@@ -248,6 +248,8 @@ export default function AdminApp() {
         return <StorePromotionsManager />;
       case 'system_reset':
         return <SystemResetPanel />;
+      case 'customer_app_config':
+        return <CustomerAppCustomization />;
       default:
         return null;
     }
