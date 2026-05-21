@@ -40,6 +40,7 @@ export default function CustomerApp() {
 
   useEffect(() => {
     let cancelled = false;
+    let pending: ReturnType<typeof setTimeout> | null = null;
     async function load() {
       const nowIso = new Date().toISOString();
       const [storesRes, menuRes, promoRes] = await Promise.all([
@@ -68,19 +69,25 @@ export default function CustomerApp() {
     }
     load();
 
-    // Realtime: when admins add/edit/remove a store, refresh the list immediately
-    // so customers see new restaurants without needing to reload the page.
+    // Realtime: when admins add/edit/remove a store, refresh the list.
+    // Debounce to coalesce bursts of updates (e.g. promotion rotations,
+    // admin bulk edits) into a single refetch.
+    const scheduleReload = () => {
+      if (pending) return;
+      pending = setTimeout(() => { pending = null; load(); }, 800);
+    };
     const channel = supabase
       .channel('customer-stores-feed')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'stores' },
-        () => { load(); },
+        scheduleReload,
       )
       .subscribe();
 
     return () => {
       cancelled = true;
+      if (pending) clearTimeout(pending);
       supabase.removeChannel(channel);
     };
   }, []);
@@ -95,7 +102,12 @@ export default function CustomerApp() {
     return cats.some(c => c.includes(selectedCategory));
   }), [stores, search, selectedCategory, storeCategories]);
 
-  const ratings = useStoreRatings([...filtered.map(s => s.id), ...promotedStores.map(s => s.id)]);
+  // Pass the full store set (not filtered) so search keystrokes don't
+  // refetch ratings repeatedly. useStoreRatings dedups by stable key.
+  const ratings = useStoreRatings(useMemo(
+    () => [...stores.map(s => s.id), ...promotedStores.map(s => s.id)],
+    [stores, promotedStores],
+  ));
 
   return (
     <div className="min-h-screen bg-background">
