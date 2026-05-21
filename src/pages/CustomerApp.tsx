@@ -18,14 +18,21 @@ type StoreRow = Database['public']['Tables']['stores']['Row'];
 
 export default function CustomerApp() {
   const t = useT();
+  const cfg = useCustomerAppConfig();
 
-  // Quick-action tiles — efood-style row but cleaner DoorDash aesthetic
-  const QUICK_TILES = [
-    { label: 'Φαγητό', emoji: '🍔', tone: 'bg-[hsl(4,90%,47%)] text-white', value: 'all' },
-    { label: 'Πίτσα', emoji: '🍕', tone: 'bg-[hsl(36,100%,95%)] text-[hsl(0,0%,9%)]', value: 'Πίτσες' },
-    { label: 'Καφές', emoji: '☕', tone: 'bg-[hsl(28,40%,92%)] text-[hsl(0,0%,9%)]', value: 'Καφέδες' },
-    { label: 'Γλυκά', emoji: '🍰', tone: 'bg-[hsl(330,80%,95%)] text-[hsl(0,0%,9%)]', value: 'Γλυκά' },
+  // Quick-action tiles (admin-configurable)
+  const QUICK_TILE_TONES = [
+    'bg-[hsl(var(--c-accent))] text-white',
+    'bg-[hsl(36,100%,95%)] text-[hsl(0,0%,9%)]',
+    'bg-[hsl(28,40%,92%)] text-[hsl(0,0%,9%)]',
+    'bg-[hsl(330,80%,95%)] text-[hsl(0,0%,9%)]',
   ];
+  const QUICK_TILES = cfg.tiles.map((tile, i) => ({
+    label: tile.label,
+    emoji: tile.emoji,
+    value: tile.category,
+    tone: QUICK_TILE_TONES[i % QUICK_TILE_TONES.length],
+  }));
 
   const CATEGORY_CHIPS = [
     { labelKey: 'cat.all', value: 'all', emoji: '🍽️' },
