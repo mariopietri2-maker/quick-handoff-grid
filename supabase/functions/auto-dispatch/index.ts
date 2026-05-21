@@ -210,7 +210,11 @@ Deno.serve(async (req) => {
       // repeated offers do not collide with the unique offer history.
       let cycleExhausted = currentWave >= s.dist_max_waves;
       let nextWave = currentWave + 1;
-      let exclude = cycleExhausted ? [] : [...(triedDrivers.get(order.id) ?? [])];
+      // Always exclude drivers in the 10s cooldown window so the same driver
+      // is not re-spammed right after declining/expiring an offer.
+      const orderTried = cycleExhausted ? new Set<string>() : new Set(triedDrivers.get(order.id) ?? []);
+      for (const d of cooledOff) orderTried.add(d);
+      let exclude = [...orderTried];
 
       const fetchCandidates = async (excludeList: string[]): Promise<CandidateDriver[]> => {
         let list: CandidateDriver[] = [];
