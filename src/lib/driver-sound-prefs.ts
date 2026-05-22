@@ -1,9 +1,16 @@
 // Driver sound preferences stored locally per device
+import doordashMp3 from '@/assets/sounds/doordash.mp3';
 
 export type SoundPattern =
   | 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse'
   | 'wolt' | 'uber' | 'doordash' | 'glovo' | 'kaching'
-  | 'arcade' | 'marimba' | 'classic_phone' | 'siren';
+  | 'arcade' | 'marimba' | 'classic_phone' | 'siren'
+  | 'doordash_real';
+
+// Sample-based (mp3) patterns — bypass the synth tone engine
+const SAMPLE_URLS: Partial<Record<SoundPattern, string>> = {
+  doordash_real: doordashMp3,
+};
 
 export interface DriverSoundPrefs {
   enabled: boolean;
@@ -46,7 +53,7 @@ function getCtx(): AudioContext {
 
 interface ToneSpec { freq: number; dur: number; type?: OscillatorType; gain?: number }
 
-const PATTERNS: Record<SoundPattern, ToneSpec[]> = {
+const PATTERNS: Record<Exclude<SoundPattern, keyof typeof SAMPLE_URLS>, ToneSpec[]> = {
   chime:  [{ freq: 523.25, dur: 0.15 }, { freq: 659.25, dur: 0.15 }, { freq: 783.99, dur: 0.2 }],
   bell:   [{ freq: 880, dur: 0.4, type: 'triangle' }],
   urgent: [{ freq: 1000, dur: 0.1, type: 'square' }, { freq: 1000, dur: 0.1, type: 'square' }, { freq: 1200, dur: 0.15, type: 'square' }],
@@ -110,13 +117,28 @@ const PATTERNS: Record<SoundPattern, ToneSpec[]> = {
   ],
 };
 
+const sampleCache: Record<string, HTMLAudioElement> = {};
+function playSample(url: string, volume: number) {
+  try {
+    let a = sampleCache[url];
+    if (!a) { a = new Audio(url); a.preload = 'auto'; sampleCache[url] = a; }
+    const node = a.cloneNode(true) as HTMLAudioElement;
+    node.volume = Math.max(0, Math.min(1, volume));
+    node.play().catch(() => {});
+    return 1200;
+  } catch { return 0; }
+}
+
 export function playPattern(pattern: SoundPattern, volume: number) {
+  const sampleUrl = SAMPLE_URLS[pattern];
+  if (sampleUrl) return playSample(sampleUrl, volume);
   try {
     const ctx = getCtx();
     if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
     let offset = 0;
-    const tones = PATTERNS[pattern];
+    const tones = (PATTERNS as Record<string, ToneSpec[]>)[pattern];
+    if (!tones) return 0;
     const gap = 0.06;
     tones.forEach((t) => {
       const osc = ctx.createOscillator();

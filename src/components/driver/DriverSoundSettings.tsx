@@ -12,6 +12,7 @@ import {
 import { requestNotificationPermission } from '@/lib/notifications';
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
+  { value: 'doordash_real', label: 'DoorDash (real)', emoji: '🔔' },
   { value: 'wolt',          label: 'Wolt-style',     emoji: '💙' },
   { value: 'uber',          label: 'Uber-style',     emoji: '⚡' },
   { value: 'doordash',      label: 'DoorDash-style', emoji: '🛵' },
