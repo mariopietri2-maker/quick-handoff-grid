@@ -40,7 +40,7 @@ export function printOrderTicket(order: OrderWithItems, storeName: string) {
       </style>
     </head>
     <body>
-      <h1>${storeName}</h1>
+      <h1>${e(String(storeName ?? ''))}</h1>
       <div class="center muted">${new Date(order.created_at).toLocaleString('el-GR')}</div>
       <div class="order-id">#${order.id.slice(0, 8).toUpperCase()}</div>
       <hr/>
@@ -52,8 +52,8 @@ export function printOrderTicket(order: OrderWithItems, storeName: string) {
         ${order.tip_amount ? `<tr><td>Φιλοδώρημα</td><td style="text-align:right">€${Number(order.tip_amount).toFixed(2)}</td></tr>` : ''}
         <tr class="grand"><td>ΣΥΝΟΛΟ</td><td style="text-align:right">€${Number(order.total_amount).toFixed(2)}</td></tr>
       </table>
-      ${order.notes ? `<div class="notes"><strong>Σημείωση:</strong> ${order.notes}</div>` : ''}
-      ${order.delivery_address ? `<hr/><div class="muted"><strong>Παράδοση:</strong><br/>${order.delivery_address}</div>` : ''}
+      ${order.notes ? `<div class="notes"><strong>Σημείωση:</strong> ${e(String(order.notes))}</div>` : ''}
+      ${order.delivery_address ? `<hr/><div class="muted"><strong>Παράδοση:</strong><br/>${e(String(order.delivery_address))}</div>` : ''}
       <div class="qr">— Ευχαριστούμε —</div>
       <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),200);}</script>
     </body>
