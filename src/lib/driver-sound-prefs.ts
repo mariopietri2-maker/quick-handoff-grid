@@ -53,7 +53,7 @@ function getCtx(): AudioContext {
 
 interface ToneSpec { freq: number; dur: number; type?: OscillatorType; gain?: number }
 
-const PATTERNS: Record<SoundPattern, ToneSpec[]> = {
+const PATTERNS: Record<Exclude<SoundPattern, keyof typeof SAMPLE_URLS>, ToneSpec[]> = {
   chime:  [{ freq: 523.25, dur: 0.15 }, { freq: 659.25, dur: 0.15 }, { freq: 783.99, dur: 0.2 }],
   bell:   [{ freq: 880, dur: 0.4, type: 'triangle' }],
   urgent: [{ freq: 1000, dur: 0.1, type: 'square' }, { freq: 1000, dur: 0.1, type: 'square' }, { freq: 1200, dur: 0.15, type: 'square' }],
