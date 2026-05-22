@@ -1,9 +1,16 @@
 // Driver sound preferences stored locally per device
+import doordashMp3 from '@/assets/sounds/doordash.mp3';
 
 export type SoundPattern =
   | 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse'
   | 'wolt' | 'uber' | 'doordash' | 'glovo' | 'kaching'
-  | 'arcade' | 'marimba' | 'classic_phone' | 'siren';
+  | 'arcade' | 'marimba' | 'classic_phone' | 'siren'
+  | 'doordash_real';
+
+// Sample-based (mp3) patterns — bypass the synth tone engine
+const SAMPLE_URLS: Partial<Record<SoundPattern, string>> = {
+  doordash_real: doordashMp3,
+};
 
 export interface DriverSoundPrefs {
   enabled: boolean;
