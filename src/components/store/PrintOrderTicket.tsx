@@ -1,16 +1,18 @@
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { escapeHtml } from '@/lib/escape-html';
 import type { OrderWithItems } from '@/hooks/useOrders';
 
 export function printOrderTicket(order: OrderWithItems, storeName: string) {
   const win = window.open('', 'PRINT', 'height=700,width=400');
   if (!win) return;
+  const e = escapeHtml;
   const itemsHtml = (order.order_items ?? [])
     .map(
       (i) => `
         <tr>
           <td style="padding:4px 0;font-weight:600;">${i.quantity}×</td>
-          <td style="padding:4px 6px;">${i.name}</td>
+          <td style="padding:4px 6px;">${e(String(i.name ?? ''))}</td>
           <td style="padding:4px 0;text-align:right;">€${(Number(i.unit_price) * i.quantity).toFixed(2)}</td>
         </tr>`,
     )
