@@ -117,13 +117,28 @@ const PATTERNS: Record<Exclude<SoundPattern, keyof typeof SAMPLE_URLS>, ToneSpec
   ],
 };
 
+const sampleCache: Record<string, HTMLAudioElement> = {};
+function playSample(url: string, volume: number) {
+  try {
+    let a = sampleCache[url];
+    if (!a) { a = new Audio(url); a.preload = 'auto'; sampleCache[url] = a; }
+    const node = a.cloneNode(true) as HTMLAudioElement;
+    node.volume = Math.max(0, Math.min(1, volume));
+    node.play().catch(() => {});
+    return 1200;
+  } catch { return 0; }
+}
+
 export function playPattern(pattern: SoundPattern, volume: number) {
+  const sampleUrl = SAMPLE_URLS[pattern];
+  if (sampleUrl) return playSample(sampleUrl, volume);
   try {
     const ctx = getCtx();
     if (ctx.state === 'suspended') ctx.resume();
     const now = ctx.currentTime;
     let offset = 0;
-    const tones = PATTERNS[pattern];
+    const tones = (PATTERNS as Record<string, ToneSpec[]>)[pattern];
+    if (!tones) return 0;
     const gap = 0.06;
     tones.forEach((t) => {
       const osc = ctx.createOscillator();
