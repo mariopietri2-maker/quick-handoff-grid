@@ -1,16 +1,18 @@
 import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { escapeHtml } from '@/lib/escape-html';
 import type { OrderWithItems } from '@/hooks/useOrders';
 
 export function printOrderTicket(order: OrderWithItems, storeName: string) {
   const win = window.open('', 'PRINT', 'height=700,width=400');
   if (!win) return;
+  const e = escapeHtml;
   const itemsHtml = (order.order_items ?? [])
     .map(
       (i) => `
         <tr>
           <td style="padding:4px 0;font-weight:600;">${i.quantity}×</td>
-          <td style="padding:4px 6px;">${i.name}</td>
+          <td style="padding:4px 6px;">${e(String(i.name ?? ''))}</td>
           <td style="padding:4px 0;text-align:right;">€${(Number(i.unit_price) * i.quantity).toFixed(2)}</td>
         </tr>`,
     )
@@ -38,7 +40,7 @@ export function printOrderTicket(order: OrderWithItems, storeName: string) {
       </style>
     </head>
     <body>
-      <h1>${storeName}</h1>
+      <h1>${e(String(storeName ?? ''))}</h1>
       <div class="center muted">${new Date(order.created_at).toLocaleString('el-GR')}</div>
       <div class="order-id">#${order.id.slice(0, 8).toUpperCase()}</div>
       <hr/>
@@ -50,8 +52,8 @@ export function printOrderTicket(order: OrderWithItems, storeName: string) {
         ${order.tip_amount ? `<tr><td>Φιλοδώρημα</td><td style="text-align:right">€${Number(order.tip_amount).toFixed(2)}</td></tr>` : ''}
         <tr class="grand"><td>ΣΥΝΟΛΟ</td><td style="text-align:right">€${Number(order.total_amount).toFixed(2)}</td></tr>
       </table>
-      ${order.notes ? `<div class="notes"><strong>Σημείωση:</strong> ${order.notes}</div>` : ''}
-      ${order.delivery_address ? `<hr/><div class="muted"><strong>Παράδοση:</strong><br/>${order.delivery_address}</div>` : ''}
+      ${order.notes ? `<div class="notes"><strong>Σημείωση:</strong> ${e(String(order.notes))}</div>` : ''}
+      ${order.delivery_address ? `<hr/><div class="muted"><strong>Παράδοση:</strong><br/>${e(String(order.delivery_address))}</div>` : ''}
       <div class="qr">— Ευχαριστούμε —</div>
       <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),200);}</script>
     </body>
