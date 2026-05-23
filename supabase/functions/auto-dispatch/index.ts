@@ -59,12 +59,20 @@ Deno.serve(async (req) => {
       return payload?.ref === projectRef && (payload?.role === "anon" || payload?.role === "service_role");
     } catch { return false; }
   };
-  const isInternalCron = looksLikeProjectAnonJwt(apikeyHeader)
-    && (bearerToken === "" || looksLikeProjectAnonJwt(bearerToken));
+  // Internal cron callers may send the project anon JWT in EITHER the apikey
+  // header OR the Authorization Bearer header (pg_cron net.http_post varies).
+  const isInternalCron =
+    looksLikeProjectAnonJwt(apikeyHeader) || looksLikeProjectAnonJwt(bearerToken);
   if (!isInternalCron && !hasCronSecret(req)) {
     const user = await getAuthedUser(req);
     if (!user?.isAdmin) {
-      console.warn("auto-dispatch unauthorized", { hasApikey: !!apikeyHeader, hasAuth: !!authHeader, projectRef });
+      console.warn("auto-dispatch unauthorized", {
+        hasApikey: !!apikeyHeader,
+        hasAuth: !!authHeader,
+        apikeyLooksProject: looksLikeProjectAnonJwt(apikeyHeader),
+        bearerLooksProject: looksLikeProjectAnonJwt(bearerToken),
+        projectRef,
+      });
       return unauthorized(corsHeaders);
     }
   }
