@@ -3408,6 +3408,7 @@ export type Database = {
         Args: { p_created_at?: string; p_store_id: string }
         Returns: string
       }
+      prune_dispatch_runs: { Args: never; Returns: undefined }
       redeem_wallet_credit: {
         Args: { p_amount: number; p_order_id: string }
         Returns: number
