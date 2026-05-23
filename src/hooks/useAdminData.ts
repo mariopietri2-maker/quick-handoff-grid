@@ -4,7 +4,7 @@ import { supabase } from '@/integrations/supabase/client';
 export function useAdminData() {
   const orders = useQuery({
     queryKey: ['admin-orders'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
@@ -18,7 +18,7 @@ export function useAdminData() {
 
   const stores = useQuery({
     queryKey: ['admin-stores'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('stores')
@@ -31,7 +31,7 @@ export function useAdminData() {
 
   const profiles = useQuery({
     queryKey: ['admin-profiles'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -44,7 +44,7 @@ export function useAdminData() {
 
   const earnings = useQuery({
     queryKey: ['admin-earnings'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('earnings')
@@ -57,7 +57,7 @@ export function useAdminData() {
 
   const reviews = useQuery({
     queryKey: ['admin-reviews'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
@@ -70,7 +70,7 @@ export function useAdminData() {
 
   const userRoles = useQuery({
     queryKey: ['admin-user-roles'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_roles')
@@ -82,7 +82,7 @@ export function useAdminData() {
 
   const driverProfiles = useQuery({
     queryKey: ['admin-driver-profiles'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_profiles')
@@ -95,7 +95,7 @@ export function useAdminData() {
 
   const driverStates = useQuery({
     queryKey: ['admin-driver-states'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('driver_state')
@@ -107,7 +107,7 @@ export function useAdminData() {
 
   const driverWallets = useQuery({
     queryKey: ['admin-driver-wallets'],
-    refetchInterval: 5000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_wallets')

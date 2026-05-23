@@ -13,7 +13,7 @@ import { Badge } from '@/components/ui/badge';
 export default function DriverSupplyPanel() {
   const { data } = useQuery({
     queryKey: ['driver-supply'],
-    refetchInterval: 6000,
+    refetchInterval: 20_000,
     queryFn: async () => {
       const [statesRes, ordersRes, zonesRes] = await Promise.all([
         supabase.from('driver_state').select('driver_id, shift_started_at, on_break'),

@@ -33,7 +33,7 @@ export default function LedgerExplorer() {
 
   const { data, isLoading } = useQuery({
     queryKey: ['admin-ledger', kind],
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       let q = (supabase as any).from('transactions').select('*').order('created_at', { ascending: false }).limit(300);
       if (kind !== 'all') q = q.eq('wallet_kind', kind);

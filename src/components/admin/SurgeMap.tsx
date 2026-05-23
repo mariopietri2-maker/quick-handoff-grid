@@ -31,7 +31,7 @@ export default function SurgeMap() {
 
   const overrides = useQuery({
     queryKey: ['surge-overrides'],
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('surge_overrides').select('*').order('created_at', { ascending: false });
@@ -42,7 +42,7 @@ export default function SurgeMap() {
 
   const events = useQuery({
     queryKey: ['surge-events'],
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('surge_events').select('*').order('started_at', { ascending: false }).limit(40);

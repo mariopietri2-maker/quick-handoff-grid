@@ -87,7 +87,7 @@ export default function OpsHome() {
   // Fetch last 8 days of orders for trends + today's snapshot
   const { data } = useQuery({
     queryKey: ['ops-home-metrics'],
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const since = subDays(new Date(), 8).toISOString();
       const { data: orders } = await supabase
