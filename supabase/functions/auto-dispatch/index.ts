@@ -82,30 +82,31 @@ Deno.serve(async (req) => {
   const admin = createClient(supabaseUrl, serviceKey);
   const startedAt = new Date();
   const source = isInternalCron ? "cron" : "manual";
-  let runId: string | null = null;
-  try {
-    const { data: runRow } = await admin
-      .from("dispatch_runs")
-      .insert({ source, started_at: startedAt.toISOString() })
-      .select("id")
-      .single();
-    runId = runRow?.id ?? null;
-  } catch (_) { /* logging best-effort */ }
 
+  // We only persist a dispatch_runs row when the run actually did something
+  // (dispatched, expired, errored, or was a manual/admin call). This keeps
+  // the table from filling up with thousands of empty cron no-ops.
   const logFinish = async (payload: Record<string, unknown>, success: boolean, errorMsg?: string) => {
-    if (!runId) return;
+    const dispatched = Number(payload.dispatched ?? 0);
+    const expired = Number(payload.expired ?? 0);
+    const isNoop = success && dispatched === 0 && expired === 0 && !errorMsg;
+    // For cron no-ops, skip the insert entirely.
+    if (source === "cron" && isNoop) return;
     try {
-      await admin.from("dispatch_runs").update({
+      await admin.from("dispatch_runs").insert({
+        source,
+        started_at: startedAt.toISOString(),
         finished_at: new Date().toISOString(),
         success,
-        dispatched: Number(payload.dispatched ?? 0),
-        expired: Number(payload.expired ?? 0),
+        dispatched,
+        expired,
         duration_ms: Date.now() - startedAt.getTime(),
         error: errorMsg ?? null,
         details: payload,
-      }).eq("id", runId);
-    } catch (_) { /* ignore */ }
+      });
+    } catch (_) { /* logging best-effort */ }
   };
+
 
   try {
     // 1) Load settings
