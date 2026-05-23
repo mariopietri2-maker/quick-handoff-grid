@@ -115,7 +115,7 @@ export default function OrdersKanban() {
 
   const { data: orders } = useQuery({
     queryKey: ['kanban-orders', statusFilter],
-    refetchInterval: 4000,
+    refetchInterval: 15_000,
     queryFn: async () => {
       const q = supabase
         .from('orders')

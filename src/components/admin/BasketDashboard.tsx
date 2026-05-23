@@ -24,7 +24,7 @@ export default function BasketDashboard() {
 
   const health = useQuery({
     queryKey: ['basket-health'],
-    refetchInterval: 10000,
+    refetchInterval: 30_000,
     queryFn: async () => {
       const { data, error } = await (supabase as any).from('basket_health').select('*').maybeSingle();
       if (error) throw error;
