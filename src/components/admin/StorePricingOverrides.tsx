@@ -40,13 +40,13 @@ export default function StorePricingOverrides({ defaultCommission }: { defaultCo
     const num = value === '' ? null : Number(value);
     setOverrides(prev => ({
       ...prev,
-      [storeId]: { ...(prev[storeId] ?? { store_id: storeId, base_pay: null, per_km_rate: null, min_pay: null, commission_pct: null }), [field]: num },
+      [storeId]: { ...(prev[storeId] ?? { store_id: storeId, base_pay: null, first_km_price: null, per_km_rate: null, min_pay: null, commission_pct: null }), [field]: num },
     }));
   };
 
   const save = async (storeId: string) => {
     setSavingId(storeId);
-    const row = overrides[storeId] ?? { store_id: storeId, base_pay: null, per_km_rate: null, min_pay: null, commission_pct: null };
+    const row = overrides[storeId] ?? { store_id: storeId, base_pay: null, first_km_price: null, per_km_rate: null, min_pay: null, commission_pct: null };
     const { error } = await supabase.from('store_pricing_overrides' as any).upsert(row as any, { onConflict: 'store_id' });
     setSavingId(null);
     if (error) toast.error('Αποτυχία'); else toast.success('Αποθηκεύτηκε');
