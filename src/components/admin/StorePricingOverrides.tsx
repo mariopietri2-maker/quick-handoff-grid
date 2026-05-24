@@ -11,6 +11,7 @@ interface StoreRow { id: string; name: string; }
 interface OverrideRow {
   store_id: string;
   base_pay: number | null;
+  first_km_price: number | null;
   per_km_rate: number | null;
   min_pay: number | null;
   commission_pct: number | null;
