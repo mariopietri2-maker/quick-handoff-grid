@@ -68,6 +68,7 @@ export default function PricingSettings() {
           const d = data as any;
           setPricing({
             base_pay: Number(d.base_pay ?? 3),
+            first_km_price: Number(d.first_km_price ?? d.base_pay ?? 3),
             per_km_rate: Number(d.per_km_rate ?? 0.5),
             min_pay: Number(d.min_pay ?? 3),
             max_pay: Number(d.max_pay ?? 12),
