@@ -164,12 +164,12 @@ export default function PricingSettings() {
             <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Αμοιβή Οδηγού (delivery fee)</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Field label="Βασική Αμοιβή (€)" value={pricing.base_pay} onChange={v => setPricing(p => ({ ...p, base_pay: v }))} hint="Σταθερό ανά παράδοση" />
-                <Field label="Χρέωση ανά χλμ (€)" value={pricing.per_km_rate} onChange={v => setPricing(p => ({ ...p, per_km_rate: v }))} hint="Επιπλέον €/km" icon={MapPin} />
+                <Field label="Τιμή 1ου χλμ (€)" value={pricing.first_km_price} onChange={v => setPricing(p => ({ ...p, first_km_price: v }))} hint="Flat για το πρώτο χλμ" />
+                <Field label="€ / χλμ μετά" value={pricing.per_km_rate} onChange={v => setPricing(p => ({ ...p, per_km_rate: v }))} hint="Για κάθε χλμ μετά το 1ο" icon={MapPin} />
                 <Field label="Ελάχιστη Αμοιβή (€)" value={pricing.min_pay} onChange={v => setPricing(p => ({ ...p, min_pay: v }))} hint="Εγγυημένο ελάχιστο" icon={Shield} />
                 <Field label="Μέγιστη Αμοιβή (€)" value={pricing.max_pay} onChange={v => setPricing(p => ({ ...p, max_pay: v }))} hint="Cap ανά παράδοση" />
               </div>
-              <Preview label={`Delivery fee — ${previewKm} χλμ`} amount={driverDeliveryPay} note={`€${pricing.base_pay.toFixed(2)} + ${previewKm} × €${pricing.per_km_rate.toFixed(2)}`} />
+              <Preview label={`Delivery fee — ${previewKm} χλμ`} amount={driverDeliveryPay} note={`€${pricing.first_km_price.toFixed(2)} + ${extraKm} × €${pricing.per_km_rate.toFixed(2)}`} />
             </CardContent>
           </Card>
 
