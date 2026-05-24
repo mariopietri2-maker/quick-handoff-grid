@@ -125,11 +125,12 @@ export default function PricingSettings() {
   }
 
   const previewKm = 3;
-  const driverDeliveryPay = Math.max(pricing.min_pay, pricing.base_pay + pricing.per_km_rate * previewKm);
+  const extraKm = Math.max(0, previewKm - 1);
+  const driverDeliveryPay = Math.min(pricing.max_pay, Math.max(pricing.min_pay, pricing.first_km_price + pricing.per_km_rate * extraKm));
   const customerFee = pricing.customer_base_fee + pricing.customer_per_km_fee * previewKm;
 
   // Live preview of pool-health bonus formula
-  const rawBonus = pricing.base_pay + pricing.per_km_rate * previewKm;
+  const rawBonus = pricing.first_km_price + pricing.per_km_rate * extraKm;
   const clampedBonus = Math.min(Math.max(rawBonus, pricing.min_pay), pricing.max_pay);
   let healthLabel: 'υγιές'|'κανονικό'|'χαμηλό'|'κρίσιμο' = 'κανονικό';
   let mult = 1.0;
