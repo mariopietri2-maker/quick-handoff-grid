@@ -48,7 +48,7 @@ export default function PricingSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState<PricingRow>({
-    base_pay: 3, per_km_rate: 0.5, min_pay: 3, max_pay: 12,
+    base_pay: 3, first_km_price: 3, per_km_rate: 0.5, min_pay: 3, max_pay: 12,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
     platform_service_fee: 0.99,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
