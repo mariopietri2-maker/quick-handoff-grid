@@ -176,6 +176,32 @@ export default function BasketDashboard() {
         </CardContent>
       </Card>
 
+      {/* Manual basket adjustment */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Χειροκίνητη ρύθμιση Basket</CardTitle>
+          <p className="text-xs text-muted-foreground">Πρόσθεσε ή αφαίρεσε χρήματα από το ταμείο. Κάθε ενέργεια καταγράφεται στο ledger.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grow min-w-[140px]">
+              <label className="text-[11px] text-muted-foreground">Ποσό (€)</label>
+              <Input type="number" step="0.01" min="0" value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} placeholder="0.00" />
+            </div>
+            <div className="grow min-w-[200px]">
+              <label className="text-[11px] text-muted-foreground">Σημείωση</label>
+              <Input value={adjNote} onChange={(e) => setAdjNote(e.target.value)} placeholder="π.χ. εισφορά, προσαρμογή…" />
+            </div>
+            <Button onClick={() => adjustBasket(1)} disabled={adjBusy} className="bg-success hover:bg-success/90 text-success-foreground">
+              <Plus className="h-4 w-4 mr-1" /> Κατάθεση
+            </Button>
+            <Button onClick={() => adjustBasket(-1)} disabled={adjBusy} variant="destructive">
+              <Minus className="h-4 w-4 mr-1" /> Ανάληψη
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Recent distributions */}
       <Card>
         <CardHeader className="pb-3"><CardTitle className="text-base">Πρόσφατες διανομές</CardTitle></CardHeader>
