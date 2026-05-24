@@ -14,7 +14,6 @@ interface PricingRow {
   base_pay: number;
   first_km_price: number;
   per_km_rate: number;
-  per_km_rate: number;
   min_pay: number;
   max_pay: number;
   customer_base_fee: number;
