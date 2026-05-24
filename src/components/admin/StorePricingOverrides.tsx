@@ -11,6 +11,7 @@ interface StoreRow { id: string; name: string; }
 interface OverrideRow {
   store_id: string;
   base_pay: number | null;
+  first_km_price: number | null;
   per_km_rate: number | null;
   min_pay: number | null;
   commission_pct: number | null;
@@ -39,13 +40,13 @@ export default function StorePricingOverrides({ defaultCommission }: { defaultCo
     const num = value === '' ? null : Number(value);
     setOverrides(prev => ({
       ...prev,
-      [storeId]: { ...(prev[storeId] ?? { store_id: storeId, base_pay: null, per_km_rate: null, min_pay: null, commission_pct: null }), [field]: num },
+      [storeId]: { ...(prev[storeId] ?? { store_id: storeId, base_pay: null, first_km_price: null, per_km_rate: null, min_pay: null, commission_pct: null }), [field]: num },
     }));
   };
 
   const save = async (storeId: string) => {
     setSavingId(storeId);
-    const row = overrides[storeId] ?? { store_id: storeId, base_pay: null, per_km_rate: null, min_pay: null, commission_pct: null };
+    const row = overrides[storeId] ?? { store_id: storeId, base_pay: null, first_km_price: null, per_km_rate: null, min_pay: null, commission_pct: null };
     const { error } = await supabase.from('store_pricing_overrides' as any).upsert(row as any, { onConflict: 'store_id' });
     setSavingId(null);
     if (error) toast.error('Αποτυχία'); else toast.success('Αποθηκεύτηκε');
@@ -71,7 +72,7 @@ export default function StorePricingOverrides({ defaultCommission }: { defaultCo
           <TableHeader>
             <TableRow>
               <TableHead>Κατάστημα</TableHead>
-              <TableHead className="w-24">Base €</TableHead>
+              <TableHead className="w-24">1ο χλμ €</TableHead>
               <TableHead className="w-24">€/km</TableHead>
               <TableHead className="w-24">Min €</TableHead>
               <TableHead className="w-28">Προμήθεια %</TableHead>
@@ -85,7 +86,7 @@ export default function StorePricingOverrides({ defaultCommission }: { defaultCo
               return (
                 <TableRow key={s.id}>
                   <TableCell className="font-medium">{s.name}</TableCell>
-                  <TableCell><Input type="number" step="0.10" placeholder="—" value={ov?.base_pay ?? ''} onChange={e => update(s.id, 'base_pay', e.target.value)} className="h-8" /></TableCell>
+                  <TableCell><Input type="number" step="0.10" placeholder="—" value={ov?.first_km_price ?? ''} onChange={e => update(s.id, 'first_km_price', e.target.value)} className="h-8" /></TableCell>
                   <TableCell><Input type="number" step="0.05" placeholder="—" value={ov?.per_km_rate ?? ''} onChange={e => update(s.id, 'per_km_rate', e.target.value)} className="h-8" /></TableCell>
                   <TableCell><Input type="number" step="0.10" placeholder="—" value={ov?.min_pay ?? ''} onChange={e => update(s.id, 'min_pay', e.target.value)} className="h-8" /></TableCell>
                   <TableCell><Input type="number" step="0.5" placeholder={String(defaultCommission)} value={ov?.commission_pct ?? ''} onChange={e => update(s.id, 'commission_pct', e.target.value)} className="h-8" /></TableCell>

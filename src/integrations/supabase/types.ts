@@ -1817,6 +1817,7 @@ export type Database = {
           dist_wave_size: number
           distribution_mode: string
           driver_pool_pct_of_subtotal: number
+          first_km_price: number | null
           id: number
           low_pool_threshold: number
           maintenance_message: string | null
@@ -1883,6 +1884,7 @@ export type Database = {
           dist_wave_size?: number
           distribution_mode?: string
           driver_pool_pct_of_subtotal?: number
+          first_km_price?: number | null
           id?: number
           low_pool_threshold?: number
           maintenance_message?: string | null
@@ -1949,6 +1951,7 @@ export type Database = {
           dist_wave_size?: number
           distribution_mode?: string
           driver_pool_pct_of_subtotal?: number
+          first_km_price?: number | null
           id?: number
           low_pool_threshold?: number
           maintenance_message?: string | null
@@ -2307,6 +2310,7 @@ export type Database = {
         Row: {
           base_pay: number | null
           commission_pct: number | null
+          first_km_price: number | null
           max_pay: number | null
           min_pay: number | null
           per_km_rate: number | null
@@ -2316,6 +2320,7 @@ export type Database = {
         Insert: {
           base_pay?: number | null
           commission_pct?: number | null
+          first_km_price?: number | null
           max_pay?: number | null
           min_pay?: number | null
           per_km_rate?: number | null
@@ -2325,6 +2330,7 @@ export type Database = {
         Update: {
           base_pay?: number | null
           commission_pct?: number | null
+          first_km_price?: number | null
           max_pay?: number | null
           min_pay?: number | null
           per_km_rate?: number | null
@@ -3168,6 +3174,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_adjust_basket: {
+        Args: { p_amount: number; p_note: string }
+        Returns: number
+      }
       admin_adjust_wallet: {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
@@ -3347,6 +3357,10 @@ export type Database = {
         }
         Returns: boolean
       }
+      haversine_km: {
+        Args: { lat1: number; lat2: number; lon1: number; lon2: number }
+        Returns: number
+      }
       is_point_in_any_zone: {
         Args: { p_lat: number; p_lng: number }
         Returns: boolean
@@ -3409,6 +3423,10 @@ export type Database = {
         Returns: string
       }
       prune_dispatch_runs: { Args: never; Returns: undefined }
+      quote_driver_payout: {
+        Args: { p_distance_km: number; p_store_id: string }
+        Returns: number
+      }
       redeem_wallet_credit: {
         Args: { p_amount: number; p_order_id: string }
         Returns: number

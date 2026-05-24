@@ -12,6 +12,7 @@ import CommissionTiersPanel from './CommissionTiersPanel';
 
 interface PricingRow {
   base_pay: number;
+  first_km_price: number;
   per_km_rate: number;
   min_pay: number;
   max_pay: number;
@@ -47,7 +48,7 @@ export default function PricingSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState<PricingRow>({
-    base_pay: 3, per_km_rate: 0.5, min_pay: 3, max_pay: 12,
+    base_pay: 3, first_km_price: 3, per_km_rate: 0.5, min_pay: 3, max_pay: 12,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
     platform_service_fee: 0.99,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
@@ -67,6 +68,7 @@ export default function PricingSettings() {
           const d = data as any;
           setPricing({
             base_pay: Number(d.base_pay ?? 3),
+            first_km_price: Number(d.first_km_price ?? d.base_pay ?? 3),
             per_km_rate: Number(d.per_km_rate ?? 0.5),
             min_pay: Number(d.min_pay ?? 3),
             max_pay: Number(d.max_pay ?? 12),
@@ -123,11 +125,12 @@ export default function PricingSettings() {
   }
 
   const previewKm = 3;
-  const driverDeliveryPay = Math.max(pricing.min_pay, pricing.base_pay + pricing.per_km_rate * previewKm);
+  const extraKm = Math.max(0, previewKm - 1);
+  const driverDeliveryPay = Math.min(pricing.max_pay, Math.max(pricing.min_pay, pricing.first_km_price + pricing.per_km_rate * extraKm));
   const customerFee = pricing.customer_base_fee + pricing.customer_per_km_fee * previewKm;
 
   // Live preview of pool-health bonus formula
-  const rawBonus = pricing.base_pay + pricing.per_km_rate * previewKm;
+  const rawBonus = pricing.first_km_price + pricing.per_km_rate * extraKm;
   const clampedBonus = Math.min(Math.max(rawBonus, pricing.min_pay), pricing.max_pay);
   let healthLabel: 'υγιές'|'κανονικό'|'χαμηλό'|'κρίσιμο' = 'κανονικό';
   let mult = 1.0;
@@ -161,12 +164,12 @@ export default function PricingSettings() {
             <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Αμοιβή Οδηγού (delivery fee)</CardTitle></CardHeader>
             <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Field label="Βασική Αμοιβή (€)" value={pricing.base_pay} onChange={v => setPricing(p => ({ ...p, base_pay: v }))} hint="Σταθερό ανά παράδοση" />
-                <Field label="Χρέωση ανά χλμ (€)" value={pricing.per_km_rate} onChange={v => setPricing(p => ({ ...p, per_km_rate: v }))} hint="Επιπλέον €/km" icon={MapPin} />
+                <Field label="Τιμή 1ου χλμ (€)" value={pricing.first_km_price} onChange={v => setPricing(p => ({ ...p, first_km_price: v }))} hint="Flat για το πρώτο χλμ" />
+                <Field label="€ / χλμ μετά" value={pricing.per_km_rate} onChange={v => setPricing(p => ({ ...p, per_km_rate: v }))} hint="Για κάθε χλμ μετά το 1ο" icon={MapPin} />
                 <Field label="Ελάχιστη Αμοιβή (€)" value={pricing.min_pay} onChange={v => setPricing(p => ({ ...p, min_pay: v }))} hint="Εγγυημένο ελάχιστο" icon={Shield} />
                 <Field label="Μέγιστη Αμοιβή (€)" value={pricing.max_pay} onChange={v => setPricing(p => ({ ...p, max_pay: v }))} hint="Cap ανά παράδοση" />
               </div>
-              <Preview label={`Delivery fee — ${previewKm} χλμ`} amount={driverDeliveryPay} note={`€${pricing.base_pay.toFixed(2)} + ${previewKm} × €${pricing.per_km_rate.toFixed(2)}`} />
+              <Preview label={`Delivery fee — ${previewKm} χλμ`} amount={driverDeliveryPay} note={`€${pricing.first_km_price.toFixed(2)} + ${extraKm} × €${pricing.per_km_rate.toFixed(2)}`} />
             </CardContent>
           </Card>
 

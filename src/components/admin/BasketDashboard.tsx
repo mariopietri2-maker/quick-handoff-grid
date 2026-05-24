@@ -3,13 +3,15 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Skeleton } from '@/components/ui/skeleton';
 import { Switch } from '@/components/ui/switch';
 import { toast } from 'sonner';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Gift, TrendingUp, Wallet, Play, Trophy, Award, Sparkles, Clock } from 'lucide-react';
+import { useState } from 'react';
+import { Gift, TrendingUp, Wallet, Play, Trophy, Award, Sparkles, Clock, Plus, Minus } from 'lucide-react';
 
 const KIND_META: Record<string, { label: string; icon: any; tone: string }> = {
   top_drivers:  { label: 'Top οδηγοί', icon: Trophy, tone: 'text-warning' },
@@ -21,6 +23,25 @@ const KIND_META: Record<string, { label: string; icon: any; tone: string }> = {
 
 export default function BasketDashboard() {
   const qc = useQueryClient();
+  const [adjAmount, setAdjAmount] = useState('');
+  const [adjNote, setAdjNote] = useState('');
+  const [adjBusy, setAdjBusy] = useState(false);
+
+  const adjustBasket = async (sign: 1 | -1) => {
+    const n = Number(adjAmount);
+    if (!n || n <= 0) { toast.error('Δώσε ποσό > 0'); return; }
+    setAdjBusy(true);
+    const { error } = await (supabase as any).rpc('admin_adjust_basket', {
+      _amount: sign * n,
+      _note: adjNote || (sign > 0 ? 'Admin deposit' : 'Admin withdrawal'),
+    });
+    setAdjBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(sign > 0 ? `+€${n.toFixed(2)} στο Basket` : `−€${n.toFixed(2)} από το Basket`);
+    setAdjAmount(''); setAdjNote('');
+    qc.invalidateQueries({ queryKey: ['basket-health'] });
+    qc.invalidateQueries({ queryKey: ['basket-distributions-recent'] });
+  };
 
   const health = useQuery({
     queryKey: ['basket-health'],
@@ -152,6 +173,32 @@ export default function BasketDashboard() {
               })}
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      {/* Manual basket adjustment */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Χειροκίνητη ρύθμιση Basket</CardTitle>
+          <p className="text-xs text-muted-foreground">Πρόσθεσε ή αφαίρεσε χρήματα από το ταμείο. Κάθε ενέργεια καταγράφεται στο ledger.</p>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-2">
+            <div className="grow min-w-[140px]">
+              <label className="text-[11px] text-muted-foreground">Ποσό (€)</label>
+              <Input type="number" step="0.01" min="0" value={adjAmount} onChange={(e) => setAdjAmount(e.target.value)} placeholder="0.00" />
+            </div>
+            <div className="grow min-w-[200px]">
+              <label className="text-[11px] text-muted-foreground">Σημείωση</label>
+              <Input value={adjNote} onChange={(e) => setAdjNote(e.target.value)} placeholder="π.χ. εισφορά, προσαρμογή…" />
+            </div>
+            <Button onClick={() => adjustBasket(1)} disabled={adjBusy} className="bg-success hover:bg-success/90 text-success-foreground">
+              <Plus className="h-4 w-4 mr-1" /> Κατάθεση
+            </Button>
+            <Button onClick={() => adjustBasket(-1)} disabled={adjBusy} variant="destructive">
+              <Minus className="h-4 w-4 mr-1" /> Ανάληψη
+            </Button>
+          </div>
         </CardContent>
       </Card>
 
