@@ -163,13 +163,24 @@ export function playPattern(pattern: SoundPattern, volume: number) {
   }
 }
 
+// Global lock to prevent overlapping/simultaneous alert plays
+let _alertLockUntil = 0;
+const _pendingTimers: number[] = [];
+
 export function playOfferAlert(prefs?: DriverSoundPrefs) {
   const p = prefs ?? loadDriverSoundPrefs();
   if (!p.enabled) return;
+  const now = Date.now();
+  if (now < _alertLockUntil) return; // suppress overlapping calls
+  const reps = Math.max(1, p.repeatCount);
+  _alertLockUntil = now + reps * 700 + 400;
+  // clear any leftover timers just in case
+  while (_pendingTimers.length) { try { clearTimeout(_pendingTimers.pop()!); } catch {} }
   if (p.vibrate && 'vibrate' in navigator) {
     try { navigator.vibrate([120, 80, 120]); } catch {}
   }
-  for (let i = 0; i < Math.max(1, p.repeatCount); i++) {
-    setTimeout(() => playPattern(p.pattern, p.volume), i * 700);
+  for (let i = 0; i < reps; i++) {
+    const t = window.setTimeout(() => playPattern(p.pattern, p.volume), i * 700);
+    _pendingTimers.push(t);
   }
 }
