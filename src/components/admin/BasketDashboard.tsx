@@ -23,6 +23,25 @@ const KIND_META: Record<string, { label: string; icon: any; tone: string }> = {
 
 export default function BasketDashboard() {
   const qc = useQueryClient();
+  const [adjAmount, setAdjAmount] = useState('');
+  const [adjNote, setAdjNote] = useState('');
+  const [adjBusy, setAdjBusy] = useState(false);
+
+  const adjustBasket = async (sign: 1 | -1) => {
+    const n = Number(adjAmount);
+    if (!n || n <= 0) { toast.error('Δώσε ποσό > 0'); return; }
+    setAdjBusy(true);
+    const { error } = await (supabase as any).rpc('admin_adjust_basket', {
+      _amount: sign * n,
+      _note: adjNote || (sign > 0 ? 'Admin deposit' : 'Admin withdrawal'),
+    });
+    setAdjBusy(false);
+    if (error) { toast.error(error.message); return; }
+    toast.success(sign > 0 ? `+€${n.toFixed(2)} στο Basket` : `−€${n.toFixed(2)} από το Basket`);
+    setAdjAmount(''); setAdjNote('');
+    qc.invalidateQueries({ queryKey: ['basket-health'] });
+    qc.invalidateQueries({ queryKey: ['basket-distributions-recent'] });
+  };
 
   const health = useQuery({
     queryKey: ['basket-health'],
