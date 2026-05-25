@@ -46,7 +46,7 @@ export function UserMenu() {
         .from('orders')
         .select('id, status')
         .eq('driver_id', user.id)
-        .not('status', 'in', '(picked_up,delivered,canceled,cancelled)')
+        .not('status', 'in', '(picked_up,delivered,cancelled)')
         .order('updated_at', { ascending: false })
         .limit(1)
         .maybeSingle();
