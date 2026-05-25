@@ -164,28 +164,39 @@ export default function SystemHealthPanel() {
       results.push({ id: 'stuck_orders', label: 'Παγωμένες παραγγελίες', icon: ShoppingBag, status: 'warn', message: e?.message ?? 'Άγνωστο' });
     }
 
-    // 7. Stale driver locations (no ping > 10min — treated as offline)
+    // 7. Stale driver locations — only flag active drivers whose ping hasn't refreshed.
     try {
       const cutoff = new Date(Date.now() - 10 * 60 * 1000).toISOString();
-      const { data, error } = await supabase
-        .from('driver_locations')
-        .select('driver_id, updated_at')
-        .lt('updated_at', cutoff);
-      if (error) throw error;
-      const count = data?.length ?? 0;
+      const { data: active } = await supabase
+        .from('driver_profiles')
+        .select('user_id')
+        .eq('is_active', true);
+      const activeIds = (active ?? []).map((d: any) => d.user_id);
+      let stale: { driver_id: string }[] = [];
+      if (activeIds.length > 0) {
+        const { data, error } = await supabase
+          .from('driver_locations')
+          .select('driver_id, updated_at')
+          .in('driver_id', activeIds)
+          .lt('updated_at', cutoff);
+        if (error) throw error;
+        stale = (data ?? []) as any;
+      }
+      const count = stale.length;
       results.push({
-        id: 'stale_drivers', label: 'Οδηγοί χωρίς σήμα', icon: Bike,
+        id: 'stale_drivers', label: 'Ενεργοί οδηγοί χωρίς σήμα', icon: Bike,
         status: count === 0 ? 'ok' : 'warn',
-        message: count === 0 ? 'Όλοι αναφέρουν θέση' : `${count} οδηγοί χωρίς ping >10min`,
+        message: count === 0 ? 'Όλοι οι ενεργοί οδηγοί αναφέρουν θέση' : `${count} ενεργοί οδηγοί χωρίς ping >10min`,
         fix: count > 0 ? async () => {
-          const ids = (data ?? []).map((d: any) => d.driver_id);
+          const ids = stale.map((d) => d.driver_id);
+          // Drop their stale location rows so dispatch stops using them until they re-ping.
           const { error: e2 } = await supabase.from('driver_locations').delete().in('driver_id', ids);
           if (e2) throw e2;
         } : undefined,
         fixLabel: 'Εκκαθάριση',
       });
     } catch (e: any) {
-      results.push({ id: 'stale_drivers', label: 'Οδηγοί χωρίς σήμα', icon: Bike, status: 'warn', message: e?.message ?? 'Άγνωστο' });
+      results.push({ id: 'stale_drivers', label: 'Ενεργοί οδηγοί χωρίς σήμα', icon: Bike, status: 'warn', message: e?.message ?? 'Άγνωστο' });
     }
 
     // 8. Browser connectivity

@@ -3221,6 +3221,7 @@ export type Database = {
       admin_wipe_all_data: { Args: never; Returns: undefined }
       admin_wipe_transactions: { Args: never; Returns: Json }
       cleanup_dispatch_runs: { Args: never; Returns: undefined }
+      cleanup_stale_dispatch_artifacts: { Args: never; Returns: Json }
       commission_pct_for_amount: { Args: { p_amount: number }; Returns: number }
       compute_driver_pool_bonus: { Args: { _order_id: string }; Returns: Json }
       compute_order_split: { Args: { _order_id: string }; Returns: Json }
