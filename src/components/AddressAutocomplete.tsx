@@ -272,6 +272,7 @@ export function AddressAutocomplete({
           value={query}
           onChange={e => handleInput(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
+          onBlur={handleBlur}
           placeholder={placeholder}
           maxLength={maxLength}
           className="pr-16"
