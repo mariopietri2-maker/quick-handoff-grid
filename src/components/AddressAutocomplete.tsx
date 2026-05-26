@@ -177,10 +177,12 @@ export function AddressAutocomplete({
         setQuery(fallback);
         onChange(fallback, lat, lon);
       }
+      hasCoordsRef.current = true;
     } catch {
       const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
       setQuery(fallback);
       onChange(fallback, lat, lon);
+      hasCoordsRef.current = true;
     } finally {
       setReverseLoading(false);
     }
