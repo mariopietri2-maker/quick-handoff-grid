@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/button';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { geocodeAddress } from '@/lib/geocode';
 
 interface AddressResult {
   display_name: string;
@@ -115,17 +116,35 @@ export function AddressAutocomplete({
     }
   }, [token]);
 
+  const hasCoordsRef = useRef(false);
+
   const handleInput = (val: string) => {
     setQuery(val);
     onChange(val);
+    hasCoordsRef.current = false;
     setNoResults(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => search(val), 200);
   };
 
+  const handleBlur = async () => {
+    // If user typed an address but never picked a suggestion, resolve via Google
+    // (more accurate for Greek street numbers than Mapbox autocomplete).
+    if (hasCoordsRef.current) return;
+    const q = query.trim();
+    if (q.length < 5) return;
+    const res = await geocodeAddress(q);
+    if (res) {
+      hasCoordsRef.current = true;
+      onChange(res.formatted || q, res.latitude, res.longitude);
+      setQuery(res.formatted || q);
+    }
+  };
+
   const selectResult = (r: AddressResult) => {
     setQuery(r.display_name);
     onChange(r.display_name, r.lat, r.lon);
+    hasCoordsRef.current = true;
     setOpen(false);
     setResults([]);
     setNoResults(false);
@@ -158,10 +177,12 @@ export function AddressAutocomplete({
         setQuery(fallback);
         onChange(fallback, lat, lon);
       }
+      hasCoordsRef.current = true;
     } catch {
       const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
       setQuery(fallback);
       onChange(fallback, lat, lon);
+      hasCoordsRef.current = true;
     } finally {
       setReverseLoading(false);
     }
@@ -253,6 +274,7 @@ export function AddressAutocomplete({
           value={query}
           onChange={e => handleInput(e.target.value)}
           onFocus={() => results.length > 0 && setOpen(true)}
+          onBlur={handleBlur}
           placeholder={placeholder}
           maxLength={maxLength}
           className="pr-16"
