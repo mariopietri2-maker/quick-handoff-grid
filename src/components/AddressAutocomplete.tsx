@@ -116,17 +116,35 @@ export function AddressAutocomplete({
     }
   }, [token]);
 
+  const hasCoordsRef = useRef(false);
+
   const handleInput = (val: string) => {
     setQuery(val);
     onChange(val);
+    hasCoordsRef.current = false;
     setNoResults(false);
     if (debounceRef.current) clearTimeout(debounceRef.current);
     debounceRef.current = setTimeout(() => search(val), 200);
   };
 
+  const handleBlur = async () => {
+    // If user typed an address but never picked a suggestion, resolve via Google
+    // (more accurate for Greek street numbers than Mapbox autocomplete).
+    if (hasCoordsRef.current) return;
+    const q = query.trim();
+    if (q.length < 5) return;
+    const res = await geocodeAddress(q);
+    if (res) {
+      hasCoordsRef.current = true;
+      onChange(res.formatted || q, res.latitude, res.longitude);
+      setQuery(res.formatted || q);
+    }
+  };
+
   const selectResult = (r: AddressResult) => {
     setQuery(r.display_name);
     onChange(r.display_name, r.lat, r.lon);
+    hasCoordsRef.current = true;
     setOpen(false);
     setResults([]);
     setNoResults(false);
