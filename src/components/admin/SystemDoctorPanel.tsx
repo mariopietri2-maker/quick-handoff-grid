@@ -187,23 +187,22 @@ export default function SystemDoctorPanel() {
 
     // ========== STORES ==========
     try {
-      const { data } = await supabase.from('stores').select('id, name, lat, lng, address');
-      const bad = (data ?? []).filter((s: any) => !s.lat || !s.lng || s.lat === 0);
+      const { data } = await supabase.from('stores').select('id, name, latitude, longitude');
+      const bad = (data ?? []).filter((s: any) => !s.latitude || !s.longitude);
       r.push({ id: 'store_coords', group: 'stores', label: 'Καταστήματα χωρίς συντεταγμένες', icon: MapPin,
         status: bad.length === 0 ? 'ok' : 'warn',
-        message: bad.length === 0 ? 'Όλα γεωκωδικοποιημένα' : `${bad.length} χωρίς lat/lng`,
-        fix: undefined });
+        message: bad.length === 0 ? 'Όλα γεωκωδικοποιημένα' : `${bad.length} χωρίς lat/lng` });
     } catch (e: any) {
       r.push({ id: 'store_coords', group: 'stores', label: 'Store coords', icon: MapPin, status: 'warn', message: e?.message ?? '?' });
     }
 
     try {
-      const { data } = await supabase.from('stores').select('id, is_open').eq('is_open', true as any);
-      r.push({ id: 'open_stores', group: 'stores', label: 'Ανοιχτά καταστήματα', icon: Store,
+      const { data } = await supabase.from('stores').select('id, is_active').eq('is_active', true);
+      r.push({ id: 'active_stores', group: 'stores', label: 'Ενεργά καταστήματα', icon: Store,
         status: !data?.length ? 'warn' : 'ok',
-        message: !data?.length ? 'Κανένα ανοιχτό!' : `${data.length} σε λειτουργία` });
+        message: !data?.length ? 'Κανένα ενεργό!' : `${data.length} ενεργά` });
     } catch (e: any) {
-      r.push({ id: 'open_stores', group: 'stores', label: 'Ανοιχτά καταστήματα', icon: Store, status: 'warn', message: e?.message ?? '?' });
+      r.push({ id: 'active_stores', group: 'stores', label: 'Ενεργά καταστήματα', icon: Store, status: 'warn', message: e?.message ?? '?' });
     }
 
     // ========== MONEY ==========
