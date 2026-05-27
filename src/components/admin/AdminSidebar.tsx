@@ -85,11 +85,9 @@ export const NAV_SECTIONS = [
     icon: Wallet,
     accent: 'text-success',
     accentBg: 'bg-success/10',
-    defaultTab: 'money_engine',
+    defaultTab: 'money_hub',
     tabs: [
-      { id: 'money_engine', label: 'Money Engine' },
-      { id: 'ledger', label: 'Καθολικό κινήσεων' },
-      { id: 'driver_basket', label: 'Driver Basket' },
+      { id: 'money_hub', label: '💰 Money Hub' },
       { id: 'surge', label: 'Surge' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
