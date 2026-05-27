@@ -52,6 +52,8 @@ const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealt
 const LedgerExplorer         = lazy(() => import('@/components/admin/LedgerExplorer'));
 const BasketDashboard        = lazy(() => import('@/components/admin/BasketDashboard'));
 const MoneyEnginePanel       = lazy(() => import('@/components/admin/MoneyEnginePanel'));
+const MoneyHub               = lazy(() => import('@/components/admin/MoneyHub'));
+const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
@@ -209,6 +211,10 @@ export default function AdminApp() {
         return <LedgerExplorer />;
       case 'driver_basket':
         return <BasketDashboard />;
+      case 'money_hub':
+        return <MoneyHub />;
+      case 'system_doctor':
+        return <SystemDoctorPanel />;
       case 'surge':
         return <SurgeMap />;
       case 'pricing':
