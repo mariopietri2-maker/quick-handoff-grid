@@ -211,6 +211,10 @@ export default function AdminApp() {
         return <LedgerExplorer />;
       case 'driver_basket':
         return <BasketDashboard />;
+      case 'money_hub':
+        return <MoneyHub />;
+      case 'system_doctor':
+        return <SystemDoctorPanel />;
       case 'surge':
         return <SurgeMap />;
       case 'pricing':
