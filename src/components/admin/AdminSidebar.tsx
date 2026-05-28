@@ -111,6 +111,7 @@ export const NAV_SECTIONS = [
       { id: 'aade_compliance', label: '🇬🇷 ΑΑΔΕ / myDATA' },
       { id: 'feature_flags', label: 'Feature flags' },
       { id: 'overrides', label: 'Operational overrides' },
+      { id: 'mission_control', label: '🛡️ Mission Control' },
       { id: 'system_doctor', label: '🩺 System Doctor' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
