@@ -54,6 +54,7 @@ const BasketDashboard        = lazy(() => import('@/components/admin/BasketDashb
 const MoneyEnginePanel       = lazy(() => import('@/components/admin/MoneyEnginePanel'));
 const MoneyHub               = lazy(() => import('@/components/admin/MoneyHub'));
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
+const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
