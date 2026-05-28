@@ -157,7 +157,7 @@ export default function MissionControl() {
             </CardHeader>
             <CardContent>
               <Button variant="destructive" onClick={cancelStuck}>
-                <ZapOff className="h-4 w-4 mr-1" /> Ακύρωσε pending/placed > 2h
+                <ZapOff className="h-4 w-4 mr-1" /> Ακύρωσε pending/placed &gt; 2h
               </Button>
             </CardContent>
           </Card>
@@ -213,13 +213,13 @@ export default function MissionControl() {
             </CardHeader>
             <CardContent className="grid grid-cols-1 sm:grid-cols-3 gap-2">
               <Button variant="outline" onClick={() => purge('dispatch_runs', 'dispatch_runs > 24h')}>
-                <RefreshCw className="h-4 w-4 mr-1" /> Dispatch runs > 24h
+                <RefreshCw className="h-4 w-4 mr-1" /> Dispatch runs &gt; 24h
               </Button>
               <Button variant="outline" onClick={() => purge('offer_events', 'offer events > 7d')}>
-                <RefreshCw className="h-4 w-4 mr-1" /> Offer events > 7d
+                <RefreshCw className="h-4 w-4 mr-1" /> Offer events &gt; 7d
               </Button>
               <Button variant="outline" onClick={() => purge('audit', 'audit log > 90d')}>
-                <RefreshCw className="h-4 w-4 mr-1" /> Audit log > 90d
+                <RefreshCw className="h-4 w-4 mr-1" /> Audit log &gt; 90d
               </Button>
             </CardContent>
           </Card>
