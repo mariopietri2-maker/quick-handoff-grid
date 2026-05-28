@@ -41,7 +41,13 @@ export function useEarnings() {
 
   useEffect(() => {
     fetchEarnings();
-  }, [fetchEarnings]);
+    if (!user) return;
+    const ch = supabase
+      .channel(`earnings-${user.id}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'earnings', filter: `driver_id=eq.${user.id}` }, fetchEarnings)
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [fetchEarnings, user?.id]);
 
   const today = useMemo<EarningsSummary>(() => {
     const startOfDay = new Date();
