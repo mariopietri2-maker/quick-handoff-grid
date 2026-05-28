@@ -173,6 +173,18 @@ export default function CheckoutPage() {
           storeData?.latitude && storeData?.longitude &&
           deliveryCoords?.lat && deliveryCoords?.lon
         ) {
+          // Same-address guard: block when within ~30m of the store
+          const toRad = (d: number) => (d * Math.PI) / 180;
+          const dLat = toRad(deliveryCoords.lat - storeData.latitude);
+          const dLon = toRad(deliveryCoords.lon - storeData.longitude);
+          const a = Math.sin(dLat / 2) ** 2 +
+            Math.cos(toRad(storeData.latitude)) * Math.cos(toRad(deliveryCoords.lat)) * Math.sin(dLon / 2) ** 2;
+          const meters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+          if (meters < 30) {
+            toast.error('Η διεύθυνση παράδοσης ταυτίζεται με το κατάστημα. Διάλεξε διαφορετική.');
+            setSubmitting(false);
+            return;
+          }
           const { data: tokenRes } = await supabase.functions.invoke('get-mapbox-token');
           const token = tokenRes?.token;
           if (token) {

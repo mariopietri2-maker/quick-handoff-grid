@@ -3183,7 +3183,12 @@ export type Database = {
         Returns: undefined
       }
       admin_auto_close_previous_month: { Args: never; Returns: string }
+      admin_cancel_stuck_orders: { Args: { p_minutes?: number }; Returns: Json }
       admin_close_month: { Args: { p_period_start?: string }; Returns: string }
+      admin_force_complete_order: {
+        Args: { p_order_id: string }
+        Returns: undefined
+      }
       admin_inject_pool: {
         Args: { p_amount: number; p_note?: string }
         Returns: Json
@@ -3192,6 +3197,7 @@ export type Database = {
         Args: { p_amount: number; p_description?: string; p_store_id: string }
         Returns: undefined
       }
+      admin_purge_stale: { Args: { p_kind: string }; Returns: Json }
       admin_reset_admin_bag: { Args: never; Returns: number }
       admin_reset_all_driver_wallets: { Args: never; Returns: Json }
       admin_reset_all_store_wallets: { Args: never; Returns: number }
@@ -3216,6 +3222,19 @@ export type Database = {
       admin_settle_all_driver_cash: { Args: never; Returns: Json }
       admin_settle_driver_cash: {
         Args: { p_debt_id: string }
+        Returns: undefined
+      }
+      admin_toggle_maintenance: {
+        Args: { p_message?: string; p_on: boolean }
+        Returns: undefined
+      }
+      admin_wallet_adjust: {
+        Args: {
+          p_amount: number
+          p_kind: string
+          p_note: string
+          p_user_id: string
+        }
         Returns: undefined
       }
       admin_wipe_all_data: { Args: never; Returns: undefined }
