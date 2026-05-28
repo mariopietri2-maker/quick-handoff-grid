@@ -216,6 +216,8 @@ export default function AdminApp() {
         return <MoneyHub />;
       case 'system_doctor':
         return <SystemDoctorPanel />;
+      case 'mission_control':
+        return <MissionControl />;
       case 'surge':
         return <SurgeMap />;
       case 'pricing':
