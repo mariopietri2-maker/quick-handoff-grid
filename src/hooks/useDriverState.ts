@@ -11,6 +11,7 @@ export interface DriverState {
   weekly_goal: number;
   shift_cash_balance: number;
   shift_started_at: string | null;
+  last_cash_reset_at: string | null;
   updated_at: string;
 }
 
@@ -29,7 +30,6 @@ export function useDriverState() {
     if (data) {
       setState(data);
     } else {
-      // Create default
       const { data: created } = await (supabase as any)
         .from('driver_state')
         .insert({ driver_id: user.id })
@@ -41,6 +41,18 @@ export function useDriverState() {
   }, [user]);
 
   useEffect(() => { fetch(); }, [fetch]);
+
+  // Realtime — picks up admin actions (cash resets, etc.) instantly
+  useEffect(() => {
+    if (!user) return;
+    const ch = supabase
+      .channel(`driver-state-${user.id}-${Math.random().toString(36).slice(2, 8)}`)
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'driver_state', filter: `driver_id=eq.${user.id}` },
+        (payload: any) => { if (payload.new) setState(payload.new as DriverState); })
+      .subscribe();
+    return () => { supabase.removeChannel(ch); };
+  }, [user?.id]);
 
   const update = async (patch: Partial<DriverState>) => {
     if (!user || !state) return;
