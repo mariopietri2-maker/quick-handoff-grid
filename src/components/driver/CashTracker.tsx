@@ -18,12 +18,24 @@ export default function CashTracker() {
       });
   }, []);
 
+  const [ackResetAt, setAckResetAt] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem('driver_cash_reset_ack') : null
+  );
+
   if (!state) return null;
 
   const cash = Number(state.shift_cash_balance);
   const pct = Math.min((cash / Math.max(cap, 1)) * 100, 100);
   const isCapped = cash >= cap;
   const isWarning = !isCapped && pct >= 80;
+  const lastReset = state.last_cash_reset_at;
+  const showResetNotice = !!lastReset && lastReset !== ackResetAt;
+
+  const dismissReset = () => {
+    if (!lastReset) return;
+    localStorage.setItem('driver_cash_reset_ack', lastReset);
+    setAckResetAt(lastReset);
+  };
 
   return (
     <Card className={`shadow-[var(--shadow-md)] ${isCapped ? 'border-2 border-destructive' : isWarning ? 'border-2 border-orange-500' : ''}`}>
