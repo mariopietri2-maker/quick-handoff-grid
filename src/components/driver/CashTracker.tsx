@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Banknote, Lock, AlertTriangle } from 'lucide-react';
+import { Banknote, Lock, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDriverState } from '@/hooks/useDriverState';
@@ -18,12 +18,24 @@ export default function CashTracker() {
       });
   }, []);
 
+  const [ackResetAt, setAckResetAt] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem('driver_cash_reset_ack') : null
+  );
+
   if (!state) return null;
 
   const cash = Number(state.shift_cash_balance);
   const pct = Math.min((cash / Math.max(cap, 1)) * 100, 100);
   const isCapped = cash >= cap;
   const isWarning = !isCapped && pct >= 80;
+  const lastReset = state.last_cash_reset_at;
+  const showResetNotice = !!lastReset && lastReset !== ackResetAt;
+
+  const dismissReset = () => {
+    if (!lastReset) return;
+    localStorage.setItem('driver_cash_reset_ack', lastReset);
+    setAckResetAt(lastReset);
+  };
 
   return (
     <Card className={`shadow-[var(--shadow-md)] ${isCapped ? 'border-2 border-destructive' : isWarning ? 'border-2 border-orange-500' : ''}`}>
@@ -43,6 +55,22 @@ export default function CashTracker() {
           <span className="text-sm font-normal text-muted-foreground ml-2">/ €{cap.toFixed(0)}</span>
         </p>
         <Progress value={pct} className={isCapped ? '[&>div]:bg-destructive' : isWarning ? '[&>div]:bg-orange-500' : ''} />
+
+        {showResetNotice && (
+          <div className="flex items-start gap-2 rounded-lg bg-success/10 border border-success/30 p-3">
+            <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed flex-1">
+              <p className="font-bold text-success mb-0.5">Ο διαχειριστής μηδένισε το ταμείο</p>
+              <p className="text-foreground/80">
+                Παρέδωσες τα μετρητά στις {new Date(lastReset!).toLocaleString('el-GR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}. Καλή συνέχεια στη βάρδια!
+              </p>
+            </div>
+            <button onClick={dismissReset} className="text-muted-foreground hover:text-foreground p-0.5" aria-label="Κλείσιμο">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
 
         {isCapped ? (
           <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/30 p-3">

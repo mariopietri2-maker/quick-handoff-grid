@@ -43,11 +43,11 @@ export function useEarnings() {
     fetchEarnings();
     if (!user) return;
     const ch = supabase
-      .channel(`earnings-${user.id}`)
+      .channel(`earnings-${user.id}-${Math.random().toString(36).slice(2, 8)}`)
       .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'earnings', filter: `driver_id=eq.${user.id}` }, fetchEarnings)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [fetchEarnings, user?.id]);
+  }, [user?.id]);
 
   const today = useMemo<EarningsSummary>(() => {
     const startOfDay = new Date();
