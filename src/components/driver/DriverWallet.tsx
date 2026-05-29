@@ -2,7 +2,7 @@ import { Wallet, ArrowDownCircle, ArrowUpCircle, Clock, TrendingUp, Banknote } f
 import { useDriverWallet } from '@/hooks/useDriverWallet';
 
 export function DriverWallet() {
-  const { wallet, transactions, loading } = useDriverWallet();
+  const { wallet, transactions, cashCollected, cashOutstanding, loading } = useDriverWallet();
 
   if (loading) {
     return (
@@ -35,6 +35,23 @@ export function DriverWallet() {
         <p className="text-[11px] text-white/60 mt-3 leading-relaxed">
           Πιστώνονται <strong>άμεσα</strong> με κάθε παράδοση. Αυτό είναι το διαθέσιμο υπόλοιπό σου για ανάληψη.
         </p>
+      </div>
+
+      <div className="grid grid-cols-2 gap-2">
+        <div className="rounded-2xl driver-glass p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Banknote className="h-4 w-4 text-[hsl(var(--driver-warm))]" />
+            <p className="text-[10px] font-heading uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">Μετρητά που μάζεψες</p>
+          </div>
+          <p className="font-heading font-extrabold text-xl text-[hsl(var(--driver-text))] tabular-nums">{cashCollected.toFixed(2)}€</p>
+        </div>
+        <div className="rounded-2xl driver-glass p-4">
+          <div className="flex items-center gap-2 mb-1">
+            <Wallet className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
+            <p className="text-[10px] font-heading uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">Προς παράδοση admin</p>
+          </div>
+          <p className="font-heading font-extrabold text-xl text-[hsl(var(--driver-text))] tabular-nums">{cashOutstanding.toFixed(2)}€</p>
+        </div>
       </div>
 
       {/* Transaction history */}
