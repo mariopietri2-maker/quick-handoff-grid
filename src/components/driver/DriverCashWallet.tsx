@@ -88,9 +88,9 @@ export default function DriverCashWallet() {
                     €{Number(d.cash_collected).toFixed(2)}
                   </span>
                   {d.settled ? (
-                    <p className="text-[9px] font-heading uppercase tracking-wider text-emerald-600 dark:text-emerald-400">εισπράχθηκε</p>
+                    <p className="text-[9px] font-heading uppercase tracking-wider text-emerald-600 dark:text-emerald-400">παραδόθηκε admin</p>
                   ) : (
-                    <p className="text-[9px] font-heading uppercase tracking-wider text-amber-600 dark:text-amber-400">εκκρεμεί</p>
+                    <p className="text-[9px] font-heading uppercase tracking-wider text-amber-600 dark:text-amber-400">κρατάς €{Number(d.amount_owed).toFixed(2)}</p>
                   )}
                 </div>
               </div>
