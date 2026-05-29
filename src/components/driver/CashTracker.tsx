@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Banknote, Lock, AlertTriangle } from 'lucide-react';
+import { Banknote, Lock, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDriverState } from '@/hooks/useDriverState';
