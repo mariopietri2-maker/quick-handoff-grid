@@ -520,15 +520,17 @@ export default function DriverApp() {
                               key={offer.id}
                               offer={{
                                 id: offer.id,
-                                storeName: storeInfo?.name || 'Ίδιο κατάστημα',
-                                storeAddress: storeInfo?.address || 'Παραλαβή',
+                                storeName: offer.store_name || storeInfo?.name || 'Ίδιο κατάστημα',
+                                storeAddress: offer.store_address || storeInfo?.address || 'Παραλαβή',
                                 deliveryAddress: offer.delivery_address || 'Πελάτης',
                                 estimatedPayout: (Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0) + Number((offer as any).driver_pool_bonus ?? 0)) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
                                 basePay: Number(offer.delivery_fee ?? 0) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
                                 tipAmount: Number(offer.tip_amount ?? 0),
                                 poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
                                 paymentMethod: (offer as any).payment_method ?? null,
-                                cashToCollect: (offer as any).payment_method === 'cash' ? Number((offer as any).total_amount ?? 0) : null,
+                                cashToCollect: (offer as any).payment_method === 'cash'
+                                  ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
+                                  : null,
                                 customerNotes: (offer as any).notes ?? null,
                                 perKmRate: 0.50,
                                 totalDistance: Number(offer.distance_km ?? 0),
@@ -605,15 +607,17 @@ export default function DriverApp() {
                       <OrderOfferCard
                         offer={{
                           id: offer.id,
-                          storeName: 'Παραλαβή',
-                          storeAddress: offer.delivery_address || 'Κατάστημα',
+                          storeName: offer.store_name || 'Κατάστημα',
+                          storeAddress: offer.store_address || 'Διεύθυνση καταστήματος',
                           deliveryAddress: offer.delivery_address || 'Πελάτης',
                           estimatedPayout: (Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0) + Number((offer as any).driver_pool_bonus ?? 0)) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
                           basePay: Number(offer.delivery_fee ?? 0) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
                           tipAmount: Number(offer.tip_amount ?? 0),
                           poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
                           paymentMethod: (offer as any).payment_method ?? null,
-                          cashToCollect: (offer as any).payment_method === 'cash' ? Number((offer as any).total_amount ?? 0) : null,
+                          cashToCollect: (offer as any).payment_method === 'cash'
+                            ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
+                            : null,
                           customerNotes: (offer as any).notes ?? null,
                           perKmRate: 0.50,
                           totalDistance: Number((offer as any).distance_km ?? 0),
