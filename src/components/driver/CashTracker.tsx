@@ -56,6 +56,22 @@ export default function CashTracker() {
         </p>
         <Progress value={pct} className={isCapped ? '[&>div]:bg-destructive' : isWarning ? '[&>div]:bg-orange-500' : ''} />
 
+        {showResetNotice && (
+          <div className="flex items-start gap-2 rounded-lg bg-success/10 border border-success/30 p-3">
+            <CheckCircle2 className="h-4 w-4 text-success shrink-0 mt-0.5" />
+            <div className="text-xs leading-relaxed flex-1">
+              <p className="font-bold text-success mb-0.5">Ο διαχειριστής μηδένισε το ταμείο</p>
+              <p className="text-foreground/80">
+                Παρέδωσες τα μετρητά στις {new Date(lastReset!).toLocaleString('el-GR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}. Καλή συνέχεια στη βάρδια!
+              </p>
+            </div>
+            <button onClick={dismissReset} className="text-muted-foreground hover:text-foreground p-0.5" aria-label="Κλείσιμο">
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+
         {isCapped ? (
           <div className="flex items-start gap-2 rounded-lg bg-destructive/10 border border-destructive/30 p-3">
             <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
