@@ -1112,6 +1112,7 @@ export type Database = {
           break_until: string | null
           daily_goal: number
           driver_id: string
+          last_cash_reset_at: string | null
           on_break: boolean
           shift_cash_balance: number
           shift_started_at: string | null
@@ -1122,6 +1123,7 @@ export type Database = {
           break_until?: string | null
           daily_goal?: number
           driver_id: string
+          last_cash_reset_at?: string | null
           on_break?: boolean
           shift_cash_balance?: number
           shift_started_at?: string | null
@@ -1132,6 +1134,7 @@ export type Database = {
           break_until?: string | null
           daily_goal?: number
           driver_id?: string
+          last_cash_reset_at?: string | null
           on_break?: boolean
           shift_cash_balance?: number
           shift_started_at?: string | null
