@@ -154,11 +154,22 @@ export function UserMenu() {
                 {profile?.full_name || 'Χρήστης'}
               </p>
               <p className="text-[11px] text-muted-foreground truncate">{user.email}</p>
-              {isDriver && (
-                <span className="mt-1 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-accent))]/15 px-2 py-0.5 text-[9.5px] font-heading font-bold text-[hsl(var(--driver-accent))] uppercase tracking-wider">
-                  <Star className="h-2.5 w-2.5" /> Driver
-                </span>
-              )}
+              <div className="mt-1 flex flex-wrap items-center gap-1">
+                {profile?.public_code && (
+                  <span
+                    className="inline-flex items-center rounded-md bg-muted px-1.5 py-0.5 text-[9.5px] font-mono font-semibold text-foreground/80 cursor-pointer"
+                    onClick={() => { navigator.clipboard?.writeText(profile.public_code!); toast.success('Κωδικός αντιγράφηκε'); }}
+                    title="Κλικ για αντιγραφή"
+                  >
+                    {profile.public_code}
+                  </span>
+                )}
+                {isDriver && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-accent))]/15 px-2 py-0.5 text-[9.5px] font-heading font-bold text-[hsl(var(--driver-accent))] uppercase tracking-wider">
+                    <Star className="h-2.5 w-2.5" /> Driver
+                  </span>
+                )}
+              </div>
             </div>
           </div>
 
