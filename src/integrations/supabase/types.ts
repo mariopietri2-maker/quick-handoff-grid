@@ -1800,6 +1800,8 @@ export type Database = {
           basket_max_surcharge_pct: number
           basket_target_balance: number
           bike_multiplier: number
+          buffer_auto_fill_pct: number
+          buffer_floor: number
           car_multiplier: number
           customer_base_fee: number
           customer_per_km_fee: number
@@ -1867,6 +1869,8 @@ export type Database = {
           basket_max_surcharge_pct?: number
           basket_target_balance?: number
           bike_multiplier?: number
+          buffer_auto_fill_pct?: number
+          buffer_floor?: number
           car_multiplier?: number
           customer_base_fee?: number
           customer_per_km_fee?: number
@@ -1934,6 +1938,8 @@ export type Database = {
           basket_max_surcharge_pct?: number
           basket_target_balance?: number
           bike_multiplier?: number
+          buffer_auto_fill_pct?: number
+          buffer_floor?: number
           car_multiplier?: number
           customer_base_fee?: number
           customer_per_km_fee?: number
@@ -2005,6 +2011,7 @@ export type Database = {
           full_name: string | null
           id: string
           phone: string | null
+          public_code: string | null
           role: Database["public"]["Enums"]["app_role"]
           updated_at: string
           user_id: string
@@ -2019,6 +2026,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          public_code?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id: string
@@ -2033,6 +2041,7 @@ export type Database = {
           full_name?: string | null
           id?: string
           phone?: string | null
+          public_code?: string | null
           role?: Database["public"]["Enums"]["app_role"]
           updated_at?: string
           user_id?: string
@@ -3188,6 +3197,16 @@ export type Database = {
       admin_auto_close_previous_month: { Args: never; Returns: string }
       admin_cancel_stuck_orders: { Args: { p_minutes?: number }; Returns: Json }
       admin_close_month: { Args: { p_period_start?: string }; Returns: string }
+      admin_distribute_buffer: {
+        Args: {
+          p_amount: number
+          p_mode?: string
+          p_note?: string
+          p_top_n?: number
+          p_zone_id?: string
+        }
+        Returns: Json
+      }
       admin_force_complete_order: {
         Args: { p_order_id: string }
         Returns: undefined
