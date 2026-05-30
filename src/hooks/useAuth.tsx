@@ -6,7 +6,7 @@ interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  profile: { role: string; full_name: string | null } | null;
+  profile: { role: string; full_name: string | null; public_code?: string | null } | null;
   isAdmin: boolean;
   isSupport: boolean;
   signUp: (email: string, password: string, fullName: string, role: string) => Promise<{ error: Error | null }>;
