@@ -20,17 +20,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ role: string; full_name: string | null } | null>(null);
+  const [profile, setProfile] = useState<{ role: string; full_name: string | null; public_code?: string | null } | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSupport, setIsSupport] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
       .from('profiles')
-      .select('role, full_name')
+      .select('role, full_name, public_code')
       .eq('user_id', userId)
       .maybeSingle();
-    setProfile(data);
+    setProfile(data as any);
 
     // Check admin & support roles from user_roles table
     const { data: roles } = await supabase
