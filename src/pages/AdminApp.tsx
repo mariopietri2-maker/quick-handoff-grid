@@ -52,7 +52,7 @@ const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealt
 const LedgerExplorer         = lazy(() => import('@/components/admin/LedgerExplorer'));
 const BasketDashboard        = lazy(() => import('@/components/admin/BasketDashboard'));
 const MoneyEnginePanel       = lazy(() => import('@/components/admin/MoneyEnginePanel'));
-const MoneyHub               = lazy(() => import('@/components/admin/MoneyHub'));
+const BufferDistributor      = lazy(() => import('@/components/admin/BufferDistributor'));
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
@@ -204,16 +204,8 @@ export default function AdminApp() {
         return <StorePayablesPanel />;
       case 'driver_payables':
         return <DriverPayablesPanel />;
-      case 'money_bags':
-        return <MoneyBagsPanel />;
-      case 'money_engine':
-        return <MoneyEnginePanel />;
-      case 'ledger':
-        return <LedgerExplorer />;
-      case 'driver_basket':
-        return <BasketDashboard />;
-      case 'money_hub':
-        return <MoneyHub />;
+      case 'buffer':
+        return <BufferDistributor />;
       case 'system_doctor':
         return <SystemDoctorPanel />;
       case 'mission_control':
