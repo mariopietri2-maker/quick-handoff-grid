@@ -85,9 +85,9 @@ export const NAV_SECTIONS = [
     icon: Wallet,
     accent: 'text-success',
     accentBg: 'bg-success/10',
-    defaultTab: 'money_hub',
+    defaultTab: 'buffer',
     tabs: [
-      { id: 'money_hub', label: '💰 Money Hub' },
+      { id: 'buffer', label: 'Buffer' },
       { id: 'surge', label: 'Surge' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
