@@ -756,6 +756,7 @@ export type Database = {
       }
       demand_zones: {
         Row: {
+          auto_surge: boolean
           bonus_amount: number
           created_at: string
           driver_count: number
@@ -763,12 +764,16 @@ export type Database = {
           is_active: boolean
           latitude: number
           longitude: number
+          multiplier: number
           name: string
           order_count: number
           radius_km: number
+          surge_ends_at: string | null
+          surge_starts_at: string | null
           updated_at: string
         }
         Insert: {
+          auto_surge?: boolean
           bonus_amount?: number
           created_at?: string
           driver_count?: number
@@ -776,12 +781,16 @@ export type Database = {
           is_active?: boolean
           latitude: number
           longitude: number
+          multiplier?: number
           name: string
           order_count?: number
           radius_km?: number
+          surge_ends_at?: string | null
+          surge_starts_at?: string | null
           updated_at?: string
         }
         Update: {
+          auto_surge?: boolean
           bonus_amount?: number
           created_at?: string
           driver_count?: number
@@ -789,9 +798,12 @@ export type Database = {
           is_active?: boolean
           latitude?: number
           longitude?: number
+          multiplier?: number
           name?: string
           order_count?: number
           radius_km?: number
+          surge_ends_at?: string | null
+          surge_starts_at?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -880,6 +892,54 @@ export type Database = {
           settled_at?: string | null
           settled_by?: string | null
           store_share?: number
+        }
+        Relationships: []
+      }
+      driver_guarantees: {
+        Row: {
+          budget_cap: number | null
+          budget_spent: number
+          created_at: string
+          day_of_week: number[]
+          end_time: string
+          id: string
+          is_active: boolean
+          label: string
+          min_acceptance_pct: number | null
+          min_per_hour: number
+          start_time: string
+          updated_at: string
+          zone_id: string | null
+        }
+        Insert: {
+          budget_cap?: number | null
+          budget_spent?: number
+          created_at?: string
+          day_of_week?: number[]
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          min_acceptance_pct?: number | null
+          min_per_hour?: number
+          start_time?: string
+          updated_at?: string
+          zone_id?: string | null
+        }
+        Update: {
+          budget_cap?: number | null
+          budget_spent?: number
+          created_at?: string
+          day_of_week?: number[]
+          end_time?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          min_acceptance_pct?: number | null
+          min_per_hour?: number
+          start_time?: string
+          updated_at?: string
+          zone_id?: string | null
         }
         Relationships: []
       }
@@ -1071,6 +1131,107 @@ export type Database = {
           vehicle_model?: string | null
           vehicle_type?: string | null
           vehicle_year?: number | null
+        }
+        Relationships: []
+      }
+      driver_quest_progress: {
+        Row: {
+          claimed: boolean
+          claimed_at: string | null
+          current_value: number
+          driver_id: string
+          id: string
+          quest_id: string
+          updated_at: string
+        }
+        Insert: {
+          claimed?: boolean
+          claimed_at?: string | null
+          current_value?: number
+          driver_id: string
+          id?: string
+          quest_id: string
+          updated_at?: string
+        }
+        Update: {
+          claimed?: boolean
+          claimed_at?: string | null
+          current_value?: number
+          driver_id?: string
+          id?: string
+          quest_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "driver_quest_progress_quest_id_fkey"
+            columns: ["quest_id"]
+            isOneToOne: false
+            referencedRelation: "driver_quests"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      driver_quests: {
+        Row: {
+          budget_cap: number | null
+          budget_spent: number
+          created_at: string
+          created_by: string | null
+          description: string | null
+          ends_at: string | null
+          id: string
+          is_active: boolean
+          min_rating: number | null
+          min_tenure_days: number | null
+          reward_amount: number
+          starts_at: string
+          target_type: string
+          target_value: number
+          title: string
+          updated_at: string
+          vehicle_types: string[] | null
+          zone_id: string | null
+        }
+        Insert: {
+          budget_cap?: number | null
+          budget_spent?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          min_rating?: number | null
+          min_tenure_days?: number | null
+          reward_amount?: number
+          starts_at?: string
+          target_type?: string
+          target_value?: number
+          title: string
+          updated_at?: string
+          vehicle_types?: string[] | null
+          zone_id?: string | null
+        }
+        Update: {
+          budget_cap?: number | null
+          budget_spent?: number
+          created_at?: string
+          created_by?: string | null
+          description?: string | null
+          ends_at?: string | null
+          id?: string
+          is_active?: boolean
+          min_rating?: number | null
+          min_tenure_days?: number | null
+          reward_amount?: number
+          starts_at?: string
+          target_type?: string
+          target_value?: number
+          title?: string
+          updated_at?: string
+          vehicle_types?: string[] | null
+          zone_id?: string | null
         }
         Relationships: []
       }
@@ -2537,6 +2698,45 @@ export type Database = {
         }
         Relationships: []
       }
+      streak_bonuses: {
+        Row: {
+          budget_cap: number | null
+          budget_spent: number
+          consecutive_accepts: number
+          created_at: string
+          id: string
+          is_active: boolean
+          label: string
+          reward_amount: number
+          updated_at: string
+          window_hours: number
+        }
+        Insert: {
+          budget_cap?: number | null
+          budget_spent?: number
+          consecutive_accepts?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label: string
+          reward_amount?: number
+          updated_at?: string
+          window_hours?: number
+        }
+        Update: {
+          budget_cap?: number | null
+          budget_spent?: number
+          consecutive_accepts?: number
+          created_at?: string
+          id?: string
+          is_active?: boolean
+          label?: string
+          reward_amount?: number
+          updated_at?: string
+          window_hours?: number
+        }
+        Relationships: []
+      }
       support_channel_members: {
         Row: {
           channel_id: string
@@ -3190,6 +3390,10 @@ export type Database = {
         Args: { p_amount: number; p_note: string }
         Returns: number
       }
+      admin_adjust_buffer: {
+        Args: { p_action: string; p_amount: number; p_reason?: string }
+        Returns: Json
+      }
       admin_adjust_wallet: {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
@@ -3261,6 +3465,7 @@ export type Database = {
       }
       admin_wipe_all_data: { Args: never; Returns: undefined }
       admin_wipe_transactions: { Args: never; Returns: Json }
+      claim_quest_reward: { Args: { p_quest_id: string }; Returns: Json }
       cleanup_dispatch_runs: { Args: never; Returns: undefined }
       cleanup_stale_dispatch_artifacts: { Args: never; Returns: Json }
       commission_pct_for_amount: { Args: { p_amount: number }; Returns: number }
