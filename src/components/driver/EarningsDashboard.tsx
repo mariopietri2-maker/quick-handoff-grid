@@ -1,146 +1,259 @@
-import { useMemo } from 'react';
-import { Clock, Car, TrendingUp, Coins, Award } from 'lucide-react';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Legend } from 'recharts';
-import { useEarnings } from '@/hooks/useEarnings';
-import { useDriverState } from '@/hooks/useDriverState';
+import { useEffect, useMemo, useState } from 'react';
+import { ChevronLeft, ChevronRight, Info, ChevronDown, Package } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/hooks/useAuth';
 import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
+import { format, startOfDay, endOfDay, addDays, isSameDay, isToday, isYesterday, getISOWeek } from 'date-fns';
+import { el } from 'date-fns/locale';
+
+interface EarningRow {
+  id: string;
+  base_pay: number;
+  tip: number | null;
+  bonus: number | null;
+  total: number | null;
+  created_at: string;
+  order_id: string | null;
+  orders: {
+    id: string;
+    created_at: string;
+    store_id: string;
+    stores: { name: string | null } | null;
+  } | null;
+}
+
+const dayLabel = (d: Date) => {
+  if (isToday(d)) return 'Σήμερα';
+  if (isYesterday(d)) return 'Χθες';
+  return format(d, 'EEE d MMM', { locale: el }).replace('.', '');
+};
 
 export function EarningsDashboard() {
-  const { today, week, weekBreakdown, loading } = useEarnings();
-  const { state: driverState } = useDriverState();
+  const { user } = useAuth();
   const { hideEarningsOnHome } = useDriverAppPrefs();
-  const mask = (v: string) => hideEarningsOnHome ? '••••' : v;
+  const mask = (v: string) => (hideEarningsOnHome ? '••••' : v);
 
-  // Projection: extrapolate today's earnings to a 10h shift based on hourly pace since shift start (or midnight)
-  const projection = useMemo(() => {
-    const now = new Date();
-    const startOfDay = new Date();
-    startOfDay.setHours(0, 0, 0, 0);
-    const shiftStart = driverState?.shift_started_at
-      ? new Date(driverState.shift_started_at)
-      : startOfDay;
-    const elapsedHours = Math.max(0.25, (now.getTime() - shiftStart.getTime()) / 3_600_000);
-    const hourlyRate = today.total / elapsedHours;
-    // Assume a typical 10-hour shift; cap projection at 24h of pace
-    const projectedDay = hourlyRate * 10;
-    const goal = driverState?.daily_goal ? Number(driverState.daily_goal) : 0;
-    const onTrackForGoal = goal > 0 && projectedDay >= goal;
-    return {
-      hourlyRate,
-      projectedDay,
-      goal,
-      onTrackForGoal,
-      elapsedHours,
-    };
-  }, [today.total, driverState?.shift_started_at, driverState?.daily_goal]);
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [rows, setRows] = useState<EarningRow[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [incomeOpen, setIncomeOpen] = useState(true);
 
-  if (loading) {
-    return (
-      <div className="text-center py-16">
-        <div className="h-8 w-8 border-4 border-[hsl(var(--driver-accent))] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-[hsl(var(--driver-text-muted))] font-heading text-sm">Φόρτωση κερδών...</p>
-      </div>
-    );
-  }
+  useEffect(() => {
+    if (!user) return;
+    let active = true;
+    setLoading(true);
+    (async () => {
+      const from = startOfDay(selectedDate).toISOString();
+      const to = endOfDay(selectedDate).toISOString();
+      const { data } = await supabase
+        .from('earnings')
+        .select('id, base_pay, tip, bonus, total, created_at, order_id, orders:order_id(id, created_at, store_id, stores:store_id(name))')
+        .eq('driver_id', user.id)
+        .gte('created_at', from)
+        .lte('created_at', to)
+        .order('created_at', { ascending: false });
+      if (active) {
+        setRows((data ?? []) as unknown as EarningRow[]);
+        setLoading(false);
+      }
+    })();
+    return () => { active = false; };
+  }, [user?.id, selectedDate]);
+
+  const totals = useMemo(() => {
+    const base = rows.reduce((s, e) => s + Number(e.base_pay ?? 0), 0);
+    const tip = rows.reduce((s, e) => s + Number(e.tip ?? 0), 0);
+    const bonus = rows.reduce((s, e) => s + Number(e.bonus ?? 0), 0);
+    const total = rows.reduce((s, e) => s + Number(e.total ?? base + tip + bonus), 0);
+    const income = total - tip; // ό,τι δεν είναι tip
+    return { base, tip, bonus, total, income };
+  }, [rows]);
+
+  // Hours = sum of (earnings.created_at - order.created_at) for rows with order
+  const workMinutes = useMemo(() => {
+    let mins = 0;
+    rows.forEach((r) => {
+      if (r.orders?.created_at) {
+        const start = new Date(r.orders.created_at).getTime();
+        const end = new Date(r.created_at).getTime();
+        const m = Math.max(0, (end - start) / 60_000);
+        if (m < 240) mins += m; // ignore unrealistic >4h
+      }
+    });
+    return Math.round(mins);
+  }, [rows]);
+
+  const avgPerHour = workMinutes > 0 ? (totals.total / (workMinutes / 60)) : 0;
+  const hoursLabel = `${Math.floor(workMinutes / 60)}Ω ${String(workMinutes % 60).padStart(2, '0')}Λ`;
+
+  // Group deliveries by store
+  const grouped = useMemo(() => {
+    const map = new Map<string, { name: string; total: number; first: Date; last: Date; count: number }>();
+    rows.forEach((r) => {
+      const key = r.orders?.store_id ?? 'other';
+      const name = r.orders?.stores?.name ?? 'Άγνωστο κατάστημα';
+      const t = new Date(r.created_at);
+      const existing = map.get(key);
+      if (existing) {
+        existing.total += Number(r.total ?? 0);
+        existing.count += 1;
+        if (t < existing.first) existing.first = t;
+        if (t > existing.last) existing.last = t;
+      } else {
+        map.set(key, { name, total: Number(r.total ?? 0), first: t, last: t, count: 1 });
+      }
+    });
+    return Array.from(map.values()).sort((a, b) => b.last.getTime() - a.last.getTime());
+  }, [rows]);
+
+  const completedCount = rows.length;
+  const weekNo = getISOWeek(selectedDate);
+  const yearNo = selectedDate.getFullYear();
+  const isFuture = startOfDay(selectedDate) >= startOfDay(addDays(new Date(), 1));
 
   return (
-    <div className="space-y-4">
-      <Tabs defaultValue="today">
-        <TabsList className="w-full bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))]">
-          <TabsTrigger value="today" className="flex-1 font-heading text-[hsl(var(--driver-text))] data-[state=active]:bg-[hsl(var(--driver-accent))] data-[state=active]:text-white">Σήμερα</TabsTrigger>
-          <TabsTrigger value="week" className="flex-1 font-heading text-[hsl(var(--driver-text))] data-[state=active]:bg-[hsl(var(--driver-accent))] data-[state=active]:text-white">Εβδομάδα</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="today" className="space-y-3 mt-4">
-          <div className="rounded-2xl driver-gradient-earn p-6 text-center">
-            <p className="text-white/70 text-xs font-heading uppercase tracking-widest">Σημερινά Κέρδη</p>
-            <p className="font-heading font-extrabold text-4xl text-white mt-1 tabular-nums">{mask(`${today.total.toFixed(2)}€`)}</p>
+    <div className="space-y-3">
+      {/* Day pager */}
+      <div className="relative rounded-2xl bg-card border border-[hsl(var(--driver-border))] px-4 py-4">
+        <div className="flex items-center justify-between">
+          <button
+            onClick={() => setSelectedDate((d) => addDays(d, -1))}
+            className="h-9 w-9 rounded-full border border-[hsl(var(--driver-border))] flex items-center justify-center text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface))] active:scale-95 transition"
+            aria-label="Προηγούμενη"
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </button>
+          <div className="text-center">
+            <p className="font-heading font-bold text-lg text-[hsl(var(--driver-text))] leading-tight">
+              {dayLabel(selectedDate)}
+            </p>
+            <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5">
+              Εβδομάδα {weekNo} · {yearNo}
+            </p>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <StatCard icon={Car} label="Διαδρομές" value={today.trips.toString()} />
-            <StatCard icon={Coins} label="Βασικά" value={mask(`${today.basePay.toFixed(2)}€`)} />
-            <StatCard icon={Award} label="Tips" value={mask(`${today.tips.toFixed(2)}€`)} accent />
-          </div>
+          <button
+            onClick={() => setSelectedDate((d) => addDays(d, 1))}
+            disabled={isFuture}
+            className="h-9 w-9 rounded-full border border-[hsl(var(--driver-border))] flex items-center justify-center text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface))] active:scale-95 transition disabled:opacity-40 disabled:cursor-not-allowed"
+            aria-label="Επόμενη"
+          >
+            <ChevronRight className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
 
-          {today.trips > 0 && projection.hourlyRate > 0 && (
-            <div className="rounded-2xl driver-glass p-4 space-y-2">
-              <div className="flex items-center gap-2">
-                <TrendingUp className={`h-4 w-4 ${projection.onTrackForGoal ? 'text-[hsl(var(--driver-accent))]' : 'text-primary'}`} />
-                <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Πρόβλεψη Ημέρας</h3>
+      {/* Total + breakdown */}
+      <div className="rounded-2xl bg-card border border-[hsl(var(--driver-border))] p-5 space-y-4">
+        <div>
+          <p className="text-sm text-[hsl(var(--driver-text-muted))] font-heading">Σύνολο</p>
+          <div className="flex items-center gap-2 mt-0.5">
+            <p className="font-heading font-extrabold text-3xl tabular-nums text-[hsl(var(--driver-text))]">
+              {loading ? '—' : mask(`${totals.total.toFixed(2).replace('.', ',')} €`)}
+            </p>
+            <Info className="h-4 w-4 text-[hsl(var(--driver-text-muted))]" />
+          </div>
+        </div>
+
+        <div className="border-t border-[hsl(var(--driver-border))] pt-3">
+          <button
+            onClick={() => setIncomeOpen((v) => !v)}
+            className="w-full flex items-center justify-between"
+          >
+            <span className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))]">Συνολικό εισόδημα</span>
+            <span className="flex items-center gap-2">
+              <span className="font-heading font-bold text-[15px] tabular-nums text-[hsl(var(--driver-text))]">
+                {mask(`${totals.income.toFixed(2).replace('.', ',')} €`)}
+              </span>
+              <ChevronDown className={`h-4 w-4 text-[hsl(var(--driver-text-muted))] transition-transform ${incomeOpen ? 'rotate-180' : ''}`} />
+            </span>
+          </button>
+          {incomeOpen && (
+            <div className="mt-2 space-y-1.5 pl-1">
+              <div className="flex justify-between text-[13px] text-[hsl(var(--driver-text-muted))]">
+                <span>Βασικά</span>
+                <span className="tabular-nums">{mask(`${totals.base.toFixed(2).replace('.', ',')} €`)}</span>
               </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-[10px] text-[hsl(var(--driver-text-muted))] uppercase tracking-wider">Ρυθμός / ώρα</p>
-                  <p className="font-heading font-bold text-lg text-[hsl(var(--driver-text))] tabular-nums">{projection.hourlyRate.toFixed(2)}€</p>
+              {totals.bonus > 0 && (
+                <div className="flex justify-between text-[13px] text-[hsl(var(--driver-text-muted))]">
+                  <span>Μπόνους</span>
+                  <span className="tabular-nums">{mask(`${totals.bonus.toFixed(2).replace('.', ',')} €`)}</span>
                 </div>
-                <div>
-                  <p className="text-[10px] text-[hsl(var(--driver-text-muted))] uppercase tracking-wider">Πρόβλεψη 10ω</p>
-                  <p className={`font-heading font-bold text-lg tabular-nums ${projection.onTrackForGoal ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text))]'}`}>{projection.projectedDay.toFixed(2)}€</p>
-                </div>
-              </div>
-              {projection.goal > 0 && (
-                <p className={`text-xs font-heading ${projection.onTrackForGoal ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'}`}>
-                  {projection.onTrackForGoal
-                    ? `🎯 Με αυτόν τον ρυθμό θα πιάσετε τον στόχο των ${projection.goal}€!`
-                    : `Στόχος ${projection.goal}€ — χρειάζεστε ${(projection.goal / 10).toFixed(2)}€/ώρα`}
-                </p>
               )}
             </div>
           )}
+        </div>
 
-          {today.trips === 0 && (
-            <p className="text-center text-sm text-[hsl(var(--driver-text-muted))] py-4">Δεν ολοκληρώθηκαν παραδόσεις σήμερα</p>
-          )}
-        </TabsContent>
+        <div className="border-t border-[hsl(var(--driver-border))] pt-3 flex items-center justify-between">
+          <span className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))]">Tip</span>
+          <span className="font-heading font-bold text-[15px] tabular-nums text-[hsl(var(--driver-text))]">
+            {mask(`${totals.tip.toFixed(2).replace('.', ',')} €`)}
+          </span>
+        </div>
+      </div>
 
-        <TabsContent value="week" className="space-y-3 mt-4">
-          <div className="rounded-2xl driver-gradient-earn p-6 text-center">
-            <p className="text-white/70 text-xs font-heading uppercase tracking-widest">Εβδομαδιαία Κέρδη</p>
-            <p className="font-heading font-extrabold text-4xl text-white mt-1 tabular-nums">{mask(`${week.total.toFixed(2)}€`)}</p>
+      {/* Avg/h + Hours */}
+      <div className="grid grid-cols-2 gap-3">
+        <div className="rounded-2xl bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))] p-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-[12px] text-[hsl(var(--driver-text-muted))]">Μέσος όρος ανά ώρα</p>
+            <Info className="h-3 w-3 text-[hsl(var(--driver-text-muted))]" />
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            <StatCard icon={Car} label="Διαδρομές" value={week.trips.toString()} />
-            <StatCard icon={Coins} label="Βασικά" value={mask(`${week.basePay.toFixed(2)}€`)} />
-            <StatCard icon={Award} label="Tips" value={mask(`${week.tips.toFixed(2)}€`)} accent />
+          <p className="font-heading font-bold text-xl tabular-nums text-[hsl(var(--driver-text))]">
+            {mask(`${avgPerHour.toFixed(2).replace('.', ',')} €`)}
+          </p>
+        </div>
+        <div className="rounded-2xl bg-[hsl(var(--driver-surface))] border border-[hsl(var(--driver-border))] p-4">
+          <div className="flex items-center gap-1.5 mb-1">
+            <p className="text-[12px] text-[hsl(var(--driver-text-muted))]">Ώρες</p>
+            <Info className="h-3 w-3 text-[hsl(var(--driver-text-muted))]" />
           </div>
+          <p className="font-heading font-bold text-xl tabular-nums text-[hsl(var(--driver-text))]">{hoursLabel}</p>
+        </div>
+      </div>
 
-          <div className="rounded-2xl driver-glass p-4">
-            <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))] mb-3">Εβδομαδιαία Ανάλυση</h3>
-            <div className="h-52">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={weekBreakdown}>
-                  <XAxis dataKey="day" tick={{ fontSize: 11, fill: 'hsl(220 10% 55%)' }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: 'hsl(220 10% 55%)' }} axisLine={false} tickLine={false} />
-                  <Tooltip
-                    contentStyle={{
-                      background: 'hsl(225 20% 14%)',
-                      border: '1px solid hsl(225 15% 25%)',
-                      borderRadius: '12px',
-                      color: 'hsl(220 14% 96%)',
-                      fontSize: 12,
-                    }}
-                  />
-                  <Legend wrapperStyle={{ fontSize: 11 }} />
-                  <Bar dataKey="base" name="Βασικά" stackId="a" fill="hsl(145 65% 42%)" radius={[0,0,0,0]} />
-                  <Bar dataKey="tips" name="Tips" stackId="a" fill="hsl(38 92% 50%)" radius={[0,0,0,0]} />
-                  <Bar dataKey="bonus" name="Μπόνους" stackId="a" fill="hsl(217 91% 60%)" radius={[4,4,0,0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
+      {/* Deliveries */}
+      <div className="pt-2">
+        <h3 className="font-heading font-extrabold text-lg text-[hsl(var(--driver-text))] mb-1">Παραδόσεις</h3>
+        <p className="text-[13px] text-[hsl(var(--driver-text-muted))] mb-3">
+          <span className="font-bold text-[hsl(var(--driver-text))]">{completedCount}</span> Ολοκληρωμένη
+        </p>
+
+        {loading ? (
+          <div className="py-8 text-center text-[hsl(var(--driver-text-muted))] text-sm">Φόρτωση…</div>
+        ) : grouped.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-[hsl(var(--driver-border))] py-10 text-center text-[hsl(var(--driver-text-muted))] text-sm">
+            Καμία παράδοση {isSameDay(selectedDate, new Date()) ? 'σήμερα' : 'αυτή τη μέρα'}
           </div>
-        </TabsContent>
-      </Tabs>
-    </div>
-  );
-}
-
-function StatCard({ icon: Icon, label, value, accent }: { icon: React.ElementType; label: string; value: string; accent?: boolean }) {
-  return (
-    <div className="rounded-xl driver-glass p-3 text-center">
-      <Icon className={`h-4 w-4 mx-auto mb-1 ${accent ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'}`} />
-      <p className={`font-heading font-bold text-base tabular-nums ${accent ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text))]'}`}>{value}</p>
-      <p className="text-[9px] text-[hsl(var(--driver-text-muted))] uppercase tracking-wider mt-0.5">{label}</p>
+        ) : (
+          <div className="rounded-2xl bg-card border border-[hsl(var(--driver-border))] divide-y divide-[hsl(var(--driver-border))]">
+            {grouped.map((g, i) => (
+              <div key={i} className="flex items-start gap-3 px-4 py-3">
+                <div className="h-9 w-9 rounded-lg bg-[hsl(var(--driver-accent))]/10 flex items-center justify-center shrink-0">
+                  <Package className="h-4 w-4 text-[hsl(var(--driver-accent))]" strokeWidth={2.25} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))] truncate uppercase">
+                      {g.name}
+                    </p>
+                    <p className="font-heading font-extrabold text-[14px] text-[hsl(var(--driver-accent))] tabular-nums shrink-0">
+                      {mask(`${g.total.toFixed(2).replace('.', ',')} €`)}
+                    </p>
+                  </div>
+                  <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-0.5">
+                    {format(g.first, 'HH:mm')} - {format(g.last, 'HH:mm')}
+                  </p>
+                  {g.count > 1 && (
+                    <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5">
+                      Παραγγελία/ες: {g.count} παραδόσεις
+                    </p>
+                  )}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

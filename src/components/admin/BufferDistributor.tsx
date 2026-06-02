@@ -78,7 +78,7 @@ function OverviewTab() {
     queryFn: async () => {
       const { data } = await (supabase as any).from('admin_treasury_ledger')
         .select('id, type, amount, description, created_at')
-        .eq('bag', 'platform_pool')
+        .in('bag', ['platform_pool', 'platform'])
         .order('created_at', { ascending: false }).limit(10);
       return data ?? [];
     },
