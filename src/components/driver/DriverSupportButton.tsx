@@ -9,7 +9,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
-import { TicketChat } from '@/components/support/TicketChat';
+import { DriverTicketChat } from '@/components/driver/DriverTicketChat';
 import { format } from 'date-fns';
 
 type Category = {
@@ -341,7 +341,7 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
             )}
 
             {view === 'chat' && activeTicket && (
-              <TicketChat ticketId={activeTicket.id} />
+              <DriverTicketChat ticketId={activeTicket.id} />
             )}
           </div>
         </DialogContent>
