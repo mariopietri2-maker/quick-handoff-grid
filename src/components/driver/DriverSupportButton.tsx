@@ -341,7 +341,7 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
             )}
 
             {view === 'chat' && activeTicket && (
-              <TicketChat ticketId={activeTicket.id} />
+              <DriverTicketChat ticketId={activeTicket.id} />
             )}
           </div>
         </DialogContent>
