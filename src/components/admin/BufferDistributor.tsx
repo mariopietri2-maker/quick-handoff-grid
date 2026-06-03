@@ -67,8 +67,8 @@ function OverviewTab() {
     refetchInterval: 10000,
     queryFn: async () => {
       const { data } = await (supabase as any).from('admin_treasury')
-        .select('platform_pool, lifetime_platform_earned').eq('id', 1).maybeSingle();
-      return data ?? { platform_pool: 0, lifetime_platform_earned: 0 };
+        .select('platform_pool, admin_balance').eq('id', 1).maybeSingle();
+      return data ?? { platform_pool: 0, admin_balance: 0 };
     },
   });
 
@@ -77,15 +77,15 @@ function OverviewTab() {
     refetchInterval: 15000,
     queryFn: async () => {
       const { data } = await (supabase as any).from('admin_treasury_ledger')
-        .select('id, type, amount, description, created_at')
-        .in('bag', ['platform_pool', 'platform'])
+        .select('id, type, amount, description, created_at, bag')
+        .in('bag', ['platform_pool', 'platform', 'admin'])
         .order('created_at', { ascending: false }).limit(10);
       return data ?? [];
     },
   });
 
   const pool = Number(treasury.data?.platform_pool ?? 0);
-  const lifetime = Number(treasury.data?.lifetime_platform_earned ?? 0);
+  const adminBal = Number(treasury.data?.admin_balance ?? 0);
 
   const handleAdjust = async () => {
     const amt = Number(amount);
@@ -104,18 +104,23 @@ function OverviewTab() {
 
   return (
     <div className="space-y-4">
-      <Card>
-        <CardContent className="p-5 grid grid-cols-2 gap-4">
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Buffer τώρα</p>
-            <p className="font-heading font-bold text-3xl tabular-nums text-primary">€{pool.toFixed(2)}</p>
-          </div>
-          <div>
-            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Lifetime συγκέντρωση</p>
-            <p className="font-heading font-bold text-3xl tabular-nums text-success">€{lifetime.toFixed(2)}</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-2 gap-3">
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Driver Buffer (10%)</p>
+            <p className="font-heading font-bold text-3xl tabular-nums text-primary mt-1">€{pool.toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Διαθέσιμο για πληρωμές drivers</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4">
+            <p className="text-[10px] uppercase tracking-wider text-muted-foreground font-semibold">Admin Buffer (5%)</p>
+            <p className="font-heading font-bold text-3xl tabular-nums text-success mt-1">€{adminBal.toFixed(2)}</p>
+            <p className="text-[10px] text-muted-foreground mt-1">Πλατφόρμα · καθαρό</p>
+          </CardContent>
+        </Card>
+      </div>
+
 
       <Card>
         <CardHeader className="pb-3">
