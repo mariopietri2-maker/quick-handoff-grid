@@ -630,6 +630,17 @@ function DistributeTab() {
   const [note, setNote] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const treasury = useQuery({
+    queryKey: ['admin-treasury-buffer'],
+    refetchInterval: 10000,
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('admin_treasury')
+        .select('platform_pool').eq('id', 1).maybeSingle();
+      return data ?? { platform_pool: 0 };
+    },
+  });
+  const pool = Number(treasury.data?.platform_pool ?? 0);
+
   const zones = useQuery({
     queryKey: ['demand-zones-buffer'],
     queryFn: async () => {
@@ -652,6 +663,7 @@ function DistributeTab() {
   const handleDistribute = async () => {
     const amt = Number(amount);
     if (amt <= 0) return toast.error('Δώσε ποσό > 0');
+    if (amt > pool) return toast.error(`Το buffer έχει μόνο €${pool.toFixed(2)} διαθέσιμα`);
     if (mode === 'surge' && !zoneId) return toast.error('Διάλεξε ζώνη');
     setBusy(true);
     const { data, error } = await (supabase as any).rpc('admin_distribute_buffer', {
@@ -665,6 +677,7 @@ function DistributeTab() {
     qc.invalidateQueries({ queryKey: ['buffer-distributions'] });
     qc.invalidateQueries({ queryKey: ['admin-treasury-buffer'] });
   };
+
 
   return (
     <div className="space-y-4">
