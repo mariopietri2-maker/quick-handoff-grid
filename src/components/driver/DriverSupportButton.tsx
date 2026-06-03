@@ -137,7 +137,7 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
       </button>
 
       <Dialog open={open} onOpenChange={(v) => { setOpen(v); if (!v) reset(); }}>
-        <DialogContent className="max-w-md mx-auto bg-card border border-border p-0 overflow-hidden shadow-2xl max-h-[92vh] flex flex-col rounded-2xl">
+        <DialogContent className="driver-shell max-w-md mx-auto bg-card border border-border p-0 overflow-hidden shadow-2xl max-h-[92vh] flex flex-col rounded-2xl">
           <div className="relative px-5 pt-5 pb-4 bg-gradient-to-br from-[hsl(var(--driver-accent))]/20 via-[hsl(var(--driver-accent))]/8 to-transparent border-b border-[hsl(var(--driver-border))]">
             {/* Decorative ring */}
             <div className="absolute -top-12 -right-12 h-32 w-32 rounded-full bg-[hsl(var(--driver-accent))]/15 blur-2xl pointer-events-none" />
