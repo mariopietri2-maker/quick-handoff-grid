@@ -105,7 +105,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
             Εκτιμώμενη αμοιβή
           </p>
           <p className="font-heading font-extrabold text-[34px] leading-none tabular-nums tracking-tight text-[hsl(var(--driver-text))] mt-1">
-            {offer.estimatedPayout.toFixed(2)}
+            {((offer.basePay ?? 0) + (offer.tipAmount ?? 0) + (offer.poolBonus ?? 0) || offer.estimatedPayout).toFixed(2)}
             <span className="text-[20px] font-bold text-[hsl(var(--driver-text-muted))] ml-0.5">€</span>
           </p>
           {/* Payment method badge */}
