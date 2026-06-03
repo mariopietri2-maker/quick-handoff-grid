@@ -151,7 +151,7 @@ export function DriverTicketChat({ ticketId }: { ticketId: string }) {
   };
 
   return (
-    <div className="flex flex-col h-[520px] bg-[hsl(var(--driver-bg))]">
+    <div className="driver-shell flex flex-col h-[520px] bg-[hsl(var(--driver-bg))]">
       <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-5 space-y-4">
         {loading ? (
           <div className="flex items-center justify-center h-full text-muted-foreground">
