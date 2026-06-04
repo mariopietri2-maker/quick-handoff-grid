@@ -153,14 +153,19 @@ export default function CustomerApp() {
       >
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
           <div className="flex items-center justify-between mb-3">
-            <button className="flex items-center gap-1.5 group">
-              <div className="h-9 w-9 rounded-full c-bg-accent flex items-center justify-center shadow-sm">
+            <button
+              type="button"
+              onClick={() => { setPendingAddress(deliveryAddress); setAddressOpen(true); }}
+              className="flex items-center gap-1.5 group max-w-[60%]"
+            >
+              <div className="h-9 w-9 rounded-full c-bg-accent flex items-center justify-center shadow-sm shrink-0">
                 <MapPin className="h-4 w-4" strokeWidth={2.5} />
               </div>
-              <div className="text-left leading-tight">
+              <div className="text-left leading-tight min-w-0">
                 <div className="text-[10px] uppercase tracking-wider c-muted font-bold">Παράδοση</div>
-                <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)]">
-                  {cfg.branding.city_label} <ChevronDown className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)] truncate">
+                  <span className="truncate">{displayAddress}</span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0" />
                 </div>
               </div>
             </button>
