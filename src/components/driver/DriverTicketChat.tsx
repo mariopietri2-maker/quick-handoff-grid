@@ -121,6 +121,27 @@ export function DriverTicketChat({ ticketId }: { ticketId: string }) {
     return `${parts[0]} ${parts[1][0]}.`;
   };
 
+  const roleLabel = (role: string) => {
+    switch (role) {
+      case 'support': return 'Υποστήριξη';
+      case 'admin': return 'Admin';
+      case 'store': return 'Κατάστημα';
+      case 'customer': return 'Πελάτης';
+      case 'driver': return 'Οδηγός';
+      default: return 'Εκπρόσωπος';
+    }
+  };
+
+  const roleBadgeClass = (role: string) => {
+    switch (role) {
+      case 'admin': return 'bg-[hsl(var(--driver-accent))] text-white';
+      case 'store': return 'bg-amber-500 text-white';
+      case 'customer': return 'bg-blue-500 text-white';
+      default: return 'bg-[hsl(var(--driver-accent))]/15 text-[hsl(var(--driver-accent))]';
+    }
+  };
+
+
   const driverHasSent = messages.some((m) => m.sender_role === 'driver');
 
   const send = async (text: string, attachment: ComposerAttachment | null) => {
