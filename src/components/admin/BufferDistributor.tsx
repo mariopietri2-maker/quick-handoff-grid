@@ -62,6 +62,11 @@ function OverviewTab() {
   const [reason, setReason] = useState('');
   const [busy, setBusy] = useState(false);
 
+  const [adminAmount, setAdminAmount] = useState('50');
+  const [adminAction, setAdminAction] = useState<'add' | 'remove' | 'set'>('add');
+  const [adminReason, setAdminReason] = useState('');
+  const [adminBusy, setAdminBusy] = useState(false);
+
   const treasury = useQuery({
     queryKey: ['admin-treasury-buffer'],
     refetchInterval: 10000,
@@ -96,11 +101,71 @@ function OverviewTab() {
     });
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(`Buffer: €${Number(data.before).toFixed(2)} → €${Number(data.after).toFixed(2)}`);
+    toast.success(`Driver Buffer: €${Number(data.before).toFixed(2)} → €${Number(data.after).toFixed(2)}`);
     setReason('');
     qc.invalidateQueries({ queryKey: ['admin-treasury-buffer'] });
     qc.invalidateQueries({ queryKey: ['buffer-ledger'] });
   };
+
+  const handleAdminAdjust = async () => {
+    const amt = Number(adminAmount);
+    if (!amt || amt < 0) return toast.error('Δώσε έγκυρο ποσό');
+    setAdminBusy(true);
+    const { data, error } = await (supabase as any).rpc('admin_adjust_admin_buffer', {
+      p_amount: amt, p_action: adminAction, p_reason: adminReason || null,
+    });
+    setAdminBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Admin Buffer: €${Number(data.before).toFixed(2)} → €${Number(data.after).toFixed(2)}`);
+    setAdminReason('');
+    qc.invalidateQueries({ queryKey: ['admin-treasury-buffer'] });
+    qc.invalidateQueries({ queryKey: ['buffer-ledger'] });
+  };
+
+  const renderManual = (opts: {
+    title: string;
+    action: 'add' | 'remove' | 'set';
+    setAction: (v: 'add' | 'remove' | 'set') => void;
+    amount: string;
+    setAmount: (v: string) => void;
+    reason: string;
+    setReason: (v: string) => void;
+    onSubmit: () => void;
+    busy: boolean;
+  }) => (
+    <Card>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm">{opts.title}</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        <div className="grid grid-cols-3 gap-2">
+          <Button variant={opts.action === 'add' ? 'default' : 'outline'} size="sm" onClick={() => opts.setAction('add')}>
+            <Plus className="h-3.5 w-3.5" /> Add
+          </Button>
+          <Button variant={opts.action === 'remove' ? 'default' : 'outline'} size="sm" onClick={() => opts.setAction('remove')}>
+            <Minus className="h-3.5 w-3.5" /> Remove
+          </Button>
+          <Button variant={opts.action === 'set' ? 'default' : 'outline'} size="sm" onClick={() => opts.setAction('set')}>
+            <Equal className="h-3.5 w-3.5" /> Set
+          </Button>
+        </div>
+        <div>
+          <Label className="text-xs">Ποσό (€)</Label>
+          <Input type="number" min="0" step="1" value={opts.amount} onChange={e => opts.setAmount(e.target.value)} />
+        </div>
+        <div>
+          <Label className="text-xs">Αιτιολογία</Label>
+          <Input value={opts.reason} onChange={e => opts.setReason(e.target.value)} placeholder="π.χ. Top-up Σαβ" />
+        </div>
+        {opts.action === 'set' && opts.amount === '0' && (
+          <p className="text-xs text-destructive">⚠ Θα μηδενιστεί όλο το buffer.</p>
+        )}
+        <Button onClick={opts.onSubmit} disabled={opts.busy} className="w-full" size="sm">
+          {opts.busy ? 'Επεξεργασία…' : `${opts.action.toUpperCase()} €${Number(opts.amount || 0).toFixed(2)}`}
+        </Button>
+      </CardContent>
+    </Card>
+  );
 
   return (
     <div className="space-y-4">
@@ -121,41 +186,20 @@ function OverviewTab() {
         </Card>
       </div>
 
-
-      <Card>
-        <CardHeader className="pb-3">
-          <CardTitle className="text-base">Χειροκίνητη ρύθμιση buffer</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-3">
-          <div className="grid grid-cols-3 gap-2">
-            <Button variant={action === 'add' ? 'default' : 'outline'} size="sm" onClick={() => setAction('add')}>
-              <Plus className="h-3.5 w-3.5" /> Add
-            </Button>
-            <Button variant={action === 'remove' ? 'default' : 'outline'} size="sm" onClick={() => setAction('remove')}>
-              <Minus className="h-3.5 w-3.5" /> Remove
-            </Button>
-            <Button variant={action === 'set' ? 'default' : 'outline'} size="sm" onClick={() => setAction('set')}>
-              <Equal className="h-3.5 w-3.5" /> Set
-            </Button>
-          </div>
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <Label className="text-xs">Ποσό (€)</Label>
-              <Input type="number" min="0" step="1" value={amount} onChange={e => setAmount(e.target.value)} />
-            </div>
-            <div>
-              <Label className="text-xs">Αιτιολογία</Label>
-              <Input value={reason} onChange={e => setReason(e.target.value)} placeholder="π.χ. Top-up Σαβ" />
-            </div>
-          </div>
-          {action === 'set' && amount === '0' && (
-            <p className="text-xs text-destructive">⚠ Θα μηδενιστεί όλο το buffer.</p>
-          )}
-          <Button onClick={handleAdjust} disabled={busy} className="w-full">
-            {busy ? 'Επεξεργασία…' : `${action.toUpperCase()} €${Number(amount || 0).toFixed(2)}`}
-          </Button>
-        </CardContent>
-      </Card>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        {renderManual({
+          title: 'Χειροκίνητη ρύθμιση Driver Buffer',
+          action, setAction, amount, setAmount, reason, setReason,
+          onSubmit: handleAdjust, busy,
+        })}
+        {renderManual({
+          title: 'Χειροκίνητη ρύθμιση Admin Buffer',
+          action: adminAction, setAction: setAdminAction,
+          amount: adminAmount, setAmount: setAdminAmount,
+          reason: adminReason, setReason: setAdminReason,
+          onSubmit: handleAdminAdjust, busy: adminBusy,
+        })}
+      </div>
 
       <Card>
         <CardHeader className="pb-3">
@@ -169,10 +213,14 @@ function OverviewTab() {
           )}
           {(ledger.data ?? []).map((l: any) => {
             const amt = Number(l.amount);
+            const bagLabel = l.bag === 'admin' ? 'Admin' : 'Driver';
             return (
               <div key={l.id} className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2 text-sm">
                 <div className="min-w-0">
-                  <p className="font-medium text-xs truncate">{l.description || l.type}</p>
+                  <p className="font-medium text-xs truncate">
+                    <span className="inline-block mr-1.5 px-1.5 py-0.5 rounded text-[9px] font-bold bg-muted">{bagLabel}</span>
+                    {l.description || l.type}
+                  </p>
                   <p className="text-[10px] text-muted-foreground">
                     {format(new Date(l.created_at), 'dd MMM HH:mm', { locale: el })} · {l.type}
                   </p>
@@ -188,6 +236,7 @@ function OverviewTab() {
     </div>
   );
 }
+
 
 /* ============================ QUESTS ============================ */
 
