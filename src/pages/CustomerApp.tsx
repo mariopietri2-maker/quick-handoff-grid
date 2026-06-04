@@ -13,6 +13,9 @@ import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
@@ -54,6 +57,23 @@ export default function CustomerApp() {
   const { user } = useAuth();
   const { itemCount } = useCart();
   useCustomerOrderNotifications();
+
+  // Delivery address (persisted locally; falls back to city label)
+  const [addressOpen, setAddressOpen] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState<string>(() => {
+    try { return localStorage.getItem('customer_delivery_address') || ''; } catch { return ''; }
+  });
+  const [pendingAddress, setPendingAddress] = useState(deliveryAddress);
+  const saveAddress = (addr: string) => {
+    const v = addr.trim();
+    setDeliveryAddress(v);
+    try { v ? localStorage.setItem('customer_delivery_address', v) : localStorage.removeItem('customer_delivery_address'); } catch {}
+    setAddressOpen(false);
+  };
+  const displayAddress = deliveryAddress
+    ? (deliveryAddress.length > 22 ? deliveryAddress.slice(0, 22) + '…' : deliveryAddress)
+    : cfg.branding.city_label;
+
 
   useEffect(() => {
     let cancelled = false;
@@ -133,14 +153,19 @@ export default function CustomerApp() {
       >
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
           <div className="flex items-center justify-between mb-3">
-            <button className="flex items-center gap-1.5 group">
-              <div className="h-9 w-9 rounded-full c-bg-accent flex items-center justify-center shadow-sm">
+            <button
+              type="button"
+              onClick={() => { setPendingAddress(deliveryAddress); setAddressOpen(true); }}
+              className="flex items-center gap-1.5 group max-w-[60%]"
+            >
+              <div className="h-9 w-9 rounded-full c-bg-accent flex items-center justify-center shadow-sm shrink-0">
                 <MapPin className="h-4 w-4" strokeWidth={2.5} />
               </div>
-              <div className="text-left leading-tight">
+              <div className="text-left leading-tight min-w-0">
                 <div className="text-[10px] uppercase tracking-wider c-muted font-bold">Παράδοση</div>
-                <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)]">
-                  {cfg.branding.city_label} <ChevronDown className="h-3.5 w-3.5" />
+                <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)] truncate">
+                  <span className="truncate">{displayAddress}</span>
+                  <ChevronDown className="h-3.5 w-3.5 shrink-0" />
                 </div>
               </div>
             </button>
@@ -449,6 +474,40 @@ export default function CustomerApp() {
         </div>
 
       </nav>
+
+      <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Διεύθυνση παράδοσης</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-3">
+            <AddressAutocomplete
+              value={pendingAddress}
+              onChange={(addr) => setPendingAddress(addr)}
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              {deliveryAddress && (
+                <button
+                  type="button"
+                  onClick={() => saveAddress('')}
+                  className="text-sm font-semibold text-[hsl(0,0%,40%)] px-3 py-2"
+                >
+                  Καθαρισμός
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => saveAddress(pendingAddress)}
+                disabled={!pendingAddress.trim()}
+                className="c-bg-accent rounded-full px-5 py-2 text-sm font-extrabold disabled:opacity-50"
+              >
+                Αποθήκευση
+              </button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
+
