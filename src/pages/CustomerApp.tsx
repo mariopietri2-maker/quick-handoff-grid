@@ -474,6 +474,40 @@ export default function CustomerApp() {
         </div>
 
       </nav>
+
+      <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
+        <SheetContent side="bottom" className="rounded-t-2xl">
+          <SheetHeader>
+            <SheetTitle>Διεύθυνση παράδοσης</SheetTitle>
+          </SheetHeader>
+          <div className="mt-4 space-y-3">
+            <AddressAutocomplete
+              value={pendingAddress}
+              onChange={(addr) => setPendingAddress(addr)}
+            />
+            <div className="flex justify-end gap-2 pt-2">
+              {deliveryAddress && (
+                <button
+                  type="button"
+                  onClick={() => saveAddress('')}
+                  className="text-sm font-semibold text-[hsl(0,0%,40%)] px-3 py-2"
+                >
+                  Καθαρισμός
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => saveAddress(pendingAddress)}
+                disabled={!pendingAddress.trim()}
+                className="c-bg-accent rounded-full px-5 py-2 text-sm font-extrabold disabled:opacity-50"
+              >
+                Αποθήκευση
+              </button>
+            </div>
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
+
