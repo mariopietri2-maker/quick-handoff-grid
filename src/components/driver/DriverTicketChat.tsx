@@ -207,6 +207,11 @@ export function DriverTicketChat({ ticketId }: { ticketId: string }) {
                       ) : null}
                     </div>
                     <div className="flex flex-col items-start max-w-[78%]">
+                      {groupStart && (
+                        <span className={`mb-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${roleBadgeClass(m.sender_role)}`}>
+                          {roleLabel(m.sender_role)}
+                        </span>
+                      )}
                       <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-card border border-[hsl(var(--driver-border))] shadow-sm">
                         {m.attachment_url && (
                           <div className={m.message ? 'mb-1.5' : ''}>
@@ -223,6 +228,7 @@ export function DriverTicketChat({ ticketId }: { ticketId: string }) {
                         {agentDisplay(m.sender_id)} · {format(new Date(m.created_at), 'HH:mm')}
                       </p>
                     </div>
+
                   </div>
                 );
               }
