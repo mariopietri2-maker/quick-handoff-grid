@@ -58,6 +58,23 @@ export default function CustomerApp() {
   const { itemCount } = useCart();
   useCustomerOrderNotifications();
 
+  // Delivery address (persisted locally; falls back to city label)
+  const [addressOpen, setAddressOpen] = useState(false);
+  const [deliveryAddress, setDeliveryAddress] = useState<string>(() => {
+    try { return localStorage.getItem('customer_delivery_address') || ''; } catch { return ''; }
+  });
+  const [pendingAddress, setPendingAddress] = useState(deliveryAddress);
+  const saveAddress = (addr: string) => {
+    const v = addr.trim();
+    setDeliveryAddress(v);
+    try { v ? localStorage.setItem('customer_delivery_address', v) : localStorage.removeItem('customer_delivery_address'); } catch {}
+    setAddressOpen(false);
+  };
+  const displayAddress = deliveryAddress
+    ? (deliveryAddress.length > 22 ? deliveryAddress.slice(0, 22) + '…' : deliveryAddress)
+    : cfg.branding.city_label;
+
+
   useEffect(() => {
     let cancelled = false;
     let pending: ReturnType<typeof setTimeout> | null = null;
