@@ -164,14 +164,12 @@ export default function RestaurantPage() {
       {/* Store Info */}
       <div className="max-w-2xl mx-auto px-4 pt-5 pb-4">
         <h1 className="font-heading font-bold text-2xl text-foreground">{store.name}</h1>
-        <div className="flex items-center gap-2 mt-2 flex-wrap">
+        <div className="flex items-center gap-3 mt-2 flex-wrap">
           <RatingBadge storeId={store.id} />
-          <span className="text-muted-foreground">•</span>
           <span className="text-sm text-muted-foreground flex items-center gap-1">
             <Clock className="h-3.5 w-3.5" />
             {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} λεπ
           </span>
-          <span className="text-muted-foreground">•</span>
           <span className="text-sm text-muted-foreground">0,99€ παράδοση</span>
         </div>
         <p className="text-sm text-muted-foreground flex items-center gap-1 mt-1.5">
