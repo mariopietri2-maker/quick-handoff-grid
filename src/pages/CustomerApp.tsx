@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Home, Heart, Receipt } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Store as StoreIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
@@ -382,18 +382,30 @@ export default function CustomerApp() {
                   </div>
 
                   <div className="flex items-start justify-between gap-3">
-                    <div className="min-w-0">
+                    <div className="min-w-0 flex-1">
                       <h3 className="font-heading font-extrabold text-[16px] text-[hsl(0,0%,9%)] truncate">
                         {store.name}
                       </h3>
                       <p className="text-[12px] c-muted mt-0.5 truncate">{store.address}</p>
-                      <div className="flex items-center gap-1.5 mt-1.5">
-                        <span className="text-[11px] font-bold c-bg-accent-soft px-2 py-0.5 rounded-full">
-                          0,99€ {t('customer.delivery')}
-                        </span>
+                      <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
+                        {Number((store as any).delivery_fee ?? 0.99) === 0 ? (
+                          <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
+                            🛵 {t('customer.delivery')} 0€
+                          </span>
+                        ) : (
+                          <span className="text-[11px] font-bold c-bg-accent-soft px-2 py-0.5 rounded-full">
+                            {Number((store as any).delivery_fee ?? 0.99).toFixed(2).replace('.', ',')}€ {t('customer.delivery')}
+                          </span>
+                        )}
+                        {Number((store as any).min_order_value ?? 0) > 0 && (
+                          <span className="text-[11px] font-semibold text-muted-foreground">
+                            · Ελάχ. {Number((store as any).min_order_value).toFixed(0)}€
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
+
                 </button>
               ))}
             </div>
@@ -408,32 +420,34 @@ export default function CustomerApp() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="max-w-2xl mx-auto grid grid-cols-4 h-16">
-          <button className="flex flex-col items-center justify-center gap-0.5 c-accent">
-            <Home className="h-5 w-5" strokeWidth={2.5} />
-            <span className="text-[10px] font-extrabold">{t('customer.nearby') || 'Αρχική'}</span>
+          <button className="relative flex flex-col items-center justify-center gap-0.5 c-accent">
+            <span className="absolute top-0 h-0.5 w-8 rounded-full c-bg-accent" />
+            <Compass className="h-[22px] w-[22px]" strokeWidth={2.2} />
+            <span className="text-[10px] font-extrabold">Ανακάλυψε</span>
           </button>
           <button
             onClick={() => setSelectedCategory('all')}
             className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
           >
-            <Search className="h-5 w-5" strokeWidth={2.2} />
-            <span className="text-[10px] font-bold">Αναζήτηση</span>
+            <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
+            <span className="text-[10px] font-bold">Φαγητό</span>
           </button>
           <Link
             to={user ? '/orders' : '/auth'}
             className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
           >
-            <Receipt className="h-5 w-5" strokeWidth={2.2} />
+            <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
             <span className="text-[10px] font-bold">{t('customer.orders')}</span>
           </Link>
           <Link
             to={user ? '/profile' : '/auth'}
             className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
           >
-            <Heart className="h-5 w-5" strokeWidth={2.2} />
+            <User className="h-[22px] w-[22px]" strokeWidth={2} />
             <span className="text-[10px] font-bold">Λογαριασμός</span>
           </Link>
         </div>
+
       </nav>
     </div>
   );
