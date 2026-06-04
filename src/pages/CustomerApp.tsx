@@ -13,6 +13,9 @@ import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
+import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 
