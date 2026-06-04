@@ -3386,6 +3386,10 @@ export type Database = {
       }
     }
     Functions: {
+      admin_adjust_admin_buffer: {
+        Args: { p_action: string; p_amount: number; p_reason?: string }
+        Returns: Json
+      }
       admin_adjust_basket: {
         Args: { p_amount: number; p_note: string }
         Returns: number
