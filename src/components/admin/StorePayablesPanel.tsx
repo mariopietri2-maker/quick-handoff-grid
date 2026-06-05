@@ -196,6 +196,33 @@ export default function StorePayablesPanel() {
     }
   };
 
+  const doLifetimeReset = async () => {
+    if (!lifetimeTarget) return;
+    setBusy(`L-${lifetimeTarget.id}`);
+    try {
+      const { error } = await (supabase.rpc as any)('admin_reset_store_lifetime', { p_store_id: lifetimeTarget.id });
+      if (error) throw error;
+      toast.success(`Lifetime μηδενίστηκε: ${lifetimeTarget.name}`);
+      setLifetimeTarget(null);
+      qc.invalidateQueries({ queryKey: ['admin-store-payables'] });
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Αποτυχία');
+    } finally { setBusy(null); }
+  };
+
+  const doBulkLifetimeReset = async () => {
+    setBusy('bulkL');
+    try {
+      const { data, error } = await (supabase.rpc as any)('admin_reset_all_store_lifetime');
+      if (error) throw error;
+      toast.success(`Μηδενίστηκε lifetime σε ${data ?? 0} καταστήματα`);
+      setBulkLifetimeOpen(false);
+      qc.invalidateQueries({ queryKey: ['admin-store-payables'] });
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Αποτυχία');
+    } finally { setBusy(null); }
+  };
+
   return (
     <div className="space-y-4">
       <div className="admin-section-header">
