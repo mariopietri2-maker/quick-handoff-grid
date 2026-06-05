@@ -517,6 +517,16 @@ export default function CheckoutPage() {
               <span className="text-muted-foreground">Φιλοδώρημα Οδηγού</span>
               <span className="text-foreground">{tipAmount.toFixed(2)}€</span>
             </div>
+            <div className="mt-2 pt-2 border-t border-dashed border-border space-y-1">
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">Καθαρή αξία</span>
+                <span className="text-muted-foreground tabular-nums">{netAmount.toFixed(2)}€</span>
+              </div>
+              <div className="flex justify-between text-xs">
+                <span className="text-muted-foreground">ΦΠΑ {(VAT_RATE * 100).toFixed(0)}% (συμπεριλαμβάνεται)</span>
+                <span className="text-muted-foreground tabular-nums">{vatAmount.toFixed(2)}€</span>
+              </div>
+            </div>
             <div className="flex justify-between font-heading font-bold pt-2 border-t border-border">
               <span className="text-foreground">Σύνολο</span>
               <span className="text-foreground">{grandTotal.toFixed(2)}€</span>
