@@ -90,6 +90,13 @@ export default function CheckoutPage() {
     : 0;
   const grandTotal = subtotalAfterDiscount + deliveryFee + tipAmount;
 
+  // VAT (ΦΠΑ) breakdown — Greek food delivery VAT 24%. Prices are inclusive.
+  const VAT_RATE = 0.24;
+  // Tip is excluded from VAT (paid directly to driver)
+  const vatableGross = subtotalAfterDiscount + deliveryFee;
+  const netAmount = vatableGross / (1 + VAT_RATE);
+  const vatAmount = vatableGross - netAmount;
+
   const handleApplyPromo = async () => {
     const code = promoCode.trim();
     if (!code) return;
