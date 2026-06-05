@@ -114,6 +114,87 @@ export default function DriverPayablesPanel() {
     toast.success('CSV κατέβηκε');
   };
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.rel = 'noopener';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  };
+
+  const buildInvoice = (rows: typeof filtered, titleSuffix?: string) => {
+    if (rows.length === 0) { toast.error('Δεν υπάρχουν υπόλοιπα για τιμολόγηση'); return; }
+    const today = format(new Date(), 'dd/MM/yyyy');
+    const invoiceNo = `DRV-${format(new Date(), 'yyyyMMdd-HHmm')}`;
+    const body = rows.map(r => {
+      const gross = r.available + r.pending;
+      const net = gross / (1 + VAT_RATE);
+      const vat = gross - net;
+      return `<tr>
+        <td>${r.name.replace(/</g, '&lt;')}${r.driver_code ? ' <span style="color:#888">#'+r.driver_code+'</span>' : ''}</td>
+        <td class="r">€${r.available.toFixed(2)}</td>
+        <td class="r">€${r.pending.toFixed(2)}</td>
+        <td class="r">€${net.toFixed(2)}</td>
+        <td class="r">€${vat.toFixed(2)}</td>
+        <td class="r"><strong>€${gross.toFixed(2)}</strong></td>
+      </tr>`;
+    }).join('');
+    const totalGross = rows.reduce((s, r) => s + r.available + r.pending, 0);
+    const totalNet = totalGross / (1 + VAT_RATE);
+    const totalVat = totalGross - totalNet;
+    const html = `<!doctype html><html lang="el"><head><meta charset="utf-8"><title>${invoiceNo}</title>
+    <style>
+      *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;padding:32px;max-width:900px;margin:0 auto}
+      h1{margin:0 0 4px;font-size:22px} .meta{color:#666;font-size:13px;margin-bottom:24px}
+      table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
+      th{background:#f6f8fa;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#555}
+      .r{text-align:right} tfoot td{border-top:2px solid #111;font-weight:700;background:#fafafa}
+      .actions{margin-top:24px;text-align:right} button{padding:8px 16px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer;font-size:13px}
+      @media print {.actions{display:none}}
+    </style></head><body>
+      <h1>Τιμολόγιο Οδηγών${titleSuffix ? ' · ' + titleSuffix : ''}</h1>
+      <div class="meta">№ ${invoiceNo} · Ημερομηνία: ${today} · ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</div>
+      <table>
+        <thead><tr><th>Οδηγός</th><th class="r">Διαθέσιμο</th><th class="r">Εκκρεμές</th><th class="r">Καθαρό</th><th class="r">ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</th><th class="r">Σύνολο</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr><td colspan="3">ΣΥΝΟΛΑ</td><td class="r">€${totalNet.toFixed(2)}</td><td class="r">€${totalVat.toFixed(2)}</td><td class="r">€${totalGross.toFixed(2)}</td></tr></tfoot>
+      </table>
+      <div class="actions"><button onclick="window.print()">Εκτύπωση / Αποθήκευση PDF</button></div>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) { downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), `${invoiceNo}.html`); toast.success('Τιμολόγιο κατέβηκε'); return; }
+    w.document.write(html); w.document.close();
+    toast.success('Τιμολόγιο δημιουργήθηκε');
+  };
+
+  const exportInvoice = () => buildInvoice(filtered.filter(r => r.available + r.pending !== 0));
+  const exportRowInvoice = (row: typeof filtered[number]) => buildInvoice([row], row.name);
+
+  const doLifetimeReset = async () => {
+    if (!lifetimeTarget) return;
+    setBusy(`L-${lifetimeTarget.id}`);
+    try {
+      const { error } = await (supabase.rpc as any)('admin_reset_driver_lifetime', { p_driver_id: lifetimeTarget.id });
+      if (error) throw error;
+      toast.success(`Lifetime μηδενίστηκε: ${lifetimeTarget.name}`);
+      setLifetimeTarget(null);
+      qc.invalidateQueries({ queryKey: ['admin-driver-payables'] });
+    } catch (e: any) { toast.error(e?.message ?? 'Αποτυχία'); }
+    finally { setBusy(null); }
+  };
+
+  const doBulkLifetimeReset = async () => {
+    setBusy('bulkL');
+    try {
+      const { data, error } = await (supabase.rpc as any)('admin_reset_all_driver_lifetime');
+      if (error) throw error;
+      toast.success(`Μηδενίστηκε lifetime σε ${data ?? 0} οδηγούς`);
+      setBulkLifetimeOpen(false);
+      qc.invalidateQueries({ queryKey: ['admin-driver-payables'] });
+    } catch (e: any) { toast.error(e?.message ?? 'Αποτυχία'); }
+    finally { setBusy(null); }
+  };
+
   const doWalletReset = async () => {
     if (!walletTarget) return;
     setBusy(`w-${walletTarget.id}`);
