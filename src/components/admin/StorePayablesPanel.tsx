@@ -104,8 +104,7 @@ export default function StorePayablesPanel() {
     toast.success('CSV κατέβηκε');
   };
 
-  const exportInvoice = () => {
-    const rows = filtered.filter(r => r.available !== 0);
+  const buildInvoice = (rows: typeof filtered, titleSuffix?: string) => {
     if (rows.length === 0) {
       toast.error('Δεν υπάρχουν υπόλοιπα για τιμολόγηση');
       return;
@@ -137,7 +136,7 @@ export default function StorePayablesPanel() {
       .actions{margin-top:24px;text-align:right} button{padding:8px 16px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer;font-size:13px}
       @media print {.actions{display:none}}
     </style></head><body>
-      <h1>Τιμολόγιο Υπηρεσιών</h1>
+      <h1>Τιμολόγιο Υπηρεσιών${titleSuffix ? ' · ' + titleSuffix : ''}</h1>
       <div class="meta">№ ${invoiceNo} · Ημερομηνία: ${today} · ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</div>
       <table>
         <thead><tr><th>Κατάστημα</th><th class="r">Ροή</th><th class="r">Καθαρό</th><th class="r">ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</th><th class="r">Σύνολο</th></tr></thead>
@@ -162,6 +161,9 @@ export default function StorePayablesPanel() {
     w.document.close();
     toast.success('Τιμολόγιο δημιουργήθηκε');
   };
+
+  const exportInvoice = () => buildInvoice(filtered.filter(r => r.available !== 0));
+  const exportRowInvoice = (row: typeof filtered[number]) => buildInvoice([row], row.name);
 
   const doReset = async () => {
     if (!resetTarget) return;
