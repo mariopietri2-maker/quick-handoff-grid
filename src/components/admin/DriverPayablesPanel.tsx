@@ -29,7 +29,9 @@ export default function DriverPayablesPanel() {
   const [q, setQ] = useState('');
   const [walletTarget, setWalletTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
   const [cashTarget, setCashTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
+  const [lifetimeTarget, setLifetimeTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkLifetimeOpen, setBulkLifetimeOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
