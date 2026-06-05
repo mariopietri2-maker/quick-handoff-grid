@@ -232,12 +232,20 @@ export default function StorePayablesPanel() {
             Πόσα χρωστάει ο admin σε κάθε κατάστημα (in-app · 85%) — με δυνατότητα μηδενισμού μετά την πληρωμή.
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <Button size="sm" variant="outline" className="h-8" onClick={exportCsv}>
             <FileDown className="h-3.5 w-3.5 mr-1.5" /> CSV
           </Button>
           <Button size="sm" variant="outline" className="h-8" onClick={exportInvoice}>
             <FileText className="h-3.5 w-3.5 mr-1.5" /> Τιμολόγιο ΦΠΑ
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 border-warning/60 text-warning hover:bg-warning/10 hover:text-warning"
+            onClick={() => setBulkLifetimeOpen(true)}
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset lifetime
           </Button>
           <Button
             size="sm"
