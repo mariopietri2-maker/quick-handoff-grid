@@ -519,6 +519,52 @@ export default function DriverPayablesPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Per-driver lifetime reset */}
+      <AlertDialog open={!!lifetimeTarget} onOpenChange={(v) => !v && setLifetimeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστεί το lifetime του <strong>{lifetimeTarget?.name}</strong> (€{lifetimeTarget?.amount.toFixed(2)}).</p>
+                <p className="text-muted-foreground">Ενεργό υπόλοιπο & ιστορικό δεν αλλάζουν.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doLifetimeReset} disabled={!!busy}>
+              {busy?.startsWith('L-') && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk lifetime reset */}
+      <AlertDialog open={bulkLifetimeOpen} onOpenChange={setBulkLifetimeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime (όλοι)
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστούν τα <strong>lifetime totals</strong> όλων των οδηγών.</p>
+                <p className="text-muted-foreground">Ενεργά πορτοφόλια & μετρητά βάρδιας δεν αλλάζουν.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doBulkLifetimeReset} disabled={!!busy}>
+              {busy === 'bulkL' && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
