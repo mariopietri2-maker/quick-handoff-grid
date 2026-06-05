@@ -3429,11 +3429,17 @@ export type Database = {
       }
       admin_purge_stale: { Args: { p_kind: string }; Returns: Json }
       admin_reset_admin_bag: { Args: never; Returns: number }
+      admin_reset_all_driver_lifetime: { Args: never; Returns: number }
       admin_reset_all_driver_wallets: { Args: never; Returns: Json }
+      admin_reset_all_store_lifetime: { Args: never; Returns: number }
       admin_reset_all_store_wallets: { Args: never; Returns: number }
       admin_reset_driver_cash: {
         Args: { p_driver_id: string }
         Returns: undefined
+      }
+      admin_reset_driver_lifetime: {
+        Args: { p_driver_id: string }
+        Returns: number
       }
       admin_reset_driver_wallet: {
         Args: { p_driver_id: string }
@@ -3441,6 +3447,10 @@ export type Database = {
       }
       admin_reset_money_to_zero: { Args: never; Returns: Json }
       admin_reset_platform_pool: { Args: never; Returns: number }
+      admin_reset_store_lifetime: {
+        Args: { p_store_id: string }
+        Returns: number
+      }
       admin_reset_store_wallet: {
         Args: { p_store_id: string }
         Returns: number

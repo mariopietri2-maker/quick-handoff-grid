@@ -27,7 +27,9 @@ export default function StorePayablesPanel() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [resetTarget, setResetTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
+  const [lifetimeTarget, setLifetimeTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkLifetimeOpen, setBulkLifetimeOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -102,8 +104,7 @@ export default function StorePayablesPanel() {
     toast.success('CSV κατέβηκε');
   };
 
-  const exportInvoice = () => {
-    const rows = filtered.filter(r => r.available !== 0);
+  const buildInvoice = (rows: typeof filtered, titleSuffix?: string) => {
     if (rows.length === 0) {
       toast.error('Δεν υπάρχουν υπόλοιπα για τιμολόγηση');
       return;
@@ -135,7 +136,7 @@ export default function StorePayablesPanel() {
       .actions{margin-top:24px;text-align:right} button{padding:8px 16px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer;font-size:13px}
       @media print {.actions{display:none}}
     </style></head><body>
-      <h1>Τιμολόγιο Υπηρεσιών</h1>
+      <h1>Τιμολόγιο Υπηρεσιών${titleSuffix ? ' · ' + titleSuffix : ''}</h1>
       <div class="meta">№ ${invoiceNo} · Ημερομηνία: ${today} · ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</div>
       <table>
         <thead><tr><th>Κατάστημα</th><th class="r">Ροή</th><th class="r">Καθαρό</th><th class="r">ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</th><th class="r">Σύνολο</th></tr></thead>
@@ -160,6 +161,9 @@ export default function StorePayablesPanel() {
     w.document.close();
     toast.success('Τιμολόγιο δημιουργήθηκε');
   };
+
+  const exportInvoice = () => buildInvoice(filtered.filter(r => r.available !== 0));
+  const exportRowInvoice = (row: typeof filtered[number]) => buildInvoice([row], row.name);
 
   const doReset = async () => {
     if (!resetTarget) return;
@@ -192,6 +196,33 @@ export default function StorePayablesPanel() {
     }
   };
 
+  const doLifetimeReset = async () => {
+    if (!lifetimeTarget) return;
+    setBusy(`L-${lifetimeTarget.id}`);
+    try {
+      const { error } = await (supabase.rpc as any)('admin_reset_store_lifetime', { p_store_id: lifetimeTarget.id });
+      if (error) throw error;
+      toast.success(`Lifetime μηδενίστηκε: ${lifetimeTarget.name}`);
+      setLifetimeTarget(null);
+      qc.invalidateQueries({ queryKey: ['admin-store-payables'] });
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Αποτυχία');
+    } finally { setBusy(null); }
+  };
+
+  const doBulkLifetimeReset = async () => {
+    setBusy('bulkL');
+    try {
+      const { data, error } = await (supabase.rpc as any)('admin_reset_all_store_lifetime');
+      if (error) throw error;
+      toast.success(`Μηδενίστηκε lifetime σε ${data ?? 0} καταστήματα`);
+      setBulkLifetimeOpen(false);
+      qc.invalidateQueries({ queryKey: ['admin-store-payables'] });
+    } catch (e: any) {
+      toast.error(e?.message ?? 'Αποτυχία');
+    } finally { setBusy(null); }
+  };
+
   return (
     <div className="space-y-4">
       <div className="admin-section-header">
@@ -201,12 +232,20 @@ export default function StorePayablesPanel() {
             Πόσα χρωστάει ο admin σε κάθε κατάστημα (in-app · 85%) — με δυνατότητα μηδενισμού μετά την πληρωμή.
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <Button size="sm" variant="outline" className="h-8" onClick={exportCsv}>
             <FileDown className="h-3.5 w-3.5 mr-1.5" /> CSV
           </Button>
           <Button size="sm" variant="outline" className="h-8" onClick={exportInvoice}>
             <FileText className="h-3.5 w-3.5 mr-1.5" /> Τιμολόγιο ΦΠΑ
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 border-warning/60 text-warning hover:bg-warning/10 hover:text-warning"
+            onClick={() => setBulkLifetimeOpen(true)}
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset lifetime
           </Button>
           <Button
             size="sm"
@@ -335,16 +374,40 @@ export default function StorePayablesPanel() {
                         {r.updated_at ? format(new Date(r.updated_at), 'dd MMM, HH:mm') : '—'}
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={zero || busy === r.id}
-                          className="h-8"
-                          onClick={() => setResetTarget({ id: r.id, name: r.name, amount: r.available })}
-                        >
-                          {busy === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RotateCcw className="h-3 w-3 mr-1" />}
-                          Reset 0
-                        </Button>
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            disabled={zero}
+                            onClick={() => exportRowInvoice(r)}
+                            title="Τιμολόγιο για αυτό το κατάστημα"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            Τιμολόγιο
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={r.lifetime === 0 || busy === `L-${r.id}`}
+                            className="h-8 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
+                            onClick={() => setLifetimeTarget({ id: r.id, name: r.name, amount: r.lifetime })}
+                            title="Μηδένισε lifetime earnings"
+                          >
+                            {busy === `L-${r.id}` ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                            Lifetime 0
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={zero || busy === r.id}
+                            className="h-8"
+                            onClick={() => setResetTarget({ id: r.id, name: r.name, amount: r.available })}
+                          >
+                            {busy === r.id ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                            Reset 0
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );
@@ -411,6 +474,52 @@ export default function StorePayablesPanel() {
             >
               {busy === 'bulk' && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />}
               Μηδενισμός όλων
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Per-store lifetime reset */}
+      <AlertDialog open={!!lifetimeTarget} onOpenChange={(v) => !v && setLifetimeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστεί το lifetime earnings του <strong>{lifetimeTarget?.name}</strong> (€{lifetimeTarget?.amount.toFixed(2)}).</p>
+                <p className="text-muted-foreground">Το ενεργό υπόλοιπο και το ιστορικό παραγγελιών δεν επηρεάζονται.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doLifetimeReset} disabled={!!busy}>
+              {busy?.startsWith('L-') && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk lifetime reset */}
+      <AlertDialog open={bulkLifetimeOpen} onOpenChange={setBulkLifetimeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime (όλα)
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστούν τα <strong>lifetime earnings</strong> όλων των καταστημάτων.</p>
+                <p className="text-muted-foreground">Ενεργά υπόλοιπα και ιστορικό παραγγελιών δεν αλλάζουν.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doBulkLifetimeReset} disabled={!!busy}>
+              {busy === 'bulkL' && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

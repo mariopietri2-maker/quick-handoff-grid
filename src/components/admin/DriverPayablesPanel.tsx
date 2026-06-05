@@ -12,7 +12,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, Banknote, HandCoins } from 'lucide-react';
+import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, Banknote, HandCoins, FileText } from 'lucide-react';
+
+const VAT_RATE = 0.24;
 
 /**
  * Per-driver payables overview.
@@ -27,7 +29,9 @@ export default function DriverPayablesPanel() {
   const [q, setQ] = useState('');
   const [walletTarget, setWalletTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
   const [cashTarget, setCashTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
+  const [lifetimeTarget, setLifetimeTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkLifetimeOpen, setBulkLifetimeOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
@@ -110,6 +114,87 @@ export default function DriverPayablesPanel() {
     toast.success('CSV κατέβηκε');
   };
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = filename; a.rel = 'noopener';
+    document.body.appendChild(a); a.click();
+    setTimeout(() => { document.body.removeChild(a); URL.revokeObjectURL(url); }, 100);
+  };
+
+  const buildInvoice = (rows: typeof filtered, titleSuffix?: string) => {
+    if (rows.length === 0) { toast.error('Δεν υπάρχουν υπόλοιπα για τιμολόγηση'); return; }
+    const today = format(new Date(), 'dd/MM/yyyy');
+    const invoiceNo = `DRV-${format(new Date(), 'yyyyMMdd-HHmm')}`;
+    const body = rows.map(r => {
+      const gross = r.available + r.pending;
+      const net = gross / (1 + VAT_RATE);
+      const vat = gross - net;
+      return `<tr>
+        <td>${r.name.replace(/</g, '&lt;')}${r.driver_code ? ' <span style="color:#888">#'+r.driver_code+'</span>' : ''}</td>
+        <td class="r">€${r.available.toFixed(2)}</td>
+        <td class="r">€${r.pending.toFixed(2)}</td>
+        <td class="r">€${net.toFixed(2)}</td>
+        <td class="r">€${vat.toFixed(2)}</td>
+        <td class="r"><strong>€${gross.toFixed(2)}</strong></td>
+      </tr>`;
+    }).join('');
+    const totalGross = rows.reduce((s, r) => s + r.available + r.pending, 0);
+    const totalNet = totalGross / (1 + VAT_RATE);
+    const totalVat = totalGross - totalNet;
+    const html = `<!doctype html><html lang="el"><head><meta charset="utf-8"><title>${invoiceNo}</title>
+    <style>
+      *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;padding:32px;max-width:900px;margin:0 auto}
+      h1{margin:0 0 4px;font-size:22px} .meta{color:#666;font-size:13px;margin-bottom:24px}
+      table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
+      th{background:#f6f8fa;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#555}
+      .r{text-align:right} tfoot td{border-top:2px solid #111;font-weight:700;background:#fafafa}
+      .actions{margin-top:24px;text-align:right} button{padding:8px 16px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer;font-size:13px}
+      @media print {.actions{display:none}}
+    </style></head><body>
+      <h1>Τιμολόγιο Οδηγών${titleSuffix ? ' · ' + titleSuffix : ''}</h1>
+      <div class="meta">№ ${invoiceNo} · Ημερομηνία: ${today} · ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</div>
+      <table>
+        <thead><tr><th>Οδηγός</th><th class="r">Διαθέσιμο</th><th class="r">Εκκρεμές</th><th class="r">Καθαρό</th><th class="r">ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</th><th class="r">Σύνολο</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr><td colspan="3">ΣΥΝΟΛΑ</td><td class="r">€${totalNet.toFixed(2)}</td><td class="r">€${totalVat.toFixed(2)}</td><td class="r">€${totalGross.toFixed(2)}</td></tr></tfoot>
+      </table>
+      <div class="actions"><button onclick="window.print()">Εκτύπωση / Αποθήκευση PDF</button></div>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) { downloadBlob(new Blob([html], { type: 'text/html;charset=utf-8' }), `${invoiceNo}.html`); toast.success('Τιμολόγιο κατέβηκε'); return; }
+    w.document.write(html); w.document.close();
+    toast.success('Τιμολόγιο δημιουργήθηκε');
+  };
+
+  const exportInvoice = () => buildInvoice(filtered.filter(r => r.available + r.pending !== 0));
+  const exportRowInvoice = (row: typeof filtered[number]) => buildInvoice([row], row.name);
+
+  const doLifetimeReset = async () => {
+    if (!lifetimeTarget) return;
+    setBusy(`L-${lifetimeTarget.id}`);
+    try {
+      const { error } = await (supabase.rpc as any)('admin_reset_driver_lifetime', { p_driver_id: lifetimeTarget.id });
+      if (error) throw error;
+      toast.success(`Lifetime μηδενίστηκε: ${lifetimeTarget.name}`);
+      setLifetimeTarget(null);
+      qc.invalidateQueries({ queryKey: ['admin-driver-payables'] });
+    } catch (e: any) { toast.error(e?.message ?? 'Αποτυχία'); }
+    finally { setBusy(null); }
+  };
+
+  const doBulkLifetimeReset = async () => {
+    setBusy('bulkL');
+    try {
+      const { data, error } = await (supabase.rpc as any)('admin_reset_all_driver_lifetime');
+      if (error) throw error;
+      toast.success(`Μηδενίστηκε lifetime σε ${data ?? 0} οδηγούς`);
+      setBulkLifetimeOpen(false);
+      qc.invalidateQueries({ queryKey: ['admin-driver-payables'] });
+    } catch (e: any) { toast.error(e?.message ?? 'Αποτυχία'); }
+    finally { setBusy(null); }
+  };
+
   const doWalletReset = async () => {
     if (!walletTarget) return;
     setBusy(`w-${walletTarget.id}`);
@@ -160,9 +245,20 @@ export default function DriverPayablesPanel() {
             Πόσα χρωστάει ο admin σε κάθε οδηγό + μετρητά βάρδιας — με δυνατότητα μηδενισμού μετά την πληρωμή/συμψηφισμό.
           </p>
         </div>
-        <div className="flex items-center gap-1.5">
+        <div className="flex items-center gap-1.5 flex-wrap">
           <Button size="sm" variant="outline" className="h-8" onClick={exportCsv}>
             <FileDown className="h-3.5 w-3.5 mr-1.5" /> CSV
+          </Button>
+          <Button size="sm" variant="outline" className="h-8" onClick={exportInvoice}>
+            <FileText className="h-3.5 w-3.5 mr-1.5" /> Τιμολόγιο ΦΠΑ
+          </Button>
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-8 border-warning/60 text-warning hover:bg-warning/10 hover:text-warning"
+            onClick={() => setBulkLifetimeOpen(true)}
+          >
+            <RotateCcw className="h-3.5 w-3.5 mr-1.5" /> Reset lifetime
           </Button>
           <Button
             size="sm"
@@ -292,7 +388,29 @@ export default function DriverPayablesPanel() {
                         €{r.shift_cash.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            disabled={zero}
+                            onClick={() => exportRowInvoice(r)}
+                            title="Τιμολόγιο για αυτόν τον οδηγό"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            Τιμολόγιο
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={r.withdrawn === 0 || busy === `L-${r.id}`}
+                            className="h-8 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
+                            onClick={() => setLifetimeTarget({ id: r.id, name: r.name, amount: r.withdrawn })}
+                            title="Μηδένισε lifetime totals"
+                          >
+                            {busy === `L-${r.id}` ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                            Lifetime 0
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
@@ -397,6 +515,52 @@ export default function DriverPayablesPanel() {
             <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
             <AlertDialogAction onClick={doBulkReset} disabled={!!busy} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
               {busy === 'bulk' && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός όλων
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Per-driver lifetime reset */}
+      <AlertDialog open={!!lifetimeTarget} onOpenChange={(v) => !v && setLifetimeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστεί το lifetime του <strong>{lifetimeTarget?.name}</strong> (€{lifetimeTarget?.amount.toFixed(2)}).</p>
+                <p className="text-muted-foreground">Ενεργό υπόλοιπο & ιστορικό δεν αλλάζουν.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doLifetimeReset} disabled={!!busy}>
+              {busy?.startsWith('L-') && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk lifetime reset */}
+      <AlertDialog open={bulkLifetimeOpen} onOpenChange={setBulkLifetimeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime (όλοι)
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστούν τα <strong>lifetime totals</strong> όλων των οδηγών.</p>
+                <p className="text-muted-foreground">Ενεργά πορτοφόλια & μετρητά βάρδιας δεν αλλάζουν.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doBulkLifetimeReset} disabled={!!busy}>
+              {busy === 'bulkL' && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
