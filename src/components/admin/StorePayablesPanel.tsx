@@ -205,6 +205,9 @@ export default function StorePayablesPanel() {
           <Button size="sm" variant="outline" className="h-8" onClick={exportCsv}>
             <FileDown className="h-3.5 w-3.5 mr-1.5" /> CSV
           </Button>
+          <Button size="sm" variant="outline" className="h-8" onClick={exportInvoice}>
+            <FileText className="h-3.5 w-3.5 mr-1.5" /> Τιμολόγιο ΦΠΑ
+          </Button>
           <Button
             size="sm"
             variant="outline"
