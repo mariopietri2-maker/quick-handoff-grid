@@ -27,7 +27,9 @@ export default function StorePayablesPanel() {
   const qc = useQueryClient();
   const [q, setQ] = useState('');
   const [resetTarget, setResetTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
+  const [lifetimeTarget, setLifetimeTarget] = useState<{ id: string; name: string; amount: number } | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
+  const [bulkLifetimeOpen, setBulkLifetimeOpen] = useState(false);
   const [busy, setBusy] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
