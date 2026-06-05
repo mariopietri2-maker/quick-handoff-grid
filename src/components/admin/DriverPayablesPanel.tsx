@@ -388,7 +388,29 @@ export default function DriverPayablesPanel() {
                         €{r.shift_cash.toFixed(2)}
                       </TableCell>
                       <TableCell className="text-right">
-                        <div className="flex items-center justify-end gap-1.5">
+                        <div className="flex items-center justify-end gap-1.5 flex-wrap">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="h-8"
+                            disabled={zero}
+                            onClick={() => exportRowInvoice(r)}
+                            title="Τιμολόγιο για αυτόν τον οδηγό"
+                          >
+                            <FileText className="h-3 w-3 mr-1" />
+                            Τιμολόγιο
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={r.withdrawn === 0 || busy === `L-${r.id}`}
+                            className="h-8 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
+                            onClick={() => setLifetimeTarget({ id: r.id, name: r.name, amount: r.withdrawn })}
+                            title="Μηδένισε lifetime totals"
+                          >
+                            {busy === `L-${r.id}` ? <Loader2 className="h-3 w-3 animate-spin mr-1" /> : <RotateCcw className="h-3 w-3 mr-1" />}
+                            Lifetime 0
+                          </Button>
                           <Button
                             size="sm"
                             variant="outline"
