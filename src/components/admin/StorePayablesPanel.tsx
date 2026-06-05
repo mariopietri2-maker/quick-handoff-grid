@@ -12,7 +12,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, TrendingUp } from 'lucide-react';
+import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, TrendingUp, FileText } from 'lucide-react';
+
+const VAT_RATE = 0.24;
 
 /**
  * Per-store payables overview.
@@ -68,6 +70,20 @@ export default function StorePayablesPanel() {
     return { owe, owed, stores, withBalance };
   }, [data]);
 
+  const downloadBlob = (blob: Blob, filename: string) => {
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.rel = 'noopener';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(() => {
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    }, 100);
+  };
+
   const exportCsv = () => {
     const rows = filtered;
     const header = ['Κατάστημα', 'Υπόλοιπο (€)', 'Κατάσταση', 'Lifetime (€)', 'Τελευταία ενημέρωση'];
@@ -82,13 +98,67 @@ export default function StorePayablesPanel() {
       ].join(',')),
     ].join('\n');
     const blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `store-payables-${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadBlob(blob, `store-payables-${format(new Date(), 'yyyy-MM-dd_HHmm')}.csv`);
     toast.success('CSV κατέβηκε');
+  };
+
+  const exportInvoice = () => {
+    const rows = filtered.filter(r => r.available !== 0);
+    if (rows.length === 0) {
+      toast.error('Δεν υπάρχουν υπόλοιπα για τιμολόγηση');
+      return;
+    }
+    const today = format(new Date(), 'dd/MM/yyyy');
+    const invoiceNo = `INV-${format(new Date(), 'yyyyMMdd-HHmm')}`;
+    const body = rows.map(r => {
+      const gross = Math.abs(r.available);
+      const net = gross / (1 + VAT_RATE);
+      const vat = gross - net;
+      return `<tr>
+        <td>${r.name.replace(/</g, '&lt;')}</td>
+        <td class="r">${r.available > 0 ? 'Admin → Κατάστημα' : 'Κατάστημα → Admin'}</td>
+        <td class="r">€${net.toFixed(2)}</td>
+        <td class="r">€${vat.toFixed(2)}</td>
+        <td class="r"><strong>€${gross.toFixed(2)}</strong></td>
+      </tr>`;
+    }).join('');
+    const totalGross = rows.reduce((s, r) => s + Math.abs(r.available), 0);
+    const totalNet = totalGross / (1 + VAT_RATE);
+    const totalVat = totalGross - totalNet;
+    const html = `<!doctype html><html lang="el"><head><meta charset="utf-8"><title>${invoiceNo}</title>
+    <style>
+      *{box-sizing:border-box} body{font-family:-apple-system,Segoe UI,Roboto,sans-serif;color:#111;padding:32px;max-width:900px;margin:0 auto}
+      h1{margin:0 0 4px;font-size:22px} .meta{color:#666;font-size:13px;margin-bottom:24px}
+      table{width:100%;border-collapse:collapse;font-size:13px} th,td{padding:8px 10px;border-bottom:1px solid #eee;text-align:left}
+      th{background:#f6f8fa;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:#555}
+      .r{text-align:right} tfoot td{border-top:2px solid #111;font-weight:700;background:#fafafa}
+      .actions{margin-top:24px;text-align:right} button{padding:8px 16px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer;font-size:13px}
+      @media print {.actions{display:none}}
+    </style></head><body>
+      <h1>Τιμολόγιο Υπηρεσιών</h1>
+      <div class="meta">№ ${invoiceNo} · Ημερομηνία: ${today} · ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</div>
+      <table>
+        <thead><tr><th>Κατάστημα</th><th class="r">Ροή</th><th class="r">Καθαρό</th><th class="r">ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</th><th class="r">Σύνολο</th></tr></thead>
+        <tbody>${body}</tbody>
+        <tfoot><tr>
+          <td colspan="2">ΣΥΝΟΛΑ</td>
+          <td class="r">€${totalNet.toFixed(2)}</td>
+          <td class="r">€${totalVat.toFixed(2)}</td>
+          <td class="r">€${totalGross.toFixed(2)}</td>
+        </tr></tfoot>
+      </table>
+      <div class="actions"><button onclick="window.print()">Εκτύπωση / Αποθήκευση PDF</button></div>
+    </body></html>`;
+    const w = window.open('', '_blank');
+    if (!w) {
+      const blob = new Blob([html], { type: 'text/html;charset=utf-8' });
+      downloadBlob(blob, `${invoiceNo}.html`);
+      toast.success('Τιμολόγιο κατέβηκε');
+      return;
+    }
+    w.document.write(html);
+    w.document.close();
+    toast.success('Τιμολόγιο δημιουργήθηκε');
   };
 
   const doReset = async () => {
@@ -134,6 +204,9 @@ export default function StorePayablesPanel() {
         <div className="flex items-center gap-1.5">
           <Button size="sm" variant="outline" className="h-8" onClick={exportCsv}>
             <FileDown className="h-3.5 w-3.5 mr-1.5" /> CSV
+          </Button>
+          <Button size="sm" variant="outline" className="h-8" onClick={exportInvoice}>
+            <FileText className="h-3.5 w-3.5 mr-1.5" /> Τιμολόγιο ΦΠΑ
           </Button>
           <Button
             size="sm"
