@@ -478,6 +478,52 @@ export default function StorePayablesPanel() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      {/* Per-store lifetime reset */}
+      <AlertDialog open={!!lifetimeTarget} onOpenChange={(v) => !v && setLifetimeTarget(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστεί το lifetime earnings του <strong>{lifetimeTarget?.name}</strong> (€{lifetimeTarget?.amount.toFixed(2)}).</p>
+                <p className="text-muted-foreground">Το ενεργό υπόλοιπο και το ιστορικό παραγγελιών δεν επηρεάζονται.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doLifetimeReset} disabled={!!busy}>
+              {busy?.startsWith('L-') && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Bulk lifetime reset */}
+      <AlertDialog open={bulkLifetimeOpen} onOpenChange={setBulkLifetimeOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="h-5 w-5 text-warning" /> Μηδενισμός lifetime (όλα)
+            </AlertDialogTitle>
+            <AlertDialogDescription asChild>
+              <div className="space-y-2 text-sm">
+                <p>Θα μηδενιστούν τα <strong>lifetime earnings</strong> όλων των καταστημάτων.</p>
+                <p className="text-muted-foreground">Ενεργά υπόλοιπα και ιστορικό παραγγελιών δεν αλλάζουν.</p>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={!!busy}>Άκυρο</AlertDialogCancel>
+            <AlertDialogAction onClick={doBulkLifetimeReset} disabled={!!busy}>
+              {busy === 'bulkL' && <Loader2 className="h-4 w-4 mr-1.5 animate-spin" />} Μηδενισμός
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
