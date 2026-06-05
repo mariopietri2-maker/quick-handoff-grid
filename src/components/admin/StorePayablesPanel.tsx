@@ -12,7 +12,9 @@ import {
   AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
-import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, TrendingUp } from 'lucide-react';
+import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, TrendingUp, FileText } from 'lucide-react';
+
+const VAT_RATE = 0.24;
 
 /**
  * Per-store payables overview.
