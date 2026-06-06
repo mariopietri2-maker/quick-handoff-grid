@@ -268,13 +268,13 @@ export default function CustomerApp() {
 
         {/* ── Sponsored / Popular row ────────────────────── */}
         {cfg.sections.show_promoted && !search && selectedCategory === 'all' && promotedStores.length > 0 && (
-          <section className="pt-5">
-            <div className="px-4 flex items-end justify-between mb-3">
+          <section className="pt-7">
+            <div className="px-5 flex items-end justify-between mb-4">
               <div>
-                <h2 className="font-heading font-black text-[20px] text-[hsl(0,0%,9%)] leading-none">
+                <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
                   {t('customer.popular')}
                 </h2>
-                <p className="text-[11px] c-muted mt-1 font-semibold uppercase tracking-wider">
+                <p className="text-[10px] c-muted mt-1.5 font-black uppercase tracking-[0.14em]">
                   Sponsored
                 </p>
               </div>
