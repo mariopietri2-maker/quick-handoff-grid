@@ -214,16 +214,24 @@ export default function CustomerApp() {
       <main className="max-w-2xl mx-auto">
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
         {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
-          <div className="px-4 pt-4">
-            <div className="grid grid-cols-4 gap-2.5">
-              {QUICK_TILES.map(tile => (
+          <div className="px-5 pt-5">
+            <div className="grid grid-cols-4 gap-3">
+              {QUICK_TILES.map((tile, i) => (
                 <button
                   key={tile.label}
                   onClick={() => setSelectedCategory(tile.value)}
-                  className={`${tile.tone} aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform shadow-sm`}
+                  className="flex flex-col items-center gap-2 group"
                 >
-                  <span className="text-2xl leading-none">{tile.emoji}</span>
-                  <span className="text-[11px] font-extrabold">{tile.label}</span>
+                  <div
+                    className={`${tile.tone} w-full aspect-square rounded-[18px] flex items-center justify-center active:scale-95 transition-transform ${
+                      i === 0
+                        ? 'shadow-[0_8px_20px_-6px_hsl(var(--c-accent)/0.45)]'
+                        : 'border border-[hsl(0,0%,92%)]'
+                    }`}
+                  >
+                    <span className="text-3xl leading-none drop-shadow-sm">{tile.emoji}</span>
+                  </div>
+                  <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">{tile.label}</span>
                 </button>
               ))}
             </div>
@@ -235,21 +243,21 @@ export default function CustomerApp() {
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
-          <div className="px-4 pt-5">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div className="px-5 pt-6">
+            <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-5 px-5">
               {CATEGORY_CHIPS.map(cat => {
                 const active = selectedCategory === cat.value;
                 return (
                   <button
                     key={cat.value}
                     onClick={() => setSelectedCategory(cat.value)}
-                    className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-bold transition-colors ${
+                    className={`shrink-0 inline-flex items-center gap-2 h-11 px-5 rounded-full text-[13px] font-bold transition-all active:scale-95 ${
                       active
-                        ? 'c-bg-accent shadow-sm'
+                        ? 'c-bg-accent shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)]'
                         : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
                     }`}
                   >
-                    <span className="text-sm">{cat.emoji}</span>
+                    <span className="text-sm leading-none">{cat.emoji}</span>
                     {t(cat.labelKey)}
                   </button>
                 );
