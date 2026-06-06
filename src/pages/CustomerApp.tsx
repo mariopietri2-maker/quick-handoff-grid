@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Store as StoreIcon } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Store as StoreIcon, Star } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
@@ -148,64 +148,64 @@ export default function CustomerApp() {
     >
       {/* ── Header ─────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-50 bg-white border-b border-[hsl(0,0%,93%)]"
+        className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-[hsl(0,0%,94%)]"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
-          <div className="flex items-center justify-between mb-3">
+        <div className="max-w-2xl mx-auto px-5 pt-4 pb-3">
+          <div className="flex items-center justify-between mb-4">
             <button
               type="button"
               onClick={() => { setPendingAddress(deliveryAddress); setAddressOpen(true); }}
-              className="flex items-center gap-1.5 group max-w-[60%]"
+              className="flex items-center gap-3 group max-w-[62%] active:scale-[0.98] transition-transform"
             >
-              <div className="h-9 w-9 rounded-full c-bg-accent flex items-center justify-center shadow-sm shrink-0">
-                <MapPin className="h-4 w-4" strokeWidth={2.5} />
+              <div className="h-11 w-11 rounded-full c-bg-accent flex items-center justify-center shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] shrink-0">
+                <MapPin className="h-5 w-5" strokeWidth={2.5} />
               </div>
               <div className="text-left leading-tight min-w-0">
-                <div className="text-[10px] uppercase tracking-wider c-muted font-bold">Παράδοση</div>
-                <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)] truncate">
+                <div className="text-[10px] uppercase tracking-[0.12em] c-muted font-extrabold leading-none mb-1">Παράδοση</div>
+                <div className="flex items-center gap-1 text-[16px] font-extrabold text-[hsl(0,0%,9%)] truncate tracking-tight">
                   <span className="truncate">{displayAddress}</span>
-                  <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                  <ChevronDown className="h-4 w-4 shrink-0 c-muted" strokeWidth={2.5} />
                 </div>
               </div>
             </button>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <LanguageToggle compact />
               {itemCount > 0 && (
                 <button
                   onClick={() => navigate('/checkout')}
-                  className="relative c-bg-accent rounded-full h-9 px-3 flex items-center gap-1.5 shadow-sm"
+                  className="relative c-bg-accent rounded-full h-10 px-3.5 flex items-center gap-1.5 shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] active:scale-95 transition-transform"
                 >
-                  <ShoppingBag className="h-4 w-4" />
+                  <ShoppingBag className="h-4 w-4" strokeWidth={2.5} />
                   <span className="text-xs font-extrabold">{itemCount}</span>
                 </button>
               )}
               {!user ? (
                 <Link
                   to="/auth"
-                  className="text-xs font-extrabold c-accent c-bg-accent-soft px-3 py-2 rounded-full"
+                  className="text-xs font-extrabold c-accent c-bg-accent-soft px-3.5 py-2.5 rounded-full"
                 >
                   {t('customer.login')}
                 </Link>
               ) : (
                 <Link
                   to="/profile"
-                  className="h-9 w-9 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center"
+                  className="h-10 w-10 rounded-full bg-[hsl(0,0%,96%)] hover:bg-[hsl(0,0%,93%)] flex items-center justify-center transition-colors"
                 >
-                  <User className="h-4 w-4 text-[hsl(0,0%,9%)]" />
+                  <User className="h-5 w-5 text-[hsl(0,0%,9%)]" strokeWidth={2} />
                 </Link>
               )}
             </div>
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 c-muted" />
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 c-muted group-focus-within:c-accent transition-colors" strokeWidth={2.5} />
             <Input
               placeholder={t('customer.search_placeholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-10 h-11 bg-[hsl(0,0%,96%)] border-0 rounded-xl text-sm placeholder:c-muted focus-visible:ring-2 focus-visible:ring-[hsl(4,90%,47%)]/30"
+              className="pl-12 h-12 bg-[hsl(0,0%,96%)] border-0 rounded-2xl text-[15px] font-medium placeholder:c-muted focus-visible:ring-2 focus-visible:ring-[hsl(var(--c-accent))]/40 focus-visible:bg-white focus-visible:ring-offset-0 transition-all"
             />
           </div>
         </div>
@@ -214,16 +214,24 @@ export default function CustomerApp() {
       <main className="max-w-2xl mx-auto">
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
         {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
-          <div className="px-4 pt-4">
-            <div className="grid grid-cols-4 gap-2.5">
-              {QUICK_TILES.map(tile => (
+          <div className="px-5 pt-5">
+            <div className="grid grid-cols-4 gap-3">
+              {QUICK_TILES.map((tile, i) => (
                 <button
                   key={tile.label}
                   onClick={() => setSelectedCategory(tile.value)}
-                  className={`${tile.tone} aspect-square rounded-2xl flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform shadow-sm`}
+                  className="flex flex-col items-center gap-2 group"
                 >
-                  <span className="text-2xl leading-none">{tile.emoji}</span>
-                  <span className="text-[11px] font-extrabold">{tile.label}</span>
+                  <div
+                    className={`${tile.tone} w-full aspect-square rounded-[18px] flex items-center justify-center active:scale-95 transition-transform ${
+                      i === 0
+                        ? 'shadow-[0_8px_20px_-6px_hsl(var(--c-accent)/0.45)]'
+                        : 'border border-[hsl(0,0%,92%)]'
+                    }`}
+                  >
+                    <span className="text-3xl leading-none drop-shadow-sm">{tile.emoji}</span>
+                  </div>
+                  <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">{tile.label}</span>
                 </button>
               ))}
             </div>
@@ -235,21 +243,21 @@ export default function CustomerApp() {
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
-          <div className="px-4 pt-5">
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-1">
+          <div className="px-5 pt-6">
+            <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-5 px-5">
               {CATEGORY_CHIPS.map(cat => {
                 const active = selectedCategory === cat.value;
                 return (
                   <button
                     key={cat.value}
                     onClick={() => setSelectedCategory(cat.value)}
-                    className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[13px] font-bold transition-colors ${
+                    className={`shrink-0 inline-flex items-center gap-2 h-11 px-5 rounded-full text-[13px] font-bold transition-all active:scale-95 ${
                       active
-                        ? 'c-bg-accent shadow-sm'
+                        ? 'c-bg-accent shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)]'
                         : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
                     }`}
                   >
-                    <span className="text-sm">{cat.emoji}</span>
+                    <span className="text-sm leading-none">{cat.emoji}</span>
                     {t(cat.labelKey)}
                   </button>
                 );
@@ -260,13 +268,13 @@ export default function CustomerApp() {
 
         {/* ── Sponsored / Popular row ────────────────────── */}
         {cfg.sections.show_promoted && !search && selectedCategory === 'all' && promotedStores.length > 0 && (
-          <section className="pt-5">
-            <div className="px-4 flex items-end justify-between mb-3">
+          <section className="pt-7">
+            <div className="px-5 flex items-end justify-between mb-4">
               <div>
-                <h2 className="font-heading font-black text-[20px] text-[hsl(0,0%,9%)] leading-none">
+                <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
                   {t('customer.popular')}
                 </h2>
-                <p className="text-[11px] c-muted mt-1 font-semibold uppercase tracking-wider">
+                <p className="text-[10px] c-muted mt-1.5 font-black uppercase tracking-[0.14em]">
                   Sponsored
                 </p>
               </div>
@@ -317,25 +325,25 @@ export default function CustomerApp() {
 
         {/* ── Store list ─────────────────────────────────── */}
         {cfg.sections.show_nearby && (
-        <section className="pt-6 px-4">
-          <div className="flex items-end justify-between mb-3">
-            <h2 className="font-heading font-black text-[20px] text-[hsl(0,0%,9%)] leading-none">
+        <section className="pt-8 px-5">
+          <div className="flex items-end justify-between mb-4">
+            <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
               {search
                 ? `${t('customer.results_for')} "${search}"`
                 : selectedCategory !== 'all'
                   ? t(CATEGORY_CHIPS.find(c => c.value === selectedCategory)?.labelKey ?? 'cat.all')
                   : t('customer.nearby')}
             </h2>
-            <span className="text-[11px] c-muted font-bold">
+            <span className="text-[11px] c-muted font-extrabold bg-[hsl(0,0%,96%)] px-2.5 py-1 rounded-md tabular-nums">
               {filtered.length} {t('customer.stores_count')}
             </span>
           </div>
 
           {loading ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {[1, 2, 3].map(i => (
                 <div key={i} className="animate-pulse">
-                  <div className="h-44 bg-[hsl(0,0%,94%)] rounded-2xl mb-2.5" />
+                  <div className="aspect-[16/9] bg-[hsl(0,0%,94%)] rounded-[20px] mb-3" />
                   <div className="h-4 bg-[hsl(0,0%,94%)] rounded w-2/3 mb-1.5" />
                   <div className="h-3 bg-[hsl(0,0%,94%)] rounded w-1/2" />
                 </div>
@@ -352,7 +360,7 @@ export default function CustomerApp() {
               </p>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {filtered.map((store, idx) => (
                 <button
                   key={store.id}
@@ -360,12 +368,12 @@ export default function CustomerApp() {
                   className="w-full text-left group animate-fade-in"
                   style={{ animationDelay: `${idx * 0.04}s`, animationFillMode: 'both' }}
                 >
-                  <div className="relative h-[180px] rounded-2xl overflow-hidden mb-3 bg-[hsl(0,0%,96%)]">
+                  <div className="relative aspect-[16/9] rounded-[20px] overflow-hidden mb-3 bg-[hsl(0,0%,96%)] shadow-sm group-hover:shadow-lg transition-shadow duration-300">
                     {store.image_url ? (
                       <img
                         src={store.image_url}
                         alt={store.name}
-                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
@@ -383,23 +391,24 @@ export default function CustomerApp() {
 
                     {/* Bottom row: ETA pill + rating pill */}
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                      <div className="bg-white/95 backdrop-blur rounded-full px-2.5 py-1 flex items-center gap-1 shadow-sm">
-                        <Clock className="h-3 w-3 text-[hsl(0,0%,9%)]" strokeWidth={2.5} />
-                        <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)]">
+                      <div className="bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-md">
+                        <Clock className="h-3.5 w-3.5 text-[hsl(0,0%,9%)]" strokeWidth={2.5} />
+                        <span className="text-[12px] font-extrabold text-[hsl(0,0%,9%)] tabular-nums">
                           {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}
                         </span>
                       </div>
                       {ratings[store.id]?.count > 0 ? (
-                        <div className="bg-white/95 backdrop-blur rounded-full px-2.5 py-1 flex items-center gap-1 shadow-sm">
-                          <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)]">
-                            ★ {ratings[store.id].avg.toFixed(1)}
+                        <div className="bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-1 shadow-md">
+                          <Star className="h-3.5 w-3.5 text-[hsl(42,95%,55%)] fill-[hsl(42,95%,55%)]" strokeWidth={0} />
+                          <span className="text-[12px] font-extrabold text-[hsl(0,0%,9%)] tabular-nums">
+                            {ratings[store.id].avg.toFixed(1)}
                           </span>
-                          <span className="text-[10px] c-muted font-semibold">
+                          <span className="text-[10px] c-muted font-bold tabular-nums">
                             ({ratings[store.id].count})
                           </span>
                         </div>
                       ) : (
-                        <div className="c-bg-accent rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider">
+                        <div className="c-bg-accent rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider shadow-md">
                           Νέο
                         </div>
                       )}
@@ -441,35 +450,42 @@ export default function CustomerApp() {
 
       {/* ── Bottom tab bar ─────────────────────────────── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[hsl(0,0%,93%)]"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-[hsl(0,0%,94%)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto grid grid-cols-4 h-16">
-          <button className="relative flex flex-col items-center justify-center gap-0.5 c-accent">
-            <span className="absolute top-0 h-0.5 w-8 rounded-full c-bg-accent" />
-            <Compass className="h-[22px] w-[22px]" strokeWidth={2.2} />
-            <span className="text-[10px] font-extrabold">Ανακάλυψε</span>
+        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
+          <button className="flex flex-col items-center justify-center gap-1 c-accent">
+            <span className="p-2 rounded-2xl c-bg-accent-soft">
+              <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
+            </span>
+            <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
           </button>
           <button
             onClick={() => setSelectedCategory('all')}
-            className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
           >
-            <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
-            <span className="text-[10px] font-bold">Φαγητό</span>
+            <span className="p-2">
+              <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">Φαγητό</span>
           </button>
           <Link
             to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
           >
-            <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
-            <span className="text-[10px] font-bold">{t('customer.orders')}</span>
+            <span className="p-2">
+              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
           </Link>
           <Link
             to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
           >
-            <User className="h-[22px] w-[22px]" strokeWidth={2} />
-            <span className="text-[10px] font-bold">Λογαριασμός</span>
+            <span className="p-2">
+              <User className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
           </Link>
         </div>
 
