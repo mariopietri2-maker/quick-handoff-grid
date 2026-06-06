@@ -325,25 +325,25 @@ export default function CustomerApp() {
 
         {/* ── Store list ─────────────────────────────────── */}
         {cfg.sections.show_nearby && (
-        <section className="pt-6 px-4">
-          <div className="flex items-end justify-between mb-3">
-            <h2 className="font-heading font-black text-[20px] text-[hsl(0,0%,9%)] leading-none">
+        <section className="pt-8 px-5">
+          <div className="flex items-end justify-between mb-4">
+            <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
               {search
                 ? `${t('customer.results_for')} "${search}"`
                 : selectedCategory !== 'all'
                   ? t(CATEGORY_CHIPS.find(c => c.value === selectedCategory)?.labelKey ?? 'cat.all')
                   : t('customer.nearby')}
             </h2>
-            <span className="text-[11px] c-muted font-bold">
+            <span className="text-[11px] c-muted font-extrabold bg-[hsl(0,0%,96%)] px-2.5 py-1 rounded-md tabular-nums">
               {filtered.length} {t('customer.stores_count')}
             </span>
           </div>
 
           {loading ? (
-            <div className="space-y-4">
+            <div className="space-y-5">
               {[1, 2, 3].map(i => (
                 <div key={i} className="animate-pulse">
-                  <div className="h-44 bg-[hsl(0,0%,94%)] rounded-2xl mb-2.5" />
+                  <div className="aspect-[16/9] bg-[hsl(0,0%,94%)] rounded-[20px] mb-3" />
                   <div className="h-4 bg-[hsl(0,0%,94%)] rounded w-2/3 mb-1.5" />
                   <div className="h-3 bg-[hsl(0,0%,94%)] rounded w-1/2" />
                 </div>
@@ -360,7 +360,7 @@ export default function CustomerApp() {
               </p>
             </div>
           ) : (
-            <div className="space-y-5">
+            <div className="space-y-6">
               {filtered.map((store, idx) => (
                 <button
                   key={store.id}
@@ -368,12 +368,12 @@ export default function CustomerApp() {
                   className="w-full text-left group animate-fade-in"
                   style={{ animationDelay: `${idx * 0.04}s`, animationFillMode: 'both' }}
                 >
-                  <div className="relative h-[180px] rounded-2xl overflow-hidden mb-3 bg-[hsl(0,0%,96%)]">
+                  <div className="relative aspect-[16/9] rounded-[20px] overflow-hidden mb-3 bg-[hsl(0,0%,96%)] shadow-sm group-hover:shadow-lg transition-shadow duration-300">
                     {store.image_url ? (
                       <img
                         src={store.image_url}
                         alt={store.name}
-                        className="w-full h-full object-cover group-hover:scale-[1.03] transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
@@ -391,23 +391,24 @@ export default function CustomerApp() {
 
                     {/* Bottom row: ETA pill + rating pill */}
                     <div className="absolute bottom-3 left-3 right-3 flex items-center justify-between">
-                      <div className="bg-white/95 backdrop-blur rounded-full px-2.5 py-1 flex items-center gap-1 shadow-sm">
-                        <Clock className="h-3 w-3 text-[hsl(0,0%,9%)]" strokeWidth={2.5} />
-                        <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)]">
+                      <div className="bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-1.5 shadow-md">
+                        <Clock className="h-3.5 w-3.5 text-[hsl(0,0%,9%)]" strokeWidth={2.5} />
+                        <span className="text-[12px] font-extrabold text-[hsl(0,0%,9%)] tabular-nums">
                           {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}
                         </span>
                       </div>
                       {ratings[store.id]?.count > 0 ? (
-                        <div className="bg-white/95 backdrop-blur rounded-full px-2.5 py-1 flex items-center gap-1 shadow-sm">
-                          <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)]">
-                            ★ {ratings[store.id].avg.toFixed(1)}
+                        <div className="bg-white/95 backdrop-blur-md rounded-full px-3 py-1.5 flex items-center gap-1 shadow-md">
+                          <Star className="h-3.5 w-3.5 text-[hsl(42,95%,55%)] fill-[hsl(42,95%,55%)]" strokeWidth={0} />
+                          <span className="text-[12px] font-extrabold text-[hsl(0,0%,9%)] tabular-nums">
+                            {ratings[store.id].avg.toFixed(1)}
                           </span>
-                          <span className="text-[10px] c-muted font-semibold">
+                          <span className="text-[10px] c-muted font-bold tabular-nums">
                             ({ratings[store.id].count})
                           </span>
                         </div>
                       ) : (
-                        <div className="c-bg-accent rounded-full px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wider">
+                        <div className="c-bg-accent rounded-full px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-wider shadow-md">
                           Νέο
                         </div>
                       )}
