@@ -148,64 +148,64 @@ export default function CustomerApp() {
     >
       {/* ── Header ─────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-50 bg-white border-b border-[hsl(0,0%,93%)]"
+        className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-[hsl(0,0%,94%)]"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
-          <div className="flex items-center justify-between mb-3">
+        <div className="max-w-2xl mx-auto px-5 pt-4 pb-3">
+          <div className="flex items-center justify-between mb-4">
             <button
               type="button"
               onClick={() => { setPendingAddress(deliveryAddress); setAddressOpen(true); }}
-              className="flex items-center gap-1.5 group max-w-[60%]"
+              className="flex items-center gap-3 group max-w-[62%] active:scale-[0.98] transition-transform"
             >
-              <div className="h-9 w-9 rounded-full c-bg-accent flex items-center justify-center shadow-sm shrink-0">
-                <MapPin className="h-4 w-4" strokeWidth={2.5} />
+              <div className="h-11 w-11 rounded-full c-bg-accent flex items-center justify-center shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] shrink-0">
+                <MapPin className="h-5 w-5" strokeWidth={2.5} />
               </div>
               <div className="text-left leading-tight min-w-0">
-                <div className="text-[10px] uppercase tracking-wider c-muted font-bold">Παράδοση</div>
-                <div className="flex items-center gap-0.5 text-[15px] font-extrabold text-[hsl(0,0%,9%)] truncate">
+                <div className="text-[10px] uppercase tracking-[0.12em] c-muted font-extrabold leading-none mb-1">Παράδοση</div>
+                <div className="flex items-center gap-1 text-[16px] font-extrabold text-[hsl(0,0%,9%)] truncate tracking-tight">
                   <span className="truncate">{displayAddress}</span>
-                  <ChevronDown className="h-3.5 w-3.5 shrink-0" />
+                  <ChevronDown className="h-4 w-4 shrink-0 c-muted" strokeWidth={2.5} />
                 </div>
               </div>
             </button>
-            <div className="flex items-center gap-1.5">
+            <div className="flex items-center gap-2">
               <LanguageToggle compact />
               {itemCount > 0 && (
                 <button
                   onClick={() => navigate('/checkout')}
-                  className="relative c-bg-accent rounded-full h-9 px-3 flex items-center gap-1.5 shadow-sm"
+                  className="relative c-bg-accent rounded-full h-10 px-3.5 flex items-center gap-1.5 shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] active:scale-95 transition-transform"
                 >
-                  <ShoppingBag className="h-4 w-4" />
+                  <ShoppingBag className="h-4 w-4" strokeWidth={2.5} />
                   <span className="text-xs font-extrabold">{itemCount}</span>
                 </button>
               )}
               {!user ? (
                 <Link
                   to="/auth"
-                  className="text-xs font-extrabold c-accent c-bg-accent-soft px-3 py-2 rounded-full"
+                  className="text-xs font-extrabold c-accent c-bg-accent-soft px-3.5 py-2.5 rounded-full"
                 >
                   {t('customer.login')}
                 </Link>
               ) : (
                 <Link
                   to="/profile"
-                  className="h-9 w-9 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center"
+                  className="h-10 w-10 rounded-full bg-[hsl(0,0%,96%)] hover:bg-[hsl(0,0%,93%)] flex items-center justify-center transition-colors"
                 >
-                  <User className="h-4 w-4 text-[hsl(0,0%,9%)]" />
+                  <User className="h-5 w-5 text-[hsl(0,0%,9%)]" strokeWidth={2} />
                 </Link>
               )}
             </div>
           </div>
 
           {/* Search */}
-          <div className="relative">
-            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 c-muted" />
+          <div className="relative group">
+            <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 c-muted group-focus-within:c-accent transition-colors" strokeWidth={2.5} />
             <Input
               placeholder={t('customer.search_placeholder')}
               value={search}
               onChange={e => setSearch(e.target.value)}
-              className="pl-10 h-11 bg-[hsl(0,0%,96%)] border-0 rounded-xl text-sm placeholder:c-muted focus-visible:ring-2 focus-visible:ring-[hsl(4,90%,47%)]/30"
+              className="pl-12 h-12 bg-[hsl(0,0%,96%)] border-0 rounded-2xl text-[15px] font-medium placeholder:c-muted focus-visible:ring-2 focus-visible:ring-[hsl(var(--c-accent))]/40 focus-visible:bg-white focus-visible:ring-offset-0 transition-all"
             />
           </div>
         </div>
