@@ -450,35 +450,42 @@ export default function CustomerApp() {
 
       {/* ── Bottom tab bar ─────────────────────────────── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[hsl(0,0%,93%)]"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-[hsl(0,0%,94%)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto grid grid-cols-4 h-16">
-          <button className="relative flex flex-col items-center justify-center gap-0.5 c-accent">
-            <span className="absolute top-0 h-0.5 w-8 rounded-full c-bg-accent" />
-            <Compass className="h-[22px] w-[22px]" strokeWidth={2.2} />
-            <span className="text-[10px] font-extrabold">Ανακάλυψε</span>
+        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
+          <button className="flex flex-col items-center justify-center gap-1 c-accent">
+            <span className="p-2 rounded-2xl c-bg-accent-soft">
+              <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
+            </span>
+            <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
           </button>
           <button
             onClick={() => setSelectedCategory('all')}
-            className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
           >
-            <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
-            <span className="text-[10px] font-bold">Φαγητό</span>
+            <span className="p-2">
+              <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">Φαγητό</span>
           </button>
           <Link
             to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
           >
-            <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
-            <span className="text-[10px] font-bold">{t('customer.orders')}</span>
+            <span className="p-2">
+              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
           </Link>
           <Link
             to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,9%)]"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
           >
-            <User className="h-[22px] w-[22px]" strokeWidth={2} />
-            <span className="text-[10px] font-bold">Λογαριασμός</span>
+            <span className="p-2">
+              <User className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
           </Link>
         </div>
 
