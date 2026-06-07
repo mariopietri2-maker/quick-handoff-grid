@@ -20,15 +20,28 @@ import PendingPayoutsPanel from './PendingPayoutsPanel';
  */
 
 export default function MoneyEnginePanel() {
+  const qc = useQueryClient();
   const settings = useQuery({
     queryKey: ['platform-settings-engine'],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('platform_settings')
-        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold')
+        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold, pause_bonus_when_critical, subsidize_min_pay, allow_pickup_before_ready, pool_alert_enabled')
         .eq('id', 1).maybeSingle();
-      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500 };
+      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500, pause_bonus_when_critical: true, subsidize_min_pay: false, allow_pickup_before_ready: false, pool_alert_enabled: true };
     },
+  });
+
+  const toggle = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
+      const { error } = await (supabase as any).from('platform_settings').update({ [key]: value }).eq('id', 1);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(`Ενημερώθηκε: ${v.key}`);
+      qc.invalidateQueries({ queryKey: ['platform-settings-engine'] });
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const treasury = useQuery({
@@ -42,6 +55,7 @@ export default function MoneyEnginePanel() {
       return data ?? { platform_pool: 0, admin_balance: 0 };
     },
   });
+
 
   if (settings.isLoading) {
     return <div className="space-y-3"><Skeleton className="h-32 w-full" /><Skeleton className="h-64 w-full" /></div>;
