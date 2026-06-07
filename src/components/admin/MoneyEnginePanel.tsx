@@ -166,6 +166,57 @@ export default function MoneyEnginePanel() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Operational toggles */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Λειτουργικές ρυθμίσεις</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ToggleRow
+            id="pause"
+            label="Παύση πληρωμών όταν Buffer χαμηλό"
+            hint="Δεν χρεώνει admin · στέλνει ειδοποίηση για top-up"
+            checked={!!(s as any).pause_bonus_when_critical}
+            onChange={(v) => toggle.mutate({ key: 'pause_bonus_when_critical', value: v })}
+          />
+          <ToggleRow
+            id="subsidy"
+            label="Επιδότηση driver από Admin bag"
+            hint="Όταν off, ελλείψεις πάνε σε εκκρεμότητες"
+            checked={!!(s as any).subsidize_min_pay}
+            onChange={(v) => toggle.mutate({ key: 'subsidize_min_pay', value: v })}
+          />
+          <ToggleRow
+            id="alert"
+            label="Ειδοποίηση admin σε χαμηλό Buffer"
+            hint="Δημιουργεί announcement στο dashboard"
+            checked={!!(s as any).pool_alert_enabled}
+            onChange={(v) => toggle.mutate({ key: 'pool_alert_enabled', value: v })}
+          />
+          <ToggleRow
+            id="pickup"
+            label="Παραλαβή πριν 'ready'"
+            hint="Driver μπορεί να κάνει pickup χωρίς το κατάστημα να μαρκάρει ready"
+            checked={!!(s as any).allow_pickup_before_ready}
+            onChange={(v) => toggle.mutate({ key: 'allow_pickup_before_ready', value: v })}
+          />
+        </CardContent>
+      </Card>
+
+      <PendingPayoutsPanel />
+    </div>
+  );
+}
+
+function ToggleRow({ id, label, hint, checked, onChange }: { id: string; label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
+      <div className="min-w-0">
+        <Label htmlFor={id} className="text-sm font-medium cursor-pointer">{label}</Label>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>
+      </div>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} />
     </div>
   );
 }
