@@ -8,6 +8,11 @@ import {
   Wallet, TrendingUp, Zap, AlertTriangle, CheckCircle2, Info, Bike, Building2,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Switch } from '@/components/ui/switch';
+import { Label } from '@/components/ui/label';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
+import PendingPayoutsPanel from './PendingPayoutsPanel';
 
 /**
  * Money Engine — read-only control room for the locked 85/10/5 split.
@@ -15,15 +20,28 @@ import { cn } from '@/lib/utils';
  */
 
 export default function MoneyEnginePanel() {
+  const qc = useQueryClient();
   const settings = useQuery({
     queryKey: ['platform-settings-engine'],
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('platform_settings')
-        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold')
+        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold, pause_bonus_when_critical, subsidize_min_pay, allow_pickup_before_ready, pool_alert_enabled')
         .eq('id', 1).maybeSingle();
-      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500 };
+      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500, pause_bonus_when_critical: true, subsidize_min_pay: false, allow_pickup_before_ready: false, pool_alert_enabled: true };
     },
+  });
+
+  const toggle = useMutation({
+    mutationFn: async ({ key, value }: { key: string; value: boolean }) => {
+      const { error } = await (supabase as any).from('platform_settings').update({ [key]: value }).eq('id', 1);
+      if (error) throw error;
+    },
+    onSuccess: (_d, v) => {
+      toast.success(`Ενημερώθηκε: ${v.key}`);
+      qc.invalidateQueries({ queryKey: ['platform-settings-engine'] });
+    },
+    onError: (e: any) => toast.error(e.message),
   });
 
   const treasury = useQuery({
@@ -37,6 +55,7 @@ export default function MoneyEnginePanel() {
       return data ?? { platform_pool: 0, admin_balance: 0 };
     },
   });
+
 
   if (settings.isLoading) {
     return <div className="space-y-3"><Skeleton className="h-32 w-full" /><Skeleton className="h-64 w-full" /></div>;
@@ -147,6 +166,57 @@ export default function MoneyEnginePanel() {
           </div>
         </CardContent>
       </Card>
+
+      {/* Operational toggles */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Λειτουργικές ρυθμίσεις</CardTitle>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ToggleRow
+            id="pause"
+            label="Παύση πληρωμών όταν Buffer χαμηλό"
+            hint="Δεν χρεώνει admin · στέλνει ειδοποίηση για top-up"
+            checked={!!(s as any).pause_bonus_when_critical}
+            onChange={(v) => toggle.mutate({ key: 'pause_bonus_when_critical', value: v })}
+          />
+          <ToggleRow
+            id="subsidy"
+            label="Επιδότηση driver από Admin bag"
+            hint="Όταν off, ελλείψεις πάνε σε εκκρεμότητες"
+            checked={!!(s as any).subsidize_min_pay}
+            onChange={(v) => toggle.mutate({ key: 'subsidize_min_pay', value: v })}
+          />
+          <ToggleRow
+            id="alert"
+            label="Ειδοποίηση admin σε χαμηλό Buffer"
+            hint="Δημιουργεί announcement στο dashboard"
+            checked={!!(s as any).pool_alert_enabled}
+            onChange={(v) => toggle.mutate({ key: 'pool_alert_enabled', value: v })}
+          />
+          <ToggleRow
+            id="pickup"
+            label="Παραλαβή πριν 'ready'"
+            hint="Driver μπορεί να κάνει pickup χωρίς το κατάστημα να μαρκάρει ready"
+            checked={!!(s as any).allow_pickup_before_ready}
+            onChange={(v) => toggle.mutate({ key: 'allow_pickup_before_ready', value: v })}
+          />
+        </CardContent>
+      </Card>
+
+      <PendingPayoutsPanel />
+    </div>
+  );
+}
+
+function ToggleRow({ id, label, hint, checked, onChange }: { id: string; label: string; hint: string; checked: boolean; onChange: (v: boolean) => void }) {
+  return (
+    <div className="flex items-center justify-between gap-3 rounded-lg border border-border bg-muted/30 p-3">
+      <div className="min-w-0">
+        <Label htmlFor={id} className="text-sm font-medium cursor-pointer">{label}</Label>
+        <p className="text-[11px] text-muted-foreground mt-0.5">{hint}</p>
+      </div>
+      <Switch id={id} checked={checked} onCheckedChange={onChange} />
     </div>
   );
 }

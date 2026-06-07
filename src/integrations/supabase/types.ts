@@ -1909,6 +1909,42 @@ export type Database = {
           },
         ]
       }
+      pending_driver_payouts: {
+        Row: {
+          amount: number
+          created_at: string
+          driver_id: string
+          id: string
+          order_id: string
+          reason: string
+          resolved: boolean
+          resolved_at: string | null
+          resolved_by: string | null
+        }
+        Insert: {
+          amount: number
+          created_at?: string
+          driver_id: string
+          id?: string
+          order_id: string
+          reason?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Update: {
+          amount?: number
+          created_at?: string
+          driver_id?: string
+          id?: string
+          order_id?: string
+          reason?: string
+          resolved?: boolean
+          resolved_at?: string | null
+          resolved_by?: string | null
+        }
+        Relationships: []
+      }
       pending_offers: {
         Row: {
           created_at: string
@@ -1954,6 +1990,7 @@ export type Database = {
       platform_settings: {
         Row: {
           admin_share_pct: number
+          allow_pickup_before_ready: boolean
           assignment_mode: string
           auto_balance_enabled: boolean
           auto_dispatch_enabled: boolean
@@ -2023,6 +2060,7 @@ export type Database = {
         }
         Insert: {
           admin_share_pct?: number
+          allow_pickup_before_ready?: boolean
           assignment_mode?: string
           auto_balance_enabled?: boolean
           auto_dispatch_enabled?: boolean
@@ -2092,6 +2130,7 @@ export type Database = {
         }
         Update: {
           admin_share_pct?: number
+          allow_pickup_before_ready?: boolean
           assignment_mode?: string
           auto_balance_enabled?: boolean
           auto_dispatch_enabled?: boolean
@@ -3428,6 +3467,10 @@ export type Database = {
         Returns: undefined
       }
       admin_purge_stale: { Args: { p_kind: string }; Returns: Json }
+      admin_release_pending_payout: {
+        Args: { p_pending_id: string; p_source?: string }
+        Returns: Json
+      }
       admin_reset_admin_bag: { Args: never; Returns: number }
       admin_reset_all_driver_lifetime: { Args: never; Returns: number }
       admin_reset_all_driver_wallets: { Args: never; Returns: Json }
