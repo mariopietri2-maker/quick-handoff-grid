@@ -5,7 +5,8 @@ export type SoundPattern =
   | 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse'
   | 'wolt' | 'uber' | 'doordash' | 'glovo' | 'kaching'
   | 'arcade' | 'marimba' | 'classic_phone' | 'siren'
-  | 'doordash_real';
+  | 'doordash_real'
+  | 'ios_tritone' | 'crystal' | 'tesla' | 'fanfare' | 'zen';
 
 // Sample-based (mp3) patterns — bypass the synth tone engine
 const SAMPLE_URLS: Partial<Record<SoundPattern, string>> = {
