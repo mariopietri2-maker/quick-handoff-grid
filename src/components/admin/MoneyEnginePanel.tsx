@@ -26,9 +26,9 @@ export default function MoneyEnginePanel() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('platform_settings')
-        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold, pause_bonus_when_critical, subsidize_min_pay, allow_pickup_before_ready, pool_alert_enabled')
+        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold, pause_bonus_when_critical, subsidize_min_pay, allow_pickup_before_ready, pool_alert_enabled, accept_offer_requires_ready, allow_arrive_before_pickup, allow_deliver_before_arrive')
         .eq('id', 1).maybeSingle();
-      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500, pause_bonus_when_critical: true, subsidize_min_pay: false, allow_pickup_before_ready: false, pool_alert_enabled: true };
+      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500, pause_bonus_when_critical: true, subsidize_min_pay: false, allow_pickup_before_ready: false, pool_alert_enabled: true, accept_offer_requires_ready: false, allow_arrive_before_pickup: true, allow_deliver_before_arrive: false };
     },
   });
 
