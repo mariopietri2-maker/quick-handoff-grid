@@ -1989,7 +1989,10 @@ export type Database = {
       }
       platform_settings: {
         Row: {
+          accept_offer_requires_ready: boolean
           admin_share_pct: number
+          allow_arrive_before_pickup: boolean
+          allow_deliver_before_arrive: boolean
           allow_pickup_before_ready: boolean
           assignment_mode: string
           auto_balance_enabled: boolean
@@ -2059,7 +2062,10 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          accept_offer_requires_ready?: boolean
           admin_share_pct?: number
+          allow_arrive_before_pickup?: boolean
+          allow_deliver_before_arrive?: boolean
           allow_pickup_before_ready?: boolean
           assignment_mode?: string
           auto_balance_enabled?: boolean
@@ -2129,7 +2135,10 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          accept_offer_requires_ready?: boolean
           admin_share_pct?: number
+          allow_arrive_before_pickup?: boolean
+          allow_deliver_before_arrive?: boolean
           allow_pickup_before_ready?: boolean
           assignment_mode?: string
           auto_balance_enabled?: boolean
