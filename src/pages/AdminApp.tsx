@@ -538,26 +538,48 @@ function StoresSection({ stores, allStores, filter, setFilter, onToggle }: any) 
   );
 }
 
-function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, filter, setFilter, onToggle, onResetCash, onResetWallet }: any) {
+function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus }: any) {
+  const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
+  const ordersByDriver = new Map<string, { today: number; active: number }>();
+  for (const o of (orders ?? []) as any[]) {
+    if (!o.driver_id) continue;
+    const slot = ordersByDriver.get(o.driver_id) ?? { today: 0, active: 0 };
+    if (new Date(o.created_at) >= todayStart && o.status === 'delivered') slot.today += 1;
+    if (['accepted', 'preparing', 'ready', 'arrived', 'picked_up'].includes(o.status)) slot.active += 1;
+    ordersByDriver.set(o.driver_id, slot);
+  }
+  const onlineCount = (driverStates ?? []).filter((s: any) => !!s.shift_started_at && !s.on_break).length;
+  const breakCount = (driverStates ?? []).filter((s: any) => !!s.shift_started_at && s.on_break).length;
+
   return (
     <div className="space-y-3">
       <SectionHeader title="Οδηγοί" count={allDrivers.length}>
-        <div className="flex gap-1 p-0.5 bg-muted rounded-md">
-          {(['all', 'active', 'inactive'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-2.5 h-6 text-[11px] font-medium rounded transition-colors ${filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {f === 'all' ? `Όλοι ${allDrivers.length}` : f === 'active' ? 'Ενεργοί' : 'Ανενεργοί'}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <span className="hidden md:inline-flex items-center gap-1.5 text-[11px] text-muted-foreground">
+            <span className="inline-flex h-2 w-2 rounded-full bg-success" /> {onlineCount} online
+            <span className="mx-1 opacity-40">·</span>
+            <span className="inline-flex h-2 w-2 rounded-full bg-warning" /> {breakCount} σε διάλειμμα
+          </span>
+          <Link to="/admin?section=drivers_live_map">
+            <Button size="sm" variant="outline" className="h-7 text-[11px]">Live χάρτης</Button>
+          </Link>
+          <div className="flex gap-1 p-0.5 bg-muted rounded-md">
+            {(['all', 'active', 'inactive'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-2.5 h-6 text-[11px] font-medium rounded transition-colors ${filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {f === 'all' ? `Όλοι ${allDrivers.length}` : f === 'active' ? 'Ενεργοί' : 'Ανενεργοί'}
+              </button>
+            ))}
+          </div>
         </div>
       </SectionHeader>
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Κωδικός</th><th>Όνομα</th><th>Τηλέφωνο</th><th className="w-20">Ενεργός</th><th>Ταμείο Βάρδιας</th><th>Πορτοφόλι</th><th>Εγγραφή</th></tr></thead>
+            <thead><tr><th>Κωδ.</th><th>Όνομα</th><th>Κατάσταση</th><th>Σήμερα</th><th>Ενεργές</th><th className="w-20">Ενεργός</th><th>Ταμείο</th><th>Πορτοφόλι</th><th className="text-right pr-3">Ενέργειες</th></tr></thead>
             <tbody>
               {drivers.map((driver: any) => {
                 const dp = driverProfiles?.find((d: any) => d.user_id === driver.user_id);
@@ -567,51 +589,47 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                 const walletAvail = Number(dw?.available_balance ?? 0);
                 const walletPending = Number(dw?.pending_balance ?? 0);
                 const walletTotal = walletAvail + walletPending;
+                const onShift = !!ds?.shift_started_at;
+                const onBreak = !!ds?.on_break;
+                const status = onShift ? (onBreak ? 'break' : 'online') : 'offline';
+                const statusBadge =
+                  status === 'online' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Online</span>
+                  : status === 'break' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> Διάλειμμα</span>
+                  : <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" /> Offline</span>;
+                const counts = ordersByDriver.get(driver.user_id) ?? { today: 0, active: 0 };
                 return (
                   <tr key={driver.id}>
                     <td><span className="font-mono text-[11px] text-muted-foreground">{dp?.driver_code || '—'}</span></td>
-                    <td className="font-medium">{driver.full_name || '—'}</td>
-                    <td className="text-muted-foreground tabular-nums">{driver.phone || '—'}</td>
+                    <td>
+                      <div className="font-medium leading-tight">{driver.full_name || '—'}</div>
+                      <div className="text-[10.5px] text-muted-foreground tabular-nums">{driver.phone || ''}</div>
+                    </td>
+                    <td>{statusBadge}</td>
+                    <td className="tabular-nums text-foreground">{counts.today}</td>
+                    <td className="tabular-nums">{counts.active > 0 ? <Badge variant="secondary" className="h-5 px-1.5 text-[10.5px]">{counts.active}</Badge> : <span className="text-muted-foreground">0</span>}</td>
                     <td><Switch checked={dp?.is_active ?? true} onCheckedChange={() => dp && onToggle(driver.user_id, dp.is_active)} /></td>
                     <td>
                       <div className="flex items-center gap-1.5">
-                        <span className={`tabular-nums font-medium ${cash > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          €{cash.toFixed(2)}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
-                          disabled={cash <= 0}
-                          onClick={() => onResetCash(driver.user_id, driver.full_name || 'οδηγό')}
-                          title="Μηδενισμός ταμείου"
-                        >
-                          Μηδενισμός
-                        </Button>
+                        <span className={`tabular-nums font-medium ${cash > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>€{cash.toFixed(2)}</span>
+                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={cash <= 0} onClick={() => onResetCash(driver.user_id, driver.full_name || 'οδηγό')} title="Μηδενισμός ταμείου">Reset</Button>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5">
-                        <span className={`tabular-nums font-medium ${walletTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}`} title={`Διαθέσιμο €${walletAvail.toFixed(2)} • Εκκρεμές €${walletPending.toFixed(2)}`}>
-                          €{walletTotal.toFixed(2)}
-                        </span>
-                        <Button
-                          size="sm"
-                          variant="ghost"
-                          className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive"
-                          disabled={walletTotal <= 0}
-                          onClick={() => onResetWallet(driver.user_id, driver.full_name || 'οδηγό')}
-                          title="Μηδενισμός πορτοφολιού"
-                        >
-                          Μηδενισμός
-                        </Button>
+                        <span className={`tabular-nums font-medium ${walletTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}`} title={`Διαθέσιμο €${walletAvail.toFixed(2)} • Εκκρεμές €${walletPending.toFixed(2)}`}>€{walletTotal.toFixed(2)}</span>
+                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={walletTotal <= 0} onClick={() => onResetWallet(driver.user_id, driver.full_name || 'οδηγό')} title="Μηδενισμός πορτοφολιού">Reset</Button>
                       </div>
                     </td>
-                    <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(driver.created_at), 'dd MMM yyyy')}</td>
+                    <td>
+                      <div className="flex items-center justify-end gap-1 pr-2">
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px]" onClick={() => onGrantBonus(driver.user_id, driver.full_name || 'οδηγό')} title="Δώσε bonus">+€ Bonus</Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px] text-warning hover:text-warning" disabled={!onShift} onClick={() => onForceEndShift(driver.user_id, driver.full_name || 'οδηγό')} title="Τερματισμός βάρδιας">End shift</Button>
+                      </div>
+                    </td>
                   </tr>
                 );
               })}
-              {!drivers.length && <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
+              {!drivers.length && <tr><td colSpan={9} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
             </tbody>
           </table>
         </div>
