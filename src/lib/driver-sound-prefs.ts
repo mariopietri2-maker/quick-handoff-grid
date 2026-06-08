@@ -116,7 +116,40 @@ const PATTERNS: Record<Exclude<SoundPattern, keyof typeof SAMPLE_URLS>, ToneSpec
     { freq: 1200, dur: 0.18, type: 'sawtooth' },
     { freq: 800, dur: 0.18, type: 'sawtooth' },
   ],
-};
+
+  // iOS Tritone — three crisp notes (classic SMS feel)
+  ios_tritone: [
+    { freq: 1244.51, dur: 0.13, type: 'sine' },
+    { freq: 1661.22, dur: 0.13, type: 'sine' },
+    { freq: 1864.66, dur: 0.22, type: 'sine' },
+  ],
+
+  // Crystal — sparkling high bell, premium feel
+  crystal: [
+    { freq: 1760, dur: 0.1, type: 'triangle', gain: 0.3 },
+    { freq: 2349.32, dur: 0.1, type: 'triangle', gain: 0.3 },
+    { freq: 2637.02, dur: 0.35, type: 'sine' },
+  ],
+
+  // Tesla — soft synthy two-note rise
+  tesla: [
+    { freq: 587.33, dur: 0.22, type: 'sine' },
+    { freq: 880, dur: 0.32, type: 'sine' },
+  ],
+
+  // Fanfare — celebratory four-note rise
+  fanfare: [
+    { freq: 523.25, dur: 0.1, type: 'triangle' },
+    { freq: 659.25, dur: 0.1, type: 'triangle' },
+    { freq: 783.99, dur: 0.1, type: 'triangle' },
+    { freq: 1046.5, dur: 0.3, type: 'triangle' },
+  ],
+
+  // Zen — calm low-to-high meditation tone
+  zen: [
+    { freq: 392, dur: 0.3, type: 'sine' },
+    { freq: 587.33, dur: 0.5, type: 'sine' },
+  ],
 
 const sampleCache: Record<string, HTMLAudioElement> = {};
 function playSample(url: string, volume: number) {
