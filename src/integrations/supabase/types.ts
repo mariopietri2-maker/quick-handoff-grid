@@ -313,7 +313,7 @@ export type Database = {
       announcements: {
         Row: {
           created_at: string
-          created_by: string
+          created_by: string | null
           expires_at: string | null
           id: string
           message: string
@@ -322,7 +322,7 @@ export type Database = {
         }
         Insert: {
           created_at?: string
-          created_by: string
+          created_by?: string | null
           expires_at?: string | null
           id?: string
           message: string
@@ -331,7 +331,7 @@ export type Database = {
         }
         Update: {
           created_at?: string
-          created_by?: string
+          created_by?: string | null
           expires_at?: string | null
           id?: string
           message?: string
@@ -3465,6 +3465,14 @@ export type Database = {
       }
       admin_force_complete_order: {
         Args: { p_order_id: string }
+        Returns: undefined
+      }
+      admin_force_end_driver_shift: {
+        Args: { p_driver_id: string }
+        Returns: undefined
+      }
+      admin_grant_driver_bonus: {
+        Args: { p_amount: number; p_driver_id: string; p_note?: string }
         Returns: undefined
       }
       admin_inject_pool: {
