@@ -414,7 +414,6 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       if (error) {
         toast.error('Failed to claim order');
       } else {
-        toast.success('✓ Admin claimed order');
         fetchOrders();
       }
       return;
