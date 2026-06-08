@@ -13,6 +13,11 @@ import { requestNotificationPermission } from '@/lib/notifications';
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
   { value: 'doordash_real', label: 'DoorDash (real)', emoji: '🔔' },
+  { value: 'ios_tritone',   label: 'iOS Tritone',     emoji: '📱' },
+  { value: 'crystal',       label: 'Crystal',         emoji: '✨' },
+  { value: 'tesla',         label: 'Tesla',           emoji: '🚗' },
+  { value: 'fanfare',       label: 'Fanfare',         emoji: '🎺' },
+  { value: 'zen',           label: 'Zen',             emoji: '🧘' },
   { value: 'wolt',          label: 'Wolt-style',     emoji: '💙' },
   { value: 'uber',          label: 'Uber-style',     emoji: '⚡' },
   { value: 'doordash',      label: 'DoorDash-style', emoji: '🛵' },
