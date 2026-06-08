@@ -149,6 +149,25 @@ export default function AdminApp() {
     else { toast.success('Πορτοφόλι μηδενίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
   };
 
+  const handleForceEndShift = async (userId: string, driverName: string) => {
+    if (!confirm(`Τερματισμός βάρδιας για ${driverName};`)) return;
+    const { error } = await (supabase.rpc as any)('admin_force_end_driver_shift', { p_driver_id: userId });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success('Βάρδια τερματίστηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-states'] }); }
+  };
+
+  const handleGrantBonus = async (userId: string, driverName: string) => {
+    const raw = prompt(`Bonus € για ${driverName}:`, '5');
+    if (!raw) return;
+    const amount = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(amount) || amount <= 0) { toast.error('Μη έγκυρο ποσό'); return; }
+    const note = prompt('Σημείωση (προαιρετικό):', 'Admin bonus') || 'Admin bonus';
+    const { error } = await (supabase.rpc as any)('admin_grant_driver_bonus', { p_driver_id: userId, p_amount: amount, p_note: note });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success(`+€${amount.toFixed(2)} στο πορτοφόλι`); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
+  };
+
+
 
 
 
