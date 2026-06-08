@@ -150,6 +150,9 @@ const PATTERNS: Record<Exclude<SoundPattern, keyof typeof SAMPLE_URLS>, ToneSpec
     { freq: 392, dur: 0.3, type: 'sine' },
     { freq: 587.33, dur: 0.5, type: 'sine' },
   ],
+};
+
+
 
 const sampleCache: Record<string, HTMLAudioElement> = {};
 function playSample(url: string, volume: number) {
