@@ -430,7 +430,6 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         fetchOrders();
         return;
       }
-      toast.success('✓ Order accepted');
       fetchOrders();
       return;
     }
