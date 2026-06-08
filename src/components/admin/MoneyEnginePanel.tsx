@@ -26,9 +26,9 @@ export default function MoneyEnginePanel() {
     queryFn: async () => {
       const { data } = await (supabase as any)
         .from('platform_settings')
-        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold, pause_bonus_when_critical, subsidize_min_pay, allow_pickup_before_ready, pool_alert_enabled')
+        .select('driver_pool_pct_of_subtotal, admin_share_pct, default_commission_pct, low_pool_threshold, pool_critical_threshold, pool_healthy_threshold, pause_bonus_when_critical, subsidize_min_pay, allow_pickup_before_ready, pool_alert_enabled, accept_offer_requires_ready, allow_arrive_before_pickup, allow_deliver_before_arrive')
         .eq('id', 1).maybeSingle();
-      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500, pause_bonus_when_critical: true, subsidize_min_pay: false, allow_pickup_before_ready: false, pool_alert_enabled: true };
+      return data ?? { driver_pool_pct_of_subtotal: 10, admin_share_pct: 5, default_commission_pct: 15, low_pool_threshold: 50, pool_critical_threshold: 20, pool_healthy_threshold: 500, pause_bonus_when_critical: true, subsidize_min_pay: false, allow_pickup_before_ready: false, pool_alert_enabled: true, accept_offer_requires_ready: false, allow_arrive_before_pickup: true, allow_deliver_before_arrive: false };
     },
   });
 
@@ -194,12 +194,43 @@ export default function MoneyEnginePanel() {
             checked={!!(s as any).pool_alert_enabled}
             onChange={(v) => toggle.mutate({ key: 'pool_alert_enabled', value: v })}
           />
+        </CardContent>
+      </Card>
+
+      {/* Order stage gates */}
+      <Card>
+        <CardHeader className="pb-3">
+          <CardTitle className="text-base">Πύλες σταδίων παραγγελίας</CardTitle>
+          <p className="text-[11px] text-muted-foreground mt-1">Ορίστε σε ποιο σημείο της ροής μπορεί ο driver να προχωρήσει την παραγγελία.</p>
+        </CardHeader>
+        <CardContent className="space-y-3">
+          <ToggleRow
+            id="accept-req-ready"
+            label="Αποδοχή προσφοράς μόνο όταν 'ready'"
+            hint="Off (προτεινόμενο): drivers μπορούν να αποδεχτούν την προσφορά πριν το κατάστημα μαρκάρει ready"
+            checked={!!(s as any).accept_offer_requires_ready}
+            onChange={(v) => toggle.mutate({ key: 'accept_offer_requires_ready', value: v })}
+          />
           <ToggleRow
             id="pickup"
-            label="Παραλαβή πριν 'ready'"
-            hint="Driver μπορεί να κάνει pickup χωρίς το κατάστημα να μαρκάρει ready"
+            label="Παραλαβή (picked_up) πριν 'ready'"
+            hint="Επιτρέπει στον driver να μαρκάρει pickup χωρίς το κατάστημα να έχει βάλει ready"
             checked={!!(s as any).allow_pickup_before_ready}
             onChange={(v) => toggle.mutate({ key: 'allow_pickup_before_ready', value: v })}
+          />
+          <ToggleRow
+            id="arrive-before-pickup"
+            label="Άφιξη (arrived) πριν παραλαβή"
+            hint="Driver μπορεί να μαρκάρει άφιξη στο κατάστημα πριν κάνει pickup"
+            checked={!!(s as any).allow_arrive_before_pickup}
+            onChange={(v) => toggle.mutate({ key: 'allow_arrive_before_pickup', value: v })}
+          />
+          <ToggleRow
+            id="deliver-before-arrive"
+            label="Παράδοση χωρίς 'arrived'"
+            hint="Off (προτεινόμενο): απαιτεί άφιξη στον πελάτη πριν την παράδοση"
+            checked={!!(s as any).allow_deliver_before_arrive}
+            onChange={(v) => toggle.mutate({ key: 'allow_deliver_before_arrive', value: v })}
           />
         </CardContent>
       </Card>

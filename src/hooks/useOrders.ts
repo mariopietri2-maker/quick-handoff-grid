@@ -414,7 +414,6 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       if (error) {
         toast.error('Failed to claim order');
       } else {
-        toast.success('✓ Admin claimed order');
         fetchOrders();
       }
       return;
@@ -431,7 +430,6 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         fetchOrders();
         return;
       }
-      toast.success('✓ Order accepted');
       fetchOrders();
       return;
     }
@@ -455,7 +453,6 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         order_id: orderId,
         action: 'accepted',
       }).then(() => {});
-      if (isStacking) toast.success('🔗 Stacked: 2η παραγγελία στην ίδια διαδρομή');
       fetchOrders();
     }
   };
