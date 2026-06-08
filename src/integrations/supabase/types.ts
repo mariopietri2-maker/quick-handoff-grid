@@ -3467,6 +3467,14 @@ export type Database = {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      admin_force_end_driver_shift: {
+        Args: { p_driver_id: string }
+        Returns: undefined
+      }
+      admin_grant_driver_bonus: {
+        Args: { p_amount: number; p_driver_id: string; p_note?: string }
+        Returns: undefined
+      }
       admin_inject_pool: {
         Args: { p_amount: number; p_note?: string }
         Returns: Json
