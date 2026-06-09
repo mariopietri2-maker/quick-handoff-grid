@@ -124,6 +124,23 @@ export default function AdminApp() {
     else { toast.success('Ανατέθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
   };
 
+  const handleRefundOrder = async (orderId: string, total: number) => {
+    const raw = prompt(`Ποσό επιστροφής € (μέγιστο €${total.toFixed(2)}):`, total.toFixed(2));
+    if (!raw) return;
+    const amount = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(amount) || amount <= 0) { toast.error('Μη έγκυρο ποσό'); return; }
+    const reason = prompt('Αιτία:', '') || null;
+    const { error } = await (supabase.rpc as any)('admin_refund_order', { p_order_id: orderId, p_amount: amount, p_reason: reason });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success(`Επιστράφηκαν €${amount.toFixed(2)}`); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
+  };
+
+  const handleForceOrderStatus = async (orderId: string, status: string) => {
+    const { error } = await (supabase.rpc as any)('admin_force_order_status', { p_order_id: orderId, p_status: status });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success('Κατάσταση άλλαξε'); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
+  };
+
   const handleToggleStoreActive = async (storeId: string, currentActive: boolean | null) => {
     const { error } = await supabase.from('stores').update({ is_active: !currentActive }).eq('id', storeId);
     if (error) toast.error('Αποτυχία');
