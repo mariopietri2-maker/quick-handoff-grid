@@ -500,7 +500,7 @@ function SectionHeader({ title, sub, count, children }: { title: string; sub?: s
   );
 }
 
-function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateStatus, onAssignDriver }: any) {
+function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateStatus, onAssignDriver, onRefund, onForceStatus }: any) {
   return (
     <div className="space-y-3">
       <SectionHeader title="Παραγγελίες" count={orders?.length ?? 0} sub="ζωντανή ροή & ανάθεση" />
