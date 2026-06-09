@@ -270,7 +270,7 @@ export default function AdminApp() {
       case 'orders':
         return <OrdersKanban />;
       case 'orders_table':
-        return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} />;
+        return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
