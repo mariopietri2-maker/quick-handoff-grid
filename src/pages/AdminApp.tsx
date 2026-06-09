@@ -536,15 +536,34 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
                   <td className="font-semibold tabular-nums text-right">€{Number(order.total_amount).toFixed(2)}</td>
                   <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(order.created_at), 'dd MMM, HH:mm')}</td>
                   <td>
-                    <Select value={order.status} onValueChange={val => onUpdateStatus(order.id, val)}>
-                      <SelectTrigger className="w-32 h-7 text-[11.5px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {['pending','placed','accepted','preparing','ready','picked_up','delivered','cancelled'].map(s => (
-                          <SelectItem key={s} value={s}>{statusLabels[s] ?? s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-1">
+                      <Select value={order.status} onValueChange={val => onUpdateStatus(order.id, val)}>
+                        <SelectTrigger className="w-32 h-7 text-[11.5px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {['pending','placed','accepted','preparing','ready','picked_up','delivered','cancelled'].map(s => (
+                            <SelectItem key={s} value={s}>{statusLabels[s] ?? s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => onRefund(order.id, Number(order.total_amount))}>
+                            <RotateCcw className="h-3.5 w-3.5 mr-2" /> Επιστροφή χρημάτων
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onForceStatus(order.id, 'delivered')}>
+                            <Activity className="h-3.5 w-3.5 mr-2" /> Force → Delivered
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onForceStatus(order.id, 'cancelled')} className="text-destructive focus:text-destructive">
+                            <Ban className="h-3.5 w-3.5 mr-2" /> Force → Cancelled
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </td>
+
                 </tr>
               ))}
               {!orders?.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Δεν υπάρχουν παραγγελίες</td></tr>}
