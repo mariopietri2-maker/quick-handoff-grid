@@ -582,7 +582,7 @@ function StoresSection({ stores, allStores, filter, setFilter, onToggle }: any) 
   );
 }
 
-function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus }: any) {
+function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus, onSuspend, onAdjustWallet, onClearCashDebt, onMessage }: any) {
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const ordersByDriver = new Map<string, { today: number; active: number }>();
   for (const o of (orders ?? []) as any[]) {
