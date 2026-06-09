@@ -167,6 +167,49 @@ export default function AdminApp() {
     else { toast.success(`+€${amount.toFixed(2)} στο πορτοφόλι`); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
   };
 
+  const handleSuspendDriver = async (userId: string, name: string, suspended: boolean) => {
+    if (suspended) {
+      if (!confirm(`Επαναφορά οδηγού ${name};`)) return;
+      const { error } = await (supabase.rpc as any)('admin_unsuspend_driver', { p_driver_id: userId });
+      if (error) toast.error(error.message || 'Αποτυχία');
+      else { toast.success('Επαναφέρθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
+    } else {
+      const reason = prompt(`Λόγος αναστολής για ${name}:`, '');
+      if (reason === null) return;
+      const { error } = await (supabase.rpc as any)('admin_suspend_driver', { p_driver_id: userId, p_reason: reason || null });
+      if (error) toast.error(error.message || 'Αποτυχία');
+      else { toast.success('Ανεστάλη'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
+    }
+  };
+
+  const handleAdjustWallet = async (userId: string, name: string) => {
+    const raw = prompt(`Προσαρμογή πορτοφολιού € για ${name} (αρνητικό για χρέωση):`, '0');
+    if (!raw) return;
+    const amount = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(amount) || amount === 0) { toast.error('Μη έγκυρο ποσό'); return; }
+    const note = prompt('Σημείωση:', amount > 0 ? 'Admin πίστωση' : 'Admin χρέωση') || '';
+    const { error } = await (supabase.rpc as any)('admin_adjust_driver_wallet', { p_driver_id: userId, p_amount: amount, p_note: note });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success(`Πορτοφόλι ${amount > 0 ? '+' : ''}€${amount.toFixed(2)}`); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
+  };
+
+  const handleClearCashDebt = async (userId: string, name: string) => {
+    if (!confirm(`Εκκαθάριση όλων των χρεών μετρητών του ${name};`)) return;
+    const { data, error } = await (supabase.rpc as any)('admin_clear_driver_cash_debt', { p_driver_id: userId });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success(`${data ?? 0} εγγραφές εκκαθαρίστηκαν`); queryClient.invalidateQueries({ queryKey: ['admin-driver-states'] }); }
+  };
+
+  const handleMessageDriver = async (userId: string, name: string) => {
+    const title = prompt(`Τίτλος μηνύματος προς ${name}:`, 'Μήνυμα διαχειριστή');
+    if (!title) return;
+    const body = prompt('Κείμενο:', '') || '';
+    const { error } = await (supabase.rpc as any)('admin_send_driver_message', { p_driver_id: userId, p_title: title, p_body: body, p_severity: 'info' });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else toast.success('Στάλθηκε');
+  };
+
+
 
 
 
