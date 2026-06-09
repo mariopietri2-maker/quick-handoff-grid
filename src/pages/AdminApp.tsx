@@ -9,7 +9,8 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus } from 'lucide-react';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
@@ -123,6 +124,23 @@ export default function AdminApp() {
     else { toast.success('Ανατέθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
   };
 
+  const handleRefundOrder = async (orderId: string, total: number) => {
+    const raw = prompt(`Ποσό επιστροφής € (μέγιστο €${total.toFixed(2)}):`, total.toFixed(2));
+    if (!raw) return;
+    const amount = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(amount) || amount <= 0) { toast.error('Μη έγκυρο ποσό'); return; }
+    const reason = prompt('Αιτία:', '') || null;
+    const { error } = await (supabase.rpc as any)('admin_refund_order', { p_order_id: orderId, p_amount: amount, p_reason: reason });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success(`Επιστράφηκαν €${amount.toFixed(2)}`); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
+  };
+
+  const handleForceOrderStatus = async (orderId: string, status: string) => {
+    const { error } = await (supabase.rpc as any)('admin_force_order_status', { p_order_id: orderId, p_status: status });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success('Κατάσταση άλλαξε'); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
+  };
+
   const handleToggleStoreActive = async (storeId: string, currentActive: boolean | null) => {
     const { error } = await supabase.from('stores').update({ is_active: !currentActive }).eq('id', storeId);
     if (error) toast.error('Αποτυχία');
@@ -167,6 +185,49 @@ export default function AdminApp() {
     else { toast.success(`+€${amount.toFixed(2)} στο πορτοφόλι`); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
   };
 
+  const handleSuspendDriver = async (userId: string, name: string, suspended: boolean) => {
+    if (suspended) {
+      if (!confirm(`Επαναφορά οδηγού ${name};`)) return;
+      const { error } = await (supabase.rpc as any)('admin_unsuspend_driver', { p_driver_id: userId });
+      if (error) toast.error(error.message || 'Αποτυχία');
+      else { toast.success('Επαναφέρθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
+    } else {
+      const reason = prompt(`Λόγος αναστολής για ${name}:`, '');
+      if (reason === null) return;
+      const { error } = await (supabase.rpc as any)('admin_suspend_driver', { p_driver_id: userId, p_reason: reason || null });
+      if (error) toast.error(error.message || 'Αποτυχία');
+      else { toast.success('Ανεστάλη'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
+    }
+  };
+
+  const handleAdjustWallet = async (userId: string, name: string) => {
+    const raw = prompt(`Προσαρμογή πορτοφολιού € για ${name} (αρνητικό για χρέωση):`, '0');
+    if (!raw) return;
+    const amount = Number(raw.replace(',', '.'));
+    if (!Number.isFinite(amount) || amount === 0) { toast.error('Μη έγκυρο ποσό'); return; }
+    const note = prompt('Σημείωση:', amount > 0 ? 'Admin πίστωση' : 'Admin χρέωση') || '';
+    const { error } = await (supabase.rpc as any)('admin_adjust_driver_wallet', { p_driver_id: userId, p_amount: amount, p_note: note });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success(`Πορτοφόλι ${amount > 0 ? '+' : ''}€${amount.toFixed(2)}`); queryClient.invalidateQueries({ queryKey: ['admin-driver-wallets'] }); }
+  };
+
+  const handleClearCashDebt = async (userId: string, name: string) => {
+    if (!confirm(`Εκκαθάριση όλων των χρεών μετρητών του ${name};`)) return;
+    const { data, error } = await (supabase.rpc as any)('admin_clear_driver_cash_debt', { p_driver_id: userId });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else { toast.success(`${data ?? 0} εγγραφές εκκαθαρίστηκαν`); queryClient.invalidateQueries({ queryKey: ['admin-driver-states'] }); }
+  };
+
+  const handleMessageDriver = async (userId: string, name: string) => {
+    const title = prompt(`Τίτλος μηνύματος προς ${name}:`, 'Μήνυμα διαχειριστή');
+    if (!title) return;
+    const body = prompt('Κείμενο:', '') || '';
+    const { error } = await (supabase.rpc as any)('admin_send_driver_message', { p_driver_id: userId, p_title: title, p_body: body, p_severity: 'info' });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else toast.success('Στάλθηκε');
+  };
+
+
 
 
 
@@ -209,11 +270,11 @@ export default function AdminApp() {
       case 'orders':
         return <OrdersKanban />;
       case 'orders_table':
-        return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} />;
+        return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
-        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} />;
+        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
@@ -439,7 +500,7 @@ function SectionHeader({ title, sub, count, children }: { title: string; sub?: s
   );
 }
 
-function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateStatus, onAssignDriver }: any) {
+function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateStatus, onAssignDriver, onRefund, onForceStatus }: any) {
   return (
     <div className="space-y-3">
       <SectionHeader title="Παραγγελίες" count={orders?.length ?? 0} sub="ζωντανή ροή & ανάθεση" />
@@ -475,15 +536,34 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
                   <td className="font-semibold tabular-nums text-right">€{Number(order.total_amount).toFixed(2)}</td>
                   <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(order.created_at), 'dd MMM, HH:mm')}</td>
                   <td>
-                    <Select value={order.status} onValueChange={val => onUpdateStatus(order.id, val)}>
-                      <SelectTrigger className="w-32 h-7 text-[11.5px]"><SelectValue /></SelectTrigger>
-                      <SelectContent>
-                        {['pending','placed','accepted','preparing','ready','picked_up','delivered','cancelled'].map(s => (
-                          <SelectItem key={s} value={s}>{statusLabels[s] ?? s}</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                    <div className="flex items-center gap-1">
+                      <Select value={order.status} onValueChange={val => onUpdateStatus(order.id, val)}>
+                        <SelectTrigger className="w-32 h-7 text-[11.5px]"><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          {['pending','placed','accepted','preparing','ready','picked_up','delivered','cancelled'].map(s => (
+                            <SelectItem key={s} value={s}>{statusLabels[s] ?? s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                          <Button size="sm" variant="ghost" className="h-7 w-7 p-0"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                        </DropdownMenuTrigger>
+                        <DropdownMenuContent align="end" className="w-52">
+                          <DropdownMenuItem onClick={() => onRefund(order.id, Number(order.total_amount))}>
+                            <RotateCcw className="h-3.5 w-3.5 mr-2" /> Επιστροφή χρημάτων
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onForceStatus(order.id, 'delivered')}>
+                            <Activity className="h-3.5 w-3.5 mr-2" /> Force → Delivered
+                          </DropdownMenuItem>
+                          <DropdownMenuItem onClick={() => onForceStatus(order.id, 'cancelled')} className="text-destructive focus:text-destructive">
+                            <Ban className="h-3.5 w-3.5 mr-2" /> Force → Cancelled
+                          </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
                   </td>
+
                 </tr>
               ))}
               {!orders?.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Δεν υπάρχουν παραγγελίες</td></tr>}
@@ -538,7 +618,7 @@ function StoresSection({ stores, allStores, filter, setFilter, onToggle }: any) 
   );
 }
 
-function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus }: any) {
+function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus, onSuspend, onAdjustWallet, onClearCashDebt, onMessage }: any) {
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const ordersByDriver = new Map<string, { today: number; active: number }>();
   for (const o of (orders ?? []) as any[]) {
@@ -597,11 +677,16 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                   : status === 'break' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> Διάλειμμα</span>
                   : <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" /> Offline</span>;
                 const counts = ordersByDriver.get(driver.user_id) ?? { today: 0, active: 0 };
+                const isSuspended = !!dp?.suspended_at;
+                const name = driver.full_name || 'οδηγό';
                 return (
-                  <tr key={driver.id}>
+                  <tr key={driver.id} className={isSuspended ? 'opacity-60' : ''}>
                     <td><span className="font-mono text-[11px] text-muted-foreground">{dp?.driver_code || '—'}</span></td>
                     <td>
-                      <div className="font-medium leading-tight">{driver.full_name || '—'}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium leading-tight">{driver.full_name || '—'}</span>
+                        {isSuspended && <Badge variant="outline" className="h-4 px-1 text-[9px] text-destructive border-destructive/40">Ανεστάλη</Badge>}
+                      </div>
                       <div className="text-[10.5px] text-muted-foreground tabular-nums">{driver.phone || ''}</div>
                     </td>
                     <td>{statusBadge}</td>
@@ -611,24 +696,47 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                     <td>
                       <div className="flex items-center gap-1.5">
                         <span className={`tabular-nums font-medium ${cash > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>€{cash.toFixed(2)}</span>
-                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={cash <= 0} onClick={() => onResetCash(driver.user_id, driver.full_name || 'οδηγό')} title="Μηδενισμός ταμείου">Reset</Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={cash <= 0} onClick={() => onResetCash(driver.user_id, name)} title="Μηδενισμός ταμείου">Reset</Button>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5">
                         <span className={`tabular-nums font-medium ${walletTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}`} title={`Διαθέσιμο €${walletAvail.toFixed(2)} • Εκκρεμές €${walletPending.toFixed(2)}`}>€{walletTotal.toFixed(2)}</span>
-                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={walletTotal <= 0} onClick={() => onResetWallet(driver.user_id, driver.full_name || 'οδηγό')} title="Μηδενισμός πορτοφολιού">Reset</Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={walletTotal <= 0} onClick={() => onResetWallet(driver.user_id, name)} title="Μηδενισμός πορτοφολιού">Reset</Button>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1 pr-2">
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px]" onClick={() => onGrantBonus(driver.user_id, driver.full_name || 'οδηγό')} title="Δώσε bonus">+€ Bonus</Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px] text-warning hover:text-warning" disabled={!onShift} onClick={() => onForceEndShift(driver.user_id, driver.full_name || 'οδηγό')} title="Τερματισμός βάρδιας">End shift</Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px]" onClick={() => onGrantBonus(driver.user_id, name)} title="Bonus">+€</Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Περισσότερα"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem onClick={() => onAdjustWallet(driver.user_id, name)}>
+                              <Plus className="h-3.5 w-3.5 mr-2" /> Προσαρμογή πορτοφολιού
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onClearCashDebt(driver.user_id, name)}>
+                              <RotateCcw className="h-3.5 w-3.5 mr-2" /> Εκκαθάριση χρεών μετρητών
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onMessage(driver.user_id, name)}>
+                              <MessageSquare className="h-3.5 w-3.5 mr-2" /> Στείλε μήνυμα
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem disabled={!onShift} onClick={() => onForceEndShift(driver.user_id, name)} className="text-warning focus:text-warning">
+                              <Minus className="h-3.5 w-3.5 mr-2" /> Τερματισμός βάρδιας
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onSuspend(driver.user_id, name, isSuspended)} className="text-destructive focus:text-destructive">
+                              <Ban className="h-3.5 w-3.5 mr-2" /> {isSuspended ? 'Επαναφορά οδηγού' : 'Αναστολή οδηγού'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
                 );
               })}
+
               {!drivers.length && <tr><td colSpan={9} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
             </tbody>
           </table>
