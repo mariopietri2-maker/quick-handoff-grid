@@ -641,11 +641,16 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                   : status === 'break' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> Διάλειμμα</span>
                   : <span className="inline-flex items-center gap-1 text-[11px] font-medium text-muted-foreground"><span className="h-1.5 w-1.5 rounded-full bg-muted-foreground/60" /> Offline</span>;
                 const counts = ordersByDriver.get(driver.user_id) ?? { today: 0, active: 0 };
+                const isSuspended = !!dp?.suspended_at;
+                const name = driver.full_name || 'οδηγό';
                 return (
-                  <tr key={driver.id}>
+                  <tr key={driver.id} className={isSuspended ? 'opacity-60' : ''}>
                     <td><span className="font-mono text-[11px] text-muted-foreground">{dp?.driver_code || '—'}</span></td>
                     <td>
-                      <div className="font-medium leading-tight">{driver.full_name || '—'}</div>
+                      <div className="flex items-center gap-1.5">
+                        <span className="font-medium leading-tight">{driver.full_name || '—'}</span>
+                        {isSuspended && <Badge variant="outline" className="h-4 px-1 text-[9px] text-destructive border-destructive/40">Ανεστάλη</Badge>}
+                      </div>
                       <div className="text-[10.5px] text-muted-foreground tabular-nums">{driver.phone || ''}</div>
                     </td>
                     <td>{statusBadge}</td>
@@ -655,24 +660,47 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                     <td>
                       <div className="flex items-center gap-1.5">
                         <span className={`tabular-nums font-medium ${cash > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>€{cash.toFixed(2)}</span>
-                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={cash <= 0} onClick={() => onResetCash(driver.user_id, driver.full_name || 'οδηγό')} title="Μηδενισμός ταμείου">Reset</Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={cash <= 0} onClick={() => onResetCash(driver.user_id, name)} title="Μηδενισμός ταμείου">Reset</Button>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center gap-1.5">
                         <span className={`tabular-nums font-medium ${walletTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}`} title={`Διαθέσιμο €${walletAvail.toFixed(2)} • Εκκρεμές €${walletPending.toFixed(2)}`}>€{walletTotal.toFixed(2)}</span>
-                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={walletTotal <= 0} onClick={() => onResetWallet(driver.user_id, driver.full_name || 'οδηγό')} title="Μηδενισμός πορτοφολιού">Reset</Button>
+                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={walletTotal <= 0} onClick={() => onResetWallet(driver.user_id, name)} title="Μηδενισμός πορτοφολιού">Reset</Button>
                       </div>
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1 pr-2">
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px]" onClick={() => onGrantBonus(driver.user_id, driver.full_name || 'οδηγό')} title="Δώσε bonus">+€ Bonus</Button>
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px] text-warning hover:text-warning" disabled={!onShift} onClick={() => onForceEndShift(driver.user_id, driver.full_name || 'οδηγό')} title="Τερματισμός βάρδιας">End shift</Button>
+                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px]" onClick={() => onGrantBonus(driver.user_id, name)} title="Bonus">+€</Button>
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Περισσότερα"><MoreVertical className="h-3.5 w-3.5" /></Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem onClick={() => onAdjustWallet(driver.user_id, name)}>
+                              <Plus className="h-3.5 w-3.5 mr-2" /> Προσαρμογή πορτοφολιού
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onClearCashDebt(driver.user_id, name)}>
+                              <RotateCcw className="h-3.5 w-3.5 mr-2" /> Εκκαθάριση χρεών μετρητών
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onMessage(driver.user_id, name)}>
+                              <MessageSquare className="h-3.5 w-3.5 mr-2" /> Στείλε μήνυμα
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem disabled={!onShift} onClick={() => onForceEndShift(driver.user_id, name)} className="text-warning focus:text-warning">
+                              <Minus className="h-3.5 w-3.5 mr-2" /> Τερματισμός βάρδιας
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => onSuspend(driver.user_id, name, isSuspended)} className="text-destructive focus:text-destructive">
+                              <Ban className="h-3.5 w-3.5 mr-2" /> {isSuspended ? 'Επαναφορά οδηγού' : 'Αναστολή οδηγού'}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </td>
                   </tr>
                 );
               })}
+
               {!drivers.length && <tr><td colSpan={9} className="text-center text-muted-foreground py-10">Κανένας οδηγός</td></tr>}
             </tbody>
           </table>
