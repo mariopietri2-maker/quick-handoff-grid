@@ -3446,12 +3446,20 @@ export type Database = {
         Args: { p_action: string; p_amount: number; p_reason?: string }
         Returns: Json
       }
+      admin_adjust_driver_wallet: {
+        Args: { p_amount: number; p_driver_id: string; p_note?: string }
+        Returns: number
+      }
       admin_adjust_wallet: {
         Args: { p_amount: number; p_description: string; p_driver_id: string }
         Returns: undefined
       }
       admin_auto_close_previous_month: { Args: never; Returns: string }
       admin_cancel_stuck_orders: { Args: { p_minutes?: number }; Returns: Json }
+      admin_clear_driver_cash_debt: {
+        Args: { p_driver_id: string }
+        Returns: number
+      }
       admin_close_month: { Args: { p_period_start?: string }; Returns: string }
       admin_distribute_buffer: {
         Args: {
@@ -3471,6 +3479,10 @@ export type Database = {
         Args: { p_driver_id: string }
         Returns: undefined
       }
+      admin_force_order_status: {
+        Args: { p_order_id: string; p_status: string }
+        Returns: undefined
+      }
       admin_grant_driver_bonus: {
         Args: { p_amount: number; p_driver_id: string; p_note?: string }
         Returns: undefined
@@ -3484,6 +3496,10 @@ export type Database = {
         Returns: undefined
       }
       admin_purge_stale: { Args: { p_kind: string }; Returns: Json }
+      admin_refund_order: {
+        Args: { p_amount: number; p_order_id: string; p_reason?: string }
+        Returns: undefined
+      }
       admin_release_pending_payout: {
         Args: { p_pending_id: string; p_source?: string }
         Returns: Json
@@ -3515,6 +3531,15 @@ export type Database = {
         Args: { p_store_id: string }
         Returns: number
       }
+      admin_send_driver_message: {
+        Args: {
+          p_body: string
+          p_driver_id: string
+          p_severity?: string
+          p_title: string
+        }
+        Returns: string
+      }
       admin_set_store_promotion: {
         Args: { p_days?: number; p_status: string; p_store_id: string }
         Returns: undefined
@@ -3524,8 +3549,16 @@ export type Database = {
         Args: { p_debt_id: string }
         Returns: undefined
       }
+      admin_suspend_driver: {
+        Args: { p_driver_id: string; p_reason?: string }
+        Returns: undefined
+      }
       admin_toggle_maintenance: {
         Args: { p_message?: string; p_on: boolean }
+        Returns: undefined
+      }
+      admin_unsuspend_driver: {
+        Args: { p_driver_id: string }
         Returns: undefined
       }
       admin_wallet_adjust: {
