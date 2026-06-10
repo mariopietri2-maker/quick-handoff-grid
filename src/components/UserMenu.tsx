@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-import { DriverSoundSettings } from '@/components/driver/DriverSoundSettings';
 import { DriverAppSettings } from '@/components/driver/DriverAppSettings';
 import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
