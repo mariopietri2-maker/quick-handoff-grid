@@ -17,7 +17,6 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useNavigate } from 'react-router-dom';
-import { DriverSoundSettings } from '@/components/driver/DriverSoundSettings';
 import { DriverAppSettings } from '@/components/driver/DriverAppSettings';
 import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
@@ -26,7 +25,7 @@ export function UserMenu() {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const isDriver = profile?.role === 'driver';
-  const [soundOpen, setSoundOpen] = useState(false);
+  
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -242,13 +241,6 @@ export function UserMenu() {
                 <Settings className="mr-2 h-4 w-4 shrink-0" />
                 Ρυθμίσεις Εφαρμογής
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className={itemClassName}
-                onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setSoundOpen(true), 50); }}
-              >
-                <Bell className="mr-2 h-4 w-4 shrink-0" />
-                Ήχος Ειδοποιήσεων
-              </DropdownMenuItem>
 
               <DropdownMenuSeparator className="my-1" />
 
@@ -343,7 +335,7 @@ export function UserMenu() {
 
       {isDriver && (
         <>
-          <DriverSoundSettings open={soundOpen} onOpenChange={setSoundOpen} />
+          {/* Sound settings merged into DriverAppSettings */}
           <DriverAppSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
           <Dialog open={breakOpen} onOpenChange={setBreakOpen}>
             <DialogContent className="max-w-xs">

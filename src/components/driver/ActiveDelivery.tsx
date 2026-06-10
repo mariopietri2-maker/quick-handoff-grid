@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -46,6 +50,8 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
   const isReady = ['ready', 'arrived', 'picked_up', 'delivered'].includes(delivery.status);
+  const [confirmDeliver, setConfirmDeliver] = useState(false);
+  const shortId = delivery.id.slice(0, 8).toUpperCase();
 
   // Live countdown to predicted ready time (only meaningful pre-ready)
   const [now, setNow] = useState<number>(() => Date.now());
@@ -233,7 +239,11 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
       {/* Main CTA */}
       {nextAction && (
         <button
-          onClick={() => !nextAction.locked && onStatusUpdate(nextAction.next)}
+          onClick={() => {
+            if (nextAction.locked) return;
+            if (nextAction.next === 'delivered') setConfirmDeliver(true);
+            else onStatusUpdate(nextAction.next);
+          }}
           disabled={nextAction.locked}
           className={`w-full h-14 rounded-full text-[15px] font-heading font-bold transition-all flex items-center justify-center gap-2 ${
             nextAction.locked
@@ -246,6 +256,30 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           {!nextAction.locked && <ChevronRight className="h-5 w-5" />}
         </button>
       )}
+
+      <AlertDialog open={confirmDeliver} onOpenChange={setConfirmDeliver}>
+        <AlertDialogContent className="rounded-3xl max-w-sm">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="font-heading text-[22px] leading-tight">
+              Επιβεβαιώνεις την παράδοση της παραγγελίας #{shortId};
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Παράδοση σε {delivery.customerName} — {shortenAddress(delivery.deliveryAddress)}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
+            <AlertDialogAction
+              onClick={() => { setConfirmDeliver(false); onStatusUpdate('delivered'); }}
+              className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90 font-heading font-bold text-[15px]"
+            >
+              Επιβεβαίωση παράδοσης
+            </AlertDialogAction>
+            <AlertDialogCancel className="w-full mt-0 border-0 bg-transparent text-destructive hover:bg-transparent hover:text-destructive font-heading font-bold">
+              Ακύρωση
+            </AlertDialogCancel>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
