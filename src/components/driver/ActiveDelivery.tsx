@@ -2,6 +2,10 @@ import { useEffect, useState } from 'react';
 import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
+import {
+  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
+  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 interface DeliveryItem { name: string; quantity: number; }
 
