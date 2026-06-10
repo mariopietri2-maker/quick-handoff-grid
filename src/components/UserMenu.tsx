@@ -242,13 +242,6 @@ export function UserMenu() {
                 <Settings className="mr-2 h-4 w-4 shrink-0" />
                 Ρυθμίσεις Εφαρμογής
               </DropdownMenuItem>
-              <DropdownMenuItem
-                className={itemClassName}
-                onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setSoundOpen(true), 50); }}
-              >
-                <Bell className="mr-2 h-4 w-4 shrink-0" />
-                Ήχος Ειδοποιήσεων
-              </DropdownMenuItem>
 
               <DropdownMenuSeparator className="my-1" />
 
