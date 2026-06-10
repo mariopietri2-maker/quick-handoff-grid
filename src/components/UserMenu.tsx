@@ -336,7 +336,7 @@ export function UserMenu() {
 
       {isDriver && (
         <>
-          <DriverSoundSettings open={soundOpen} onOpenChange={setSoundOpen} />
+          {/* Sound settings merged into DriverAppSettings */}
           <DriverAppSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
           <Dialog open={breakOpen} onOpenChange={setBreakOpen}>
             <DialogContent className="max-w-xs">
