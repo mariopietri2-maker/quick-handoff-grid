@@ -50,6 +50,8 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
   const isReady = ['ready', 'arrived', 'picked_up', 'delivered'].includes(delivery.status);
+  const [confirmDeliver, setConfirmDeliver] = useState(false);
+  const shortId = delivery.id.slice(0, 8).toUpperCase();
 
   // Live countdown to predicted ready time (only meaningful pre-ready)
   const [now, setNow] = useState<number>(() => Date.now());
