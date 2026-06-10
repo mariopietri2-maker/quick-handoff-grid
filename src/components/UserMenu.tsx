@@ -25,7 +25,7 @@ export function UserMenu() {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const isDriver = profile?.role === 'driver';
-  const [soundOpen, setSoundOpen] = useState(false);
+  const [, ] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
