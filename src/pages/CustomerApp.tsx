@@ -149,10 +149,12 @@ export default function CustomerApp() {
     >
       {/* ── Header ─────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-[hsl(0,0%,94%)]"
+        className="sticky top-0 z-50 bg-white/85 backdrop-blur-2xl border-b border-[hsl(0,0%,94%)] shadow-[0_1px_0_hsl(0_0%_0%/0.02),0_8px_24px_-16px_hsl(0_0%_0%/0.08)] relative overflow-hidden"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-2xl mx-auto px-5 pt-4 pb-3">
+        {/* Soft accent glow */}
+        <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full opacity-[0.07] blur-3xl c-bg-accent" />
+        <div className="max-w-2xl mx-auto px-5 pt-4 pb-3 relative">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
