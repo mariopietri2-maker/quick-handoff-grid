@@ -227,14 +227,17 @@ export default function CustomerApp() {
                   className="flex flex-col items-center gap-2 group"
                 >
                   <div
-                    className={`${tile.tone} w-full aspect-square rounded-[18px] flex items-center justify-center active:scale-95 transition-transform ${
+                    className={`${tile.tone} w-full aspect-square rounded-[20px] flex items-center justify-center active:scale-95 transition-all duration-200 relative overflow-hidden ${
                       i === 0
-                        ? 'shadow-[0_8px_20px_-6px_hsl(var(--c-accent)/0.45)]'
-                        : 'border border-[hsl(0,0%,92%)]'
+                        ? 'shadow-[0_10px_24px_-8px_hsl(var(--c-accent)/0.55),inset_0_1px_0_hsl(0_0%_100%/0.25)]'
+                        : 'border border-[hsl(0,0%,92%)] shadow-[0_1px_2px_hsl(0_0%_0%/0.04),0_6px_14px_-8px_hsl(0_0%_0%/0.12)]'
                     }`}
                   >
-                    <span className="text-3xl leading-none drop-shadow-sm">{tile.emoji}</span>
+                    {/* glossy top highlight */}
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent" />
+                    <span className="text-3xl leading-none drop-shadow-sm relative">{tile.emoji}</span>
                   </div>
+
                   <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">{tile.label}</span>
                 </button>
               ))}
