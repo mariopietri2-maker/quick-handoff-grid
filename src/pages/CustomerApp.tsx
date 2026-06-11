@@ -149,10 +149,12 @@ export default function CustomerApp() {
     >
       {/* ── Header ─────────────────────────────────────── */}
       <header
-        className="sticky top-0 z-50 bg-white/95 backdrop-blur-xl border-b border-[hsl(0,0%,94%)]"
+        className="sticky top-0 z-50 bg-white/85 backdrop-blur-2xl border-b border-[hsl(0,0%,94%)] shadow-[0_1px_0_hsl(0_0%_0%/0.02),0_8px_24px_-16px_hsl(0_0%_0%/0.08)] relative overflow-hidden"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-2xl mx-auto px-5 pt-4 pb-3">
+        {/* Soft accent glow */}
+        <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full opacity-[0.07] blur-3xl c-bg-accent" />
+        <div className="max-w-2xl mx-auto px-5 pt-4 pb-3 relative">
           <div className="flex items-center justify-between mb-4">
             <button
               type="button"
@@ -225,14 +227,17 @@ export default function CustomerApp() {
                   className="flex flex-col items-center gap-2 group"
                 >
                   <div
-                    className={`${tile.tone} w-full aspect-square rounded-[18px] flex items-center justify-center active:scale-95 transition-transform ${
+                    className={`${tile.tone} w-full aspect-square rounded-[20px] flex items-center justify-center active:scale-95 transition-all duration-200 relative overflow-hidden ${
                       i === 0
-                        ? 'shadow-[0_8px_20px_-6px_hsl(var(--c-accent)/0.45)]'
-                        : 'border border-[hsl(0,0%,92%)]'
+                        ? 'shadow-[0_10px_24px_-8px_hsl(var(--c-accent)/0.55),inset_0_1px_0_hsl(0_0%_100%/0.25)]'
+                        : 'border border-[hsl(0,0%,92%)] shadow-[0_1px_2px_hsl(0_0%_0%/0.04),0_6px_14px_-8px_hsl(0_0%_0%/0.12)]'
                     }`}
                   >
-                    <span className="text-3xl leading-none drop-shadow-sm">{tile.emoji}</span>
+                    {/* glossy top highlight */}
+                    <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent" />
+                    <span className="text-3xl leading-none drop-shadow-sm relative">{tile.emoji}</span>
                   </div>
+
                   <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">{tile.label}</span>
                 </button>
               ))}
@@ -289,24 +294,26 @@ export default function CustomerApp() {
                     onClick={() => navigate(`/restaurant/${store.id}`)}
                     className="w-[230px] shrink-0 text-left group"
                   >
-                    <div className="relative h-[140px] rounded-2xl overflow-hidden mb-2 bg-[hsl(0,0%,96%)]">
+                    <div className="relative h-[140px] rounded-2xl overflow-hidden mb-2 bg-[hsl(0,0%,96%)] shadow-[0_2px_4px_-2px_hsl(0_0%_0%/0.06),0_10px_24px_-12px_hsl(0_0%_0%/0.18)] ring-1 ring-black/[0.03]">
                       {store.image_url ? (
                         <img
                           src={store.image_url}
                           alt={store.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
                       )}
-                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold text-[hsl(0,0%,9%)] uppercase tracking-wider">
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/35 to-transparent" />
+                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold text-[hsl(0,0%,9%)] uppercase tracking-wider shadow-sm">
                         Ad
                       </div>
-                      <div className="absolute top-2 right-2 c-bg-accent rounded-full px-2 py-0.5 text-[10px] font-extrabold">
+                      <div className="absolute top-2 right-2 c-bg-accent rounded-full px-2 py-0.5 text-[10px] font-extrabold shadow-[0_4px_10px_-2px_hsl(var(--c-accent)/0.5)]">
                         −15%
                       </div>
                     </div>
+
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-[13px] font-extrabold text-[hsl(0,0%,9%)] truncate">{store.name}</span>
                       {ratings[store.id]?.count > 0 && (
@@ -370,16 +377,20 @@ export default function CustomerApp() {
                   className="w-full text-left group animate-fade-in"
                   style={{ animationDelay: `${idx * 0.04}s`, animationFillMode: 'both' }}
                 >
-                  <div className="relative aspect-[16/9] rounded-[20px] overflow-hidden mb-3 bg-[hsl(0,0%,96%)] shadow-sm group-hover:shadow-lg transition-shadow duration-300">
+                  <div className="relative aspect-[16/9] rounded-[22px] overflow-hidden mb-3 bg-[hsl(0,0%,96%)] shadow-[0_2px_4px_-2px_hsl(0_0%_0%/0.06),0_12px_28px_-12px_hsl(0_0%_0%/0.18)] group-hover:shadow-[0_4px_8px_-2px_hsl(0_0%_0%/0.08),0_20px_40px_-12px_hsl(0_0%_0%/0.22)] transition-shadow duration-500 ring-1 ring-black/[0.03]">
                     {store.image_url ? (
                       <img
                         src={store.image_url}
                         alt={store.name}
-                        className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
                     )}
+
+                    {/* Gradient overlay for legibility */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+
 
                     {/* Top row: Fav + busy badge */}
                     <div className="absolute top-3 left-3">
@@ -452,15 +463,16 @@ export default function CustomerApp() {
 
       {/* ── Bottom tab bar ─────────────────────────────── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-[hsl(0,0%,94%)]"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
           <button className="flex flex-col items-center justify-center gap-1 c-accent">
-            <span className="p-2 rounded-2xl c-bg-accent-soft">
+            <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
               <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
             </span>
             <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
+            <span className="h-1 w-1 rounded-full c-bg-accent -mt-0.5" />
           </button>
           <button
             onClick={() => setSelectedCategory('all')}
