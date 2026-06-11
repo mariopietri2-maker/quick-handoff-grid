@@ -1,14 +1,11 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, CheckCircle2, Circle, Clock, Package, Car, MapPin, Phone, User, Utensils, Star } from 'lucide-react';
-import { Card, CardContent } from '@/components/ui/card';
+import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
-import { Progress } from '@/components/ui/progress';
 import { ReviewForm } from '@/components/ReviewForm';
-import DriverLiveMap from '@/components/DriverLiveMap';
+import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
@@ -16,68 +13,24 @@ type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
 
 const DELIVERY_BUFFER_MIN = 15;
 
-function DeliveryCountdown({ order }: { order: OrderRow }) {
-  const [now, setNow] = useState(Date.now());
+const STATUS_STEPS = [
+  { key: 'placed', label: 'Στάλθηκε', icon: Package },
+  { key: 'accepted', label: 'Αποδεκτή', icon: CheckCircle2 },
+  { key: 'preparing', label: 'Ετοιμάζεται', icon: Utensils },
+  { key: 'ready', label: 'Έτοιμη', icon: Package },
+  { key: 'picked_up', label: 'Στο δρόμο', icon: Car },
+  { key: 'delivered', label: 'Παραδόθηκε', icon: MapPin },
+] as const;
 
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 1000);
-    return () => clearInterval(interval);
-  }, []);
-
-  const prepMin = order.estimated_prep_time ?? 30;
-  const totalMin = prepMin + DELIVERY_BUFFER_MIN;
-  const startTime = new Date(order.created_at).getTime();
-  const endTime = startTime + totalMin * 60 * 1000;
-  const elapsed = now - startTime;
-  const remaining = Math.max(0, endTime - now);
-  const progress = Math.min(100, (elapsed / (totalMin * 60 * 1000)) * 100);
-  const remainingMin = Math.floor(remaining / 60000);
-  const remainingSec = Math.floor((remaining % 60000) / 1000);
-  const isOverdue = remaining === 0;
-
-  return (
-    <Card className={`shadow-[var(--shadow-md)] ${isOverdue ? 'border-warning/30' : 'border-primary/20'}`}>
-      <CardContent className="p-4 space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Clock className={`h-5 w-5 ${isOverdue ? 'text-warning' : 'text-primary'}`} />
-            <span className="text-sm font-heading text-foreground">
-              {isOverdue ? 'Καθυστερεί λίγο' : 'Εκτιμώμενη παράδοση'}
-            </span>
-          </div>
-          <span className={`font-heading font-bold text-xl tabular-nums ${isOverdue ? 'text-warning' : 'text-foreground'}`}>
-            {isOverdue ? 'Σύντομα' : `${remainingMin}:${String(remainingSec).padStart(2, '0')}`}
-          </span>
-        </div>
-        <Progress value={progress} className="h-2" />
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>Ετοιμασία ~{prepMin} λεπ.</span>
-          <span>Παράδοση ~{DELIVERY_BUFFER_MIN} λεπ.</span>
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-const statusSteps = [
-  { key: 'placed', label: 'Παραγγελία Υποβλήθηκε', icon: Package, description: 'Η παραγγελία σας στάλθηκε στο εστιατόριο' },
-  { key: 'accepted', label: 'Αποδεκτή', icon: CheckCircle2, description: 'Το εστιατόριο επιβεβαίωσε την παραγγελία σας' },
-  { key: 'preparing', label: 'Ετοιμάζεται', icon: Utensils, description: 'Το φαγητό σας ετοιμάζεται' },
-  { key: 'ready', label: 'Έτοιμη για Παραλαβή', icon: Package, description: 'Αναμονή οδηγού για παραλαβή' },
-  { key: 'arrived', label: 'Οδηγός στο Κατάστημα', icon: Car, description: 'Ο οδηγός έφτασε στο εστιατόριο' },
-  { key: 'picked_up', label: 'Σε Μεταφορά', icon: Car, description: 'Ο οδηγός κατευθύνεται προς εσάς' },
-  { key: 'delivered', label: 'Παραδόθηκε', icon: MapPin, description: 'Η παραγγελία παραδόθηκε' },
-];
-
-const statusMessages: Record<string, { emoji: string; title: string; subtitle: string }> = {
-  placed: { emoji: '📋', title: 'Παραγγελία Στάλθηκε!', subtitle: 'Αναμονή αποδοχής από το εστιατόριο' },
-  accepted: { emoji: '👨‍🍳', title: 'Το Εστιατόριο Αποδέχτηκε!', subtitle: 'Ξεκινούν την ετοιμασία της παραγγελίας' },
-  preparing: { emoji: '🔥', title: 'Ετοιμάζεται', subtitle: 'Το φαγητό σας ετοιμάζεται φρέσκο' },
-  ready: { emoji: '✅', title: 'Έτοιμη για Παραλαβή!', subtitle: 'Ένας οδηγός θα παραλάβει σύντομα' },
-  arrived: { emoji: '🏪', title: 'Οδηγός στο Κατάστημα', subtitle: 'Ο οδηγός είναι στο εστιατόριο και παραλαμβάνει' },
-  picked_up: { emoji: '🚗', title: 'Σε Μεταφορά!', subtitle: 'Ο οδηγός κατευθύνεται προς εσάς' },
-  delivered: { emoji: '🎉', title: 'Παραδόθηκε!', subtitle: 'Καλή όρεξη!' },
-  cancelled: { emoji: '❌', title: 'Ακυρώθηκε', subtitle: 'Αυτή η παραγγελία ακυρώθηκε' },
+const STATUS_HEADLINE: Record<string, { emoji: string; title: string; sub: string }> = {
+  placed:     { emoji: '📋', title: 'Στείλαμε την παραγγελία σου', sub: 'Περιμένουμε επιβεβαίωση από το κατάστημα' },
+  accepted:   { emoji: '👨‍🍳', title: 'Το κατάστημα την αποδέχτηκε', sub: 'Ξεκινάει η ετοιμασία' },
+  preparing:  { emoji: '🔥', title: 'Ετοιμάζεται φρέσκο', sub: 'Σύντομα θα είναι έτοιμη' },
+  ready:      { emoji: '✅', title: 'Έτοιμη για παραλαβή', sub: 'Ψάχνουμε οδηγό' },
+  arrived:    { emoji: '🏪', title: 'Ο οδηγός στο κατάστημα', sub: 'Παραλαμβάνει την παραγγελία' },
+  picked_up:  { emoji: '🛵', title: 'Ο οδηγός έρχεται!', sub: 'Παρακολούθησε ζωντανά την πορεία' },
+  delivered:  { emoji: '🎉', title: 'Παραδόθηκε', sub: 'Καλή όρεξη!' },
+  cancelled:  { emoji: '❌', title: 'Ακυρώθηκε', sub: 'Η παραγγελία ακυρώθηκε' },
 };
 
 export default function OrderTrackingPage() {
@@ -86,63 +39,60 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [storeName, setStoreName] = useState('');
+  const [storeLat, setStoreLat] = useState<number | null>(null);
+  const [storeLng, setStoreLng] = useState<number | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [driverPhone, setDriverPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
+  const [sheetExpanded, setSheetExpanded] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
+  const [now, setNow] = useState(Date.now());
+
+  useEffect(() => {
+    const t = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(t);
+  }, []);
 
   useEffect(() => {
     if (!id) return;
     Promise.all([
       supabase.from('orders').select('*').eq('id', id).single(),
       supabase.from('order_items').select('*').eq('order_id', id),
-    ]).then(async ([orderRes, itemsRes]) => {
-      if (orderRes.data) {
-        setOrder(orderRes.data);
-        const { data: store } = await supabase.from('stores').select('name').eq('id', orderRes.data.store_id).single();
-        if (store) setStoreName(store.name);
-        if (orderRes.data.driver_id) {
-          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', orderRes.data.driver_id).single();
-          if (profile) {
-            setDriverName(profile.full_name);
-            setDriverPhone(profile.phone);
-          }
+    ]).then(async ([oRes, iRes]) => {
+      if (oRes.data) {
+        setOrder(oRes.data);
+        const { data: s } = await (supabase as any)
+          .from('stores_public')
+          .select('name, latitude, longitude')
+          .eq('id', oRes.data.store_id)
+          .maybeSingle();
+        if (s) { setStoreName(s.name); setStoreLat(s.latitude); setStoreLng(s.longitude); }
+        if (oRes.data.driver_id) {
+          const { data: p } = await supabase.from('profiles').select('full_name, phone').eq('user_id', oRes.data.driver_id).single();
+          if (p) { setDriverName(p.full_name); setDriverPhone(p.phone); }
         }
+        const { data: rev } = await supabase.from('reviews').select('id').eq('order_id', oRes.data.id).maybeSingle();
+        if (rev) setHasReviewed(true);
       }
-      setItems(itemsRes.data ?? []);
-      if (orderRes.data) {
-        const { data: existingReview } = await supabase.from('reviews').select('id').eq('order_id', orderRes.data.id).maybeSingle();
-        if (existingReview) setHasReviewed(true);
-      }
+      setItems(iRes.data ?? []);
       setLoading(false);
     });
   }, [id]);
 
   useEffect(() => {
     if (!id) return;
-    const channel = supabase
+    const ch = supabase
       .channel(`order-track-${id}`)
-      .on('postgres_changes', {
-        event: 'UPDATE',
-        schema: 'public',
-        table: 'orders',
-        filter: `id=eq.${id}`,
-      }, async (payload) => {
-        const updated = payload.new as OrderRow;
-        setOrder(prev => prev ? { ...prev, ...updated } : prev);
-        setLastUpdate(new Date());
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` }, async (p) => {
+        const updated = p.new as OrderRow;
+        setOrder((prev) => (prev ? { ...prev, ...updated } : prev));
         if (updated.driver_id && !driverName) {
-          const { data: profile } = await supabase.from('profiles').select('full_name, phone').eq('user_id', updated.driver_id).single();
-          if (profile) {
-            setDriverName(profile.full_name);
-            setDriverPhone(profile.phone);
-          }
+          const { data: pr } = await supabase.from('profiles').select('full_name, phone').eq('user_id', updated.driver_id).single();
+          if (pr) { setDriverName(pr.full_name); setDriverPhone(pr.phone); }
         }
       })
       .subscribe();
-
-    return () => { supabase.removeChannel(channel); };
+    return () => { supabase.removeChannel(ch); };
   }, [id, driverName]);
 
   if (loading) {
@@ -152,7 +102,6 @@ export default function OrderTrackingPage() {
       </div>
     );
   }
-
   if (!order) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -161,205 +110,260 @@ export default function OrderTrackingPage() {
     );
   }
 
-  const currentIndex = statusSteps.findIndex(s => s.key === order.status);
-  const isDelivered = order.status === 'delivered';
-  const isCancelled = order.status === 'cancelled';
-  const currentMessage = statusMessages[order.status ?? 'placed'];
-  const progressPercent = isCancelled ? 0 : isDelivered ? 100 : Math.max(5, ((currentIndex + 1) / statusSteps.length) * 100);
+  const status = order.status ?? 'placed';
+  const headline = STATUS_HEADLINE[status] ?? STATUS_HEADLINE.placed;
+  const isDelivered = status === 'delivered';
+  const isCancelled = status === 'cancelled';
+  const currentIdx = STATUS_STEPS.findIndex((s) => s.key === status);
+
+  // ETA
+  const prepMin = order.estimated_prep_time ?? 30;
+  const totalMin = prepMin + DELIVERY_BUFFER_MIN;
+  const startTs = new Date(order.created_at).getTime();
+  const endTs = startTs + totalMin * 60_000;
+  const remainingMin = Math.max(0, Math.ceil((endTs - now) / 60_000));
+
+  const showMap = !isCancelled && !isDelivered;
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate('/orders')} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+    <div className="fixed inset-0 bg-background overflow-hidden">
+      {/* Map background */}
+      {showMap ? (
+        <LiveTrackingMap
+          driverId={order.driver_id}
+          storeLat={storeLat}
+          storeLng={storeLng}
+          deliveryLat={order.delivery_latitude}
+          deliveryLng={order.delivery_longitude}
+          status={status}
+        />
+      ) : (
+        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-background flex items-center justify-center">
+          <span className="text-[120px] opacity-20">{headline.emoji}</span>
+        </div>
+      )}
+
+      {/* Top floating bar */}
+      <header
+        className="absolute top-0 left-0 right-0 z-30 px-4 pt-3 pb-2 flex items-center justify-between"
+        style={{ paddingTop: 'calc(env(safe-area-inset-top) + 0.5rem)' }}
+      >
+        <button
+          onClick={() => navigate('/orders')}
+          className="h-11 w-11 rounded-full bg-card/95 backdrop-blur-md shadow-lg flex items-center justify-center active:scale-95 transition-transform"
+        >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <div className="flex-1">
-          <h1 className="font-heading font-bold text-lg text-foreground">Παρακολούθηση</h1>
-          <p className="text-xs text-muted-foreground font-mono">#{order.id.slice(0, 8)}</p>
+        <div className="bg-card/95 backdrop-blur-md shadow-lg rounded-full px-4 py-2 flex items-center gap-2">
+          {!isCancelled && !isDelivered && (
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+            </span>
+          )}
+          <span className="text-xs font-bold text-foreground tabular-nums">#{order.id.slice(0, 6).toUpperCase()}</span>
         </div>
-        <Badge variant={isCancelled ? 'destructive' : 'default'} className="font-heading">
-          {isCancelled ? 'Ακυρώθηκε' : isDelivered ? 'Ολοκληρώθηκε' : 'Ζωντανά'}
-        </Badge>
       </header>
 
-      <div className="max-w-lg mx-auto p-4 space-y-4">
-        <Card className={`shadow-[var(--shadow-lg)] overflow-hidden ${isCancelled ? 'border-destructive/30' : ''}`}>
-          <div className={`p-6 text-center ${isCancelled ? 'bg-destructive/5' : isDelivered ? 'bg-success/5' : 'bg-primary/5'}`}>
-            <span className="text-4xl block mb-2">{currentMessage.emoji}</span>
-            <h2 className="font-heading font-bold text-xl text-foreground">{currentMessage.title}</h2>
-            <p className="text-sm text-muted-foreground mt-1">{currentMessage.subtitle}</p>
-            {!isCancelled && !isDelivered && (
-              <div className="mt-4 flex items-center justify-center gap-2 text-xs text-muted-foreground">
-                <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                Ζωντανές ενημερώσεις • Τελευταία: {lastUpdate.toLocaleTimeString()}
+      {/* Bottom sheet */}
+      <div
+        className="absolute left-0 right-0 bottom-0 z-30 bg-card rounded-t-3xl shadow-[0_-12px_40px_rgba(0,0,0,0.15)] transition-[max-height] duration-300 ease-out flex flex-col"
+        style={{
+          maxHeight: sheetExpanded ? '85vh' : '46vh',
+          paddingBottom: 'env(safe-area-inset-bottom)',
+        }}
+      >
+        {/* Drag handle */}
+        <button
+          onClick={() => setSheetExpanded((v) => !v)}
+          className="w-full pt-2.5 pb-1 flex flex-col items-center"
+        >
+          <span className="h-1.5 w-12 rounded-full bg-muted" />
+        </button>
+
+        <div className="overflow-y-auto px-5 pb-5 flex-1">
+          {/* Headline + ETA */}
+          <div className="pt-1 pb-3">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-2xl">{headline.emoji}</span>
+                  <h1 className="font-heading font-extrabold text-lg text-foreground leading-tight">{headline.title}</h1>
+                </div>
+                <p className="text-sm text-muted-foreground mt-1">{headline.sub}</p>
+              </div>
+              {!isCancelled && !isDelivered && (
+                <div className="text-right shrink-0 bg-primary/10 rounded-2xl px-3 py-2">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary">ETA</p>
+                  <p className="font-heading font-extrabold text-xl text-primary tabular-nums leading-none mt-0.5">
+                    {remainingMin}<span className="text-xs font-bold ml-0.5">λεπ</span>
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Progress dots */}
+            {!isCancelled && (
+              <div className="mt-4 flex items-center gap-1.5">
+                {STATUS_STEPS.map((s, i) => {
+                  const done = i <= currentIdx;
+                  const current = i === currentIdx;
+                  return (
+                    <div
+                      key={s.key}
+                      className={`h-1.5 flex-1 rounded-full transition-all duration-500 ${
+                        done ? 'bg-primary' : 'bg-muted'
+                      } ${current && !isDelivered ? 'animate-pulse' : ''}`}
+                    />
+                  );
+                })}
               </div>
             )}
           </div>
 
-          {!isCancelled && (
-            <div className="px-6 pb-4 pt-3">
-              <div className="flex justify-between text-xs text-muted-foreground mb-1.5">
-                <span>Υποβολή</span>
-                <span>Παράδοση</span>
+          {/* Driver card */}
+          {order.driver_id && !isDelivered && !isCancelled && (
+            <div className="mt-2 rounded-2xl border border-border bg-background/60 p-3 flex items-center gap-3">
+              <div className="h-12 w-12 rounded-full gradient-primary flex items-center justify-center shrink-0 text-primary-foreground font-heading font-extrabold text-lg">
+                {(driverName?.[0] ?? 'Ο').toUpperCase()}
               </div>
-              <div className="h-2 bg-muted rounded-full overflow-hidden">
-                <div
-                  className={`h-full rounded-full transition-all duration-1000 ease-out ${isDelivered ? 'bg-success' : 'gradient-primary'}`}
-                  style={{ width: `${progressPercent}%` }}
-                />
+              <div className="flex-1 min-w-0">
+                <p className="font-heading font-bold text-sm text-foreground truncate">{driverName ?? 'Ο οδηγός σου'}</p>
+                <p className="text-xs text-muted-foreground">Οδηγός παράδοσης</p>
+              </div>
+              <div className="flex items-center gap-2">
+                {driverPhone && (
+                  <a
+                    href={`tel:${driverPhone}`}
+                    className="h-11 w-11 rounded-full bg-success/15 text-success flex items-center justify-center active:scale-95 transition-transform"
+                  >
+                    <Phone className="h-5 w-5" />
+                  </a>
+                )}
+                <button
+                  onClick={() => navigate('/support')}
+                  className="h-11 w-11 rounded-full bg-primary/15 text-primary flex items-center justify-center active:scale-95 transition-transform"
+                >
+                  <MessageCircle className="h-5 w-5" />
+                </button>
               </div>
             </div>
           )}
-        </Card>
 
-        {storeName && (
-          <Card className="shadow-[var(--shadow-md)]">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center">
+          {/* Store row */}
+          {storeName && (
+            <div className="mt-3 flex items-center gap-3 rounded-2xl bg-background/60 border border-border p-3">
+              <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center">
                 <Utensils className="h-5 w-5 text-primary" />
               </div>
-              <div>
-                <p className="font-heading font-semibold text-foreground text-sm">Εστιατόριο</p>
-                <p className="text-muted-foreground text-sm">{storeName}</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {order.driver_id && (
-          <Card className="shadow-[var(--shadow-md)] border-primary/20">
-            <CardContent className="p-4 flex items-center gap-3">
-              <div className="h-12 w-12 rounded-full gradient-primary flex items-center justify-center shrink-0">
-                <User className="h-6 w-6 text-primary-foreground" />
-              </div>
               <div className="flex-1 min-w-0">
-                <p className="font-heading font-semibold text-foreground">{driverName || 'Οδηγός'}</p>
-                <p className="text-xs text-muted-foreground">Ο οδηγός παράδοσής σας</p>
-                {driverPhone && (
-                  <a href={`tel:${driverPhone}`} className="text-xs text-primary font-heading flex items-center gap-1 mt-0.5">
-                    <Phone className="h-3 w-3" /> {driverPhone}
-                  </a>
-                )}
+                <p className="text-[11px] uppercase tracking-wider font-extrabold text-muted-foreground">Από</p>
+                <p className="font-heading font-bold text-sm text-foreground truncate">{storeName}</p>
               </div>
-              {driverPhone && (
-                <a href={`tel:${driverPhone}`} className="h-10 w-10 rounded-full bg-success/10 flex items-center justify-center shrink-0">
-                  <Phone className="h-5 w-5 text-success" />
-                </a>
-              )}
-              {!driverPhone && (
-                <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center shrink-0">
-                  <Phone className="h-5 w-5 text-muted-foreground" />
+            </div>
+          )}
+
+          {/* Expand toggle hint */}
+          {!sheetExpanded && (
+            <button
+              onClick={() => setSheetExpanded(true)}
+              className="mt-4 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-muted-foreground py-2"
+            >
+              Λεπτομέρειες παραγγελίας <ChevronUp className="h-4 w-4" />
+            </button>
+          )}
+
+          {/* Expanded content */}
+          {sheetExpanded && (
+            <>
+              {/* Timeline */}
+              {!isCancelled && (
+                <div className="mt-5">
+                  <h3 className="font-heading font-bold text-sm text-foreground mb-3">Πρόοδος</h3>
+                  <div>
+                    {STATUS_STEPS.map((s, i) => {
+                      const Icon = s.icon;
+                      const done = i <= currentIdx;
+                      const current = i === currentIdx;
+                      return (
+                        <div key={s.key} className="flex items-start gap-3">
+                          <div className="flex flex-col items-center">
+                            <div className={`h-8 w-8 rounded-full flex items-center justify-center transition-all duration-300 ${
+                              done ? 'gradient-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+                            } ${current && !isDelivered ? 'ring-4 ring-primary/20 scale-110' : ''}`}>
+                              <Icon className="h-4 w-4" />
+                            </div>
+                            {i < STATUS_STEPS.length - 1 && (
+                              <div className={`w-0.5 h-6 ${i < currentIdx ? 'bg-primary' : 'bg-muted'}`} />
+                            )}
+                          </div>
+                          <div className="pb-4 flex-1">
+                            <p className={`font-heading font-semibold text-sm ${done ? 'text-foreground' : 'text-muted-foreground'}`}>{s.label}</p>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
-            </CardContent>
-          </Card>
-        )}
 
-        {order.driver_id && !isDelivered && !isCancelled && (
-          <DriverLiveMap
-            driverId={order.driver_id}
-            deliveryLat={order.delivery_latitude}
-            deliveryLng={order.delivery_longitude}
-            deliveryAddress={order.delivery_address}
-          />
-        )}
-
-        {!isCancelled && (
-          <Card className="shadow-[var(--shadow-md)]">
-            <CardContent className="p-6">
-              <h3 className="font-heading font-semibold text-foreground mb-4">Πρόοδος Παραγγελίας</h3>
-              <div className="space-y-0">
-                {statusSteps.map((step, i) => {
-                  const Icon = step.icon;
-                  const isComplete = i <= currentIndex;
-                  const isCurrent = i === currentIndex;
-                  return (
-                    <div key={step.key} className="flex items-start gap-3">
-                      <div className="flex flex-col items-center">
-                        <div className={`h-8 w-8 rounded-full flex items-center justify-center flex-shrink-0 transition-all duration-500 ${
-                          isComplete ? 'gradient-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                        } ${isCurrent && !isDelivered ? 'ring-4 ring-primary/20 scale-110' : ''}`}>
-                          <Icon className="h-4 w-4" />
-                        </div>
-                        {i < statusSteps.length - 1 && (
-                          <div className={`w-0.5 h-8 transition-colors duration-500 ${i < currentIndex ? 'bg-primary' : 'bg-muted'}`} />
-                        )}
-                      </div>
-                      <div className="pb-6">
-                        <p className={`font-heading font-semibold text-sm ${isComplete ? 'text-foreground' : 'text-muted-foreground'}`}>
-                          {step.label}
-                        </p>
-                        {isCurrent && !isDelivered && (
-                          <p className="text-xs text-primary font-heading mt-0.5 animate-pulse">{step.description}</p>
-                        )}
-                        {isComplete && !isCurrent && (
-                          <p className="text-xs text-muted-foreground mt-0.5">{step.description}</p>
-                        )}
-                      </div>
-                    </div>
-                  );
-                })}
+              {/* Order summary */}
+              <div className="mt-4 rounded-2xl border border-border p-4">
+                <h3 className="font-heading font-bold text-sm text-foreground mb-3">Παραγγελία</h3>
+                {items.map((item) => (
+                  <div key={item.id} className="flex justify-between py-1.5 text-sm">
+                    <span className="text-foreground">{item.quantity}× {item.name}</span>
+                    <span className="text-muted-foreground tabular-nums">€{(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
+                  </div>
+                ))}
+                <div className="flex justify-between pt-3 mt-2 border-t border-border font-heading font-extrabold">
+                  <span className="text-foreground">Σύνολο</span>
+                  <span className="text-foreground tabular-nums">€{Number(order.total_amount).toFixed(2)}</span>
+                </div>
+                {order.delivery_address && (
+                  <div className="flex items-start gap-2 mt-3 text-xs text-muted-foreground">
+                    <MapPin className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />
+                    <span>{order.delivery_address}</span>
+                  </div>
+                )}
               </div>
-            </CardContent>
-          </Card>
-        )}
 
-        <Card className="shadow-[var(--shadow-md)]">
-          <CardContent className="p-4">
-            <h3 className="font-heading font-semibold text-foreground mb-3">Λεπτομέρειες Παραγγελίας</h3>
-            {items.map(item => (
-              <div key={item.id} className="flex justify-between py-2 border-b border-border last:border-0 text-sm">
-                <span className="text-foreground">{item.quantity}x {item.name}</span>
-                <span className="text-muted-foreground">€{(Number(item.unit_price) * item.quantity).toFixed(2)}</span>
-              </div>
-            ))}
-            <div className="flex justify-between pt-3 border-t border-border font-heading font-bold">
-              <span className="text-foreground">Σύνολο</span>
-              <span className="text-foreground">€{Number(order.total_amount).toFixed(2)}</span>
-            </div>
-            {order.delivery_address && (
-              <div className="flex items-start gap-2 mt-3 text-sm text-muted-foreground">
-                <MapPin className="h-4 w-4 flex-shrink-0 mt-0.5" />
-                <span>{order.delivery_address}</span>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              {isDelivered && order.driver_id && (
+                <div className="mt-4">
+                  <PostDeliveryTipCard
+                    orderId={order.id}
+                    driverId={order.driver_id}
+                    driverName={driverName}
+                    initialTip={Number(order.tip_amount ?? 0)}
+                  />
+                </div>
+              )}
 
-        {!isDelivered && !isCancelled && <DeliveryCountdown order={order} />}
+              {isDelivered && !hasReviewed && (
+                <div className="mt-4">
+                  <ReviewForm orderId={order.id} storeId={order.store_id} onSubmitted={() => setHasReviewed(true)} />
+                </div>
+              )}
+              {isDelivered && hasReviewed && (
+                <div className="mt-4 rounded-2xl bg-success/5 border border-success/20 p-4 text-center">
+                  <Star className="h-6 w-6 fill-warning text-warning mx-auto mb-1" />
+                  <p className="font-heading text-sm text-foreground">Ευχαριστούμε για την κριτική!</p>
+                </div>
+              )}
 
-        {isDelivered && order.driver_id && (
-          <PostDeliveryTipCard
-            orderId={order.id}
-            driverId={order.driver_id}
-            driverName={driverName}
-            initialTip={Number(order.tip_amount ?? 0)}
-          />
-        )}
+              <Button onClick={() => navigate('/orders')} variant="outline" className="w-full font-heading mt-4">
+                Οι παραγγελίες μου
+              </Button>
 
-        {isDelivered && !hasReviewed && (
-          <ReviewForm
-            orderId={order.id}
-            storeId={order.store_id}
-            onSubmitted={() => setHasReviewed(true)}
-          />
-        )}
-        {isDelivered && hasReviewed && (
-          <Card className="shadow-[var(--shadow-sm)] bg-success/5 border-success/20">
-            <CardContent className="p-4 text-center">
-              <Star className="h-6 w-6 fill-warning text-warning mx-auto mb-1" />
-              <p className="font-heading text-sm text-foreground">Ευχαριστούμε για την κριτική σας!</p>
-            </CardContent>
-          </Card>
-        )}
-
-        <Button
-          onClick={() => navigate('/orders')}
-          variant="outline"
-          className="w-full font-heading"
-        >
-          Οι Παραγγελίες μου
-        </Button>
+              <button
+                onClick={() => setSheetExpanded(false)}
+                className="mt-3 w-full flex items-center justify-center gap-1.5 text-xs font-bold text-muted-foreground py-2"
+              >
+                Σύμπτυξη <ChevronDown className="h-4 w-4" />
+              </button>
+            </>
+          )}
+        </div>
       </div>
     </div>
   );
