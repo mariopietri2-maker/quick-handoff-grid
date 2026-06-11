@@ -372,16 +372,20 @@ export default function CustomerApp() {
                   className="w-full text-left group animate-fade-in"
                   style={{ animationDelay: `${idx * 0.04}s`, animationFillMode: 'both' }}
                 >
-                  <div className="relative aspect-[16/9] rounded-[20px] overflow-hidden mb-3 bg-[hsl(0,0%,96%)] shadow-sm group-hover:shadow-lg transition-shadow duration-300">
+                  <div className="relative aspect-[16/9] rounded-[22px] overflow-hidden mb-3 bg-[hsl(0,0%,96%)] shadow-[0_2px_4px_-2px_hsl(0_0%_0%/0.06),0_12px_28px_-12px_hsl(0_0%_0%/0.18)] group-hover:shadow-[0_4px_8px_-2px_hsl(0_0%_0%/0.08),0_20px_40px_-12px_hsl(0_0%_0%/0.22)] transition-shadow duration-500 ring-1 ring-black/[0.03]">
                     {store.image_url ? (
                       <img
                         src={store.image_url}
                         alt={store.name}
-                        className="w-full h-full object-cover group-hover:scale-[1.04] transition-transform duration-500"
+                        className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
                       />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
                     )}
+
+                    {/* Gradient overlay for legibility */}
+                    <div className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/55 via-black/15 to-transparent" />
+
 
                     {/* Top row: Fav + busy badge */}
                     <div className="absolute top-3 left-3">
