@@ -291,24 +291,26 @@ export default function CustomerApp() {
                     onClick={() => navigate(`/restaurant/${store.id}`)}
                     className="w-[230px] shrink-0 text-left group"
                   >
-                    <div className="relative h-[140px] rounded-2xl overflow-hidden mb-2 bg-[hsl(0,0%,96%)]">
+                    <div className="relative h-[140px] rounded-2xl overflow-hidden mb-2 bg-[hsl(0,0%,96%)] shadow-[0_2px_4px_-2px_hsl(0_0%_0%/0.06),0_10px_24px_-12px_hsl(0_0%_0%/0.18)] ring-1 ring-black/[0.03]">
                       {store.image_url ? (
                         <img
                           src={store.image_url}
                           alt={store.name}
-                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                          className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
                       )}
-                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold text-[hsl(0,0%,9%)] uppercase tracking-wider">
+                      <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/35 to-transparent" />
+                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold text-[hsl(0,0%,9%)] uppercase tracking-wider shadow-sm">
                         Ad
                       </div>
-                      <div className="absolute top-2 right-2 c-bg-accent rounded-full px-2 py-0.5 text-[10px] font-extrabold">
+                      <div className="absolute top-2 right-2 c-bg-accent rounded-full px-2 py-0.5 text-[10px] font-extrabold shadow-[0_4px_10px_-2px_hsl(var(--c-accent)/0.5)]">
                         −15%
                       </div>
                     </div>
+
                     <div className="flex items-center gap-1.5 mb-0.5">
                       <span className="text-[13px] font-extrabold text-[hsl(0,0%,9%)] truncate">{store.name}</span>
                       {ratings[store.id]?.count > 0 && (
