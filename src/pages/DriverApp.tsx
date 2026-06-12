@@ -276,6 +276,10 @@ export default function DriverApp() {
                   pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
                   predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
                   notes: (activeDelivery as any).notes ?? null,
+                  paymentMethod: (activeDelivery as any).payment_method ?? null,
+                  cashToCollect: (activeDelivery as any).payment_method === 'cash'
+                    ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
+                    : null,
                 }}
                 onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                 
