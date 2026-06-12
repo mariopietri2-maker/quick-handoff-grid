@@ -266,7 +266,7 @@ export default function CustomerApp() {
                         : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
                     }`}
                   >
-                    <span className="text-sm leading-none">{cat.emoji}</span>
+                    <span className="emoji text-sm leading-none">{cat.emoji}</span>
                     {t(cat.labelKey)}
                   </button>
                 );
