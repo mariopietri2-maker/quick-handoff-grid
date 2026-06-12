@@ -305,7 +305,7 @@ export default function CustomerApp() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
+                        <div className="w-full h-full flex items-center justify-center text-4xl emoji">🍽️</div>
                       )}
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/35 to-transparent" />
                       <div className="absolute top-2 left-2 bg-white/95 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold text-[hsl(0,0%,9%)] uppercase tracking-wider shadow-sm">
