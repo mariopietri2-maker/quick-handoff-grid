@@ -9,6 +9,7 @@ import type { Database } from '@/integrations/supabase/types';
 import PromoBannerCarousel from '@/components/PromoBannerCarousel';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
+import AppSplash from '@/components/customer/AppSplash';
 import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
@@ -147,6 +148,7 @@ export default function CustomerApp() {
         ['--c-accent-soft' as any]: `${cfg.branding.accent_hsl} / 0.10`,
       }}
     >
+      <AppSplash />
       {/* ── Header ─────────────────────────────────────── */}
       <header
         className="sticky top-0 z-50 bg-white/85 backdrop-blur-2xl border-b border-[hsl(0,0%,94%)] shadow-[0_1px_0_hsl(0_0%_0%/0.02),0_8px_24px_-16px_hsl(0_0%_0%/0.08)] relative overflow-hidden"
@@ -235,7 +237,7 @@ export default function CustomerApp() {
                   >
                     {/* glossy top highlight */}
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent" />
-                    <span className="text-3xl leading-none drop-shadow-sm relative">{tile.emoji}</span>
+                    <span className="emoji text-3xl leading-none drop-shadow-sm relative">{tile.emoji}</span>
                   </div>
 
                   <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">{tile.label}</span>
@@ -264,7 +266,7 @@ export default function CustomerApp() {
                         : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
                     }`}
                   >
-                    <span className="text-sm leading-none">{cat.emoji}</span>
+                    <span className="emoji text-sm leading-none">{cat.emoji}</span>
                     {t(cat.labelKey)}
                   </button>
                 );
@@ -303,7 +305,7 @@ export default function CustomerApp() {
                           loading="lazy"
                         />
                       ) : (
-                        <div className="w-full h-full flex items-center justify-center text-4xl">🍽️</div>
+                        <div className="w-full h-full flex items-center justify-center text-4xl emoji">🍽️</div>
                       )}
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/35 to-transparent" />
                       <div className="absolute top-2 left-2 bg-white/95 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold text-[hsl(0,0%,9%)] uppercase tracking-wider shadow-sm">
@@ -385,7 +387,7 @@ export default function CustomerApp() {
                         className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
+                      <div className="w-full h-full flex items-center justify-center text-5xl emoji">🍽️</div>
                     )}
 
                     {/* Gradient overlay for legibility */}
@@ -436,9 +438,7 @@ export default function CustomerApp() {
                       <p className="text-[12px] c-muted mt-0.5 truncate">{store.address}</p>
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         {Number((store as any).delivery_fee ?? 0.99) === 0 ? (
-                          <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                            🛵 {t('customer.delivery')} 0€
-                          </span>
+                          <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full"><span className="emoji">🛵</span> {t('customer.delivery')} 0€</span>
                         ) : (
                           <span className="text-[11px] font-bold c-bg-accent-soft px-2 py-0.5 rounded-full">
                             {Number((store as any).delivery_fee ?? 0.99).toFixed(2).replace('.', ',')}€ {t('customer.delivery')}
