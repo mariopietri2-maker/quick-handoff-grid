@@ -438,9 +438,7 @@ export default function CustomerApp() {
                       <p className="text-[12px] c-muted mt-0.5 truncate">{store.address}</p>
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
                         {Number((store as any).delivery_fee ?? 0.99) === 0 ? (
-                          <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full">
-                            🛵 {t('customer.delivery')} 0€
-                          </span>
+                          <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full"><span className="emoji">🛵</span> {t('customer.delivery')} 0€</span>
                         ) : (
                           <span className="text-[11px] font-bold c-bg-accent-soft px-2 py-0.5 rounded-full">
                             {Number((store as any).delivery_fee ?? 0.99).toFixed(2).replace('.', ',')}€ {t('customer.delivery')}
