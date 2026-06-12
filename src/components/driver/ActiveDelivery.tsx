@@ -30,6 +30,10 @@ interface ActiveDeliveryData {
   /** Notes from customer or store (special instructions, allergies, gate codes, etc.) */
   notes?: string | null;
   storeNotes?: string | null;
+  /** Payment method — when 'cash' the driver must confirm collected amount before completing */
+  paymentMethod?: string | null;
+  /** Amount of cash to collect from customer */
+  cashToCollect?: number | null;
 }
 
 interface ActiveDeliveryProps {
