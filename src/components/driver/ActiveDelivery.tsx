@@ -57,16 +57,13 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
   const [confirmDeliver, setConfirmDeliver] = useState(false);
   const isCash = (delivery.paymentMethod ?? '').toLowerCase() === 'cash';
   const cashDue = Number(delivery.cashToCollect ?? 0);
-  const [cashCollected, setCashCollected] = useState<string>('');
   const [cashConfirmed, setCashConfirmed] = useState(false);
   useEffect(() => {
     if (confirmDeliver) {
-      setCashCollected(isCash && cashDue > 0 ? cashDue.toFixed(2) : '');
       setCashConfirmed(false);
     }
-  }, [confirmDeliver, isCash, cashDue]);
-  const cashCollectedNum = Number(cashCollected.replace(',', '.'));
-  const cashOk = !isCash || (cashConfirmed && Number.isFinite(cashCollectedNum) && Math.abs(cashCollectedNum - cashDue) < 0.005);
+  }, [confirmDeliver]);
+  const cashOk = !isCash || cashConfirmed;
   const shortId = delivery.id.slice(0, 8).toUpperCase();
 
   // Live countdown to predicted ready time (only meaningful pre-ready)
@@ -293,27 +290,6 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
                 <span className="font-heading font-bold text-[18px] text-[hsl(var(--driver-text))] tabular-nums">
                   €{cashDue.toFixed(2)}
                 </span>
-              </div>
-              <div>
-                <label className="block text-[12px] font-heading font-semibold text-[hsl(var(--driver-text))] mb-1.5">
-                  Ποσό που εισέπραξες
-                </label>
-                <div className="relative">
-                  <span className="absolute left-3 top-1/2 -translate-y-1/2 text-[15px] font-heading font-bold text-[hsl(var(--driver-text-muted))]">€</span>
-                  <input
-                    inputMode="decimal"
-                    type="text"
-                    value={cashCollected}
-                    onChange={(e) => { setCashCollected(e.target.value); setCashConfirmed(false); }}
-                    placeholder="0.00"
-                    className="w-full h-12 pl-8 pr-3 rounded-xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface))] text-[16px] font-heading font-bold text-[hsl(var(--driver-text))] tabular-nums focus:outline-none focus:ring-2 focus:ring-[hsl(var(--driver-accent))]/30"
-                  />
-                </div>
-                {cashCollected !== '' && Number.isFinite(cashCollectedNum) && Math.abs(cashCollectedNum - cashDue) >= 0.005 && (
-                  <p className="mt-1.5 text-[12px] text-destructive font-medium">
-                    Το ποσό πρέπει να είναι €{cashDue.toFixed(2)}
-                  </p>
-                )}
               </div>
               <label className="flex items-start gap-2.5 cursor-pointer select-none">
                 <input
