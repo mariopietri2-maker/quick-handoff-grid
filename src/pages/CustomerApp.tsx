@@ -148,6 +148,7 @@ export default function CustomerApp() {
         ['--c-accent-soft' as any]: `${cfg.branding.accent_hsl} / 0.10`,
       }}
     >
+      <AppSplash />
       {/* ── Header ─────────────────────────────────────── */}
       <header
         className="sticky top-0 z-50 bg-white/85 backdrop-blur-2xl border-b border-[hsl(0,0%,94%)] shadow-[0_1px_0_hsl(0_0%_0%/0.02),0_8px_24px_-16px_hsl(0_0%_0%/0.08)] relative overflow-hidden"
