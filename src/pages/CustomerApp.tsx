@@ -237,7 +237,7 @@ export default function CustomerApp() {
                   >
                     {/* glossy top highlight */}
                     <div className="pointer-events-none absolute inset-x-0 top-0 h-1/2 bg-gradient-to-b from-white/25 to-transparent" />
-                    <span className="text-3xl leading-none drop-shadow-sm relative">{tile.emoji}</span>
+                    <span className="emoji text-3xl leading-none drop-shadow-sm relative">{tile.emoji}</span>
                   </div>
 
                   <span className="text-[11px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">{tile.label}</span>
