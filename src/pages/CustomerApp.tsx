@@ -387,7 +387,7 @@ export default function CustomerApp() {
                         className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
                       />
                     ) : (
-                      <div className="w-full h-full flex items-center justify-center text-5xl">🍽️</div>
+                      <div className="w-full h-full flex items-center justify-center text-5xl emoji">🍽️</div>
                     )}
 
                     {/* Gradient overlay for legibility */}
