@@ -55,6 +55,18 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
   const isGoingToCustomer = delivery.status === 'picked_up';
   const isReady = ['ready', 'arrived', 'picked_up', 'delivered'].includes(delivery.status);
   const [confirmDeliver, setConfirmDeliver] = useState(false);
+  const isCash = (delivery.paymentMethod ?? '').toLowerCase() === 'cash';
+  const cashDue = Number(delivery.cashToCollect ?? 0);
+  const [cashCollected, setCashCollected] = useState<string>('');
+  const [cashConfirmed, setCashConfirmed] = useState(false);
+  useEffect(() => {
+    if (confirmDeliver) {
+      setCashCollected(isCash && cashDue > 0 ? cashDue.toFixed(2) : '');
+      setCashConfirmed(false);
+    }
+  }, [confirmDeliver, isCash, cashDue]);
+  const cashCollectedNum = Number(cashCollected.replace(',', '.'));
+  const cashOk = !isCash || (cashConfirmed && Number.isFinite(cashCollectedNum) && Math.abs(cashCollectedNum - cashDue) < 0.005);
   const shortId = delivery.id.slice(0, 8).toUpperCase();
 
   // Live countdown to predicted ready time (only meaningful pre-ready)
