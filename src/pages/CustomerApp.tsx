@@ -57,6 +57,9 @@ export default function CustomerApp() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filterFree, setFilterFree] = useState(false);
+  const [filterTopRated, setFilterTopRated] = useState(false);
+  const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
