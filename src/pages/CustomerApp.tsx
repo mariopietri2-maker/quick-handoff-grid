@@ -362,6 +362,40 @@ export default function CustomerApp() {
             </span>
           </div>
 
+          {/* Quick filters */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-5 px-5">
+            {[
+              { key: 'free', label: 'Δωρεάν παράδοση', icon: BadgePercent, on: filterFree, toggle: () => setFilterFree(v => !v) },
+              { key: 'top', label: 'Κορυφαία 4.5+', icon: Star, on: filterTopRated, toggle: () => setFilterTopRated(v => !v) },
+              { key: 'fast', label: 'Γρήγορα', icon: Zap, on: filterFast, toggle: () => setFilterFast(v => !v) },
+            ].map(f => {
+              const Icon = f.icon;
+              return (
+                <button
+                  key={f.key}
+                  onClick={f.toggle}
+                  className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] font-extrabold transition-all active:scale-95 border ${
+                    f.on
+                      ? 'c-bg-accent border-transparent shadow-[0_4px_10px_-2px_hsl(var(--c-accent)/0.35)]'
+                      : 'bg-white text-[hsl(0,0%,9%)] border-[hsl(0,0%,90%)]'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={2.6} />
+                  {f.label}
+                </button>
+              );
+            })}
+            {(filterFree || filterTopRated || filterFast) && (
+              <button
+                onClick={() => { setFilterFree(false); setFilterTopRated(false); setFilterFast(false); }}
+                className="shrink-0 inline-flex items-center h-9 px-3 rounded-full text-[12px] font-bold c-muted"
+              >
+                Καθαρισμός
+              </button>
+            )}
+          </div>
+
+
           {loading ? (
             <div className="space-y-5">
               {[1, 2, 3].map(i => (
