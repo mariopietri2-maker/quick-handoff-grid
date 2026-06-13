@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Store as StoreIcon, Star } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Store as StoreIcon, Star, Zap, BadgePercent, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
@@ -10,6 +10,8 @@ import PromoBannerCarousel from '@/components/PromoBannerCarousel';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
 import AppSplash from '@/components/customer/AppSplash';
+import OrderAgainRow from '@/components/customer/OrderAgainRow';
+import HomeGreeting from '@/components/customer/HomeGreeting';
 import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
@@ -55,6 +57,9 @@ export default function CustomerApp() {
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const [filterFree, setFilterFree] = useState(false);
+  const [filterTopRated, setFilterTopRated] = useState(false);
+  const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
@@ -125,19 +130,24 @@ export default function CustomerApp() {
     };
   }, []);
 
-  const filtered = useMemo(() => stores.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.address.toLowerCase().includes(search.toLowerCase());
-    if (!matchesSearch) return false;
-    if (selectedCategory === 'all') return true;
-    const cats = storeCategories[s.id] ?? [];
-    return cats.some(c => c.includes(selectedCategory));
-  }), [stores, search, selectedCategory, storeCategories]);
-
   const ratings = useStoreRatings(useMemo(
     () => [...stores.map(s => s.id), ...promotedStores.map(s => s.id)],
     [stores, promotedStores],
   ));
+
+  const filtered = useMemo(() => stores.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.address.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (selectedCategory !== 'all') {
+      const cats = storeCategories[s.id] ?? [];
+      if (!cats.some(c => c.includes(selectedCategory))) return false;
+    }
+    if (filterFree && Number((s as any).delivery_fee ?? 0.99) !== 0) return false;
+    if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
+    if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
+    return true;
+  }), [stores, search, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
 
   return (
     <div
@@ -218,6 +228,8 @@ export default function CustomerApp() {
 
       <main className="max-w-2xl mx-auto">
         <ActiveOrderTracker />
+        <HomeGreeting />
+        <OrderAgainRow />
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
         {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
           <div className="px-5 pt-5">
@@ -349,6 +361,40 @@ export default function CustomerApp() {
               {filtered.length} {t('customer.stores_count')}
             </span>
           </div>
+
+          {/* Quick filters */}
+          <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-5 px-5">
+            {[
+              { key: 'free', label: 'Δωρεάν παράδοση', icon: BadgePercent, on: filterFree, toggle: () => setFilterFree(v => !v) },
+              { key: 'top', label: 'Κορυφαία 4.5+', icon: Star, on: filterTopRated, toggle: () => setFilterTopRated(v => !v) },
+              { key: 'fast', label: 'Γρήγορα', icon: Zap, on: filterFast, toggle: () => setFilterFast(v => !v) },
+            ].map(f => {
+              const Icon = f.icon;
+              return (
+                <button
+                  key={f.key}
+                  onClick={f.toggle}
+                  className={`shrink-0 inline-flex items-center gap-1.5 h-9 px-3.5 rounded-full text-[12px] font-extrabold transition-all active:scale-95 border ${
+                    f.on
+                      ? 'c-bg-accent border-transparent shadow-[0_4px_10px_-2px_hsl(var(--c-accent)/0.35)]'
+                      : 'bg-white text-[hsl(0,0%,9%)] border-[hsl(0,0%,90%)]'
+                  }`}
+                >
+                  <Icon className="h-3.5 w-3.5" strokeWidth={2.6} />
+                  {f.label}
+                </button>
+              );
+            })}
+            {(filterFree || filterTopRated || filterFast) && (
+              <button
+                onClick={() => { setFilterFree(false); setFilterTopRated(false); setFilterFast(false); }}
+                className="shrink-0 inline-flex items-center h-9 px-3 rounded-full text-[12px] font-bold c-muted"
+              >
+                Καθαρισμός
+              </button>
+            )}
+          </div>
+
 
           {loading ? (
             <div className="space-y-5">
