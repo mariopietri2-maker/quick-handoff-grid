@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Store as StoreIcon, Star } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Store as StoreIcon, Star, Zap, BadgePercent, Sparkles } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
@@ -10,6 +10,8 @@ import PromoBannerCarousel from '@/components/PromoBannerCarousel';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
 import AppSplash from '@/components/customer/AppSplash';
+import OrderAgainRow from '@/components/customer/OrderAgainRow';
+import HomeGreeting from '@/components/customer/HomeGreeting';
 import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
