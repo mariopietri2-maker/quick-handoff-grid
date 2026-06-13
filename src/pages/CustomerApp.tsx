@@ -130,19 +130,24 @@ export default function CustomerApp() {
     };
   }, []);
 
-  const filtered = useMemo(() => stores.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.address.toLowerCase().includes(search.toLowerCase());
-    if (!matchesSearch) return false;
-    if (selectedCategory === 'all') return true;
-    const cats = storeCategories[s.id] ?? [];
-    return cats.some(c => c.includes(selectedCategory));
-  }), [stores, search, selectedCategory, storeCategories]);
-
   const ratings = useStoreRatings(useMemo(
     () => [...stores.map(s => s.id), ...promotedStores.map(s => s.id)],
     [stores, promotedStores],
   ));
+
+  const filtered = useMemo(() => stores.filter(s => {
+    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.address.toLowerCase().includes(search.toLowerCase());
+    if (!matchesSearch) return false;
+    if (selectedCategory !== 'all') {
+      const cats = storeCategories[s.id] ?? [];
+      if (!cats.some(c => c.includes(selectedCategory))) return false;
+    }
+    if (filterFree && Number((s as any).delivery_fee ?? 0.99) !== 0) return false;
+    if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
+    if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
+    return true;
+  }), [stores, search, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
 
   return (
     <div
