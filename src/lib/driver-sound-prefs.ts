@@ -1,16 +1,18 @@
-// Driver sound preferences stored locally per device
+// Driver sound preferences stored locally per device.
+// All sounds are designed as polished, modern, professional alerts.
 import doordashMp3 from '@/assets/sounds/doordash.mp3';
 
 export type SoundPattern =
-  | 'chime' | 'bell' | 'urgent' | 'cash' | 'pulse'
-  | 'wolt' | 'uber' | 'doordash' | 'glovo' | 'kaching'
-  | 'arcade' | 'marimba' | 'classic_phone' | 'siren'
-  | 'doordash_real'
-  | 'ios_tritone' | 'crystal' | 'tesla' | 'fanfare' | 'zen';
+  | 'doordash'    // real DoorDash sample (mp3)
+  | 'pristine'    // high-end resonant bell triad
+  | 'pulse'       // modern two-tone (Wolt/Uber feel)
+  | 'cash'        // warm coin drop
+  | 'zen'         // meditation bowl long resonance
+  | 'alert';      // urgent triple beep
 
-// Sample-based (mp3) patterns — bypass the synth tone engine
+// Sample-based patterns — bypass the synth tone engine
 const SAMPLE_URLS: Partial<Record<SoundPattern, string>> = {
-  doordash_real: doordashMp3,
+  doordash: doordashMp3,
 };
 
 export interface DriverSoundPrefs {
@@ -26,16 +28,43 @@ const KEY = 'qg.driver.sound.prefs.v1';
 const DEFAULTS: DriverSoundPrefs = {
   enabled: true,
   volume: 0.7,
-  pattern: 'chime',
+  pattern: 'doordash',
   repeatCount: 2,
   vibrate: true,
 };
+
+// Migrate any legacy/removed pattern names to the new curated set.
+const PATTERN_MIGRATIONS: Record<string, SoundPattern> = {
+  doordash_real: 'doordash',
+  doordash_style: 'pulse',
+  ios_tritone: 'pristine',
+  crystal: 'pristine',
+  tesla: 'pulse',
+  fanfare: 'pristine',
+  wolt: 'pulse',
+  uber: 'pulse',
+  glovo: 'pulse',
+  kaching: 'cash',
+  arcade: 'cash',
+  marimba: 'pristine',
+  classic_phone: 'alert',
+  siren: 'alert',
+  chime: 'pristine',
+  bell: 'pristine',
+  urgent: 'alert',
+};
+
+const VALID: SoundPattern[] = ['doordash', 'pristine', 'pulse', 'cash', 'zen', 'alert'];
 
 export function loadDriverSoundPrefs(): DriverSoundPrefs {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) return DEFAULTS;
-    return { ...DEFAULTS, ...JSON.parse(raw) };
+    const parsed = { ...DEFAULTS, ...JSON.parse(raw) } as DriverSoundPrefs;
+    if (!VALID.includes(parsed.pattern)) {
+      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'doordash';
+    }
+    return parsed;
   } catch {
     return DEFAULTS;
   }
@@ -52,107 +81,53 @@ function getCtx(): AudioContext {
   return ctxRef;
 }
 
-interface ToneSpec { freq: number; dur: number; type?: OscillatorType; gain?: number }
+interface ToneSpec {
+  freq: number;
+  dur: number;
+  type?: OscillatorType;
+  gain?: number;
+  attack?: number;       // seconds
+  release?: number;      // seconds (decay tail)
+  harmonics?: number[];  // additional partials as ratios of freq
+  detune?: number;       // cents, gives subtle chorus
+}
 
-const PATTERNS: Record<Exclude<SoundPattern, keyof typeof SAMPLE_URLS>, ToneSpec[]> = {
-  chime:  [{ freq: 523.25, dur: 0.15 }, { freq: 659.25, dur: 0.15 }, { freq: 783.99, dur: 0.2 }],
-  bell:   [{ freq: 880, dur: 0.4, type: 'triangle' }],
-  urgent: [{ freq: 1000, dur: 0.1, type: 'square' }, { freq: 1000, dur: 0.1, type: 'square' }, { freq: 1200, dur: 0.15, type: 'square' }],
-  cash:   [{ freq: 1318.51, dur: 0.08 }, { freq: 1567.98, dur: 0.08 }, { freq: 2093, dur: 0.25 }],
-  pulse:  [{ freq: 600, dur: 0.12, type: 'sine' }, { freq: 800, dur: 0.18, type: 'sine' }],
-
-  // Wolt-style: clean two-note rising chime
-  wolt: [{ freq: 880, dur: 0.18, type: 'sine' }, { freq: 1318.51, dur: 0.28, type: 'sine' }],
-
-  // Uber-style: short triangle ping
-  uber: [{ freq: 1046.5, dur: 0.12, type: 'triangle' }, { freq: 1396.91, dur: 0.22, type: 'triangle' }],
-
-  // DoorDash-style: warm bell trio
-  doordash: [
-    { freq: 659.25, dur: 0.14, type: 'triangle' },
-    { freq: 880, dur: 0.14, type: 'triangle' },
-    { freq: 1108.73, dur: 0.3, type: 'triangle' },
+// Polished, professional-grade patterns.
+// Designed with proper ADSR envelopes + harmonic stacks for a richer timbre.
+const PATTERNS: Record<Exclude<SoundPattern, 'doordash'>, ToneSpec[]> = {
+  // Pristine — high-end mallet bell with sparkle (think premium iOS/Tesla)
+  pristine: [
+    { freq: 1046.5, dur: 0.18, type: 'sine', gain: 0.5, attack: 0.005, release: 0.4, harmonics: [2, 3], detune: 4 },
+    { freq: 1396.9, dur: 0.18, type: 'sine', gain: 0.45, attack: 0.005, release: 0.45, harmonics: [2, 3] },
+    { freq: 2093.0, dur: 0.55, type: 'sine', gain: 0.4,  attack: 0.005, release: 0.7,  harmonics: [2] },
   ],
 
-  // Glovo-style: bouncy alert
-  glovo: [
-    { freq: 783.99, dur: 0.1, type: 'sine' },
-    { freq: 1046.5, dur: 0.1, type: 'sine' },
-    { freq: 783.99, dur: 0.1, type: 'sine' },
-    { freq: 1318.51, dur: 0.22, type: 'sine' },
+  // Pulse — modern, soft two-tone rise (Wolt / Uber style done right)
+  pulse: [
+    { freq: 587.33, dur: 0.22, type: 'sine',     gain: 0.55, attack: 0.01,  release: 0.35, harmonics: [2], detune: 3 },
+    { freq: 880.0,  dur: 0.45, type: 'triangle', gain: 0.55, attack: 0.008, release: 0.5,  harmonics: [2] },
   ],
 
-  // Ka-ching cash register
-  kaching: [
-    { freq: 2093, dur: 0.06, type: 'square', gain: 0.35 },
-    { freq: 2637, dur: 0.06, type: 'square', gain: 0.35 },
-    { freq: 3136, dur: 0.18, type: 'triangle' },
+  // Cash — warm, satisfying coin-drop (no cheap 8-bit feel)
+  cash: [
+    { freq: 1567.98, dur: 0.08, type: 'triangle', gain: 0.45, attack: 0.002, release: 0.18 },
+    { freq: 2093.0,  dur: 0.08, type: 'triangle', gain: 0.45, attack: 0.002, release: 0.22 },
+    { freq: 2637.02, dur: 0.55, type: 'sine',     gain: 0.5,  attack: 0.003, release: 0.65, harmonics: [2] },
   ],
 
-  // 8-bit arcade coin
-  arcade: [
-    { freq: 988, dur: 0.08, type: 'square' },
-    { freq: 1319, dur: 0.18, type: 'square' },
-  ],
-
-  // Marimba - soft mallet feel
-  marimba: [
-    { freq: 523.25, dur: 0.12, type: 'sine' },
-    { freq: 783.99, dur: 0.12, type: 'sine' },
-    { freq: 1046.5, dur: 0.18, type: 'sine' },
-  ],
-
-  // Classic phone double-ring
-  classic_phone: [
-    { freq: 440, dur: 0.18, type: 'sine' },
-    { freq: 480, dur: 0.18, type: 'sine' },
-    { freq: 440, dur: 0.18, type: 'sine' },
-    { freq: 480, dur: 0.18, type: 'sine' },
-  ],
-
-  // Siren - emergency style
-  siren: [
-    { freq: 800, dur: 0.18, type: 'sawtooth' },
-    { freq: 1200, dur: 0.18, type: 'sawtooth' },
-    { freq: 800, dur: 0.18, type: 'sawtooth' },
-  ],
-
-  // iOS Tritone — three crisp notes (classic SMS feel)
-  ios_tritone: [
-    { freq: 1244.51, dur: 0.13, type: 'sine' },
-    { freq: 1661.22, dur: 0.13, type: 'sine' },
-    { freq: 1864.66, dur: 0.22, type: 'sine' },
-  ],
-
-  // Crystal — sparkling high bell, premium feel
-  crystal: [
-    { freq: 1760, dur: 0.1, type: 'triangle', gain: 0.3 },
-    { freq: 2349.32, dur: 0.1, type: 'triangle', gain: 0.3 },
-    { freq: 2637.02, dur: 0.35, type: 'sine' },
-  ],
-
-  // Tesla — soft synthy two-note rise
-  tesla: [
-    { freq: 587.33, dur: 0.22, type: 'sine' },
-    { freq: 880, dur: 0.32, type: 'sine' },
-  ],
-
-  // Fanfare — celebratory four-note rise
-  fanfare: [
-    { freq: 523.25, dur: 0.1, type: 'triangle' },
-    { freq: 659.25, dur: 0.1, type: 'triangle' },
-    { freq: 783.99, dur: 0.1, type: 'triangle' },
-    { freq: 1046.5, dur: 0.3, type: 'triangle' },
-  ],
-
-  // Zen — calm low-to-high meditation tone
+  // Zen — calm singing-bowl resonance (long tail)
   zen: [
-    { freq: 392, dur: 0.3, type: 'sine' },
-    { freq: 587.33, dur: 0.5, type: 'sine' },
+    { freq: 392.0,  dur: 0.6, type: 'sine', gain: 0.45, attack: 0.04, release: 0.9, harmonics: [2, 3], detune: 6 },
+    { freq: 587.33, dur: 0.9, type: 'sine', gain: 0.4,  attack: 0.05, release: 1.2, harmonics: [2],    detune: 4 },
+  ],
+
+  // Alert — urgent but tasteful triple beep
+  alert: [
+    { freq: 988.0, dur: 0.12, type: 'square', gain: 0.4, attack: 0.003, release: 0.05 },
+    { freq: 988.0, dur: 0.12, type: 'square', gain: 0.4, attack: 0.003, release: 0.05 },
+    { freq: 1318.5, dur: 0.22, type: 'square', gain: 0.45, attack: 0.003, release: 0.12 },
   ],
 };
-
-
 
 const sampleCache: Record<string, HTMLAudioElement> = {};
 function playSample(url: string, volume: number) {
@@ -166,31 +141,49 @@ function playSample(url: string, volume: number) {
   } catch { return 0; }
 }
 
+function scheduleTone(ctx: AudioContext, t: ToneSpec, startAt: number, volume: number, master: GainNode) {
+  const peak = Math.max(0.0001, Math.min(1, volume)) * (t.gain ?? 0.4);
+  const attack = t.attack ?? 0.01;
+  const release = t.release ?? 0.15;
+  const harmonics = [1, ...(t.harmonics ?? [])];
+  const harmonicGain = 1 / harmonics.length;
+
+  harmonics.forEach((ratio, i) => {
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = t.type ?? 'sine';
+    osc.frequency.value = t.freq * ratio;
+    if (t.detune) osc.detune.value = (i % 2 === 0 ? 1 : -1) * t.detune;
+    const partialPeak = peak * harmonicGain * (i === 0 ? 1 : 0.55 / ratio);
+
+    gain.gain.setValueAtTime(0, startAt);
+    gain.gain.linearRampToValueAtTime(partialPeak, startAt + attack);
+    gain.gain.setValueAtTime(partialPeak, startAt + t.dur);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + t.dur + release);
+
+    osc.connect(gain);
+    gain.connect(master);
+    osc.start(startAt);
+    osc.stop(startAt + t.dur + release + 0.05);
+  });
+}
+
 export function playPattern(pattern: SoundPattern, volume: number) {
   const sampleUrl = SAMPLE_URLS[pattern];
   if (sampleUrl) return playSample(sampleUrl, volume);
   try {
     const ctx = getCtx();
     if (ctx.state === 'suspended') ctx.resume();
+    const master = ctx.createGain();
+    master.gain.value = 1;
+    master.connect(ctx.destination);
     const now = ctx.currentTime;
-    let offset = 0;
-    const tones = (PATTERNS as Record<string, ToneSpec[]>)[pattern];
+    const tones = PATTERNS[pattern as Exclude<SoundPattern, 'doordash'>];
     if (!tones) return 0;
-    const gap = 0.06;
+    const gap = 0.05;
+    let offset = 0;
     tones.forEach((t) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.type = t.type ?? 'sine';
-      osc.frequency.value = t.freq;
-      const start = now + offset;
-      const peak = Math.max(0.001, Math.min(1, volume)) * (t.gain ?? 0.4);
-      gain.gain.setValueAtTime(0, start);
-      gain.gain.linearRampToValueAtTime(peak, start + 0.015);
-      gain.gain.exponentialRampToValueAtTime(0.0001, start + t.dur);
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.start(start);
-      osc.stop(start + t.dur + 0.05);
+      scheduleTone(ctx, t, now + offset, volume, master);
       offset += t.dur + gap;
     });
     return offset * 1000;
@@ -208,16 +201,15 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
   const p = prefs ?? loadDriverSoundPrefs();
   if (!p.enabled) return;
   const now = Date.now();
-  if (now < _alertLockUntil) return; // suppress overlapping calls
+  if (now < _alertLockUntil) return;
   const reps = Math.max(1, p.repeatCount);
-  _alertLockUntil = now + reps * 700 + 400;
-  // clear any leftover timers just in case
+  _alertLockUntil = now + reps * 900 + 400;
   while (_pendingTimers.length) { try { clearTimeout(_pendingTimers.pop()!); } catch {} }
   if (p.vibrate && 'vibrate' in navigator) {
     try { navigator.vibrate([120, 80, 120]); } catch {}
   }
   for (let i = 0; i < reps; i++) {
-    const t = window.setTimeout(() => playPattern(p.pattern, p.volume), i * 700);
+    const t = window.setTimeout(() => playPattern(p.pattern, p.volume), i * 900);
     _pendingTimers.push(t);
   }
 }
