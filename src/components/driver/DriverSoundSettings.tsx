@@ -12,26 +12,12 @@ import {
 import { requestNotificationPermission } from '@/lib/notifications';
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
-  { value: 'doordash_real', label: 'DoorDash (real)', emoji: '🔔' },
-  { value: 'ios_tritone',   label: 'iOS Tritone',     emoji: '📱' },
-  { value: 'crystal',       label: 'Crystal',         emoji: '✨' },
-  { value: 'tesla',         label: 'Tesla',           emoji: '🚗' },
-  { value: 'fanfare',       label: 'Fanfare',         emoji: '🎺' },
-  { value: 'zen',           label: 'Zen',             emoji: '🧘' },
-  { value: 'wolt',          label: 'Wolt-style',     emoji: '💙' },
-  { value: 'uber',          label: 'Uber-style',     emoji: '⚡' },
-  { value: 'doordash',      label: 'DoorDash-style', emoji: '🛵' },
-  { value: 'glovo',         label: 'Glovo-style',    emoji: '🟡' },
-  { value: 'kaching',       label: 'Ka-ching',       emoji: '💸' },
-  { value: 'cash',          label: 'Ταμείο',         emoji: '💰' },
-  { value: 'arcade',        label: 'Arcade Coin',    emoji: '🎮' },
-  { value: 'marimba',       label: 'Marimba',        emoji: '🎵' },
-  { value: 'chime',         label: 'Χτύπος',         emoji: '🔔' },
-  { value: 'bell',          label: 'Καμπάνα',        emoji: '🛎️' },
-  { value: 'classic_phone', label: 'Τηλέφωνο',       emoji: '☎️' },
-  { value: 'pulse',         label: 'Παλμός',         emoji: '💫' },
-  { value: 'urgent',        label: 'Επείγον',        emoji: '🚨' },
-  { value: 'siren',         label: 'Σειρήνα',        emoji: '🚓' },
+  { value: 'doordash', label: 'DoorDash', emoji: '🛵' },
+  { value: 'pristine', label: 'Pristine', emoji: '✨' },
+  { value: 'pulse',    label: 'Pulse',    emoji: '💫' },
+  { value: 'cash',     label: 'Cash',     emoji: '💰' },
+  { value: 'zen',      label: 'Zen',      emoji: '🧘' },
+  { value: 'alert',    label: 'Alert',    emoji: '🚨' },
 ];
 
 interface DriverSoundSettingsProps {
