@@ -16,6 +16,7 @@ import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/i18n';
+import HomeGreeting from '@/components/customer/HomeGreeting';
 
 const roleConfig: Record<string, { label: string; icon: any; path: string; color: string }> = {
   admin:    { label: 'Admin',    icon: Shield,     path: '/admin',   color: 'text-primary' },
@@ -83,6 +84,7 @@ export default function ProfilePage() {
       </header>
 
       <main className="container max-w-3xl px-4 py-6 space-y-6">
+        <HomeGreeting />
         {/* Identity card */}
         <Card>
           <CardHeader>

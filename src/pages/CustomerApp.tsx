@@ -11,7 +11,6 @@ import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
 import AppSplash from '@/components/customer/AppSplash';
 import OrderAgainRow from '@/components/customer/OrderAgainRow';
-import HomeGreeting from '@/components/customer/HomeGreeting';
 import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
@@ -228,7 +227,6 @@ export default function CustomerApp() {
 
       <main className="max-w-2xl mx-auto">
         <ActiveOrderTracker />
-        <HomeGreeting />
         <OrderAgainRow />
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
         {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
