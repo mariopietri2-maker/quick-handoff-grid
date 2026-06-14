@@ -227,7 +227,6 @@ export default function CustomerApp() {
 
       <main className="max-w-2xl mx-auto">
         <ActiveOrderTracker />
-        <HomeGreeting />
         <OrderAgainRow />
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
         {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
