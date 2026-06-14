@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
-import { ChevronLeft, ChevronRight, Info, ChevronDown, Package } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Info, ChevronDown, Package, MapPin, ShoppingBag, Clock, Receipt, Navigation } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { format, startOfDay, endOfDay, addDays, isSameDay, isToday, isYesterday, getISOWeek } from 'date-fns';
 import { el } from 'date-fns/locale';
+import { shortenAddress } from '@/lib/address-utils';
 
 interface EarningRow {
   id: string;
@@ -18,7 +19,10 @@ interface EarningRow {
     id: string;
     created_at: string;
     store_id: string;
+    delivery_address: string | null;
+    distance_km: number | null;
     stores: { name: string | null } | null;
+    order_items: { quantity: number }[] | null;
   } | null;
 }
 
@@ -47,7 +51,7 @@ export function EarningsDashboard() {
       const to = endOfDay(selectedDate).toISOString();
       const { data } = await supabase
         .from('earnings')
-        .select('id, base_pay, tip, bonus, total, created_at, order_id, orders:order_id(id, created_at, store_id, stores:store_id(name))')
+        .select('id, base_pay, tip, bonus, total, created_at, order_id, orders:order_id(id, created_at, store_id, delivery_address, distance_km, stores:store_id(name), order_items(quantity))')
         .eq('driver_id', user.id)
         .gte('created_at', from)
         .lte('created_at', to)
