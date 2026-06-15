@@ -164,8 +164,14 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
             <div className={`grid grid-cols-3 gap-2 ${!sound.enabled ? 'opacity-50 pointer-events-none' : ''}`}>
               {PATTERN_OPTIONS.map(opt => (
                 <button
+                  type="button"
                   key={opt.value}
-                  onClick={() => { updateSound({ pattern: opt.value }); playPattern(opt.value, sound.volume); }}
+                  onClick={() => {
+                    const next = { ...sound, pattern: opt.value };
+                    setSound(next);
+                    saveDriverSoundPrefs(next);
+                    playPattern(next.pattern, next.volume);
+                  }}
                   className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all ${
                     sound.pattern === opt.value ? 'border-primary bg-primary/10' : 'border-border bg-muted/40'
                   }`}
