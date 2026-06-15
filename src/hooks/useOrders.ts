@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { playOrderSound, showOrderNotification } from '@/lib/notifications';
+import { playOrderSound, showDeliveryNotification, showOrderNotification } from '@/lib/notifications';
 import { playOfferAlert } from '@/lib/driver-sound-prefs';
 
 import type { Database } from '@/integrations/supabase/types';
@@ -313,6 +313,11 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   useEffect(() => {
     if (activeDelivery) return;
     if (!ringableKey) return;
+    const first = offers.find(o => o.status === 'ready');
+    if (first) {
+      const payout = Number(first.delivery_fee ?? 0) + Number(first.tip_amount ?? 0) || Number((first as any).driver_payout ?? 0) || 0;
+      showDeliveryNotification(payout);
+    }
     playOfferAlert();
     const id = setInterval(() => playOfferAlert(), 4000);
     return () => clearInterval(id);

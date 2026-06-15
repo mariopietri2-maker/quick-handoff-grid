@@ -44,7 +44,6 @@ export async function showOsNotification(opts: {
             title: opts.title,
             body: opts.body,
             schedule: { at: new Date(Date.now() + 50) },
-            sound: 'default',
             smallIcon: 'ic_stat_icon_config_sample',
             channelId: 'driver-offers',
           },
@@ -83,7 +82,6 @@ export async function initNotificationChannels() {
       description: 'Ειδοποιήσεις για νέες παραγγελίες προς ανάθεση',
       importance: 5,
       visibility: 1,
-      sound: 'default',
       vibration: true,
       lights: true,
     });

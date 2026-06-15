@@ -12,8 +12,8 @@ import {
 import { requestNotificationPermission } from '@/lib/notifications';
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
-  { value: 'doordash', label: 'DoorDash', emoji: '🛵' },
-  { value: 'pristine', label: 'Pristine', emoji: '✨' },
+  { value: 'fresh',    label: 'Fresh',    emoji: '🛵' },
+  { value: 'bell',     label: 'Bell',     emoji: '✨' },
   { value: 'pulse',    label: 'Pulse',    emoji: '💫' },
   { value: 'cash',     label: 'Cash',     emoji: '💰' },
   { value: 'zen',      label: 'Zen',      emoji: '🧘' },
@@ -89,8 +89,14 @@ export function DriverSoundSettings({ trigger, open: controlledOpen, onOpenChang
             <div className="grid grid-cols-2 gap-2">
               {PATTERN_OPTIONS.map(opt => (
                 <button
+                  type="button"
                   key={opt.value}
-                  onClick={() => { update({ pattern: opt.value }); playPattern(opt.value, prefs.volume); }}
+                  onClick={() => {
+                    const next = { ...prefs, pattern: opt.value };
+                    setPrefs(next);
+                    saveDriverSoundPrefs(next);
+                    playPattern(next.pattern, next.volume);
+                  }}
                   className={`flex items-center justify-between p-3 rounded-xl border-2 transition-all ${
                     prefs.pattern === opt.value
                       ? 'border-primary bg-primary/10'
