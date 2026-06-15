@@ -24,8 +24,8 @@ interface Props {
 }
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
-  { value: 'doordash', label: 'DoorDash', emoji: '🛵' },
-  { value: 'pristine', label: 'Pristine', emoji: '✨' },
+  { value: 'fresh',    label: 'Fresh',    emoji: '🛵' },
+  { value: 'bell',     label: 'Bell',     emoji: '✨' },
   { value: 'pulse',    label: 'Pulse',    emoji: '💫' },
   { value: 'cash',     label: 'Cash',     emoji: '💰' },
   { value: 'zen',      label: 'Zen',      emoji: '🧘' },

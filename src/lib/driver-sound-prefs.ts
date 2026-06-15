@@ -54,7 +54,7 @@ export function loadDriverSoundPrefs(): DriverSoundPrefs {
     if (!raw) return DEFAULTS;
     const parsed = { ...DEFAULTS, ...JSON.parse(raw) } as DriverSoundPrefs;
     if (!VALID.includes(parsed.pattern)) {
-      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'doordash';
+      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'fresh';
     }
     return parsed;
   } catch {
@@ -142,18 +142,6 @@ const PATTERNS: Record<SoundPattern, ToneSpec[]> = {
   ],
 };
 
-const sampleCache: Record<string, HTMLAudioElement> = {};
-function playSample(url: string, volume: number) {
-  try {
-    let a = sampleCache[url];
-    if (!a) { a = new Audio(url); a.preload = 'auto'; sampleCache[url] = a; }
-    const node = a.cloneNode(true) as HTMLAudioElement;
-    node.volume = Math.max(0, Math.min(1, volume));
-    node.play().catch(() => {});
-    return 1200;
-  } catch { return 0; }
-}
-
 function scheduleTone(ctx: AudioContext, t: ToneSpec, startAt: number, volume: number, master: GainNode) {
   const peak = Math.max(0.0001, Math.min(1, volume)) * (t.gain ?? 0.4);
   const attack = t.attack ?? 0.01;
@@ -182,16 +170,14 @@ function scheduleTone(ctx: AudioContext, t: ToneSpec, startAt: number, volume: n
 }
 
 export function playPattern(pattern: SoundPattern, volume: number) {
-  const sampleUrl = SAMPLE_URLS[pattern];
-  if (sampleUrl) return playSample(sampleUrl, volume);
   try {
     const ctx = getCtx();
-    if (ctx.state === 'suspended') ctx.resume();
+    unlockAudio(ctx);
     const master = ctx.createGain();
     master.gain.value = 1;
     master.connect(ctx.destination);
     const now = ctx.currentTime;
-    const tones = PATTERNS[pattern as Exclude<SoundPattern, 'doordash'>];
+    const tones = PATTERNS[pattern];
     if (!tones) return 0;
     const gap = 0.05;
     let offset = 0;
