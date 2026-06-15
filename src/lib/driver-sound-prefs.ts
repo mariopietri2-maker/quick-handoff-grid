@@ -1,19 +1,10 @@
-// Driver sound preferences stored locally per device.
-// All sounds are designed as polished, modern, professional alerts.
-import doordashMp3 from '@/assets/sounds/doordash.mp3';
-
 export type SoundPattern =
-  | 'doordash'    // real DoorDash sample (mp3)
-  | 'pristine'    // high-end resonant bell triad
+  | 'fresh'       // Fresh Delivery signature chime
+  | 'bell'        // high-end resonant bell triad
   | 'pulse'       // modern two-tone (Wolt/Uber feel)
   | 'cash'        // warm coin drop
   | 'zen'         // meditation bowl long resonance
   | 'alert';      // urgent triple beep
-
-// Sample-based patterns — bypass the synth tone engine
-const SAMPLE_URLS: Partial<Record<SoundPattern, string>> = {
-  doordash: doordashMp3,
-};
 
 export interface DriverSoundPrefs {
   enabled: boolean;
@@ -28,33 +19,34 @@ const KEY = 'qg.driver.sound.prefs.v1';
 const DEFAULTS: DriverSoundPrefs = {
   enabled: true,
   volume: 0.7,
-  pattern: 'doordash',
+  pattern: 'fresh',
   repeatCount: 2,
   vibrate: true,
 };
 
 // Migrate any legacy/removed pattern names to the new curated set.
 const PATTERN_MIGRATIONS: Record<string, SoundPattern> = {
-  doordash_real: 'doordash',
+  doordash: 'fresh',
+  doordash_real: 'fresh',
   doordash_style: 'pulse',
-  ios_tritone: 'pristine',
-  crystal: 'pristine',
+  ios_tritone: 'bell',
+  pristine: 'bell',
+  crystal: 'bell',
   tesla: 'pulse',
-  fanfare: 'pristine',
+  fanfare: 'bell',
   wolt: 'pulse',
   uber: 'pulse',
   glovo: 'pulse',
   kaching: 'cash',
   arcade: 'cash',
-  marimba: 'pristine',
+  marimba: 'bell',
   classic_phone: 'alert',
   siren: 'alert',
-  chime: 'pristine',
-  bell: 'pristine',
+  chime: 'bell',
   urgent: 'alert',
 };
 
-const VALID: SoundPattern[] = ['doordash', 'pristine', 'pulse', 'cash', 'zen', 'alert'];
+const VALID: SoundPattern[] = ['fresh', 'bell', 'pulse', 'cash', 'zen', 'alert'];
 
 export function loadDriverSoundPrefs(): DriverSoundPrefs {
   try {
@@ -77,8 +69,24 @@ export function saveDriverSoundPrefs(prefs: DriverSoundPrefs) {
 
 let ctxRef: AudioContext | null = null;
 function getCtx(): AudioContext {
-  if (!ctxRef) ctxRef = new AudioContext();
+  if (!ctxRef) {
+    const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
+    ctxRef = new AudioCtor();
+  }
   return ctxRef;
+}
+
+function unlockAudio(ctx: AudioContext) {
+  try {
+    if (ctx.state === 'suspended') void ctx.resume();
+    const silent = ctx.createBufferSource();
+    const gain = ctx.createGain();
+    gain.gain.value = 0.0001;
+    silent.connect(gain);
+    gain.connect(ctx.destination);
+    silent.start(0);
+    silent.stop(ctx.currentTime + 0.03);
+  } catch {}
 }
 
 interface ToneSpec {
@@ -94,9 +102,14 @@ interface ToneSpec {
 
 // Polished, professional-grade patterns.
 // Designed with proper ADSR envelopes + harmonic stacks for a richer timbre.
-const PATTERNS: Record<Exclude<SoundPattern, 'doordash'>, ToneSpec[]> = {
-  // Pristine — high-end mallet bell with sparkle (think premium iOS/Tesla)
-  pristine: [
+const PATTERNS: Record<SoundPattern, ToneSpec[]> = {
+  fresh: [
+    { freq: 659.25, dur: 0.13, type: 'triangle', gain: 0.5, attack: 0.006, release: 0.18, harmonics: [2], detune: 2 },
+    { freq: 987.77, dur: 0.15, type: 'sine',     gain: 0.52, attack: 0.006, release: 0.22, harmonics: [2] },
+    { freq: 1318.5, dur: 0.32, type: 'sine',     gain: 0.42, attack: 0.008, release: 0.42, harmonics: [2, 3] },
+  ],
+
+  bell: [
     { freq: 1046.5, dur: 0.18, type: 'sine', gain: 0.5, attack: 0.005, release: 0.4, harmonics: [2, 3], detune: 4 },
     { freq: 1396.9, dur: 0.18, type: 'sine', gain: 0.45, attack: 0.005, release: 0.45, harmonics: [2, 3] },
     { freq: 2093.0, dur: 0.55, type: 'sine', gain: 0.4,  attack: 0.005, release: 0.7,  harmonics: [2] },
