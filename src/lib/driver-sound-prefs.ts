@@ -89,6 +89,23 @@ function unlockAudio(ctx: AudioContext) {
   } catch {}
 }
 
+let unlockListenersInstalled = false;
+export function primeDriverAudio() {
+  if (typeof window === 'undefined') return;
+  unlockAudio(getCtx());
+}
+
+function installAudioUnlockListeners() {
+  if (typeof window === 'undefined' || unlockListenersInstalled) return;
+  unlockListenersInstalled = true;
+  const unlock = () => primeDriverAudio();
+  window.addEventListener('pointerdown', unlock, { passive: true });
+  window.addEventListener('touchstart', unlock, { passive: true });
+  window.addEventListener('keydown', unlock, { passive: true });
+}
+
+installAudioUnlockListeners();
+
 interface ToneSpec {
   freq: number;
   dur: number;
