@@ -83,7 +83,22 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
     </div>
   );
 
-  const selectClassName = "h-9 rounded-md border border-input bg-background px-3 text-sm font-heading text-foreground outline-none focus:ring-2 focus:ring-ring";
+  const ChoiceButton = <T extends string>({
+    value, current, label, onSelect,
+  }: { value: T; current: T; label: string; onSelect: (value: T) => void }) => (
+    <button
+      type="button"
+      onPointerDown={(e) => e.stopPropagation()}
+      onClick={() => onSelect(value)}
+      className={`min-h-9 rounded-lg border px-2.5 text-xs font-heading font-semibold transition-colors ${
+        current === value ? 'border-primary bg-primary/10 text-primary' : 'border-border bg-card text-foreground'
+      }`}
+    >
+      {label}
+    </button>
+  );
+
+  const choiceWrapClassName = "flex max-w-[190px] flex-wrap justify-end gap-1.5";
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -98,17 +113,17 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
         <div className="space-y-6 pb-6">
           <Section title="Εμφάνιση">
             <Row icon={Moon} label="Θέμα" desc="Σκοτεινό, φωτεινό ή σύστημα">
-              <select className={`${selectClassName} w-36`} value={prefs.theme} onChange={(e) => update({ theme: e.target.value as DriverAppPrefs['theme'] })}>
-                <option value="dark">🌙 Σκοτεινό</option>
-                <option value="light">☀️ Φωτεινό</option>
-                <option value="system">⚙️ Σύστημα</option>
-              </select>
+              <div className={choiceWrapClassName}>
+                <ChoiceButton value="dark" current={prefs.theme} label="🌙" onSelect={(theme) => update({ theme })} />
+                <ChoiceButton value="light" current={prefs.theme} label="☀️" onSelect={(theme) => update({ theme })} />
+                <ChoiceButton value="system" current={prefs.theme} label="⚙️" onSelect={(theme) => update({ theme })} />
+              </div>
             </Row>
             <Row icon={Languages} label="Γλώσσα">
-              <select className={`${selectClassName} w-36`} value={prefs.language} onChange={(e) => update({ language: e.target.value as DriverAppPrefs['language'] })}>
-                <option value="el">🇬🇷 Ελληνικά</option>
-                <option value="en">🇬🇧 English</option>
-              </select>
+              <div className={choiceWrapClassName}>
+                <ChoiceButton value="el" current={prefs.language} label="🇬🇷 EL" onSelect={(language) => update({ language })} />
+                <ChoiceButton value="en" current={prefs.language} label="🇬🇧 EN" onSelect={(language) => update({ language })} />
+              </div>
             </Row>
             <Row icon={prefs.hideEarningsOnHome ? EyeOff : Eye} label="Απόκρυψη κερδών" desc="Κρύψτε ποσά από οθόνη">
               <Switch
@@ -120,11 +135,11 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
 
           <Section title="Πλοήγηση & Χάρτης">
             <Row icon={NavIcon} label="Εφαρμογή πλοήγησης">
-              <select className={`${selectClassName} w-36`} value={prefs.navApp} onChange={(e) => update({ navApp: e.target.value as DriverAppPrefs['navApp'] })}>
-                <option value="google">Google Maps</option>
-                <option value="apple">Apple Maps</option>
-                <option value="waze">Waze</option>
-              </select>
+              <div className={choiceWrapClassName}>
+                <ChoiceButton value="google" current={prefs.navApp} label="Google" onSelect={(navApp) => update({ navApp })} />
+                <ChoiceButton value="apple" current={prefs.navApp} label="Apple" onSelect={(navApp) => update({ navApp })} />
+                <ChoiceButton value="waze" current={prefs.navApp} label="Waze" onSelect={(navApp) => update({ navApp })} />
+              </div>
             </Row>
             <Row icon={MapPin} label="Pins καταστημάτων" desc="Εμφάνιση στον χάρτη">
               <Switch
@@ -211,13 +226,17 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
               />
             </Row>
             <Row icon={Clock} label="Auto-offline (λεπτά)" desc="Όταν είσαι αδρανής">
-              <select className={`${selectClassName} w-24`} value={String(prefs.inactivityMinutes)} onChange={(e) => update({ inactivityMinutes: Number(e.target.value) })}>
-                <option value="0">Ποτέ</option>
-                <option value="15">15</option>
-                <option value="30">30</option>
-                <option value="60">60</option>
-                <option value="120">120</option>
-              </select>
+              <div className={choiceWrapClassName}>
+                {[0, 15, 30, 60, 120].map((minutes) => (
+                  <ChoiceButton
+                    key={minutes}
+                    value={String(minutes)}
+                    current={String(prefs.inactivityMinutes)}
+                    label={minutes === 0 ? 'Ποτέ' : String(minutes)}
+                    onSelect={(value) => update({ inactivityMinutes: Number(value) })}
+                  />
+                ))}
+              </div>
             </Row>
           </Section>
 
