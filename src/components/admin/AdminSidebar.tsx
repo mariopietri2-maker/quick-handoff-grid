@@ -114,6 +114,7 @@ export const NAV_SECTIONS = [
       { id: 'mission_control', label: '🛡️ Mission Control' },
       { id: 'system_doctor', label: '🩺 System Doctor' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },
+      { id: 'cloud_usage', label: '☁️ Lovable Cloud usage' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
       { id: 'audit', label: 'Audit log' },

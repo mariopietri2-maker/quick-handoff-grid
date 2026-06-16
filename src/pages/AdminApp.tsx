@@ -50,6 +50,7 @@ const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayab
 const MoneyBagsPanel         = lazy(() => import('@/components/admin/LedgerPanel'));
 const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
+const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsagePanel'));
 const LedgerExplorer         = lazy(() => import('@/components/admin/LedgerExplorer'));
 const BasketDashboard        = lazy(() => import('@/components/admin/BasketDashboard'));
 const MoneyEnginePanel       = lazy(() => import('@/components/admin/MoneyEnginePanel'));
@@ -263,6 +264,8 @@ export default function AdminApp() {
         return <LiveOpsDashboard />;
       case 'system_health':
         return <SystemHealthPanel />;
+      case 'cloud_usage':
+        return <CloudUsagePanel />;
       case 'analytics':
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'audit':
