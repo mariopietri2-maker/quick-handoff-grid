@@ -264,6 +264,8 @@ export default function AdminApp() {
         return <LiveOpsDashboard />;
       case 'system_health':
         return <SystemHealthPanel />;
+      case 'cloud_usage':
+        return <CloudUsagePanel />;
       case 'analytics':
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'audit':
