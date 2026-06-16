@@ -78,7 +78,7 @@ function getCtx(): AudioContext {
 
 function unlockAudio(ctx: AudioContext) {
   try {
-    if (ctx.state === 'suspended') void ctx.resume();
+    const resume = ctx.state === 'suspended' ? ctx.resume().catch(() => {}) : undefined;
     const silent = ctx.createBufferSource();
     const gain = ctx.createGain();
     gain.gain.value = 0.0001;
@@ -86,6 +86,7 @@ function unlockAudio(ctx: AudioContext) {
     gain.connect(ctx.destination);
     silent.start(0);
     silent.stop(ctx.currentTime + 0.03);
+    return resume;
   } catch {}
 }
 
@@ -189,19 +190,30 @@ function scheduleTone(ctx: AudioContext, t: ToneSpec, startAt: number, volume: n
 export function playPattern(pattern: SoundPattern, volume: number) {
   try {
     const ctx = getCtx();
-    unlockAudio(ctx);
-    const master = ctx.createGain();
-    master.gain.value = 1;
-    master.connect(ctx.destination);
-    const now = ctx.currentTime;
     const tones = PATTERNS[pattern];
     if (!tones) return 0;
-    const gap = 0.05;
+
     let offset = 0;
-    tones.forEach((t) => {
-      scheduleTone(ctx, t, now + offset, volume, master);
-      offset += t.dur + gap;
-    });
+    const gap = 0.05;
+    const schedule = () => {
+      const master = ctx.createGain();
+      master.gain.value = 1;
+      master.connect(ctx.destination);
+      const now = ctx.currentTime + 0.01;
+      offset = 0;
+      tones.forEach((t) => {
+        scheduleTone(ctx, t, now + offset, volume, master);
+        offset += t.dur + gap;
+      });
+      window.setTimeout(() => master.disconnect(), Math.ceil(offset * 1000) + 1400);
+    };
+
+    const resumed = unlockAudio(ctx);
+    if (ctx.state === 'suspended' && resumed) {
+      void resumed.then(schedule);
+    } else {
+      schedule();
+    }
     return offset * 1000;
   } catch (e) {
     console.warn('sound play failed', e);
@@ -224,7 +236,9 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
   if (p.vibrate && 'vibrate' in navigator) {
     try { navigator.vibrate([120, 80, 120]); } catch {}
   }
+  playPattern(p.pattern, p.volume);
   for (let i = 0; i < reps; i++) {
+    if (i === 0) continue;
     const t = window.setTimeout(() => playPattern(p.pattern, p.volume), i * 900);
     _pendingTimers.push(t);
   }
