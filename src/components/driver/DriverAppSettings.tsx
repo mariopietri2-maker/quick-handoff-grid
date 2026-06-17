@@ -23,12 +23,16 @@ interface Props {
 }
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
-  { value: 'fresh',    label: 'Fresh',    emoji: '🛵' },
-  { value: 'bell',     label: 'Bell',     emoji: '✨' },
-  { value: 'pulse',    label: 'Pulse',    emoji: '💫' },
-  { value: 'cash',     label: 'Cash',     emoji: '💰' },
-  { value: 'zen',      label: 'Zen',      emoji: '🧘' },
-  { value: 'alert',    label: 'Alert',    emoji: '🚨' },
+  { value: 'pop',      label: 'Pop',      emoji: '🎉' },
+  { value: 'honk',     label: 'Honk',     emoji: '📯' },
+  { value: 'party',    label: 'Party',    emoji: '🥳' },
+  { value: 'whistle',  label: 'Whistle',  emoji: '😮‍💨' },
+  { value: 'clown',    label: 'Clown',    emoji: '🤡' },
+  { value: 'suspense', label: 'Suspense', emoji: '🎬' },
+  { value: 'mystery',  label: 'Mystery',  emoji: '🔮' },
+  { value: 'screech',  label: 'Screech',  emoji: '🎻' },
+  { value: 'nokia',    label: 'Nokia',    emoji: '📱' },
+  { value: 'slip',     label: 'Slip',     emoji: '🍌' },
 ];
 
 export function DriverAppSettings({ open, onOpenChange }: Props) {
