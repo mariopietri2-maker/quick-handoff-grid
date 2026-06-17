@@ -309,57 +309,17 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   // Persistent alert: keep ringing every ~4s while there are unaccepted
   // offers. Triggered only when the set of offer IDs changes — not on
   // every offers array reference (prevents overlapping plays on refetch).
-  const ringableKey = offers.filter(o => o.status === 'ready').map(o => o.id).sort().join(',');
+  // NOTE: We rely on `playOfferAlert` only for sound — no extra OS-level
+  // notification sound here, to avoid the "double sound" issue.
+  const ringableKey = offers.map(o => o.id).sort().join(',');
   useEffect(() => {
     if (activeDelivery) return;
     if (!ringableKey) return;
-    const first = offers.find(o => o.status === 'ready');
-    if (first) {
-      const payout = Number(first.delivery_fee ?? 0) + Number(first.tip_amount ?? 0) || Number((first as any).driver_payout ?? 0) || 0;
-      showDeliveryNotification(payout);
-    }
     playOfferAlert();
     const id = setInterval(() => playOfferAlert(), 4000);
     return () => clearInterval(id);
   }, [ringableKey, activeDelivery]);
-
-  // Real-time: listen for new available orders + new pending offers.
-  // We debounce refetches so a burst of order updates doesn't cause a
-  // refetch storm (one update per row otherwise).
-  useEffect(() => {
-    if (!user) return;
-    let pending: ReturnType<typeof setTimeout> | null = null;
-    const scheduleRefetch = () => {
-      if (pending) return;
-      pending = setTimeout(() => {
-        pending = null;
-        fetchOrders();
-      }, 400);
-    };
-
-    const isRelevant = (row: Partial<OrderRow> | null | undefined) => {
-      if (!row) return false;
-      // Relevant if assigned to me, unassigned (claimable), or admin override
-      if (adminOverride) return true;
-      if (row.driver_id === user.id) return true;
-      if (row.driver_id == null) return true;
-      return false;
-    };
-
-    const ordersChannel = supabase
-      .channel(`driver-orders-${user.id}`)
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          if (payload.eventType === 'DELETE') return;
-          if (isRelevant(payload.new as OrderRow) || isRelevant(payload.old as OrderRow)) {
-            scheduleRefetch();
-          }
-        }
-      )
-      .subscribe();
-
+...
     const offersChannel = supabase
       .channel(`driver-offers-${user.id}`)
       .on(
@@ -370,19 +330,12 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           table: 'pending_offers',
           filter: `driver_id=eq.${user.id}`,
         },
-        (payload) => {
+        () => {
+          // Just refetch — the ringableKey effect handles sound/vibration.
+          // Removing the duplicate OS notification here fixes the
+          // "double sound" the driver was hearing.
           fetchOrders();
-          // OS-level alert so driver hears it even when app is minimized / screen off
-          void import('@/lib/push-notifications').then(({ showOsNotification }) => {
-            showOsNotification({
-              title: '🚨 Νέα παραγγελία!',
-              body: 'Έχεις νέα προσφορά παράδοσης — πάτα για άνοιγμα.',
-              tag: 'driver-offer',
-              vibrate: true,
-            });
-          });
         }
-
       )
       .subscribe();
 
@@ -397,11 +350,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
     const offerId = offerIds[orderId];
-    const target = offers.find((o) => o.id === orderId);
-    if (!adminOverride && target && target.status !== 'ready') {
-      toast.info('Η παραγγελία δεν είναι ακόμη έτοιμη για παραλαβή');
-      return;
-    }
+    // Drivers may now soft-accept an order even before the store marks it
+    // ready — physical pickup is still gated server-side by the store's
+    // `ready` status (see project memory: driver Accept is a soft reservation).
 
     // ADMIN PRIORITY: admins always win — they can claim/steal any order
     // directly, even if a driver already has it. Bypass the offer-accept flow.
