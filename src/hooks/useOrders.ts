@@ -319,7 +319,43 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const id = setInterval(() => playOfferAlert(), 4000);
     return () => clearInterval(id);
   }, [ringableKey, activeDelivery]);
-...
+
+  // Real-time: listen for new available orders + new pending offers.
+  // We debounce refetches so a burst of order updates doesn't cause a
+  // refetch storm (one update per row otherwise).
+  useEffect(() => {
+    if (!user) return;
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    const scheduleRefetch = () => {
+      if (pending) return;
+      pending = setTimeout(() => {
+        pending = null;
+        fetchOrders();
+      }, 400);
+    };
+
+    const isRelevant = (row: Partial<OrderRow> | null | undefined) => {
+      if (!row) return false;
+      if (adminOverride) return true;
+      if (row.driver_id === user.id) return true;
+      if (row.driver_id == null) return true;
+      return false;
+    };
+
+    const ordersChannel = supabase
+      .channel(`driver-orders-${user.id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        (payload) => {
+          if (payload.eventType === 'DELETE') return;
+          if (isRelevant(payload.new as OrderRow) || isRelevant(payload.old as OrderRow)) {
+            scheduleRefetch();
+          }
+        }
+      )
+      .subscribe();
+
     const offersChannel = supabase
       .channel(`driver-offers-${user.id}`)
       .on(
