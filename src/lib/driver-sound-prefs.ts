@@ -1,10 +1,25 @@
+import popAsset from '@/assets/sounds/pop.mp3.asset.json';
+import honkAsset from '@/assets/sounds/honk.mp3.asset.json';
+import partyAsset from '@/assets/sounds/party.mp3.asset.json';
+import screechAsset from '@/assets/sounds/screech.mp3.asset.json';
+import suspenseAsset from '@/assets/sounds/suspense.mp3.asset.json';
+import mysteryAsset from '@/assets/sounds/mystery.mp3.asset.json';
+import whistleAsset from '@/assets/sounds/whistle.mp3.asset.json';
+import clownAsset from '@/assets/sounds/clown.mp3.asset.json';
+import nokiaAsset from '@/assets/sounds/nokia.mp3.asset.json';
+import slipAsset from '@/assets/sounds/slip.mp3.asset.json';
+
 export type SoundPattern =
-  | 'fresh'       // Fresh Delivery signature chime
-  | 'bell'        // high-end resonant bell triad
-  | 'pulse'       // modern two-tone (Wolt/Uber feel)
-  | 'cash'        // warm coin drop
-  | 'zen'         // meditation bowl long resonance
-  | 'alert';      // urgent triple beep
+  | 'pop'
+  | 'honk'
+  | 'party'
+  | 'screech'
+  | 'suspense'
+  | 'mystery'
+  | 'whistle'
+  | 'clown'
+  | 'nokia'
+  | 'slip';
 
 export interface DriverSoundPrefs {
   enabled: boolean;
@@ -14,47 +29,58 @@ export interface DriverSoundPrefs {
   vibrate: boolean;
 }
 
-const KEY = 'qg.driver.sound.prefs.v1';
+const KEY = 'qg.driver.sound.prefs.v2';
 
 const DEFAULTS: DriverSoundPrefs = {
   enabled: true,
-  volume: 0.7,
-  pattern: 'fresh',
+  volume: 0.85,
+  pattern: 'pop',
   repeatCount: 2,
   vibrate: true,
 };
 
-// Migrate any legacy/removed pattern names to the new curated set.
 const PATTERN_MIGRATIONS: Record<string, SoundPattern> = {
-  doordash: 'fresh',
-  doordash_real: 'fresh',
-  doordash_style: 'pulse',
-  ios_tritone: 'bell',
-  pristine: 'bell',
-  crystal: 'bell',
-  tesla: 'pulse',
-  fanfare: 'bell',
-  wolt: 'pulse',
-  uber: 'pulse',
-  glovo: 'pulse',
-  kaching: 'cash',
-  arcade: 'cash',
-  marimba: 'bell',
-  classic_phone: 'alert',
-  siren: 'alert',
-  chime: 'bell',
-  urgent: 'alert',
+  fresh: 'pop', bell: 'party', pulse: 'pop', cash: 'party', zen: 'mystery',
+  alert: 'honk', doordash: 'pop', doordash_real: 'pop', doordash_style: 'pop',
+  ios_tritone: 'mystery', pristine: 'party', crystal: 'party', tesla: 'pop',
+  fanfare: 'party', wolt: 'pop', uber: 'pop', glovo: 'pop',
+  kaching: 'party', arcade: 'pop', marimba: 'mystery', classic_phone: 'nokia',
+  siren: 'honk', chime: 'party', urgent: 'honk',
 };
 
-const VALID: SoundPattern[] = ['fresh', 'bell', 'pulse', 'cash', 'zen', 'alert'];
+const VALID: SoundPattern[] = ['pop','honk','party','screech','suspense','mystery','whistle','clown','nokia','slip'];
+
+const SOUND_URLS: Record<SoundPattern, string> = {
+  pop: popAsset.url,
+  honk: honkAsset.url,
+  party: partyAsset.url,
+  screech: screechAsset.url,
+  suspense: suspenseAsset.url,
+  mystery: mysteryAsset.url,
+  whistle: whistleAsset.url,
+  clown: clownAsset.url,
+  nokia: nokiaAsset.url,
+  slip: slipAsset.url,
+};
 
 export function loadDriverSoundPrefs(): DriverSoundPrefs {
   try {
     const raw = localStorage.getItem(KEY);
-    if (!raw) return DEFAULTS;
+    if (!raw) {
+      // try legacy key migration
+      const legacy = localStorage.getItem('qg.driver.sound.prefs.v1');
+      if (legacy) {
+        const parsedLegacy = { ...DEFAULTS, ...JSON.parse(legacy) } as DriverSoundPrefs;
+        if (!VALID.includes(parsedLegacy.pattern)) {
+          parsedLegacy.pattern = PATTERN_MIGRATIONS[parsedLegacy.pattern as string] ?? 'pop';
+        }
+        return parsedLegacy;
+      }
+      return DEFAULTS;
+    }
     const parsed = { ...DEFAULTS, ...JSON.parse(raw) } as DriverSoundPrefs;
     if (!VALID.includes(parsed.pattern)) {
-      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'fresh';
+      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'pop';
     }
     return parsed;
   } catch {
@@ -67,161 +93,65 @@ export function saveDriverSoundPrefs(prefs: DriverSoundPrefs) {
   window.dispatchEvent(new CustomEvent('driver-sound-prefs-changed', { detail: prefs }));
 }
 
-let ctxRef: AudioContext | null = null;
-function getCtx(): AudioContext {
-  if (!ctxRef) {
-    const AudioCtor = window.AudioContext || (window as any).webkitAudioContext;
-    ctxRef = new AudioCtor();
+// Audio element cache — one per pattern, reused so we don't refetch each play.
+const audioCache: Partial<Record<SoundPattern, HTMLAudioElement>> = {};
+function getAudio(pattern: SoundPattern): HTMLAudioElement {
+  let el = audioCache[pattern];
+  if (!el) {
+    el = new Audio(SOUND_URLS[pattern]);
+    el.preload = 'auto';
+    audioCache[pattern] = el;
   }
-  return ctxRef;
+  return el;
 }
 
-function unlockAudio(ctx: AudioContext) {
+export function primeDriverAudio() {
+  if (typeof window === 'undefined') return;
+  // Touch each audio element so the browser whitelists playback within this gesture.
   try {
-    const resume = ctx.state === 'suspended' ? ctx.resume().catch(() => {}) : undefined;
-    const silent = ctx.createBufferSource();
-    const gain = ctx.createGain();
-    gain.gain.value = 0.0001;
-    silent.connect(gain);
-    gain.connect(ctx.destination);
-    silent.start(0);
-    silent.stop(ctx.currentTime + 0.03);
-    return resume;
+    VALID.forEach((p) => {
+      const el = getAudio(p);
+      el.muted = true;
+      const pr = el.play();
+      if (pr && typeof pr.then === 'function') {
+        pr.then(() => { el.pause(); el.currentTime = 0; el.muted = false; }).catch(() => { el.muted = false; });
+      } else {
+        el.pause(); el.currentTime = 0; el.muted = false;
+      }
+    });
   } catch {}
 }
 
 let unlockListenersInstalled = false;
-export function primeDriverAudio() {
-  if (typeof window === 'undefined') return;
-  unlockAudio(getCtx());
-}
-
 function installAudioUnlockListeners() {
   if (typeof window === 'undefined' || unlockListenersInstalled) return;
   unlockListenersInstalled = true;
-  const unlock = () => primeDriverAudio();
+  const unlock = () => {
+    primeDriverAudio();
+    window.removeEventListener('pointerdown', unlock);
+    window.removeEventListener('touchstart', unlock);
+    window.removeEventListener('keydown', unlock);
+  };
   window.addEventListener('pointerdown', unlock, { passive: true });
   window.addEventListener('touchstart', unlock, { passive: true });
   window.addEventListener('keydown', unlock, { passive: true });
 }
-
 installAudioUnlockListeners();
-
-interface ToneSpec {
-  freq: number;
-  dur: number;
-  type?: OscillatorType;
-  gain?: number;
-  attack?: number;       // seconds
-  release?: number;      // seconds (decay tail)
-  harmonics?: number[];  // additional partials as ratios of freq
-  detune?: number;       // cents, gives subtle chorus
-}
-
-// Polished, professional-grade patterns.
-// Designed with proper ADSR envelopes + harmonic stacks for a richer timbre.
-const PATTERNS: Record<SoundPattern, ToneSpec[]> = {
-  fresh: [
-    { freq: 659.25, dur: 0.13, type: 'triangle', gain: 0.5, attack: 0.006, release: 0.18, harmonics: [2], detune: 2 },
-    { freq: 987.77, dur: 0.15, type: 'sine',     gain: 0.52, attack: 0.006, release: 0.22, harmonics: [2] },
-    { freq: 1318.5, dur: 0.32, type: 'sine',     gain: 0.42, attack: 0.008, release: 0.42, harmonics: [2, 3] },
-  ],
-
-  bell: [
-    { freq: 1046.5, dur: 0.18, type: 'sine', gain: 0.5, attack: 0.005, release: 0.4, harmonics: [2, 3], detune: 4 },
-    { freq: 1396.9, dur: 0.18, type: 'sine', gain: 0.45, attack: 0.005, release: 0.45, harmonics: [2, 3] },
-    { freq: 2093.0, dur: 0.55, type: 'sine', gain: 0.4,  attack: 0.005, release: 0.7,  harmonics: [2] },
-  ],
-
-  // Pulse — modern, soft two-tone rise (Wolt / Uber style done right)
-  pulse: [
-    { freq: 587.33, dur: 0.22, type: 'sine',     gain: 0.55, attack: 0.01,  release: 0.35, harmonics: [2], detune: 3 },
-    { freq: 880.0,  dur: 0.45, type: 'triangle', gain: 0.55, attack: 0.008, release: 0.5,  harmonics: [2] },
-  ],
-
-  // Cash — warm, satisfying coin-drop (no cheap 8-bit feel)
-  cash: [
-    { freq: 1567.98, dur: 0.08, type: 'triangle', gain: 0.45, attack: 0.002, release: 0.18 },
-    { freq: 2093.0,  dur: 0.08, type: 'triangle', gain: 0.45, attack: 0.002, release: 0.22 },
-    { freq: 2637.02, dur: 0.55, type: 'sine',     gain: 0.5,  attack: 0.003, release: 0.65, harmonics: [2] },
-  ],
-
-  // Zen — calm singing-bowl resonance (long tail)
-  zen: [
-    { freq: 392.0,  dur: 0.6, type: 'sine', gain: 0.45, attack: 0.04, release: 0.9, harmonics: [2, 3], detune: 6 },
-    { freq: 587.33, dur: 0.9, type: 'sine', gain: 0.4,  attack: 0.05, release: 1.2, harmonics: [2],    detune: 4 },
-  ],
-
-  // Alert — urgent but tasteful triple beep
-  alert: [
-    { freq: 988.0, dur: 0.12, type: 'square', gain: 0.4, attack: 0.003, release: 0.05 },
-    { freq: 988.0, dur: 0.12, type: 'square', gain: 0.4, attack: 0.003, release: 0.05 },
-    { freq: 1318.5, dur: 0.22, type: 'square', gain: 0.45, attack: 0.003, release: 0.12 },
-  ],
-};
-
-function scheduleTone(ctx: AudioContext, t: ToneSpec, startAt: number, volume: number, master: GainNode) {
-  const peak = Math.max(0.0001, Math.min(1, volume)) * (t.gain ?? 0.4);
-  const attack = t.attack ?? 0.01;
-  const release = t.release ?? 0.15;
-  const harmonics = [1, ...(t.harmonics ?? [])];
-  const harmonicGain = 1 / harmonics.length;
-
-  harmonics.forEach((ratio, i) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = t.type ?? 'sine';
-    osc.frequency.value = t.freq * ratio;
-    if (t.detune) osc.detune.value = (i % 2 === 0 ? 1 : -1) * t.detune;
-    const partialPeak = peak * harmonicGain * (i === 0 ? 1 : 0.55 / ratio);
-
-    gain.gain.setValueAtTime(0, startAt);
-    gain.gain.linearRampToValueAtTime(partialPeak, startAt + attack);
-    gain.gain.setValueAtTime(partialPeak, startAt + t.dur);
-    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + t.dur + release);
-
-    osc.connect(gain);
-    gain.connect(master);
-    osc.start(startAt);
-    osc.stop(startAt + t.dur + release + 0.05);
-  });
-}
 
 export function playPattern(pattern: SoundPattern, volume: number) {
   try {
-    const ctx = getCtx();
-    const tones = PATTERNS[pattern];
-    if (!tones) return 0;
-
-    let offset = 0;
-    const gap = 0.05;
-    const schedule = () => {
-      const master = ctx.createGain();
-      master.gain.value = 1;
-      master.connect(ctx.destination);
-      const now = ctx.currentTime + 0.01;
-      offset = 0;
-      tones.forEach((t) => {
-        scheduleTone(ctx, t, now + offset, volume, master);
-        offset += t.dur + gap;
-      });
-      window.setTimeout(() => master.disconnect(), Math.ceil(offset * 1000) + 1400);
-    };
-
-    const resumed = unlockAudio(ctx);
-    if (ctx.state === 'suspended' && resumed) {
-      void resumed.then(schedule);
-    } else {
-      schedule();
-    }
-    return offset * 1000;
+    const el = getAudio(pattern);
+    el.pause();
+    el.currentTime = 0;
+    el.volume = Math.max(0, Math.min(1, volume));
+    void el.play().catch(() => {});
+    return (el.duration && isFinite(el.duration)) ? el.duration * 1000 : 1200;
   } catch (e) {
     console.warn('sound play failed', e);
     return 0;
   }
 }
 
-// Global lock to prevent overlapping/simultaneous alert plays
 let _alertLockUntil = 0;
 const _pendingTimers: number[] = [];
 
@@ -231,15 +161,14 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
   const now = Date.now();
   if (now < _alertLockUntil) return;
   const reps = Math.max(1, p.repeatCount);
-  _alertLockUntil = now + reps * 900 + 400;
+  _alertLockUntil = now + reps * 1400 + 400;
   while (_pendingTimers.length) { try { clearTimeout(_pendingTimers.pop()!); } catch {} }
   if (p.vibrate && 'vibrate' in navigator) {
     try { navigator.vibrate([120, 80, 120]); } catch {}
   }
   playPattern(p.pattern, p.volume);
-  for (let i = 0; i < reps; i++) {
-    if (i === 0) continue;
-    const t = window.setTimeout(() => playPattern(p.pattern, p.volume), i * 900);
+  for (let i = 1; i < reps; i++) {
+    const t = window.setTimeout(() => playPattern(p.pattern, p.volume), i * 1400);
     _pendingTimers.push(t);
   }
 }

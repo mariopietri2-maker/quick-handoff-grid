@@ -43,7 +43,17 @@ export default function CheckoutPage() {
       });
   }, []);
 
+  // Prefill address — first try the customer's saved default address,
+  // otherwise fall back to whatever they typed on the home page (stored
+  // locally as `customer_delivery_address`).
   useEffect(() => {
+    // Local fallback runs immediately so the field is never empty when
+    // the customer already set an address on home.
+    try {
+      const local = localStorage.getItem('customer_delivery_address');
+      if (local && !address) setAddress(local);
+    } catch {}
+
     if (!user) return;
     supabase
       .from('saved_addresses')
@@ -52,7 +62,7 @@ export default function CheckoutPage() {
       .eq('is_default', true)
       .maybeSingle()
       .then(({ data }) => {
-        if (data && !address) {
+        if (data) {
           setAddress((data as any).address);
           if ((data as any).latitude && (data as any).longitude) {
             setDeliveryCoords({ lat: (data as any).latitude, lon: (data as any).longitude });
@@ -70,7 +80,8 @@ export default function CheckoutPage() {
   const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>(cardEnabled ? 'card' : 'cash');
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
-  const [tipOption, setTipOption] = useState<number | 'custom'>(15);
+  // Tip defaults to 0 — customers opt in explicitly.
+  const [tipOption, setTipOption] = useState<number | 'custom'>(0);
   const [customTip, setCustomTip] = useState('');
 
   const subtotalAfterDiscount = Math.max(0, total - (appliedPromo
