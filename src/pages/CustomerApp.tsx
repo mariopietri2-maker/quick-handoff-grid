@@ -70,10 +70,23 @@ export default function CustomerApp() {
     try { return localStorage.getItem('customer_delivery_address') || ''; } catch { return ''; }
   });
   const [pendingAddress, setPendingAddress] = useState(deliveryAddress);
-  const saveAddress = (addr: string) => {
+  const [pendingCoords, setPendingCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const saveAddress = (addr: string, coords?: { lat: number; lon: number } | null) => {
     const v = addr.trim();
     setDeliveryAddress(v);
-    try { v ? localStorage.setItem('customer_delivery_address', v) : localStorage.removeItem('customer_delivery_address'); } catch {}
+    try {
+      if (v) {
+        localStorage.setItem('customer_delivery_address', v);
+        if (coords && coords.lat && coords.lon) {
+          localStorage.setItem('customer_delivery_coords', JSON.stringify(coords));
+        } else {
+          localStorage.removeItem('customer_delivery_coords');
+        }
+      } else {
+        localStorage.removeItem('customer_delivery_address');
+        localStorage.removeItem('customer_delivery_coords');
+      }
+    } catch {}
     setAddressOpen(false);
   };
   const displayAddress = deliveryAddress
