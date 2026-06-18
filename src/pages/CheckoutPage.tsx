@@ -52,6 +52,11 @@ export default function CheckoutPage() {
     try {
       const local = localStorage.getItem('customer_delivery_address');
       if (local && !address) setAddress(local);
+      const coordsRaw = localStorage.getItem('customer_delivery_coords');
+      if (coordsRaw && !deliveryCoords) {
+        const parsed = JSON.parse(coordsRaw);
+        if (parsed?.lat && parsed?.lon) setDeliveryCoords({ lat: parsed.lat, lon: parsed.lon });
+      }
     } catch {}
 
     if (!user) return;
