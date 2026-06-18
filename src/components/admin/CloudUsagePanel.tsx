@@ -136,6 +136,128 @@ export default function CloudUsagePanel() {
         </Button>
       </div>
 
+      {/* PANIC MODE + guardrails */}
+      <Card className={guardrails.panicMode ? 'border-destructive bg-destructive/5' : 'border-warning/40'}>
+        <CardHeader>
+          <CardTitle className="text-lg flex items-center gap-2">
+            <ShieldAlert className={`h-5 w-5 ${guardrails.panicMode ? 'text-destructive' : 'text-warning'}`} />
+            Cost Guardrails — Όρια & Kill Switches
+          </CardTitle>
+          <CardDescription>
+            Σκληρά όρια για να μην χρεωθείς τρελά ποσά. Ενεργοποιείται άμεσα παντού στην εφαρμογή.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {/* Panic mode */}
+          <div className={`flex items-center justify-between p-3 rounded-lg border ${guardrails.panicMode ? 'border-destructive bg-destructive/10' : 'border-border'}`}>
+            <div className="flex items-start gap-3">
+              <Power className={`h-5 w-5 mt-0.5 ${guardrails.panicMode ? 'text-destructive' : 'text-muted-foreground'}`} />
+              <div>
+                <Label className="font-semibold">Panic Mode</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Απενεργοποιεί ΑΜΕΣΑ: AI, push notifications, realtime locations, uploads.
+                </p>
+              </div>
+            </div>
+            <Switch
+              checked={guardrails.panicMode}
+              onCheckedChange={(v) => { saveGuardrails({ panicMode: v }); toast.success(v ? 'Panic mode ON' : 'Panic mode OFF'); }}
+            />
+          </div>
+
+          {/* Kill switches grid */}
+          <div className="grid gap-3 sm:grid-cols-2">
+            <KillSwitch
+              icon={<Sparkles className="h-4 w-4" />}
+              label="Lovable AI"
+              hint={`Σήμερα: ${aiUsedToday} / ${guardrails.aiDailyCallCap} κλήσεις`}
+              checked={eff.aiEnabled}
+              disabled={guardrails.panicMode}
+              onChange={(v) => saveGuardrails({ aiEnabled: v })}
+            />
+            <KillSwitch
+              icon={<MapPin className="h-4 w-4" />}
+              label="Realtime Driver Locations"
+              hint={`Update κάθε ${guardrails.driverLocationIntervalSec}s`}
+              checked={eff.realtimeLocationsEnabled}
+              disabled={guardrails.panicMode}
+              onChange={(v) => saveGuardrails({ realtimeLocationsEnabled: v })}
+            />
+            <KillSwitch
+              icon={<Bell className="h-4 w-4" />}
+              label="Push Notifications"
+              hint="OneSignal / OS ειδοποιήσεις"
+              checked={eff.pushNotificationsEnabled}
+              disabled={guardrails.panicMode}
+              onChange={(v) => saveGuardrails({ pushNotificationsEnabled: v })}
+            />
+            <KillSwitch
+              icon={<Upload className="h-4 w-4" />}
+              label="Storage Uploads"
+              hint={`Μέγιστο ${guardrails.maxUploadMb} MB / αρχείο`}
+              checked={eff.storageUploadsEnabled}
+              disabled={guardrails.panicMode}
+              onChange={(v) => saveGuardrails({ storageUploadsEnabled: v })}
+            />
+          </div>
+
+          <Separator />
+
+          {/* Hard caps */}
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">AI όριο/ημέρα (κλήσεις)</Label>
+              <div className="flex gap-2">
+                <Input
+                  type="number" min={1}
+                  value={guardrails.aiDailyCallCap}
+                  onChange={(e) => saveGuardrails({ aiDailyCallCap: Number(e.target.value) || 1 })}
+                />
+                <Button size="sm" variant="outline" onClick={() => { resetAiCounter(); toast.success('Reset'); }}>
+                  Reset
+                </Button>
+              </div>
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Driver location interval (sec)</Label>
+              <Input
+                type="number" min={5}
+                value={guardrails.driverLocationIntervalSec}
+                onChange={(e) => saveGuardrails({ driverLocationIntervalSec: Math.max(5, Number(e.target.value) || 15) })}
+              />
+            </div>
+            <div className="space-y-1.5">
+              <Label className="text-sm font-medium">Μέγιστο upload (MB)</Label>
+              <Input
+                type="number" min={1} max={50}
+                value={guardrails.maxUploadMb}
+                onChange={(e) => saveGuardrails({ maxUploadMb: Number(e.target.value) || 5 })}
+              />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+              <div>
+                <Label className="text-sm font-medium">Φθηνό AI model (flash-lite)</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Εξοικονομεί έως 90% credits</p>
+              </div>
+              <Switch
+                checked={guardrails.aiPreferCheapModel}
+                onCheckedChange={(v) => saveGuardrails({ aiPreferCheapModel: v })}
+              />
+            </div>
+            <div className="flex items-center justify-between p-3 rounded-lg border border-border sm:col-span-2">
+              <div>
+                <Label className="text-sm font-medium">Συμπίεση εικόνων πριν το upload</Label>
+                <p className="text-xs text-muted-foreground mt-0.5">Μειώνει σημαντικά το κόστος storage & bandwidth</p>
+              </div>
+              <Switch
+                checked={guardrails.imageCompression}
+                onCheckedChange={(v) => saveGuardrails({ imageCompression: v })}
+              />
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
       {/* High-level cards */}
       <div className="grid gap-4 md:grid-cols-4">
         <Card>
