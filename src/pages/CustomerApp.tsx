@@ -70,10 +70,23 @@ export default function CustomerApp() {
     try { return localStorage.getItem('customer_delivery_address') || ''; } catch { return ''; }
   });
   const [pendingAddress, setPendingAddress] = useState(deliveryAddress);
-  const saveAddress = (addr: string) => {
+  const [pendingCoords, setPendingCoords] = useState<{ lat: number; lon: number } | null>(null);
+  const saveAddress = (addr: string, coords?: { lat: number; lon: number } | null) => {
     const v = addr.trim();
     setDeliveryAddress(v);
-    try { v ? localStorage.setItem('customer_delivery_address', v) : localStorage.removeItem('customer_delivery_address'); } catch {}
+    try {
+      if (v) {
+        localStorage.setItem('customer_delivery_address', v);
+        if (coords && coords.lat && coords.lon) {
+          localStorage.setItem('customer_delivery_coords', JSON.stringify(coords));
+        } else {
+          localStorage.removeItem('customer_delivery_coords');
+        }
+      } else {
+        localStorage.removeItem('customer_delivery_address');
+        localStorage.removeItem('customer_delivery_coords');
+      }
+    } catch {}
     setAddressOpen(false);
   };
   const displayAddress = deliveryAddress
@@ -557,13 +570,17 @@ export default function CustomerApp() {
           <div className="mt-4 space-y-3">
             <AddressAutocomplete
               value={pendingAddress}
-              onChange={(addr) => setPendingAddress(addr)}
+              onChange={(addr, lat, lon) => {
+                setPendingAddress(addr);
+                if (lat != null && lon != null) setPendingCoords({ lat, lon });
+                else if (!addr) setPendingCoords(null);
+              }}
             />
             <div className="flex justify-end gap-2 pt-2">
               {deliveryAddress && (
                 <button
                   type="button"
-                  onClick={() => saveAddress('')}
+                  onClick={() => { setPendingCoords(null); saveAddress('', null); }}
                   className="text-sm font-semibold text-[hsl(0,0%,40%)] px-3 py-2"
                 >
                   Καθαρισμός
@@ -571,7 +588,7 @@ export default function CustomerApp() {
               )}
               <button
                 type="button"
-                onClick={() => saveAddress(pendingAddress)}
+                onClick={() => saveAddress(pendingAddress, pendingCoords)}
                 disabled={!pendingAddress.trim()}
                 className="c-bg-accent rounded-full px-5 py-2 text-sm font-extrabold disabled:opacity-50"
               >
