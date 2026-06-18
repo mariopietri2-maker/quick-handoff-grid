@@ -503,3 +503,27 @@ function RetentionRow({
     </div>
   );
 }
+
+function KillSwitch({
+  icon, label, hint, checked, disabled, onChange,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  hint?: string;
+  checked: boolean;
+  disabled?: boolean;
+  onChange: (v: boolean) => void;
+}) {
+  return (
+    <div className={`flex items-center justify-between p-3 rounded-lg border ${checked ? 'border-border' : 'border-destructive/40 bg-destructive/5'}`}>
+      <div className="flex items-start gap-2.5 min-w-0">
+        <div className={`mt-0.5 ${checked ? 'text-primary' : 'text-destructive'}`}>{icon}</div>
+        <div className="min-w-0">
+          <Label className="text-sm font-medium block">{label}</Label>
+          {hint && <p className="text-[11px] text-muted-foreground mt-0.5 truncate">{hint}</p>}
+        </div>
+      </div>
+      <Switch checked={checked} disabled={disabled} onCheckedChange={onChange} />
+    </div>
+  );
+}
