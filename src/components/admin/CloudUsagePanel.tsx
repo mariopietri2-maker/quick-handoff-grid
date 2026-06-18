@@ -6,9 +6,10 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Cloud, Database, Zap, Image as ImageIcon, HardDrive, RefreshCw, ExternalLink, AlertTriangle, Trash2, Settings, Activity, Sparkles } from 'lucide-react';
+import { Cloud, Database, Zap, Image as ImageIcon, HardDrive, RefreshCw, ExternalLink, AlertTriangle, Trash2, Settings, Activity, Sparkles, ShieldAlert, Power, Bell, MapPin, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { useGuardrails, saveGuardrails, getAiCallsToday, resetAiCounter, effective } from '@/lib/cost-guardrails';
 
 type TableStat = { table: string; label: string; count: number | null; hint?: string };
 
