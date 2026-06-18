@@ -59,6 +59,9 @@ export default function CloudUsagePanel() {
   const [loading, setLoading] = useState(false);
   const [settings, setSettings] = useState<LocalSettings>(loadSettings);
   const [cleaning, setCleaning] = useState<string | null>(null);
+  const guardrails = useGuardrails();
+  const eff = effective(guardrails);
+  const aiUsedToday = getAiCallsToday();
 
   const totalRows = stats.reduce((a, s) => a + (s.count ?? 0), 0);
 
