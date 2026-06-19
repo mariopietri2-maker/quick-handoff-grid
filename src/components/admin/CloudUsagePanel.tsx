@@ -136,6 +136,8 @@ export default function CloudUsagePanel() {
           Ανανέωση
         </Button>
       </div>
+      {/* DAILY BUDGET METER — self-throttling */}
+      <BudgetCard />
 
       {/* PANIC MODE + guardrails */}
       <Card className={guardrails.panicMode ? 'border-destructive bg-destructive/5' : 'border-warning/40'}>
