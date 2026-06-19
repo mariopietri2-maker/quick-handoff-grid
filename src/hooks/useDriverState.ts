@@ -45,8 +45,11 @@ export function useDriverState() {
   // Realtime — picks up admin actions (cash resets, etc.) instantly
   useEffect(() => {
     if (!user) return;
+    // Stable channel name per user — avoids leaking a fresh channel on every
+    // mount (the previous Math.random() suffix produced thousands of unique
+    // channels and contributed to runaway rolled-back transactions).
     const ch = supabase
-      .channel(`driver-state-${user.id}-${Math.random().toString(36).slice(2, 8)}`)
+      .channel(`driver-state-${user.id}`)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'driver_state', filter: `driver_id=eq.${user.id}` },
         (payload: any) => { if (payload.new) setState(payload.new as DriverState); })
