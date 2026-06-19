@@ -530,3 +530,109 @@ function KillSwitch({
     </div>
   );
 }
+
+function BudgetCard() {
+  const g = useGuardrails();
+  const meter = useUsageMeter();
+  const cap = Math.max(g.dailyBudgetCredits, 0.0001);
+  const pct = Math.min(100, (meter.total / cap) * 100);
+  const tripped = isBudgetExceeded(g);
+  const soft = isSoftThrottled(g);
+  const state: 'ok' | 'warn' | 'over' = tripped ? 'over' : soft ? 'warn' : 'ok';
+  const tone =
+    state === 'over' ? 'border-destructive bg-destructive/5'
+    : state === 'warn' ? 'border-warning/40 bg-warning/5'
+    : 'border-border';
+
+  const bucketRow = (label: string, value: number) => (
+    <div className="flex items-center justify-between text-xs">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="font-medium tabular-nums">{value.toFixed(4)}</span>
+    </div>
+  );
+
+  return (
+    <Card className={tone}>
+      <CardHeader>
+        <CardTitle className="text-lg flex items-center gap-2">
+          <Activity className="h-5 w-5 text-primary" />
+          Ημερήσιο Budget — Self-throttling
+        </CardTitle>
+        <CardDescription>
+          Ζωντανό μετρητή κόστους ανά UTC ημέρα. Στο {g.softThrottlePct}% μπαίνει soft-throttle (κλείνει AI + realtime).
+          Στο 100% {g.autoPanicOnBudget ? 'ενεργοποιείται αυτόματα το Panic Mode' : 'εμφανίζει προειδοποίηση'}.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="space-y-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Χρήση σήμερα</span>
+            <span className="font-semibold tabular-nums">
+              {meter.total.toFixed(3)} / {g.dailyBudgetCredits} credits ({pct.toFixed(0)}%)
+            </span>
+          </div>
+          <Progress value={pct} className={state === 'over' ? '[&>div]:bg-destructive' : state === 'warn' ? '[&>div]:bg-warning' : ''} />
+          {state === 'over' && (
+            <p className="text-xs text-destructive font-medium">
+              ⛔ Ξεπέρασες το budget — μη-βασικές υπηρεσίες έχουν κλείσει αυτόματα.
+            </p>
+          )}
+          {state === 'warn' && (
+            <p className="text-xs text-warning-foreground">
+              ⚠️ Soft-throttle ενεργό — AI & realtime locations παύουν προσωρινά.
+            </p>
+          )}
+        </div>
+
+        <Separator />
+
+        <div className="grid grid-cols-2 gap-x-6 gap-y-1.5">
+          {bucketRow('AI calls', meter.buckets.ai)}
+          {bucketRow('DB writes', meter.buckets.db)}
+          {bucketRow('Realtime', meter.buckets.realtime)}
+          {bucketRow('Storage', meter.buckets.storage)}
+        </div>
+
+        <Separator />
+
+        <div className="grid sm:grid-cols-3 gap-3">
+          <div>
+            <Label className="text-xs">Daily cap (credits)</Label>
+            <Input
+              type="number"
+              min={0.5}
+              step={0.5}
+              value={g.dailyBudgetCredits}
+              onChange={(e) => saveGuardrails({ dailyBudgetCredits: Number(e.target.value) || 1 })}
+            />
+          </div>
+          <div>
+            <Label className="text-xs">Soft-throttle %</Label>
+            <Input
+              type="number"
+              min={10}
+              max={99}
+              value={g.softThrottlePct}
+              onChange={(e) => saveGuardrails({ softThrottlePct: Math.min(99, Math.max(10, Number(e.target.value) || 75)) })}
+            />
+          </div>
+          <div className="flex items-end">
+            <Button variant="outline" size="sm" className="w-full" onClick={() => { resetUsageMeter(); toast.success('Μετρητής μηδενίστηκε'); }}>
+              <RefreshCw className="h-3.5 w-3.5 mr-1.5" />
+              Reset μετρητή
+            </Button>
+          </div>
+        </div>
+
+        <div className="flex items-center justify-between p-3 rounded-lg border border-border">
+          <div className="min-w-0">
+            <Label className="text-sm font-medium block">Auto-panic στο 100%</Label>
+            <p className="text-[11px] text-muted-foreground mt-0.5">Κλείνει αυτόματα όλες τις πληρωμένες υπηρεσίες όταν εξαντληθεί το budget.</p>
+          </div>
+          <Switch checked={g.autoPanicOnBudget} onCheckedChange={(v) => saveGuardrails({ autoPanicOnBudget: v })} />
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
