@@ -117,5 +117,17 @@ export function useAdminData() {
     },
   });
 
-  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets };
+  const storeWallets = useQuery({
+    queryKey: ['admin-store-wallets'],
+    refetchInterval: 30_000,
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('store_wallets')
+        .select('store_id, available_balance, lifetime_earnings');
+      if (error) throw error;
+      return (data ?? []) as { store_id: string; available_balance: number; lifetime_earnings: number }[];
+    },
+  });
+
+  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets, storeWallets };
 }
