@@ -275,7 +275,7 @@ export default function AdminApp() {
       case 'orders_table':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
-        return <StoresSection stores={filteredStores} allStores={allStores} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
+        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
         return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
       case 'users':
