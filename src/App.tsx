@@ -34,10 +34,23 @@ const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
-      // Reasonable defaults so we don't refetch on every focus/mount.
+      // Cost-aware defaults shared across all apps (customer, driver, store,
+      // admin, support). Cuts duplicate fetches + auto-retries flaky requests
+      // with backoff so a brief network blip doesn't surface as an error.
       staleTime: 30_000,
+      gcTime: 5 * 60_000,
       refetchOnWindowFocus: false,
-      retry: 1,
+      refetchOnReconnect: true, // resync when the device comes back online
+      retry: (failureCount, err: any) => {
+        // Don't retry auth / permission errors — they won't get better.
+        const status = err?.status ?? err?.code;
+        if (status === 401 || status === 403 || status === 404) return false;
+        return failureCount < 2;
+      },
+      retryDelay: (i) => Math.min(1000 * 2 ** i, 8000),
+    },
+    mutations: {
+      retry: 0,
     },
   },
 });
