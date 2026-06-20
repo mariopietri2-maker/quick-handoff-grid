@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -19,6 +19,9 @@ export function useDriverState() {
   const { user } = useAuth();
   const [state, setState] = useState<DriverState | null>(null);
   const [loading, setLoading] = useState(true);
+  const channelInstanceIdRef = useRef(
+    globalThis.crypto?.randomUUID?.() ?? Math.random().toString(36).slice(2)
+  );
 
   const fetch = useCallback(async () => {
     if (!user) return;
@@ -45,11 +48,11 @@ export function useDriverState() {
   // Realtime — picks up admin actions (cash resets, etc.) instantly
   useEffect(() => {
     if (!user) return;
-    // Stable channel name per user — avoids leaking a fresh channel on every
-    // mount (the previous Math.random() suffix produced thousands of unique
-    // channels and contributed to runaway rolled-back transactions).
+    // Stable for this mounted hook instance, unique across duplicate driver
+    // surfaces. Reusing the exact same topic can hit Supabase Realtime's
+    // "cannot add callbacks after subscribe()" guard during remount/HMR.
     const ch = supabase
-      .channel(`driver-state-${user.id}`)
+      .channel(`driver-state-${user.id}-${channelInstanceIdRef.current}`)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'driver_state', filter: `driver_id=eq.${user.id}` },
         (payload: any) => { if (payload.new) setState(payload.new as DriverState); })
