@@ -172,3 +172,18 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
     _pendingTimers.push(t);
   }
 }
+
+export function stopOfferAlert() {
+  while (_pendingTimers.length) { try { clearTimeout(_pendingTimers.pop()!); } catch {} }
+  _alertLockUntil = 0;
+  // Pause any currently playing audio elements
+  try {
+    Object.values(audioCache).forEach((el) => {
+      if (!el) return;
+      try { el.pause(); el.currentTime = 0; } catch {}
+    });
+  } catch {}
+  if ('vibrate' in navigator) {
+    try { navigator.vibrate(0); } catch {}
+  }
+}

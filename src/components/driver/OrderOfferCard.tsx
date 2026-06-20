@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard, MessageSquare } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
+import { stopOfferAlert } from '@/lib/driver-sound-prefs';
 
 interface OrderOffer {
   id: string;
@@ -30,56 +31,19 @@ interface OrderOfferCardProps {
 
 const OFFER_TIMEOUT_SECONDS = 60;
 
-// DoorDash-style two-tone offer chime via WebAudio (no asset needed)
-function playOfferChime(ctx: AudioContext) {
-  const now = ctx.currentTime;
-  const tones = [
-    { f: 880, t: 0 },     // A5
-    { f: 1318.5, t: 0.18 } // E6
-  ];
-  tones.forEach(({ f, t }) => {
-    const osc = ctx.createOscillator();
-    const gain = ctx.createGain();
-    osc.type = 'sine';
-    osc.frequency.setValueAtTime(f, now + t);
-    gain.gain.setValueAtTime(0, now + t);
-    gain.gain.linearRampToValueAtTime(0.6, now + t + 0.02);
-    gain.gain.exponentialRampToValueAtTime(0.001, now + t + 0.32);
-    osc.connect(gain).connect(ctx.destination);
-    osc.start(now + t);
-    osc.stop(now + t + 0.35);
-  });
-}
-
 export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardProps) {
   const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMEOUT_SECONDS);
 
-  // Play repeating DoorDash-like chime + vibrate while offer is visible
+  // Sound + vibration are handled centrally in `useOrders` via
+  // `playOfferAlert`. Do NOT play another chime here — that caused the
+  // double-sound bug and kept ringing after the card unmounted.
+
+  // Stop any ringing alert as soon as the offer card unmounts (accept,
+  // decline, or auto-timeout) so the driver gets immediate silence.
   useEffect(() => {
-    let ctx: AudioContext | null = null;
-    try {
-      const AC = (window as any).AudioContext || (window as any).webkitAudioContext;
-      if (AC) {
-        ctx = new AC();
-        if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-        playOfferChime(ctx);
-        if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-      }
-    } catch {}
-    const interval = setInterval(() => {
-      if (ctx) {
-        try {
-          if (ctx.state === 'suspended') ctx.resume().catch(() => {});
-          playOfferChime(ctx);
-        } catch {}
-      }
-      if (navigator.vibrate) navigator.vibrate([200, 100, 200]);
-    }, 2500);
-    return () => {
-      clearInterval(interval);
-      if (ctx) ctx.close().catch(() => {});
-    };
-  }, [offer.id]);
+    return () => { stopOfferAlert(); };
+  }, []);
+
 
   useEffect(() => {
     if (secondsLeft <= 0) {
@@ -209,13 +173,13 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
         {/* Actions */}
         <div className="flex gap-2.5 mt-5">
           <button
-            onClick={() => onDecline(offer.id)}
+            onClick={() => { stopOfferAlert(); onDecline(offer.id); }}
             className="flex-1 h-12 rounded-full text-[14px] font-heading font-bold border border-[hsl(var(--driver-border-strong))] bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface-muted))] transition-all active:scale-[0.97]"
           >
             Απόρριψη
           </button>
           <button
-            onClick={() => onAccept(offer.id)}
+            onClick={() => { stopOfferAlert(); onAccept(offer.id); }}
             className="flex-[1.5] h-12 rounded-full text-[14px] font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-105 transition-all active:scale-[0.97]"
           >
             Αποδοχή
