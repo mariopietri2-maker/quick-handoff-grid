@@ -34,21 +34,29 @@ export default function ConnectionStatus() {
     <div
       className={`fixed top-0 inset-x-0 z-[100] flex items-center justify-center gap-2 px-4 py-1.5 text-xs font-heading font-bold shadow-md transition-colors ${
         online
-          ? 'bg-emerald-500 text-white'
-          : 'bg-red-600 text-white animate-pulse'
+          ? 'bg-[hsl(var(--success))] text-[hsl(var(--success-foreground))]'
+          : 'bg-destructive text-destructive-foreground animate-pulse'
       }`}
       role="status"
       aria-live="polite"
     >
       {online ? (
         <>
-          <Wifi className="h-3.5 w-3.5" />
+          <Wifi className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Σύνδεση αποκαταστάθηκε</span>
         </>
       ) : (
         <>
-          <WifiOff className="h-3.5 w-3.5" />
+          <WifiOff className="h-3.5 w-3.5" aria-hidden="true" />
           <span>Χωρίς σύνδεση — οι ενέργειες θα συγχρονιστούν όταν επανέλθετε online</span>
+          <button
+            type="button"
+            onClick={() => window.location.reload()}
+            className="ml-2 underline underline-offset-2 hover:opacity-90 focus:outline-none focus-visible:ring-2 focus-visible:ring-white/70 rounded-sm px-1"
+            aria-label="Δοκίμασε ξανά τη σύνδεση"
+          >
+            Επανάληψη
+          </button>
         </>
       )}
     </div>
