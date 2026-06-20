@@ -173,13 +173,13 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
         {/* Actions */}
         <div className="flex gap-2.5 mt-5">
           <button
-            onClick={() => onDecline(offer.id)}
+            onClick={() => { stopOfferAlert(); onDecline(offer.id); }}
             className="flex-1 h-12 rounded-full text-[14px] font-heading font-bold border border-[hsl(var(--driver-border-strong))] bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface-muted))] transition-all active:scale-[0.97]"
           >
             Απόρριψη
           </button>
           <button
-            onClick={() => onAccept(offer.id)}
+            onClick={() => { stopOfferAlert(); onAccept(offer.id); }}
             className="flex-[1.5] h-12 rounded-full text-[14px] font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-105 transition-all active:scale-[0.97]"
           >
             Αποδοχή
