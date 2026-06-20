@@ -455,6 +455,37 @@
   }
 }
 
+/* ───────────────────────────────────────────────
+   Global a11y + perf defaults (apply to every app:
+   customer, driver, store, admin, support).
+   ─────────────────────────────────────────────── */
+@layer base {
+  /* Visible focus ring for keyboard users on every interactive element.
+     Mouse clicks stay clean thanks to :focus-visible. */
+  :where(a, button, [role="button"], input, select, textarea, summary, [tabindex]:not([tabindex="-1"])):focus-visible {
+    outline: 2px solid hsl(var(--ring));
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+
+  /* Mobile-first tap targets: WCAG 2.5.5 recommends ≥44×44 CSS px.
+     Opt-in via class so we don't bloat tiny inline icons in dense tables. */
+  .tap-target { min-height: 44px; min-width: 44px; }
+
+  /* Images default to lazy + async decode — saves bandwidth across all apps. */
+  img { content-visibility: auto; }
+
+  /* Honor reduced-motion globally — turn off the heavy keyframes we ship. */
+  @media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+      animation-duration: 0.001ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.001ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+}
+
 @keyframes slide-shimmer {
   0% { background-position: -100% 0; }
   100% { background-position: 200% 0; }
