@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,6 +26,8 @@ interface Props {
 type DialogKey = null | 'location' | 'credit' | 'suspend' | 'broadcast' | 'sos' | 'unassign' | 'cancel_order' | 'modify_order';
 
 export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props) {
+  const { isAdmin, isSupport } = useAuth();
+  const creditMax = isAdmin ? 20 : isSupport ? 5 : 0;
   const [open, setOpen] = useState<DialogKey>(null);
   const [loading, setLoading] = useState(false);
 
@@ -63,8 +66,9 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
   };
 
   const submitCredit = async () => {
+    if (creditMax <= 0) return toast.error('Δεν έχεις δικαίωμα πίστωσης');
     const amt = parseFloat(amount);
-    if (!amt || amt <= 0 || amt > 20) return toast.error('Ποσό 0–20€');
+    if (!amt || amt <= 0 || amt > creditMax) return toast.error(`Ποσό 0–${creditMax}€`);
     if (!reason.trim()) return toast.error('Συμπλήρωσε αιτιολογία');
     setLoading(true);
     const { error } = await (supabase as any).rpc('support_credit_wallet', {
@@ -232,12 +236,12 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /> Πίστωση πορτοφολιού</DialogTitle>
-              <DialogDescription>Έως 20€ ανά αίτημα. Καταγράφεται στο ιστορικό συναλλαγών του οδηγού.</DialogDescription>
+              <DialogDescription>Έως {creditMax}€ ανά αίτημα ({isAdmin ? 'admin' : 'support'}). Καταγράφεται στο ιστορικό συναλλαγών του οδηγού.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div>
                 <Label>Ποσό (€)</Label>
-                <Input type="number" step="0.5" min="0" max="20" value={amount} onChange={(e) => setAmount(e.target.value)} placeholder="π.χ. 5.00" />
+                <Input type="number" step="0.5" min="0" max={creditMax} value={amount} onChange={(e) => setAmount(e.target.value)} placeholder={isAdmin ? 'π.χ. 10.00' : 'π.χ. 3.00'} />
               </div>
               <div>
                 <Label>Αιτιολογία</Label>
