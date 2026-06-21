@@ -35,21 +35,46 @@ export default function StorePayablesPanel() {
   const { data, isLoading } = useQuery({
     queryKey: ['admin-store-payables'],
     queryFn: async () => {
-      const [{ data: stores, error: e1 }, { data: wallets, error: e2 }] = await Promise.all([
-        supabase.from('stores').select('id, name, owner_id, is_active'),
+      const [{ data: stores, error: e1 }, { data: wallets, error: e2 }, { data: delivered, error: e3 }] = await Promise.all([
+        supabase.from('stores').select('id, name, owner_id, is_active, commission_pct'),
         (supabase as any).from('store_wallets').select('store_id, available_balance, lifetime_earnings, updated_at'),
+        supabase
+          .from('orders')
+          .select('id, store_id, total_amount, delivery_fee, tip_amount, commission_settled_at, updated_at, created_at')
+          .eq('status', 'delivered' as any)
+          .order('created_at', { ascending: false })
+          .limit(5000),
       ]);
       if (e1) throw e1;
       if (e2) throw e2;
+      if (e3) throw e3;
       const wmap = new Map((wallets ?? []).map((w: any) => [w.store_id, w]));
+      const deliveredByStore = new Map<string, any[]>();
+      (delivered ?? []).forEach((order: any) => {
+        if (!order.store_id) return;
+        const rows = deliveredByStore.get(order.store_id) ?? [];
+        rows.push(order);
+        deliveredByStore.set(order.store_id, rows);
+      });
       return (stores ?? []).map((s: any) => {
         const w: any = wmap.get(s.id);
+        const walletTouchedAt = w?.updated_at ? new Date(w.updated_at).getTime() : 0;
+        const commissionPct = Math.max(Number(s.commission_pct ?? 15), 15);
+        const missingWalletCredit = (deliveredByStore.get(s.id) ?? []).reduce((sum, order) => {
+          const settledAt = new Date(order.commission_settled_at ?? order.updated_at ?? order.created_at).getTime();
+          if (walletTouchedAt && settledAt <= walletTouchedAt) return sum;
+          const foodSubtotal = Math.max(
+            Number(order.total_amount ?? 0) - Number(order.delivery_fee ?? 0) - Number(order.tip_amount ?? 0),
+            0,
+          );
+          return sum + Math.round(foodSubtotal * (100 - commissionPct)) / 100;
+        }, 0);
         return {
           id: s.id,
           name: s.name as string,
           is_active: s.is_active as boolean | null,
-          available: Number(w?.available_balance ?? 0),
-          lifetime: Number(w?.lifetime_earnings ?? 0),
+          available: Number(w?.available_balance ?? 0) + missingWalletCredit,
+          lifetime: Number(w?.lifetime_earnings ?? 0) + missingWalletCredit,
           updated_at: w?.updated_at as string | undefined,
         };
       });
