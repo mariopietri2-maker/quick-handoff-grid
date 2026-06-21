@@ -154,15 +154,6 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
   };
 
-  const handleToggleStorePromo = async (storeId: string, currentlyPromoted: boolean) => {
-    const next = currentlyPromoted ? 'inactive' : 'active';
-    const { error } = await supabase
-      .from('stores')
-      .update({ promotion_status: next, promotion_starts_at: next === 'active' ? new Date().toISOString() : null } as any)
-      .eq('id', storeId);
-    if (error) toast.error('Αποτυχία');
-    else { toast.success(currentlyPromoted ? 'Εκτός Πεινιάτας' : 'Στην Πεινιάτα 🦄'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
-  };
 
 
   const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
@@ -292,7 +283,7 @@ export default function AdminApp() {
       case 'orders_table':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
-        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} onTogglePromo={handleToggleStorePromo} />;
+        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
         return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
       case 'users':
@@ -639,7 +630,7 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
   );
 }
 
-function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle, onTogglePromo }: any) {
+function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle }: any) {
   const walletMap = new Map((storeWallets ?? []).map((w: any) => [w.store_id, w]));
   const totalLifetime = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.lifetime_earnings ?? 0), 0);
   const totalAvailable = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.available_balance ?? 0), 0);
