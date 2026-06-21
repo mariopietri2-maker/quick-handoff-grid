@@ -64,6 +64,13 @@ export default function CustomerApp() {
   const [filterFree, setFilterFree] = useState(false);
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
+  const [serviceMode, setServiceMode] = useState<'delivery' | 'pickup' | 'fresh'>(() => {
+    try { return (localStorage.getItem('customer_service_mode') as any) || 'delivery'; } catch { return 'delivery'; }
+  });
+  const changeMode = (m: 'delivery' | 'pickup' | 'fresh') => {
+    setServiceMode(m);
+    try { localStorage.setItem('customer_service_mode', m); } catch {}
+  };
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
@@ -293,6 +300,33 @@ export default function CustomerApp() {
                 </Link>
               )}
             </div>
+          </div>
+
+
+          {/* ── Service mode segmented control (Delivery / Pickup / Fresh) ─── */}
+          <div className="relative mb-3 bg-[hsl(0,0%,96%)] rounded-2xl p-1 grid grid-cols-3 gap-1">
+            {[
+              { key: 'delivery' as const, label: 'Delivery', emoji: '🛵' },
+              { key: 'pickup' as const, label: 'Pickup', emoji: '🛍️' },
+              { key: 'fresh' as const, label: 'Fresh', emoji: '🥬' },
+            ].map(m => {
+              const active = serviceMode === m.key;
+              return (
+                <button
+                  key={m.key}
+                  onClick={() => changeMode(m.key)}
+                  className={`relative h-10 rounded-xl text-[12.5px] font-extrabold tracking-tight inline-flex items-center justify-center gap-1.5 transition-all active:scale-[0.97] ${
+                    active
+                      ? 'bg-white text-[hsl(0,0%,9%)] shadow-[0_2px_6px_-1px_hsl(0_0%_0%/0.12),0_1px_0_hsl(0_0%_100%)_inset]'
+                      : 'text-[hsl(0,0%,42%)]'
+                  }`}
+                >
+                  <span className="emoji text-[14px] leading-none">{m.emoji}</span>
+                  {m.label}
+                  {active && <span className="absolute -bottom-0.5 left-1/2 -translate-x-1/2 h-1 w-1 rounded-full c-bg-accent" />}
+                </button>
+              );
+            })}
           </div>
 
           {/* Search */}
@@ -631,13 +665,25 @@ export default function CustomerApp() {
         className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
+        <div className="max-w-2xl mx-auto grid grid-cols-5 pt-2 pb-2">
           <button className="flex flex-col items-center justify-center gap-1 c-accent">
             <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
               <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
             </span>
             <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
-            <span className="h-1 w-1 rounded-full c-bg-accent -mt-0.5" />
+          </button>
+          <button
+            onClick={() => {
+              const el = document.querySelector('input[placeholder]') as HTMLInputElement | null;
+              el?.focus();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+          >
+            <span className="p-2">
+              <Search className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">Αναζήτηση</span>
           </button>
           <button
             onClick={() => setSelectedCategory('all')}
