@@ -118,6 +118,7 @@ export default function DriverApp() {
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
+  const [sheetCollapsed, setSheetCollapsed] = useState(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
@@ -476,7 +477,7 @@ export default function DriverApp() {
           )}
 
 
-          <div className={`fixed bottom-0 left-0 right-0 z-20 max-h-[72vh] overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain ${isNavActive ? 'hidden' : ''}`}>
+          <div className={`fixed bottom-0 left-0 right-0 z-20 ${sheetCollapsed ? 'max-h-[18vh]' : 'max-h-[72vh]'} overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain transition-[max-height] duration-300 ease-out ${isNavActive ? 'hidden' : ''}`}>
             {/* Recenter button — pinned just above the sheet */}
             <div className="flex justify-end pb-2 pointer-events-auto">
               <button
@@ -487,6 +488,16 @@ export default function DriverApp() {
                 <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
               </button>
             </div>
+            {/* Drag handle — tap to collapse/expand so the driver can see more of the map */}
+            <button
+              type="button"
+              onClick={() => setSheetCollapsed(v => !v)}
+              className="pointer-events-auto w-full flex items-center justify-center pt-1 pb-2 -mb-1 group"
+              aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
+              title={sheetCollapsed ? 'Άνοιγμα' : 'Σύμπτυξη για περισσότερο χάρτη'}
+            >
+              <span className="h-1.5 w-12 rounded-full bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70 transition-colors" />
+            </button>
             <div className="pointer-events-auto space-y-2.5 animate-slide-up">
 
               {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
