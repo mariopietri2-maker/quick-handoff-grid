@@ -45,15 +45,19 @@ export default function CustomerApp() {
     tone: QUICK_TILE_TONES[i % QUICK_TILE_TONES.length],
   }));
 
-  const CATEGORY_CHIPS = [
-    { labelKey: 'cat.all', value: 'all', emoji: '🍽️' },
-    { labelKey: 'cat.pizza', value: 'Πίτσες', emoji: '🍕' },
-    { labelKey: 'cat.burgers', value: 'Burgers', emoji: '🍔' },
-    { labelKey: 'cat.crepes', value: 'Κρέπες', emoji: '🥞' },
-    { labelKey: 'cat.pasta', value: 'Ζυμαρικά', emoji: '🍝' },
-    { labelKey: 'cat.gyros', value: 'Σουβλάκια', emoji: '🥙' },
-    { labelKey: 'cat.salads', value: 'Σαλάτες', emoji: '🥗' },
-  ];
+  const CATEGORY_EMOJI: Record<string, string> = {
+    'πίτσες': '🍕', 'pizza': '🍕',
+    'burgers': '🍔', 'burger': '🍔',
+    'κρέπες': '🥞', 'crepes': '🥞',
+    'ζυμαρικά': '🍝', 'pasta': '🍝',
+    'σουβλάκια': '🥙', 'gyros': '🥙',
+    'σαλάτες': '🥗', 'salads': '🥗',
+    'γλυκά': '🍰', 'desserts': '🍰',
+    'ποτά': '🥤', 'drinks': '🥤',
+    'καφέδες': '☕', 'coffee': '☕',
+    'κυρίως': '🍽️', 'mains': '🍽️',
+    'combo': '🍱', 'ορεκτικά': '🥨', 'starters': '🥨',
+  };
 
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
@@ -389,7 +393,13 @@ export default function CustomerApp() {
         {cfg.sections.show_categories && (
           <div className="px-5 pt-6">
             <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-5 px-5">
-              {CATEGORY_CHIPS.map(cat => {
+              {[{ value: 'all', label: t('cat.all'), emoji: '🍽️' },
+                ...Array.from(new Set(Object.values(storeCategories).flat())).sort().map(c => ({
+                  value: c,
+                  label: c,
+                  emoji: CATEGORY_EMOJI[c.toLowerCase()] ?? '🍴',
+                }))
+              ].map(cat => {
                 const active = selectedCategory === cat.value;
                 return (
                   <button
@@ -402,7 +412,7 @@ export default function CustomerApp() {
                     }`}
                   >
                     <span className="emoji text-sm leading-none">{cat.emoji}</span>
-                    {t(cat.labelKey)}
+                    {cat.label}
                   </button>
                 );
               })}
@@ -477,7 +487,7 @@ export default function CustomerApp() {
               {search
                 ? `${t('customer.results_for')} "${search}"`
                 : selectedCategory !== 'all'
-                  ? t(CATEGORY_CHIPS.find(c => c.value === selectedCategory)?.labelKey ?? 'cat.all')
+                  ? selectedCategory
                   : t('customer.nearby')}
             </h2>
             <span className="text-[11px] c-muted font-extrabold bg-[hsl(0,0%,96%)] px-2.5 py-1 rounded-md tabular-nums">
