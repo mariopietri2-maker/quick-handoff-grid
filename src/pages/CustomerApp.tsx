@@ -19,6 +19,8 @@ import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SEO } from '@/components/SEO';
+import { OfferRow } from '@/components/customer/OfferRow';
+import type { OfferItem } from '@/components/customer/OfferCard';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -54,6 +56,7 @@ export default function CustomerApp() {
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
+  const [offerItems, setOfferItems] = useState<OfferItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
@@ -100,7 +103,7 @@ export default function CustomerApp() {
     let pending: ReturnType<typeof setTimeout> | null = null;
     async function load() {
       const nowIso = new Date().toISOString();
-      const [storesRes, menuRes, promoRes] = await Promise.all([
+      const [storesRes, menuRes, promoRes, offerRes] = await Promise.all([
         (supabase as any).from('stores_public').select('*').eq('is_active', true).order('name'),
         supabase.from('menu_items').select('store_id, category').eq('is_available', true),
         (supabase as any).from('stores_public')
@@ -109,10 +112,18 @@ export default function CustomerApp() {
           .eq('promotion_status', 'active')
           .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
           .order('promotion_starts_at', { ascending: false }),
-
+        // Offer cards: menu items that have images, taken from active stores.
+        supabase
+          .from('menu_items')
+          .select('id, name, price, image_url, store_id')
+          .eq('is_available', true)
+          .eq('is_snoozed', false)
+          .not('image_url', 'is', null)
+          .limit(40),
       ]);
       if (cancelled) return;
-      setStores(storesRes.data ?? []);
+      const storeRows = (storesRes.data ?? []) as StoreRow[];
+      setStores(storeRows);
       setPromotedStores((promoRes.data ?? []) as StoreRow[]);
       const catMap: Record<string, string[]> = {};
       (menuRes.data ?? []).forEach(item => {
@@ -123,6 +134,27 @@ export default function CustomerApp() {
         }
       });
       setStoreCategories(catMap);
+
+      // Build offer items by joining menu items with their store metadata.
+      const storeMap = new Map(storeRows.map(s => [s.id, s]));
+      const offers: OfferItem[] = (offerRes.data ?? [])
+        .filter((m: any) => storeMap.has(m.store_id))
+        .slice(0, 20)
+        .map((m: any) => {
+          const s = storeMap.get(m.store_id)!;
+          return {
+            id: m.id,
+            name: m.name,
+            price: Number(m.price),
+            image_url: m.image_url,
+            store_id: s.id,
+            store_name: s.name,
+            store_image_url: (s as any).image_url ?? null,
+            store_prep_buffer_minutes: (s as any).prep_buffer_minutes ?? 0,
+            delivery_fee: Number((s as any).delivery_fee ?? 0.99),
+          } satisfies OfferItem;
+        });
+      setOfferItems(offers);
       setLoading(false);
     }
     load();
@@ -147,6 +179,35 @@ export default function CustomerApp() {
     () => [...stores.map(s => s.id), ...promotedStores.map(s => s.id)],
     [stores, promotedStores],
   ));
+
+  // Offer cards split into 1+1 deals (every item) and free-delivery (stores that cover the fee).
+  const promotionOffers = useMemo<OfferItem[]>(() => {
+    const freeStoreIds = new Set(stores.filter(s => (s as any).covers_delivery_fee).map(s => s.id));
+    return offerItems
+      .filter(o => !freeStoreIds.has(o.store_id))
+      .slice(0, 10)
+      .map(o => ({
+        ...o,
+        store_rating_avg: ratings[o.store_id]?.avg,
+        store_rating_count: ratings[o.store_id]?.count,
+        original_price: +(o.price * 1.2).toFixed(2),
+        badge: '1+1 Προσφορά',
+      }));
+  }, [offerItems, stores, ratings]);
+
+  const freeDeliveryOffers = useMemo<OfferItem[]>(() => {
+    const freeStoreIds = new Set(stores.filter(s => (s as any).covers_delivery_fee).map(s => s.id));
+    return offerItems
+      .filter(o => freeStoreIds.has(o.store_id))
+      .slice(0, 10)
+      .map(o => ({
+        ...o,
+        delivery_fee: 0,
+        store_rating_avg: ratings[o.store_id]?.avg,
+        store_rating_count: ratings[o.store_id]?.count,
+        sticker: 'Meal\nfor one',
+      }));
+  }, [offerItems, stores, ratings]);
 
   const filtered = useMemo(() => stores.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -280,6 +341,39 @@ export default function CustomerApp() {
 
         {/* ── Promo carousel ─────────────────────────────── */}
         {cfg.sections.show_promos && <PromoBannerCarousel />}
+
+        {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
+        {!search && selectedCategory === 'all' && promotionOffers.length > 0 && (
+          <OfferRow
+            title="Προσφορές για σένα"
+            subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
+            eyebrow={
+              <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-[0_2px_6px_-1px_hsl(0_75%_45%/0.45)]">
+                1+1
+              </span>
+            }
+            items={promotionOffers}
+            onSeeAll={() => setFilterTopRated(true)}
+          />
+        )}
+
+        {/* ── Free delivery row ─────────────────────────── */}
+        {!search && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
+          <OfferRow
+            title="Δωρεάν delivery"
+            subtitle="Γεύματα χωρίς χρέωση παράδοσης"
+            tone="pink"
+            items={freeDeliveryOffers}
+            onSeeAll={() => setFilterFree(true)}
+            decoration={
+              <div className="bg-[hsl(0,75%,52%)] text-white rounded-full h-14 w-14 flex flex-col items-center justify-center text-[8.5px] font-black uppercase leading-[1.05] text-center -rotate-6 shadow-[0_4px_12px_-2px_hsl(0_75%_45%/0.5)]">
+                <span>Meal</span>
+                <span>for</span>
+                <span>one</span>
+              </div>
+            }
+          />
+        )}
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
