@@ -22,6 +22,7 @@ import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
+import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -373,6 +374,9 @@ export default function CustomerApp() {
             </div>
           </div>
         )}
+
+        {/* ── AI-generated hero carousel ────────────────── */}
+        {cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
         {/* ── 1+1 hero card (efood-style) ────────────────── */}
         <OnePlusOneHero />
