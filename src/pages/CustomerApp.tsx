@@ -481,7 +481,7 @@ export default function CustomerApp() {
               {search
                 ? `${t('customer.results_for')} "${search}"`
                 : selectedCategory !== 'all'
-                  ? t(CATEGORY_CHIPS.find(c => c.value === selectedCategory)?.labelKey ?? 'cat.all')
+                  ? selectedCategory
                   : t('customer.nearby')}
             </h2>
             <span className="text-[11px] c-muted font-extrabold bg-[hsl(0,0%,96%)] px-2.5 py-1 rounded-md tabular-nums">
