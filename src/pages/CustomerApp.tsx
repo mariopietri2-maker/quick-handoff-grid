@@ -64,6 +64,13 @@ export default function CustomerApp() {
   const [filterFree, setFilterFree] = useState(false);
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
+  const [serviceMode, setServiceMode] = useState<'delivery' | 'pickup' | 'fresh'>(() => {
+    try { return (localStorage.getItem('customer_service_mode') as any) || 'delivery'; } catch { return 'delivery'; }
+  });
+  const changeMode = (m: 'delivery' | 'pickup' | 'fresh') => {
+    setServiceMode(m);
+    try { localStorage.setItem('customer_service_mode', m); } catch {}
+  };
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
