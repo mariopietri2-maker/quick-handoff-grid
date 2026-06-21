@@ -357,11 +357,11 @@ function QuantityControl({ qty, onMinus, onPlus, compact }: { qty: number; onMin
   if (compact) {
     return (
       <div className="flex items-center bg-card rounded-full shadow-md border border-border overflow-hidden">
-        <button onClick={onMinus} className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
+        <button onClick={onMinus} aria-label="Μείωση ποσότητας" className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
           <Minus className="h-3 w-3 text-primary" />
         </button>
-        <span className="text-xs font-bold text-foreground w-5 text-center">{qty}</span>
-        <button onClick={onPlus} className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
+        <span className="text-xs font-bold text-foreground w-5 text-center" aria-live="polite">{qty}</span>
+        <button onClick={onPlus} aria-label="Αύξηση ποσότητας" className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
           <Plus className="h-3 w-3 text-primary" />
         </button>
       </div>
@@ -372,13 +372,15 @@ function QuantityControl({ qty, onMinus, onPlus, compact }: { qty: number; onMin
     <div className="flex items-center gap-2">
       <button
         onClick={onMinus}
+        aria-label="Μείωση ποσότητας"
         className="h-8 w-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
       >
         <Minus className="h-3.5 w-3.5 text-foreground" />
       </button>
-      <span className="font-heading font-bold text-foreground w-6 text-center text-sm">{qty}</span>
+      <span className="font-heading font-bold text-foreground w-6 text-center text-sm" aria-live="polite">{qty}</span>
       <button
         onClick={onPlus}
+        aria-label="Αύξηση ποσότητας"
         className="h-8 w-8 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors"
       >
         <Plus className="h-3.5 w-3.5 text-primary-foreground" />
