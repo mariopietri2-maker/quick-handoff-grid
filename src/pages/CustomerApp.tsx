@@ -384,6 +384,10 @@ export default function CustomerApp() {
         <OnePlusOneHero />
 
         {/* ── Promo carousel ─────────────────────────────── */}
+        {/* ── Lucky Hungry countdown card ────────────────── */}
+        {!search && selectedCategory === 'all' && <LuckyHungryCard />}
+
+        {/* ── Promo carousel ─────────────────────────────── */}
         {cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
