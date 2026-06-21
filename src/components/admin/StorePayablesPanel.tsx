@@ -40,7 +40,7 @@ export default function StorePayablesPanel() {
         (supabase as any).from('store_wallets').select('store_id, available_balance, lifetime_earnings, updated_at'),
         supabase
           .from('orders')
-          .select('id, store_id, total_amount, delivery_fee, tip_amount, commission_settled_at, updated_at, created_at')
+          .select('id, store_id, source, total_amount, delivery_fee, tip_amount, store_charge, commission_settled_at, updated_at, created_at')
           .eq('status', 'delivered' as any)
           .order('created_at', { ascending: false })
           .limit(5000),
@@ -63,6 +63,7 @@ export default function StorePayablesPanel() {
         const missingWalletCredit = (deliveredByStore.get(s.id) ?? []).reduce((sum, order) => {
           const settledAt = new Date(order.commission_settled_at ?? order.updated_at ?? order.created_at).getTime();
           if (walletTouchedAt && settledAt <= walletTouchedAt) return sum;
+          if (order.source && order.source !== 'in_app') return sum - Number(order.store_charge ?? 0);
           const foodSubtotal = Math.max(
             Number(order.total_amount ?? 0) - Number(order.delivery_fee ?? 0) - Number(order.tip_amount ?? 0),
             0,
