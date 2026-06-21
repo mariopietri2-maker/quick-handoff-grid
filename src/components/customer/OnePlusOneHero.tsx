@@ -1,15 +1,13 @@
 import { useState, useEffect, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Heart } from 'lucide-react';
 
 /**
  * efood-style 1+1 hero card.
  * Big red banner with a white heart-shaped “1+1” badge, floating food
- * illustrations, and a carousel-like dot indicator. Tapping it navigates
- * to the 1+1 offers section or a dedicated promo landing.
+ * illustrations, and a carousel-like dot indicator. Tapping it scrolls to
+ * the 1+1 offers row below.
  */
 export function OnePlusOneHero() {
-  const navigate = useNavigate();
   const [current, setCurrent] = useState(0);
 
   const next = useCallback(() => setCurrent(c => (c + 1) % 3), []);
@@ -20,7 +18,10 @@ export function OnePlusOneHero() {
   }, [next]);
 
   const handleClick = () => {
-    navigate('/order', { state: { filter: '1plus1' } });
+    const target = document.getElementById('one-plus-one-row');
+    if (target) {
+      target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
   };
 
   return (
