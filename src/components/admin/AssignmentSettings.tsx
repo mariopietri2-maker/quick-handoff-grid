@@ -176,6 +176,49 @@ export default function AssignmentSettings() {
         </CardContent>
       </Card>
 
+      {/* Fair earnings target — only meaningful when fair_earnings mode is active */}
+      <Card className={s.distribution_mode === 'fair_earnings' ? '' : 'opacity-60'}>
+        <CardHeader>
+          <CardTitle className="font-heading text-base flex items-center gap-2">
+            <HandCoins className="h-4 w-4 text-amber-600" /> Δίκαιες Αμοιβές · Στόχος €/ώρα
+          </CardTitle>
+        </CardHeader>
+        <CardContent className={`space-y-3 ${s.distribution_mode !== 'fair_earnings' ? 'pointer-events-none' : ''}`}>
+          <p className="text-xs text-muted-foreground">
+            Οι παραγγελίες πηγαίνουν στον πιο κοντινό διαθέσιμο οδηγό, αλλά με προτεραιότητα σε όσους έχουν βγάλει
+            λιγότερα στο παράθυρο. Στόχος: όλοι οι οδηγοί να φτάνουν τα <b>€{fairTarget.toFixed(0)}/ώρα</b>.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[11px] uppercase">Στόχος €/ώρα ανά οδηγό</Label>
+              <Input
+                type="number"
+                min={1}
+                step={0.5}
+                value={fairTarget}
+                onChange={(e) => setFairTarget(parseFloat(e.target.value) || 0)}
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-[11px] uppercase">Παράθυρο υπολογισμού (ώρες)</Label>
+              <Input
+                type="number"
+                min={1}
+                step={1}
+                value={fairWindow}
+                onChange={(e) => setFairWindow(parseFloat(e.target.value) || 1)}
+                className="h-9"
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Παράδειγμα: ένας οδηγός online 4 ώρες με €24 κερδών είναι €6/ώρα — θα προτιμηθεί έναντι ενός που είναι ήδη πάνω από €10/ώρα,
+            αν και οι δύο είναι σε λογική απόσταση.
+          </p>
+        </CardContent>
+      </Card>
+
       {/* Core parameters */}
       <Card>
         <CardHeader>
