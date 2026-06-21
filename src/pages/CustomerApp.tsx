@@ -103,7 +103,7 @@ export default function CustomerApp() {
     let pending: ReturnType<typeof setTimeout> | null = null;
     async function load() {
       const nowIso = new Date().toISOString();
-      const [storesRes, menuRes, promoRes] = await Promise.all([
+      const [storesRes, menuRes, promoRes, offerRes] = await Promise.all([
         (supabase as any).from('stores_public').select('*').eq('is_active', true).order('name'),
         supabase.from('menu_items').select('store_id, category').eq('is_available', true),
         (supabase as any).from('stores_public')
@@ -112,10 +112,18 @@ export default function CustomerApp() {
           .eq('promotion_status', 'active')
           .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
           .order('promotion_starts_at', { ascending: false }),
-
+        // Offer cards: menu items that have images, taken from active stores.
+        supabase
+          .from('menu_items')
+          .select('id, name, price, image_url, store_id')
+          .eq('is_available', true)
+          .eq('is_snoozed', false)
+          .not('image_url', 'is', null)
+          .limit(40),
       ]);
       if (cancelled) return;
-      setStores(storesRes.data ?? []);
+      const storeRows = (storesRes.data ?? []) as StoreRow[];
+      setStores(storeRows);
       setPromotedStores((promoRes.data ?? []) as StoreRow[]);
       const catMap: Record<string, string[]> = {};
       (menuRes.data ?? []).forEach(item => {
@@ -126,6 +134,27 @@ export default function CustomerApp() {
         }
       });
       setStoreCategories(catMap);
+
+      // Build offer items by joining menu items with their store metadata.
+      const storeMap = new Map(storeRows.map(s => [s.id, s]));
+      const offers: OfferItem[] = (offerRes.data ?? [])
+        .filter((m: any) => storeMap.has(m.store_id))
+        .slice(0, 20)
+        .map((m: any) => {
+          const s = storeMap.get(m.store_id)!;
+          return {
+            id: m.id,
+            name: m.name,
+            price: Number(m.price),
+            image_url: m.image_url,
+            store_id: s.id,
+            store_name: s.name,
+            store_image_url: (s as any).image_url ?? null,
+            store_prep_buffer_minutes: (s as any).prep_buffer_minutes ?? 0,
+            delivery_fee: Number((s as any).delivery_fee ?? 0.99),
+          } satisfies OfferItem;
+        });
+      setOfferItems(offers);
       setLoading(false);
     }
     load();
