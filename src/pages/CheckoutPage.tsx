@@ -298,13 +298,16 @@ export default function CheckoutPage() {
         noindex
       />
       <PaymentTestModeBanner />
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+      <header className="bg-card/85 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
+        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <div>
-          <h1 className="font-heading font-bold text-lg text-foreground">Ολοκλήρωση Παραγγελίας</h1>
-          <p className="text-xs text-muted-foreground">από {storeName}</p>
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.14em] font-extrabold text-muted-foreground leading-none">Checkout</p>
+          <h1 className="font-heading font-extrabold text-[17px] text-foreground leading-tight truncate">{storeName}</h1>
+        </div>
+        <div className="ml-auto bg-primary/10 text-primary rounded-full px-3 py-1.5 text-xs font-extrabold tabular-nums">
+          {grandTotal.toFixed(2)}€
         </div>
       </header>
 
