@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Save, Target, Radio, Layers, Sparkles, Bike, Car, Filter, Scale } from 'lucide-react';
+import { Loader2, Save, Target, Radio, Layers, Sparkles, Bike, Car, Filter, Scale, HandCoins } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MODES = [
