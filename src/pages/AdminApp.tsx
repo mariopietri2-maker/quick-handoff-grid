@@ -154,15 +154,6 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
   };
 
-  const handleToggleStorePromo = async (storeId: string, currentlyPromoted: boolean) => {
-    const next = currentlyPromoted ? 'inactive' : 'active';
-    const { error } = await supabase
-      .from('stores')
-      .update({ promotion_status: next, promotion_starts_at: next === 'active' ? new Date().toISOString() : null } as any)
-      .eq('id', storeId);
-    if (error) toast.error('Αποτυχία');
-    else { toast.success(currentlyPromoted ? 'Εκτός Πεινιάτας' : 'Στην Πεινιάτα 🦄'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
-  };
 
 
   const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
@@ -292,7 +283,7 @@ export default function AdminApp() {
       case 'orders_table':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
-        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} onTogglePromo={handleToggleStorePromo} />;
+        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
         return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
       case 'users':
@@ -639,7 +630,7 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
   );
 }
 
-function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle, onTogglePromo }: any) {
+function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle }: any) {
   const walletMap = new Map((storeWallets ?? []).map((w: any) => [w.store_id, w]));
   const totalLifetime = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.lifetime_earnings ?? 0), 0);
   const totalAvailable = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.available_balance ?? 0), 0);
@@ -672,13 +663,12 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th className="w-24">🦄 Πεινιάτα</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
+            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
             <tbody>
               {stores.map((store: any) => {
                 const w: any = walletMap.get(store.id);
                 const lifetime = Number(w?.lifetime_earnings ?? 0);
                 const available = Number(w?.available_balance ?? 0);
-                const inPromo = store.promotion_status === 'active';
                 return (
                   <tr key={store.id}>
                     <td className="font-medium">{store.name}</td>
@@ -686,12 +676,6 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                     <td className="text-right tabular-nums font-medium">{fmt(lifetime)}</td>
                     <td className={`text-right tabular-nums ${available < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{fmt(available)}</td>
                     <td><Switch checked={!!store.is_active} onCheckedChange={() => onToggle(store.id, store.is_active)} /></td>
-                    <td>
-                      <Switch
-                        checked={inPromo}
-                        onCheckedChange={() => onTogglePromo(store.id, inPromo)}
-                      />
-                    </td>
                     <td>
                       <span className={`admin-pill ${store.busy_mode ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30' : 'bg-muted text-muted-foreground border-border'}`}>
                         {store.busy_mode ? 'Πολυάσχολο' : 'Κανονικό'}
@@ -701,7 +685,7 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                   </tr>
                 );
               })}
-              {!stores.length && <tr><td colSpan={8} className="text-center text-muted-foreground py-10">Κανένα κατάστημα</td></tr>}
+              {!stores.length && <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Κανένα κατάστημα</td></tr>}
             </tbody>
           </table>
         </div>
