@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Save, Target, Radio, Layers, Sparkles, Bike, Car, Filter, Scale } from 'lucide-react';
+import { Loader2, Save, Target, Radio, Layers, Sparkles, Bike, Car, Filter, Scale, HandCoins } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MODES = [
@@ -34,6 +34,13 @@ const MODES = [
     tone: 'text-orange-600 bg-orange-500/10 border-orange-500/30',
   },
   {
+    key: 'fair_earnings',
+    label: 'Δίκαιες Αμοιβές (€/ώρα)',
+    desc: 'Σαν "Πλησιέστερος", αλλά προτεραιότητα σε οδηγούς που έχουν βγάλει λιγότερα — στόχος να φτάσουν όλοι τα €/ώρα.',
+    Icon: HandCoins,
+    tone: 'text-amber-600 bg-amber-500/10 border-amber-500/30',
+  },
+  {
     key: 'smart',
     label: 'Smart (Rating + Δικαιοσύνη)',
     desc: 'Σταθμισμένη βαθμολογία βάσει απόστασης, rating, και δικαιοσύνης (round-robin).',
@@ -41,6 +48,8 @@ const MODES = [
     tone: 'text-purple-600 bg-purple-500/10 border-purple-500/30',
   },
 ] as const;
+
+const FAIR_TARGET_KEY = 'admin.dist.fair_hourly_target';
 
 interface Settings {
   distribution_mode: string;
@@ -63,6 +72,14 @@ export default function AssignmentSettings() {
   const qc = useQueryClient();
   const [s, setS] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fairTarget, setFairTarget] = useState<number>(() => {
+    const v = Number(localStorage.getItem(FAIR_TARGET_KEY));
+    return Number.isFinite(v) && v > 0 ? v : 10;
+  });
+  const [fairWindow, setFairWindow] = useState<number>(() => {
+    const v = Number(localStorage.getItem(FAIR_TARGET_KEY + '.window'));
+    return Number.isFinite(v) && v > 0 ? v : 6;
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['platform-distribution-settings'],
@@ -95,6 +112,8 @@ export default function AssignmentSettings() {
 
   const save = async () => {
     setSaving(true);
+    localStorage.setItem(FAIR_TARGET_KEY, String(fairTarget));
+    localStorage.setItem(FAIR_TARGET_KEY + '.window', String(fairWindow));
     const { error } = await supabase
       .from('platform_settings')
       .update(s as any)
@@ -154,6 +173,49 @@ export default function AssignmentSettings() {
               );
             })}
           </div>
+        </CardContent>
+      </Card>
+
+      {/* Fair earnings target — only meaningful when fair_earnings mode is active */}
+      <Card className={s.distribution_mode === 'fair_earnings' ? '' : 'opacity-60'}>
+        <CardHeader>
+          <CardTitle className="font-heading text-base flex items-center gap-2">
+            <HandCoins className="h-4 w-4 text-amber-600" /> Δίκαιες Αμοιβές · Στόχος €/ώρα
+          </CardTitle>
+        </CardHeader>
+        <CardContent className={`space-y-3 ${s.distribution_mode !== 'fair_earnings' ? 'pointer-events-none' : ''}`}>
+          <p className="text-xs text-muted-foreground">
+            Οι παραγγελίες πηγαίνουν στον πιο κοντινό διαθέσιμο οδηγό, αλλά με προτεραιότητα σε όσους έχουν βγάλει
+            λιγότερα στο παράθυρο. Στόχος: όλοι οι οδηγοί να φτάνουν τα <b>€{fairTarget.toFixed(0)}/ώρα</b>.
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[11px] uppercase">Στόχος €/ώρα ανά οδηγό</Label>
+              <Input
+                type="number"
+                min={1}
+                step={0.5}
+                value={fairTarget}
+                onChange={(e) => setFairTarget(parseFloat(e.target.value) || 0)}
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-[11px] uppercase">Παράθυρο υπολογισμού (ώρες)</Label>
+              <Input
+                type="number"
+                min={1}
+                step={1}
+                value={fairWindow}
+                onChange={(e) => setFairWindow(parseFloat(e.target.value) || 1)}
+                className="h-9"
+              />
+            </div>
+          </div>
+          <p className="text-[11px] text-muted-foreground">
+            Παράδειγμα: ένας οδηγός online 4 ώρες με €24 κερδών είναι €6/ώρα — θα προτιμηθεί έναντι ενός που είναι ήδη πάνω από €10/ώρα,
+            αν και οι δύο είναι σε λογική απόσταση.
+          </p>
         </CardContent>
       </Card>
 
