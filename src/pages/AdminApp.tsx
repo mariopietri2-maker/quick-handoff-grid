@@ -440,14 +440,16 @@ export default function AdminApp() {
             const parentSection = findParentSection(activeSection);
             const tabs = getTabsForSection(parentSection);
             if (tabs.length <= 1) return null;
+            type TabItem = { id: string; label: string; badgeKey?: string };
             const isSettings = parentSection === 'settings';
+            const tabsTyped = tabs as TabItem[];
             const visibleTabs = isSettings
-              ? tabs.filter(t => {
+              ? tabsTyped.filter(t => {
                   if (!settingsSearch.trim()) return true;
                   const q = settingsSearch.toLowerCase();
                   return t.label.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
                 })
-              : tabs;
+              : tabsTyped;
             return (
               <div className="px-3 lg:px-4 border-t border-border/50 overflow-x-auto bg-card">
                 <div className="flex gap-0 min-w-max items-center">
