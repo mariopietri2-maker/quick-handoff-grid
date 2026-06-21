@@ -1,37 +1,16 @@
 import { useEffect, useRef, useState } from 'react';
-import { supabase } from '@/integrations/supabase/client';
 import { Sparkles } from 'lucide-react';
-
-type HeroCard = {
-  id: string;
-  title: string;
-  subtitle: string | null;
-  cta_label: string | null;
-  cta_link: string | null;
-  image_url: string | null;
-};
+import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+import { useNavigate } from 'react-router-dom';
 
 export function AiHeroCarousel() {
-  const [cards, setCards] = useState<HeroCard[]>([]);
+  const config = useCustomerAppConfig();
+  const navigate = useNavigate();
+  const cards = (config.hero_cards ?? []).filter(c => c.enabled && c.image_data_url);
   const [active, setActive] = useState(0);
   const scrollerRef = useRef<HTMLDivElement>(null);
   const pausedRef = useRef(false);
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await (supabase as any)
-        .from('ai_hero_cards')
-        .select('id, title, subtitle, cta_label, cta_link, image_url')
-        .eq('status', 'active')
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false });
-      if (!cancelled) setCards((data ?? []).filter((c: HeroCard) => c.image_url));
-    })();
-    return () => { cancelled = true; };
-  }, []);
-
-  // Auto-advance every 5s
   useEffect(() => {
     if (cards.length < 2) return;
     const id = setInterval(() => {
@@ -64,35 +43,38 @@ export function AiHeroCarousel() {
         onScroll={onScroll}
         onTouchStart={() => { pausedRef.current = true; }}
         onTouchEnd={() => { pausedRef.current = false; }}
-        className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar -mx-1 rounded-3xl"
-        style={{ scrollSnapType: 'x mandatory' }}
+        className="flex overflow-x-auto snap-x snap-mandatory no-scrollbar rounded-3xl"
+        style={{ scrollSnapType: 'x mandatory', scrollbarWidth: 'none' }}
       >
         {cards.map(card => (
           <button
             key={card.id}
             onClick={() => {
-              if (card.cta_link) window.location.href = card.cta_link;
+              if (card.cta_link) {
+                if (card.cta_link.startsWith('http')) window.location.href = card.cta_link;
+                else navigate(card.cta_link);
+              }
             }}
-            className="snap-center shrink-0 w-full px-1"
+            className="snap-center shrink-0 w-full text-left"
           >
-            <div className="relative aspect-[16/9] rounded-3xl overflow-hidden shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.25)] ring-1 ring-black/5">
+            <div className="relative aspect-[16/10] rounded-3xl overflow-hidden shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.25)] ring-1 ring-black/5">
               <img
-                src={card.image_url!}
+                src={card.image_data_url}
                 alt={card.title}
                 className="absolute inset-0 w-full h-full object-cover"
                 loading="lazy"
               />
-              <div className="absolute inset-0 bg-gradient-to-r from-black/65 via-black/30 to-transparent" />
-              <div className="absolute inset-0 flex flex-col justify-end p-5 text-left">
-                <div className="inline-flex items-center gap-1 self-start bg-white/90 backdrop-blur-md text-[hsl(0,0%,9%)] text-[10px] font-black uppercase tracking-[0.14em] px-2 py-1 rounded-full mb-2 shadow">
+              <div className="absolute inset-0 bg-gradient-to-tr from-black/70 via-black/30 to-transparent" />
+              <div className="absolute inset-0 flex flex-col justify-end p-5">
+                <div className="inline-flex items-center gap-1 self-start bg-white/95 backdrop-blur-md text-[hsl(0,0%,9%)] text-[10px] font-black uppercase tracking-[0.14em] px-2 py-1 rounded-full mb-2 shadow">
                   <Sparkles className="h-3 w-3" strokeWidth={2.6} />
                   AI Pick
                 </div>
-                <h3 className="font-heading font-black text-white text-[22px] leading-[1.1] tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] max-w-[80%]">
+                <h3 className="font-heading font-black text-white text-[22px] leading-[1.1] tracking-tight drop-shadow-[0_2px_8px_rgba(0,0,0,0.5)] max-w-[85%]">
                   {card.title}
                 </h3>
                 {card.subtitle && (
-                  <p className="text-white/90 text-[12.5px] font-semibold mt-1 max-w-[80%] line-clamp-2">
+                  <p className="text-white/95 text-[12.5px] font-semibold mt-1 max-w-[85%] line-clamp-2 drop-shadow">
                     {card.subtitle}
                   </p>
                 )}
@@ -107,7 +89,6 @@ export function AiHeroCarousel() {
         ))}
       </div>
 
-      {/* Dots */}
       {cards.length > 1 && (
         <div className="flex justify-center gap-1.5 mt-3">
           {cards.map((_, i) => (

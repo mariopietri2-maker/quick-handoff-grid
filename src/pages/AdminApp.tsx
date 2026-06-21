@@ -43,6 +43,7 @@ const SystemResetPanel       = lazy(() => import('@/components/admin/SystemReset
 const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDashboard'));
 const DispatchDiagnostics    = lazy(() => import('@/components/admin/DispatchDiagnostics'));
 const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerAppCustomization'));
+const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
@@ -340,6 +341,8 @@ export default function AdminApp() {
         return <SystemResetPanel />;
       case 'customer_app_config':
         return <CustomerAppCustomization />;
+      case 'ai_hero_cards':
+        return <AiHeroCardsAdmin />;
       case 'aade_compliance':
         return <AadeCompliance />;
       default:
