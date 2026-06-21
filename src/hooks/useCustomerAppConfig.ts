@@ -1,6 +1,16 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type HeroCard = {
+  id: string;
+  title: string;
+  subtitle?: string;
+  cta_label?: string;
+  cta_link?: string;
+  image_data_url: string; // base64 data URL
+  enabled: boolean;
+};
+
 export type CustomerAppConfig = {
   branding: {
     app_name: string;
@@ -18,12 +28,14 @@ export type CustomerAppConfig = {
     gradient: 'hero' | 'dark';
     enabled: boolean;
   }[];
+  hero_cards: HeroCard[];
   sections: {
     show_tiles: boolean;
     show_promos: boolean;
     show_categories: boolean;
     show_promoted: boolean;
     show_nearby: boolean;
+    show_hero_carousel: boolean;
   };
 };
 
@@ -44,12 +56,14 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
   promos: [
     { tag: 'NEW', title: 'Δωρεάν παράδοση', subtitle: 'στην πρώτη σου παραγγελία', code: 'WELCOME', gradient: 'hero', enabled: true },
   ],
+  hero_cards: [],
   sections: {
     show_tiles: true,
     show_promos: true,
     show_categories: true,
     show_promoted: true,
     show_nearby: true,
+    show_hero_carousel: true,
   },
 };
 
