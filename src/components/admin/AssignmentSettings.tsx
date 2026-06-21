@@ -72,6 +72,14 @@ export default function AssignmentSettings() {
   const qc = useQueryClient();
   const [s, setS] = useState<Settings | null>(null);
   const [saving, setSaving] = useState(false);
+  const [fairTarget, setFairTarget] = useState<number>(() => {
+    const v = Number(localStorage.getItem(FAIR_TARGET_KEY));
+    return Number.isFinite(v) && v > 0 ? v : 10;
+  });
+  const [fairWindow, setFairWindow] = useState<number>(() => {
+    const v = Number(localStorage.getItem(FAIR_TARGET_KEY + '.window'));
+    return Number.isFinite(v) && v > 0 ? v : 6;
+  });
 
   const { data, isLoading } = useQuery({
     queryKey: ['platform-distribution-settings'],
