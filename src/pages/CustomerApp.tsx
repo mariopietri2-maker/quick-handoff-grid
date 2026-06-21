@@ -425,6 +425,9 @@ export default function CustomerApp() {
           />
         )}
 
+        {/* ── Pro subscription banner ────────────────────── */}
+        {!search && selectedCategory === 'all' && <ProBanner />}
+
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
           <div className="px-5 pt-6">
