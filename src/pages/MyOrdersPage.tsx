@@ -152,7 +152,7 @@ export default function MyOrdersPage() {
             })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }
