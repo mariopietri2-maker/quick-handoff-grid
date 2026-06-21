@@ -19,6 +19,8 @@ import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SEO } from '@/components/SEO';
+import { OfferRow } from '@/components/customer/OfferRow';
+import type { OfferItem } from '@/components/customer/OfferCard';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -54,6 +56,7 @@ export default function CustomerApp() {
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
   const [storeCategories, setStoreCategories] = useState<Record<string, string[]>>({});
+  const [offerItems, setOfferItems] = useState<OfferItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
