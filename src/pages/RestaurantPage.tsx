@@ -205,7 +205,7 @@ export default function RestaurantPage() {
         <div className="mt-3">
           <GroupOrderShare storeId={store.id} />
         </div>
-      </div>
+      </main>
 
       {/* Category Tabs (sticky under the floating header on scroll) */}
       {categories.length > 1 && (
@@ -297,7 +297,7 @@ export default function RestaurantPage() {
                         <div className="relative flex-shrink-0">
                           <img
                             src={item.image_url}
-                            alt={item.name}
+                            alt={`Φωτογραφία ${item.name}`}
                             className="h-24 w-24 rounded-xl object-cover"
                           />
                           {/* Add button on image */}
