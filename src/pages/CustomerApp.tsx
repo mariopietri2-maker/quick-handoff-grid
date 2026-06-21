@@ -45,15 +45,19 @@ export default function CustomerApp() {
     tone: QUICK_TILE_TONES[i % QUICK_TILE_TONES.length],
   }));
 
-  const CATEGORY_CHIPS = [
-    { labelKey: 'cat.all', value: 'all', emoji: '🍽️' },
-    { labelKey: 'cat.pizza', value: 'Πίτσες', emoji: '🍕' },
-    { labelKey: 'cat.burgers', value: 'Burgers', emoji: '🍔' },
-    { labelKey: 'cat.crepes', value: 'Κρέπες', emoji: '🥞' },
-    { labelKey: 'cat.pasta', value: 'Ζυμαρικά', emoji: '🍝' },
-    { labelKey: 'cat.gyros', value: 'Σουβλάκια', emoji: '🥙' },
-    { labelKey: 'cat.salads', value: 'Σαλάτες', emoji: '🥗' },
-  ];
+  const CATEGORY_EMOJI: Record<string, string> = {
+    'πίτσες': '🍕', 'pizza': '🍕',
+    'burgers': '🍔', 'burger': '🍔',
+    'κρέπες': '🥞', 'crepes': '🥞',
+    'ζυμαρικά': '🍝', 'pasta': '🍝',
+    'σουβλάκια': '🥙', 'gyros': '🥙',
+    'σαλάτες': '🥗', 'salads': '🥗',
+    'γλυκά': '🍰', 'desserts': '🍰',
+    'ποτά': '🥤', 'drinks': '🥤',
+    'καφέδες': '☕', 'coffee': '☕',
+    'κυρίως': '🍽️', 'mains': '🍽️',
+    'combo': '🍱', 'ορεκτικά': '🥨', 'starters': '🥨',
+  };
 
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
