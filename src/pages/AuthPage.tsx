@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Label } from '@/components/ui/label';
 import { Car, Store, Mail, Lock, User, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { SEO } from '@/components/SEO';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -60,12 +61,18 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen bg-[hsl(220,20%,7%)] flex flex-col">
+      <SEO
+        title="Σύνδεση & Εγγραφή — Fresh Delivery"
+        description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο Fresh Delivery ως πελάτης, οδηγός ή κατάστημα και ξεκινήστε άμεσα."
+        path="/auth"
+      />
+      <h1 className="sr-only">Σύνδεση & Εγγραφή στο Fresh Delivery</h1>
       {/* Header */}
       <header className="px-4 py-4 flex items-center justify-center">
         <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
       </header>
 
-      <div className="flex-1 flex items-center justify-center p-4">
+      <main className="flex-1 flex items-center justify-center p-4">
         <Card className="w-full max-w-md shadow-[var(--shadow-lg)] border-[hsl(220,20%,14%)] bg-[hsl(220,20%,10%)] animate-scale-in">
           <CardHeader className="text-center pb-2">
             <CardTitle className="font-heading text-2xl text-[hsl(220,14%,96%)]">
@@ -183,7 +190,7 @@ export default function AuthPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </main>
     </div>
   );
 }
