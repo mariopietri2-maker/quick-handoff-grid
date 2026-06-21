@@ -174,8 +174,22 @@ export default function RestaurantPage() {
         <div className="absolute top-4 right-4 flex items-center gap-2">
           <FavoriteButton storeId={store.id} size="md" />
           <button
+            onClick={async () => {
+              const url = window.location.href;
+              const shareData = { title: store.name, text: `Δες το ${store.name} στο Fresh Delivery`, url };
+              try {
+                if (navigator.share) {
+                  await navigator.share(shareData);
+                } else {
+                  await navigator.clipboard.writeText(url);
+                  toast.success('Ο σύνδεσμος αντιγράφηκε');
+                }
+              } catch (e: any) {
+                if (e?.name !== 'AbortError') toast.error('Δεν ήταν δυνατή η κοινοποίηση');
+              }
+            }}
             aria-label={`Κοινοποίηση εστιατορίου ${store.name}`}
-            className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm"
+            className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm active:scale-95 transition-transform"
           >
             <Share2 className="h-5 w-5 text-foreground" />
           </button>
