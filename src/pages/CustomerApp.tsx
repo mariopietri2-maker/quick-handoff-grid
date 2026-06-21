@@ -21,6 +21,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
+import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
 
 
