@@ -628,7 +628,7 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
   );
 }
 
-function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle }: any) {
+function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle, onTogglePromo }: any) {
   const walletMap = new Map((storeWallets ?? []).map((w: any) => [w.store_id, w]));
   const totalLifetime = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.lifetime_earnings ?? 0), 0);
   const totalAvailable = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.available_balance ?? 0), 0);
