@@ -313,7 +313,7 @@ export default function CheckoutPage() {
 
       <main className="max-w-lg mx-auto p-4 space-y-4">
         {/* Cart Items */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τα Προϊόντα σας</h2>
             {items.map(item => (
@@ -348,7 +348,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Delivery Address */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
@@ -374,7 +374,7 @@ export default function CheckoutPage() {
         <ScheduledDeliveryPicker value={scheduledFor} onChange={setScheduledFor} />
 
 
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-2">
             <Label className="font-heading">Σημειώσεις Παραγγελίας (προαιρετικά)</Label>
             <Textarea
@@ -388,7 +388,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Tip Selection */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">💰</span>
@@ -441,7 +441,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Payment method */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τρόπος πληρωμής</h2>
             <div className="grid grid-cols-2 gap-2">
@@ -481,7 +481,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Promo Code */}
-        <Card className={`shadow-[var(--shadow-md)] ${appliedPromo ? 'border-success/30' : ''}`}>
+        <Card className={`rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)] ${appliedPromo ? 'border-success/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Tag className="h-5 w-5 text-primary" />
@@ -528,7 +528,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Order Summary */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-2">
             <h2 className="font-heading font-semibold text-foreground">Σύνοψη Παραγγελίας</h2>
             <div className="flex justify-between text-sm">
