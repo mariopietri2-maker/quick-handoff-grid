@@ -340,22 +340,27 @@ export default function CustomerApp() {
           </div>
         )}
 
+        {/* ── 1+1 hero card (efood-style) ────────────────── */}
+        <OnePlusOneHero />
+
         {/* ── Promo carousel ─────────────────────────────── */}
         {cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
         {!search && selectedCategory === 'all' && promotionOffers.length > 0 && (
-          <OfferRow
-            title="Προσφορές για σένα"
-            subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
-            eyebrow={
-              <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-[0_2px_6px_-1px_hsl(0_75%_45%/0.45)]">
-                1+1
-              </span>
-            }
-            items={promotionOffers}
-            onSeeAll={() => setFilterTopRated(true)}
-          />
+          <div id="one-plus-one-row">
+            <OfferRow
+              title="Προσφορές για σένα"
+              subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
+              eyebrow={
+                <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-[0_2px_6px_-1px_hsl(0_75%_45%/0.45)]">
+                  1+1
+                </span>
+              }
+              items={promotionOffers}
+              onSeeAll={() => setFilterTopRated(true)}
+            />
+          </div>
         )}
 
         {/* ── Free delivery row ─────────────────────────── */}
