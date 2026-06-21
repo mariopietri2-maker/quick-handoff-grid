@@ -378,13 +378,6 @@ export default function CustomerApp() {
         {/* ── AI-generated hero carousel ────────────────── */}
         {cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
-        {/* ── 1+1 hero card (efood-style) ────────────────── */}
-        <OnePlusOneHero />
-
-        {/* ── Promo carousel ─────────────────────────────── */}
-        {/* ── Lucky Hungry countdown card ────────────────── */}
-        {!search && selectedCategory === 'all' && <LuckyHungryCard />}
-
         {/* ── Promo carousel ─────────────────────────────── */}
         {cfg.sections.show_promos && <PromoBannerCarousel />}
 
