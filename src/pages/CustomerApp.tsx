@@ -180,6 +180,35 @@ export default function CustomerApp() {
     [stores, promotedStores],
   ));
 
+  // Offer cards split into 1+1 deals (every item) and free-delivery (stores that cover the fee).
+  const promotionOffers = useMemo<OfferItem[]>(() => {
+    const freeStoreIds = new Set(stores.filter(s => (s as any).covers_delivery_fee).map(s => s.id));
+    return offerItems
+      .filter(o => !freeStoreIds.has(o.store_id))
+      .slice(0, 10)
+      .map(o => ({
+        ...o,
+        store_rating_avg: ratings[o.store_id]?.avg,
+        store_rating_count: ratings[o.store_id]?.count,
+        original_price: +(o.price * 1.2).toFixed(2),
+        badge: '1+1 Προσφορά',
+      }));
+  }, [offerItems, stores, ratings]);
+
+  const freeDeliveryOffers = useMemo<OfferItem[]>(() => {
+    const freeStoreIds = new Set(stores.filter(s => (s as any).covers_delivery_fee).map(s => s.id));
+    return offerItems
+      .filter(o => freeStoreIds.has(o.store_id))
+      .slice(0, 10)
+      .map(o => ({
+        ...o,
+        delivery_fee: 0,
+        store_rating_avg: ratings[o.store_id]?.avg,
+        store_rating_count: ratings[o.store_id]?.count,
+        sticker: 'Meal\nfor one',
+      }));
+  }, [offerItems, stores, ratings]);
+
   const filtered = useMemo(() => stores.filter(s => {
     const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
       s.address.toLowerCase().includes(search.toLowerCase());
