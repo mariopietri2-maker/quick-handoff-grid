@@ -18,6 +18,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
+import { SEO } from '@/components/SEO';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -171,6 +172,12 @@ export default function CustomerApp() {
       }}
     >
       <AppSplash />
+      <SEO
+        title="Παραγγείλτε φαγητό online — Fresh Delivery"
+        description="Ανακαλύψτε εστιατόρια κοντά σας, παραγγείλτε φαγητό online και παρακολουθήστε την παράδοση σε πραγματικό χρόνο."
+        path="/order"
+      />
+      <h1 className="sr-only">Παραγγείλτε φαγητό online από εστιατόρια κοντά σας</h1>
       {/* ── Header ─────────────────────────────────────── */}
       <header
         className="sticky top-0 z-50 bg-white/85 backdrop-blur-2xl border-b border-[hsl(0,0%,94%)] shadow-[0_1px_0_hsl(0_0%_0%/0.02),0_8px_24px_-16px_hsl(0_0%_0%/0.08)] relative overflow-hidden"
@@ -217,6 +224,7 @@ export default function CustomerApp() {
               ) : (
                 <Link
                   to="/profile"
+                  aria-label="Άνοιγμα προφίλ χρήστη"
                   className="h-10 w-10 rounded-full bg-[hsl(0,0%,96%)] hover:bg-[hsl(0,0%,93%)] flex items-center justify-center transition-colors"
                 >
                   <User className="h-5 w-5 text-[hsl(0,0%,9%)]" strokeWidth={2} />
@@ -323,7 +331,7 @@ export default function CustomerApp() {
                       {store.image_url ? (
                         <img
                           src={store.image_url}
-                          alt={store.name}
+                          alt={`Φωτογραφία εστιατορίου ${store.name}`}
                           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                           loading="lazy"
                         />
@@ -440,7 +448,7 @@ export default function CustomerApp() {
                     {store.image_url ? (
                       <img
                         src={store.image_url}
-                        alt={store.name}
+                        alt={`Φωτογραφία εστιατορίου ${store.name}`}
                         className="w-full h-full object-cover group-hover:scale-[1.06] transition-transform duration-700 ease-out"
                       />
                     ) : (

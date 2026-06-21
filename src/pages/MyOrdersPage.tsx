@@ -12,6 +12,7 @@ import { CustomerWalletCard } from '@/components/customer/CustomerWalletCard';
 import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard';
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
+import { SEO } from '@/components/SEO';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
@@ -77,14 +78,20 @@ export default function MyOrdersPage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Οι παραγγελίες μου — Fresh Delivery"
+        description="Δείτε το ιστορικό παραγγελιών σας, παρακολουθήστε ενεργές αποστολές και επαναλάβετε αγαπημένες παραγγελίες."
+        path="/orders"
+        noindex
+      />
       <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate('/order')} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+        <button onClick={() => navigate('/order')} aria-label="Επιστροφή στα εστιατόρια" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <h1 className="font-heading font-bold text-lg text-foreground">Οι Παραγγελίες μου</h1>
       </header>
 
-      <div className="max-w-lg mx-auto p-4 space-y-4">
+      <main className="max-w-lg mx-auto p-4 space-y-4">
         <RewardsCard />
         <CustomerWalletCard />
         <CustomerReferralCard />
@@ -145,7 +152,7 @@ export default function MyOrdersPage() {
             })}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

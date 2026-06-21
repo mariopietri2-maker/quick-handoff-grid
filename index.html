@@ -10,7 +10,7 @@
     <meta name="description" content="Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα.">
     <meta name="author" content="Fresh Delivery" />
     <meta name="theme-color" content="#1a1a2e" />
-    <link rel="canonical" href="https://quick-handoff-grid.lovable.app/" />
+    <!-- Canonical URL is set per-route via react-helmet-async (see src/components/SEO.tsx). -->
 
     <meta property="og:type" content="website" />
     
@@ -25,16 +25,24 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Fresh Delivery",
-      "description": "Πλατφόρμα delivery φαγητού για πελάτες, εστιατόρια και οδηγούς",
-      "applicationCategory": "FoodDelivery",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "EUR"
-      }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://freshdelivery.app/#organization",
+          "name": "Fresh Delivery",
+          "url": "https://freshdelivery.app/",
+          "logo": "https://freshdelivery.app/favicon.svg"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://freshdelivery.app/#website",
+          "url": "https://freshdelivery.app/",
+          "name": "Fresh Delivery",
+          "description": "Πλατφόρμα delivery φαγητού για πελάτες, εστιατόρια και οδηγούς",
+          "publisher": { "@id": "https://freshdelivery.app/#organization" },
+          "inLanguage": "el-GR"
+        }
+      ]
     }
     </script>
     <meta property="og:title" content="Fresh Delivery — Παραγγελία Φαγητού Online">

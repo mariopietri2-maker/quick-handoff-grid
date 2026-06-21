@@ -10,6 +10,7 @@ import { ReviewList, RatingBadge } from '@/components/ReviewList';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import GroupOrderShare from '@/components/customer/GroupOrderShare';
 import { MenuItemBadges } from '@/components/customer/MenuItemBadges';
+import { SEO } from '@/components/SEO';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
@@ -108,6 +109,21 @@ export default function RestaurantPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <SEO
+        title={`${store.name} — Μενού & Παραγγελία | Fresh Delivery`}
+        description={`Παραγγείλτε online από ${store.name}. Δείτε το μενού, τιμές και διαθεσιμότητα και απολαύστε γρήγορη παράδοση στην πόρτα σας.`}
+        path={`/restaurant/${store.id}`}
+        type="product"
+        image={store.image_url ?? undefined}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Restaurant',
+          name: store.name,
+          image: store.image_url ?? undefined,
+          address: store.address ?? undefined,
+          url: `https://freshdelivery.app/restaurant/${store.id}`,
+        }}
+      />
       {/* Sticky Header (appears on scroll) */}
       <div
         className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border transition-all duration-200 ${
@@ -117,6 +133,7 @@ export default function RestaurantPage() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate('/order')}
+            aria-label="Επιστροφή στη λίστα εστιατορίων"
             className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
@@ -135,10 +152,10 @@ export default function RestaurantPage() {
       </div>
 
       {/* Hero Image */}
-      <div ref={heroRef} className="relative">
+      <header ref={heroRef} className="relative">
         <div className="h-56 bg-muted">
           {store.image_url ? (
-            <img src={store.image_url} alt={store.name} className="w-full h-full object-cover" />
+            <img src={store.image_url} alt={`Φωτογραφία εστιατορίου ${store.name}`} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-muted">
               <span className="text-6xl">🍽️</span>
@@ -149,20 +166,23 @@ export default function RestaurantPage() {
         {/* Back + Share buttons */}
         <button
           onClick={() => navigate('/order')}
+          aria-label="Επιστροφή στη λίστα εστιατορίων"
           className="absolute top-4 left-4 h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm"
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div className="absolute top-4 right-4 flex items-center gap-2">
           <FavoriteButton storeId={store.id} size="md" />
-          <button className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
+          <button
+            aria-label={`Κοινοποίηση εστιατορίου ${store.name}`}
+            className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm"
+          >
             <Share2 className="h-5 w-5 text-foreground" />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Store Info */}
-      <div className="max-w-2xl mx-auto px-4 pt-5 pb-4">
+      <main className="max-w-2xl mx-auto px-4 pt-5 pb-4">
         <h1 className="font-heading font-bold text-2xl text-foreground">{store.name}</h1>
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <RatingBadge storeId={store.id} />
@@ -185,7 +205,7 @@ export default function RestaurantPage() {
         <div className="mt-3">
           <GroupOrderShare storeId={store.id} />
         </div>
-      </div>
+      </main>
 
       {/* Category Tabs (sticky under the floating header on scroll) */}
       {categories.length > 1 && (
@@ -277,7 +297,7 @@ export default function RestaurantPage() {
                         <div className="relative flex-shrink-0">
                           <img
                             src={item.image_url}
-                            alt={item.name}
+                            alt={`Φωτογραφία ${item.name}`}
                             className="h-24 w-24 rounded-xl object-cover"
                           />
                           {/* Add button on image */}
@@ -337,11 +357,11 @@ function QuantityControl({ qty, onMinus, onPlus, compact }: { qty: number; onMin
   if (compact) {
     return (
       <div className="flex items-center bg-card rounded-full shadow-md border border-border overflow-hidden">
-        <button onClick={onMinus} className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
+        <button onClick={onMinus} aria-label="Μείωση ποσότητας" className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
           <Minus className="h-3 w-3 text-primary" />
         </button>
-        <span className="text-xs font-bold text-foreground w-5 text-center">{qty}</span>
-        <button onClick={onPlus} className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
+        <span className="text-xs font-bold text-foreground w-5 text-center" aria-live="polite">{qty}</span>
+        <button onClick={onPlus} aria-label="Αύξηση ποσότητας" className="h-7 w-7 flex items-center justify-center hover:bg-muted transition-colors">
           <Plus className="h-3 w-3 text-primary" />
         </button>
       </div>
@@ -352,13 +372,15 @@ function QuantityControl({ qty, onMinus, onPlus, compact }: { qty: number; onMin
     <div className="flex items-center gap-2">
       <button
         onClick={onMinus}
+        aria-label="Μείωση ποσότητας"
         className="h-8 w-8 rounded-full bg-muted flex items-center justify-center hover:bg-muted/80 transition-colors"
       >
         <Minus className="h-3.5 w-3.5 text-foreground" />
       </button>
-      <span className="font-heading font-bold text-foreground w-6 text-center text-sm">{qty}</span>
+      <span className="font-heading font-bold text-foreground w-6 text-center text-sm" aria-live="polite">{qty}</span>
       <button
         onClick={onPlus}
+        aria-label="Αύξηση ποσότητας"
         className="h-8 w-8 rounded-full bg-primary flex items-center justify-center hover:bg-primary/90 transition-colors"
       >
         <Plus className="h-3.5 w-3.5 text-primary-foreground" />

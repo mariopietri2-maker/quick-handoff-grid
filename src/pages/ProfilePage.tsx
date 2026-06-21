@@ -17,6 +17,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/i18n';
 import HomeGreeting from '@/components/customer/HomeGreeting';
+import { SEO } from '@/components/SEO';
 
 const roleConfig: Record<string, { label: string; icon: any; path: string; color: string }> = {
   admin:    { label: 'Admin',    icon: Shield,     path: '/admin',   color: 'text-primary' },
@@ -74,9 +75,15 @@ export default function ProfilePage() {
 
   return (
     <div className="min-h-screen bg-background">
+      <SEO
+        title="Το προφίλ μου — Fresh Delivery"
+        description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh Delivery."
+        path="/profile"
+        noindex
+      />
       <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
         <div className="container max-w-3xl flex items-center gap-3 px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)}>
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="font-heading font-bold text-lg">Το Προφίλ μου</h1>

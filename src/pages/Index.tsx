@@ -7,6 +7,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { SEO } from '@/components/SEO';
 
 /* ─── tiny count-up hook ─── */
 function useCountUp(target: number, duration = 1600) {
@@ -90,6 +91,12 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
+      <SEO
+        title="Fresh Delivery — Παραγγελία φαγητού online σε πραγματικό χρόνο"
+        description="Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα, στην πόρτα σας."
+        path="/"
+        image="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/6907eb92-746f-428e-b488-c3a1766ebcb0"
+      />
       {/* ─── NAVBAR ─── */}
       <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">

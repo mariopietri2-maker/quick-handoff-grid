@@ -7,6 +7,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { ReviewForm } from '@/components/ReviewForm';
 import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
+import { SEO } from '@/components/SEO';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -127,6 +128,12 @@ export default function OrderTrackingPage() {
 
   return (
     <div className="fixed inset-0 bg-background overflow-hidden">
+      <SEO
+        title={`Παρακολούθηση παραγγελίας #${order.id.slice(0, 6).toUpperCase()} — Fresh Delivery`}
+        description="Παρακολουθήστε την παραγγελία σας σε πραγματικό χρόνο, δείτε την εκτιμώμενη ώρα παράδοσης και επικοινωνήστε με τον οδηγό."
+        path={`/order-tracking/${order.id}`}
+        noindex
+      />
       {/* Map background */}
       {showMap ? (
         <LiveTrackingMap
@@ -150,6 +157,7 @@ export default function OrderTrackingPage() {
       >
         <button
           onClick={() => navigate('/orders')}
+          aria-label="Επιστροφή στις παραγγελίες μου"
           className="h-11 w-11 rounded-full bg-card/95 backdrop-blur-md shadow-lg flex items-center justify-center active:scale-95 transition-transform"
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
