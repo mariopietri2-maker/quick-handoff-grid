@@ -342,6 +342,39 @@ export default function CustomerApp() {
         {/* ── Promo carousel ─────────────────────────────── */}
         {cfg.sections.show_promos && <PromoBannerCarousel />}
 
+        {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
+        {!search && selectedCategory === 'all' && promotionOffers.length > 0 && (
+          <OfferRow
+            title="Προσφορές για σένα"
+            subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
+            eyebrow={
+              <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-[0_2px_6px_-1px_hsl(0_75%_45%/0.45)]">
+                1+1
+              </span>
+            }
+            items={promotionOffers}
+            onSeeAll={() => setFilterTopRated(true)}
+          />
+        )}
+
+        {/* ── Free delivery row ─────────────────────────── */}
+        {!search && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
+          <OfferRow
+            title="Δωρεάν delivery"
+            subtitle="Γεύματα χωρίς χρέωση παράδοσης"
+            tone="pink"
+            items={freeDeliveryOffers}
+            onSeeAll={() => setFilterFree(true)}
+            decoration={
+              <div className="bg-[hsl(0,75%,52%)] text-white rounded-full h-14 w-14 flex flex-col items-center justify-center text-[8.5px] font-black uppercase leading-[1.05] text-center -rotate-6 shadow-[0_4px_12px_-2px_hsl(0_75%_45%/0.5)]">
+                <span>Meal</span>
+                <span>for</span>
+                <span>one</span>
+              </div>
+            }
+          />
+        )}
+
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
           <div className="px-5 pt-6">
