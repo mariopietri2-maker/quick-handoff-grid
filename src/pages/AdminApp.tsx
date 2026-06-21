@@ -661,12 +661,13 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
+            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th className="w-24">🦄 Πεινιάτα</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
             <tbody>
               {stores.map((store: any) => {
                 const w: any = walletMap.get(store.id);
                 const lifetime = Number(w?.lifetime_earnings ?? 0);
                 const available = Number(w?.available_balance ?? 0);
+                const inPromo = store.promotion_status === 'active';
                 return (
                   <tr key={store.id}>
                     <td className="font-medium">{store.name}</td>
@@ -674,6 +675,16 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                     <td className="text-right tabular-nums font-medium">{fmt(lifetime)}</td>
                     <td className={`text-right tabular-nums ${available < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{fmt(available)}</td>
                     <td><Switch checked={!!store.is_active} onCheckedChange={() => onToggle(store.id, store.is_active)} /></td>
+                    <td>
+                      <Switch
+                        checked={inPromo}
+                        onCheckedChange={async () => {
+                          const next = inPromo ? 'inactive' : 'active';
+                          const { error } = await supabase.from('stores').update({ promotion_status: next, promotion_starts_at: next === 'active' ? new Date().toISOString() : null } as any).eq('id', store.id);
+                          if (error) toast.error('Αποτυχία'); else { toast.success(inPromo ? 'Εκτός Πεινιάτας' : 'Στην Πεινιάτα 🦄'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
+                        }}
+                      />
+                    </td>
                     <td>
                       <span className={`admin-pill ${store.busy_mode ? 'bg-red-500/10 text-red-700 dark:text-red-400 border-red-500/30' : 'bg-muted text-muted-foreground border-border'}`}>
                         {store.busy_mode ? 'Πολυάσχολο' : 'Κανονικό'}
@@ -683,7 +694,7 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                   </tr>
                 );
               })}
-              {!stores.length && <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Κανένα κατάστημα</td></tr>}
+              {!stores.length && <tr><td colSpan={8} className="text-center text-muted-foreground py-10">Κανένα κατάστημα</td></tr>}
             </tbody>
           </table>
         </div>
