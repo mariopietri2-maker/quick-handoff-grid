@@ -124,26 +124,42 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   useEffect(() => { onDriverPosUpdate?.(pos); }, [pos, onDriverPosUpdate]);
 
 
+  // Auto day/night style based on local hour (06-19 = day)
+  const isDaytime = () => {
+    const h = new Date().getHours();
+    return h >= 6 && h < 19;
+  };
+
   // Init map
   useEffect(() => {
     if (!token || !mapContainer.current || mapRef.current) return;
     mapboxgl.accessToken = token;
 
+    const styleUrl = isDaytime()
+      ? 'mapbox://styles/mapbox/navigation-day-v1'
+      : 'mapbox://styles/mapbox/navigation-night-v1';
+
     const map = new mapboxgl.Map({
       container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/navigation-night-v1',
+      style: styleUrl,
       center: [pos?.lng ?? 20.8537, pos?.lat ?? 39.6650],
       zoom: 14,
+      pitch: 0,
       attributionControl: false,
+      antialias: true,
+      fadeDuration: 100,
+      maxTileCacheSize: 200,
     });
 
     // GeolocateControl removed — custom recenter button used instead
 
-    map.on('load', () => {
-      // Route source + layers
+    const addRouteLayers = () => {
+      if (map.getSource('route')) return;
+      // Route source + layers (data-driven color by traffic congestion)
       map.addSource('route', {
         type: 'geojson',
-        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {} },
+        lineMetrics: true,
+        data: { type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: { congestion: [] } },
       });
       // Glow layer
       map.addLayer({
@@ -152,9 +168,9 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         source: 'route',
         paint: {
           'line-color': '#3b82f6',
-          'line-width': 12,
-          'line-opacity': 0.2,
-          'line-blur': 8,
+          'line-width': 14,
+          'line-opacity': 0.18,
+          'line-blur': 10,
         },
         layout: { 'line-join': 'round', 'line-cap': 'round' },
       });
@@ -164,24 +180,69 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         type: 'line',
         source: 'route',
         paint: {
-          'line-color': '#1d4ed8',
-          'line-width': 6,
-          'line-opacity': 0.6,
+          'line-color': '#0b2545',
+          'line-width': 8,
+          'line-opacity': 0.85,
         },
         layout: { 'line-join': 'round', 'line-cap': 'round' },
       });
-      // Main line
+      // Main line — traffic-aware gradient (green/yellow/orange/red)
       map.addLayer({
         id: 'route-line',
         type: 'line',
         source: 'route',
         paint: {
-          'line-color': '#3b82f6',
-          'line-width': 4,
-          'line-opacity': 0.9,
+          'line-color': '#22c55e',
+          'line-width': 6,
+          'line-opacity': 0.95,
+          'line-gradient': [
+            'interpolate', ['linear'], ['line-progress'],
+            0, '#22c55e',
+            1, '#22c55e',
+          ],
         },
         layout: { 'line-join': 'round', 'line-cap': 'round' },
       });
+    };
+
+    const add3DBuildings = () => {
+      // Find first symbol layer to insert buildings beneath labels
+      const layers = map.getStyle().layers || [];
+      const labelLayer = layers.find((l: any) => l.type === 'symbol' && l.layout?.['text-field']);
+      const labelLayerId = labelLayer?.id;
+      if (map.getLayer('3d-buildings')) return;
+      const compositeSource = map.getStyle().sources?.composite;
+      if (!compositeSource) return;
+      map.addLayer(
+        {
+          id: '3d-buildings',
+          source: 'composite',
+          'source-layer': 'building',
+          filter: ['==', 'extrude', 'true'],
+          type: 'fill-extrusion',
+          minzoom: 14,
+          paint: {
+            'fill-extrusion-color': isDaytime() ? '#d6d6d6' : '#2a3340',
+            'fill-extrusion-height': [
+              'interpolate', ['linear'], ['zoom'],
+              14, 0,
+              15.5, ['get', 'height'],
+            ],
+            'fill-extrusion-base': [
+              'interpolate', ['linear'], ['zoom'],
+              14, 0,
+              15.5, ['get', 'min_height'],
+            ],
+            'fill-extrusion-opacity': 0.65,
+          },
+        },
+        labelLayerId,
+      );
+    };
+
+    map.on('load', () => {
+      addRouteLayers();
+      add3DBuildings();
     });
 
     // Detect manual user interaction so the follow camera doesn't fight the user
@@ -196,6 +257,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     mapRef.current = map;
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
+
 
   // Update driver marker (arrow that rotates with heading when in followMode)
   useEffect(() => {
