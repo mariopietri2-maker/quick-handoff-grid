@@ -713,24 +713,6 @@ export default function CustomerApp() {
             <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
           </Link>
         </div>
-            to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
-          >
-            <span className="p-2">
-              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
-          </Link>
-          <Link
-            to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
-          >
-            <span className="p-2">
-              <User className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
-          </Link>
-        </div>
 
       </nav>
 
