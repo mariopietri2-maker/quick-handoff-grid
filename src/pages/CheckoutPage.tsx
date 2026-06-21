@@ -573,13 +573,13 @@ export default function CheckoutPage() {
           <Button
             onClick={handlePlaceOrder}
             disabled={submitting || !address.trim()}
-            className="w-full h-14 gradient-primary shadow-primary text-primary-foreground font-heading text-lg rounded-2xl"
+            className="w-full h-16 gradient-primary shadow-primary text-primary-foreground font-heading text-base rounded-2xl flex items-center justify-between px-6 active:scale-[0.99] transition-transform"
           >
-            {submitting
-              ? 'Υποβολή Παραγγελίας...'
-              : paymentMethod === 'card'
-                ? `Πληρωμή — ${grandTotal.toFixed(2)}€`
-                : `Υποβολή Παραγγελίας — ${grandTotal.toFixed(2)}€`}
+            <span className="flex items-center gap-2">
+              {paymentMethod === 'card' ? <CreditCard className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}
+              {submitting ? 'Υποβολή…' : paymentMethod === 'card' ? 'Πληρωμή τώρα' : 'Υποβολή Παραγγελίας'}
+            </span>
+            <span className="font-extrabold text-lg tabular-nums">{grandTotal.toFixed(2)}€</span>
           </Button>
         </div>
       </div>
