@@ -678,11 +678,7 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                     <td>
                       <Switch
                         checked={inPromo}
-                        onCheckedChange={async () => {
-                          const next = inPromo ? 'inactive' : 'active';
-                          const { error } = await supabase.from('stores').update({ promotion_status: next, promotion_starts_at: next === 'active' ? new Date().toISOString() : null } as any).eq('id', store.id);
-                          if (error) toast.error('Αποτυχία'); else { toast.success(inPromo ? 'Εκτός Πεινιάτας' : 'Στην Πεινιάτα 🦄'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
-                        }}
+                        onCheckedChange={() => onTogglePromo(store.id, inPromo)}
                       />
                     </td>
                     <td>
