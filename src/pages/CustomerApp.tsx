@@ -21,6 +21,7 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
+import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
