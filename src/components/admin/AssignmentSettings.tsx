@@ -112,6 +112,8 @@ export default function AssignmentSettings() {
 
   const save = async () => {
     setSaving(true);
+    localStorage.setItem(FAIR_TARGET_KEY, String(fairTarget));
+    localStorage.setItem(FAIR_TARGET_KEY + '.window', String(fairWindow));
     const { error } = await supabase
       .from('platform_settings')
       .update(s as any)
