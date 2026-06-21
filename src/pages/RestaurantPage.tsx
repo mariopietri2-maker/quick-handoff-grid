@@ -153,15 +153,15 @@ export default function RestaurantPage() {
 
       {/* Hero Image */}
       <header ref={heroRef} className="relative">
-        <div className="h-56 bg-muted">
+        <div className="h-64 bg-muted overflow-hidden">
           {store.image_url ? (
-            <img src={store.image_url} alt={`Φωτογραφία εστιατορίου ${store.name}`} className="w-full h-full object-cover" />
+            <img src={store.image_url} alt={`Φωτογραφία εστιατορίου ${store.name}`} className="w-full h-full object-cover scale-105" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-muted">
               <span className="text-6xl">🍽️</span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-black/20" />
+          <div className="absolute inset-0 bg-gradient-to-t from-background via-background/20 to-black/30" />
         </div>
         {/* Back + Share buttons */}
         <button
