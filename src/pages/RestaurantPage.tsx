@@ -133,6 +133,7 @@ export default function RestaurantPage() {
         <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             onClick={() => navigate('/order')}
+            aria-label="Επιστροφή στη λίστα εστιατορίων"
             className="h-8 w-8 rounded-full bg-muted flex items-center justify-center flex-shrink-0"
           >
             <ArrowLeft className="h-4 w-4 text-foreground" />
@@ -151,10 +152,10 @@ export default function RestaurantPage() {
       </div>
 
       {/* Hero Image */}
-      <div ref={heroRef} className="relative">
+      <header ref={heroRef} className="relative">
         <div className="h-56 bg-muted">
           {store.image_url ? (
-            <img src={store.image_url} alt={store.name} className="w-full h-full object-cover" />
+            <img src={store.image_url} alt={`Φωτογραφία εστιατορίου ${store.name}`} className="w-full h-full object-cover" />
           ) : (
             <div className="w-full h-full flex items-center justify-center bg-muted">
               <span className="text-6xl">🍽️</span>
@@ -165,20 +166,23 @@ export default function RestaurantPage() {
         {/* Back + Share buttons */}
         <button
           onClick={() => navigate('/order')}
+          aria-label="Επιστροφή στη λίστα εστιατορίων"
           className="absolute top-4 left-4 h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm"
         >
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div className="absolute top-4 right-4 flex items-center gap-2">
           <FavoriteButton storeId={store.id} size="md" />
-          <button className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm">
+          <button
+            aria-label={`Κοινοποίηση εστιατορίου ${store.name}`}
+            className="h-10 w-10 rounded-full bg-card/80 backdrop-blur-sm flex items-center justify-center shadow-sm"
+          >
             <Share2 className="h-5 w-5 text-foreground" />
           </button>
         </div>
-      </div>
+      </header>
 
-      {/* Store Info */}
-      <div className="max-w-2xl mx-auto px-4 pt-5 pb-4">
+      <main className="max-w-2xl mx-auto px-4 pt-5 pb-4">
         <h1 className="font-heading font-bold text-2xl text-foreground">{store.name}</h1>
         <div className="flex items-center gap-3 mt-2 flex-wrap">
           <RatingBadge storeId={store.id} />
