@@ -298,19 +298,22 @@ export default function CheckoutPage() {
         noindex
       />
       <PaymentTestModeBanner />
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+      <header className="bg-card/85 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
+        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
-        <div>
-          <h1 className="font-heading font-bold text-lg text-foreground">Ολοκλήρωση Παραγγελίας</h1>
-          <p className="text-xs text-muted-foreground">από {storeName}</p>
+        <div className="min-w-0">
+          <p className="text-[10px] uppercase tracking-[0.14em] font-extrabold text-muted-foreground leading-none">Checkout</p>
+          <h1 className="font-heading font-extrabold text-[17px] text-foreground leading-tight truncate">{storeName}</h1>
+        </div>
+        <div className="ml-auto bg-primary/10 text-primary rounded-full px-3 py-1.5 text-xs font-extrabold tabular-nums">
+          {grandTotal.toFixed(2)}€
         </div>
       </header>
 
       <main className="max-w-lg mx-auto p-4 space-y-4">
         {/* Cart Items */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τα Προϊόντα σας</h2>
             {items.map(item => (
@@ -345,7 +348,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Delivery Address */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <MapPin className="h-5 w-5 text-primary" />
@@ -371,7 +374,7 @@ export default function CheckoutPage() {
         <ScheduledDeliveryPicker value={scheduledFor} onChange={setScheduledFor} />
 
 
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-2">
             <Label className="font-heading">Σημειώσεις Παραγγελίας (προαιρετικά)</Label>
             <Textarea
@@ -385,7 +388,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Tip Selection */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">💰</span>
@@ -438,7 +441,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Payment method */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τρόπος πληρωμής</h2>
             <div className="grid grid-cols-2 gap-2">
@@ -478,7 +481,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Promo Code */}
-        <Card className={`shadow-[var(--shadow-md)] ${appliedPromo ? 'border-success/30' : ''}`}>
+        <Card className={`rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)] ${appliedPromo ? 'border-success/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Tag className="h-5 w-5 text-primary" />
@@ -525,7 +528,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Order Summary */}
-        <Card className="shadow-[var(--shadow-md)]">
+        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-2">
             <h2 className="font-heading font-semibold text-foreground">Σύνοψη Παραγγελίας</h2>
             <div className="flex justify-between text-sm">
@@ -570,13 +573,13 @@ export default function CheckoutPage() {
           <Button
             onClick={handlePlaceOrder}
             disabled={submitting || !address.trim()}
-            className="w-full h-14 gradient-primary shadow-primary text-primary-foreground font-heading text-lg rounded-2xl"
+            className="w-full h-16 gradient-primary shadow-primary text-primary-foreground font-heading text-base rounded-2xl flex items-center justify-between px-6 active:scale-[0.99] transition-transform"
           >
-            {submitting
-              ? 'Υποβολή Παραγγελίας...'
-              : paymentMethod === 'card'
-                ? `Πληρωμή — ${grandTotal.toFixed(2)}€`
-                : `Υποβολή Παραγγελίας — ${grandTotal.toFixed(2)}€`}
+            <span className="flex items-center gap-2">
+              {paymentMethod === 'card' ? <CreditCard className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}
+              {submitting ? 'Υποβολή…' : paymentMethod === 'card' ? 'Πληρωμή τώρα' : 'Υποβολή Παραγγελίας'}
+            </span>
+            <span className="font-extrabold text-lg tabular-nums">{grandTotal.toFixed(2)}€</span>
           </Button>
         </div>
       </div>
