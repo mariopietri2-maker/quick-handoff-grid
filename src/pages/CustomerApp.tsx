@@ -23,6 +23,8 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
+import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
+import ProBanner from '@/components/customer/ProBanner';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -382,6 +384,10 @@ export default function CustomerApp() {
         <OnePlusOneHero />
 
         {/* ── Promo carousel ─────────────────────────────── */}
+        {/* ── Lucky Hungry countdown card ────────────────── */}
+        {!search && selectedCategory === 'all' && <LuckyHungryCard />}
+
+        {/* ── Promo carousel ─────────────────────────────── */}
         {cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
@@ -418,6 +424,9 @@ export default function CustomerApp() {
             }
           />
         )}
+
+        {/* ── Pro subscription banner ────────────────────── */}
+        {!search && selectedCategory === 'all' && <ProBanner />}
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
