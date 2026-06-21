@@ -34,6 +34,13 @@ const MODES = [
     tone: 'text-orange-600 bg-orange-500/10 border-orange-500/30',
   },
   {
+    key: 'fair_earnings',
+    label: 'Δίκαιες Αμοιβές (€/ώρα)',
+    desc: 'Σαν "Πλησιέστερος", αλλά προτεραιότητα σε οδηγούς που έχουν βγάλει λιγότερα — στόχος να φτάσουν όλοι τα €/ώρα.',
+    Icon: HandCoins,
+    tone: 'text-amber-600 bg-amber-500/10 border-amber-500/30',
+  },
+  {
     key: 'smart',
     label: 'Smart (Rating + Δικαιοσύνη)',
     desc: 'Σταθμισμένη βαθμολογία βάσει απόστασης, rating, και δικαιοσύνης (round-robin).',
@@ -41,6 +48,8 @@ const MODES = [
     tone: 'text-purple-600 bg-purple-500/10 border-purple-500/30',
   },
 ] as const;
+
+const FAIR_TARGET_KEY = 'admin.dist.fair_hourly_target';
 
 interface Settings {
   distribution_mode: string;
