@@ -393,7 +393,13 @@ export default function CustomerApp() {
         {cfg.sections.show_categories && (
           <div className="px-5 pt-6">
             <div className="flex gap-2.5 overflow-x-auto no-scrollbar pb-1 -mx-5 px-5">
-              {CATEGORY_CHIPS.map(cat => {
+              {[{ value: 'all', label: t('cat.all'), emoji: '🍽️' },
+                ...Array.from(new Set(Object.values(storeCategories).flat())).sort().map(c => ({
+                  value: c,
+                  label: c,
+                  emoji: CATEGORY_EMOJI[c.toLowerCase()] ?? '🍴',
+                }))
+              ].map(cat => {
                 const active = selectedCategory === cat.value;
                 return (
                   <button
@@ -406,7 +412,7 @@ export default function CustomerApp() {
                     }`}
                   >
                     <span className="emoji text-sm leading-none">{cat.emoji}</span>
-                    {t(cat.labelKey)}
+                    {cat.label}
                   </button>
                 );
               })}
