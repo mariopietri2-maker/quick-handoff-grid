@@ -562,7 +562,7 @@ export default function CheckoutPage() {
             </div>
           </CardContent>
         </Card>
-      </div>
+      </main>
 
       {/* Place Order Button */}
       <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur border-t border-border z-50">
