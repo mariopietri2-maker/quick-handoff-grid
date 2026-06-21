@@ -25,16 +25,24 @@
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
-      "@type": "WebApplication",
-      "name": "Fresh Delivery",
-      "description": "Πλατφόρμα delivery φαγητού για πελάτες, εστιατόρια και οδηγούς",
-      "applicationCategory": "FoodDelivery",
-      "operatingSystem": "Web",
-      "offers": {
-        "@type": "Offer",
-        "price": "0",
-        "priceCurrency": "EUR"
-      }
+      "@graph": [
+        {
+          "@type": "Organization",
+          "@id": "https://freshdelivery.app/#organization",
+          "name": "Fresh Delivery",
+          "url": "https://freshdelivery.app/",
+          "logo": "https://freshdelivery.app/favicon.svg"
+        },
+        {
+          "@type": "WebSite",
+          "@id": "https://freshdelivery.app/#website",
+          "url": "https://freshdelivery.app/",
+          "name": "Fresh Delivery",
+          "description": "Πλατφόρμα delivery φαγητού για πελάτες, εστιατόρια και οδηγούς",
+          "publisher": { "@id": "https://freshdelivery.app/#organization" },
+          "inLanguage": "el-GR"
+        }
+      ]
     }
     </script>
     <meta property="og:title" content="Fresh Delivery — Παραγγελία Φαγητού Online">
