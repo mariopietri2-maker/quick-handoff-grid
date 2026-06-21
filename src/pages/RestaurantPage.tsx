@@ -10,6 +10,7 @@ import { ReviewList, RatingBadge } from '@/components/ReviewList';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import GroupOrderShare from '@/components/customer/GroupOrderShare';
 import { MenuItemBadges } from '@/components/customer/MenuItemBadges';
+import { SEO } from '@/components/SEO';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
@@ -108,6 +109,21 @@ export default function RestaurantPage() {
 
   return (
     <div className="min-h-screen bg-background pb-24">
+      <SEO
+        title={`${store.name} — Μενού & Παραγγελία | Fresh Delivery`}
+        description={`Παραγγείλτε online από ${store.name}. Δείτε το μενού, τιμές και διαθεσιμότητα και απολαύστε γρήγορη παράδοση στην πόρτα σας.`}
+        path={`/restaurant/${store.id}`}
+        type="product"
+        image={store.image_url ?? undefined}
+        jsonLd={{
+          '@context': 'https://schema.org',
+          '@type': 'Restaurant',
+          name: store.name,
+          image: store.image_url ?? undefined,
+          address: store.address ?? undefined,
+          url: `https://freshdelivery.app/restaurant/${store.id}`,
+        }}
+      />
       {/* Sticky Header (appears on scroll) */}
       <div
         className={`fixed top-0 left-0 right-0 z-50 bg-card border-b border-border transition-all duration-200 ${
