@@ -21,9 +21,6 @@ import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
-import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
-import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
-import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
 import ProBanner from '@/components/customer/ProBanner';
 
 
