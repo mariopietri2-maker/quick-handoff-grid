@@ -3357,6 +3357,7 @@ export type Database = {
           description: string | null
           driver_id: string
           id: string
+          issued_by: string | null
           order_id: string | null
           status: string
           type: string
@@ -3367,6 +3368,7 @@ export type Database = {
           description?: string | null
           driver_id: string
           id?: string
+          issued_by?: string | null
           order_id?: string | null
           status?: string
           type: string
@@ -3377,6 +3379,7 @@ export type Database = {
           description?: string | null
           driver_id?: string
           id?: string
+          issued_by?: string | null
           order_id?: string | null
           status?: string
           type?: string
