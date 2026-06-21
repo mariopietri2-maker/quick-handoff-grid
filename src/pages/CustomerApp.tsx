@@ -665,13 +665,25 @@ export default function CustomerApp() {
         className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
+        <div className="max-w-2xl mx-auto grid grid-cols-5 pt-2 pb-2">
           <button className="flex flex-col items-center justify-center gap-1 c-accent">
             <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
               <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
             </span>
             <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
-            <span className="h-1 w-1 rounded-full c-bg-accent -mt-0.5" />
+          </button>
+          <button
+            onClick={() => {
+              const el = document.querySelector('input[placeholder]') as HTMLInputElement | null;
+              el?.focus();
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+          >
+            <span className="p-2">
+              <Search className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">Αναζήτηση</span>
           </button>
           <button
             onClick={() => setSelectedCategory('all')}
@@ -683,6 +695,24 @@ export default function CustomerApp() {
             <span className="text-[10px] font-bold tracking-tight">Φαγητό</span>
           </button>
           <Link
+            to={user ? '/orders' : '/auth'}
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+          >
+            <span className="p-2">
+              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
+          </Link>
+          <Link
+            to={user ? '/profile' : '/auth'}
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+          >
+            <span className="p-2">
+              <User className="h-[22px] w-[22px]" strokeWidth={2} />
+            </span>
+            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
+          </Link>
+        </div>
             to={user ? '/orders' : '/auth'}
             className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
           >
