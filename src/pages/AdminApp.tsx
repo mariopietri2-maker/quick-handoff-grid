@@ -1,4 +1,4 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { supabase } from '@/integrations/supabase/client';
@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -93,6 +93,11 @@ export default function AdminApp() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [paletteOpen, setPaletteOpen] = useState(false);
+  const [settingsSearch, setSettingsSearch] = useState('');
+
+  useEffect(() => {
+    if (findParentSection(activeSection) !== 'settings') setSettingsSearch('');
+  }, [activeSection]);
 
   const driverCodeMap = new Map((driverProfiles.data ?? []).map(d => [d.user_id, d.driver_code]));
   const adminUserIds = new Set(userRoles.data?.filter(r => r.role === 'admin').map(r => r.user_id) ?? []);
@@ -432,17 +437,49 @@ export default function AdminApp() {
 
           {/* Sub-tab strip — underline style */}
           {(() => {
-            const tabs = getTabsForSection(findParentSection(activeSection));
+            const parentSection = findParentSection(activeSection);
+            const tabs = getTabsForSection(parentSection);
             if (tabs.length <= 1) return null;
+            type TabItem = { id: string; label: string; badgeKey?: string };
+            const isSettings = parentSection === 'settings';
+            const tabsTyped = tabs as TabItem[];
+            const visibleTabs = isSettings
+              ? tabsTyped.filter(t => {
+                  if (!settingsSearch.trim()) return true;
+                  const q = settingsSearch.toLowerCase();
+                  return t.label.toLowerCase().includes(q) || t.id.toLowerCase().includes(q);
+                })
+              : tabsTyped;
             return (
               <div className="px-3 lg:px-4 border-t border-border/50 overflow-x-auto bg-card">
-                <div className="flex gap-0 min-w-max">
-                  {tabs.map(t => {
+                <div className="flex gap-0 min-w-max items-center">
+                  {isSettings && (
+                    <div className="relative shrink-0 mr-2 py-1">
+                      <Search className="absolute left-2 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
+                      <Input
+                        value={settingsSearch}
+                        onChange={(e) => setSettingsSearch(e.target.value)}
+                        placeholder="Αναζήτηση ρυθμίσεων…"
+                        className="h-7 w-36 sm:w-48 pl-7 pr-7 text-[11.5px] rounded-full bg-muted/40 border-border/60 focus:bg-background"
+                      />
+                      {settingsSearch && (
+                        <button
+                          type="button"
+                          onClick={() => setSettingsSearch('')}
+                          className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                          aria-label="Καθαρισμός"
+                        >
+                          <X className="h-3.5 w-3.5" />
+                        </button>
+                      )}
+                    </div>
+                  )}
+                  {visibleTabs.map(t => {
                     const isActive = t.id === activeSection;
                     return (
                       <button
                         key={t.id}
-                        onClick={() => setActiveSection(t.id)}
+                        onClick={() => { setActiveSection(t.id); setSettingsSearch(''); }}
                         className={cn(
                           'relative px-3 h-9 text-[12px] font-medium transition-colors whitespace-nowrap',
                           isActive
@@ -457,6 +494,16 @@ export default function AdminApp() {
                       </button>
                     );
                   })}
+                  {isSettings && visibleTabs.length === 0 && (
+                    <div className="flex flex-col py-1.5">
+                      <span className="text-[11.5px] text-muted-foreground">Δεν βρέθηκαν ρυθμίσεις.</span>
+                      {/database|migration|schema|approve/i.test(settingsSearch) && (
+                        <span className="text-[11px] text-muted-foreground/80">
+                          Για Database migrations & Approve schema changes, χρησιμοποίησε Lovable project settings.
+                        </span>
+                      )}
+                    </div>
+                  )}
                 </div>
               </div>
             );
