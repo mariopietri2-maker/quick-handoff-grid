@@ -118,6 +118,7 @@ export default function DriverApp() {
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
+  const [sheetCollapsed, setSheetCollapsed] = useState(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
