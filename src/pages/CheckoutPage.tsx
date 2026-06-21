@@ -17,6 +17,7 @@ import { OrderCheckout } from '@/components/OrderCheckout';
 import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
 import { isPaymentsConfigured } from '@/lib/stripe';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { SEO } from '@/components/SEO';
 
 interface AppliedPromo {
   id: string;
@@ -264,8 +265,14 @@ export default function CheckoutPage() {
   if (items.length === 0) {
     return (
       <div className="min-h-screen bg-background">
+        <SEO
+          title="Καλάθι αγορών — Fresh Delivery"
+          description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο Fresh Delivery."
+          path="/checkout"
+          noindex
+        />
         <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-          <button onClick={() => navigate('/order')} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+          <button onClick={() => navigate('/order')} aria-label="Επιστροφή στα εστιατόρια" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
             <ArrowLeft className="h-5 w-5 text-foreground" />
           </button>
           <h1 className="font-heading font-bold text-lg text-foreground">Το Καλάθι σας</h1>
@@ -284,9 +291,15 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen bg-background pb-32">
+      <SEO
+        title="Ολοκλήρωση παραγγελίας — Fresh Delivery"
+        description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."
+        path="/checkout"
+        noindex
+      />
       <PaymentTestModeBanner />
       <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
+        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div>
@@ -295,7 +308,7 @@ export default function CheckoutPage() {
         </div>
       </header>
 
-      <div className="max-w-lg mx-auto p-4 space-y-4">
+      <main className="max-w-lg mx-auto p-4 space-y-4">
         {/* Cart Items */}
         <Card className="shadow-[var(--shadow-md)]">
           <CardContent className="p-4 space-y-3">
