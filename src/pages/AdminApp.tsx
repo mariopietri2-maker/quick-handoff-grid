@@ -154,6 +154,17 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
   };
 
+  const handleToggleStorePromo = async (storeId: string, currentlyPromoted: boolean) => {
+    const next = currentlyPromoted ? 'inactive' : 'active';
+    const { error } = await supabase
+      .from('stores')
+      .update({ promotion_status: next, promotion_starts_at: next === 'active' ? new Date().toISOString() : null } as any)
+      .eq('id', storeId);
+    if (error) toast.error('Αποτυχία');
+    else { toast.success(currentlyPromoted ? 'Εκτός Πεινιάτας' : 'Στην Πεινιάτα 🦄'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
+  };
+
+
   const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
     const { error } = await supabase.from('driver_profiles').update({ is_active: !currentActive } as any).eq('user_id', userId);
     if (error) toast.error('Αποτυχία');
