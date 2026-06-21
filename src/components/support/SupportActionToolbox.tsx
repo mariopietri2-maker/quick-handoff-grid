@@ -236,7 +236,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /> Πίστωση πορτοφολιού</DialogTitle>
-              <DialogDescription>Έως {creditMax}€ ανά αίτημα ({isAdmin ? 'admin' : 'support'}). Καταγράφεται στο ιστορικό συναλλαγών του οδηγού.</DialogDescription>
+              <DialogDescription>Έως {creditMax}€ ανά αίτημα ({isAdmin ? 'admin – 30 φορές/μήνα' : 'support – 5 φορές/μήνα'}). Καταγράφεται στο ιστορικό συναλλαγών του οδηγού.</DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div>
