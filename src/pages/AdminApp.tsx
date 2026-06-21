@@ -415,8 +415,8 @@ export default function AdminApp() {
             const adminToday = todays.reduce((s: number, o: any) => s + Number(o.platform_profit || 0), 0);
             const activeDrivers = (driverStates.data ?? []).filter((d: any) => !!d.shift_started_at && !d.on_break).length;
             const live = todays.filter((o: any) => !['delivered', 'cancelled'].includes(o.status)).length;
-            const orderDelta = yesterdays.length > 0 ? ((todays.length - yesterdays.length) / yesterdays.length) * 100 : null;
-            const revDelta = revenueYesterday > 0 ? ((revenueToday - revenueYesterday) / revenueYesterday) * 100 : null;
+            const orderDelta = todays.length > 0 && yesterdays.length > 0 ? ((todays.length - yesterdays.length) / yesterdays.length) * 100 : null;
+            const revDelta = revenueToday > 0 && revenueYesterday > 0 ? ((revenueToday - revenueYesterday) / revenueYesterday) * 100 : null;
             return (
               <div className="px-3 lg:px-4 py-2 border-t border-border/40 bg-gradient-to-b from-muted/10 to-transparent overflow-x-auto">
                 <div className="flex gap-2 min-w-max">
