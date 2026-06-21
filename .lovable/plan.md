@@ -1,153 +1,64 @@
-## More Support Tools to Help Drivers
+## Goal
+Ship a unique customer-app revamp with an AI-generated hero slideshow, an admin tool to create those cards (image + prompt → AI image), and a sweep to wire up dead buttons.
 
-Currently support agents can only chat, set priority/status, copy IDs, call the driver, and use AI suggestions. I'll add **7 concrete action tools** inside the ticket detail view so agents can actually *resolve* driver problems instead of just messaging back and forth.
+## 1. AI Hero Cards — backend
+- Migration: new table `public.ai_hero_cards`
+  - `id`, `title`, `subtitle`, `cta_label`, `cta_link`, `image_url` (storage), `source_image_url` (admin upload), `prompt`, `status` (`draft|active`), `sort_order`, `created_at`, `created_by`
+  - GRANTs: `SELECT` to `anon`+`authenticated` (public slideshow); full CRUD via service_role; admin-only writes via `has_role(auth.uid(),'admin')` policies.
+- Storage bucket `ai-hero-cards` (public) for source uploads + generated PNGs.
+- Edge function `generate-hero-card`:
+  - Input: `{ card_id, source_image_url, prompt, title }`
+  - Calls Lovable AI Gateway `/v1/images/generations` (`openai/gpt-image-2`, `quality:"low"`, `stream:true`, `partial_images:1`); uses source as visual reference in the prompt text.
+  - Uploads final base64 PNG to storage, updates row's `image_url`.
+  - Streams SSE back so admin sees progressive preview.
 
----
+## 2. Admin — AI Card Creator
+- New tab inside `Καταστήματα` sidebar group: `Καταστήματα → AI Cards` (path `/admin?tab=ai-cards`).
+- Page `AiCardsAdmin.tsx`:
+  - List of existing cards (reorder, toggle active, delete).
+  - "Create card" panel: upload reference image, title, subtitle, CTA, free-text prompt, "Generate" button.
+  - Live progressive preview via `streamImage` helper while AI runs (blur on partial, sharp on final).
+  - Save → inserts row, kicks off edge function, persists generated `image_url`.
 
-### New Tools (all inside `Εργαλεία Agent` card)
+## 3. Customer App — full revamp (all screens, one design language)
+Theme name: **"Fresh Bento"** — soft warm-white surfaces, rounded-3xl bento tiles, brand accent (existing `c-accent`), subtle motion. Reuse current OfferCard. No new external libs.
 
-#### 1. 📍 **Locate Driver Live**
-- Button "Δες θέση οδηγού" → opens dialog with a Mapbox map showing the driver's last known location from `driver_locations`
-- Shows last update timestamp + speed + heading
-- Useful for: "where is the driver?" emergencies, accident reports, lost drivers
+Screens touched:
+- `CustomerApp.tsx` (home): replace `OnePlusOneHero` with new `AiHeroCarousel` (auto-advance, dots, swipe) sourced from `ai_hero_cards` where `status='active'`. Keep existing quick tiles, offer rows, store list.
+- `RestaurantPage.tsx`: new sticky header w/ blurred hero, bento-style category strip, cleaner item rows, persistent footer cart button.
+- `CheckoutPage.tsx`: stepper (Address → Time → Pay), summary card, brand CTA.
+- `MyOrdersPage.tsx`: segmented "Ενεργές / Ιστορικό", status pills, empty state.
+- `OrderTrackingPage.tsx`: bigger status hero, driver card, ETA chip, contact buttons.
+- `ProfilePage.tsx`: bento grid (wallet, addresses, referrals, settings, support, logout).
 
-#### 2. 💰 **Quick Wallet Credit / Compensation**
-- Dialog with amount (€) + reason
-- Calls existing `admin_adjust_wallet` RPC (need to extend RLS to allow `support` role too, or create new `support_credit_wallet` RPC capped at €20)
-- Logs to `wallet_transactions` with type `support_credit`
-- Auto-posts a chat message: "Πιστώθηκαν Xeur στο πορτοφόλι σου"
-- Useful for: compensating fuel, wait time, customer no-shows
+New components:
+- `src/components/customer/AiHeroCarousel.tsx`
+- `src/components/customer/BentoTile.tsx`
+- `src/components/customer/SectionHeader.tsx`
 
-#### 3. 🚨 **Escalate to Emergency Services**
-- One-click button (red, confirmation required) for `accident` / SOS tickets
-- Opens dialog with pre-filled emergency info (driver name, phone, last location, vehicle plate)
-- Quick-dial 112 button
-- Marks ticket priority = `sos` and inserts a `fraud_signals`/audit row (or new `emergency_escalations` table)
+## 4. Functional sweep — wire up dead buttons
+Audit these known surfaces and bind handlers / routes:
+- Customer header: Search bar bottom-nav button (focus + scroll), Address sheet save (already works — verify), Language toggle.
+- Home: "See all" on offer rows (filter + scroll), category chips, quick tiles, promo banner click.
+- Restaurant: Share, Favorite, Info, Reviews.
+- Checkout: Apply promo, schedule time, payment method select.
+- Orders: Reorder, Rate, Contact support.
+- Profile tiles: each routes to existing pages or shows a "coming soon" toast (no silent dead clicks).
 
-#### 4. 📢 **Send Push Broadcast to Driver**
-- Send a non-chat notification (toast in driver app) for urgent info like "Stop accepting orders in Athens — system issue"
-- New table `driver_notifications` (id, driver_id, title, body, severity, read_at, created_at) + realtime subscription on driver app
-- Single-driver mode (from ticket) and admin-side broadcast-to-all mode
+For any button without a destination yet, hook a `toast` with a clear message instead of leaving it inert.
 
-#### 5. 🎁 **Grant One-Time Bonus**
-- Button "Δώσε bonus" → creates entry in `wait_time_bonuses` or `earnings` (bonus column) tied to last delivered order
-- Cap €10, requires reason
-- Useful for: long waits at store, exceptional service
+## 5. Verification
+- Build passes.
+- Playwright: load `/order`, screenshot home, click into a store, into checkout, into profile — confirm no console errors and visible state changes on every tap.
+- Admin: open AI Cards tab, generate a sample card end-to-end, confirm it appears on `/order`.
 
-#### 6. ⛔ **Temporary Suspend / Reactivate Driver**
-- Toggle button reading `driver_profiles.is_active` and `suspended_at`
-- Currently only admin can flip `is_active` (per `protect_driver_active_status` trigger). I'll relax it: allow `support` role for **temp suspensions** with `suspension_reason` required, and log to `admin_audit_log`
-- Auto-posts chat message explaining suspension
+## Technical details
+- Stack: React + Vite + Tailwind + shadcn, Supabase (Lovable Cloud), AI Gateway image stream (`openai/gpt-image-2`, default params).
+- Edge function uses `LOVABLE_API_KEY` server-side; image upload via service role.
+- Carousel auto-advance every 5s, pauses on touch; uses CSS scroll-snap (no new lib).
+- Reuses existing semantic tokens (`c-accent`, `c-muted`); no hardcoded hex.
 
-#### 7. 🔄 **Reassign / Unassign Order**
-- If ticket has `order_id`, button to:
-  - **Unassign driver** (sets `driver_id = NULL`, status back to `ready`) → returns order to dispatch
-  - **Cancel order** with refund → calls existing `refund_order` RPC
-- Useful when driver can't complete (breakdown, accident)
-
----
-
-### Database Changes (single migration)
-
-```sql
--- 1. Driver notifications table
-create table public.driver_notifications (
-  id uuid primary key default gen_random_uuid(),
-  driver_id uuid not null,
-  title text not null,
-  body text not null,
-  severity text not null default 'info',  -- info | warning | urgent
-  sender_id uuid,
-  read_at timestamptz,
-  created_at timestamptz not null default now()
-);
-alter table public.driver_notifications enable row level security;
-create policy "Drivers read own notifications" on public.driver_notifications
-  for select using (auth.uid() = driver_id);
-create policy "Drivers mark own notifications read" on public.driver_notifications
-  for update using (auth.uid() = driver_id);
-create policy "Support/admin send notifications" on public.driver_notifications
-  for insert with check (is_support_or_admin(auth.uid()));
-alter publication supabase_realtime add table public.driver_notifications;
-
--- 2. RPC: support_credit_wallet (capped €20)
-create or replace function public.support_credit_wallet(
-  p_driver_id uuid, p_amount numeric, p_reason text
-) returns void language plpgsql security definer set search_path=public as $$
-begin
-  if not is_support_or_admin(auth.uid()) then
-    raise exception 'Forbidden';
-  end if;
-  if p_amount <= 0 or p_amount > 20 then
-    raise exception 'Amount must be between 0 and 20';
-  end if;
-  insert into driver_wallets (driver_id) values (p_driver_id)
-    on conflict (driver_id) do nothing;
-  update driver_wallets
-    set available_balance = available_balance + p_amount
-    where driver_id = p_driver_id;
-  insert into wallet_transactions (driver_id, type, amount, status, description)
-    values (p_driver_id, 'support_credit', p_amount, 'completed', p_reason);
-end; $$;
-
--- 3. RPC: support_suspend_driver (temp, with reason)
-create or replace function public.support_suspend_driver(
-  p_driver_id uuid, p_reason text, p_suspend boolean
-) returns void language plpgsql security definer set search_path=public as $$
-begin
-  if not is_support_or_admin(auth.uid()) then
-    raise exception 'Forbidden';
-  end if;
-  -- Bypass protect_driver_active_status (security definer runs as owner)
-  update driver_profiles
-    set is_active = not p_suspend,
-        suspended_at = case when p_suspend then now() else null end,
-        suspension_reason = case when p_suspend then p_reason else null end
-    where user_id = p_driver_id;
-end; $$;
-
--- 4. RPC: support_unassign_order (returns to dispatch)
-create or replace function public.support_unassign_order(p_order_id uuid)
-returns void language plpgsql security definer set search_path=public as $$
-begin
-  if not is_support_or_admin(auth.uid()) then raise exception 'Forbidden'; end if;
-  update orders set driver_id = null, status = 'ready' where id = p_order_id;
-end; $$;
-
--- 5. RPC: support_grant_bonus (recorded as earning bonus on driver's most-recent delivered order, cap €10)
-create or replace function public.support_grant_bonus(
-  p_driver_id uuid, p_amount numeric, p_reason text
-) returns void language plpgsql security definer set search_path=public as $$
-begin
-  if not is_support_or_admin(auth.uid()) then raise exception 'Forbidden'; end if;
-  if p_amount <= 0 or p_amount > 10 then raise exception 'Bonus 0-10€'; end if;
-  insert into driver_wallets (driver_id) values (p_driver_id) on conflict do nothing;
-  update driver_wallets set available_balance = available_balance + p_amount where driver_id = p_driver_id;
-  insert into wallet_transactions (driver_id, type, amount, status, description)
-    values (p_driver_id, 'support_bonus', p_amount, 'completed', p_reason);
-end; $$;
-```
-
-### Frontend Changes
-
-**New files**
-- `src/components/support/DriverLocationDialog.tsx` — Mapbox map of driver's last `driver_locations` row
-- `src/components/support/SupportActionToolbox.tsx` — wraps the 7 buttons + their dialogs (wallet credit, bonus, suspend, broadcast, escalate, reassign), accepts `ticket` prop
-
-**Edited**
-- `src/pages/SupportApp.tsx` — replace the inline "Εργαλεία Agent" buttons block with the new `<SupportActionToolbox ticket={activeTicket} driver={driver} />`
-- `src/pages/DriverApp.tsx` — subscribe to `driver_notifications` realtime; show a toast (and red banner for `urgent`) when a row arrives; mark `read_at` on dismiss
-- `src/integrations/supabase/types.ts` — auto-regen after migration
-
-### Out of Scope (ask later if wanted)
-- Full driver-history timeline panel
-- Voice call via Twilio
-- Bulk broadcast UI (this PR adds backend only — admin UI in a follow-up)
-
----
-
-**After you approve**, I'll:
-1. Run the migration above
-2. Build the two new components
-3. Wire `DriverApp.tsx` for the realtime notification banner
-4. Replace the toolbox section in `SupportApp.tsx`
+## Out of scope
+- Driver/store/admin apps beyond the new AI Cards tab.
+- Payment provider changes.
+- New languages.
