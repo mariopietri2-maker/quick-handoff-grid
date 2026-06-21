@@ -201,10 +201,10 @@ export default function OrderTrackingPage() {
                 <p className="text-sm text-muted-foreground mt-1">{headline.sub}</p>
               </div>
               {!isCancelled && !isDelivered && (
-                <div className="text-right shrink-0 bg-primary/10 rounded-2xl px-3 py-2">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary">ETA</p>
-                  <p className="font-heading font-extrabold text-xl text-primary tabular-nums leading-none mt-0.5">
-                    {remainingMin}<span className="text-xs font-bold ml-0.5">λεπ</span>
+                <div className="text-right shrink-0 gradient-primary rounded-2xl px-4 py-2.5 shadow-primary">
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary-foreground/80">ETA</p>
+                  <p className="font-heading font-extrabold text-2xl text-primary-foreground tabular-nums leading-none mt-0.5">
+                    {remainingMin}<span className="text-xs font-bold ml-0.5 opacity-80">λεπ</span>
                   </p>
                 </div>
               )}
