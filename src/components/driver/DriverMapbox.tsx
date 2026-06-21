@@ -468,20 +468,45 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     routeFetchRef.current = ctrl;
 
     try {
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${pos.lng},${pos.lat};${destLng},${destLat}?geometries=geojson&overview=full&steps=true&access_token=${token}`;
+      // Use driving-traffic for live traffic-aware ETA + congestion annotations
+      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${pos.lng},${pos.lat};${destLng},${destLat}?geometries=geojson&overview=full&steps=true&annotations=congestion,duration&access_token=${token}`;
       const res = await fetch(url, { signal: ctrl.signal });
       const data = await res.json();
       const route = data.routes?.[0];
       if (!route) return;
 
       const coords = route.geometry.coordinates;
+      const congestion: string[] = route.legs?.[0]?.annotation?.congestion || [];
 
       if (map.getSource('route')) {
         (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
           type: 'Feature',
           geometry: { type: 'LineString', coordinates: coords },
-          properties: {},
+          properties: { congestion },
         });
+
+        // Build a gradient along line-progress from congestion buckets
+        if (congestion.length && coords.length > 1) {
+          const colorFor = (c: string) => {
+            switch (c) {
+              case 'severe': return '#dc2626';
+              case 'heavy': return '#f97316';
+              case 'moderate': return '#facc15';
+              case 'low': return '#22c55e';
+              default: return '#22c55e';
+            }
+          };
+          const stops: any[] = ['interpolate', ['linear'], ['line-progress']];
+          const n = congestion.length;
+          for (let i = 0; i < n; i++) {
+            const t = i / n;
+            stops.push(t, colorFor(congestion[i]));
+          }
+          stops.push(1, colorFor(congestion[n - 1]));
+          try {
+            map.setPaintProperty('route-line', 'line-gradient', stops as any);
+          } catch {/* layer may not be ready */}
+        }
       }
 
       // Fit route — skip while in followMode so we don't fight the follow camera
@@ -491,6 +516,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         bounds.extend([pos.lng, pos.lat]);
         map.fitBounds(bounds, { padding: { top: 80, bottom: 200, left: 50, right: 50 }, maxZoom: 16 });
       }
+
 
       // Parse steps with maneuver detail for in-app turn-by-turn UI
       const steps: RouteStep[] = route.legs[0]?.steps?.map((s: any) => ({
