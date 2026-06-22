@@ -146,6 +146,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
   const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
+  const [activeDeliveries, setActiveDeliveries] = useState<OrderWithItems[]>([]);
+  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   // Map of order_id -> pending offer id (only set when assignment_mode='auto')
   const [offerIds, setOfferIds] = useState<Record<string, string>>({});
@@ -161,20 +163,25 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const mode = (row?.assignment_mode === 'manual' ? 'manual' : 'auto') as 'auto' | 'manual';
     setAssignmentMode(mode);
 
-    // Fetch assigned active orders
-    const { data: active } = await supabase
+    // Fetch ALL active orders for this driver (stacked routing supports up to 3).
+    // The "primary" activeDelivery is the order with the lowest stop_sequence
+    // (= next stop on the smart route); fallback to oldest if no sequence.
+    const { data: activeRows } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .eq('driver_id', user.id)
       .in('status', ['accepted', 'preparing', 'ready', 'arrived', 'picked_up'])
-      .limit(1)
-      .maybeSingle();
+      .order('stop_sequence', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true })
+      .limit(3);
 
-    if (active) {
-      setActiveDelivery(active as OrderWithItems);
-    } else {
-      setActiveDelivery(null);
-    }
+    const activeList = (activeRows as OrderWithItems[] | null) ?? [];
+    const active = activeList[0] ?? null;
+
+    setActiveDeliveries(activeList);
+    setCurrentBatchId(active?.batch_id ?? null);
+    setActiveDelivery(active);
+
 
     let availableOrders: OrderWithItems[] = [];
     const nextOfferIds: Record<string, string> = {};
