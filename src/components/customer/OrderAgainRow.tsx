@@ -47,29 +47,29 @@ export function OrderAgainRow() {
   if (!user || stores.length === 0) return null;
 
   return (
-    <section className="pt-6">
-      <div className="px-5 flex items-center gap-2 mb-3">
-        <Repeat2 className="h-4 w-4 c-accent" strokeWidth={2.6} />
-        <h2 className="font-heading font-black text-[18px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
+    <section className="pt-4">
+      <div className="px-5 flex items-center gap-2 mb-2">
+        <Repeat2 className="h-3.5 w-3.5 c-accent" strokeWidth={2.6} />
+        <h2 className="font-heading font-black text-[15px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
           Παράγγειλε ξανά
         </h2>
       </div>
       <div className="overflow-x-auto no-scrollbar">
-        <div className="flex gap-3 px-5 pb-1 w-max">
+        <div className="flex gap-2 px-5 pb-1 w-max">
           {stores.map(s => (
             <button
               key={s.id}
               onClick={() => navigate(`/restaurant/${s.id}`)}
-              className="w-[84px] shrink-0 text-center group active:scale-95 transition-transform"
+              className="w-[64px] shrink-0 text-center group active:scale-95 transition-transform"
             >
-              <div className="h-[84px] w-[84px] rounded-2xl overflow-hidden bg-[hsl(0,0%,96%)] ring-1 ring-black/[0.04] shadow-[0_6px_16px_-10px_hsl(0_0%_0%/0.25)]">
+              <div className="h-[64px] w-[64px] rounded-xl overflow-hidden bg-[hsl(0,0%,96%)] ring-1 ring-black/[0.04] shadow-[0_4px_10px_-6px_hsl(0_0%_0%/0.2)]">
                 {s.image_url ? (
                   <img src={s.image_url} alt={s.name} loading="lazy" className="h-full w-full object-cover" />
                 ) : (
-                  <div className="h-full w-full flex items-center justify-center text-3xl emoji">🍽️</div>
+                  <div className="h-full w-full flex items-center justify-center text-2xl emoji">🍽️</div>
                 )}
               </div>
-              <p className="mt-1.5 text-[11px] font-extrabold text-[hsl(0,0%,9%)] truncate">{s.name}</p>
+              <p className="mt-1 text-[10px] font-extrabold text-[hsl(0,0%,9%)] truncate">{s.name}</p>
             </button>
           ))}
         </div>
