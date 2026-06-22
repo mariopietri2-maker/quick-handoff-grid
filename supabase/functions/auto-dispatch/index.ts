@@ -284,6 +284,7 @@ Deno.serve(async (req) => {
           _order_value: Number(order.total_amount ?? 0),
           _exclude_drivers: excludeList,
           _limit: s.dist_wave_size,
+          _store_id: order.store_id,
         });
         list = (primary ?? []) as CandidateDriver[];
 
@@ -294,6 +295,7 @@ Deno.serve(async (req) => {
             _order_value: Number(order.total_amount ?? 0),
             _exclude_drivers: excludeList,
             _limit: s.dist_wave_size,
+            _store_id: order.store_id,
           });
           list = (dropoffDrivers ?? []) as CandidateDriver[];
         }
@@ -303,6 +305,7 @@ Deno.serve(async (req) => {
         }
         return list;
       };
+
 
       let candidateDrivers = await fetchCandidates(exclude);
 

@@ -1,64 +1,58 @@
-## Goal
-Ship a unique customer-app revamp with an AI-generated hero slideshow, an admin tool to create those cards (image + prompt → AI image), and a sweep to wire up dead buttons.
+# Smart Stacked Routing (up to 3 orders)
 
-## 1. AI Hero Cards — backend
-- Migration: new table `public.ai_hero_cards`
-  - `id`, `title`, `subtitle`, `cta_label`, `cta_link`, `image_url` (storage), `source_image_url` (admin upload), `prompt`, `status` (`draft|active`), `sort_order`, `created_at`, `created_by`
-  - GRANTs: `SELECT` to `anon`+`authenticated` (public slideshow); full CRUD via service_role; admin-only writes via `has_role(auth.uid(),'admin')` policies.
-- Storage bucket `ai-hero-cards` (public) for source uploads + generated PNGs.
-- Edge function `generate-hero-card`:
-  - Input: `{ card_id, source_image_url, prompt, title }`
-  - Calls Lovable AI Gateway `/v1/images/generations` (`openai/gpt-image-2`, `quality:"low"`, `stream:true`, `partial_images:1`); uses source as visual reference in the prompt text.
-  - Uploads final base64 PNG to storage, updates row's `image_url`.
-  - Streams SSE back so admin sees progressive preview.
+Today drivers can only carry **one** order at a time. The codebase has a half-built 1+1 "stacked" link but nothing supports 2 or 3 active orders, and dispatch hard-excludes any driver already on a job. This plan turns that into a real multi-order batch system with optimized stop ordering.
 
-## 2. Admin — AI Card Creator
-- New tab inside `Καταστήματα` sidebar group: `Καταστήματα → AI Cards` (path `/admin?tab=ai-cards`).
-- Page `AiCardsAdmin.tsx`:
-  - List of existing cards (reorder, toggle active, delete).
-  - "Create card" panel: upload reference image, title, subtitle, CTA, free-text prompt, "Generate" button.
-  - Live progressive preview via `streamImage` helper while AI runs (blur on partial, sharp on final).
-  - Save → inserts row, kicks off edge function, persists generated `image_url`.
+## What changes for the driver
 
-## 3. Customer App — full revamp (all screens, one design language)
-Theme name: **"Fresh Bento"** — soft warm-white surfaces, rounded-3xl bento tiles, brand accent (existing `c-accent`), subtle motion. Reuse current OfferCard. No new external libs.
+- A driver can hold up to **3 active orders** simultaneously (configurable from Admin → Money Engine settings, default 3).
+- After accepting an order, the dispatcher may offer a 2nd/3rd order **only if it is on the way** (same store or close pickup, and the new dropoff doesn't add more than X minutes of detour).
+- The driver app shows a **multi-stop route card**: a clean ordered list of remaining stops (Pickup A → Pickup B → Dropoff B → Dropoff A) with the next stop highlighted and ETA per stop.
+- The map draws the full sequence with numbered pins; navigation always points to the next stop.
+- "Smart route" = nearest-neighbor optimization across remaining pickups and dropoffs, with a hard rule that a dropoff can only happen after its pickup.
 
-Screens touched:
-- `CustomerApp.tsx` (home): replace `OnePlusOneHero` with new `AiHeroCarousel` (auto-advance, dots, swipe) sourced from `ai_hero_cards` where `status='active'`. Keep existing quick tiles, offer rows, store list.
-- `RestaurantPage.tsx`: new sticky header w/ blurred hero, bento-style category strip, cleaner item rows, persistent footer cart button.
-- `CheckoutPage.tsx`: stepper (Address → Time → Pay), summary card, brand CTA.
-- `MyOrdersPage.tsx`: segmented "Ενεργές / Ιστορικό", status pills, empty state.
-- `OrderTrackingPage.tsx`: bigger status hero, driver card, ETA chip, contact buttons.
-- `ProfilePage.tsx`: bento grid (wallet, addresses, referrals, settings, support, logout).
+## What changes for the customer
 
-New components:
-- `src/components/customer/AiHeroCarousel.tsx`
-- `src/components/customer/BentoTile.tsx`
-- `src/components/customer/SectionHeader.tsx`
+- No visible change; their ETA is recomputed using the driver's actual stop sequence so it stays accurate when their order is batched.
 
-## 4. Functional sweep — wire up dead buttons
-Audit these known surfaces and bind handlers / routes:
-- Customer header: Search bar bottom-nav button (focus + scroll), Address sheet save (already works — verify), Language toggle.
-- Home: "See all" on offer rows (filter + scroll), category chips, quick tiles, promo banner click.
-- Restaurant: Share, Favorite, Info, Reviews.
-- Checkout: Apply promo, schedule time, payment method select.
-- Orders: Reorder, Rate, Contact support.
-- Profile tiles: each routes to existing pages or shows a "coming soon" toast (no silent dead clicks).
+## What changes for the admin
 
-For any button without a destination yet, hook a `toast` with a clear message instead of leaving it inert.
+- New setting in Money Engine → Dispatch: **Max stacked orders per driver** (1–3) + **Max detour minutes** for a stack offer to be considered "on the way".
+- New badge on the order list when an order is part of a batch.
 
-## 5. Verification
-- Build passes.
-- Playwright: load `/order`, screenshot home, click into a store, into checkout, into profile — confirm no console errors and visible state changes on every tap.
-- Admin: open AI Cards tab, generate a sample card end-to-end, confirm it appears on `/order`.
+## Technical scope
 
-## Technical details
-- Stack: React + Vite + Tailwind + shadcn, Supabase (Lovable Cloud), AI Gateway image stream (`openai/gpt-image-2`, default params).
-- Edge function uses `LOVABLE_API_KEY` server-side; image upload via service role.
-- Carousel auto-advance every 5s, pauses on touch; uses CSS scroll-snap (no new lib).
-- Reuses existing semantic tokens (`c-accent`, `c-muted`); no hardcoded hex.
+**Database**
+- Add `batch_id uuid` and `stop_sequence int` to `orders`. Keep `stacked_with_order_id` for backward read compatibility, fill from `batch_id`.
+- Add `max_stacked_orders int default 3` and `stack_max_detour_minutes int default 8` to `platform_settings`.
+- Rewrite `nearby_active_drivers` RPC: instead of excluding any driver with an active order, allow drivers whose active-order count `< max_stacked_orders`, and (for stack candidates) score by detour distance from their current route.
+
+**Auto-dispatch (`supabase/functions/auto-dispatch`)**
+- Two-phase offer: (1) fresh drivers (0 active); (2) stack candidates (1–2 active) ranked by detour cost. Assign `batch_id` of the existing order to the new offer at acceptance time.
+
+**Accept-offer (`supabase/functions/accept-offer`)**
+- On accept, if driver already has active orders → reuse their `batch_id` (create one if null), set `stop_sequence` after running the route optimizer.
+
+**New edge function `optimize-route`**
+- Input: driver location + list of remaining stops (each with type pickup/dropoff, coords, paired order id).
+- Output: ordered sequence honoring pickup-before-dropoff, minimizing total distance (greedy nearest-neighbor with the constraint; good enough for ≤6 stops).
+- Called by `accept-offer` and whenever a stop completes.
+
+**Client**
+- `useOrders.ts`: return `activeDeliveries` (array) and `currentBatch` instead of single `activeDelivery`. Keep a `currentStop` derived from `stop_sequence`.
+- `ActiveDelivery.tsx`: redesign into a stacked card showing the ordered stop list, with the current stop expanded and the rest collapsed.
+- `NavigationPanel.tsx` + `DriverMapbox.tsx`: draw multi-waypoint polyline, numbered markers, focus on next stop.
+- `StackedOrderBanner.tsx`: iterate over batch members (not just one partner).
+- Admin settings panel: two new inputs wired to `platform_settings`.
 
 ## Out of scope
-- Driver/store/admin apps beyond the new AI Cards tab.
-- Payment provider changes.
-- New languages.
+
+- Cross-store batching beyond the detour rule (no "pick up at restaurant A then B in two different neighborhoods just because they fit 3").
+- Customer-facing batch transparency / live multi-stop ETA visualization.
+- Reordering stops manually by the driver (auto-optimized only in v1).
+
+## Rollout
+
+1. Migration (schema + RPC + settings) — gated behind `max_stacked_orders = 1` so behavior is unchanged on deploy.
+2. Backend functions (`accept-offer`, `auto-dispatch`, `optimize-route`).
+3. Driver UI refactor.
+4. Admin toggle to raise `max_stacked_orders` to 3 when ready.
