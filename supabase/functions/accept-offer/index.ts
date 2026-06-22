@@ -53,7 +53,7 @@ Deno.serve(async (req) => {
       .update({ driver_id: user.id })
       .eq("id", offer.order_id)
       .is("driver_id", null)
-      .select("id, status")
+      .select("id, status, store_id")
       .maybeSingle();
 
     if (claimErr) return json({ error: claimErr.message }, 500);
@@ -92,6 +92,42 @@ Deno.serve(async (req) => {
       order_id: offer.order_id,
       action: "accepted",
     });
+
+    // STACKING: if the driver already has other active orders, attach this new
+    // order to the existing batch (or create one) and re-run the smart router
+    // so the stop sequence is recomputed across all active orders.
+    const { data: otherActive } = await admin
+      .from("orders")
+      .select("id, batch_id")
+      .eq("driver_id", user.id)
+      .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
+      .neq("id", offer.order_id);
+
+    if (otherActive && otherActive.length > 0) {
+      const existingBatch = otherActive.find((o) => o.batch_id)?.batch_id ?? crypto.randomUUID();
+      // Link this order to the batch; optimizer will recompute stop_sequence
+      await admin
+        .from("orders")
+        .update({ batch_id: existingBatch, stacked_with_order_id: otherActive[0].id })
+        .eq("id", offer.order_id);
+      // Backfill any siblings missing batch_id
+      const missing = otherActive.filter((o) => !o.batch_id).map((o) => o.id);
+      if (missing.length > 0) {
+        await admin.from("orders").update({ batch_id: existingBatch }).in("id", missing);
+      }
+      // Fire-and-forget optimize call (admin client → direct function call)
+      try {
+        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/optimize-route`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
+          },
+          body: JSON.stringify({ driver_id: user.id, batch_id: existingBatch }),
+        });
+      } catch (_) { /* best effort */ }
+    }
+
 
     return json({ ok: true, order_id: offer.order_id });
   } catch (err) {
