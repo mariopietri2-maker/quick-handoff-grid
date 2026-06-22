@@ -181,6 +181,43 @@ export default function ProfilePage() {
           </CardContent>
         </Card>
 
+        {/* Customer options */}
+        <Card>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 font-heading">
+              <ShoppingBag className="h-5 w-5 text-primary" />
+              Ο λογαριασμός μου
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-2 pt-0">
+            {[
+              { to: '/orders', icon: Receipt, label: 'Οι παραγγελίες μου', desc: 'Ιστορικό & επανάληψη' },
+              { to: '/order?tab=wallet', icon: Wallet, label: 'Πορτοφόλι', desc: 'Υπόλοιπο & πιστώσεις' },
+              { to: '/order?tab=rewards', icon: Gift, label: 'Πόντοι & επίπεδα', desc: 'Ανταμοιβές πιστότητας' },
+              { to: '/order?tab=referral', icon: Heart, label: 'Κάλεσε φίλους', desc: 'Κέρδισε 5€ για κάθε φίλο' },
+              { to: '/order?tab=addresses', icon: MapPin, label: 'Διευθύνσεις', desc: 'Αποθηκευμένες τοποθεσίες' },
+              { to: '/order?tab=favorites', icon: Heart, label: 'Αγαπημένα', desc: 'Καταστήματα & προϊόντα' },
+            ].map(({ to, icon: Icon, label, desc }) => (
+              <Link
+                key={to}
+                to={to}
+                className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted transition-colors"
+              >
+                <span className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
+                  <Icon className="h-4 w-4" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-semibold text-foreground leading-tight">{label}</p>
+                  <p className="text-xs text-muted-foreground leading-tight mt-0.5">{desc}</p>
+                </div>
+                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+              </Link>
+            ))}
+          </CardContent>
+        </Card>
+
+
+
         {/* Appearance & Language */}
         <Card>
           <CardHeader>
