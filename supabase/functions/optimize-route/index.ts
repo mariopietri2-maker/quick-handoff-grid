@@ -121,12 +121,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // 4) Driver start position
-    const { data: loc } = await admin
-      .from("driver_locations")
-      .select("latitude, longitude")
-      .eq("driver_id", driverId)
-      .maybeSingle();
+    // 4) Driver start position — resolve driver from any order if not provided
+    let effectiveDriverId: string | null = driverId ?? null;
+    if (!effectiveDriverId) {
+      const { data: anyOrder } = await admin
+        .from("orders")
+        .select("driver_id")
+        .eq("batch_id", explicitBatchId!)
+        .not("driver_id", "is", null)
+        .limit(1)
+        .maybeSingle();
+      effectiveDriverId = (anyOrder as any)?.driver_id ?? null;
+    }
+    const { data: loc } = effectiveDriverId
+      ? await admin
+          .from("driver_locations")
+          .select("latitude, longitude")
+          .eq("driver_id", effectiveDriverId)
+          .maybeSingle()
+      : { data: null };
     const start = {
       lat: loc?.latitude != null ? Number(loc.latitude) : (stops[0]?.lat ?? 0),
       lng: loc?.longitude != null ? Number(loc.longitude) : (stops[0]?.lng ?? 0),
