@@ -10,8 +10,8 @@ import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
-  FileText, RefreshCw, Wallet, Gift, MapPin, Heart, Receipt, ChevronRight,
-  Sparkles, Settings as SettingsIcon,
+  FileText, RefreshCw, Ticket, Gift, MapPin, Heart, Receipt, ChevronRight,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -180,14 +180,13 @@ export default function ProfilePage() {
         {/* Primary tiles */}
         <section className="grid grid-cols-2 gap-3">
           <TileButton to="/orders" icon={Receipt} tone="primary" label="Παραγγελίες μου" hint="Ιστορικό & επανάληψη" />
-          <TileButton to="/order?tab=wallet" icon={Wallet} tone="emerald" label="Πορτοφόλι" hint="Υπόλοιπο & πιστώσεις" />
+          <TileButton to="/order?tab=coupons" icon={Ticket} tone="emerald" label="Κουπόνια" hint="Εκπτώσεις & προσφορές" />
         </section>
 
         {/* Perks & Social */}
         <section>
           <SectionTitle>Ανταμοιβές & Προσκλήσεις</SectionTitle>
           <Group>
-            <Row to="/order?tab=rewards" icon={Sparkles} iconTone="amber" label="Πόντοι & επίπεδα" trailing={<span className="text-sm text-muted-foreground font-semibold">Δες</span>} />
             <Row to="/order?tab=referral" icon={Heart} iconTone="rose" label="Κάλεσε φίλους" trailing={<Badge className="bg-primary/10 text-primary border-0 hover:bg-primary/10">Κέρδισε 5€</Badge>} />
           </Group>
         </section>
