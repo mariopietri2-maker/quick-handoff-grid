@@ -1850,6 +1850,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          batch_id: string | null
           cash_received: number | null
           change_due: number | null
           commission_settled_at: string | null
@@ -1882,6 +1883,7 @@ export type Database = {
           source: string
           stacked_with_order_id: string | null
           status: Database["public"]["Enums"]["order_status"]
+          stop_sequence: number | null
           store_charge: number
           store_id: string
           surge_event_id: string | null
@@ -1891,6 +1893,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          batch_id?: string | null
           cash_received?: number | null
           change_due?: number | null
           commission_settled_at?: string | null
@@ -1923,6 +1926,7 @@ export type Database = {
           source?: string
           stacked_with_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stop_sequence?: number | null
           store_charge?: number
           store_id: string
           surge_event_id?: string | null
@@ -1932,6 +1936,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          batch_id?: string | null
           cash_received?: number | null
           change_due?: number | null
           commission_settled_at?: string | null
@@ -1964,6 +1969,7 @@ export type Database = {
           source?: string
           stacked_with_order_id?: string | null
           status?: Database["public"]["Enums"]["order_status"]
+          stop_sequence?: number | null
           store_charge?: number
           store_id?: string
           surge_event_id?: string | null
@@ -2117,6 +2123,7 @@ export type Database = {
           maintenance_mode: boolean
           max_cash_cap: number
           max_pay: number
+          max_stacked_orders: number
           min_pay: number
           motorcycle_multiplier: number
           pause_bonus_when_critical: boolean
@@ -2137,6 +2144,8 @@ export type Database = {
           sla_tickets_per_agent: number
           sla_urgent_seconds: number
           sla_warn_seconds: number
+          stack_max_detour_minutes: number
+          stacking_enabled: boolean
           subsidize_min_pay: boolean
           surge_default_multiplier: number
           surge_enabled: boolean
@@ -2190,6 +2199,7 @@ export type Database = {
           maintenance_mode?: boolean
           max_cash_cap?: number
           max_pay?: number
+          max_stacked_orders?: number
           min_pay?: number
           motorcycle_multiplier?: number
           pause_bonus_when_critical?: boolean
@@ -2210,6 +2220,8 @@ export type Database = {
           sla_tickets_per_agent?: number
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
+          stack_max_detour_minutes?: number
+          stacking_enabled?: boolean
           subsidize_min_pay?: boolean
           surge_default_multiplier?: number
           surge_enabled?: boolean
@@ -2263,6 +2275,7 @@ export type Database = {
           maintenance_mode?: boolean
           max_cash_cap?: number
           max_pay?: number
+          max_stacked_orders?: number
           min_pay?: number
           motorcycle_multiplier?: number
           pause_bonus_when_critical?: boolean
@@ -2283,6 +2296,8 @@ export type Database = {
           sla_tickets_per_agent?: number
           sla_urgent_seconds?: number
           sla_warn_seconds?: number
+          stack_max_detour_minutes?: number
+          stacking_enabled?: boolean
           subsidize_min_pay?: boolean
           surge_default_multiplier?: number
           surge_enabled?: boolean
@@ -3861,21 +3876,41 @@ export type Database = {
         }
         Returns: number
       }
-      nearby_active_drivers: {
-        Args: {
-          _exclude_drivers?: string[]
-          _limit?: number
-          _order_value?: number
-          _store_lat: number
-          _store_lng: number
-        }
-        Returns: {
-          distance_km: number
-          driver_id: string
-          score: number
-          vehicle_type: string
-        }[]
-      }
+      nearby_active_drivers:
+        | {
+            Args: {
+              _exclude_drivers?: string[]
+              _limit?: number
+              _order_value?: number
+              _store_lat: number
+              _store_lng: number
+            }
+            Returns: {
+              distance_km: number
+              driver_id: string
+              score: number
+              vehicle_type: string
+            }[]
+          }
+        | {
+            Args: {
+              _exclude_drivers?: string[]
+              _limit?: number
+              _order_value?: number
+              _store_id?: string
+              _store_lat: number
+              _store_lng: number
+            }
+            Returns: {
+              active_orders: number
+              distance_km: number
+              driver_id: string
+              is_stack: boolean
+              score: number
+              vehicle_type: string
+            }[]
+          }
+      next_stop_sequence: { Args: { _batch_id: string }; Returns: number }
       open_surge_event: {
         Args: {
           _ends_at?: string
