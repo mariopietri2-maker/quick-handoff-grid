@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
-import { Loader2, Save, Target, Radio, Layers, Sparkles, Bike, Car, Filter, Scale, HandCoins } from 'lucide-react';
+import { Loader2, Save, Target, Radio, Layers, Sparkles, Bike, Car, Filter, Scale, HandCoins, Route } from 'lucide-react';
 import { toast } from 'sonner';
 
 const MODES = [
@@ -66,6 +66,9 @@ interface Settings {
   dist_fairness_weight: number;
   dist_rating_weight: number;
   dist_distance_weight: number;
+  max_stacked_orders: number;
+  stack_max_detour_minutes: number;
+  stacking_enabled: boolean;
 }
 
 export default function AssignmentSettings() {
@@ -86,7 +89,7 @@ export default function AssignmentSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_settings')
-        .select('distribution_mode, dist_search_radius_km, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, dist_vehicle_rules_enabled, dist_bike_max_km, dist_motorcycle_max_km, dist_car_min_value, dist_min_driver_rating, dist_min_acceptance_rate, dist_fairness_weight, dist_rating_weight, dist_distance_weight')
+        .select('distribution_mode, dist_search_radius_km, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, dist_vehicle_rules_enabled, dist_bike_max_km, dist_motorcycle_max_km, dist_car_min_value, dist_min_driver_rating, dist_min_acceptance_rate, dist_fairness_weight, dist_rating_weight, dist_distance_weight, max_stacked_orders, stack_max_detour_minutes, stacking_enabled')
         .eq('id', 1)
         .maybeSingle();
       if (error) throw error;
@@ -402,6 +405,49 @@ export default function AssignmentSettings() {
               </div>
             );
           })}
+        </CardContent>
+      </Card>
+
+      {/* Smart stacking */}
+      <Card>
+        <CardHeader className="flex flex-row items-center justify-between">
+          <CardTitle className="font-heading text-base flex items-center gap-2">
+            <Route className="h-4 w-4 text-primary" /> Smart Stacking · Πολλαπλές Παραγγελίες
+          </CardTitle>
+          <Switch
+            checked={s.stacking_enabled}
+            onCheckedChange={(v) => update('stacking_enabled', v)}
+          />
+        </CardHeader>
+        <CardContent className={`space-y-3 ${s.stacking_enabled ? '' : 'opacity-50 pointer-events-none'}`}>
+          <p className="text-xs text-muted-foreground">
+            Επιτρέπει σε έναν οδηγό να μεταφέρει έως {s.max_stacked_orders} παραγγελίες ταυτόχρονα. Νέες προσφορές
+            δίνονται μόνο όταν το επιπλέον στοπ είναι στη διαδρομή (ίδιο κατάστημα).
+          </p>
+          <div className="grid sm:grid-cols-2 gap-3">
+            <div>
+              <Label className="text-[11px] uppercase">Μέγιστες ταυτόχρονες (1–3)</Label>
+              <Input
+                type="number"
+                min={1}
+                max={3}
+                value={s.max_stacked_orders}
+                onChange={(e) => update('max_stacked_orders', Math.min(3, Math.max(1, parseInt(e.target.value) || 1)))}
+                className="h-9"
+              />
+            </div>
+            <div>
+              <Label className="text-[11px] uppercase">Max παράκαμψη (λεπτά)</Label>
+              <Input
+                type="number"
+                min={0}
+                max={30}
+                value={s.stack_max_detour_minutes}
+                onChange={(e) => update('stack_max_detour_minutes', parseInt(e.target.value) || 0)}
+                className="h-9"
+              />
+            </div>
+          </div>
         </CardContent>
       </Card>
 
