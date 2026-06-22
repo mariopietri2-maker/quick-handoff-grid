@@ -91,8 +91,8 @@ export default function ProfilePage() {
       </header>
 
       <main className="container max-w-3xl px-4 py-6 space-y-6">
-        <HomeGreeting />
         {/* Identity card */}
+
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2 font-heading">
