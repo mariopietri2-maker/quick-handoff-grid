@@ -5,26 +5,25 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
-  Headphones, ShoppingBag, LogOut, Languages, Palette,
+  Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
   FileText, RefreshCw, Wallet, Gift, MapPin, Heart, Receipt, ChevronRight,
+  Sparkles, Settings as SettingsIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
-import { useT } from '@/lib/i18n';
 import { SEO } from '@/components/SEO';
 
-
-const roleConfig: Record<string, { label: string; icon: any; path: string; color: string }> = {
-  admin:    { label: 'Admin',    icon: Shield,     path: '/admin',   color: 'text-primary' },
-  support:  { label: 'Support',  icon: Headphones, path: '/support', color: 'text-blue-500' },
-  driver:   { label: 'Οδηγός',   icon: Car,        path: '/driver',  color: 'text-emerald-500' },
-  store:    { label: 'Κατάστημα',icon: Store,      path: '/store',   color: 'text-orange-500' },
-  customer: { label: 'Πελάτης',  icon: ShoppingBag,path: '/order',   color: 'text-purple-500' },
+const roleConfig: Record<string, { label: string; icon: any; path: string }> = {
+  admin:    { label: 'Admin',     icon: Shield,      path: '/admin'   },
+  support:  { label: 'Support',   icon: Headphones,  path: '/support' },
+  driver:   { label: 'Οδηγός',    icon: Car,         path: '/driver'  },
+  store:    { label: 'Κατάστημα', icon: Store,       path: '/store'   },
+  customer: { label: 'Πελάτης',   icon: ShoppingBag, path: '/order'   },
 };
 
 export default function ProfilePage() {
@@ -33,6 +32,7 @@ export default function ProfilePage() {
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
+  const [editOpen, setEditOpen] = useState(false);
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
@@ -53,6 +53,7 @@ export default function ProfilePage() {
     setSaving(false);
     if (error) return toast.error(error.message);
     toast.success('Το προφίλ ενημερώθηκε');
+    setEditOpen(false);
   };
 
   const handleSignOut = async () => {
@@ -60,7 +61,7 @@ export default function ProfilePage() {
     navigate('/auth');
   };
 
-  // All roles this user has access to
+  // Roles
   const availableRoles: string[] = [];
   if (isAdmin) availableRoles.push('admin');
   if (isSupport || isAdmin) availableRoles.push('support');
@@ -70,217 +71,246 @@ export default function ProfilePage() {
     if (!availableRoles.includes(profile.role)) availableRoles.push(profile.role);
     if (profile.role !== 'customer') availableRoles.push('customer');
   }
+  const activeRole = isAdmin ? 'admin' : (profile?.role ?? 'customer');
 
   if (!user) return null;
 
+  const initials = (fullName || user.email || '?').charAt(0).toUpperCase();
+
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-muted/40">
       <SEO
         title="Το προφίλ μου — Fresh Delivery"
         description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh Delivery."
         path="/profile"
         noindex
       />
-      <header className="sticky top-0 z-10 border-b border-border bg-background/95 backdrop-blur">
-        <div className="container max-w-3xl flex items-center gap-3 px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη">
+
+      {/* Sticky header */}
+      <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
+        <div className="container max-w-2xl flex items-center justify-between px-4 py-3">
+          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Πίσω">
             <ArrowLeft className="h-5 w-5" />
           </Button>
-          <h1 className="font-heading font-bold text-lg">Το Προφίλ μου</h1>
+          <h1 className="font-heading font-bold text-base text-foreground">Το Προφίλ μου</h1>
+          <Sheet open={editOpen} onOpenChange={setEditOpen}>
+            <SheetTrigger asChild>
+              <Button variant="ghost" size="icon" aria-label="Επεξεργασία">
+                <SettingsIcon className="h-5 w-5" />
+              </Button>
+            </SheetTrigger>
+            <SheetContent side="bottom" className="rounded-t-2xl">
+              <SheetHeader>
+                <SheetTitle className="font-heading text-left">Στοιχεία λογαριασμού</SheetTitle>
+              </SheetHeader>
+              <div className="space-y-4 pt-4">
+                <div className="space-y-2">
+                  <Label htmlFor="fullName">Ονοματεπώνυμο</Label>
+                  <Input id="fullName" value={fullName} onChange={(e) => setFullName(e.target.value)} maxLength={100} />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="phone">Τηλέφωνο</Label>
+                  <div className="relative">
+                    <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <Input id="phone" value={phone} onChange={(e) => setPhone(e.target.value)} maxLength={20} className="pl-9" placeholder="+30..." />
+                  </div>
+                </div>
+                <Button onClick={handleSave} disabled={saving} className="w-full">
+                  {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Αποθήκευση
+                </Button>
+              </div>
+            </SheetContent>
+          </Sheet>
         </div>
       </header>
 
-      <main className="container max-w-3xl px-4 py-6 space-y-6">
-        {/* Identity card */}
-
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-heading">
-              <User className="h-5 w-5 text-primary" />
-              Στοιχεία λογαριασμού
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="flex items-center gap-4">
-              <div className="h-16 w-16 rounded-full gradient-primary flex items-center justify-center text-white font-heading font-bold text-2xl">
-                {(fullName || user.email || '?').charAt(0).toUpperCase()}
-              </div>
-              <div className="flex-1 min-w-0">
-                <p className="font-heading font-semibold truncate">{fullName || 'Χρήστης'}</p>
-                <p className="text-sm text-muted-foreground truncate flex items-center gap-1">
-                  <Mail className="h-3 w-3" /> {user.email}
-                </p>
-              </div>
+      <main className="container max-w-2xl px-5 pt-6 pb-16 space-y-8">
+        {/* Identity */}
+        <section className="flex flex-col items-center text-center">
+          <div className="relative">
+            <div className="h-24 w-24 rounded-full gradient-primary border-4 border-card shadow-lg flex items-center justify-center text-primary-foreground font-heading font-bold text-3xl">
+              {initials}
             </div>
+            <button
+              onClick={() => setEditOpen(true)}
+              className="absolute bottom-0 right-0 p-1.5 bg-foreground text-background rounded-full border-2 border-card shadow-sm hover:opacity-90 transition"
+              aria-label="Επεξεργασία προφίλ"
+            >
+              <Pencil className="h-3.5 w-3.5" strokeWidth={2.5} />
+            </button>
+          </div>
+          <h2 className="mt-4 font-heading font-bold text-xl text-foreground">{fullName || 'Χρήστης'}</h2>
+          <p className="text-sm text-muted-foreground flex items-center gap-1 mt-0.5">
+            <Mail className="h-3 w-3" /> {user.email}
+          </p>
+          {phone && (
+            <p className="text-xs text-muted-foreground mt-1">{phone}</p>
+          )}
+        </section>
 
-            <div className="space-y-2">
-              <Label htmlFor="fullName">Ονοματεπώνυμο</Label>
-              <Input
-                id="fullName"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                maxLength={100}
-                placeholder="Το ονοματεπώνυμό σας"
-              />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="phone">Τηλέφωνο</Label>
-              <div className="relative">
-                <Phone className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  id="phone"
-                  value={phone}
-                  onChange={(e) => setPhone(e.target.value)}
-                  maxLength={20}
-                  className="pl-9"
-                  placeholder="+30..."
-                />
-              </div>
-            </div>
-            <Button onClick={handleSave} disabled={saving} className="w-full gradient-primary text-primary-foreground">
-              {saving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
-              Αποθήκευση
-            </Button>
-          </CardContent>
-        </Card>
-
-        {/* Roles & app switcher */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-heading">
-              <Shield className="h-5 w-5 text-primary" />
-              {isAdmin ? 'Όλοι οι ρόλοι (Admin)' : 'Ο ρόλος μου'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {isAdmin && (
-              <p className="text-sm text-muted-foreground mb-4">
-                Ως admin έχεις πρόσβαση σε όλες τις εφαρμογές ταυτόχρονα. Επίλεξε τι θέλεις να ανοίξεις:
-              </p>
-            )}
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {/* Role switcher (admin/multi-role only) */}
+        {availableRoles.length > 1 && (
+          <section>
+            <div className="bg-muted p-1 rounded-xl flex gap-1 overflow-x-auto scrollbar-none">
               {availableRoles.map(r => {
                 const cfg = roleConfig[r];
                 if (!cfg) return null;
                 const Icon = cfg.icon;
-                const isCurrent = profile?.role === r;
+                const isActive = r === activeRole;
                 return (
                   <button
                     key={r}
                     onClick={() => navigate(cfg.path)}
-                    className="group flex flex-col items-center gap-2 rounded-xl border border-border bg-card p-4 text-center transition-all hover:border-primary/40 hover:shadow-primary press-scale"
+                    className={`flex-1 min-w-fit px-3 py-2 rounded-lg text-sm font-semibold transition flex items-center justify-center gap-1.5 ${
+                      isActive
+                        ? 'bg-card text-foreground shadow-sm'
+                        : 'text-muted-foreground hover:text-foreground'
+                    }`}
                   >
-                    <Icon className={`h-7 w-7 ${cfg.color} transition-transform group-hover:scale-110`} />
-                    <span className="font-heading font-semibold text-sm">{cfg.label}</span>
-                    {isCurrent && !isAdmin && <Badge variant="outline" className="text-[10px]">Τρέχων</Badge>}
-                    {isAdmin && r === 'admin' && <Badge className="text-[10px]">Κύριος</Badge>}
+                    <Icon className="h-3.5 w-3.5" />
+                    {cfg.label}
                   </button>
                 );
               })}
             </div>
-          </CardContent>
-        </Card>
+          </section>
+        )}
 
-        {/* Customer options */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-heading">
-              <ShoppingBag className="h-5 w-5 text-primary" />
-              Ο λογαριασμός μου
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            {[
-              { to: '/orders', icon: Receipt, label: 'Οι παραγγελίες μου', desc: 'Ιστορικό & επανάληψη' },
-              { to: '/order?tab=wallet', icon: Wallet, label: 'Πορτοφόλι', desc: 'Υπόλοιπο & πιστώσεις' },
-              { to: '/order?tab=rewards', icon: Gift, label: 'Πόντοι & επίπεδα', desc: 'Ανταμοιβές πιστότητας' },
-              { to: '/order?tab=referral', icon: Heart, label: 'Κάλεσε φίλους', desc: 'Κέρδισε 5€ για κάθε φίλο' },
-              { to: '/order?tab=addresses', icon: MapPin, label: 'Διευθύνσεις', desc: 'Αποθηκευμένες τοποθεσίες' },
-              { to: '/order?tab=favorites', icon: Heart, label: 'Αγαπημένα', desc: 'Καταστήματα & προϊόντα' },
-            ].map(({ to, icon: Icon, label, desc }) => (
-              <Link
-                key={to}
-                to={to}
-                className="flex items-center gap-3 rounded-lg px-3 py-2.5 hover:bg-muted transition-colors"
-              >
-                <span className="h-9 w-9 rounded-full bg-primary/10 text-primary flex items-center justify-center shrink-0">
-                  <Icon className="h-4 w-4" />
-                </span>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-foreground leading-tight">{label}</p>
-                  <p className="text-xs text-muted-foreground leading-tight mt-0.5">{desc}</p>
-                </div>
-                <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-              </Link>
-            ))}
-          </CardContent>
-        </Card>
+        {/* Primary tiles */}
+        <section className="grid grid-cols-2 gap-3">
+          <TileButton to="/orders" icon={Receipt} tone="primary" label="Παραγγελίες μου" hint="Ιστορικό & επανάληψη" />
+          <TileButton to="/order?tab=wallet" icon={Wallet} tone="emerald" label="Πορτοφόλι" hint="Υπόλοιπο & πιστώσεις" />
+        </section>
 
+        {/* Perks & Social */}
+        <section>
+          <SectionTitle>Ανταμοιβές & Προσκλήσεις</SectionTitle>
+          <Group>
+            <Row to="/order?tab=rewards" icon={Sparkles} iconTone="amber" label="Πόντοι & επίπεδα" trailing={<span className="text-sm text-muted-foreground font-semibold">Δες</span>} />
+            <Row to="/order?tab=referral" icon={Heart} iconTone="rose" label="Κάλεσε φίλους" trailing={<Badge className="bg-primary/10 text-primary border-0 hover:bg-primary/10">Κέρδισε 5€</Badge>} />
+          </Group>
+        </section>
 
-
-        {/* Appearance & Language */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-heading">
-              <Palette className="h-5 w-5 text-primary" />
-              Εμφάνιση & Γλώσσα
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2"><Languages className="h-4 w-4" /> Γλώσσα / Language</Label>
-              <LanguageToggle />
-            </div>
-            <div className="space-y-2">
-              <Label className="flex items-center gap-2"><Palette className="h-4 w-4" /> Θέμα</Label>
-              <ThemeToggle />
-            </div>
-          </CardContent>
-        </Card>
+        {/* Preferences */}
+        <section>
+          <SectionTitle>Προτιμήσεις</SectionTitle>
+          <Group>
+            <Row to="/order?tab=addresses" icon={MapPin} iconTone="muted" label="Διευθύνσεις" trailing={<Chevron />} />
+            <Row to="/order?tab=favorites" icon={Heart} iconTone="muted" label="Αγαπημένα" trailing={<Chevron />} />
+            <RowInline icon={Languages} iconTone="muted" label="Γλώσσα" trailing={<LanguageToggle />} />
+            <RowInline icon={Palette} iconTone="muted" label="Θέμα" trailing={<ThemeToggle />} />
+          </Group>
+        </section>
 
         {/* Legal */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2 font-heading">
-              <FileText className="h-5 w-5 text-primary" />
-              Νομικά Έγγραφα
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2 pt-0">
-            <Link
-              to="/legal/terms"
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <FileText className="h-4 w-4 text-muted-foreground" />
-              Όροι Χρήσης
-            </Link>
-            <Link
-              to="/legal/privacy"
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <Shield className="h-4 w-4 text-muted-foreground" />
-              Πολιτική Απορρήτου
-            </Link>
-            <Link
-              to="/legal/refunds"
-              className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm font-medium text-foreground hover:bg-muted transition-colors"
-            >
-              <RefreshCw className="h-4 w-4 text-muted-foreground" />
-              Πολιτική Επιστροφών
-            </Link>
-          </CardContent>
-        </Card>
+        <section>
+          <SectionTitle>Νομικά</SectionTitle>
+          <Group>
+            <Row to="/legal/terms" icon={FileText} iconTone="muted" label="Όροι Χρήσης" trailing={<Chevron />} />
+            <Row to="/legal/privacy" icon={Shield} iconTone="muted" label="Πολιτική Απορρήτου" trailing={<Chevron />} />
+            <Row to="/legal/refunds" icon={RefreshCw} iconTone="muted" label="Πολιτική Επιστροφών" trailing={<Chevron />} />
+          </Group>
+        </section>
 
         {/* Sign out */}
-        <Card>
-          <CardContent className="pt-6">
-            <Button onClick={handleSignOut} variant="outline" className="w-full text-destructive border-destructive/30 hover:bg-destructive/10 hover:text-destructive">
-              <LogOut className="mr-2 h-4 w-4" />
-              Αποσύνδεση
-            </Button>
-          </CardContent>
-        </Card>
+        <div className="pt-2">
+          <button
+            onClick={handleSignOut}
+            className="w-full py-4 bg-muted text-muted-foreground font-bold text-sm rounded-xl border border-border hover:bg-destructive/10 hover:text-destructive hover:border-destructive/30 transition-colors flex items-center justify-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Αποσύνδεση
+          </button>
+          <p className="mt-4 text-center text-[10px] text-muted-foreground uppercase tracking-wider">Fresh Delivery · v2.4</p>
+        </div>
       </main>
     </div>
+  );
+}
+
+/* ---------- subcomponents ---------- */
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <h3 className="text-[11px] font-bold text-muted-foreground uppercase tracking-[0.1em] px-1 mb-2">
+      {children}
+    </h3>
+  );
+}
+
+function Group({ children }: { children: React.ReactNode }) {
+  return (
+    <div className="bg-card border border-border rounded-xl overflow-hidden divide-y divide-border shadow-sm">
+      {children}
+    </div>
+  );
+}
+
+function Chevron() {
+  return <ChevronRight className="h-4 w-4 text-muted-foreground/60" />;
+}
+
+const toneClasses: Record<string, string> = {
+  primary: 'bg-primary/10 text-primary',
+  emerald: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400',
+  amber:   'bg-amber-500/10 text-amber-600 dark:text-amber-400',
+  rose:    'bg-rose-500/10 text-rose-600 dark:text-rose-400',
+  muted:   'bg-muted text-muted-foreground',
+};
+
+function Row({
+  to, icon: Icon, iconTone = 'muted', label, trailing,
+}: {
+  to: string; icon: React.ElementType; iconTone?: keyof typeof toneClasses | string;
+  label: string; trailing?: React.ReactNode;
+}) {
+  return (
+    <Link to={to} className="w-full flex items-center justify-between gap-3 p-4 hover:bg-muted/40 transition-colors">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toneClasses[iconTone] ?? toneClasses.muted}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-medium text-foreground truncate">{label}</span>
+      </div>
+      <div className="shrink-0 flex items-center gap-2">{trailing}</div>
+    </Link>
+  );
+}
+
+function RowInline({
+  icon: Icon, iconTone = 'muted', label, trailing,
+}: {
+  icon: React.ElementType; iconTone?: string; label: string; trailing?: React.ReactNode;
+}) {
+  return (
+    <div className="w-full flex items-center justify-between gap-3 p-4">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toneClasses[iconTone] ?? toneClasses.muted}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-medium text-foreground truncate">{label}</span>
+      </div>
+      <div className="shrink-0">{trailing}</div>
+    </div>
+  );
+}
+
+function TileButton({
+  to, icon: Icon, tone, label, hint,
+}: {
+  to: string; icon: React.ElementType; tone: keyof typeof toneClasses; label: string; hint: string;
+}) {
+  return (
+    <Link
+      to={to}
+      className="flex flex-col items-start p-4 bg-card border border-border rounded-xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all press-scale"
+    >
+      <div className={`p-2 rounded-lg mb-3 ${toneClasses[tone]}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <span className="font-heading font-semibold text-foreground text-sm">{label}</span>
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{hint}</span>
+    </Link>
   );
 }
