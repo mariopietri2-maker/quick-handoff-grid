@@ -279,28 +279,33 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
     setOfferIds(nextOfferIds);
 
-    if (active) {
-      // Driver has an active delivery — only surface "stacked" offers from the SAME store
-      // and only while we haven't picked up yet (so the second pickup is still on the path).
-      const sameStorePickupPending = ['accepted', 'preparing', 'ready', 'arrived'].includes(
-        (active as OrderWithItems).status as string,
+    const MAX_STACK = Number(row?.max_stacked_orders ?? 3);
+    const remainingCapacity = Math.max(0, MAX_STACK - activeList.length);
+
+    if (active && remainingCapacity > 0) {
+      // Driver has active deliveries but still has room — surface stacked offers
+      // from any store they're already heading to (same-store only) and only
+      // while at least one pickup is still pending on that store.
+      const activeStoreIds = new Set(
+        activeList
+          .filter((o) => ['accepted', 'preparing', 'ready', 'arrived'].includes(o.status as string))
+          .map((o) => o.store_id),
       );
-      if (sameStorePickupPending) {
-        const sameStore = availableOrders.filter(
-          (o) =>
-            o.store_id === (active as OrderWithItems).store_id &&
-            o.id !== (active as OrderWithItems).id &&
-            o.status === 'ready',
-        );
-        setStackedOffers(sameStore);
-      } else {
-        setStackedOffers([]);
-      }
+      const activeIds = new Set(activeList.map((o) => o.id));
+      const sameStore = availableOrders.filter(
+        (o) => activeStoreIds.has(o.store_id) && !activeIds.has(o.id) && o.status === 'ready',
+      ).slice(0, remainingCapacity);
+      setStackedOffers(sameStore);
+      setOffers([]);
+    } else if (active) {
+      // At capacity — no more offers
+      setStackedOffers([]);
       setOffers([]);
     } else {
       setOffers(availableOrders);
       setStackedOffers([]);
     }
+
 
     setLoading(false);
   }, [user, adminOverride]);
