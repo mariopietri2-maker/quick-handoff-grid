@@ -490,15 +490,37 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       console.error('[updateDeliveryStatus]', { orderId, newStatus, error });
       toast.error(`Σφάλμα: ${error.message ?? 'Failed to update status'}`);
     } else {
+      // When a stop is completed, re-run the optimizer so the remaining stops
+      // are re-sequenced from the driver's current position.
+      if (['picked_up', 'delivered'].includes(newStatus) && currentBatchId) {
+        supabase.functions.invoke('optimize-route', { body: { batch_id: currentBatchId } })
+          .catch(() => {});
+      }
       if (newStatus === 'delivered') {
-        setActiveDelivery(null);
+        // Only clear if it was the primary active. Fetch will reconcile.
+        setActiveDelivery(prev => prev?.id === orderId ? null : prev);
+        setActiveDeliveries(prev => prev.filter(o => o.id !== orderId));
       }
       fetchOrders();
     }
   };
 
-  return { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, refetch: fetchOrders, assignmentMode, offerIds };
+  return {
+    offers,
+    stackedOffers,
+    activeDelivery,
+    activeDeliveries,
+    currentBatchId,
+    loading,
+    acceptOrder,
+    declineOrder,
+    updateDeliveryStatus,
+    refetch: fetchOrders,
+    assignmentMode,
+    offerIds,
+  };
 }
+
 
 export function useUserStore() {
   const { user } = useAuth();
