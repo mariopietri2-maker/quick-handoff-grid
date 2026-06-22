@@ -10,14 +10,14 @@ import { Badge } from '@/components/ui/badge';
 import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette,
-  FileText, RefreshCw,
+  FileText, RefreshCw, Wallet, Gift, MapPin, Heart, Receipt, ChevronRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { useT } from '@/lib/i18n';
-import HomeGreeting from '@/components/customer/HomeGreeting';
 import { SEO } from '@/components/SEO';
+
 
 const roleConfig: Record<string, { label: string; icon: any; path: string; color: string }> = {
   admin:    { label: 'Admin',    icon: Shield,     path: '/admin',   color: 'text-primary' },
