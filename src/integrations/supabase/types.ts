@@ -3811,8 +3811,10 @@ export type Database = {
           maintenance_message: string
           maintenance_mode: boolean
           max_cash_cap: number
+          max_stacked_orders: number
           platform_service_fee: number
           show_stores_on_driver_map: boolean
+          stacking_enabled: boolean
         }[]
       }
       get_public_reviews: {
