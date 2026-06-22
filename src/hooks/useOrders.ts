@@ -146,6 +146,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
   const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
+  const [activeDeliveries, setActiveDeliveries] = useState<OrderWithItems[]>([]);
+  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   // Map of order_id -> pending offer id (only set when assignment_mode='auto')
   const [offerIds, setOfferIds] = useState<Record<string, string>>({});
@@ -161,20 +163,25 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const mode = (row?.assignment_mode === 'manual' ? 'manual' : 'auto') as 'auto' | 'manual';
     setAssignmentMode(mode);
 
-    // Fetch assigned active orders
-    const { data: active } = await supabase
+    // Fetch ALL active orders for this driver (stacked routing supports up to 3).
+    // The "primary" activeDelivery is the order with the lowest stop_sequence
+    // (= next stop on the smart route); fallback to oldest if no sequence.
+    const { data: activeRows } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .eq('driver_id', user.id)
       .in('status', ['accepted', 'preparing', 'ready', 'arrived', 'picked_up'])
-      .limit(1)
-      .maybeSingle();
+      .order('stop_sequence', { ascending: true, nullsFirst: false })
+      .order('created_at', { ascending: true })
+      .limit(3);
 
-    if (active) {
-      setActiveDelivery(active as OrderWithItems);
-    } else {
-      setActiveDelivery(null);
-    }
+    const activeList = (activeRows as OrderWithItems[] | null) ?? [];
+    const active = activeList[0] ?? null;
+
+    setActiveDeliveries(activeList);
+    setCurrentBatchId((active as any)?.batch_id ?? null);
+    setActiveDelivery(active);
+
 
     let availableOrders: OrderWithItems[] = [];
     const nextOfferIds: Record<string, string> = {};
@@ -272,28 +279,33 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
     setOfferIds(nextOfferIds);
 
-    if (active) {
-      // Driver has an active delivery — only surface "stacked" offers from the SAME store
-      // and only while we haven't picked up yet (so the second pickup is still on the path).
-      const sameStorePickupPending = ['accepted', 'preparing', 'ready', 'arrived'].includes(
-        (active as OrderWithItems).status as string,
+    const MAX_STACK = Number(row?.max_stacked_orders ?? 3);
+    const remainingCapacity = Math.max(0, MAX_STACK - activeList.length);
+
+    if (active && remainingCapacity > 0) {
+      // Driver has active deliveries but still has room — surface stacked offers
+      // from any store they're already heading to (same-store only) and only
+      // while at least one pickup is still pending on that store.
+      const activeStoreIds = new Set(
+        activeList
+          .filter((o) => ['accepted', 'preparing', 'ready', 'arrived'].includes(o.status as string))
+          .map((o) => o.store_id),
       );
-      if (sameStorePickupPending) {
-        const sameStore = availableOrders.filter(
-          (o) =>
-            o.store_id === (active as OrderWithItems).store_id &&
-            o.id !== (active as OrderWithItems).id &&
-            o.status === 'ready',
-        );
-        setStackedOffers(sameStore);
-      } else {
-        setStackedOffers([]);
-      }
+      const activeIds = new Set(activeList.map((o) => o.id));
+      const sameStore = availableOrders.filter(
+        (o) => activeStoreIds.has(o.store_id) && !activeIds.has(o.id) && o.status === 'ready',
+      ).slice(0, remainingCapacity);
+      setStackedOffers(sameStore);
+      setOffers([]);
+    } else if (active) {
+      // At capacity — no more offers
+      setStackedOffers([]);
       setOffers([]);
     } else {
       setOffers(availableOrders);
       setStackedOffers([]);
     }
+
 
     setLoading(false);
   }, [user, adminOverride]);
@@ -483,15 +495,37 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       console.error('[updateDeliveryStatus]', { orderId, newStatus, error });
       toast.error(`Σφάλμα: ${error.message ?? 'Failed to update status'}`);
     } else {
+      // When a stop is completed, re-run the optimizer so the remaining stops
+      // are re-sequenced from the driver's current position.
+      if (['picked_up', 'delivered'].includes(newStatus) && currentBatchId) {
+        supabase.functions.invoke('optimize-route', { body: { batch_id: currentBatchId } })
+          .catch(() => {});
+      }
       if (newStatus === 'delivered') {
-        setActiveDelivery(null);
+        // Only clear if it was the primary active. Fetch will reconcile.
+        setActiveDelivery(prev => prev?.id === orderId ? null : prev);
+        setActiveDeliveries(prev => prev.filter(o => o.id !== orderId));
       }
       fetchOrders();
     }
   };
 
-  return { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, refetch: fetchOrders, assignmentMode, offerIds };
+  return {
+    offers,
+    stackedOffers,
+    activeDelivery,
+    activeDeliveries,
+    currentBatchId,
+    loading,
+    acceptOrder,
+    declineOrder,
+    updateDeliveryStatus,
+    refetch: fetchOrders,
+    assignmentMode,
+    offerIds,
+  };
 }
+
 
 export function useUserStore() {
   const { user } = useAuth();
