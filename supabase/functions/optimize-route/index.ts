@@ -63,26 +63,32 @@ function optimize(start: { lat: number; lng: number }, stops: Stop[]): Stop[] {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  const authHeader = req.headers.get("Authorization");
+  const authHeader = req.headers.get("Authorization") ?? "";
   if (!authHeader) return json({ error: "missing auth" }, 401);
 
-  const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_ANON_KEY")!,
-    { global: { headers: { Authorization: authHeader } } },
-  );
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+  const isService = authHeader === `Bearer ${serviceKey}`;
 
-  try {
+  const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+
+  let resolvedDriverId: string | null = null;
+  if (!isService) {
+    const supabase = createClient(
+      Deno.env.get("SUPABASE_URL")!,
+      Deno.env.get("SUPABASE_ANON_KEY")!,
+      { global: { headers: { Authorization: authHeader } } },
+    );
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return json({ error: "unauthorized" }, 401);
+    resolvedDriverId = user.id;
+  }
 
+  try {
     const body = await req.json().catch(() => ({}));
-    const driverId = (body.driver_id as string | undefined) ?? user.id;
+    const driverId = (body.driver_id as string | undefined) ?? resolvedDriverId;
     const explicitBatchId = body.batch_id as string | undefined;
+    if (!driverId && !explicitBatchId) return json({ error: "driver_id or batch_id required" }, 400);
+
 
     // 1) Load the driver's active orders (or the batch's orders)
     let q = admin
