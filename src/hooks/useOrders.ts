@@ -179,7 +179,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const active = activeList[0] ?? null;
 
     setActiveDeliveries(activeList);
-    setCurrentBatchId(active?.batch_id ?? null);
+    setCurrentBatchId((active as any)?.batch_id ?? null);
     setActiveDelivery(active);
 
 
