@@ -129,6 +129,7 @@ export function useNearbyStoresForDriver() {
       mounted = false;
       supabase.removeChannel(ch);
       clearInterval(interval);
+      if (countsRefresh) clearTimeout(countsRefresh);
     };
   }, [enabled]);
 
