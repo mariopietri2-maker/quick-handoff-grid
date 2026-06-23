@@ -119,6 +119,8 @@ export default function DriverApp() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const sheetDragStartY = useRef<number | null>(null);
+  const sheetDragMoved = useRef(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
