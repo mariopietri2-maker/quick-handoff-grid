@@ -491,38 +491,35 @@ export default function DriverApp() {
               </button>
             </div>
             {/* Drag handle — tap to toggle, or swipe up/down to expand/collapse */}
-            {(() => {
-              const dragStartY = useRef<number | null>(null);
-              const dragMoved = useRef(false);
-              const onStart = (y: number) => { dragStartY.current = y; dragMoved.current = false; };
-              const onMove = (y: number) => {
-                if (dragStartY.current == null) return;
-                const dy = y - dragStartY.current;
-                if (Math.abs(dy) > 8) dragMoved.current = true;
-                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); dragStartY.current = null; }
-                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); dragStartY.current = null; }
-              };
-              const onEnd = () => { dragStartY.current = null; };
-              return (
-                <div
-                  className="pointer-events-auto w-full flex items-center justify-center pt-2 pb-3 -mb-1 group cursor-grab active:cursor-grabbing touch-none select-none"
-                  role="button"
-                  tabIndex={0}
-                  aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
-                  title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
-                  onClick={() => { if (!dragMoved.current) setSheetCollapsed(v => !v); }}
-                  onTouchStart={(e) => onStart(e.touches[0].clientY)}
-                  onTouchMove={(e) => onMove(e.touches[0].clientY)}
-                  onTouchEnd={onEnd}
-                  onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); onStart(e.clientY); }}
-                  onPointerMove={(e) => { if (dragStartY.current != null) onMove(e.clientY); }}
-                  onPointerUp={onEnd}
-                  onPointerCancel={onEnd}
-                >
-                  <span className="h-1.5 w-14 rounded-full bg-[hsl(var(--driver-text-muted))]/50 group-active:bg-[hsl(var(--driver-text-muted))]/80 transition-colors" />
-                </div>
-              );
-            })()}
+            <div
+              className="pointer-events-auto w-full flex items-center justify-center pt-2 pb-3 -mb-1 group cursor-grab active:cursor-grabbing touch-none select-none"
+              role="button"
+              tabIndex={0}
+              aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
+              title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
+              onClick={() => { if (!sheetDragMoved.current) setSheetCollapsed(v => !v); }}
+              onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; sheetDragMoved.current = false; }}
+              onTouchMove={(e) => {
+                if (sheetDragStartY.current == null) return;
+                const dy = e.touches[0].clientY - sheetDragStartY.current;
+                if (Math.abs(dy) > 8) sheetDragMoved.current = true;
+                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
+                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
+              }}
+              onTouchEnd={() => { sheetDragStartY.current = null; }}
+              onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); sheetDragStartY.current = e.clientY; sheetDragMoved.current = false; }}
+              onPointerMove={(e) => {
+                if (sheetDragStartY.current == null) return;
+                const dy = e.clientY - sheetDragStartY.current;
+                if (Math.abs(dy) > 8) sheetDragMoved.current = true;
+                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
+                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
+              }}
+              onPointerUp={() => { sheetDragStartY.current = null; }}
+              onPointerCancel={() => { sheetDragStartY.current = null; }}
+            >
+              <span className="h-1.5 w-14 rounded-full bg-[hsl(var(--driver-text-muted))]/50 group-active:bg-[hsl(var(--driver-text-muted))]/80 transition-colors" />
+            </div>
             <div className="pointer-events-auto space-y-2.5 animate-slide-up">
 
               {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
