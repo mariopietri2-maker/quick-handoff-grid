@@ -285,6 +285,8 @@ Deno.serve(async (req) => {
           _exclude_drivers: excludeList,
           _limit: s.dist_wave_size,
           _store_id: order.store_id,
+          _dropoff_lat: dropoff?.lat ?? null,
+          _dropoff_lng: dropoff?.lng ?? null,
         });
         list = (primary ?? []) as CandidateDriver[];
 
@@ -296,6 +298,8 @@ Deno.serve(async (req) => {
             _exclude_drivers: excludeList,
             _limit: s.dist_wave_size,
             _store_id: order.store_id,
+            _dropoff_lat: dropoff.lat,
+            _dropoff_lng: dropoff.lng,
           });
           list = (dropoffDrivers ?? []) as CandidateDriver[];
         }
