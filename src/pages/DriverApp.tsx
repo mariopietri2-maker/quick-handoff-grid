@@ -119,6 +119,8 @@ export default function DriverApp() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const sheetDragStartY = useRef<number | null>(null);
+  const sheetDragMoved = useRef(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
   const mapRef = useRef<DriverMapboxHandle>(null);
 
@@ -488,16 +490,36 @@ export default function DriverApp() {
                 <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
               </button>
             </div>
-            {/* Drag handle — tap to collapse/expand so the driver can see more of the map */}
-            <button
-              type="button"
-              onClick={() => setSheetCollapsed(v => !v)}
-              className="pointer-events-auto w-full flex items-center justify-center pt-1 pb-2 -mb-1 group"
+            {/* Drag handle — tap to toggle, or swipe up/down to expand/collapse */}
+            <div
+              className="pointer-events-auto w-full flex items-center justify-center pt-2 pb-3 -mb-1 group cursor-grab active:cursor-grabbing touch-none select-none"
+              role="button"
+              tabIndex={0}
               aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
-              title={sheetCollapsed ? 'Άνοιγμα' : 'Σύμπτυξη για περισσότερο χάρτη'}
+              title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
+              onClick={() => { if (!sheetDragMoved.current) setSheetCollapsed(v => !v); }}
+              onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; sheetDragMoved.current = false; }}
+              onTouchMove={(e) => {
+                if (sheetDragStartY.current == null) return;
+                const dy = e.touches[0].clientY - sheetDragStartY.current;
+                if (Math.abs(dy) > 8) sheetDragMoved.current = true;
+                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
+                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
+              }}
+              onTouchEnd={() => { sheetDragStartY.current = null; }}
+              onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); sheetDragStartY.current = e.clientY; sheetDragMoved.current = false; }}
+              onPointerMove={(e) => {
+                if (sheetDragStartY.current == null) return;
+                const dy = e.clientY - sheetDragStartY.current;
+                if (Math.abs(dy) > 8) sheetDragMoved.current = true;
+                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
+                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
+              }}
+              onPointerUp={() => { sheetDragStartY.current = null; }}
+              onPointerCancel={() => { sheetDragStartY.current = null; }}
             >
-              <span className="h-1.5 w-12 rounded-full bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70 transition-colors" />
-            </button>
+              <span className="h-1.5 w-14 rounded-full bg-[hsl(var(--driver-text-muted))]/50 group-active:bg-[hsl(var(--driver-text-muted))]/80 transition-colors" />
+            </div>
             <div className="pointer-events-auto space-y-2.5 animate-slide-up">
 
               {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}

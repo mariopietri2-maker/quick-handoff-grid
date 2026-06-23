@@ -3912,6 +3912,26 @@ export type Database = {
               vehicle_type: string
             }[]
           }
+        | {
+            Args: {
+              _dropoff_lat?: number
+              _dropoff_lng?: number
+              _exclude_drivers?: string[]
+              _limit?: number
+              _order_value?: number
+              _store_id?: string
+              _store_lat: number
+              _store_lng: number
+            }
+            Returns: {
+              active_orders: number
+              distance_km: number
+              driver_id: string
+              is_stack: boolean
+              score: number
+              vehicle_type: string
+            }[]
+          }
       next_stop_sequence: { Args: { _batch_id: string }; Returns: number }
       open_surge_event: {
         Args: {
