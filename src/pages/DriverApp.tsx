@@ -488,16 +488,39 @@ export default function DriverApp() {
                 <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
               </button>
             </div>
-            {/* Drag handle — tap to collapse/expand so the driver can see more of the map */}
-            <button
-              type="button"
-              onClick={() => setSheetCollapsed(v => !v)}
-              className="pointer-events-auto w-full flex items-center justify-center pt-1 pb-2 -mb-1 group"
-              aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
-              title={sheetCollapsed ? 'Άνοιγμα' : 'Σύμπτυξη για περισσότερο χάρτη'}
-            >
-              <span className="h-1.5 w-12 rounded-full bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70 transition-colors" />
-            </button>
+            {/* Drag handle — tap to toggle, or swipe up/down to expand/collapse */}
+            {(() => {
+              const dragStartY = useRef<number | null>(null);
+              const dragMoved = useRef(false);
+              const onStart = (y: number) => { dragStartY.current = y; dragMoved.current = false; };
+              const onMove = (y: number) => {
+                if (dragStartY.current == null) return;
+                const dy = y - dragStartY.current;
+                if (Math.abs(dy) > 8) dragMoved.current = true;
+                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); dragStartY.current = null; }
+                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); dragStartY.current = null; }
+              };
+              const onEnd = () => { dragStartY.current = null; };
+              return (
+                <div
+                  className="pointer-events-auto w-full flex items-center justify-center pt-2 pb-3 -mb-1 group cursor-grab active:cursor-grabbing touch-none select-none"
+                  role="button"
+                  tabIndex={0}
+                  aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
+                  title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
+                  onClick={() => { if (!dragMoved.current) setSheetCollapsed(v => !v); }}
+                  onTouchStart={(e) => onStart(e.touches[0].clientY)}
+                  onTouchMove={(e) => onMove(e.touches[0].clientY)}
+                  onTouchEnd={onEnd}
+                  onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); onStart(e.clientY); }}
+                  onPointerMove={(e) => { if (dragStartY.current != null) onMove(e.clientY); }}
+                  onPointerUp={onEnd}
+                  onPointerCancel={onEnd}
+                >
+                  <span className="h-1.5 w-14 rounded-full bg-[hsl(var(--driver-text-muted))]/50 group-active:bg-[hsl(var(--driver-text-muted))]/80 transition-colors" />
+                </div>
+              );
+            })()}
             <div className="pointer-events-auto space-y-2.5 animate-slide-up">
 
               {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
