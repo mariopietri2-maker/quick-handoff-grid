@@ -50,68 +50,80 @@ export function useNearbyStoresForDriver() {
     if (enabled === null) return;
 
     let mounted = true;
+    let validStoreIds: string[] = [];
+    let validStores: NearbyStore[] = [];
+    let countsRefresh: ReturnType<typeof setTimeout> | null = null;
 
-    const fetchAll = async () => {
-      const { data: storeRows } = await supabase
-        .from('stores')
-        .select('id, name, latitude, longitude, image_url, is_active')
-        .eq('is_active', true);
-      if (!storeRows || !mounted) return;
+    const IOANNINA_LAT = 39.6650;
+    const IOANNINA_LNG = 20.8537;
+    const MAX_KM = 15;
+    const distKm = (lat: number, lng: number) => {
+      const toRad = (d: number) => (d * Math.PI) / 180;
+      const dLat = toRad(lat - IOANNINA_LAT);
+      const dLng = toRad(lng - IOANNINA_LNG);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(IOANNINA_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng/2)**2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    };
 
-      // Filter to Ioannina city only (~15km around city center 39.6650, 20.8537)
-      const IOANNINA_LAT = 39.6650;
-      const IOANNINA_LNG = 20.8537;
-      const MAX_KM = 15;
-      const distKm = (lat: number, lng: number) => {
-        const toRad = (d: number) => (d * Math.PI) / 180;
-        const dLat = toRad(lat - IOANNINA_LAT);
-        const dLng = toRad(lng - IOANNINA_LNG);
-        const a = Math.sin(dLat/2)**2 + Math.cos(toRad(IOANNINA_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng/2)**2;
-        return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-      };
+    const applyCounts = (counts: Record<string, number>) => {
+      if (!mounted) return;
+      setStores(validStores.map(s => ({ ...s, pendingOrders: counts[s.id] ?? 0 })));
+    };
 
-      const valid = storeRows.filter(s =>
-        s.latitude != null && s.longitude != null &&
-        distKm(s.latitude as number, s.longitude as number) <= MAX_KM
-      );
-      if (valid.length === 0) { setStores([]); return; }
-
+    const refreshCounts = async () => {
+      if (!mounted || validStoreIds.length === 0) return;
       const { data: orderRows } = await supabase
         .from('orders')
         .select('store_id')
         .in('status', [...ACTIVE_STATUSES])
-        .in('store_id', valid.map(s => s.id));
-
+        .in('store_id', validStoreIds);
       const counts: Record<string, number> = {};
-      (orderRows ?? []).forEach(o => {
-        counts[o.store_id] = (counts[o.store_id] ?? 0) + 1;
-      });
+      (orderRows ?? []).forEach(o => { counts[o.store_id] = (counts[o.store_id] ?? 0) + 1; });
+      applyCounts(counts);
+    };
 
-      if (!mounted) return;
-      // Show ALL Ioannina stores; badge reflects current active order count
-      setStores(valid
+    const scheduleRefresh = () => {
+      if (countsRefresh) return;
+      countsRefresh = setTimeout(() => { countsRefresh = null; refreshCounts(); }, 1500);
+    };
+
+    // Load stores once (rarely change), then counts
+    (async () => {
+      const { data: storeRows } = await supabase
+        .from('stores')
+        .select('id, name, latitude, longitude, image_url')
+        .eq('is_active', true);
+      if (!storeRows || !mounted) return;
+      validStores = storeRows
+        .filter(s => s.latitude != null && s.longitude != null &&
+          distKm(s.latitude as number, s.longitude as number) <= MAX_KM)
         .map(s => ({
           id: s.id,
           name: s.name,
           latitude: s.latitude as number,
           longitude: s.longitude as number,
           image_url: s.image_url ?? null,
-          pendingOrders: counts[s.id] ?? 0,
-        })));
-    };
+          pendingOrders: 0,
+        }));
+      validStoreIds = validStores.map(s => s.id);
+      setStores(validStores);
+      refreshCounts();
+    })();
 
-    fetchAll();
-
-    // Refresh on order changes
+    // Refresh counts on order status changes (debounced)
     const ch = supabase
       .channel('driver-map-store-orders')
       .on('postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        () => fetchAll()
+        { event: 'INSERT', schema: 'public', table: 'orders' },
+        () => scheduleRefresh()
+      )
+      .on('postgres_changes',
+        { event: 'UPDATE', schema: 'public', table: 'orders' },
+        () => scheduleRefresh()
       )
       .subscribe();
 
-    const interval = setInterval(fetchAll, 30_000);
+    const interval = setInterval(refreshCounts, 60_000);
 
     return () => {
       mounted = false;
