@@ -407,7 +407,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       const badge = `<div style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;background:${badgeColor};color:white;border-radius:10px;border:2px solid white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${s.pendingOrders}</div>`;
       const safeImg = safeHttpsUrl(s.image_url);
       const imgInner = safeImg
-        ? `<img src="${safeImg}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" />`
+        ? `<img src="${safeImg}" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" />`
         : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);">${safeInitials}</div>`;
 
       const html = `
