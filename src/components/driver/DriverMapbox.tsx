@@ -403,18 +403,24 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       const safeName = escapeHtml(s.name);
       const initials = String(s.name).split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '🏪';
       const safeInitials = escapeHtml(initials);
-      const badgeColor = s.pendingOrders > 0 ? '#ef4444' : '#6b7280';
-      const badge = `<div style="position:absolute;top:-6px;right:-6px;min-width:20px;height:20px;padding:0 5px;background:${badgeColor};color:white;border-radius:10px;border:2px solid white;font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(0,0,0,0.3);">${s.pendingOrders}</div>`;
+      const hasOrders = s.pendingOrders > 0;
+      const ringColor = hasOrders ? '#f97316' : '#cbd5e1';
+      const badge = hasOrders
+        ? `<div style="position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;background:#ef4444;color:#fff;border-radius:9px;border:2px solid #fff;font-size:10px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(239,68,68,0.5);">${s.pendingOrders}</div>`
+        : '';
       const safeImg = safeHttpsUrl(s.image_url);
       const imgInner = safeImg
-        ? `<img src="${safeImg}" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none'" />`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:700;color:#fff;font-size:11px;background:linear-gradient(135deg,#f97316,#ea580c);">${safeInitials}</div>`;
+        ? `<img src="${safeImg}" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'" />`
+        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:12px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:50%;font-family:system-ui,sans-serif;">${safeInitials}</div>`;
 
       const html = `
-        <div style="position:relative;cursor:pointer;">
-          <div style="width:36px;height:36px;border-radius:10px;border:2.5px solid white;overflow:hidden;box-shadow:0 3px 10px rgba(0,0,0,0.4);background:#1f2937;">
-            ${imgInner}
+        <div style="position:relative;cursor:pointer;width:44px;height:52px;">
+          <div style="position:absolute;top:0;left:0;width:44px;height:44px;border-radius:50%;padding:2.5px;background:${ringColor};box-shadow:0 4px 12px rgba(0,0,0,0.25);">
+            <div style="width:100%;height:100%;border-radius:50%;background:#fff;padding:1.5px;box-sizing:border-box;">
+              <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#1f2937;">${imgInner}</div>
+            </div>
           </div>
+          <div style="position:absolute;left:50%;top:40px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid ${ringColor};filter:drop-shadow(0 2px 2px rgba(0,0,0,0.2));"></div>
           ${badge}
         </div>`;
 
