@@ -85,20 +85,22 @@ export function useStoreOrders(storeId: string | null) {
     newStatus: string,
     options?: { estimatedPrepTime?: number },
   ) => {
-    const patch: Record<string, unknown> = { status: newStatus };
+    const patch: Database['public']['Tables']['orders']['Update'] = {
+      status: newStatus as OrderRow['status'],
+    };
     if (typeof options?.estimatedPrepTime === 'number' && !Number.isNaN(options.estimatedPrepTime)) {
       patch.estimated_prep_time = options.estimatedPrepTime;
     }
     const { error } = await supabase
       .from('orders')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update(patch as any)
+      .update(patch)
       .eq('id', orderId);
 
     if (error) {
       toast.error('Failed to update order status');
     } else {
       toast.success(`Order updated → ${newStatus}`);
+
       // Smart dispatch: trigger prediction when accepted/preparing
       if (newStatus === 'accepted' || newStatus === 'preparing') {
         supabase.functions.invoke('predict-dispatch-time', {
@@ -312,11 +314,11 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
   useEffect(() => {
     fetchOrders();
-    // Poll every 45s as a safety net for time-based dispatch.
-    // Realtime subscriptions handle the immediate updates.
-    const interval = setInterval(fetchOrders, 45_000);
+    // Realtime handles immediate updates; long safety-net poll only.
+    const interval = setInterval(fetchOrders, 120_000);
     return () => clearInterval(interval);
   }, [fetchOrders]);
+
 
   // Persistent alert: keep ringing every ~4s while there are unaccepted
   // offers. Triggered only when the set of offer IDs changes — not on
@@ -405,16 +407,16 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     // ADMIN PRIORITY: admins always win — they can claim/steal any order
     // directly, even if a driver already has it. Bypass the offer-accept flow.
     if (adminOverride) {
-      const patch: Record<string, unknown> = {
+      const patch: Database['public']['Tables']['orders']['Update'] = {
         driver_id: user.id,
         status: 'accepted',
         stacked_with_order_id: null,
       };
       const { error } = await supabase
         .from('orders')
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        .update(patch as any)
+        .update(patch)
         .eq('id', orderId);
+
       if (error) {
         toast.error('Failed to claim order');
       } else {
@@ -440,14 +442,17 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
     // MANUAL mode (or stacked offer with no pending_offer) → legacy direct claim
     const isStacking = !!activeDelivery && activeDelivery.id !== orderId;
-    const patch: Record<string, unknown> = { driver_id: user.id, status: 'accepted' };
+    const patch: Database['public']['Tables']['orders']['Update'] = {
+      driver_id: user.id,
+      status: 'accepted',
+    };
     if (isStacking) patch.stacked_with_order_id = activeDelivery!.id;
 
     const { error } = await supabase
       .from('orders')
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      .update(patch as any)
+      .update(patch)
       .eq('id', orderId);
+
 
     if (error) {
       toast.error('Failed to accept order');
@@ -488,8 +493,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const updateDeliveryStatus = async (orderId: string, newStatus: string) => {
     const { error } = await supabase
       .from('orders')
-      .update({ status: newStatus as any })
+      .update({ status: newStatus as OrderRow['status'] })
       .eq('id', orderId);
+
 
     if (error) {
       console.error('[updateDeliveryStatus]', { orderId, newStatus, error });
