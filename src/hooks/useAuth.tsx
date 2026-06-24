@@ -30,7 +30,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role, full_name, public_code')
       .eq('user_id', userId)
       .maybeSingle();
-    setProfile(data as any);
+
+    // Reconcile the role the user selected at signup. Because email
+    // confirmation is required, there is no session at signup time, so the
+    // role chosen then cannot be written (RLS blocks it). We stash it in the
+    // user's auth metadata and apply it here on the first authenticated load,
+    // but only while the profile is still on the default 'customer' role so we
+    // never override a role an admin set later.
+    let resolved = data as any;
+    const { data: userData } = await supabase.auth.getUser();
+    const desiredRole = userData?.user?.user_metadata?.signup_role as string | undefined;
+    if (
+      desiredRole &&
+      resolved &&
+      resolved.role === 'customer' &&
+      desiredRole !== 'customer'
+    ) {
+      const { data: updated } = await supabase
+        .from('profiles')
+        .update({ role: desiredRole as any })
+        .eq('user_id', userId)
+        .select('role, full_name, public_code')
+        .maybeSingle();
+      if (updated) resolved = updated;
+    }
+    setProfile(resolved as any);
 
     // Check admin & support roles from user_roles table
     const { data: roles } = await supabase
@@ -72,11 +96,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      // Store both the display name and the chosen role in auth metadata.
+      // The role is applied to the profile on first authenticated login
+      // (see fetchProfile) because there is no session yet at signup.
+      options: { data: { full_name: fullName, signup_role: role } },
     });
 
-    if (!error && data.user) {
-      // Update profile role
+    if (!error && data.user && data.session) {
+      // Only runs when email confirmation is disabled (session exists immediately).
       await supabase
         .from('profiles')
         .update({ role: role as any })
