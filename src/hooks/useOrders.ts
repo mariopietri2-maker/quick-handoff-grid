@@ -153,6 +153,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const [loading, setLoading] = useState(true);
   // Map of order_id -> pending offer id (only set when assignment_mode='auto')
   const [offerIds, setOfferIds] = useState<Record<string, string>>({});
+  const [offerExpiresAt, setOfferExpiresAt] = useState<Record<string, string>>({});
+  const [offerTimeoutSec, setOfferTimeoutSec] = useState<number>(60);
   const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
   const declinedRef = useRef<Record<string, number>>(loadDeclined());
 
