@@ -50,7 +50,7 @@ export default function DriverApp() {
       return next;
     });
   };
-  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders({ adminOverride: isAdmin });
+  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, offerExpiresAt, offerTimeoutSec } = useDriverOrders({ adminOverride: isAdmin });
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
