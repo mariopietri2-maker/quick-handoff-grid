@@ -191,6 +191,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
     let availableOrders: OrderWithItems[] = [];
     const nextOfferIds: Record<string, string> = {};
+    const nextExpires: Record<string, string> = {};
 
     if (adminOverride) {
       // ADMIN OVERRIDE: ops queue shows EVERY active order — assigned or not —
