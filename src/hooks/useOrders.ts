@@ -538,6 +538,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     refetch: fetchOrders,
     assignmentMode,
     offerIds,
+    offerExpiresAt,
+    offerTimeoutSec,
   };
 }
 
