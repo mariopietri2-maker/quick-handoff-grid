@@ -3808,6 +3808,7 @@ export type Database = {
           assignment_mode: string
           customer_base_fee: number
           customer_per_km_fee: number
+          dist_offer_timeout_seconds: number
           maintenance_message: string
           maintenance_mode: boolean
           max_cash_cap: number
