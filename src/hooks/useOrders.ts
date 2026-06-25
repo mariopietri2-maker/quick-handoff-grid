@@ -242,7 +242,10 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           .is('driver_id', null)
           .in('status', ['placed', 'accepted', 'preparing', 'ready']);
         offered = (ord as OrderWithItems[]) ?? [];
-        for (const p of myPending ?? []) nextOfferIds[p.order_id] = p.id;
+        for (const p of myPending ?? []) {
+          nextOfferIds[p.order_id] = p.id;
+          if (p.expires_at) nextExpires[p.order_id] = p.expires_at as string;
+        }
       }
 
       const broadcastFiltered = ((broadcast as OrderWithItems[]) ?? []).filter(
