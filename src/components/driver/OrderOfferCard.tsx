@@ -27,12 +27,25 @@ interface OrderOfferCardProps {
   offer: OrderOffer;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
+  /** Absolute ISO expiry from `pending_offers.expires_at` — preferred source of truth */
+  expiresAt?: string | null;
+  /** Fallback total window (seconds) when `expiresAt` is missing. Server config default 60s. */
+  timeoutSec?: number;
 }
 
-const OFFER_TIMEOUT_SECONDS = 60;
+function computeSecondsLeft(expiresAt?: string | null, fallback = 60): number {
+  if (expiresAt) {
+    const ms = new Date(expiresAt).getTime() - Date.now();
+    return Math.max(0, Math.ceil(ms / 1000));
+  }
+  return fallback;
+}
 
-export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardProps) {
-  const [secondsLeft, setSecondsLeft] = useState(OFFER_TIMEOUT_SECONDS);
+export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutSec = 60 }: OrderOfferCardProps) {
+  const totalWindow = expiresAt
+    ? Math.max(1, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)) || timeoutSec
+    : timeoutSec;
+  const [secondsLeft, setSecondsLeft] = useState(() => computeSecondsLeft(expiresAt, timeoutSec));
 
   // Sound + vibration are handled centrally in `useOrders` via
   // `playOfferAlert`. Do NOT play another chime here — that caused the
@@ -50,11 +63,14 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
       onDecline(offer.id);
       return;
     }
-    const timer = setTimeout(() => setSecondsLeft(s => s - 1), 1000);
+    const timer = setTimeout(
+      () => setSecondsLeft(computeSecondsLeft(expiresAt, secondsLeft - 1)),
+      1000,
+    );
     return () => clearTimeout(timer);
-  }, [secondsLeft, offer.id, onDecline]);
+  }, [secondsLeft, offer.id, onDecline, expiresAt]);
 
-  const progress = (secondsLeft / OFFER_TIMEOUT_SECONDS) * 100;
+  const progress = Math.max(0, Math.min(100, (secondsLeft / totalWindow) * 100));
   const isUrgent = secondsLeft <= 15;
 
   const isCash = offer.paymentMethod === 'cash';
