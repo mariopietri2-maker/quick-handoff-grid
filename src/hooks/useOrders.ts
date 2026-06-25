@@ -288,6 +288,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     }
 
     setOfferIds(nextOfferIds);
+    setOfferExpiresAt(nextExpires);
 
     const MAX_STACK = Number(row?.max_stacked_orders ?? 3);
     const remainingCapacity = Math.max(0, MAX_STACK - activeList.length);
