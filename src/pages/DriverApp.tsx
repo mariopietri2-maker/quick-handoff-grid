@@ -669,6 +669,8 @@ export default function DriverApp() {
                         }}
                         onAccept={acceptOrder}
                         onDecline={handleDecline}
+                        expiresAt={offerExpiresAt[offer.id] ?? null}
+                        timeoutSec={offerTimeoutSec}
                       />
                     </div>
                   ))}
