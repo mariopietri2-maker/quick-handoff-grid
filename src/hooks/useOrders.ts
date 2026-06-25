@@ -166,6 +166,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const row = Array.isArray(settings) ? settings[0] : settings;
     const mode = (row?.assignment_mode === 'manual' ? 'manual' : 'auto') as 'auto' | 'manual';
     setAssignmentMode(mode);
+    const tmo = Number(row?.dist_offer_timeout_seconds);
+    if (Number.isFinite(tmo) && tmo > 0) setOfferTimeoutSec(tmo);
 
     // Fetch ALL active orders for this driver (stacked routing supports up to 3).
     // The "primary" activeDelivery is the order with the lowest stop_sequence
