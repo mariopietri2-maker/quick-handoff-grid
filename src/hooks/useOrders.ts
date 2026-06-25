@@ -396,7 +396,47 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           fetchOrders();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'pending_offers',
+          filter: `driver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const row = payload.new as { order_id?: string; status?: string; expires_at?: string } | null;
+          const oldRow = payload.old as { order_id?: string } | null;
+          if (!row) return;
+          // Status moved away from pending (accepted/declined/expired/cancelled) → refetch.
+          if (row.status && row.status !== 'pending') {
+            scheduleRefetch();
+            return;
+          }
+          // Expiry adjusted while still pending → patch countdown source in place.
+          const orderId = row.order_id ?? oldRow?.order_id;
+          if (orderId && row.expires_at) {
+            setOfferExpiresAt((prev) =>
+              prev[orderId] === row.expires_at ? prev : { ...prev, [orderId]: row.expires_at as string },
+            );
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'pending_offers',
+          filter: `driver_id=eq.${user.id}`,
+        },
+        () => {
+          // Offer cancelled / cleaned up → drop it from the UI immediately.
+          scheduleRefetch();
+        }
+      )
       .subscribe();
+
 
 
     return () => {
