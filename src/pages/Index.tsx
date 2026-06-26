@@ -184,18 +184,9 @@ const Index = () => {
             <Button
               size="lg" variant="outline"
               className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
-              onClick={() => handleNav('driver')}
+              onClick={() => navigate('/auth')}
             >
-              <Car className="mr-2 h-5 w-5 text-primary" />
-              Γίνε Οδηγός
-            </Button>
-            <Button
-              size="lg" variant="outline"
-              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
-              onClick={() => handleNav('store')}
-            >
-              <Store className="mr-2 h-5 w-5 text-primary" />
-              Σύνδεσε Κατάστημα
+              Σύνδεση
             </Button>
           </div>
 
