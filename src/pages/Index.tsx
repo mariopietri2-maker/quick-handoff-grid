@@ -73,22 +73,37 @@ function LiveTicker() {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { user, profile, isAdmin, isSupport } = useAuth();
+  const { isAdmin, isSupport } = useAuth();
 
-  const handleNav = (target: 'driver' | 'store') => {
-    if (user && profile?.role === target) navigate(`/${target}`);
-    else navigate('/auth');
-  };
+  const [counts, setCounts] = useState({ stores: 0, drivers: 0, orders: 0, rating: 0 });
+  const [partners, setPartners] = useState<string[]>([]);
 
-  const stores  = useCountUp(520);
-  const drivers = useCountUp(2140);
-  const orders  = useCountUp(53000);
-  const rating  = useCountUp(49);
+  useEffect(() => {
+    (async () => {
+      const [s, d, o, r, names] = await Promise.all([
+        (supabase as any).from('stores_public').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('driver_profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('orders').select('id', { count: 'exact', head: true }),
+        supabase.from('reviews').select('rating'),
+        (supabase as any).from('stores_public').select('name').eq('is_active', true).order('name').limit(12),
+      ]);
+      const ratings = (r.data ?? []) as { rating: number }[];
+      const avg = ratings.length ? ratings.reduce((a, b) => a + (b.rating ?? 0), 0) / ratings.length : 0;
+      setCounts({
+        stores: s.count ?? 0,
+        drivers: d.count ?? 0,
+        orders: o.count ?? 0,
+        rating: Math.round(avg * 10),
+      });
+      setPartners(((names.data ?? []) as { name: string }[]).map((n) => n.name));
+    })();
+  }, []);
 
-  const partners = useMemo(
-    () => ['Mama Pizza', 'Souvlaki Bros', 'Green Bowl', 'Burger Lab', 'Kafé 23', 'Sushi Now', 'Bakery 1907', 'Taverna Mou'],
-    [],
-  );
+  const stores  = useCountUp(counts.stores);
+  const drivers = useCountUp(counts.drivers);
+  const orders  = useCountUp(counts.orders);
+  const rating  = useCountUp(counts.rating);
+
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
