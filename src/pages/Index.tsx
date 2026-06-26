@@ -32,23 +32,14 @@ function useCountUp(target: number, duration = 1200) {
 }
 
 
-/* ─── live activity feed (rotates) ─── */
-const FEED = [
-  { city: 'Αθήνα',       text: 'παρέλαβε από Mama Pizza',     mins: 2  },
-  { city: 'Θεσσαλονίκη', text: 'ολοκλήρωσε παράδοση',          mins: 4  },
-  { city: 'Πάτρα',       text: 'νέα παραγγελία €18.40',        mins: 1  },
-  { city: 'Ηράκλειο',    text: 'ένα νέο κατάστημα συνδέθηκε',  mins: 6  },
-  { city: 'Λάρισα',      text: 'οδηγός online',                mins: 1  },
-  { city: 'Βόλος',       text: 'παράδοση σε 22 λεπτά ⚡',      mins: 3  },
-];
-
-function LiveTicker() {
+/* ─── live partner ticker (real data) ─── */
+function LiveTicker({ items }: { items: string[] }) {
   const [i, setI] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % FEED.length), 2600);
+    if (!items.length) return;
+    const t = setInterval(() => setI((v) => (v + 1) % items.length), 2600);
     return () => clearInterval(t);
-  }, []);
-  const item = FEED[i];
+  }, [items.length]);
   return (
     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-card/80 backdrop-blur-sm shadow-sm">
       <span className="relative flex h-2 w-2">
@@ -56,13 +47,13 @@ function LiveTicker() {
         <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
       </span>
       <span key={i} className="text-xs font-medium text-foreground animate-fade-in">
-        <span className="text-primary font-semibold">{item.city}</span>
-        <span className="text-muted-foreground"> · {item.text}</span>
-        <span className="text-muted-foreground/70"> · {item.mins}'</span>
+        <span className="text-primary font-semibold">Live</span>
+        <span className="text-muted-foreground"> · {items[i] ?? 'Συνδεδεμένα καταστήματα'}</span>
       </span>
     </div>
   );
 }
+
 
 const Index = () => {
   const navigate = useNavigate();
