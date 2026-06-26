@@ -140,7 +140,7 @@ const Index = () => {
 
         <div className="relative max-w-5xl mx-auto px-4 pt-16 sm:pt-24 pb-16 text-center">
           <div className="flex justify-center mb-6 animate-fade-in">
-            <LiveTicker />
+            <LiveTicker items={partners} />
           </div>
 
           <h1 className="font-heading font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
