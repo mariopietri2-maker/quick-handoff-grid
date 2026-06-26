@@ -46,7 +46,7 @@ export default function AuthPage() {
           setSubmitting(false);
           return;
         }
-        const { error } = await signUp(email, password, fullName, role);
+        const { error } = await signUp(email, password, fullName, 'customer');
         if (error) {
           toast.error(error.message);
         } else {
