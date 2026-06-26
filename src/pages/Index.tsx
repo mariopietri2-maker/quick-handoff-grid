@@ -201,10 +201,10 @@ const Index = () => {
           {/* Live stat tiles */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto animate-fade-in"
                style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
-            <StatTile icon={Store}      label="Καταστήματα"  countRef={stores.ref}  display={`${stores.val}+`} />
-            <StatTile icon={Bike}       label="Οδηγοί"        countRef={drivers.ref} display={`${(drivers.val/1000).toFixed(1)}K+`} />
-            <StatTile icon={Activity}   label="Παραγγελίες/μήνα" countRef={orders.ref}  display={`${Math.round(orders.val/1000)}K+`} />
-            <StatTile icon={Star}       label="Αξιολόγηση"    countRef={rating.ref}  display={`${(rating.val/10).toFixed(1)}★`} />
+            <StatTile icon={Store}      label="Καταστήματα"   countRef={stores.ref}  display={`${stores.val}`} />
+            <StatTile icon={Bike}       label="Οδηγοί"         countRef={drivers.ref} display={`${drivers.val}`} />
+            <StatTile icon={Activity}   label="Παραγγελίες"    countRef={orders.ref}  display={`${orders.val}`} />
+            <StatTile icon={Star}       label="Αξιολόγηση"     countRef={rating.ref}  display={rating.val ? `${(rating.val/10).toFixed(1)}★` : '—'} />
           </div>
         </div>
 
