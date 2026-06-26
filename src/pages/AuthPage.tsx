@@ -78,61 +78,26 @@ export default function AuthPage() {
               {isLogin ? 'Καλώς Ήρθατε' : 'Δημιουργία Λογαριασμού'}
             </CardTitle>
             <p className="text-sm text-[hsl(220,10%,55%)] mt-1">
-              {isLogin ? 'Συνδεθείτε για να συνεχίσετε' : 'Εγγραφείτε ως οδηγός ή ιδιοκτήτης καταστήματος'}
+              {isLogin ? 'Συνδεθείτε για να συνεχίσετε' : 'Εγγραφείτε σε λίγα δευτερόλεπτα'}
             </p>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmit} className="space-y-4">
               {!isLogin && (
-                <>
-                  <div className="space-y-2">
-                    <Label className="font-heading text-[hsl(220,14%,96%)]">Είμαι...</Label>
-                    <div className="grid grid-cols-2 gap-3">
-                      <button
-                        type="button"
-                        onClick={() => setRole('driver')}
-                        className={`p-4 rounded-xl border-2 transition-all text-center press-scale ${
-                          role === 'driver'
-                            ? 'border-primary bg-primary/10 shadow-primary'
-                            : 'border-[hsl(220,20%,18%)] hover:border-primary/30'
-                        }`}
-                      >
-                        <Car className={`h-8 w-8 mx-auto mb-2 ${role === 'driver' ? 'text-primary' : 'text-[hsl(220,10%,55%)]'}`} />
-                        <span className={`font-heading font-semibold text-sm ${role === 'driver' ? 'text-primary' : 'text-[hsl(220,14%,96%)]'}`}>
-                          Οδηγός
-                        </span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRole('store')}
-                        className={`p-4 rounded-xl border-2 transition-all text-center press-scale ${
-                          role === 'store'
-                            ? 'border-primary bg-primary/10 shadow-primary'
-                            : 'border-[hsl(220,20%,18%)] hover:border-primary/30'
-                        }`}
-                      >
-                        <Store className={`h-8 w-8 mx-auto mb-2 ${role === 'store' ? 'text-primary' : 'text-[hsl(220,10%,55%)]'}`} />
-                        <span className={`font-heading font-semibold text-sm ${role === 'store' ? 'text-primary' : 'text-[hsl(220,14%,96%)]'}`}>
-                          Κατάστημα
-                        </span>
-                      </button>
-                    </div>
+                <div className="space-y-2">
+                  <Label htmlFor="fullName" className="font-heading text-[hsl(220,14%,96%)]">Ονοματεπώνυμο</Label>
+                  <div className="relative">
+                    <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Input
+                      id="fullName"
+                      placeholder="Το ονοματεπώνυμό σας"
+                      value={fullName}
+                      onChange={(e) => setFullName(e.target.value)}
+                      className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      maxLength={100}
+                    />
                   </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="fullName" className="font-heading text-[hsl(220,14%,96%)]">Ονοματεπώνυμο</Label>
-                    <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
-                      <Input
-                        id="fullName"
-                        placeholder="Το ονοματεπώνυμό σας"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
-                        maxLength={100}
-                      />
-                    </div>
-                  </div>
-                </>
+                </div>
               )}
               <div className="space-y-2">
                 <Label htmlFor="email" className="font-heading text-[hsl(220,14%,96%)]">Email</Label>
