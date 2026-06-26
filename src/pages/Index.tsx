@@ -1,13 +1,14 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
-  Car, Store, ArrowRight, Zap, Shield, BarChart3, MapPin, Clock, Users,
+  ArrowRight, Zap, Shield, BarChart3, MapPin, Users,
   Search, ClipboardList, Bike, CheckCircle, Headphones, Sparkles, Activity,
-  TrendingUp, Star,
+  TrendingUp, Star, Store,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SEO } from '@/components/SEO';
+import { supabase } from '@/integrations/supabase/client';
 
 /* ─── tiny count-up hook ─── */
 function useCountUp(target: number, duration = 1600) {
