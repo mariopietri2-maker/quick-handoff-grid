@@ -117,9 +117,9 @@ const Index = () => {
             <Button
               size="sm"
               className="gradient-primary text-primary-foreground font-heading font-bold rounded-lg press-scale shadow-primary"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/order')}
             >
-              Ξεκίνα
+              Δες καταστήματα
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </div>
