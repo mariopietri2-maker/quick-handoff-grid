@@ -11,33 +11,26 @@ import { SEO } from '@/components/SEO';
 import { supabase } from '@/integrations/supabase/client';
 
 /* ─── tiny count-up hook ─── */
-function useCountUp(target: number, duration = 1600) {
+function useCountUp(target: number, duration = 1200) {
   const [val, setVal] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const started = useRef(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting && !started.current) {
-          started.current = true;
-          const start = performance.now();
-          const tick = (now: number) => {
-            const p = Math.min(1, (now - start) / duration);
-            const eased = 1 - Math.pow(1 - p, 3);
-            setVal(Math.round(target * eased));
-            if (p < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-      });
-    }, { threshold: 0.3 });
-    io.observe(el);
-    return () => io.disconnect();
+    if (!target) { setVal(0); return; }
+    const start = performance.now();
+    const from = 0;
+    let raf = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(from + (target - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [target, duration]);
   return { val, ref };
 }
+
 
 /* ─── live activity feed (rotates) ─── */
 const FEED = [
