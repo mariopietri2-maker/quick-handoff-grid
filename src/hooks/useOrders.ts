@@ -313,7 +313,19 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       setStackedOffers([]);
       setOffers([]);
     } else {
-      setOffers(availableOrders);
+      // No active delivery → only surface ONE offer at a time.
+      // Stacked offers (2nd/3rd) only appear after the driver accepts the first.
+      // Prefer offers with a real pending_offer and the soonest expiry.
+      const sorted = [...availableOrders].sort((a, b) => {
+        const aOffered = nextOfferIds[a.id] ? 0 : 1;
+        const bOffered = nextOfferIds[b.id] ? 0 : 1;
+        if (aOffered !== bOffered) return aOffered - bOffered;
+        const aExp = nextExpires[a.id] ? new Date(nextExpires[a.id]).getTime() : Infinity;
+        const bExp = nextExpires[b.id] ? new Date(nextExpires[b.id]).getTime() : Infinity;
+        if (aExp !== bExp) return aExp - bExp;
+        return new Date(a.created_at as string).getTime() - new Date(b.created_at as string).getTime();
+      });
+      setOffers(sorted.slice(0, 1));
       setStackedOffers([]);
     }
 
