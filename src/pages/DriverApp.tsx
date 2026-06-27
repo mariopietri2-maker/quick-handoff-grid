@@ -367,24 +367,32 @@ export default function DriverApp() {
         onForceOffline={() => setIsOnline(false)}
         hasActiveDelivery={!!activeDelivery}
       />
+      {/* Persistent map — kept mounted across tab switches so tiles aren't re-downloaded */}
+      <div
+        className={`fixed inset-0 z-0 ${activeTab === 'home' ? '' : 'invisible pointer-events-none'}`}
+        aria-hidden={activeTab !== 'home'}
+      >
+        <DriverMapbox
+          ref={mapRef}
+          className="absolute inset-0"
+          storeLat={storeInfo?.latitude}
+          storeLng={storeInfo?.longitude}
+          storeName={storeInfo?.name}
+          customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
+          customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
+          customerName={customerInfo?.name}
+          customerAddress={activeDelivery?.delivery_address}
+          navigatingTo={navigatingTo}
+          onRouteUpdate={setRouteInfo}
+          onDriverPosUpdate={setDriverPos}
+          nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
+          followMode={isNavActive}
+        />
+      </div>
+
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
-          <DriverMapbox
-            ref={mapRef}
-            className="fixed inset-0 z-0"
-            storeLat={storeInfo?.latitude}
-            storeLng={storeInfo?.longitude}
-            storeName={storeInfo?.name}
-            customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
-            customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
-            customerName={customerInfo?.name}
-            customerAddress={activeDelivery?.delivery_address}
-            navigatingTo={navigatingTo}
-            onRouteUpdate={setRouteInfo}
-            onDriverPosUpdate={setDriverPos}
-            nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
-            followMode={isNavActive}
-          />
+
 
           {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
