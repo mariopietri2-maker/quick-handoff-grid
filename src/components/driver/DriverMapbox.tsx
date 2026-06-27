@@ -148,10 +148,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       attributionControl: false,
       antialias: true,
       fadeDuration: 100,
-      maxTileCacheSize: 1000,
-      preserveDrawingBuffer: false,
-      refreshExpiredTiles: false,
-
+      maxTileCacheSize: 200,
     });
 
     // GeolocateControl removed — custom recenter button used instead
