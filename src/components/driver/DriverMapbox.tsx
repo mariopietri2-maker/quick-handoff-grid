@@ -242,8 +242,10 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
     map.on('load', () => {
       addRouteLayers();
-      add3DBuildings();
+      // 3D buildings are expensive on mobile; only add them when the driver
+      // enters turn-by-turn navigation (followMode). See effect below.
     });
+
 
     // Detect manual user interaction so the follow camera doesn't fight the user
     const onUserMove = (e: any) => {
@@ -329,14 +331,54 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (followMode) {
-      userInteractingRef.current = false;
-      map.easeTo({ pitch: 55, zoom: Math.max(map.getZoom(), 17), duration: 600 });
-    } else {
-      smoothedHeadingRef.current = null;
-      map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
-    }
+    const apply = () => {
+      if (followMode) {
+        userInteractingRef.current = false;
+        // Lazily add 3D buildings the first time the driver enters navigation
+        if (!map.getLayer('3d-buildings')) {
+          try {
+            const layers = map.getStyle().layers || [];
+            const labelLayer = layers.find((l: any) => l.type === 'symbol' && l.layout?.['text-field']);
+            const compositeSource = map.getStyle().sources?.composite;
+            if (compositeSource) {
+              map.addLayer(
+                {
+                  id: '3d-buildings',
+                  source: 'composite',
+                  'source-layer': 'building',
+                  filter: ['==', 'extrude', 'true'],
+                  type: 'fill-extrusion',
+                  minzoom: 14,
+                  paint: {
+                    'fill-extrusion-color': isDaytime() ? '#d6d6d6' : '#2a3340',
+                    'fill-extrusion-height': [
+                      'interpolate', ['linear'], ['zoom'],
+                      14, 0,
+                      15.5, ['get', 'height'],
+                    ],
+                    'fill-extrusion-base': [
+                      'interpolate', ['linear'], ['zoom'],
+                      14, 0,
+                      15.5, ['get', 'min_height'],
+                    ],
+                    'fill-extrusion-opacity': 0.65,
+                  },
+                },
+                labelLayer?.id,
+              );
+            }
+          } catch { /* no-op */ }
+        }
+
+        map.easeTo({ pitch: 55, zoom: Math.max(map.getZoom(), 17), duration: 600 });
+      } else {
+        smoothedHeadingRef.current = null;
+        map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
+      }
+    };
+    if (map.isStyleLoaded()) apply(); else map.once('load', apply);
   }, [followMode]);
+
 
 
   // Store marker
