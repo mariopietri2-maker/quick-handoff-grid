@@ -138,6 +138,21 @@ export function useDriverLocation(isActive: boolean) {
 
         setTracking(true);
 
+        // Throttled push loop. Wakes every TICK_MS but only actually upserts
+        // when (a) enough time has passed for the driver's current speed and
+        // (b) the position moved more than MIN_MOVE_M from the last push.
+        let lastSentAt = 0;
+        let lastSentPos: NormalizedPos | null = null;
+        const distanceM = (a: NormalizedPos, b: NormalizedPos) => {
+          const dLat = (b.latitude - a.latitude) * 111_000;
+          const dLng = (b.longitude - a.longitude) * 111_000 * Math.cos(a.latitude * Math.PI / 180);
+          return Math.hypot(dLat, dLng);
+        };
+        const intervalForSpeed = (speedMps: number | null) => {
+          if (speedMps == null || speedMps < 0.5) return MIN_INTERVAL_STATIONARY;
+          if (speedMps < 5) return MIN_INTERVAL_SLOW; // walking / urban crawl
+          return MIN_INTERVAL_FAST;                   // driving
+        };
         intervalRef.current = window.setInterval(async () => {
           let pos = lastPosRef.current;
           if (!pos) {
@@ -152,28 +167,22 @@ export function useDriverLocation(isActive: boolean) {
                 };
                 lastPosRef.current = pos;
               } else {
-                navigator.geolocation.getCurrentPosition(
-                  (p) => {
-                    const np = {
-                      latitude: p.coords.latitude,
-                      longitude: p.coords.longitude,
-                      speed: p.coords.speed ?? null,
-                      heading: p.coords.heading ?? null,
-                    };
-                    lastPosRef.current = np;
-                    sendLocation(np);
-                  },
-                  () => {},
-                  { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 }
-                );
-                return;
+                return; // wait for watchPosition callback
               }
             } catch {
               return;
             }
           }
-          if (pos) sendLocation(pos);
-        }, UPDATE_INTERVAL_MS);
+          if (!pos) return;
+          const now = Date.now();
+          const minInterval = intervalForSpeed(pos.speed);
+          const moved = lastSentPos ? distanceM(lastSentPos, pos) : Infinity;
+          if (now - lastSentAt < minInterval && moved < MIN_MOVE_M) return;
+          lastSentAt = now;
+          lastSentPos = pos;
+          sendLocation(pos);
+        }, TICK_MS);
+
 
         cleanupRef.current = () => {
           if (watchIdRef.current !== null) {
