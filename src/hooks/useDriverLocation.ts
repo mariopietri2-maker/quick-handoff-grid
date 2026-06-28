@@ -4,7 +4,14 @@ import { useAuth } from '@/hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 
-const UPDATE_INTERVAL_MS = 5_000; // push every 5 seconds
+// Dynamic push cadence: stationary drivers push rarely (saves battery + network);
+// moving drivers push often (dispatcher needs accuracy). Tuned per GPS speed.
+const TICK_MS = 2_000;             // scheduler tick (cheap)
+const MIN_INTERVAL_STATIONARY = 15_000;
+const MIN_INTERVAL_SLOW = 8_000;
+const MIN_INTERVAL_FAST = 4_000;
+const MIN_MOVE_M = 8;              // don't re-send if position barely changed
+
 
 interface NormalizedPos {
   latitude: number;
