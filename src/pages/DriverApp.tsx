@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
