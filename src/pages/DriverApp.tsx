@@ -372,22 +372,25 @@ export default function DriverApp() {
       />
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
-          <DriverMapbox
-            ref={mapRef}
-            className="fixed inset-0 z-0"
-            storeLat={storeInfo?.latitude}
-            storeLng={storeInfo?.longitude}
-            storeName={storeInfo?.name}
-            customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
-            customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
-            customerName={customerInfo?.name}
-            customerAddress={activeDelivery?.delivery_address}
-            navigatingTo={navigatingTo}
-            onRouteUpdate={setRouteInfo}
-            onDriverPosUpdate={setDriverPos}
-            nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
-            followMode={isNavActive}
-          />
+          <Suspense fallback={<div className="fixed inset-0 z-0 bg-muted/40" />}>
+            <DriverMapbox
+              ref={mapRef}
+              className="fixed inset-0 z-0"
+              storeLat={storeInfo?.latitude}
+              storeLng={storeInfo?.longitude}
+              storeName={storeInfo?.name}
+              customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
+              customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
+              customerName={customerInfo?.name}
+              customerAddress={activeDelivery?.delivery_address}
+              navigatingTo={navigatingTo}
+              onRouteUpdate={setRouteInfo}
+              onDriverPosUpdate={setDriverPos}
+              nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
+              followMode={isNavActive}
+            />
+          </Suspense>
+
 
           {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
