@@ -242,8 +242,10 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
     map.on('load', () => {
       addRouteLayers();
-      add3DBuildings();
+      // 3D buildings are expensive on mobile; only add them when the driver
+      // enters turn-by-turn navigation (followMode). See effect below.
     });
+
 
     // Detect manual user interaction so the follow camera doesn't fight the user
     const onUserMove = (e: any) => {
