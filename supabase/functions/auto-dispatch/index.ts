@@ -159,26 +159,17 @@ Deno.serve(async (req) => {
       return json(payload);
     }
 
-    // 4) Find orders needing dispatch (predictive).
-    //    Offer when EITHER:
-    //      - status = 'ready' (offer immediately), OR
-    //      - predicted_ready_at <= now() + lead_minutes (so the driver
-    //        arrives at the store right as the food is ready).
-    //    Lead minutes = typical pickup ETA. Fast stores get offered later,
-    //    slow stores get offered earlier — keeping handoff tight.
-    const LEAD_MIN = Number(s.dispatch_lead_minutes ?? 8);
-    const leadCutoffIso = new Date(Date.now() + LEAD_MIN * 60_000).toISOString();
+    // 4) Find orders needing dispatch — offer ASAP, no waiting on predicted
+    //    ready time. Any unassigned order in an active pre-pickup status is
+    //    eligible immediately so drivers can be assigned without delay.
     const { data: candidates } = await admin
       .from("orders")
       .select("id, store_id, driver_id, total_amount, status, dispatch_at, predicted_ready_at")
       .is("driver_id", null)
       .in("status", ["placed", "accepted", "preparing", "ready"])
-      .or(`status.eq.ready,predicted_ready_at.lte.${leadCutoffIso}`)
-      // Prioritize orders that will be ready soonest (fast stores first),
-      // so quick-prep restaurants don't queue behind slow ones.
-      .order("predicted_ready_at", { ascending: true, nullsFirst: false })
       .order("created_at", { ascending: true })
       .limit(50);
+
 
     const orders = (candidates ?? []) as OrderRow[];
     if (orders.length === 0) {
