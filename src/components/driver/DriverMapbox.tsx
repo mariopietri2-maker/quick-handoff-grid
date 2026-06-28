@@ -80,6 +80,11 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const watchRef = useRef<number | null>(null);
   const routeFetchRef = useRef<AbortController | null>(null);
   const lastRouteKey = useRef('');
+  // In-memory cache of recent route responses so we don't re-hit the
+  // Mapbox Directions API on every refresh / re-render. Keyed by routeKey.
+  const routeCacheRef = useRef<Map<string, { at: number; data: any }>>(new Map());
+  const ROUTE_CACHE_TTL_MS = 25_000;
+
   const followModeRef = useRef(followMode);
   useEffect(() => { followModeRef.current = followMode; }, [followMode]);
   // When the user manually pans/zooms/rotates during follow mode, pause auto-camera until they recenter
