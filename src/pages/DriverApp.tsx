@@ -23,7 +23,10 @@ import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import SurgeStatusBadge from '@/components/driver/SurgeStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
-import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
+import type { RouteInfo, DriverMapboxHandle } from '@/components/driver/DriverMapbox';
+// Lazy-load the map: mapbox-gl is large (~800KB) and was blocking the driver app's initial paint.
+const DriverMapbox = lazy(() => import('@/components/driver/DriverMapbox'));
+
 import { TurnByTurnBanner } from '@/components/driver/TurnByTurnBanner';
 import { NavBottomCard } from '@/components/driver/NavBottomCard';
 import { SlideToggle } from '@/components/driver/SlideToggle';
