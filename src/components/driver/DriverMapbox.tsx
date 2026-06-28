@@ -331,14 +331,22 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
-    if (followMode) {
-      userInteractingRef.current = false;
-      map.easeTo({ pitch: 55, zoom: Math.max(map.getZoom(), 17), duration: 600 });
-    } else {
-      smoothedHeadingRef.current = null;
-      map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
-    }
+    const apply = () => {
+      if (followMode) {
+        userInteractingRef.current = false;
+        // Lazily add 3D buildings the first time the driver enters navigation
+        if (!map.getLayer('3d-buildings')) {
+          try { add3DBuildings(); } catch { /* no-op */ }
+        }
+        map.easeTo({ pitch: 55, zoom: Math.max(map.getZoom(), 17), duration: 600 });
+      } else {
+        smoothedHeadingRef.current = null;
+        map.easeTo({ bearing: 0, pitch: 0, duration: 500 });
+      }
+    };
+    if (map.isStyleLoaded()) apply(); else map.once('load', apply);
   }, [followMode]);
+
 
 
   // Store marker
