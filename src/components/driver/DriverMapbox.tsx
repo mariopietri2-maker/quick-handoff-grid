@@ -80,6 +80,11 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const watchRef = useRef<number | null>(null);
   const routeFetchRef = useRef<AbortController | null>(null);
   const lastRouteKey = useRef('');
+  // In-memory cache of recent route responses so we don't re-hit the
+  // Mapbox Directions API on every refresh / re-render. Keyed by routeKey.
+  const routeCacheRef = useRef<Map<string, { at: number; data: any }>>(new Map());
+  const ROUTE_CACHE_TTL_MS = 25_000;
+
   const followModeRef = useRef(followMode);
   useEffect(() => { followModeRef.current = followMode; }, [followMode]);
   // When the user manually pans/zooms/rotates during follow mode, pause auto-camera until they recenter
@@ -511,20 +516,38 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     if (routeKey === lastRouteKey.current) return;
     lastRouteKey.current = routeKey;
 
-    routeFetchRef.current?.abort();
-    const ctrl = new AbortController();
-    routeFetchRef.current = ctrl;
+    // Cache hit: reuse a recent route response instead of hitting Mapbox again.
+    const cached = routeCacheRef.current.get(routeKey);
+    let data: any | null = cached && (Date.now() - cached.at) < ROUTE_CACHE_TTL_MS ? cached.data : null;
+
+    if (!data) {
+      routeFetchRef.current?.abort();
+      const ctrl = new AbortController();
+      routeFetchRef.current = ctrl;
+      try {
+        // Use driving-traffic for live traffic-aware ETA + congestion annotations
+        const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${pos.lng},${pos.lat};${destLng},${destLat}?geometries=geojson&overview=full&steps=true&annotations=congestion,duration&access_token=${token}`;
+        const res = await fetch(url, { signal: ctrl.signal });
+        data = await res.json();
+        routeCacheRef.current.set(routeKey, { at: Date.now(), data });
+        // Trim cache to last 20 entries
+        if (routeCacheRef.current.size > 20) {
+          const firstKey = routeCacheRef.current.keys().next().value;
+          if (firstKey) routeCacheRef.current.delete(firstKey);
+        }
+      } catch (e: any) {
+        if (e.name !== 'AbortError') console.error('Route fetch error:', e);
+        return;
+      }
+    }
 
     try {
-      // Use driving-traffic for live traffic-aware ETA + congestion annotations
-      const url = `https://api.mapbox.com/directions/v5/mapbox/driving-traffic/${pos.lng},${pos.lat};${destLng},${destLat}?geometries=geojson&overview=full&steps=true&annotations=congestion,duration&access_token=${token}`;
-      const res = await fetch(url, { signal: ctrl.signal });
-      const data = await res.json();
       const route = data.routes?.[0];
       if (!route) return;
 
       const coords = route.geometry.coordinates;
       const congestion: string[] = route.legs?.[0]?.annotation?.congestion || [];
+
 
       if (map.getSource('route')) {
         (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
