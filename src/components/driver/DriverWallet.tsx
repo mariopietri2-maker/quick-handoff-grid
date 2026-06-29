@@ -37,22 +37,6 @@ export function DriverWallet() {
         </p>
       </div>
 
-      <div className="grid grid-cols-2 gap-2">
-        <div className="rounded-2xl driver-glass p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Banknote className="h-4 w-4 text-[hsl(var(--driver-warm))]" />
-            <p className="text-[10px] font-heading uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">Μετρητά που μάζεψες</p>
-          </div>
-          <p className="font-heading font-extrabold text-xl text-[hsl(var(--driver-text))] tabular-nums">{cashCollected.toFixed(2)}€</p>
-        </div>
-        <div className="rounded-2xl driver-glass p-4">
-          <div className="flex items-center gap-2 mb-1">
-            <Wallet className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
-            <p className="text-[10px] font-heading uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">Προς παράδοση admin</p>
-          </div>
-          <p className="font-heading font-extrabold text-xl text-[hsl(var(--driver-text))] tabular-nums">{cashOutstanding.toFixed(2)}€</p>
-        </div>
-      </div>
 
       {/* Transaction history */}
       <div className="rounded-2xl driver-glass overflow-hidden">
