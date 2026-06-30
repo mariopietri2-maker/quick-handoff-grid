@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Badge } from '@/components/ui/badge';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
+import { StackedOfferCard } from '@/components/driver/StackedOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
 import { DriverWallet } from '@/components/driver/DriverWallet';
