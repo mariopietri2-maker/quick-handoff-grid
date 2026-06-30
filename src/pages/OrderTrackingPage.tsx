@@ -8,6 +8,7 @@ import { ReviewForm } from '@/components/ReviewForm';
 import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 import { SEO } from '@/components/SEO';
+import { formatOrderNumber } from '@/lib/order-number';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -129,7 +130,7 @@ export default function OrderTrackingPage() {
   return (
     <div className="fixed inset-0 bg-background overflow-hidden">
       <SEO
-        title={`Παρακολούθηση παραγγελίας #${order.id.slice(0, 6).toUpperCase()} — Fresh Delivery`}
+        title={`Παρακολούθηση παραγγελίας ${formatOrderNumber(order as any)} — Fresh Delivery`}
         description="Παρακολουθήστε την παραγγελία σας σε πραγματικό χρόνο, δείτε την εκτιμώμενη ώρα παράδοσης και επικοινωνήστε με τον οδηγό."
         path={`/order-tracking/${order.id}`}
         noindex
@@ -169,7 +170,7 @@ export default function OrderTrackingPage() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
             </span>
           )}
-          <span className="text-xs font-bold text-foreground tabular-nums">#{order.id.slice(0, 6).toUpperCase()}</span>
+          <span className="text-xs font-bold text-foreground tabular-nums">{formatOrderNumber(order as any)}</span>
         </div>
       </header>
 

@@ -64,7 +64,9 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
     }
   }, [confirmDeliver]);
   const cashOk = !isCash || cashConfirmed;
-  const shortId = delivery.id.slice(0, 8).toUpperCase();
+  const shortId = (delivery as any).store_order_number != null
+    ? String((delivery as any).store_order_number).padStart(4, '0')
+    : delivery.id.slice(0, 8).toUpperCase();
 
   // Live countdown to predicted ready time (only meaningful pre-ready)
   const [now, setNow] = useState<number>(() => Date.now());
