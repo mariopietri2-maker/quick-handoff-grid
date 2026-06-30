@@ -8,6 +8,7 @@ import { Clock, AlertTriangle, MapPin, Bike, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatDistanceToNowStrict } from 'date-fns';
+import { formatOrderNumber } from '@/lib/order-number';
 
 /**
  * DoorDash-style orders pipeline: 5 columns (New → Preparing → Ready → In Transit → Delivered)
