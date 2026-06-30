@@ -141,7 +141,7 @@ export function StackedOfferCard({
           </div>
         </div>
 
-        {/* Actions: Accept (primary), Decline, Remove */}
+        {/* Actions: Accept (primary), Decline */}
         <div className="flex items-stretch gap-2 mt-4">
           <button
             onClick={() => { stopOfferAlert(); onAccept(offer.id); }}
@@ -158,19 +158,10 @@ export function StackedOfferCard({
           >
             <X className="h-4.5 w-4.5" strokeWidth={2.5} />
           </button>
-          <button
-            onClick={handleRemove}
-            aria-label="Αφαίρεση προσφοράς"
-            title="Αφαίρεση προσφοράς"
-            className="w-12 h-12 rounded-full border border-destructive/30 bg-destructive/8 text-destructive hover:bg-destructive/15 active:scale-[0.95] transition-all flex items-center justify-center"
-          >
-            <EyeOff className="h-4.5 w-4.5" strokeWidth={2.5} />
-          </button>
         </div>
-        <div className="mt-2 grid grid-cols-3 gap-2 text-[9.5px] text-center text-[hsl(var(--driver-text-muted))] font-heading uppercase tracking-wider">
+        <div className="mt-2 grid grid-cols-2 gap-2 text-[9.5px] text-center text-[hsl(var(--driver-text-muted))] font-heading uppercase tracking-wider">
           <span>Αποδοχή</span>
           <span>Απόρριψη</span>
-          <span>Αφαίρεση</span>
         </div>
       </div>
     </div>
