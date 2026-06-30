@@ -13,6 +13,7 @@ import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { SEO } from '@/components/SEO';
+import { formatOrderNumber } from '@/lib/order-number';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
