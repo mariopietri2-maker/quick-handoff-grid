@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Badge } from '@/components/ui/badge';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
+import { StackedOfferCard } from '@/components/driver/StackedOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
 import { DriverWallet } from '@/components/driver/DriverWallet';
@@ -549,18 +550,11 @@ export default function DriverApp() {
 
                       {/* Stacked offers — same store, on the path */}
                       {stackedOffers.length > 0 && (
-                        <div className="space-y-2 animate-slide-up">
-                          <div className="flex items-center justify-between px-1">
-                            <h3 className="font-heading font-bold text-xs text-[hsl(var(--driver-text))] uppercase tracking-wide">
-                              🔗 Επιπλέον στην ίδια διαδρομή
-                            </h3>
-                            <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5">
-                              +{stackedOffers.length}
-                            </Badge>
-                          </div>
-                          {stackedOffers.map((offer) => (
-                            <OrderOfferCard
+                        <div className="space-y-2.5 animate-slide-up">
+                          {stackedOffers.map((offer, idx) => (
+                            <StackedOfferCard
                               key={offer.id}
+                              index={idx + 2}
                               offer={{
                                 id: offer.id,
                                 storeName: offer.store_name || storeInfo?.name || 'Ίδιο κατάστημα',
@@ -574,14 +568,13 @@ export default function DriverApp() {
                                 cashToCollect: (offer as any).payment_method === 'cash'
                                   ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
                                   : null,
-                                customerNotes: (offer as any).notes ?? null,
-                                perKmRate: 0.50,
                                 totalDistance: Number(offer.distance_km ?? 0),
                                 estimatedTime: offer.estimated_prep_time ?? 20,
                                 itemCount: offer.order_items?.length ?? 0,
                               }}
                               onAccept={acceptOrder}
                               onDecline={handleDecline}
+                              onRemove={handleDecline}
                               expiresAt={offerExpiresAt[offer.id] ?? null}
                               timeoutSec={offerTimeoutSec}
                             />
