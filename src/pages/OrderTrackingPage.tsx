@@ -170,7 +170,7 @@ export default function OrderTrackingPage() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
             </span>
           )}
-          <span className="text-xs font-bold text-foreground tabular-nums">#{order.id.slice(0, 6).toUpperCase()}</span>
+          <span className="text-xs font-bold text-foreground tabular-nums">{formatOrderNumber(order as any)}</span>
         </div>
       </header>
 
