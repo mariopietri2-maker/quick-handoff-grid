@@ -1886,6 +1886,7 @@ export type Database = {
           stop_sequence: number | null
           store_charge: number
           store_id: string
+          store_order_number: number | null
           surge_event_id: string | null
           surge_multiplier_used: number
           tip_amount: number | null
@@ -1929,6 +1930,7 @@ export type Database = {
           stop_sequence?: number | null
           store_charge?: number
           store_id: string
+          store_order_number?: number | null
           surge_event_id?: string | null
           surge_multiplier_used?: number
           tip_amount?: number | null
@@ -1972,6 +1974,7 @@ export type Database = {
           stop_sequence?: number | null
           store_charge?: number
           store_id?: string
+          store_order_number?: number | null
           surge_event_id?: string | null
           surge_multiplier_used?: number
           tip_amount?: number | null
