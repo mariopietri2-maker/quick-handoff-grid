@@ -8,6 +8,7 @@ import { ReviewForm } from '@/components/ReviewForm';
 import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 import { SEO } from '@/components/SEO';
+import { formatOrderNumber } from '@/lib/order-number';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
