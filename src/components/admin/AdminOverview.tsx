@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAdminInvalidate } from '@/hooks/useAdminInvalidate';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
+import { formatOrderNumber } from '@/lib/order-number';
 
 interface Props {
   orders: any[];
