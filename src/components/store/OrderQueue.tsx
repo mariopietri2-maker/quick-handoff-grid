@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { PrintTicketButton, printOrderTicket } from './PrintOrderTicket';
 import { getPrinterPrefs } from '@/lib/printer-prefs';
 import type { OrderWithItems } from '@/hooks/useOrders';
+import { formatOrderNumber } from '@/lib/order-number';
 
 interface OrderQueueProps {
   orders: OrderWithItems[];
