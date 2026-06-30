@@ -13,6 +13,7 @@ import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard
 import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { SEO } from '@/components/SEO';
+import { formatOrderNumber } from '@/lib/order-number';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 
@@ -119,7 +120,7 @@ export default function MyOrdersPage() {
                   <CardContent className="p-4">
                     <div onClick={() => navigate(`/order-tracking/${order.id}`)} className="cursor-pointer">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-mono text-xs text-muted-foreground">#{order.id.slice(0, 8)}</span>
+                        <span className="font-mono text-xs font-bold text-foreground">{formatOrderNumber(order as any)}</span>
                         <Badge variant="outline" className={`text-xs font-heading ${status.color}`}>
                           {status.label}
                         </Badge>

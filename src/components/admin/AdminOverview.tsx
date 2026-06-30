@@ -20,6 +20,7 @@ import { toast } from 'sonner';
 import { cn } from '@/lib/utils';
 import { useAdminInvalidate } from '@/hooks/useAdminInvalidate';
 import { TableSkeleton } from '@/components/admin/TableSkeleton';
+import { formatOrderNumber } from '@/lib/order-number';
 
 interface Props {
   orders: any[];
@@ -398,7 +399,7 @@ function RecentOrdersTable({ orders, profiles }: { orders: any[]; profiles: any[
               const cancellable = !['delivered', 'cancelled'].includes(o.status);
               return (
               <tr key={o.id} className={cn('border-t border-border/50', i % 2 && 'bg-muted/20', rowDelayed(o) && 'bg-red-500/5')}>
-                <td className="px-3 py-2 font-mono text-[11.5px] text-muted-foreground">#{o.id.slice(0, 8)}</td>
+                <td className="px-3 py-2 font-mono text-[11.5px] font-bold text-foreground">{formatOrderNumber(o)}</td>
                 <td className="px-3 py-2 text-muted-foreground">{o.store_id?.slice(0, 6) ?? '—'}</td>
                 <td className="px-3 py-2">{o.driver_id ? driverNames.get(o.driver_id) ?? o.driver_id.slice(0, 6) : <span className="text-muted-foreground italic">—</span>}</td>
                 <td className="px-3 py-2">
