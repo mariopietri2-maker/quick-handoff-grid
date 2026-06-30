@@ -120,7 +120,7 @@ export function OrderQueue({ orders, onStatusUpdate, storeName = 'Κατάστη
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Ακύρωση παραγγελίας #{order.id.slice(0, 6)};</AlertDialogTitle>
+                        <AlertDialogTitle>Ακύρωση παραγγελίας {formatOrderNumber(order)};</AlertDialogTitle>
                         <AlertDialogDescription>
                           Η παραγγελία θα μαρκαριστεί ως ακυρωμένη και θα αφαιρεθεί από την ουρά.
                           Αν ο πελάτης έχει χρεωθεί, χρησιμοποίησε επιστροφή χρημάτων ξεχωριστά.
