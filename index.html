@@ -22,6 +22,14 @@
 
     <link rel="icon" type="image/svg+xml" href="/favicon.svg">
 
+    <!-- Preconnect + DNS-prefetch to Mapbox for faster first map paint -->
+    <link rel="preconnect" href="https://api.mapbox.com" crossorigin>
+    <link rel="preconnect" href="https://events.mapbox.com" crossorigin>
+    <link rel="dns-prefetch" href="https://a.tiles.mapbox.com">
+    <link rel="dns-prefetch" href="https://b.tiles.mapbox.com">
+    <link rel="dns-prefetch" href="https://c.tiles.mapbox.com">
+    <link rel="dns-prefetch" href="https://d.tiles.mapbox.com">
+
     <script type="application/ld+json">
     {
       "@context": "https://schema.org",
