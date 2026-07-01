@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star } from 'lucide-react';
+import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -318,7 +319,38 @@ export default function OrderTrackingPage() {
 
               {/* Order summary */}
               <div className="mt-4 rounded-2xl border border-border p-4">
-                <h3 className="font-heading font-bold text-sm text-foreground mb-3">Παραγγελία</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-heading font-bold text-sm text-foreground">Παραγγελία</h3>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const lines: string[] = [];
+                      lines.push(`Παραγγελία ${formatOrderNumber(order as any)}`);
+                      if (storeName) lines.push(`Από: ${storeName}`);
+                      lines.push(new Date(order.created_at).toLocaleString('el-GR'));
+                      lines.push('');
+                      items.forEach((i) => {
+                        lines.push(`${i.quantity}× ${i.name} — €${(Number(i.unit_price) * i.quantity).toFixed(2)}`);
+                      });
+                      lines.push('');
+                      if (order.delivery_fee) lines.push(`Παράδοση: €${Number(order.delivery_fee).toFixed(2)}`);
+                      if (order.tip_amount) lines.push(`Φιλοδώρημα: €${Number(order.tip_amount).toFixed(2)}`);
+                      lines.push(`Σύνολο: €${Number(order.total_amount).toFixed(2)}`);
+                      if (order.delivery_address) { lines.push(''); lines.push(`Διεύθυνση: ${order.delivery_address}`); }
+                      if (order.notes) lines.push(`Σημείωση: ${order.notes}`);
+                      const text = lines.join('\n');
+                      try {
+                        await navigator.clipboard.writeText(text);
+                        toast.success('Αντιγράφηκε');
+                      } catch {
+                        toast.error('Αποτυχία αντιγραφής');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-primary active:scale-95 transition-transform"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Αντιγραφή
+                  </button>
+                </div>
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between py-1.5 text-sm">
                     <span className="text-foreground">{item.quantity}× {item.name}</span>
@@ -336,6 +368,7 @@ export default function OrderTrackingPage() {
                   </div>
                 )}
               </div>
+
 
               {isDelivered && order.driver_id && (
                 <div className="mt-4">
