@@ -315,7 +315,7 @@ export default function CustomerApp() {
 
       <main className="max-w-2xl mx-auto">
         <ActiveOrderTracker />
-        <OrderAgainRow />
+        {cfg.sections.show_order_again && <OrderAgainRow />}
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
         {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
           <div className="px-5 pt-5">
@@ -387,7 +387,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Pro subscription banner ────────────────────── */}
-        {!search && selectedCategory === 'all' && <ProBanner />}
+        {cfg.sections.show_pro_delivery && !search && selectedCategory === 'all' && <ProBanner />}
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
@@ -481,7 +481,7 @@ export default function CustomerApp() {
 
         {/* ── Store list ─────────────────────────────────── */}
         {cfg.sections.show_nearby && (
-        <section className="pt-8 px-5">
+        <section id="nearby-stores" className="pt-8 px-5 scroll-mt-28">
           <div className="flex items-end justify-between mb-4">
             <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
               {search
@@ -646,19 +646,31 @@ export default function CustomerApp() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="max-w-2xl mx-auto grid grid-cols-5 pt-2 pb-2">
-          <button className="flex flex-col items-center justify-center gap-1 c-accent">
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setSelectedCategory('all');
+              setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center justify-center gap-1 c-accent active:scale-95 transition-transform"
+          >
             <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
               <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
             </span>
             <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
           </button>
           <button
+            type="button"
             onClick={() => {
-              const el = document.querySelector('input[placeholder]') as HTMLInputElement | null;
-              el?.focus();
               window.scrollTo({ top: 0, behavior: 'smooth' });
+              setTimeout(() => {
+                const el = document.querySelector<HTMLInputElement>('input[placeholder]');
+                el?.focus();
+              }, 350);
             }}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
           >
             <span className="p-2">
               <Search className="h-[22px] w-[22px]" strokeWidth={2} />
@@ -666,8 +678,14 @@ export default function CustomerApp() {
             <span className="text-[10px] font-bold tracking-tight">Αναζήτηση</span>
           </button>
           <button
-            onClick={() => setSelectedCategory('all')}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+            type="button"
+            onClick={() => {
+              setSelectedCategory('all');
+              const el = document.getElementById('nearby-stores');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
           >
             <span className="p-2">
               <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
@@ -676,7 +694,7 @@ export default function CustomerApp() {
           </button>
           <Link
             to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
           >
             <span className="p-2">
               <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
@@ -685,7 +703,7 @@ export default function CustomerApp() {
           </Link>
           <Link
             to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
           >
             <span className="p-2">
               <User className="h-[22px] w-[22px]" strokeWidth={2} />
@@ -693,6 +711,7 @@ export default function CustomerApp() {
             <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
           </Link>
         </div>
+
 
       </nav>
 
