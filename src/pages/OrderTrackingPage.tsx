@@ -50,6 +50,8 @@ export default function OrderTrackingPage() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [thankYouCountdown, setThankYouCountdown] = useState(6);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
