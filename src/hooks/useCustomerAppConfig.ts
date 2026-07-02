@@ -36,6 +36,8 @@ export type CustomerAppConfig = {
     show_promoted: boolean;
     show_nearby: boolean;
     show_hero_carousel: boolean;
+    show_pro_delivery: boolean;
+    show_order_again: boolean;
   };
 };
 
@@ -64,6 +66,8 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     show_promoted: true,
     show_nearby: true,
     show_hero_carousel: true,
+    show_pro_delivery: false,
+    show_order_again: false,
   },
 };
 
