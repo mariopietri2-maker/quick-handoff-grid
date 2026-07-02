@@ -248,6 +248,9 @@ export default function CustomerAppCustomization() {
                 ['show_categories', 'Λωρίδα κατηγοριών (chips)'],
                 ['show_promoted', 'Sponsored / Δημοφιλή'],
                 ['show_nearby', 'Κοντινά εστιατόρια'],
+                ['show_hero_carousel', 'AI hero carousel'],
+                ['show_order_again', 'Λωρίδα «Παράγγειλε ξανά»'],
+                ['show_pro_delivery', 'Pro delivery banner'],
               ] as const).map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between border rounded-lg p-3 bg-card">
                   <span className="text-sm font-medium">{label}</span>
