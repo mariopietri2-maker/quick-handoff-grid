@@ -481,7 +481,7 @@ export default function CustomerApp() {
 
         {/* ── Store list ─────────────────────────────────── */}
         {cfg.sections.show_nearby && (
-        <section className="pt-8 px-5">
+        <section id="nearby-stores" className="pt-8 px-5 scroll-mt-28">
           <div className="flex items-end justify-between mb-4">
             <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
               {search
