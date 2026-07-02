@@ -154,6 +154,32 @@ export default function OrderTrackingPage() {
         path={`/order-tracking/${order.id}`}
         noindex
       />
+
+      {/* Thank-you overlay after delivery */}
+      {showThankYou && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center animate-in fade-in duration-500"
+          style={{ background: 'linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%)' }}
+        >
+          <div className="text-8xl mb-6 animate-bounce">🎉</div>
+          <h1 className="font-heading font-extrabold text-4xl text-primary-foreground mb-3">
+            Ευχαριστούμε!
+          </h1>
+          <p className="text-primary-foreground/90 font-heading text-lg mb-1">
+            Η παραγγελία σου παραδόθηκε
+          </p>
+          <p className="text-primary-foreground/70 text-sm mb-10">
+            Καλή σου όρεξη 🍽️
+          </p>
+          <Button
+            onClick={() => navigate('/orders')}
+            className="bg-card text-foreground hover:bg-card/90 font-heading font-bold rounded-full px-8 h-12 shadow-lg"
+          >
+            Κλείσιμο ({thankYouCountdown})
+          </Button>
+        </div>
+      )}
+
       {/* Map background */}
       {showMap ? (
         <LiveTrackingMap
