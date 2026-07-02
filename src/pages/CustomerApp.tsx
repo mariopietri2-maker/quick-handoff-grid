@@ -387,7 +387,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Pro subscription banner ────────────────────── */}
-        {!search && selectedCategory === 'all' && <ProBanner />}
+        {cfg.sections.show_pro_delivery && !search && selectedCategory === 'all' && <ProBanner />}
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
