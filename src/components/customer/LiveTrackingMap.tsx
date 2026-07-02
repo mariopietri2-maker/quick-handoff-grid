@@ -190,16 +190,26 @@ export default function LiveTrackingMap({
     const ensureMarker = () => {
       if (driverMarker.current) return;
       const wrap = document.createElement('div');
-      wrap.style.cssText = 'width:46px;height:46px;display:flex;align-items:center;justify-content:center;';
+      wrap.style.cssText = 'position:relative;width:52px;height:52px;display:flex;align-items:center;justify-content:center;';
+      const pulse = document.createElement('div');
+      pulse.style.cssText =
+        'position:absolute;inset:0;border-radius:50%;background:hsl(var(--primary) / .35);animation:driverPulse 1.6s ease-out infinite;';
       const inner = document.createElement('div');
       inner.style.cssText =
-        'width:46px;height:46px;border-radius:50%;background:white;box-shadow:0 6px 20px rgba(0,0,0,.3),0 0 0 4px hsl(var(--primary) / .25);display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .8s ease-out;';
+        'position:relative;width:46px;height:46px;border-radius:50%;background:white;box-shadow:0 6px 20px rgba(0,0,0,.35),0 0 0 4px hsl(var(--primary));display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .8s ease-out;';
       inner.textContent = '🛵';
+      wrap.appendChild(pulse);
       wrap.appendChild(inner);
       driverIcon.current = inner;
       driverMarker.current = new mapboxgl.Marker({ element: wrap, anchor: 'center' })
         .setLngLat(driverPos)
         .addTo(map);
+      if (!document.getElementById('driver-pulse-kf')) {
+        const st = document.createElement('style');
+        st.id = 'driver-pulse-kf';
+        st.textContent = '@keyframes driverPulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.2);opacity:0}}';
+        document.head.appendChild(st);
+      }
     };
 
     const place = () => {
@@ -209,18 +219,16 @@ export default function LiveTrackingMap({
       driverMarker.current.setLngLat(driverPos);
       if (prev && driverIcon.current) {
         const b = bearing(prev, driverPos);
-        // Rotate the emoji wrapper so the bike looks like it's heading toward the next point
         driverIcon.current.style.transform = `rotate(${b - 90}deg)`;
       }
       lastPos.current = driverPos;
-      // Keep driver in view but don't snap aggressively
       const cam = map.getCenter();
       const dist = Math.hypot(cam.lng - driverPos[0], cam.lat - driverPos[1]);
       if (dist > 0.01) map.easeTo({ center: driverPos, duration: 1200 });
     };
 
-    if (map.isStyleLoaded()) place();
-    else map.once('load', place);
+    // Markers work even before style load — place immediately.
+    place();
   }, [driverPos]);
 
   return <div ref={container} className="absolute inset-0" />;

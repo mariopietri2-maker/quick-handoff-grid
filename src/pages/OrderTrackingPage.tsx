@@ -50,6 +50,8 @@ export default function OrderTrackingPage() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [thankYouCountdown, setThankYouCountdown] = useState(6);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -98,6 +100,22 @@ export default function OrderTrackingPage() {
     return () => { supabase.removeChannel(ch); };
   }, [id, driverName]);
 
+  // When order becomes delivered → celebrate + auto navigate away
+  useEffect(() => {
+    if (order?.status !== 'delivered') return;
+    setShowThankYou(true);
+  }, [order?.status]);
+
+  useEffect(() => {
+    if (!showThankYou) return;
+    setThankYouCountdown(6);
+    const tick = setInterval(() => {
+      setThankYouCountdown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    const done = setTimeout(() => navigate('/orders'), 6000);
+    return () => { clearInterval(tick); clearTimeout(done); };
+  }, [showThankYou, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -136,6 +154,32 @@ export default function OrderTrackingPage() {
         path={`/order-tracking/${order.id}`}
         noindex
       />
+
+      {/* Thank-you overlay after delivery */}
+      {showThankYou && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center animate-in fade-in duration-500"
+          style={{ background: 'linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%)' }}
+        >
+          <div className="text-8xl mb-6 animate-bounce">🎉</div>
+          <h1 className="font-heading font-extrabold text-4xl text-primary-foreground mb-3">
+            Ευχαριστούμε!
+          </h1>
+          <p className="text-primary-foreground/90 font-heading text-lg mb-1">
+            Η παραγγελία σου παραδόθηκε
+          </p>
+          <p className="text-primary-foreground/70 text-sm mb-10">
+            Καλή σου όρεξη 🍽️
+          </p>
+          <Button
+            onClick={() => navigate('/orders')}
+            className="bg-card text-foreground hover:bg-card/90 font-heading font-bold rounded-full px-8 h-12 shadow-lg"
+          >
+            Κλείσιμο ({thankYouCountdown})
+          </Button>
+        </div>
+      )}
+
       {/* Map background */}
       {showMap ? (
         <LiveTrackingMap
