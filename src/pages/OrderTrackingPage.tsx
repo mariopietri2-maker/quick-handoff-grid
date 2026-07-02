@@ -100,6 +100,22 @@ export default function OrderTrackingPage() {
     return () => { supabase.removeChannel(ch); };
   }, [id, driverName]);
 
+  // When order becomes delivered → celebrate + auto navigate away
+  useEffect(() => {
+    if (order?.status !== 'delivered') return;
+    setShowThankYou(true);
+  }, [order?.status]);
+
+  useEffect(() => {
+    if (!showThankYou) return;
+    setThankYouCountdown(6);
+    const tick = setInterval(() => {
+      setThankYouCountdown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    const done = setTimeout(() => navigate('/orders'), 6000);
+    return () => { clearInterval(tick); clearTimeout(done); };
+  }, [showThankYou, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
