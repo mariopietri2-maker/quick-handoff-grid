@@ -3593,6 +3593,10 @@ export type Database = {
         Returns: number
       }
       admin_close_month: { Args: { p_period_start?: string }; Returns: string }
+      admin_credit_customer_wallet: {
+        Args: { p_amount: number; p_customer_id: string; p_reason: string }
+        Returns: undefined
+      }
       admin_distribute_buffer: {
         Args: {
           p_amount: number
@@ -3602,6 +3606,14 @@ export type Database = {
           p_zone_id?: string
         }
         Returns: Json
+      }
+      admin_extend_offer: {
+        Args: { p_extra_seconds: number; p_offer_id: string }
+        Returns: string
+      }
+      admin_force_assign_order: {
+        Args: { p_driver_id: string; p_order_id: string; p_reason?: string }
+        Returns: undefined
       }
       admin_force_complete_order: {
         Args: { p_order_id: string }
@@ -3622,6 +3634,10 @@ export type Database = {
       admin_inject_pool: {
         Args: { p_amount: number; p_note?: string }
         Returns: Json
+      }
+      admin_pause_driver_offers: {
+        Args: { p_driver_id: string; p_minutes: number }
+        Returns: undefined
       }
       admin_payout_store: {
         Args: { p_amount: number; p_description?: string; p_store_id: string }
@@ -3671,6 +3687,10 @@ export type Database = {
           p_title: string
         }
         Returns: string
+      }
+      admin_set_dispatch_enabled: {
+        Args: { p_enabled: boolean }
+        Returns: undefined
       }
       admin_set_store_promotion: {
         Args: { p_days?: number; p_status: string; p_store_id: string }
