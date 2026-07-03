@@ -44,8 +44,9 @@ export const NAV_SECTIONS = [
     icon: ShoppingBag,
     accent: 'text-primary',
     accentBg: 'bg-primary/10',
-    defaultTab: 'orders',
+    defaultTab: 'delivery_control',
     tabs: [
+      { id: 'delivery_control', label: '🎛️ Delivery Control' },
       { id: 'orders', label: 'Pipeline (Kanban)' },
       { id: 'orders_table', label: 'Πίνακας' },
       { id: 'external_orders', label: 'eFood / Wolt' },

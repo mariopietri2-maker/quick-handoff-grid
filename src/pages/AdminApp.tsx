@@ -59,6 +59,7 @@ const BufferDistributor      = lazy(() => import('@/components/admin/BufferDistr
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
+const DeliveryControlCenter  = lazy(() => import('@/components/admin/DeliveryControlCenter'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -278,6 +279,8 @@ export default function AdminApp() {
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'audit':
         return <AdminAuditTab />;
+      case 'delivery_control':
+        return <DeliveryControlCenter />;
       case 'orders':
         return <OrdersKanban />;
       case 'orders_table':
