@@ -303,7 +303,7 @@ export default function DeliveryControlCenter() {
                   <div key={o.id} className="flex items-center justify-between gap-2 rounded-md border border-border p-2 text-xs">
                     <div className="min-w-0">
                       <p className="font-semibold truncate">
-                        {ord ? formatOrderNumber(ord.store_order_number) : '#' + o.order_id.slice(0, 6)}
+                        {ord ? formatOrderNumber(ord) : '#' + o.order_id.slice(0, 6)}
                         <span className="ml-2 text-muted-foreground">→ {driverName(o.driver_id)}</span>
                       </p>
                       <p className="text-[10px] text-muted-foreground truncate">{ord?.delivery_address ?? '—'}</p>
@@ -344,7 +344,7 @@ export default function DeliveryControlCenter() {
                 <div className="flex items-start justify-between gap-2">
                   <div className="min-w-0">
                     <p className="font-semibold truncate">
-                      {formatOrderNumber(o.store_order_number)}
+                      {formatOrderNumber(o)}
                       <Badge variant="outline" className="ml-2 h-5 text-[10px] uppercase">{o.status}</Badge>
                       {o.batch_id && <Badge variant="outline" className="ml-1 h-5 text-[10px]">Stack</Badge>}
                     </p>
