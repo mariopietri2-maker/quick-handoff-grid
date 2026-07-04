@@ -340,6 +340,11 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
+          <SupportAIPanel
+            ticketId={activeTicket.id}
+            onUseReply={(text) => chatRef.current?.setDraft(text)}
+          />
+
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
             <TicketChat ref={chatRef} ticketId={activeTicket.id} priority={currentPriority} />
