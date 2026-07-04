@@ -23,6 +23,9 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
+import HomeGreeting from '@/components/customer/HomeGreeting';
+import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
+import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
