@@ -348,8 +348,17 @@ export default function CustomerApp() {
           </div>
         )}
 
+        {/* ── Personalized greeting (signed-in only) ─────── */}
+        <HomeGreeting />
+
         {/* ── AI-generated hero carousel ────────────────── */}
         {cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
+
+        {/* ── 1+1 hero banner ────────────────────────────── */}
+        {!search && selectedCategory === 'all' && <OnePlusOneHero />}
+
+        {/* ── Lucky Hungry daily deal ────────────────────── */}
+        {!search && selectedCategory === 'all' && <LuckyHungryCard />}
 
         {/* ── Promo carousel ─────────────────────────────── */}
         {cfg.sections.show_promos && <PromoBannerCarousel />}
