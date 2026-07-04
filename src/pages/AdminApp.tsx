@@ -48,7 +48,7 @@ const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
-const MoneyBagsPanel         = lazy(() => import('@/components/admin/LedgerPanel'));
+const LedgerPanel            = lazy(() => import('@/components/admin/LedgerPanel'));
 const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
 const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsagePanel'));
