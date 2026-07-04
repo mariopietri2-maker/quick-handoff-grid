@@ -645,7 +645,7 @@ export default function CustomerApp() {
         className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto grid grid-cols-5 pt-2 pb-2">
+        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
           <button
             type="button"
             onClick={() => {
@@ -660,22 +660,6 @@ export default function CustomerApp() {
               <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
             </span>
             <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              setTimeout(() => {
-                const el = document.querySelector<HTMLInputElement>('input[placeholder]');
-                el?.focus();
-              }, 350);
-            }}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <Search className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Αναζήτηση</span>
           </button>
           <button
             type="button"
