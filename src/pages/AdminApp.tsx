@@ -293,7 +293,7 @@ export default function AdminApp() {
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
         // Legacy id — merged into Money Bags
-        return <MoneyBagsPanel />;
+        return <LedgerPanel />;
       case 'store_payables':
         return <StorePayablesPanel />;
       case 'driver_payables':
