@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
+import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
@@ -338,6 +339,11 @@ export default function SupportApp() {
               </div>
             </CardContent>
           </Card>
+
+          <SupportAIPanel
+            ticketId={activeTicket.id}
+            onUseReply={(text) => chatRef.current?.setDraft(text)}
+          />
 
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>

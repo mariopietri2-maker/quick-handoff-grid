@@ -48,7 +48,7 @@ const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
-const MoneyBagsPanel         = lazy(() => import('@/components/admin/LedgerPanel'));
+const LedgerPanel            = lazy(() => import('@/components/admin/LedgerPanel'));
 const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
 const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsagePanel'));
@@ -293,7 +293,7 @@ export default function AdminApp() {
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
         // Legacy id — merged into Money Bags
-        return <MoneyBagsPanel />;
+        return <LedgerPanel />;
       case 'store_payables':
         return <StorePayablesPanel />;
       case 'driver_payables':
