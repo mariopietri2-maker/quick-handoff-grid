@@ -39,6 +39,7 @@ interface ActiveDeliveryData {
 
 interface ActiveDeliveryProps {
   delivery: ActiveDeliveryData;
+  driverId?: string;
   onStatusUpdate: (status: string) => void;
   onFocusDestination?: (target: 'store' | 'customer') => void;
 }
