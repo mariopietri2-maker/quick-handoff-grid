@@ -2,10 +2,11 @@ import { useEffect, useState } from 'react';
 import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
+import { supabase } from '@/integrations/supabase/client';
+import ProofOfHandoff from './ProofOfHandoff';
 import {
-  AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent,
-  AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
+} from '@/components/ui/dialog';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -38,6 +39,7 @@ interface ActiveDeliveryData {
 
 interface ActiveDeliveryProps {
   delivery: ActiveDeliveryData;
+  driverId?: string;
   onStatusUpdate: (status: string) => void;
   onFocusDestination?: (target: 'store' | 'customer') => void;
 }
@@ -49,7 +51,7 @@ const statusSteps = [
   { key: 'delivered', label: 'Παραδόθηκε', icon: CheckCircle2 },
 ];
 
-export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
+export function ActiveDelivery({ delivery, driverId, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
@@ -272,16 +274,16 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
         </button>
       )}
 
-      <AlertDialog open={confirmDeliver} onOpenChange={setConfirmDeliver}>
-        <AlertDialogContent className="rounded-3xl max-w-sm">
-          <AlertDialogHeader>
-            <AlertDialogTitle className="font-heading text-[22px] leading-tight">
-              Επιβεβαιώνεις την παράδοση της παραγγελίας #{shortId};
-            </AlertDialogTitle>
-            <AlertDialogDescription>
+      <Dialog open={confirmDeliver} onOpenChange={setConfirmDeliver}>
+        <DialogContent className="rounded-3xl max-w-sm max-h-[92vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="font-heading text-[22px] leading-tight">
+              Παράδοση παραγγελίας #{shortId}
+            </DialogTitle>
+            <DialogDescription>
               Παράδοση σε {delivery.customerName} — {shortenAddress(delivery.deliveryAddress)}
-            </AlertDialogDescription>
-          </AlertDialogHeader>
+            </DialogDescription>
+          </DialogHeader>
 
           {isCash && (
             <div className="rounded-2xl border border-[hsl(var(--driver-warm))]/30 bg-[hsl(var(--driver-warm))]/8 p-4 space-y-3">
@@ -307,24 +309,37 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
             </div>
           )}
 
-          <AlertDialogFooter className="flex-col gap-2 sm:flex-col">
-            <AlertDialogAction
-              disabled={!cashOk}
-              onClick={(e) => {
-                if (!cashOk) { e.preventDefault(); return; }
+          {cashOk && driverId ? (
+            <ProofOfHandoff
+              orderId={delivery.id}
+              driverId={driverId}
+              onUploaded={async (path) => {
+                await supabase.from('orders').update({ photo_verification_url: path } as any).eq('id', delivery.id);
                 setConfirmDeliver(false);
                 onStatusUpdate('delivered');
               }}
-              className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90 font-heading font-bold text-[15px] disabled:opacity-50 disabled:pointer-events-none"
+            />
+          ) : cashOk && !driverId ? (
+            <button
+              onClick={() => { setConfirmDeliver(false); onStatusUpdate('delivered'); }}
+              className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90 font-heading font-bold text-[15px]"
             >
-              {isCash ? 'Επιβεβαίωση εισπραξης & παράδοσης' : 'Επιβεβαίωση παράδοσης'}
-            </AlertDialogAction>
-            <AlertDialogCancel className="w-full mt-0 border-0 bg-transparent text-destructive hover:bg-transparent hover:text-destructive font-heading font-bold">
-              Ακύρωση
-            </AlertDialogCancel>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
+              Επιβεβαίωση παράδοσης
+            </button>
+          ) : (
+            <p className="text-[12px] text-center text-[hsl(var(--driver-text-muted))]">
+              Επιβεβαίωσε την είσπραξη μετρητών για να συνεχίσεις
+            </p>
+          )}
+
+          <button
+            onClick={() => setConfirmDeliver(false)}
+            className="w-full h-10 text-destructive font-heading font-bold text-sm"
+          >
+            Ακύρωση
+          </button>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
