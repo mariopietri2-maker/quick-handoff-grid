@@ -184,14 +184,14 @@ export default function ProfilePage() {
         {/* Primary tiles */}
         <section className="grid grid-cols-2 gap-3">
           <TileButton to="/orders" icon={Receipt} tone="primary" label="Παραγγελίες μου" hint="Ιστορικό & επανάληψη" />
-          <TileButton to="/order?tab=coupons" icon={Ticket} tone="emerald" label="Κουπόνια" hint="Εκπτώσεις & προσφορές" />
+          <TileAction onClick={() => setSheet('wallet')} icon={Wallet} tone="emerald" label="Πορτοφόλι" hint="Υπόλοιπο & κινήσεις" />
         </section>
 
         {/* Perks & Social */}
         <section>
           <SectionTitle>Ανταμοιβές & Προσκλήσεις</SectionTitle>
           <Group>
-            <Row to="/order?tab=referral" icon={Heart} iconTone="rose" label="Κάλεσε φίλους" trailing={<Badge className="bg-primary/10 text-primary border-0 hover:bg-primary/10">Κέρδισε 5€</Badge>} />
+            <RowAction onClick={() => setSheet('referral')} icon={Heart} iconTone="rose" label="Κάλεσε φίλους" trailing={<Badge className="bg-primary/10 text-primary border-0 hover:bg-primary/10">Κέρδισε 5€</Badge>} />
           </Group>
         </section>
 
@@ -199,8 +199,7 @@ export default function ProfilePage() {
         <section>
           <SectionTitle>Προτιμήσεις</SectionTitle>
           <Group>
-            <Row to="/order?tab=addresses" icon={MapPin} iconTone="muted" label="Διευθύνσεις" trailing={<Chevron />} />
-            <Row to="/order?tab=favorites" icon={Heart} iconTone="muted" label="Αγαπημένα" trailing={<Chevron />} />
+            <RowAction onClick={() => setSheet('addresses')} icon={MapPin} iconTone="muted" label="Διευθύνσεις" trailing={<Chevron />} />
             <RowInline icon={Languages} iconTone="muted" label="Γλώσσα" trailing={<LanguageToggle />} />
             <RowInline icon={Palette} iconTone="muted" label="Θέμα" trailing={<ThemeToggle />} />
           </Group>
