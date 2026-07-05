@@ -227,6 +227,26 @@ export default function ProfilePage() {
           <p className="mt-4 text-center text-[10px] text-muted-foreground uppercase tracking-wider">Fresh Delivery · v2.4</p>
         </div>
       </main>
+
+      {/* Sub-sheets: Wallet / Referral / Addresses */}
+      <Sheet open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="font-heading text-left">
+              {sheet === 'wallet' && 'Πορτοφόλι'}
+              {sheet === 'referral' && 'Κάλεσε φίλους'}
+              {sheet === 'addresses' && 'Οι διευθύνσεις μου'}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="pt-4">
+            {sheet === 'wallet' && <CustomerWalletCard />}
+            {sheet === 'referral' && <CustomerReferralCard />}
+            {sheet === 'addresses' && (
+              <SavedAddresses onSelect={() => setSheet(null)} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
