@@ -11,12 +11,15 @@ import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
   FileText, RefreshCw, Ticket, Gift, MapPin, Heart, Receipt, ChevronRight,
-  Settings as SettingsIcon,
+  Settings as SettingsIcon, Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SEO } from '@/components/SEO';
+import { SavedAddresses } from '@/components/SavedAddresses';
+import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard';
+import { CustomerWalletCard } from '@/components/customer/CustomerWalletCard';
 
 const roleConfig: Record<string, { label: string; icon: any; path: string }> = {
   admin:    { label: 'Admin',     icon: Shield,      path: '/admin'   },
@@ -33,6 +36,7 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [sheet, setSheet] = useState<null | 'addresses' | 'referral' | 'wallet'>(null);
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
@@ -180,14 +184,14 @@ export default function ProfilePage() {
         {/* Primary tiles */}
         <section className="grid grid-cols-2 gap-3">
           <TileButton to="/orders" icon={Receipt} tone="primary" label="Παραγγελίες μου" hint="Ιστορικό & επανάληψη" />
-          <TileButton to="/order?tab=coupons" icon={Ticket} tone="emerald" label="Κουπόνια" hint="Εκπτώσεις & προσφορές" />
+          <TileAction onClick={() => setSheet('wallet')} icon={Wallet} tone="emerald" label="Πορτοφόλι" hint="Υπόλοιπο & κινήσεις" />
         </section>
 
         {/* Perks & Social */}
         <section>
           <SectionTitle>Ανταμοιβές & Προσκλήσεις</SectionTitle>
           <Group>
-            <Row to="/order?tab=referral" icon={Heart} iconTone="rose" label="Κάλεσε φίλους" trailing={<Badge className="bg-primary/10 text-primary border-0 hover:bg-primary/10">Κέρδισε 5€</Badge>} />
+            <RowAction onClick={() => setSheet('referral')} icon={Heart} iconTone="rose" label="Κάλεσε φίλους" trailing={<Badge className="bg-primary/10 text-primary border-0 hover:bg-primary/10">Κέρδισε 5€</Badge>} />
           </Group>
         </section>
 
@@ -195,8 +199,7 @@ export default function ProfilePage() {
         <section>
           <SectionTitle>Προτιμήσεις</SectionTitle>
           <Group>
-            <Row to="/order?tab=addresses" icon={MapPin} iconTone="muted" label="Διευθύνσεις" trailing={<Chevron />} />
-            <Row to="/order?tab=favorites" icon={Heart} iconTone="muted" label="Αγαπημένα" trailing={<Chevron />} />
+            <RowAction onClick={() => setSheet('addresses')} icon={MapPin} iconTone="muted" label="Διευθύνσεις" trailing={<Chevron />} />
             <RowInline icon={Languages} iconTone="muted" label="Γλώσσα" trailing={<LanguageToggle />} />
             <RowInline icon={Palette} iconTone="muted" label="Θέμα" trailing={<ThemeToggle />} />
           </Group>
@@ -224,6 +227,26 @@ export default function ProfilePage() {
           <p className="mt-4 text-center text-[10px] text-muted-foreground uppercase tracking-wider">Fresh Delivery · v2.4</p>
         </div>
       </main>
+
+      {/* Sub-sheets: Wallet / Referral / Addresses */}
+      <Sheet open={sheet !== null} onOpenChange={(o) => !o && setSheet(null)}>
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
+          <SheetHeader>
+            <SheetTitle className="font-heading text-left">
+              {sheet === 'wallet' && 'Πορτοφόλι'}
+              {sheet === 'referral' && 'Κάλεσε φίλους'}
+              {sheet === 'addresses' && 'Οι διευθύνσεις μου'}
+            </SheetTitle>
+          </SheetHeader>
+          <div className="pt-4">
+            {sheet === 'wallet' && <CustomerWalletCard />}
+            {sheet === 'referral' && <CustomerReferralCard />}
+            {sheet === 'addresses' && (
+              <SavedAddresses onSelect={() => setSheet(null)} />
+            )}
+          </div>
+        </SheetContent>
+      </Sheet>
     </div>
   );
 }
@@ -311,5 +334,43 @@ function TileButton({
       <span className="font-heading font-semibold text-foreground text-sm">{label}</span>
       <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{hint}</span>
     </Link>
+  );
+}
+
+function RowAction({
+  onClick, icon: Icon, iconTone = 'muted', label, trailing,
+}: {
+  onClick: () => void; icon: React.ElementType; iconTone?: string; label: string; trailing?: React.ReactNode;
+}) {
+  return (
+    <button type="button" onClick={onClick} className="w-full flex items-center justify-between gap-3 p-4 hover:bg-muted/40 transition-colors text-left">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toneClasses[iconTone] ?? toneClasses.muted}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-medium text-foreground truncate">{label}</span>
+      </div>
+      <div className="shrink-0 flex items-center gap-2">{trailing}</div>
+    </button>
+  );
+}
+
+function TileAction({
+  onClick, icon: Icon, tone, label, hint,
+}: {
+  onClick: () => void; icon: React.ElementType; tone: keyof typeof toneClasses; label: string; hint: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-start p-4 bg-card border border-border rounded-xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all press-scale text-left"
+    >
+      <div className={`p-2 rounded-lg mb-3 ${toneClasses[tone]}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <span className="font-heading font-semibold text-foreground text-sm">{label}</span>
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{hint}</span>
+    </button>
   );
 }
