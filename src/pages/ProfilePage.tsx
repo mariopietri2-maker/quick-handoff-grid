@@ -336,3 +336,41 @@ function TileButton({
     </Link>
   );
 }
+
+function RowAction({
+  onClick, icon: Icon, iconTone = 'muted', label, trailing,
+}: {
+  onClick: () => void; icon: React.ElementType; iconTone?: string; label: string; trailing?: React.ReactNode;
+}) {
+  return (
+    <button type="button" onClick={onClick} className="w-full flex items-center justify-between gap-3 p-4 hover:bg-muted/40 transition-colors text-left">
+      <div className="flex items-center gap-3 min-w-0">
+        <div className={`w-8 h-8 rounded-lg flex items-center justify-center shrink-0 ${toneClasses[iconTone] ?? toneClasses.muted}`}>
+          <Icon className="h-4 w-4" />
+        </div>
+        <span className="text-sm font-medium text-foreground truncate">{label}</span>
+      </div>
+      <div className="shrink-0 flex items-center gap-2">{trailing}</div>
+    </button>
+  );
+}
+
+function TileAction({
+  onClick, icon: Icon, tone, label, hint,
+}: {
+  onClick: () => void; icon: React.ElementType; tone: keyof typeof toneClasses; label: string; hint: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="flex flex-col items-start p-4 bg-card border border-border rounded-xl shadow-sm hover:shadow-md hover:border-primary/30 transition-all press-scale text-left"
+    >
+      <div className={`p-2 rounded-lg mb-3 ${toneClasses[tone]}`}>
+        <Icon className="h-5 w-5" />
+      </div>
+      <span className="font-heading font-semibold text-foreground text-sm">{label}</span>
+      <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-bold mt-0.5">{hint}</span>
+    </button>
+  );
+}
