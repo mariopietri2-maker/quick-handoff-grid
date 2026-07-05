@@ -36,6 +36,7 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
+  const [sheet, setSheet] = useState<null | 'addresses' | 'referral' | 'wallet'>(null);
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
