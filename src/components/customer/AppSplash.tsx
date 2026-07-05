@@ -1,10 +1,8 @@
-import { useEffect, useMemo, useState } from 'react';
-
-const FOODS = ['🍔', '🍕', '🌮', '🍣', '🍜', '🥗', '🍦', '🍩', '🥙', '🍱', '🍝', '🍟', '🥐', '🍰', '☕', '🥪'];
+import { useEffect, useState } from 'react';
 
 /**
- * Branded splash shown the first time the customer app mounts in a session.
- * A random food emoji bounces in, then the splash fades out.
+ * Polished, professional brand splash for the customer app.
+ * A refined monogram mark with subtle motion — no emoji, no clutter.
  */
 export default function AppSplash() {
   const [phase, setPhase] = useState<'in' | 'out' | 'done'>(() => {
@@ -14,19 +12,13 @@ export default function AppSplash() {
     return 'in';
   });
 
-  const food = useMemo(() => FOODS[Math.floor(Math.random() * FOODS.length)], []);
-  const orbiters = useMemo(() => {
-    const pool = FOODS.filter((f) => f !== food);
-    return Array.from({ length: 6 }, () => pool[Math.floor(Math.random() * pool.length)]);
-  }, [food]);
-
   useEffect(() => {
     if (phase === 'done') return;
-    const t1 = setTimeout(() => setPhase('out'), 1500);
+    const t1 = setTimeout(() => setPhase('out'), 1400);
     const t2 = setTimeout(() => {
       setPhase('done');
       try { sessionStorage.setItem('customer_splash_shown', '1'); } catch {}
-    }, 2100);
+    }, 2000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
   }, [phase]);
 
@@ -39,58 +31,61 @@ export default function AppSplash() {
       }`}
       style={{
         background:
-          'radial-gradient(120% 80% at 50% 30%, hsl(var(--c-accent, 4 90% 47%) / 0.95), hsl(var(--c-accent-dark, 4 90% 38%) / 1))',
+          'radial-gradient(120% 80% at 50% 20%, hsl(var(--c-accent, 4 90% 47%)) 0%, hsl(var(--c-accent-dark, 4 90% 38%)) 70%, hsl(4 85% 28%) 100%)',
       }}
       aria-hidden
     >
       <style>{`
-        @keyframes splashPop { 0%{transform:scale(.4) rotate(-20deg);opacity:0} 60%{transform:scale(1.15) rotate(8deg);opacity:1} 100%{transform:scale(1) rotate(0)} }
-        @keyframes splashFloat { 0%,100%{transform:translateY(0)} 50%{transform:translateY(-8px)} }
-        @keyframes splashOrbit { from{transform:rotate(0) translateX(110px) rotate(0)} to{transform:rotate(360deg) translateX(110px) rotate(-360deg)} }
-        @keyframes splashFadeUp { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+        @keyframes splashMarkIn { 0%{transform:scale(.85);opacity:0} 100%{transform:scale(1);opacity:1} }
+        @keyframes splashRingPulse { 0%,100%{transform:scale(1);opacity:.35} 50%{transform:scale(1.08);opacity:.15} }
+        @keyframes splashTextIn { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:translateY(0)} }
+        @keyframes splashBar { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
       `}</style>
 
-      <div className="relative h-[260px] w-[260px] flex items-center justify-center">
-        {/* Orbiting food emojis */}
-        {orbiters.map((o, i) => (
+      {/* soft vignette */}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_100%,hsl(0_0%_0%/0.35),transparent_70%)]" />
+
+      <div className="relative flex flex-col items-center">
+        {/* pulsing ring */}
+        <div
+          className="absolute top-0 h-[120px] w-[120px] rounded-full border border-white/25"
+          style={{ animation: 'splashRingPulse 2.4s ease-in-out infinite' }}
+        />
+        {/* mark */}
+        <div
+          className="h-[120px] w-[120px] rounded-[32px] bg-white flex items-center justify-center shadow-[0_24px_60px_-16px_hsl(0_0%_0%/0.45),inset_0_1px_0_hsl(0_0%_100%/0.9)]"
+          style={{ animation: 'splashMarkIn 700ms cubic-bezier(.2,.9,.3,1) both' }}
+        >
           <span
-            key={i}
-            className="emoji absolute text-3xl"
+            className="font-heading font-black text-[56px] leading-none tracking-tight bg-clip-text text-transparent"
             style={{
-              animation: `splashOrbit ${8 + i}s linear infinite`,
-              animationDelay: `${-i * 1.3}s`,
-              filter: 'drop-shadow(0 4px 8px hsl(0 0% 0% / 0.25))',
-              opacity: 0.9,
+              backgroundImage:
+                'linear-gradient(135deg, hsl(var(--c-accent, 4 90% 47%)), hsl(var(--c-accent-dark, 4 90% 38%)))',
             }}
           >
-            {o}
+            F
           </span>
-        ))}
+        </div>
 
-        {/* Main food */}
+        {/* wordmark */}
         <div
-          className="relative"
-          style={{ animation: 'splashPop 700ms cubic-bezier(.34,1.56,.64,1) both' }}
+          className="mt-7 text-center"
+          style={{ animation: 'splashTextIn 600ms ease-out 250ms both' }}
         >
-          <div
-            className="h-32 w-32 rounded-[36px] bg-white/95 backdrop-blur flex items-center justify-center shadow-[0_20px_60px_-12px_hsl(0_0%_0%/0.4)]"
-            style={{ animation: 'splashFloat 2.2s ease-in-out infinite 700ms' }}
-          >
-            <span className="emoji text-[72px] leading-none">{food}</span>
+          <div className="font-heading font-black text-white text-[26px] tracking-tight leading-none">
+            Fresh Delivery
+          </div>
+          <div className="mt-2 text-white/70 text-[11px] font-bold tracking-[0.32em] uppercase">
+            Fast · Fresh · Local
           </div>
         </div>
 
-        {/* Wordmark */}
-        <div
-          className="absolute -bottom-2 left-0 right-0 text-center"
-          style={{ animation: 'splashFadeUp 600ms ease-out 400ms both' }}
-        >
-          <div className="font-heading font-black text-white text-2xl tracking-tight drop-shadow">
-            Fresh Delivery
-          </div>
-          <div className="text-white/80 text-xs font-bold tracking-[0.2em] uppercase mt-1">
-            Καλή όρεξη
-          </div>
+        {/* progress bar */}
+        <div className="mt-8 h-[2px] w-[140px] rounded-full bg-white/15 overflow-hidden">
+          <div
+            className="h-full w-full bg-white/90 origin-left"
+            style={{ animation: 'splashBar 1300ms ease-out both' }}
+          />
         </div>
       </div>
     </div>
