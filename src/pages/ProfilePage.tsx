@@ -11,12 +11,15 @@ import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
   FileText, RefreshCw, Ticket, Gift, MapPin, Heart, Receipt, ChevronRight,
-  Settings as SettingsIcon,
+  Settings as SettingsIcon, Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SEO } from '@/components/SEO';
+import { SavedAddresses } from '@/components/SavedAddresses';
+import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard';
+import { CustomerWalletCard } from '@/components/customer/CustomerWalletCard';
 
 const roleConfig: Record<string, { label: string; icon: any; path: string }> = {
   admin:    { label: 'Admin',     icon: Shield,      path: '/admin'   },
