@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Gift } from 'lucide-react';
+import { Ticket, ArrowDownCircle, ArrowUpCircle, Gift } from 'lucide-react';
 import { useCustomerWallet } from '@/hooks/useCustomerWallet';
 
 export function CustomerWalletCard() {
