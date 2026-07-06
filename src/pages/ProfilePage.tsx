@@ -184,7 +184,7 @@ export default function ProfilePage() {
         {/* Primary tiles */}
         <section className="grid grid-cols-2 gap-3">
           <TileButton to="/orders" icon={Receipt} tone="primary" label="Παραγγελίες μου" hint="Ιστορικό & επανάληψη" />
-          <TileAction onClick={() => setSheet('wallet')} icon={Wallet} tone="emerald" label="Πορτοφόλι" hint="Υπόλοιπο & κινήσεις" />
+          <TileAction onClick={() => setSheet('wallet')} icon={Ticket} tone="emerald" label="Κουπόνια" hint="Υπόλοιπο & κινήσεις" />
         </section>
 
         {/* Perks & Social */}
