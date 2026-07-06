@@ -184,7 +184,7 @@ export default function ProfilePage() {
         {/* Primary tiles */}
         <section className="grid grid-cols-2 gap-3">
           <TileButton to="/orders" icon={Receipt} tone="primary" label="Παραγγελίες μου" hint="Ιστορικό & επανάληψη" />
-          <TileAction onClick={() => setSheet('wallet')} icon={Wallet} tone="emerald" label="Πορτοφόλι" hint="Υπόλοιπο & κινήσεις" />
+          <TileAction onClick={() => setSheet('wallet')} icon={Ticket} tone="emerald" label="Κουπόνια" hint="Υπόλοιπο & κινήσεις" />
         </section>
 
         {/* Perks & Social */}
@@ -233,7 +233,7 @@ export default function ProfilePage() {
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="font-heading text-left">
-              {sheet === 'wallet' && 'Πορτοφόλι'}
+              {sheet === 'wallet' && 'Κουπόνια'}
               {sheet === 'referral' && 'Κάλεσε φίλους'}
               {sheet === 'addresses' && 'Οι διευθύνσεις μου'}
             </SheetTitle>
