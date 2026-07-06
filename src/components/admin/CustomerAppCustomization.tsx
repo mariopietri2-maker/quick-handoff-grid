@@ -22,6 +22,7 @@ export default function CustomerAppCustomization() {
   const [draft, setDraft] = useState<CustomerAppConfig>(DEFAULT_CONFIG);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const load = async () => {
     const { data } = await (supabase as any)
