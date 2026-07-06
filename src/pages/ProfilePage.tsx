@@ -233,7 +233,7 @@ export default function ProfilePage() {
         <SheetContent side="bottom" className="rounded-t-2xl max-h-[85vh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle className="font-heading text-left">
-              {sheet === 'wallet' && 'Πορτοφόλι'}
+              {sheet === 'wallet' && 'Κουπόνια'}
               {sheet === 'referral' && 'Κάλεσε φίλους'}
               {sheet === 'addresses' && 'Οι διευθύνσεις μου'}
             </SheetTitle>
