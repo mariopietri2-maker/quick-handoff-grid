@@ -1,5 +1,5 @@
 import { Card, CardContent } from '@/components/ui/card';
-import { Wallet, ArrowDownCircle, ArrowUpCircle, Gift } from 'lucide-react';
+import { Ticket, ArrowDownCircle, ArrowUpCircle, Gift } from 'lucide-react';
 import { useCustomerWallet } from '@/hooks/useCustomerWallet';
 
 export function CustomerWalletCard() {
@@ -13,8 +13,8 @@ export function CustomerWalletCard() {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <Wallet className="h-5 w-5 text-primary" />
-            <span className="font-heading font-semibold text-foreground">Πορτοφόλι</span>
+            <Ticket className="h-5 w-5 text-primary" />
+            <span className="font-heading font-semibold text-foreground">Κουπόνια</span>
           </div>
           <span className="font-heading font-bold text-2xl text-foreground">
             {balance.toFixed(2)}€

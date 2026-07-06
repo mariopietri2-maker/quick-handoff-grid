@@ -22,6 +22,7 @@ export default function CustomerAppCustomization() {
   const [draft, setDraft] = useState<CustomerAppConfig>(DEFAULT_CONFIG);
   const [saving, setSaving] = useState(false);
   const [publishing, setPublishing] = useState(false);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
 
   const load = async () => {
     const { data } = await (supabase as any)
@@ -142,13 +143,45 @@ export default function CustomerAppCustomization() {
                   <div className="h-9 w-9 rounded-md border" style={{ background: `hsl(${draft.branding.accent_dark_hsl})` }} />
                 </div>
               </div>
-              <div className="sm:col-span-2">
-                <Label>Logo URL (προαιρετικό)</Label>
-                <Input
-                  value={draft.branding.logo_url ?? ''}
-                  onChange={e => setDraft({ ...draft, branding: { ...draft.branding, logo_url: e.target.value || null } })}
-                  placeholder="https://..."
-                />
+              <div className="sm:col-span-2 space-y-2">
+                <Label>Logo εφαρμογής</Label>
+                <div className="flex items-center gap-3">
+                  {draft.branding.logo_url ? (
+                    <img src={draft.branding.logo_url} alt="Logo" className="h-16 w-16 rounded-lg border object-contain bg-card" />
+                  ) : (
+                    <div className="h-16 w-16 rounded-lg border bg-muted flex items-center justify-center text-xs text-muted-foreground">Κανένα</div>
+                  )}
+                  <div className="flex-1 space-y-2">
+                    <Input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp,image/svg+xml"
+                      disabled={uploadingLogo}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setUploadingLogo(true);
+                        const ext = file.name.split('.').pop() || 'png';
+                        const path = `logo-${Date.now()}.${ext}`;
+                        const { error: upErr } = await supabase.storage.from('app-branding').upload(path, file, { cacheControl: '3600', upsert: false });
+                        if (upErr) { toast.error('Αποτυχία upload: ' + upErr.message); setUploadingLogo(false); return; }
+                        const { data: pub } = supabase.storage.from('app-branding').getPublicUrl(path);
+                        setDraft({ ...draft, branding: { ...draft.branding, logo_url: pub.publicUrl } });
+                        setUploadingLogo(false);
+                        toast.success('Logo ανέβηκε — μην ξεχάσεις Δημοσίευση');
+                      }}
+                    />
+                    <Input
+                      value={draft.branding.logo_url ?? ''}
+                      onChange={e => setDraft({ ...draft, branding: { ...draft.branding, logo_url: e.target.value || null } })}
+                      placeholder="ή επικόλλησε URL..."
+                    />
+                    {draft.branding.logo_url && (
+                      <Button size="sm" variant="ghost" onClick={() => setDraft({ ...draft, branding: { ...draft.branding, logo_url: null } })}>
+                        <Trash2 className="h-3.5 w-3.5 mr-1" /> Αφαίρεση logo
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
             </CardContent>
           </Card>
