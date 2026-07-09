@@ -30,9 +30,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role, full_name, public_code')
       .eq('user_id', userId)
       .maybeSingle();
-    setProfile(data as any);
+    // If profile row doesn't exist yet (e.g. DB trigger lag after signup),
+    // set a minimal placeholder so the app isn't stuck on the loading spinner.
+    setProfile(data ? (data as any) : { role: 'customer', full_name: null });
 
-    // Check admin & support roles from user_roles table
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
@@ -43,24 +44,32 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    let initialised = false;
+
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          await fetchProfile(session.user.id);
         } else {
           setProfile(null);
+          setIsAdmin(false);
+          setIsSupport(false);
         }
         setLoading(false);
+        initialised = true;
       }
     );
 
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    // Fallback: resolve loading state from initial session check in case
+    // onAuthStateChange fires late.
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (initialised) return; // onAuthStateChange already handled it
       setSession(session);
       setUser(session?.user ?? null);
       if (session?.user) {
-        fetchProfile(session.user.id);
+        await fetchProfile(session.user.id);
       }
       setLoading(false);
     });
@@ -76,7 +85,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     });
 
     if (!error && data.user) {
-      // Update profile role
       await supabase
         .from('profiles')
         .update({ role: role as any })
