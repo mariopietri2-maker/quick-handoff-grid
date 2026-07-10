@@ -1,15 +1,18 @@
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense, useState, useRef } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
+import { Label } from '@/components/ui/label';
+import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoveVertical as MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -148,6 +151,24 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
   };
 
+  const handleCreateStore = async (data: { name: string; address: string; phone: string; latitude: string; longitude: string; description: string }) => {
+    const lat = data.latitude ? parseFloat(data.latitude) : null;
+    const lng = data.longitude ? parseFloat(data.longitude) : null;
+    const { error } = await supabase.from('stores').insert({
+      name: data.name.trim(),
+      address: data.address.trim() || null,
+      phone: data.phone.trim() || null,
+      latitude: lat,
+      longitude: lng,
+      description: data.description.trim() || null,
+      is_active: true,
+    } as any);
+    if (error) { toast.error(error.message || 'Αποτυχία δημιουργίας'); return false; }
+    toast.success(`Κατάστημα "${data.name}" δημιουργήθηκε`);
+    queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
+    return true;
+  };
+
   const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
     const { error } = await supabase.from('driver_profiles').update({ is_active: !currentActive } as any).eq('user_id', userId);
     if (error) toast.error('Αποτυχία');
@@ -275,7 +296,7 @@ export default function AdminApp() {
       case 'orders_table':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
-        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
+        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} onCreate={handleCreateStore} />;
       case 'drivers':
         return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
       case 'users':
@@ -578,24 +599,86 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
   );
 }
 
-function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle }: any) {
+function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle, onCreate }: any) {
   const walletMap = new Map((storeWallets ?? []).map((w: any) => [w.store_id, w]));
   const totalLifetime = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.lifetime_earnings ?? 0), 0);
   const totalAvailable = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.available_balance ?? 0), 0);
   const fmt = (n: number) => `€${n.toFixed(2)}`;
+
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [form, setForm] = useState({ name: '', address: '', phone: '', latitude: '', longitude: '', description: '' });
+
+  const handleSave = async () => {
+    if (!form.name.trim()) return;
+    setSaving(true);
+    const ok = await onCreate(form);
+    setSaving(false);
+    if (ok) { setDialogOpen(false); setForm({ name: '', address: '', phone: '', latitude: '', longitude: '', description: '' }); }
+  };
+
   return (
     <div className="space-y-3">
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Νέο Κατάστημα</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-3 py-1">
+            <div className="space-y-1">
+              <Label>Όνομα *</Label>
+              <Input value={form.name} onChange={e => setForm(p => ({ ...p, name: e.target.value }))} placeholder="π.χ. Souvlaki Express" />
+            </div>
+            <div className="space-y-1">
+              <Label>Διεύθυνση</Label>
+              <Input value={form.address} onChange={e => setForm(p => ({ ...p, address: e.target.value }))} placeholder="π.χ. Δωδώνης 12, Ιωάννινα" />
+            </div>
+            <div className="space-y-1">
+              <Label>Τηλέφωνο</Label>
+              <Input value={form.phone} onChange={e => setForm(p => ({ ...p, phone: e.target.value }))} placeholder="π.χ. 2651012345" />
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1">
+                <Label>Γεωγρ. Πλάτος (lat)</Label>
+                <Input value={form.latitude} onChange={e => setForm(p => ({ ...p, latitude: e.target.value }))} placeholder="39.6650" type="number" step="any" />
+              </div>
+              <div className="space-y-1">
+                <Label>Γεωγρ. Μήκος (lng)</Label>
+                <Input value={form.longitude} onChange={e => setForm(p => ({ ...p, longitude: e.target.value }))} placeholder="20.8537" type="number" step="any" />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">Οι συντεταγμένες χρειάζονται για εμφάνιση στον χάρτη οδηγών.</p>
+            <div className="space-y-1">
+              <Label>Περιγραφή</Label>
+              <Textarea value={form.description} onChange={e => setForm(p => ({ ...p, description: e.target.value }))} placeholder="Σύντομη περιγραφή..." rows={2} />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setDialogOpen(false)}>Ακύρωση</Button>
+            <Button onClick={handleSave} disabled={saving || !form.name.trim()}>
+              {saving ? 'Αποθήκευση...' : 'Δημιουργία'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
       <SectionHeader title="Καταστήματα" count={allStores.length}>
-        <div className="flex gap-1 p-0.5 bg-muted rounded-md">
-          {(['all', 'active', 'inactive'] as const).map(f => (
-            <button
-              key={f}
-              onClick={() => setFilter(f)}
-              className={`px-2.5 h-6 text-[11px] font-medium rounded transition-colors ${filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
-            >
-              {f === 'all' ? `Όλα ${allStores.length}` : f === 'active' ? `Ενεργά ${allStores.filter((s: any) => s.is_active !== false).length}` : `Ανενεργά ${allStores.filter((s: any) => s.is_active === false).length}`}
-            </button>
-          ))}
+        <div className="flex items-center gap-2">
+          <div className="flex gap-1 p-0.5 bg-muted rounded-md">
+            {(['all', 'active', 'inactive'] as const).map(f => (
+              <button
+                key={f}
+                onClick={() => setFilter(f)}
+                className={`px-2.5 h-6 text-[11px] font-medium rounded transition-colors ${filter === f ? 'bg-background text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}
+              >
+                {f === 'all' ? `Όλα ${allStores.length}` : f === 'active' ? `Ενεργά ${allStores.filter((s: any) => s.is_active !== false).length}` : `Ανενεργά ${allStores.filter((s: any) => s.is_active === false).length}`}
+              </button>
+            ))}
+          </div>
+          <Button size="sm" className="h-7 px-2.5 text-[11px] gap-1" onClick={() => setDialogOpen(true)}>
+            <Plus className="h-3 w-3" />
+            Νέο
+          </Button>
         </div>
       </SectionHeader>
       <div className="grid grid-cols-2 gap-2">
@@ -611,16 +694,31 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
+            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th>Συντεταγμένες</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
             <tbody>
               {stores.map((store: any) => {
                 const w: any = walletMap.get(store.id);
                 const lifetime = Number(w?.lifetime_earnings ?? 0);
                 const available = Number(w?.available_balance ?? 0);
+                const hasCoords = store.latitude != null && store.longitude != null;
                 return (
                   <tr key={store.id}>
                     <td className="font-medium">{store.name}</td>
                     <td className="text-muted-foreground">{store.address}</td>
+                    <td>
+                      {hasCoords ? (
+                        <a
+                          href={`https://www.google.com/maps?q=${store.latitude},${store.longitude}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-[11px] text-primary hover:underline tabular-nums"
+                        >
+                          {Number(store.latitude).toFixed(4)}, {Number(store.longitude).toFixed(4)}
+                        </a>
+                      ) : (
+                        <span className="text-[11px] text-destructive font-medium">⚠ Δεν έχουν οριστεί</span>
+                      )}
+                    </td>
                     <td className="text-right tabular-nums font-medium">{fmt(lifetime)}</td>
                     <td className={`text-right tabular-nums ${available < 0 ? 'text-red-600 dark:text-red-400' : ''}`}>{fmt(available)}</td>
                     <td><Switch checked={!!store.is_active} onCheckedChange={() => onToggle(store.id, store.is_active)} /></td>
@@ -633,7 +731,17 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                   </tr>
                 );
               })}
-              {!stores.length && <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Κανένα κατάστημα</td></tr>}
+              {!stores.length && (
+                <tr>
+                  <td colSpan={8} className="text-center py-12">
+                    <div className="space-y-2">
+                      <Store className="h-8 w-8 text-muted-foreground mx-auto" />
+                      <p className="text-sm font-medium text-muted-foreground">Κανένα κατάστημα</p>
+                      <p className="text-xs text-muted-foreground">Προσθέστε το πρώτο κατάστημα με το κουμπί "Νέο" παραπάνω.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

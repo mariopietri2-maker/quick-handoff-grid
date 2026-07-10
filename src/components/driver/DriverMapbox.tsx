@@ -522,10 +522,22 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
   useImperativeHandle(ref, () => ({ recenter, focusOn }), [recenter, focusOn]);
 
-  if (loading || !token) {
+  if (loading) {
     return (
       <div className={`bg-muted/50 flex items-center justify-center ${className}`}>
         <div className="h-6 w-6 border-3 border-primary border-t-transparent rounded-full animate-spin" />
+      </div>
+    );
+  }
+
+  if (!token) {
+    return (
+      <div className={`bg-[hsl(220,14%,12%)] flex flex-col items-center justify-center gap-3 ${className}`}>
+        <div className="h-12 w-12 rounded-2xl bg-destructive/15 border border-destructive/25 flex items-center justify-center">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-destructive"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+        </div>
+        <p className="text-sm font-medium text-white/70">Ο χάρτης δεν είναι διαθέσιμος</p>
+        <p className="text-xs text-white/40 text-center px-6">Το Mapbox API token δεν έχει ρυθμιστεί.</p>
       </div>
     );
   }
