@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap, PackagePlus, Wallet } from 'lucide-react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, ChartBar as BarChart3, Tag, Package, Clock, Zap, PackagePlus, Wallet, ChevronDown } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
@@ -20,6 +20,9 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission } from '@/lib/notifications';
@@ -34,14 +37,13 @@ export default function StoreApp() {
     const granted = await requestNotificationPermission();
     setNotifPermission(granted ? 'granted' : 'denied');
   };
-  const { store, loading: storeLoading, createStore } = useStore();
+  const { store, allStores, loading: storeLoading, createStore, selectStore } = useStore();
   const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(store?.id ?? null);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [activeTab, setActiveTab] = useState('orders');
   const tabsListRef = useRef<HTMLDivElement>(null);
 
-  // Keep the active tab visible inside the horizontally scrolling tab strip on mobile.
   useEffect(() => {
     const list = tabsListRef.current;
     if (!list) return;
@@ -64,11 +66,44 @@ export default function StoreApp() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-[var(--shadow-sm)]">
-        <div className="flex items-center gap-2">
-          <Store className="h-6 w-6 text-primary" />
-          <h1 className="font-heading font-bold text-lg text-foreground">DashStore</h1>
+        <div className="flex items-center gap-2 min-w-0">
+          <Store className="h-6 w-6 text-primary flex-shrink-0" />
+          {store && allStores.length > 1 ? (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button className="flex items-center gap-1 font-heading font-bold text-base text-foreground hover:text-primary transition-colors min-w-0">
+                  <span className="truncate max-w-[140px]">{store.name}</span>
+                  <ChevronDown className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                <div className="px-2 py-1.5 text-xs font-heading font-semibold text-muted-foreground uppercase tracking-wider">
+                  Επιλογή καταστήματος
+                </div>
+                <DropdownMenuSeparator />
+                {allStores.map(s => (
+                  <DropdownMenuItem
+                    key={s.id}
+                    onClick={() => selectStore(s.id)}
+                    className={`font-heading cursor-pointer ${s.id === store.id ? 'text-primary font-semibold' : ''}`}
+                  >
+                    <Store className="h-4 w-4 mr-2 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <div className="truncate">{s.name}</div>
+                      {s.address && <div className="text-xs text-muted-foreground truncate">{s.address}</div>}
+                    </div>
+                    {s.id === store.id && <span className="ml-auto text-primary">✓</span>}
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          ) : (
+            <h1 className="font-heading font-bold text-lg text-foreground truncate">
+              {store ? store.name : 'DashStore'}
+            </h1>
+          )}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-shrink-0">
           {store && (
             <Badge variant="outline" className={`font-heading ${store.is_active ? 'text-success border-success/30' : 'text-muted-foreground border-border'}`}>
               {store.is_active ? '● Ανοιχτό' : '○ Κλειστό'}
