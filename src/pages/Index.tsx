@@ -1,9 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  ArrowRight, Zap, Shield, BarChart3, MapPin, Users,
-  Search, ClipboardList, Bike, CheckCircle, Headphones, Sparkles, Activity,
-  TrendingUp, Star, Store,
-} from 'lucide-react';
+import { ArrowRight, Zap, Shield, ChartBar as BarChart3, MapPin, Users, Search, ClipboardList, Bike, CircleCheck as CheckCircle, Headphones, Sparkles, Activity, TrendingUp, Star, Store, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -171,6 +167,14 @@ const Index = () => {
               onClick={() => navigate('/auth')}
             >
               Σύνδεση
+            </Button>
+            <Button
+              size="lg" variant="outline"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card border-primary/40 text-primary hover:bg-primary/5"
+              onClick={() => navigate('/driver')}
+            >
+              <Car className="mr-2 h-5 w-5" />
+              Είμαι Οδηγός
             </Button>
           </div>
 
