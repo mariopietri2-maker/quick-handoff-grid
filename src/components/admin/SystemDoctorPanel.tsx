@@ -3,11 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import {
-  CheckCircle2, AlertTriangle, XCircle, Loader2, RefreshCw, Wrench, Stethoscope,
-  Database, Zap, MapPin, ShoppingBag, Bike, Wallet, Receipt, Truck, Bell,
-  CreditCard, Clock, Users, Store, Activity, FileWarning, Trash2, Settings2,
-} from 'lucide-react';
+import { CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, Loader as Loader2, RefreshCw, Wrench, Stethoscope, Database, Zap, MapPin, ShoppingBag, Bike, Wallet, Receipt, Truck, Bell, CreditCard, Clock, Users, Store, Activity, FileWarning, Trash2, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Status = 'ok' | 'warn' | 'error' | 'checking';
