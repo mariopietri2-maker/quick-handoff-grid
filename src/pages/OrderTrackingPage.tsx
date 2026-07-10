@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star } from 'lucide-react';
+import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CircleCheck as CheckCircle2, Car, MapPin, Star } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -23,6 +23,7 @@ const STATUS_STEPS = [
 ] as const;
 
 const STATUS_HEADLINE: Record<string, { emoji: string; title: string; sub: string }> = {
+  pending:    { emoji: '⏳', title: 'Αναμονή πληρωμής', sub: 'Η παραγγελία ολοκληρώνεται μόλις επιβεβαιωθεί η πληρωμή' },
   placed:     { emoji: '📋', title: 'Στείλαμε την παραγγελία σου', sub: 'Περιμένουμε επιβεβαίωση από το κατάστημα' },
   accepted:   { emoji: '👨‍🍳', title: 'Το κατάστημα την αποδέχτηκε', sub: 'Ξεκινάει η ετοιμασία' },
   preparing:  { emoji: '🔥', title: 'Ετοιμάζεται φρέσκο', sub: 'Σύντομα θα είναι έτοιμη' },
@@ -111,7 +112,7 @@ export default function OrderTrackingPage() {
   }
 
   const status = order.status ?? 'placed';
-  const headline = STATUS_HEADLINE[status] ?? STATUS_HEADLINE.placed;
+  const headline = STATUS_HEADLINE[status] ?? STATUS_HEADLINE['placed'];
   const isDelivered = status === 'delivered';
   const isCancelled = status === 'cancelled';
   const currentIdx = STATUS_STEPS.findIndex((s) => s.key === status);

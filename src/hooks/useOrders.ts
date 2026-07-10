@@ -59,7 +59,7 @@ export function useStoreOrders(storeId: string | null) {
             playOrderSound();
             const newOrder = payload.new as OrderRow;
             showOrderNotification(newOrder.id, 0);
-            toast('🔔 New order received!', { duration: 5000 });
+            toast('🔔 Νέα παραγγελία!', { duration: 5000 });
           } else if (payload.eventType === 'UPDATE') {
             setOrders(prev =>
               prev.map(order =>
@@ -96,9 +96,13 @@ export function useStoreOrders(storeId: string | null) {
       .eq('id', orderId);
 
     if (error) {
-      toast.error('Failed to update order status');
+      toast.error('Αποτυχία ενημέρωσης κατάστασης');
     } else {
-      toast.success(`Order updated → ${newStatus}`);
+      const labels: Record<string, string> = {
+        placed: 'Υποβλήθηκε', accepted: 'Αποδεκτή', preparing: 'Ετοιμάζεται',
+        ready: 'Έτοιμη', picked_up: 'Παραλήφθηκε', delivered: 'Παραδόθηκε', cancelled: 'Ακυρώθηκε',
+      };
+      toast.success(`Κατάσταση → ${labels[newStatus] ?? newStatus}`);
       // Smart dispatch: trigger prediction when accepted/preparing
       if (newStatus === 'accepted' || newStatus === 'preparing') {
         supabase.functions.invoke('predict-dispatch-time', {
@@ -425,7 +429,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       });
       if (error || (data && (data as { error?: string }).error)) {
         const msg = (data as { error?: string })?.error ?? error?.message ?? 'Failed to accept';
-        toast.error(msg === 'order already taken' ? 'Order already taken by another driver' : 'Failed to accept order');
+        toast.error(msg === 'order already taken' ? 'Η παραγγελία έχει ληφθεί από άλλον οδηγό' : 'Αποτυχία αποδοχής παραγγελίας');
         fetchOrders();
         return;
       }
@@ -445,7 +449,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       .eq('id', orderId);
 
     if (error) {
-      toast.error('Failed to accept order');
+      toast.error('Αποτυχία αποδοχής παραγγελίας');
     } else {
       supabase.from('driver_offer_events').insert({
         driver_id: user.id,
@@ -512,7 +516,7 @@ export function useUserStore() {
       .select('id')
       .eq('owner_id', user.id)
       .limit(1)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         setStoreId(data?.id ?? null);
         setLoading(false);
