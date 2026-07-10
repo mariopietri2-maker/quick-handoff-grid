@@ -45,11 +45,15 @@ export function useDriverState() {
   // Realtime — picks up admin actions (cash resets, etc.) instantly
   useEffect(() => {
     if (!user) return;
-    // Stable channel name per user — avoids leaking a fresh channel on every
-    // mount (the previous Math.random() suffix produced thousands of unique
-    // channels and contributed to runaway rolled-back transactions).
+    const channelName = `driver-state-${user.id}`;
+    // Remove any lingering channel with the same name before creating a new one.
+    // This prevents the "cannot add postgres_changes after subscribe()" error that
+    // occurs when Supabase returns an already-subscribed channel on re-mount.
+    const existing = supabase.getChannels().find(c => c.topic === `realtime:${channelName}`);
+    if (existing) supabase.removeChannel(existing);
+
     const ch = supabase
-      .channel(`driver-state-${user.id}`)
+      .channel(channelName)
       .on('postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'driver_state', filter: `driver_id=eq.${user.id}` },
         (payload: any) => { if (payload.new) setState(payload.new as DriverState); })

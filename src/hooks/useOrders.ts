@@ -342,8 +342,15 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       return false;
     };
 
+    const ordersChannelName = `driver-orders-${user.id}`;
+    const offersChannelName = `driver-offers-${user.id}`;
+    const existingOrders = supabase.getChannels().find(c => c.topic === `realtime:${ordersChannelName}`);
+    if (existingOrders) supabase.removeChannel(existingOrders);
+    const existingOffers = supabase.getChannels().find(c => c.topic === `realtime:${offersChannelName}`);
+    if (existingOffers) supabase.removeChannel(existingOffers);
+
     const ordersChannel = supabase
-      .channel(`driver-orders-${user.id}`)
+      .channel(ordersChannelName)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
@@ -357,7 +364,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       .subscribe();
 
     const offersChannel = supabase
-      .channel(`driver-offers-${user.id}`)
+      .channel(offersChannelName)
       .on(
         'postgres_changes',
         {

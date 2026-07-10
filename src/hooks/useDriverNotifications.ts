@@ -44,8 +44,12 @@ export function useDriverNotifications() {
     })();
 
     // 2) Realtime stream
+    const notifChannelName = `driver-notifications-${user.id}`;
+    const existingNotif = supabase.getChannels().find(c => c.topic === `realtime:${notifChannelName}`);
+    if (existingNotif) supabase.removeChannel(existingNotif);
+
     const channel = supabase
-      .channel(`driver-notifications-${user.id}`)
+      .channel(notifChannelName)
       .on(
         'postgres_changes',
         {
