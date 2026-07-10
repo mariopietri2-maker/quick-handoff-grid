@@ -30,8 +30,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role, full_name, public_code')
       .eq('user_id', userId)
       .maybeSingle();
-    // If profile row doesn't exist yet (e.g. DB trigger lag after signup),
-    // set a minimal placeholder so the app isn't stuck on the loading spinner.
     setProfile(data ? (data as any) : { role: 'customer', full_name: null });
 
     const { data: roles } = await supabase
@@ -44,35 +42,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    let initialised = false;
-
+    // onAuthStateChange must NOT be async and must NOT await Supabase calls
+    // directly inside the callback — doing so causes a deadlock because the
+    // SDK fires the callback synchronously while the auth token is still being
+    // committed. Defer any DB work with setTimeout to break the cycle.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+
         if (session?.user) {
-          await fetchProfile(session.user.id);
+          const userId = session.user.id;
+          setTimeout(() => {
+            fetchProfile(userId).finally(() => setLoading(false));
+          }, 0);
         } else {
           setProfile(null);
           setIsAdmin(false);
           setIsSupport(false);
+          setLoading(false);
         }
-        setLoading(false);
-        initialised = true;
       }
     );
-
-    // Fallback: resolve loading state from initial session check in case
-    // onAuthStateChange fires late.
-    supabase.auth.getSession().then(async ({ data: { session } }) => {
-      if (initialised) return; // onAuthStateChange already handled it
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
