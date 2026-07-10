@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+const ENV_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+
 const LS_KEY = 'mapbox_token_v1';
 const LS_TS_KEY = 'mapbox_token_ts_v1';
 const TTL_MS = 24 * 60 * 60 * 1000; // 24h
 
-let cachedToken: string | null = null;
+let cachedToken: string | null = ENV_TOKEN || null;
 let inflight: Promise<string | null> | null = null;
 
 function readLocal(): string | null {
