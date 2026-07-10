@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Star, Zap, BadgePercent } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -68,7 +68,23 @@ export default function CustomerApp() {
   const [offerItems, setOfferItems] = useState<OfferItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onSearchChange = (value: string) => {
+    setSearch(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setDebouncedSearch(value.trim()), 250);
+  };
+
+  const clearSearch = () => {
+    setSearch('');
+    setDebouncedSearch('');
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  };
+
+  const isSearching = debouncedSearch.length > 0;
   const [filterFree, setFilterFree] = useState(false);
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
@@ -219,8 +235,9 @@ export default function CustomerApp() {
   }, [offerItems, stores, ratings]);
 
   const filtered = useMemo(() => stores.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.address.toLowerCase().includes(search.toLowerCase());
+    const q = debouncedSearch.toLowerCase();
+    const matchesSearch = !q || s.name.toLowerCase().includes(q) ||
+      s.address.toLowerCase().includes(q);
     if (!matchesSearch) return false;
     if (selectedCategory !== 'all') {
       const cats = storeCategories[s.id] ?? [];
@@ -230,7 +247,7 @@ export default function CustomerApp() {
     if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
     if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
     return true;
-  }), [stores, search, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
+  }), [stores, debouncedSearch, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
 
   return (
     <div
@@ -309,9 +326,18 @@ export default function CustomerApp() {
             <Input
               placeholder={t('customer.search_placeholder')}
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => onSearchChange(e.target.value)}
               className="pl-12 h-12 bg-[hsl(0,0%,96%)] border-0 rounded-2xl text-[15px] font-medium placeholder:c-muted focus-visible:ring-2 focus-visible:ring-[hsl(var(--c-accent))]/40 focus-visible:bg-white focus-visible:ring-offset-0 transition-all"
             />
+            {search && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-[hsl(0,0%,90%)] hover:bg-[hsl(0,0%,85%)] flex items-center justify-center transition-colors"
+                aria-label="Clear search"
+              >
+                <svg className="h-4 w-4 text-[hsl(0,0%,40%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            )}
           </div>
         </div>
       </header>
@@ -349,13 +375,13 @@ export default function CustomerApp() {
         )}
 
         {/* ── AI-generated hero carousel ────────────────── */}
-        {cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
+        {!isSearching && cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
         {/* ── Promo carousel ─────────────────────────────── */}
-        {cfg.sections.show_promos && <PromoBannerCarousel />}
+        {!isSearching && cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
-        {!search && selectedCategory === 'all' && promotionOffers.length > 0 && (
+        {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (
           <div id="one-plus-one-row">
             <OfferRow
               title="Προσφορές για σένα"
@@ -372,7 +398,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Free delivery row ─────────────────────────── */}
-        {!search && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
+        {!isSearching && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
           <OfferRow
             title="Δωρεάν delivery"
             subtitle="Γεύματα χωρίς χρέωση παράδοσης"
@@ -390,7 +416,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Pro subscription banner ────────────────────── */}
-        {cfg.sections.show_pro_delivery && !search && selectedCategory === 'all' && <ProBanner />}
+        {!isSearching && cfg.sections.show_pro_delivery && selectedCategory === 'all' && <ProBanner />}
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
@@ -424,7 +450,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Sponsored / Popular row ────────────────────── */}
-        {cfg.sections.show_promoted && !search && selectedCategory === 'all' && promotedStores.length > 0 && (
+        {cfg.sections.show_promoted && !isSearching && selectedCategory === 'all' && promotedStores.length > 0 && (
           <section className="pt-7">
             <div className="px-5 flex items-end justify-between mb-4">
               <div>
@@ -487,8 +513,8 @@ export default function CustomerApp() {
         <section id="nearby-stores" className="pt-8 px-5 scroll-mt-28">
           <div className="flex items-end justify-between mb-4">
             <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
-              {search
-                ? `${t('customer.results_for')} "${search}"`
+              {isSearching
+                ? `${t('customer.results_for')} "${debouncedSearch}"`
                 : selectedCategory !== 'all'
                   ? selectedCategory
                   : t('customer.nearby')}
@@ -549,7 +575,7 @@ export default function CustomerApp() {
               </div>
               <p className="font-heading font-extrabold text-[hsl(0,0%,9%)]">{t('customer.no_results')}</p>
               <p className="text-sm c-muted mt-1">
-                {search ? t('customer.try_search') : t('customer.check_back')}
+                {isSearching ? t('customer.try_search') : t('customer.check_back')}
               </p>
             </div>
           ) : (

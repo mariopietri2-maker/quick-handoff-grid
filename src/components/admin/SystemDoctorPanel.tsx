@@ -291,7 +291,7 @@ export default function SystemDoctorPanel() {
       if (!token) return { status: 0, ms: 0 };
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ping: true }),
       });
       await res.text().catch(() => '');
