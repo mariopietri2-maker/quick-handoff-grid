@@ -1,5 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
-import { ArrowLeft, User, Car, FileText, Landmark, Save, Loader2, Phone, Camera, Globe, Calendar, ShieldAlert, Shield, RefreshCw } from 'lucide-react';
+import { ArrowLeft, User, Car, FileText, Landmark, Save, Loader as Loader2, Phone, Camera, Globe, Calendar, ShieldAlert, Shield, RefreshCw, Wallet, TrendingUp } from 'lucide-react';
+import { DriverWallet } from '@/components/driver/DriverWallet';
+import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 import { Badge } from '@/components/ui/badge';
 import { useNavigate, Link } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -256,7 +258,7 @@ export default function DriverProfilePage() {
         </Card>
 
         <Tabs defaultValue="personal">
-          <TabsList className="w-full mb-4 grid grid-cols-5">
+          <TabsList className="w-full mb-4 grid grid-cols-7">
             <TabsTrigger value="personal" className="text-[10px] font-heading px-1">
               <User className="h-3 w-3 mr-0.5" />Προσ.
             </TabsTrigger>
@@ -271,6 +273,12 @@ export default function DriverProfilePage() {
             </TabsTrigger>
             <TabsTrigger value="bank" className="text-[10px] font-heading px-1">
               <Landmark className="h-3 w-3 mr-0.5" />Τράπ.
+            </TabsTrigger>
+            <TabsTrigger value="wallet" className="text-[10px] font-heading px-1">
+              <Wallet className="h-3 w-3 mr-0.5" />Πορτ.
+            </TabsTrigger>
+            <TabsTrigger value="earnings" className="text-[10px] font-heading px-1">
+              <TrendingUp className="h-3 w-3 mr-0.5" />Κέρδη
             </TabsTrigger>
           </TabsList>
 
@@ -503,6 +511,16 @@ export default function DriverProfilePage() {
                 </Button>
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* WALLET */}
+          <TabsContent value="wallet">
+            <DriverWallet />
+          </TabsContent>
+
+          {/* EARNINGS */}
+          <TabsContent value="earnings">
+            <EarningsDashboard />
           </TabsContent>
         </Tabs>
 
