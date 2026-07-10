@@ -14,6 +14,8 @@ export interface OrderWithItems extends OrderRow {
   order_items: OrderItemRow[];
   store_name?: string;
   store_address?: string | null;
+  store_lat?: number | null;
+  store_lng?: number | null;
 }
 
 export function useStoreOrders(storeId: string | null) {
@@ -26,7 +28,7 @@ export function useStoreOrders(storeId: string | null) {
       .from('orders')
       .select('*, order_items(*)')
       .eq('store_id', storeId)
-      .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+      .in('status', ['pending', 'placed', 'accepted', 'preparing', 'ready'])
       .order('created_at', { ascending: false });
 
     if (!error && data) {
@@ -265,12 +267,12 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       const storeIds = Array.from(new Set(availableOrders.map((o) => o.store_id).filter(Boolean)));
       const { data: stores } = await supabase
         .from('stores')
-        .select('id, name, address')
+        .select('id, name, address, latitude, longitude')
         .in('id', storeIds);
       const storeMap = new Map((stores ?? []).map((s) => [s.id, s]));
       availableOrders = availableOrders.map((order) => {
         const store = storeMap.get(order.store_id);
-        return store ? { ...order, store_name: store.name, store_address: store.address } : order;
+        return store ? { ...order, store_name: store.name, store_address: store.address, store_lat: store.latitude, store_lng: store.longitude } : order;
       });
     }
 

@@ -6,6 +6,8 @@ interface OrderOffer {
   id: string;
   storeName: string;
   storeAddress: string;
+  storeLat?: number | null;
+  storeLng?: number | null;
   deliveryAddress: string;
   estimatedPayout: number;
   totalDistance: number;
@@ -158,6 +160,18 @@ export function OrderOfferCard({ offer, onAccept, onDecline }: OrderOfferCardPro
               <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παραλαβή</p>
               <p className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))] truncate leading-tight">{offer.storeName}</p>
               <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(offer.storeAddress)}</p>
+              {offer.storeLat != null && offer.storeLng != null && (
+                <a
+                  href={`https://www.google.com/maps/dir/?api=1&destination=${offer.storeLat},${offer.storeLng}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1 mt-1 text-[11px] font-heading font-semibold text-[hsl(var(--driver-accent))] hover:underline"
+                  onClick={e => e.stopPropagation()}
+                >
+                  <Navigation className="h-3 w-3" />
+                  Πλοήγηση στο κατάστημα
+                </a>
+              )}
             </div>
             <div>
               <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παράδοση</p>
