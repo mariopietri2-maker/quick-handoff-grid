@@ -32,13 +32,9 @@ export default function AuthPage() {
     e.preventDefault();
     setSubmitting(true);
 
-    const timeout = new Promise<{ error: Error }>(resolve =>
-      setTimeout(() => resolve({ error: new Error('Το αίτημα έληξε. Ελέγξτε τη σύνδεσή σας και δοκιμάστε ξανά.') }), 15000)
-    );
-
     try {
       if (isLogin) {
-        const { error } = await Promise.race([signIn(email, password), timeout]);
+        const { error } = await signIn(email, password);
         if (error) {
           toast.error(error.message);
         } else {
@@ -50,7 +46,7 @@ export default function AuthPage() {
           setSubmitting(false);
           return;
         }
-        const { error } = await Promise.race([signUp(email, password, fullName, 'customer'), timeout]);
+        const { error } = await signUp(email, password, fullName, 'customer');
         if (error) {
           toast.error(error.message);
         } else {
