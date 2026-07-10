@@ -72,18 +72,18 @@ Deno.serve(async (req) => {
     if (total > 40) predictedPrep += 3;
     if (total > 80) predictedPrep += 4;
 
-    // Ask Lovable AI to refine if available (optional, fast model)
-    const apiKey = Deno.env.get("LOVABLE_API_KEY");
+    // Use OpenAI to refine if available (optional, fast model)
+    const apiKey = Deno.env.get("OPENAI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
     if (apiKey) {
       try {
-        const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
           method: "POST",
           headers: {
             Authorization: `Bearer ${apiKey}`,
             "Content-Type": "application/json",
           },
           body: JSON.stringify({
-            model: "google/gemini-2.5-flash-lite",
+            model: "gpt-4o-mini",
             messages: [
               {
                 role: "system",

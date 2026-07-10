@@ -1,4 +1,4 @@
-// Admin Setting Advisor — analyzes a proposed admin setting change with Lovable AI
+// Admin Setting Advisor — analyzes a proposed admin setting change with AI
 // and returns a structured impact assessment that the admin must review before applying.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
@@ -23,8 +23,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
-    if (!LOVABLE_API_KEY) throw new Error("LOVABLE_API_KEY missing");
+    const LOVABLE_API_KEY = Deno.env.get("OPENAI_API_KEY") ?? Deno.env.get("LOVABLE_API_KEY");
+    if (!LOVABLE_API_KEY) throw new Error("OPENAI_API_KEY missing");
 
     // --- AUTH: require admin role ---
     const authHeader = req.headers.get("Authorization");
@@ -86,14 +86,14 @@ ${body.context ? `Συμπληρωματικά: ${JSON.stringify(body.context)}`
 
 Δώσε ανάλυση για να αποφασίσει ο admin αν θα προχωρήσει.`;
 
-    const aiResp = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+    const aiResp = await fetch("https://api.openai.com/v1/chat/completions", {
       method: "POST",
       headers: {
         Authorization: `Bearer ${LOVABLE_API_KEY}`,
         "Content-Type": "application/json",
       },
       body: JSON.stringify({
-        model: "google/gemini-3-flash-preview",
+        model: "gpt-4o-mini",
         messages: [
           { role: "system", content: systemPrompt },
           { role: "user", content: userPrompt },

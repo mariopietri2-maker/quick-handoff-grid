@@ -6,7 +6,7 @@ import { Separator } from '@/components/ui/separator';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Input } from '@/components/ui/input';
-import { Cloud, Database, Zap, Image as ImageIcon, HardDrive, RefreshCw, ExternalLink, AlertTriangle, Trash2, Settings, Activity, Sparkles, ShieldAlert, Power, Bell, MapPin, Upload } from 'lucide-react';
+import { Cloud, Database, Zap, Image as ImageIcon, HardDrive, RefreshCw, ExternalLink, TriangleAlert as AlertTriangle, Trash2, Settings, Activity, Sparkles, ShieldAlert, Power, Bell, MapPin, Upload } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { useGuardrails, saveGuardrails, getAiCallsToday, resetAiCounter, effective, useUsageMeter, resetUsageMeter, isBudgetExceeded, isSoftThrottled } from '@/lib/cost-guardrails';
@@ -322,7 +322,7 @@ export default function CloudUsagePanel() {
             </div>
           </div>
           <Button asChild variant="default" size="sm">
-            <a href="#" onClick={(e) => { e.preventDefault(); (window as any).dispatchEvent(new CustomEvent('lovable:open-backend')); }}>
+            <a href="#" onClick={(e) => e.preventDefault()}>
               Άνοιγμα Backend <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
             </a>
           </Button>
