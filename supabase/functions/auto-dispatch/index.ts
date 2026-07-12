@@ -296,7 +296,7 @@ Deno.serve(async (req) => {
         }
 
         if (list.length === 0) {
-          list = await loadAnyOnlineDrivers(admin, anchorLat, anchorLng, excludeList, s.dist_wave_size);
+          list = await loadAvailableOnlineDrivers(admin, anchorLat, anchorLng, excludeList, s.dist_wave_size);
         }
         return list;
       };
@@ -366,13 +366,14 @@ function json(body: unknown, status = 200) {
   });
 }
 
-async function loadAnyOnlineDrivers(
+async function loadAvailableOnlineDrivers(
   admin: ReturnType<typeof createClient>,
   anchorLat: number,
   anchorLng: number,
   exclude: string[],
   limit: number,
 ): Promise<CandidateDriver[]> {
+  // Get all active drivers with their current location and active order count
   const { data } = await admin
     .from("driver_profiles")
     .select("user_id, driver_locations(latitude, longitude, updated_at), driver_state(on_break, is_online)")
@@ -380,8 +381,22 @@ async function loadAnyOnlineDrivers(
     .is("suspended_at", null)
     .limit(Math.max(limit * 8, limit));
 
+  // Get drivers with active orders (those already have a delivery in progress)
+  const { data: busyDrivers } = await admin
+    .from("orders")
+    .select("driver_id")
+    .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
+    .not("driver_id", "is", null);
+
+  const busyDriverSet = new Set((busyDrivers ?? []).map((o: any) => o.driver_id));
+
   return (data ?? [])
-    .filter((row: any) => !exclude.includes(row.user_id) && !row.driver_state?.on_break)
+    // Exclude: drivers in the exclude list, drivers on break, drivers with active orders
+    .filter((row: any) => 
+      !exclude.includes(row.user_id) && 
+      !row.driver_state?.on_break &&
+      !busyDriverSet.has(row.user_id)
+    )
     .map((row: any) => {
       const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
       const lat = loc?.latitude != null ? Number(loc.latitude) : null;
