@@ -153,6 +153,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const [loading, setLoading] = useState(true);
   // Map of order_id -> pending offer id (only set when assignment_mode='auto')
   const [offerIds, setOfferIds] = useState<Record<string, string>>({});
+  const [offerExpiresAt, setOfferExpiresAt] = useState<Record<string, string>>({});
+  const [offerTimeoutSec, setOfferTimeoutSec] = useState<number>(60);
   const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
   const declinedRef = useRef<Record<string, number>>(loadDeclined());
 
@@ -164,6 +166,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const row = Array.isArray(settings) ? settings[0] : settings;
     const mode = (row?.assignment_mode === 'manual' ? 'manual' : 'auto') as 'auto' | 'manual';
     setAssignmentMode(mode);
+    const tmo = Number(row?.dist_offer_timeout_seconds);
+    if (Number.isFinite(tmo) && tmo > 0) setOfferTimeoutSec(tmo);
 
     // Fetch ALL active orders for this driver (stacked routing supports up to 3).
     // The "primary" activeDelivery is the order with the lowest stop_sequence
@@ -187,6 +191,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
     let availableOrders: OrderWithItems[] = [];
     const nextOfferIds: Record<string, string> = {};
+    const nextExpires: Record<string, string> = {};
 
     if (adminOverride) {
       // ADMIN OVERRIDE: ops queue shows EVERY active order — assigned or not —
@@ -237,7 +242,10 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           .is('driver_id', null)
           .in('status', ['placed', 'accepted', 'preparing', 'ready']);
         offered = (ord as OrderWithItems[]) ?? [];
-        for (const p of myPending ?? []) nextOfferIds[p.order_id] = p.id;
+        for (const p of myPending ?? []) {
+          nextOfferIds[p.order_id] = p.id;
+          if (p.expires_at) nextExpires[p.order_id] = p.expires_at as string;
+        }
       }
 
       const broadcastFiltered = ((broadcast as OrderWithItems[]) ?? []).filter(
@@ -280,6 +288,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     }
 
     setOfferIds(nextOfferIds);
+    setOfferExpiresAt(nextExpires);
 
     const MAX_STACK = Number(row?.max_stacked_orders ?? 3);
     const remainingCapacity = Math.max(0, MAX_STACK - activeList.length);
@@ -304,7 +313,19 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       setStackedOffers([]);
       setOffers([]);
     } else {
-      setOffers(availableOrders);
+      // No active delivery → only surface ONE offer at a time.
+      // Stacked offers (2nd/3rd) only appear after the driver accepts the first.
+      // Prefer offers with a real pending_offer and the soonest expiry.
+      const sorted = [...availableOrders].sort((a, b) => {
+        const aOffered = nextOfferIds[a.id] ? 0 : 1;
+        const bOffered = nextOfferIds[b.id] ? 0 : 1;
+        if (aOffered !== bOffered) return aOffered - bOffered;
+        const aExp = nextExpires[a.id] ? new Date(nextExpires[a.id]).getTime() : Infinity;
+        const bExp = nextExpires[b.id] ? new Date(nextExpires[b.id]).getTime() : Infinity;
+        if (aExp !== bExp) return aExp - bExp;
+        return new Date(a.created_at as string).getTime() - new Date(b.created_at as string).getTime();
+      });
+      setOffers(sorted.slice(0, 1));
       setStackedOffers([]);
     }
 
@@ -387,7 +408,47 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           fetchOrders();
         }
       )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'pending_offers',
+          filter: `driver_id=eq.${user.id}`,
+        },
+        (payload) => {
+          const row = payload.new as { order_id?: string; status?: string; expires_at?: string } | null;
+          const oldRow = payload.old as { order_id?: string } | null;
+          if (!row) return;
+          // Status moved away from pending (accepted/declined/expired/cancelled) → refetch.
+          if (row.status && row.status !== 'pending') {
+            scheduleRefetch();
+            return;
+          }
+          // Expiry adjusted while still pending → patch countdown source in place.
+          const orderId = row.order_id ?? oldRow?.order_id;
+          if (orderId && row.expires_at) {
+            setOfferExpiresAt((prev) =>
+              prev[orderId] === row.expires_at ? prev : { ...prev, [orderId]: row.expires_at as string },
+            );
+          }
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'pending_offers',
+          filter: `driver_id=eq.${user.id}`,
+        },
+        () => {
+          // Offer cancelled / cleaned up → drop it from the UI immediately.
+          scheduleRefetch();
+        }
+      )
       .subscribe();
+
 
 
     return () => {
@@ -529,6 +590,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     refetch: fetchOrders,
     assignmentMode,
     offerIds,
+    offerExpiresAt,
+    offerTimeoutSec,
   };
 }
 

@@ -12,6 +12,7 @@ import { toast } from 'sonner';
 import { PrintTicketButton, printOrderTicket } from './PrintOrderTicket';
 import { getPrinterPrefs } from '@/lib/printer-prefs';
 import type { OrderWithItems } from '@/hooks/useOrders';
+import { formatOrderNumber } from '@/lib/order-number';
 
 interface OrderQueueProps {
   orders: OrderWithItems[];
@@ -97,7 +98,7 @@ export function OrderQueue({ orders, onStatusUpdate, storeName = 'Κατάστη
                   <Badge variant={config.variant} className="font-heading font-semibold flex-shrink-0">
                     {config.label}
                   </Badge>
-                  <span className="text-sm font-mono text-muted-foreground truncate">#{order.id.slice(0, 6)}</span>
+                  <span className="text-sm font-mono font-bold text-foreground truncate">{formatOrderNumber(order)}</span>
                   <span className="text-xs text-muted-foreground flex items-center gap-1 flex-shrink-0">
                     <Clock className="h-3.5 w-3.5" />
                     {getTimeSince(order.created_at)}
@@ -119,7 +120,7 @@ export function OrderQueue({ orders, onStatusUpdate, storeName = 'Κατάστη
                     </AlertDialogTrigger>
                     <AlertDialogContent>
                       <AlertDialogHeader>
-                        <AlertDialogTitle>Ακύρωση παραγγελίας #{order.id.slice(0, 6)};</AlertDialogTitle>
+                        <AlertDialogTitle>Ακύρωση παραγγελίας {formatOrderNumber(order)};</AlertDialogTitle>
                         <AlertDialogDescription>
                           Η παραγγελία θα μαρκαριστεί ως ακυρωμένη και θα αφαιρεθεί από την ουρά.
                           Αν ο πελάτης έχει χρεωθεί, χρησιμοποίησε επιστροφή χρημάτων ξεχωριστά.

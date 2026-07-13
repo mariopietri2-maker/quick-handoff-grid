@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
@@ -7,6 +7,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Badge } from '@/components/ui/badge';
 import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
+import { StackedOfferCard } from '@/components/driver/StackedOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
 import { DriverWallet } from '@/components/driver/DriverWallet';
@@ -23,7 +24,10 @@ import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import SurgeStatusBadge from '@/components/driver/SurgeStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
-import DriverMapbox, { type RouteInfo, type DriverMapboxHandle } from '@/components/driver/DriverMapbox';
+import type { RouteInfo, DriverMapboxHandle } from '@/components/driver/DriverMapbox';
+// Lazy-load the map: mapbox-gl is large (~800KB) and was blocking the driver app's initial paint.
+const DriverMapbox = lazy(() => import('@/components/driver/DriverMapbox'));
+
 import { TurnByTurnBanner } from '@/components/driver/TurnByTurnBanner';
 import { NavBottomCard } from '@/components/driver/NavBottomCard';
 import { SlideToggle } from '@/components/driver/SlideToggle';
@@ -50,7 +54,7 @@ export default function DriverApp() {
       return next;
     });
   };
-  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus } = useDriverOrders({ adminOverride: isAdmin });
+  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, offerExpiresAt, offerTimeoutSec } = useDriverOrders({ adminOverride: isAdmin });
   const { state: driverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
@@ -284,6 +288,7 @@ export default function DriverApp() {
                     ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
                     : null,
                 }}
+                driverId={user?.id}
                 onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                 
               />
@@ -369,22 +374,25 @@ export default function DriverApp() {
       />
       {activeTab === 'home' ? (
         <div className="flex-1 relative">
-          <DriverMapbox
-            ref={mapRef}
-            className="fixed inset-0 z-0"
-            storeLat={storeInfo?.latitude}
-            storeLng={storeInfo?.longitude}
-            storeName={storeInfo?.name}
-            customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
-            customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
-            customerName={customerInfo?.name}
-            customerAddress={activeDelivery?.delivery_address}
-            navigatingTo={navigatingTo}
-            onRouteUpdate={setRouteInfo}
-            onDriverPosUpdate={setDriverPos}
-            nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
-            followMode={isNavActive}
-          />
+          <Suspense fallback={<div className="fixed inset-0 z-0 bg-muted/40" />}>
+            <DriverMapbox
+              ref={mapRef}
+              className="fixed inset-0 z-0"
+              storeLat={storeInfo?.latitude}
+              storeLng={storeInfo?.longitude}
+              storeName={storeInfo?.name}
+              customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
+              customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
+              customerName={customerInfo?.name}
+              customerAddress={activeDelivery?.delivery_address}
+              navigatingTo={navigatingTo}
+              onRouteUpdate={setRouteInfo}
+              onDriverPosUpdate={setDriverPos}
+              nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
+              followMode={isNavActive}
+            />
+          </Suspense>
+
 
           {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
@@ -543,18 +551,11 @@ export default function DriverApp() {
 
                       {/* Stacked offers — same store, on the path */}
                       {stackedOffers.length > 0 && (
-                        <div className="space-y-2 animate-slide-up">
-                          <div className="flex items-center justify-between px-1">
-                            <h3 className="font-heading font-bold text-xs text-[hsl(var(--driver-text))] uppercase tracking-wide">
-                              🔗 Επιπλέον στην ίδια διαδρομή
-                            </h3>
-                            <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5">
-                              +{stackedOffers.length}
-                            </Badge>
-                          </div>
-                          {stackedOffers.map((offer) => (
-                            <OrderOfferCard
+                        <div className="space-y-2.5 animate-slide-up">
+                          {stackedOffers.map((offer, idx) => (
+                            <StackedOfferCard
                               key={offer.id}
+                              index={idx + 2}
                               offer={{
                                 id: offer.id,
                                 storeName: offer.store_name || storeInfo?.name || 'Ίδιο κατάστημα',
@@ -568,14 +569,15 @@ export default function DriverApp() {
                                 cashToCollect: (offer as any).payment_method === 'cash'
                                   ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
                                   : null,
-                                customerNotes: (offer as any).notes ?? null,
-                                perKmRate: 0.50,
                                 totalDistance: Number(offer.distance_km ?? 0),
                                 estimatedTime: offer.estimated_prep_time ?? 20,
                                 itemCount: offer.order_items?.length ?? 0,
                               }}
                               onAccept={acceptOrder}
                               onDecline={handleDecline}
+                              onRemove={handleDecline}
+                              expiresAt={offerExpiresAt[offer.id] ?? null}
+                              timeoutSec={offerTimeoutSec}
                             />
                           ))}
                         </div>
@@ -610,6 +612,7 @@ export default function DriverApp() {
                             ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
                             : null,
                         }}
+                        driverId={user?.id}
                         onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                         onFocusDestination={() => { setNavMode(true); }}
                       />
@@ -667,6 +670,8 @@ export default function DriverApp() {
                         }}
                         onAccept={acceptOrder}
                         onDecline={handleDecline}
+                        expiresAt={offerExpiresAt[offer.id] ?? null}
+                        timeoutSec={offerTimeoutSec}
                       />
                     </div>
                   ))}

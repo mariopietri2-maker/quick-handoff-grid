@@ -1,60 +1,41 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import {
-  Car, Store, ArrowRight, Zap, Shield, BarChart3, MapPin, Clock, Users,
-  Search, ClipboardList, Bike, CheckCircle, Headphones, Sparkles, Activity,
-  TrendingUp, Star,
-} from 'lucide-react';
+import { useEffect, useRef, useState } from 'react';
+import { ArrowRight, Zap, Shield, ChartBar as BarChart3, MapPin, Users, Search, ClipboardList, Bike, CircleCheck as CheckCircle, Headphones, Sparkles, Activity, TrendingUp, Star, Store, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SEO } from '@/components/SEO';
+import { supabase } from '@/integrations/supabase/client';
 
 /* ─── tiny count-up hook ─── */
-function useCountUp(target: number, duration = 1600) {
+function useCountUp(target: number, duration = 1200) {
   const [val, setVal] = useState(0);
   const ref = useRef<HTMLSpanElement>(null);
-  const started = useRef(false);
   useEffect(() => {
-    const el = ref.current;
-    if (!el) return;
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((e) => {
-        if (e.isIntersecting && !started.current) {
-          started.current = true;
-          const start = performance.now();
-          const tick = (now: number) => {
-            const p = Math.min(1, (now - start) / duration);
-            const eased = 1 - Math.pow(1 - p, 3);
-            setVal(Math.round(target * eased));
-            if (p < 1) requestAnimationFrame(tick);
-          };
-          requestAnimationFrame(tick);
-        }
-      });
-    }, { threshold: 0.3 });
-    io.observe(el);
-    return () => io.disconnect();
+    if (!target) { setVal(0); return; }
+    const start = performance.now();
+    const from = 0;
+    let raf = 0;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      const eased = 1 - Math.pow(1 - p, 3);
+      setVal(Math.round(from + (target - from) * eased));
+      if (p < 1) raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
   }, [target, duration]);
   return { val, ref };
 }
 
-/* ─── live activity feed (rotates) ─── */
-const FEED = [
-  { city: 'Αθήνα',       text: 'παρέλαβε από Mama Pizza',     mins: 2  },
-  { city: 'Θεσσαλονίκη', text: 'ολοκλήρωσε παράδοση',          mins: 4  },
-  { city: 'Πάτρα',       text: 'νέα παραγγελία €18.40',        mins: 1  },
-  { city: 'Ηράκλειο',    text: 'ένα νέο κατάστημα συνδέθηκε',  mins: 6  },
-  { city: 'Λάρισα',      text: 'οδηγός online',                mins: 1  },
-  { city: 'Βόλος',       text: 'παράδοση σε 22 λεπτά ⚡',      mins: 3  },
-];
 
-function LiveTicker() {
+/* ─── live partner ticker (real data) ─── */
+function LiveTicker({ items }: { items: string[] }) {
   const [i, setI] = useState(0);
   useEffect(() => {
-    const t = setInterval(() => setI((v) => (v + 1) % FEED.length), 2600);
+    if (!items.length) return;
+    const t = setInterval(() => setI((v) => (v + 1) % items.length), 2600);
     return () => clearInterval(t);
-  }, []);
-  const item = FEED[i];
+  }, [items.length]);
   return (
     <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-card/80 backdrop-blur-sm shadow-sm">
       <span className="relative flex h-2 w-2">
@@ -62,32 +43,47 @@ function LiveTicker() {
         <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
       </span>
       <span key={i} className="text-xs font-medium text-foreground animate-fade-in">
-        <span className="text-primary font-semibold">{item.city}</span>
-        <span className="text-muted-foreground"> · {item.text}</span>
-        <span className="text-muted-foreground/70"> · {item.mins}'</span>
+        <span className="text-primary font-semibold">Live</span>
+        <span className="text-muted-foreground"> · {items[i] ?? 'Συνδεδεμένα καταστήματα'}</span>
       </span>
     </div>
   );
 }
 
+
 const Index = () => {
   const navigate = useNavigate();
-  const { user, profile, isAdmin, isSupport } = useAuth();
+  const { isAdmin, isSupport } = useAuth();
 
-  const handleNav = (target: 'driver' | 'store') => {
-    if (user && profile?.role === target) navigate(`/${target}`);
-    else navigate('/auth');
-  };
+  const [counts, setCounts] = useState({ stores: 0, drivers: 0, orders: 0, rating: 0 });
+  const [partners, setPartners] = useState<string[]>([]);
 
-  const stores  = useCountUp(520);
-  const drivers = useCountUp(2140);
-  const orders  = useCountUp(53000);
-  const rating  = useCountUp(49);
+  useEffect(() => {
+    (async () => {
+      const [s, d, o, r, names] = await Promise.all([
+        (supabase as any).from('stores_public').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('driver_profiles').select('id', { count: 'exact', head: true }),
+        supabase.from('orders').select('id', { count: 'exact', head: true }),
+        supabase.from('reviews').select('rating'),
+        (supabase as any).from('stores_public').select('name').eq('is_active', true).order('name').limit(12),
+      ]);
+      const ratings = (r.data ?? []) as { rating: number }[];
+      const avg = ratings.length ? ratings.reduce((a, b) => a + (b.rating ?? 0), 0) / ratings.length : 0;
+      setCounts({
+        stores: s.count ?? 0,
+        drivers: d.count ?? 0,
+        orders: o.count ?? 0,
+        rating: Math.round(avg * 10),
+      });
+      setPartners(((names.data ?? []) as { name: string }[]).map((n) => n.name));
+    })();
+  }, []);
 
-  const partners = useMemo(
-    () => ['Mama Pizza', 'Souvlaki Bros', 'Green Bowl', 'Burger Lab', 'Kafé 23', 'Sushi Now', 'Bakery 1907', 'Taverna Mou'],
-    [],
-  );
+  const stores  = useCountUp(counts.stores);
+  const drivers = useCountUp(counts.drivers);
+  const orders  = useCountUp(counts.orders);
+  const rating  = useCountUp(counts.rating);
+
 
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
@@ -117,9 +113,9 @@ const Index = () => {
             <Button
               size="sm"
               className="gradient-primary text-primary-foreground font-heading font-bold rounded-lg press-scale shadow-primary"
-              onClick={() => navigate('/auth')}
+              onClick={() => navigate('/order')}
             >
-              Ξεκίνα
+              Δες καταστήματα
               <ArrowRight className="ml-1.5 h-3.5 w-3.5" />
             </Button>
           </div>
@@ -140,7 +136,7 @@ const Index = () => {
 
         <div className="relative max-w-5xl mx-auto px-4 pt-16 sm:pt-24 pb-16 text-center">
           <div className="flex justify-center mb-6 animate-fade-in">
-            <LiveTicker />
+            <LiveTicker items={partners} />
           </div>
 
           <h1 className="font-heading font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
@@ -168,18 +164,25 @@ const Index = () => {
             <Button
               size="lg" variant="outline"
               className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
-              onClick={() => handleNav('driver')}
+              onClick={() => navigate('/auth')}
             >
-              <Car className="mr-2 h-5 w-5 text-primary" />
-              Γίνε Οδηγός
+              Σύνδεση
             </Button>
             <Button
               size="lg" variant="outline"
-              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
-              onClick={() => handleNav('store')}
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card border-primary/40 text-primary hover:bg-primary/5"
+              onClick={() => navigate('/driver')}
             >
-              <Store className="mr-2 h-5 w-5 text-primary" />
-              Σύνδεσε Κατάστημα
+              <Car className="mr-2 h-5 w-5" />
+              Είμαι Οδηγός
+            </Button>
+            <Button
+              size="lg" variant="outline"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card border-border text-foreground hover:bg-card/80"
+              onClick={() => navigate('/store')}
+            >
+              <Store className="mr-2 h-5 w-5" />
+              Κατάστημα
             </Button>
           </div>
 
@@ -201,10 +204,10 @@ const Index = () => {
           {/* Live stat tiles */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto animate-fade-in"
                style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
-            <StatTile icon={Store}      label="Καταστήματα"  countRef={stores.ref}  display={`${stores.val}+`} />
-            <StatTile icon={Bike}       label="Οδηγοί"        countRef={drivers.ref} display={`${(drivers.val/1000).toFixed(1)}K+`} />
-            <StatTile icon={Activity}   label="Παραγγελίες/μήνα" countRef={orders.ref}  display={`${Math.round(orders.val/1000)}K+`} />
-            <StatTile icon={Star}       label="Αξιολόγηση"    countRef={rating.ref}  display={`${(rating.val/10).toFixed(1)}★`} />
+            <StatTile icon={Store}      label="Καταστήματα"   countRef={stores.ref}  display={`${stores.val}`} />
+            <StatTile icon={Bike}       label="Οδηγοί"         countRef={drivers.ref} display={`${drivers.val}`} />
+            <StatTile icon={Activity}   label="Παραγγελίες"    countRef={orders.ref}  display={`${orders.val}`} />
+            <StatTile icon={Star}       label="Αξιολόγηση"     countRef={rating.ref}  display={rating.val ? `${(rating.val/10).toFixed(1)}★` : '—'} />
           </div>
         </div>
 

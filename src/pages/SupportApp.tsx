@@ -11,8 +11,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
+import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
+import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { CustomerProfilePanel } from '@/components/support/CustomerProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
@@ -65,7 +67,7 @@ export default function SupportApp() {
   const [activeTicket, setActiveTicket] = useState<any | null>(null);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
-  const [view, setView] = useState<'tickets' | 'team'>('tickets');
+  const [view, setView] = useState<'tickets' | 'team' | 'dcc'>('tickets');
   const chatRef = useRef<TicketChatHandle>(null);
 
   const { data: tickets } = useQuery({
@@ -338,6 +340,11 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
+          <SupportAIPanel
+            ticketId={activeTicket.id}
+            onUseReply={(text) => chatRef.current?.setDraft(text)}
+          />
+
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
             <TicketChat ref={chatRef} ticketId={activeTicket.id} priority={currentPriority} />
@@ -392,6 +399,14 @@ export default function SupportApp() {
           >
             <Users className="h-3.5 w-3.5" /> Ομάδα
           </button>
+          <button
+            onClick={() => setView('dcc')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'dcc' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Zap className="h-3.5 w-3.5" /> Control
+          </button>
         </div>
         <div className="flex items-center gap-1">
           <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Το προφίλ μου">
@@ -407,6 +422,11 @@ export default function SupportApp() {
         <div className="p-4 max-w-7xl mx-auto space-y-4">
           <AnnouncementsBanner audience="support" />
           <TeamChat />
+        </div>
+      ) : view === 'dcc' ? (
+        <div className="p-4 max-w-7xl mx-auto space-y-4">
+          <AnnouncementsBanner audience="support" />
+          <DeliveryControlCenter />
         </div>
       ) : (
 

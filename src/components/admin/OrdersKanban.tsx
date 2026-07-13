@@ -8,6 +8,7 @@ import { Clock, AlertTriangle, MapPin, Bike, ChevronRight } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { toast } from 'sonner';
 import { formatDistanceToNowStrict } from 'date-fns';
+import { formatOrderNumber } from '@/lib/order-number';
 
 /**
  * DoorDash-style orders pipeline: 5 columns (New → Preparing → Ready → In Transit → Delivered)
@@ -64,7 +65,7 @@ function OrderCard({ order, columnId, drivers, onAssign }: OrderCardProps) {
       )}
     >
       <div className="flex items-center justify-between gap-2">
-        <span className="font-mono text-[11px] text-muted-foreground">#{order.id.slice(0, 6)}</span>
+        <span className="font-mono text-[11px] font-bold text-foreground">{formatOrderNumber(order)}</span>
         <span className={cn('text-[10.5px] tabular-nums flex items-center gap-1', late ? 'text-destructive font-semibold' : 'text-muted-foreground')}>
           {late && <AlertTriangle className="h-3 w-3" />}
           <Clock className="h-3 w-3" />

@@ -30,33 +30,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role, full_name, public_code')
       .eq('user_id', userId)
       .maybeSingle();
+    setProfile(data ? (data as any) : { role: 'customer', full_name: null });
 
-    // Reconcile the role the user selected at signup. Because email
-    // confirmation is required, there is no session at signup time, so the
-    // role chosen then cannot be written (RLS blocks it). We stash it in the
-    // user's auth metadata and apply it here on the first authenticated load,
-    // but only while the profile is still on the default 'customer' role so we
-    // never override a role an admin set later.
-    let resolved = data as any;
-    const { data: userData } = await supabase.auth.getUser();
-    const desiredRole = userData?.user?.user_metadata?.signup_role as string | undefined;
-    if (
-      desiredRole &&
-      resolved &&
-      resolved.role === 'customer' &&
-      desiredRole !== 'customer'
-    ) {
-      const { data: updated } = await supabase
-        .from('profiles')
-        .update({ role: desiredRole as any })
-        .eq('user_id', userId)
-        .select('role, full_name, public_code')
-        .maybeSingle();
-      if (updated) resolved = updated;
-    }
-    setProfile(resolved as any);
-
-    // Check admin & support roles from user_roles table
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
@@ -67,27 +42,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
+    // onAuthStateChange must NOT be async and must NOT await Supabase calls
+    // directly inside the callback — doing so causes a deadlock because the
+    // SDK fires the callback synchronously while the auth token is still being
+    // committed. Defer any DB work with setTimeout to break the cycle.
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
+      (_event, session) => {
         setSession(session);
         setUser(session?.user ?? null);
+
         if (session?.user) {
-          setTimeout(() => fetchProfile(session.user.id), 0);
+          const userId = session.user.id;
+          setTimeout(() => {
+            fetchProfile(userId).finally(() => setLoading(false));
+          }, 0);
         } else {
           setProfile(null);
+          setIsAdmin(false);
+          setIsSupport(false);
+          setLoading(false);
         }
-        setLoading(false);
       }
     );
-
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      }
-      setLoading(false);
-    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -96,14 +72,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      // Store both the display name and the chosen role in auth metadata.
-      // The role is applied to the profile on first authenticated login
-      // (see fetchProfile) because there is no session yet at signup.
-      options: { data: { full_name: fullName, signup_role: role } },
+      options: { data: { full_name: fullName } },
     });
 
-    if (!error && data.user && data.session) {
-      // Only runs when email confirmation is disabled (session exists immediately).
+    if (!error && data.user) {
       await supabase
         .from('profiles')
         .update({ role: role as any })

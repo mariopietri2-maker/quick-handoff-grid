@@ -3,11 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import {
-  CheckCircle2, AlertTriangle, XCircle, Loader2, RefreshCw, Wrench, Stethoscope,
-  Database, Zap, MapPin, ShoppingBag, Bike, Wallet, Receipt, Truck, Bell,
-  CreditCard, Clock, Users, Store, Activity, FileWarning, Trash2, Settings2,
-} from 'lucide-react';
+import { CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, Loader as Loader2, RefreshCw, Wrench, Stethoscope, Database, Zap, MapPin, ShoppingBag, Bike, Wallet, Receipt, Truck, Bell, CreditCard, Clock, Users, Store, Activity, FileWarning, Trash2, Settings2 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Status = 'ok' | 'warn' | 'error' | 'checking';
@@ -291,7 +287,7 @@ export default function SystemDoctorPanel() {
       if (!token) return { status: 0, ms: 0 };
       const res = await fetch(url, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY, Authorization: `Bearer ${token}` },
+        headers: { 'Content-Type': 'application/json', apikey: import.meta.env.VITE_SUPABASE_ANON_KEY, Authorization: `Bearer ${token}` },
         body: JSON.stringify({ ping: true }),
       });
       await res.text().catch(() => '');

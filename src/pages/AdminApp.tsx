@@ -48,7 +48,7 @@ const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
-const MoneyBagsPanel         = lazy(() => import('@/components/admin/LedgerPanel'));
+const LedgerPanel            = lazy(() => import('@/components/admin/LedgerPanel'));
 const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
 const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
 const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsagePanel'));
@@ -59,6 +59,7 @@ const BufferDistributor      = lazy(() => import('@/components/admin/BufferDistr
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
+const DeliveryControlCenter  = lazy(() => import('@/components/admin/DeliveryControlCenter'));
 import { Link } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -278,6 +279,8 @@ export default function AdminApp() {
         return <PlatformAnalytics orders={(orders.data ?? []) as any} profiles={(profiles.data ?? []) as any} />;
       case 'audit':
         return <AdminAuditTab />;
+      case 'delivery_control':
+        return <DeliveryControlCenter />;
       case 'orders':
         return <OrdersKanban />;
       case 'orders_table':
@@ -290,7 +293,7 @@ export default function AdminApp() {
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
         // Legacy id — merged into Money Bags
-        return <MoneyBagsPanel />;
+        return <LedgerPanel />;
       case 'store_payables':
         return <StorePayablesPanel />;
       case 'driver_payables':

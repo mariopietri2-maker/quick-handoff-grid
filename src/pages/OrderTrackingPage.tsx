@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star } from 'lucide-react';
+import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star, Copy } from 'lucide-react';
+import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
@@ -8,6 +9,7 @@ import { ReviewForm } from '@/components/ReviewForm';
 import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 import { SEO } from '@/components/SEO';
+import { formatOrderNumber } from '@/lib/order-number';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -48,6 +50,8 @@ export default function OrderTrackingPage() {
   const [sheetExpanded, setSheetExpanded] = useState(false);
   const [hasReviewed, setHasReviewed] = useState(false);
   const [now, setNow] = useState(Date.now());
+  const [showThankYou, setShowThankYou] = useState(false);
+  const [thankYouCountdown, setThankYouCountdown] = useState(6);
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -96,6 +100,22 @@ export default function OrderTrackingPage() {
     return () => { supabase.removeChannel(ch); };
   }, [id, driverName]);
 
+  // When order becomes delivered → celebrate + auto navigate away
+  useEffect(() => {
+    if (order?.status !== 'delivered') return;
+    setShowThankYou(true);
+  }, [order?.status]);
+
+  useEffect(() => {
+    if (!showThankYou) return;
+    setThankYouCountdown(6);
+    const tick = setInterval(() => {
+      setThankYouCountdown((c) => (c > 0 ? c - 1 : 0));
+    }, 1000);
+    const done = setTimeout(() => navigate('/orders'), 6000);
+    return () => { clearInterval(tick); clearTimeout(done); };
+  }, [showThankYou, navigate]);
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -129,11 +149,37 @@ export default function OrderTrackingPage() {
   return (
     <div className="fixed inset-0 bg-background overflow-hidden">
       <SEO
-        title={`Παρακολούθηση παραγγελίας #${order.id.slice(0, 6).toUpperCase()} — Fresh Delivery`}
+        title={`Παρακολούθηση παραγγελίας ${formatOrderNumber(order as any)} — Fresh Delivery`}
         description="Παρακολουθήστε την παραγγελία σας σε πραγματικό χρόνο, δείτε την εκτιμώμενη ώρα παράδοσης και επικοινωνήστε με τον οδηγό."
         path={`/order-tracking/${order.id}`}
         noindex
       />
+
+      {/* Thank-you overlay after delivery */}
+      {showThankYou && (
+        <div
+          className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center animate-in fade-in duration-500"
+          style={{ background: 'linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%)' }}
+        >
+          <div className="text-8xl mb-6 animate-bounce">🎉</div>
+          <h1 className="font-heading font-extrabold text-4xl text-primary-foreground mb-3">
+            Ευχαριστούμε!
+          </h1>
+          <p className="text-primary-foreground/90 font-heading text-lg mb-1">
+            Η παραγγελία σου παραδόθηκε
+          </p>
+          <p className="text-primary-foreground/70 text-sm mb-10">
+            Καλή σου όρεξη 🍽️
+          </p>
+          <Button
+            onClick={() => navigate('/orders')}
+            className="bg-card text-foreground hover:bg-card/90 font-heading font-bold rounded-full px-8 h-12 shadow-lg"
+          >
+            Κλείσιμο ({thankYouCountdown})
+          </Button>
+        </div>
+      )}
+
       {/* Map background */}
       {showMap ? (
         <LiveTrackingMap
@@ -169,7 +215,7 @@ export default function OrderTrackingPage() {
               <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
             </span>
           )}
-          <span className="text-xs font-bold text-foreground tabular-nums">#{order.id.slice(0, 6).toUpperCase()}</span>
+          <span className="text-xs font-bold text-foreground tabular-nums">{formatOrderNumber(order as any)}</span>
         </div>
       </header>
 
@@ -317,7 +363,38 @@ export default function OrderTrackingPage() {
 
               {/* Order summary */}
               <div className="mt-4 rounded-2xl border border-border p-4">
-                <h3 className="font-heading font-bold text-sm text-foreground mb-3">Παραγγελία</h3>
+                <div className="flex items-center justify-between mb-3">
+                  <h3 className="font-heading font-bold text-sm text-foreground">Παραγγελία</h3>
+                  <button
+                    type="button"
+                    onClick={async () => {
+                      const lines: string[] = [];
+                      lines.push(`Παραγγελία ${formatOrderNumber(order as any)}`);
+                      if (storeName) lines.push(`Από: ${storeName}`);
+                      lines.push(new Date(order.created_at).toLocaleString('el-GR'));
+                      lines.push('');
+                      items.forEach((i) => {
+                        lines.push(`${i.quantity}× ${i.name} — €${(Number(i.unit_price) * i.quantity).toFixed(2)}`);
+                      });
+                      lines.push('');
+                      if (order.delivery_fee) lines.push(`Παράδοση: €${Number(order.delivery_fee).toFixed(2)}`);
+                      if (order.tip_amount) lines.push(`Φιλοδώρημα: €${Number(order.tip_amount).toFixed(2)}`);
+                      lines.push(`Σύνολο: €${Number(order.total_amount).toFixed(2)}`);
+                      if (order.delivery_address) { lines.push(''); lines.push(`Διεύθυνση: ${order.delivery_address}`); }
+                      if (order.notes) lines.push(`Σημείωση: ${order.notes}`);
+                      const text = lines.join('\n');
+                      try {
+                        await navigator.clipboard.writeText(text);
+                        toast.success('Αντιγράφηκε');
+                      } catch {
+                        toast.error('Αποτυχία αντιγραφής');
+                      }
+                    }}
+                    className="flex items-center gap-1.5 text-xs font-bold text-primary active:scale-95 transition-transform"
+                  >
+                    <Copy className="h-3.5 w-3.5" /> Αντιγραφή
+                  </button>
+                </div>
                 {items.map((item) => (
                   <div key={item.id} className="flex justify-between py-1.5 text-sm">
                     <span className="text-foreground">{item.quantity}× {item.name}</span>
@@ -335,6 +412,7 @@ export default function OrderTrackingPage() {
                   </div>
                 )}
               </div>
+
 
               {isDelivered && order.driver_id && (
                 <div className="mt-4">

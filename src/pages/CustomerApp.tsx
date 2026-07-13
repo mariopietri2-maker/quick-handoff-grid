@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Star, Zap, BadgePercent } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,6 +23,9 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
+import HomeGreeting from '@/components/customer/HomeGreeting';
+import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
+import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -65,7 +68,23 @@ export default function CustomerApp() {
   const [offerItems, setOfferItems] = useState<OfferItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const onSearchChange = (value: string) => {
+    setSearch(value);
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+    searchTimer.current = setTimeout(() => setDebouncedSearch(value.trim()), 250);
+  };
+
+  const clearSearch = () => {
+    setSearch('');
+    setDebouncedSearch('');
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  };
+
+  const isSearching = debouncedSearch.length > 0;
   const [filterFree, setFilterFree] = useState(false);
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
@@ -216,8 +235,9 @@ export default function CustomerApp() {
   }, [offerItems, stores, ratings]);
 
   const filtered = useMemo(() => stores.filter(s => {
-    const matchesSearch = s.name.toLowerCase().includes(search.toLowerCase()) ||
-      s.address.toLowerCase().includes(search.toLowerCase());
+    const q = debouncedSearch.toLowerCase();
+    const matchesSearch = !q || s.name.toLowerCase().includes(q) ||
+      s.address.toLowerCase().includes(q);
     if (!matchesSearch) return false;
     if (selectedCategory !== 'all') {
       const cats = storeCategories[s.id] ?? [];
@@ -227,7 +247,7 @@ export default function CustomerApp() {
     if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
     if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
     return true;
-  }), [stores, search, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
+  }), [stores, debouncedSearch, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
 
   return (
     <div
@@ -306,16 +326,25 @@ export default function CustomerApp() {
             <Input
               placeholder={t('customer.search_placeholder')}
               value={search}
-              onChange={e => setSearch(e.target.value)}
+              onChange={e => onSearchChange(e.target.value)}
               className="pl-12 h-12 bg-[hsl(0,0%,96%)] border-0 rounded-2xl text-[15px] font-medium placeholder:c-muted focus-visible:ring-2 focus-visible:ring-[hsl(var(--c-accent))]/40 focus-visible:bg-white focus-visible:ring-offset-0 transition-all"
             />
+            {search && (
+              <button
+                onClick={clearSearch}
+                className="absolute right-3 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-[hsl(0,0%,90%)] hover:bg-[hsl(0,0%,85%)] flex items-center justify-center transition-colors"
+                aria-label="Clear search"
+              >
+                <svg className="h-4 w-4 text-[hsl(0,0%,40%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><path d="M18 6 6 18M6 6l12 12"/></svg>
+              </button>
+            )}
           </div>
         </div>
       </header>
 
       <main className="max-w-2xl mx-auto">
         <ActiveOrderTracker />
-        <OrderAgainRow />
+        {cfg.sections.show_order_again && <OrderAgainRow />}
         {/* ── Quick action tiles (DoorDash square buttons) ── */}
         {cfg.sections.show_tiles && QUICK_TILES.length > 0 && (
           <div className="px-5 pt-5">
@@ -346,13 +375,13 @@ export default function CustomerApp() {
         )}
 
         {/* ── AI-generated hero carousel ────────────────── */}
-        {cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
+        {!isSearching && cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
         {/* ── Promo carousel ─────────────────────────────── */}
-        {cfg.sections.show_promos && <PromoBannerCarousel />}
+        {!isSearching && cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
-        {!search && selectedCategory === 'all' && promotionOffers.length > 0 && (
+        {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (
           <div id="one-plus-one-row">
             <OfferRow
               title="Προσφορές για σένα"
@@ -369,7 +398,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Free delivery row ─────────────────────────── */}
-        {!search && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
+        {!isSearching && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
           <OfferRow
             title="Δωρεάν delivery"
             subtitle="Γεύματα χωρίς χρέωση παράδοσης"
@@ -387,7 +416,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Pro subscription banner ────────────────────── */}
-        {!search && selectedCategory === 'all' && <ProBanner />}
+        {!isSearching && cfg.sections.show_pro_delivery && selectedCategory === 'all' && <ProBanner />}
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (
@@ -421,7 +450,7 @@ export default function CustomerApp() {
         )}
 
         {/* ── Sponsored / Popular row ────────────────────── */}
-        {cfg.sections.show_promoted && !search && selectedCategory === 'all' && promotedStores.length > 0 && (
+        {cfg.sections.show_promoted && !isSearching && selectedCategory === 'all' && promotedStores.length > 0 && (
           <section className="pt-7">
             <div className="px-5 flex items-end justify-between mb-4">
               <div>
@@ -481,11 +510,11 @@ export default function CustomerApp() {
 
         {/* ── Store list ─────────────────────────────────── */}
         {cfg.sections.show_nearby && (
-        <section className="pt-8 px-5">
+        <section id="nearby-stores" className="pt-8 px-5 scroll-mt-28">
           <div className="flex items-end justify-between mb-4">
             <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
-              {search
-                ? `${t('customer.results_for')} "${search}"`
+              {isSearching
+                ? `${t('customer.results_for')} "${debouncedSearch}"`
                 : selectedCategory !== 'all'
                   ? selectedCategory
                   : t('customer.nearby')}
@@ -546,7 +575,7 @@ export default function CustomerApp() {
               </div>
               <p className="font-heading font-extrabold text-[hsl(0,0%,9%)]">{t('customer.no_results')}</p>
               <p className="text-sm c-muted mt-1">
-                {search ? t('customer.try_search') : t('customer.check_back')}
+                {isSearching ? t('customer.try_search') : t('customer.check_back')}
               </p>
             </div>
           ) : (
@@ -645,29 +674,31 @@ export default function CustomerApp() {
         className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto grid grid-cols-5 pt-2 pb-2">
-          <button className="flex flex-col items-center justify-center gap-1 c-accent">
+        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
+          <button
+            type="button"
+            onClick={() => {
+              setSearch('');
+              setSelectedCategory('all');
+              setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="flex flex-col items-center justify-center gap-1 c-accent active:scale-95 transition-transform"
+          >
             <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
               <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
             </span>
             <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
           </button>
           <button
+            type="button"
             onClick={() => {
-              const el = document.querySelector('input[placeholder]') as HTMLInputElement | null;
-              el?.focus();
-              window.scrollTo({ top: 0, behavior: 'smooth' });
+              setSelectedCategory('all');
+              const el = document.getElementById('nearby-stores');
+              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
             }}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
-          >
-            <span className="p-2">
-              <Search className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Αναζήτηση</span>
-          </button>
-          <button
-            onClick={() => setSelectedCategory('all')}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
           >
             <span className="p-2">
               <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
@@ -676,7 +707,7 @@ export default function CustomerApp() {
           </button>
           <Link
             to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
           >
             <span className="p-2">
               <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
@@ -685,7 +716,7 @@ export default function CustomerApp() {
           </Link>
           <Link
             to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] hover:text-[hsl(0,0%,9%)] transition-colors"
+            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
           >
             <span className="p-2">
               <User className="h-[22px] w-[22px]" strokeWidth={2} />
@@ -693,6 +724,7 @@ export default function CustomerApp() {
             <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
           </Link>
         </div>
+
 
       </nav>
 
