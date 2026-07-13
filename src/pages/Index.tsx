@@ -176,6 +176,14 @@ const Index = () => {
               <Car className="mr-2 h-5 w-5" />
               Είμαι Οδηγός
             </Button>
+            <Button
+              size="lg" variant="outline"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card border-border text-foreground hover:bg-card/80"
+              onClick={() => navigate('/store')}
+            >
+              <Store className="mr-2 h-5 w-5" />
+              Κατάστημα
+            </Button>
           </div>
 
           {(isAdmin || isSupport) && (
