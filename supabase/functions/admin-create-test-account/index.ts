@@ -52,6 +52,32 @@ Deno.serve(async (req) => {
     { onConflict: "user_id,role" },
   );
 
+  // For drivers: activate profile + create state + seed a GPS location so
+  // the driver is immediately visible to the dispatch engine.
+  if (role === "driver") {
+    await admin.from("driver_profiles").upsert(
+      { user_id: userId, is_active: true, vehicle_type: "motorcycle" },
+      { onConflict: "user_id" },
+    );
+    await admin.from("driver_state").upsert(
+      { driver_id: userId, on_break: false },
+      { onConflict: "driver_id" },
+    );
+    // Place near the first store's coordinates if available, else default.
+    const { data: store } = await admin
+      .from("stores")
+      .select("latitude, longitude")
+      .not("latitude", "is", null)
+      .limit(1)
+      .maybeSingle();
+    const lat = store?.latitude ?? 39.6698;
+    const lng = store?.longitude ?? 20.8528;
+    await admin.from("driver_locations").upsert(
+      { driver_id: userId, latitude: lat, longitude: lng, updated_at: new Date().toISOString() },
+      { onConflict: "driver_id" },
+    );
+  }
+
   return new Response(
     JSON.stringify({ ok: true, email, password, user_id: userId, role }),
     { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } },
