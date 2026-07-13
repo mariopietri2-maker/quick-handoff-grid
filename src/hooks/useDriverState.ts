@@ -17,6 +17,7 @@ export interface DriverState {
 
 export function useDriverState() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [state, setState] = useState<DriverState | null>(null);
   const [loading, setLoading] = useState(true);
   const channelInstanceIdRef = useRef(
@@ -24,41 +25,41 @@ export function useDriverState() {
   );
 
   const fetch = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await (supabase as any)
       .from('driver_state')
       .select('*')
-      .eq('driver_id', user.id)
+      .eq('driver_id', userId)
       .maybeSingle();
     if (data) {
       setState(data);
     } else {
       const { data: created } = await (supabase as any)
         .from('driver_state')
-        .insert({ driver_id: user.id })
+        .insert({ driver_id: userId })
         .select()
         .single();
       setState(created);
     }
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => { fetch(); }, [fetch]);
 
   // Realtime — picks up admin actions (cash resets, etc.) instantly
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     // Stable for this mounted hook instance, unique across duplicate driver
     // surfaces. Reusing the exact same topic can hit Supabase Realtime's
     // "cannot add callbacks after subscribe()" guard during remount/HMR.
     const ch = supabase
-      .channel(`driver-state-${user.id}-${channelInstanceIdRef.current}`)
+      .channel(`driver-state-${userId}-${channelInstanceIdRef.current}`)
       .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'driver_state', filter: `driver_id=eq.${user.id}` },
+        { event: 'UPDATE', schema: 'public', table: 'driver_state', filter: `driver_id=eq.${userId}` },
         (payload: any) => { if (payload.new) setState(payload.new as DriverState); })
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user?.id]);
+  }, [userId]);
 
   const update = async (patch: Partial<DriverState>) => {
     if (!user || !state) return;

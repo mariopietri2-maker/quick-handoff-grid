@@ -9,27 +9,28 @@ type StoreRow = Database['public']['Tables']['stores']['Row'];
 
 export function useStore() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [store, setStore] = useState<StoreRow | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchStore = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data } = await supabase
       .from('stores')
       .select('*')
-      .eq('owner_id', user.id)
+      .eq('owner_id', userId)
       .maybeSingle();
 
     setStore(data);
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     fetchStore();
   }, [fetchStore]);
 
   const createStore = async (storeData: { name: string; address: string; phone?: string }) => {
-    if (!user) return null;
+    if (!userId) return null;
 
     // Best-effort geocode at creation so the store appears on driver/admin maps
     // immediately. Silently ignored if Mapbox can't resolve the address.
@@ -41,7 +42,7 @@ export function useStore() {
 
     const { data, error } = await supabase
       .from('stores')
-      .insert({ ...storeData, ...(geo ?? {}), owner_id: user.id })
+      .insert({ ...storeData, ...(geo ?? {}), owner_id: userId })
       .select()
       .single();
 

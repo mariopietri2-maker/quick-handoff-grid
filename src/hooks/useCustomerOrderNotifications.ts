@@ -26,23 +26,24 @@ const statusToastLabels: Record<string, string> = {
  */
 export function useCustomerOrderNotifications() {
   const { user } = useAuth();
+  const userId = user?.id;
   const lastStatusRef = useRef<Map<string, string>>(new Map());
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     // Best-effort: ask for permission once when the hook mounts.
     requestNotificationPermission().catch(() => {});
 
     const channel = supabase
-      .channel(`customer-orders-${user.id}`)
+      .channel(`customer-orders-${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'UPDATE',
           schema: 'public',
           table: 'orders',
-          filter: `customer_id=eq.${user.id}`,
+          filter: `customer_id=eq.${userId}`,
         },
         (payload) => {
           const next = payload.new as { id: string; status: string };
@@ -64,5 +65,5 @@ export function useCustomerOrderNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [userId]);
 }

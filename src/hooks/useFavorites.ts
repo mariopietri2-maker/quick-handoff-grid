@@ -11,11 +11,12 @@ interface FavoriteRow {
 
 export function useFavorites() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [favorites, setFavorites] = useState<FavoriteRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchFavorites = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setFavorites([]);
       setLoading(false);
       return;
@@ -23,10 +24,10 @@ export function useFavorites() {
     const { data } = await supabase
       .from('customer_favorites' as any)
       .select('id, store_id, menu_item_id')
-      .eq('user_id', user.id);
+      .eq('user_id', userId);
     setFavorites((data ?? []) as any);
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     fetchFavorites();
@@ -38,7 +39,7 @@ export function useFavorites() {
     favorites.some((f) => f.menu_item_id === itemId);
 
   const toggleStore = async (storeId: string) => {
-    if (!user) {
+    if (!userId) {
       toast.error('Συνδεθείτε για να αποθηκεύσετε αγαπημένα');
       return;
     }
@@ -54,7 +55,7 @@ export function useFavorites() {
     } else {
       const { data, error } = await supabase
         .from('customer_favorites' as any)
-        .insert({ user_id: user.id, store_id: storeId, menu_item_id: null } as any)
+        .insert({ user_id: userId, store_id: storeId, menu_item_id: null } as any)
         .select('id, store_id, menu_item_id')
         .single();
       if (!error && data) {
@@ -65,7 +66,7 @@ export function useFavorites() {
   };
 
   const toggleItem = async (itemId: string) => {
-    if (!user) {
+    if (!userId) {
       toast.error('Συνδεθείτε για να αποθηκεύσετε αγαπημένα');
       return;
     }
@@ -81,7 +82,7 @@ export function useFavorites() {
     } else {
       const { data, error } = await supabase
         .from('customer_favorites' as any)
-        .insert({ user_id: user.id, store_id: null, menu_item_id: itemId } as any)
+        .insert({ user_id: userId, store_id: null, menu_item_id: itemId } as any)
         .select('id, store_id, menu_item_id')
         .single();
       if (!error && data) {

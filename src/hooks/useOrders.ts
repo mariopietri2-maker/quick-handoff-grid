@@ -144,6 +144,7 @@ function saveDeclined(map: Record<string, number>) {
 
 export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const { user } = useAuth();
+  const userId = user?.id;
   const adminOverride = !!opts.adminOverride;
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
   const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
@@ -159,7 +160,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const declinedRef = useRef<Record<string, number>>(loadDeclined());
 
   const fetchOrders = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
 
     // Load assignment mode via public RPC (avoids exposing all platform_settings)
     const { data: settings } = await (supabase as any).rpc('get_platform_settings_public');
@@ -175,7 +176,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const { data: activeRows } = await supabase
       .from('orders')
       .select('*, order_items(*)')
-      .eq('driver_id', user.id)
+      .eq('driver_id', userId)
       .in('status', ['accepted', 'preparing', 'ready', 'arrived', 'picked_up'])
       .order('stop_sequence', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
@@ -204,7 +205,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         .limit(50);
       // Hide orders the admin themself is already actively delivering
       availableOrders = ((all as OrderWithItems[]) ?? []).filter(
-        (o) => o.driver_id !== user.id,
+        (o) => o.driver_id !== userId,
       );
     } else if (mode === 'auto') {
       // AUTO MODE: show two buckets, merged into one list:
@@ -219,7 +220,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         supabase
           .from('pending_offers')
           .select('id, order_id, expires_at')
-          .eq('driver_id', user.id)
+          .eq('driver_id', userId)
           .eq('status', 'pending')
           .gt('expires_at', nowIso),
         supabase
@@ -331,7 +332,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
 
     setLoading(false);
-  }, [user, adminOverride]);
+  }, [userId, adminOverride]);
 
   useEffect(() => {
     fetchOrders();
@@ -359,7 +360,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   // We debounce refetches so a burst of order updates doesn't cause a
   // refetch storm (one update per row otherwise).
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     let pending: ReturnType<typeof setTimeout> | null = null;
     const scheduleRefetch = () => {
       if (pending) return;
@@ -372,13 +373,13 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const isRelevant = (row: Partial<OrderRow> | null | undefined) => {
       if (!row) return false;
       if (adminOverride) return true;
-      if (row.driver_id === user.id) return true;
+      if (row.driver_id === userId) return true;
       if (row.driver_id == null) return true;
       return false;
     };
 
     const ordersChannel = supabase
-      .channel(`driver-orders-${user.id}`)
+      .channel(`driver-orders-${userId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'orders' },
@@ -392,14 +393,14 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       .subscribe();
 
     const offersChannel = supabase
-      .channel(`driver-offers-${user.id}`)
+      .channel(`driver-offers-${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'pending_offers',
-          filter: `driver_id=eq.${user.id}`,
+          filter: `driver_id=eq.${userId}`,
         },
         () => {
           // Just refetch — the ringableKey effect handles sound/vibration.
@@ -414,7 +415,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           event: 'UPDATE',
           schema: 'public',
           table: 'pending_offers',
-          filter: `driver_id=eq.${user.id}`,
+          filter: `driver_id=eq.${userId}`,
         },
         (payload) => {
           const row = payload.new as { order_id?: string; status?: string; expires_at?: string } | null;
@@ -440,7 +441,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           event: 'DELETE',
           schema: 'public',
           table: 'pending_offers',
-          filter: `driver_id=eq.${user.id}`,
+          filter: `driver_id=eq.${userId}`,
         },
         () => {
           // Offer cancelled / cleaned up → drop it from the UI immediately.
@@ -456,10 +457,10 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(offersChannel);
     };
-  }, [user, fetchOrders, adminOverride]);
+  }, [userId, fetchOrders, adminOverride]);
 
   const acceptOrder = async (orderId: string) => {
-    if (!user) return;
+    if (!userId) return;
     const offerId = offerIds[orderId];
     // Drivers may now soft-accept an order even before the store marks it
     // ready — physical pickup is still gated server-side by the store's
@@ -469,7 +470,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     // directly, even if a driver already has it. Bypass the offer-accept flow.
     if (adminOverride) {
       const patch: Database['public']['Tables']['orders']['Update'] = {
-        driver_id: user.id,
+        driver_id: userId,
         status: 'accepted',
         stacked_with_order_id: null,
       };
@@ -504,7 +505,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     // MANUAL mode (or stacked offer with no pending_offer) → legacy direct claim
     const isStacking = !!activeDelivery && activeDelivery.id !== orderId;
     const patch: Database['public']['Tables']['orders']['Update'] = {
-      driver_id: user.id,
+      driver_id: userId,
       status: 'accepted',
     };
     if (isStacking) patch.stacked_with_order_id = activeDelivery!.id;
@@ -519,7 +520,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       toast.error('Failed to accept order');
     } else {
       supabase.from('driver_offer_events').insert({
-        driver_id: user.id,
+        driver_id: userId,
         order_id: orderId,
         action: 'accepted',
       }).then(() => {});
@@ -528,7 +529,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   };
 
   const declineOrder = async (orderId: string) => {
-    if (!user) return;
+    if (!userId) return;
     const offerId = offerIds[orderId];
 
     if (assignmentMode === 'auto' && offerId) {
@@ -543,7 +544,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     declinedRef.current[orderId] = Date.now();
     saveDeclined(declinedRef.current);
     supabase.from('driver_offer_events').insert({
-      driver_id: user.id,
+      driver_id: userId,
       order_id: orderId,
       action: 'declined',
     }).then(() => {});
@@ -598,22 +599,23 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
 export function useUserStore() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
     supabase
       .from('stores')
       .select('id')
-      .eq('owner_id', user.id)
+      .eq('owner_id', userId)
       .limit(1)
       .single()
       .then(({ data }) => {
         setStoreId(data?.id ?? null);
         setLoading(false);
       });
-  }, [user]);
+  }, [userId]);
 
   return { storeId, loading };
 }

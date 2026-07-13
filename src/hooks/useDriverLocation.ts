@@ -24,6 +24,7 @@ const isNative = Capacitor.isNativePlatform();
 
 export function useDriverLocation(isActive: boolean) {
   const { user } = useAuth();
+  const userId = user?.id;
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const watchIdRef = useRef<string | number | null>(null);
@@ -32,7 +33,7 @@ export function useDriverLocation(isActive: boolean) {
   const cleanupRef = useRef<(() => void) | null>(null);
 
   const sendLocation = useCallback(async (pos: NormalizedPos) => {
-    if (!user) return;
+    if (!userId) return;
     // If we're offline, just keep the latest pos in lastPosRef and bail —
     // the 'online' listener (and the next interval tick) will flush it.
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -44,7 +45,7 @@ export function useDriverLocation(isActive: boolean) {
         .from('driver_locations')
         .upsert(
           {
-            driver_id: user.id,
+            driver_id: userId,
             latitude: pos.latitude,
             longitude: pos.longitude,
             heading: pos.heading,
@@ -57,23 +58,23 @@ export function useDriverLocation(isActive: boolean) {
       // Network blip — keep last pos for next tick / online event
       lastPosRef.current = pos;
     }
-  }, [user]);
+  }, [userId]);
 
   // Hard-offline: clear our location row so the dispatcher immediately
   // stops considering us online. ONLY used when the driver explicitly
   // toggles offline — not on tab close / background, so a driver who
   // momentarily loses signal or backgrounds the app stays online.
   const goHardOffline = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     try {
-      await supabase.from('driver_locations').delete().eq('driver_id', user.id);
+      await supabase.from('driver_locations').delete().eq('driver_id', userId);
     } catch {
       /* swallow */
     }
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
-    if (!isActive || !user) {
+    if (!isActive || !userId) {
       cleanupRef.current?.();
       cleanupRef.current = null;
       lastPosRef.current = null;
@@ -224,7 +225,7 @@ export function useDriverLocation(isActive: boolean) {
       cleanupRef.current = null;
       window.removeEventListener('online', handleOnline);
     };
-  }, [isActive, user, sendLocation, goHardOffline]);
+  }, [isActive, userId, sendLocation, goHardOffline]);
 
   return { tracking, error };
 }

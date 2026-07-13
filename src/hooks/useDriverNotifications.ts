@@ -15,9 +15,10 @@ import {
  */
 export function useDriverNotifications() {
   const { user } = useAuth();
+  const userId = user?.id;
 
   useEffect(() => {
-    if (!user) return;
+    if (!userId) return;
 
     // Initialize OS-level notifications (asks permission once)
     void initNotificationChannels();
@@ -28,7 +29,7 @@ export function useDriverNotifications() {
       const { data } = await (supabase as any)
         .from('driver_notifications')
         .select('id, title, body, severity')
-        .eq('driver_id', user.id)
+        .eq('driver_id', userId)
         .is('read_at', null)
         .order('created_at', { ascending: true })
         .limit(10);
@@ -45,14 +46,14 @@ export function useDriverNotifications() {
 
     // 2) Realtime stream
     const channel = supabase
-      .channel(`driver-notifications-${user.id}`)
+      .channel(`driver-notifications-${userId}`)
       .on(
         'postgres_changes',
         {
           event: 'INSERT',
           schema: 'public',
           table: 'driver_notifications',
-          filter: `driver_id=eq.${user.id}`,
+          filter: `driver_id=eq.${userId}`,
         },
         async (payload) => {
           const n = payload.new as any;
@@ -68,7 +69,7 @@ export function useDriverNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [userId]);
 }
 
 function showNotification(n: { title: string; body: string; severity: string }) {

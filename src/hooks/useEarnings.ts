@@ -22,32 +22,33 @@ interface DayBreakdown {
 
 export function useEarnings() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [earnings, setEarnings] = useState<EarningRow[]>([]);
   const [loading, setLoading] = useState(true);
 
   const fetchEarnings = useCallback(async () => {
-    if (!user) return;
+    if (!userId) return;
     const { data, error } = await supabase
       .from('earnings')
       .select('*')
-      .eq('driver_id', user.id)
+      .eq('driver_id', userId)
       .order('created_at', { ascending: false });
 
     if (!error && data) {
       setEarnings(data);
     }
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     fetchEarnings();
-    if (!user) return;
+    if (!userId) return;
     const ch = supabase
-      .channel(`earnings-${user.id}-${Math.random().toString(36).slice(2, 8)}`)
-      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'earnings', filter: `driver_id=eq.${user.id}` }, fetchEarnings)
+      .channel(`earnings-${userId}-${Math.random().toString(36).slice(2, 8)}`)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'earnings', filter: `driver_id=eq.${userId}` }, fetchEarnings)
       .subscribe();
     return () => { supabase.removeChannel(ch); };
-  }, [user?.id]);
+  }, [userId]);
 
   const today = useMemo<EarningsSummary>(() => {
     const startOfDay = new Date();

@@ -17,11 +17,12 @@ const TIER_THRESHOLDS: Record<string, { next: string | null; nextAt: number | nu
 
 export function useRewards() {
   const { user } = useAuth();
+  const userId = user?.id;
   const [rewards, setRewards] = useState<Rewards | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setRewards(null);
       setLoading(false);
       return;
@@ -29,27 +30,27 @@ export function useRewards() {
     const { data } = await supabase
       .from('customer_rewards' as any)
       .select('points, tier, lifetime_points')
-      .eq('user_id', user.id)
+      .eq('user_id', userId)
       .maybeSingle();
     setRewards((data as any) ?? { points: 0, tier: 'bronze', lifetime_points: 0 });
     setLoading(false);
-  }, [user]);
+  }, [userId]);
 
   useEffect(() => {
     fetch();
-    if (!user) return;
+    if (!userId) return;
     const ch = supabase
-      .channel(`rewards-${user.id}`)
+      .channel(`rewards-${userId}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'customer_rewards', filter: `user_id=eq.${user.id}` },
+        { event: '*', schema: 'public', table: 'customer_rewards', filter: `user_id=eq.${userId}` },
         () => fetch(),
       )
       .subscribe();
     return () => {
       supabase.removeChannel(ch);
     };
-  }, [user, fetch]);
+  }, [userId, fetch]);
 
   const tierInfo = rewards ? TIER_THRESHOLDS[rewards.tier] ?? TIER_THRESHOLDS.bronze : TIER_THRESHOLDS.bronze;
 
