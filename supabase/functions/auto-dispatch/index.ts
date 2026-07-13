@@ -373,7 +373,7 @@ async function loadAvailableOnlineDrivers(
   exclude: string[],
   limit: number,
 ): Promise<CandidateDriver[]> {
-  const GPS_STALE_MS = 10 * 60 * 1000; // 10 minutes — lenient fallback window
+  const GPS_STALE_MS = 30 * 60 * 1000; // 30 minutes — lenient fallback window
   const cutoff = new Date(Date.now() - GPS_STALE_MS).toISOString();
 
   const [{ data }, { data: busyDrivers }, { data: pendingOfferDrivers }] = await Promise.all([
