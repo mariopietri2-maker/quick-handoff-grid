@@ -373,35 +373,43 @@ async function loadAvailableOnlineDrivers(
   exclude: string[],
   limit: number,
 ): Promise<CandidateDriver[]> {
-  // Get all active drivers with their current location and active order count
-  const { data } = await admin
-    .from("driver_profiles")
-    .select("user_id, driver_locations(latitude, longitude, updated_at), driver_state(on_break, is_online)")
-    .eq("is_active", true)
-    .is("suspended_at", null)
-    .limit(Math.max(limit * 8, limit));
+  const GPS_STALE_MS = 10 * 60 * 1000; // 10 minutes — lenient fallback window
+  const cutoff = new Date(Date.now() - GPS_STALE_MS).toISOString();
 
-  // Get drivers with active orders (those already have a delivery in progress)
-  const { data: busyDrivers } = await admin
-    .from("orders")
-    .select("driver_id")
-    .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
-    .not("driver_id", "is", null);
+  const [{ data }, { data: busyDrivers }, { data: pendingOfferDrivers }] = await Promise.all([
+    admin
+      .from("driver_profiles")
+      .select("user_id, driver_locations(latitude, longitude, updated_at), driver_state(on_break)")
+      .eq("is_active", true)
+      .is("suspended_at", null)
+      .limit(Math.max(limit * 8, limit)),
+    admin
+      .from("orders")
+      .select("driver_id")
+      .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
+      .not("driver_id", "is", null),
+    admin
+      .from("pending_offers")
+      .select("driver_id")
+      .eq("status", "pending"),
+  ]);
 
   const busyDriverSet = new Set((busyDrivers ?? []).map((o: any) => o.driver_id));
+  const pendingOfferSet = new Set((pendingOfferDrivers ?? []).map((o: any) => o.driver_id));
 
   return (data ?? [])
-    // Exclude: drivers in the exclude list, drivers on break, drivers with active orders
-    .filter((row: any) => 
-      !exclude.includes(row.user_id) && 
-      !row.driver_state?.on_break &&
-      !busyDriverSet.has(row.user_id)
-    )
+    .filter((row: any) => {
+      if (exclude.includes(row.user_id)) return false;
+      if (row.driver_state?.on_break) return false;
+      if (busyDriverSet.has(row.user_id)) return false;
+      if (pendingOfferSet.has(row.user_id)) return false;
+      const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
+      return loc?.updated_at != null && loc.updated_at >= cutoff;
+    })
     .map((row: any) => {
       const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
       const lat = loc?.latitude != null ? Number(loc.latitude) : null;
       const lng = loc?.longitude != null ? Number(loc.longitude) : null;
-      // If no recent GPS, still offer (assume far) so order doesn't sit unassigned.
       const distance = lat != null && lng != null
         ? haversineKm(anchorLat, anchorLng, lat, lng)
         : 9999;
