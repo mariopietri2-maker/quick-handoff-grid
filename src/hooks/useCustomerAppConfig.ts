@@ -39,6 +39,10 @@ export type CustomerAppConfig = {
     show_pro_delivery: boolean;
     show_order_again: boolean;
   };
+  bottom_bar: {
+    style: 'pill' | 'classic' | 'minimal';
+    items: { id: string; label: string; icon: string; route: string }[];
+  };
 };
 
 export const DEFAULT_CONFIG: CustomerAppConfig = {
@@ -69,6 +73,15 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     show_pro_delivery: false,
     show_order_again: false,
   },
+  bottom_bar: {
+    style: 'pill',
+    items: [
+      { id: 'discover', label: 'Ανακάλυψε', icon: 'compass', route: 'scroll-top' },
+      { id: 'food', label: 'Φαγητό', icon: 'utensils', route: 'scroll-nearby' },
+      { id: 'orders', label: 'Παραγγελίες', icon: 'receipt', route: '/orders' },
+      { id: 'profile', label: 'Λογαριασμός', icon: 'user', route: '/profile' },
+    ],
+  },
 };
 
 /** Reads the PUBLISHED customer app config + subscribes to live updates. */
@@ -85,7 +98,7 @@ export function useCustomerAppConfig(): CustomerAppConfig {
       if (!mounted) return;
       const cfg = data?.published_config;
       if (cfg && Object.keys(cfg).length) {
-        setConfig({ ...DEFAULT_CONFIG, ...cfg, branding: { ...DEFAULT_CONFIG.branding, ...(cfg.branding ?? {}) }, sections: { ...DEFAULT_CONFIG.sections, ...(cfg.sections ?? {}) } });
+        setConfig({ ...DEFAULT_CONFIG, ...cfg, branding: { ...DEFAULT_CONFIG.branding, ...(cfg.branding ?? {}) }, sections: { ...DEFAULT_CONFIG.sections, ...(cfg.sections ?? {}) }, bottom_bar: { ...DEFAULT_CONFIG.bottom_bar, ...(cfg.bottom_bar ?? {}) } });
       }
     };
     load();

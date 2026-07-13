@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap, PackagePlus, Wallet } from 'lucide-react';
+import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, ChartBar as BarChart3, Tag, Package, Clock, Zap, PackagePlus, Wallet } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
+import { useStoreAppConfig } from '@/hooks/useAppConfigs';
 import { MenuControl } from '@/components/store/MenuControl';
 import { StoreSettings } from '@/components/store/StoreSettings';
 import { PrinterSettings } from '@/components/store/PrinterSettings';
@@ -36,9 +37,10 @@ export default function StoreApp() {
   };
   const { store, loading: storeLoading, createStore } = useStore();
   const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(store?.id ?? null);
+  const storeCfg = useStoreAppConfig();
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState(storeCfg.defaults.default_tab || 'orders');
   const tabsListRef = useRef<HTMLDivElement>(null);
 
   // Keep the active tab visible inside the horizontally scrolling tab strip on mobile.
@@ -66,7 +68,7 @@ export default function StoreApp() {
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-[var(--shadow-sm)]">
         <div className="flex items-center gap-2">
           <Store className="h-6 w-6 text-primary" />
-          <h1 className="font-heading font-bold text-lg text-foreground">DashStore</h1>
+          <h1 className="font-heading font-bold text-lg text-foreground">{storeCfg.branding.app_name}</h1>
         </div>
         <div className="flex items-center gap-2">
           {store && (
@@ -84,7 +86,7 @@ export default function StoreApp() {
         </div>
       </header>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="p-4 max-w-6xl mx-auto">
         {storeLoading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -216,7 +218,7 @@ export default function StoreApp() {
                   </div>
                 </div>
               ) : (
-                <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} storeName={store.name} />
+                <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} storeName={store.name} compact={storeCfg.defaults.compact_queue} />
               )}
             </TabsContent>
 

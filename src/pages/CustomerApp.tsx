@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Star, Zap, BadgePercent } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Star, Zap, BadgePercent, Chrome as Home, Heart, Settings, Bell, Coffee } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
@@ -669,64 +669,112 @@ export default function CustomerApp() {
         )}
       </main>
 
-      {/* ── Bottom tab bar ─────────────────────────────── */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSearch('');
-              setSelectedCategory('all');
-              setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 c-accent active:scale-95 transition-transform"
-          >
-            <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
-              <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
-            </span>
-            <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCategory('all');
-              const el = document.getElementById('nearby-stores');
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Φαγητό</span>
-          </button>
-          <Link
-            to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
-          </Link>
-          <Link
-            to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <User className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
-          </Link>
-        </div>
+      {/* ── Bottom tab bar — configurable via admin ─────── */}
+      {(() => {
+        const iconMap: Record<string, any> = { compass: Compass, utensils: UtensilsCrossed, receipt: Receipt, user: User, home: Home, heart: Heart, coffee: Coffee, bell: Bell, settings: Settings, zap: Zap };
+        const items = cfg.bottom_bar?.items ?? [];
+        const style = cfg.bottom_bar?.style ?? 'pill';
 
+        const handleNav = (route: string) => {
+          if (route.startsWith('/')) {
+            navigate(user ? route : '/auth');
+          } else if (route === 'scroll-nearby') {
+            const el = document.getElementById('nearby-stores');
+            if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
+          } else {
+            setSearch('');
+            setSelectedCategory('all');
+            setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+          }
+        };
 
-      </nav>
+        if (style === 'minimal') {
+          return (
+            <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <div className="max-w-2xl mx-auto flex items-center justify-around py-2.5">
+                {items.map((item) => {
+                  const Icon = iconMap[item.icon] ?? Compass;
+                  return (
+                    <button key={item.id} onClick={() => handleNav(item.route)} className="flex flex-col items-center justify-center text-muted-foreground active:scale-90 transition-transform">
+                      <Icon className="h-5 w-5" strokeWidth={2} />
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          );
+        }
+
+        if (style === 'classic') {
+          return (
+            <nav className="fixed bottom-0 left-0 right-0 z-50 bg-card/95 backdrop-blur-lg border-t border-border" style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}>
+              <div className="max-w-2xl mx-auto flex items-center justify-around py-2">
+                {items.map((item) => {
+                  const Icon = iconMap[item.icon] ?? Compass;
+                  return (
+                    <button key={item.id} onClick={() => handleNav(item.route)} className="flex flex-col items-center justify-center gap-0.5 text-muted-foreground hover:text-foreground active:scale-95 transition-all">
+                      <Icon className="h-5 w-5" strokeWidth={2} />
+                      <span className="text-[10px] font-bold">{item.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            </nav>
+          );
+        }
+
+        // pill style (default) — professional floating bar with active pill
+        return (
+          <nav className="fixed bottom-0 left-0 right-0 z-50 px-3" style={{ paddingBottom: 'calc(env(safe-area-inset-bottom) + 8px)' }}>
+            <div
+              className="mx-auto flex items-center justify-between rounded-2xl border border-border px-2"
+              style={{
+                maxWidth: '420px',
+                height: '56px',
+                backgroundColor: 'hsl(var(--card) / 0.92)',
+                backdropFilter: 'blur(16px)',
+                boxShadow: '0 4px 24px -4px rgba(0,0,0,0.1), 0 0 0 1px hsl(var(--border) / 0.5)',
+              }}
+            >
+              {items.map((item, idx) => {
+                const Icon = iconMap[item.icon] ?? Compass;
+                const isFirst = idx === 0;
+                return (
+                  <button
+                    key={item.id}
+                    onClick={() => handleNav(item.route)}
+                    className="flex flex-col items-center justify-center gap-0.5 flex-1 active:scale-90 transition-transform"
+                    style={{ height: '48px', maxWidth: '80px' }}
+                  >
+                    <div
+                      className="flex items-center justify-center rounded-xl transition-all"
+                      style={{
+                        width: '40px',
+                        height: '32px',
+                        backgroundColor: isFirst ? 'hsl(var(--c-accent) / 0.15)' : 'transparent',
+                      }}
+                    >
+                      <Icon
+                        className="h-5 w-5"
+                        strokeWidth={isFirst ? 2.4 : 2}
+                        style={{ color: isFirst ? 'hsl(var(--c-accent))' : 'hsl(var(--muted-foreground))' }}
+                      />
+                    </div>
+                    <span
+                      className="text-[9px] font-bold leading-none"
+                      style={{ color: isFirst ? 'hsl(var(--c-accent))' : 'hsl(var(--muted-foreground))' }}
+                    >
+                      {item.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </nav>
+        );
+      })()}
 
       <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl">

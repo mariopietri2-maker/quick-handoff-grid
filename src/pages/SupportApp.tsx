@@ -8,12 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
+import { Headphones, TriangleAlert as AlertTriangle, Clock, CircleCheck as CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
+import { CustomerSupportTools } from '@/components/support/CustomerSupportTools';
+import { StoreSupportTools } from '@/components/support/StoreSupportTools';
+import { useSupportAppConfig } from '@/hooks/useAppConfigs';
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { CustomerProfilePanel } from '@/components/support/CustomerProfilePanel';
@@ -68,6 +71,7 @@ export default function SupportApp() {
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [view, setView] = useState<'tickets' | 'team' | 'dcc'>('tickets');
+  const supportCfg = useSupportAppConfig();
   const chatRef = useRef<TicketChatHandle>(null);
 
   const { data: tickets } = useQuery({
@@ -241,10 +245,25 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
-          {(activeTicket.requester_role === 'customer' || activeTicket.requester_role === 'store') && activeTicket.requester_id ? (
-            <CustomerProfilePanel userId={activeTicket.requester_id} />
+          {(activeTicket.requester_role === 'customer') && activeTicket.requester_id ? (
+            <>
+              <CustomerProfilePanel userId={activeTicket.requester_id} />
+              <CustomerSupportTools ticket={activeTicket} />
+            </>
+          ) : activeTicket.requester_role === 'store' && activeTicket.requester_id ? (
+            <>
+              <CustomerProfilePanel userId={activeTicket.requester_id} />
+              <StoreSupportTools ticket={activeTicket} />
+            </>
           ) : activeTicket.driver_id ? (
-            <DriverProfilePanel driverId={activeTicket.driver_id} />
+            <>
+              <DriverProfilePanel driverId={activeTicket.driver_id} />
+              <SupportActionToolbox
+                ticket={activeTicket}
+                driver={driver}
+                onDriverChanged={() => queryClient.invalidateQueries({ queryKey: ['support-driver-profile', activeTicket.driver_id] })}
+              />
+            </>
           ) : null}
 
 
@@ -326,7 +345,7 @@ export default function SupportApp() {
                   Γρήγορες απαντήσεις
                 </p>
                 <div className="flex flex-wrap gap-1.5">
-                  {QUICK_REPLIES.map((q) => (
+                  {supportCfg.quick_replies.map((q) => (
                     <button
                       key={q.label}
                       onClick={() => chatRef.current?.setDraft(q.text)}
@@ -340,10 +359,12 @@ export default function SupportApp() {
             </CardContent>
           </Card>
 
-          <SupportAIPanel
-            ticketId={activeTicket.id}
-            onUseReply={(text) => chatRef.current?.setDraft(text)}
-          />
+          {supportCfg.sections.show_ai_panel && (
+            <SupportAIPanel
+              ticketId={activeTicket.id}
+              onUseReply={(text) => chatRef.current?.setDraft(text)}
+            />
+          )}
 
           <div>
             <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
@@ -418,16 +439,18 @@ export default function SupportApp() {
         </div>
       </header>
 
-      {view === 'team' ? (
+      {view === 'team' && supportCfg.sections.show_team_chat ? (
         <div className="p-4 max-w-7xl mx-auto space-y-4">
           <AnnouncementsBanner audience="support" />
           <TeamChat />
         </div>
-      ) : view === 'dcc' ? (
+      ) : view === 'dcc' && supportCfg.sections.show_delivery_control ? (
         <div className="p-4 max-w-7xl mx-auto space-y-4">
           <AnnouncementsBanner audience="support" />
           <DeliveryControlCenter />
         </div>
+      ) : view === 'team' || view === 'dcc' ? (
+        <div className="p-4 text-center text-muted-foreground text-sm">Αυτός ο προβολέας είναι απενεργοποιημένος από τον admin.</div>
       ) : (
 
       <div className="p-4 space-y-4 max-w-3xl mx-auto">
@@ -471,7 +494,7 @@ export default function SupportApp() {
           </Button>
         </div>
 
-        <SlaSettingsPanel />
+        {supportCfg.sections.show_sla_settings && <SlaSettingsPanel />}
 
         <div className="space-y-2">
           {filtered.length === 0 ? (

@@ -1,7 +1,4 @@
-import {
-  LayoutDashboard, ShoppingBag, Store, Users, Wallet, Settings2,
-  ChevronLeft, ChevronRight, LogOut, Shield, UserCircle, Repeat, Bike, ShoppingCart,
-} from 'lucide-react';
+import { LayoutDashboard, ShoppingBag, Store, Users, Wallet, Settings2, ChevronLeft, ChevronRight, LogOut, Shield, CircleUser as UserCircle, Repeat, Bike, ShoppingCart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -109,6 +106,10 @@ export const NAV_SECTIONS = [
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
       { id: 'customer_app_config', label: '🎨 Customer app' },
+      { id: 'driver_app_config', label: '🛵 Driver app' },
+      { id: 'store_app_config', label: '🏪 Store app' },
+      { id: 'support_app_config', label: '🎧 Support app' },
+      { id: 'store_stickers', label: '🏷️ Store stickers' },
       { id: 'ai_hero_cards', label: '✨ AI Hero Cards' },
       { id: 'aade_compliance', label: '🇬🇷 ΑΑΔΕ / myDATA' },
       { id: 'feature_flags', label: 'Feature flags' },

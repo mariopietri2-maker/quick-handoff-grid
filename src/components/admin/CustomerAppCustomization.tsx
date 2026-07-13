@@ -101,6 +101,7 @@ export default function CustomerAppCustomization() {
           <TabsTrigger value="tiles">Πλακίδια</TabsTrigger>
           <TabsTrigger value="promos">Promo banners</TabsTrigger>
           <TabsTrigger value="sections">Ενότητες</TabsTrigger>
+          <TabsTrigger value="bottombar">Bottom bar</TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding">
@@ -293,6 +294,76 @@ export default function CustomerAppCustomization() {
                   />
                 </div>
               ))}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="bottombar">
+          <Card>
+            <CardContent className="space-y-4">
+              <div>
+                <Label className="text-sm font-heading font-bold">Στυλ bottom bar</Label>
+                <Select
+                  value={draft.bottom_bar?.style ?? 'pill'}
+                  onValueChange={v => setDraft({ ...draft, bottom_bar: { ...(draft.bottom_bar ?? { items: [] }), style: v as any } })}
+                >
+                  <SelectTrigger className="mt-1"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="pill">Pill (φουσκωτό, ενεργό = καψουλα)</SelectItem>
+                    <SelectItem value="classic">Classic (flat icon + label)</SelectItem>
+                    <SelectItem value="minimal">Minimal (μόνο εικονίδια)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              <p className="text-xs text-muted-foreground">Οι καρτέλες του bottom bar (έως 5). Οι διαδρομές: <code>scroll-top</code>, <code>scroll-nearby</code>, <code>/orders</code>, <code>/profile</code></p>
+              <div className="space-y-2">
+                {(draft.bottom_bar?.items ?? []).map((item: any, idx: number) => (
+                  <div key={idx} className="flex items-center gap-2 border rounded-lg p-2 bg-card">
+                    <Input
+                      className="flex-1"
+                      placeholder="Label"
+                      value={item.label}
+                      onChange={e => {
+                        const items = [...(draft.bottom_bar?.items ?? [])];
+                        items[idx] = { ...item, label: e.target.value };
+                        setDraft({ ...draft, bottom_bar: { ...(draft.bottom_bar ?? { style: 'pill' }), items } });
+                      }}
+                    />
+                    <Input
+                      className="w-28"
+                      placeholder="icon"
+                      value={item.icon}
+                      onChange={e => {
+                        const items = [...(draft.bottom_bar?.items ?? [])];
+                        items[idx] = { ...item, icon: e.target.value };
+                        setDraft({ ...draft, bottom_bar: { ...(draft.bottom_bar ?? { style: 'pill' }), items } });
+                      }}
+                    />
+                    <Input
+                      className="w-32"
+                      placeholder="route"
+                      value={item.route}
+                      onChange={e => {
+                        const items = [...(draft.bottom_bar?.items ?? [])];
+                        items[idx] = { ...item, route: e.target.value };
+                        setDraft({ ...draft, bottom_bar: { ...(draft.bottom_bar ?? { style: 'pill' }), items } });
+                      }}
+                    />
+                    <Button variant="ghost" size="icon" className="h-8 w-8 text-destructive" onClick={() => {
+                      const items = (draft.bottom_bar?.items ?? []).filter((_: any, i: number) => i !== idx);
+                      setDraft({ ...draft, bottom_bar: { ...(draft.bottom_bar ?? { style: 'pill' }), items } });
+                    }}>
+                      <Trash2 className="h-4 w-4" />
+                    </Button>
+                  </div>
+                ))}
+                <Button variant="outline" size="sm" onClick={() => {
+                  const items = [...(draft.bottom_bar?.items ?? []), { id: `tab-${Date.now()}`, label: 'Νέα', icon: 'compass', route: 'scroll-top' }];
+                  setDraft({ ...draft, bottom_bar: { ...(draft.bottom_bar ?? { style: 'pill' }), items } });
+                }}>
+                  <Plus className="h-4 w-4 mr-1" /> Προσθήκη καρτέλας
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </TabsContent>

@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Input } from '@/components/ui/input';
-import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
+import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoveVertical as MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -45,6 +45,10 @@ const DispatchDiagnostics    = lazy(() => import('@/components/admin/DispatchDia
 const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerAppCustomization'));
 const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
+const DriverAppCustomization = lazy(() => import('@/components/admin/DriverAppCustomization'));
+const StoreAppCustomization = lazy(() => import('@/components/admin/StoreAppCustomization'));
+const SupportAppCustomization = lazy(() => import('@/components/admin/SupportAppCustomization'));
+const StoreStickersPanel = lazy(() => import('@/components/admin/StoreStickersPanel'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
@@ -346,6 +350,14 @@ export default function AdminApp() {
         return <SystemResetPanel />;
       case 'customer_app_config':
         return <CustomerAppCustomization />;
+      case 'driver_app_config':
+        return <DriverAppCustomization />;
+      case 'store_app_config':
+        return <StoreAppCustomization />;
+      case 'support_app_config':
+        return <SupportAppCustomization />;
+      case 'store_stickers':
+        return <StoreStickersPanel />;
       case 'ai_hero_cards':
         return <AiHeroCardsAdmin />;
       case 'aade_compliance':
