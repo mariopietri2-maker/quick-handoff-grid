@@ -83,14 +83,15 @@ Deno.serve(async (req) => {
   const startedAt = new Date();
   const source = isInternalCron ? "cron" : "manual";
 
-  // We only persist a dispatch_runs row when the run actually did something
-  // (dispatched, expired, errored, or was a manual/admin call). This keeps
-  // the table from filling up with thousands of empty cron no-ops.
+  // Skip logging pure cron no-ops (nothing to dispatch AND no pending orders)
+  // to avoid filling the table with thousands of idle ticks. Any run that had
+  // pending orders — even if dispatched=0 — is always logged so the admin can
+  // see the cron is running and diagnose why dispatch isn't happening.
   const logFinish = async (payload: Record<string, unknown>, success: boolean, errorMsg?: string) => {
     const dispatched = Number(payload.dispatched ?? 0);
     const expired = Number(payload.expired ?? 0);
-    const isNoop = success && dispatched === 0 && expired === 0 && !errorMsg;
-    // For cron no-ops, skip the insert entirely.
+    const pendingOrders = Number(payload.pending_orders ?? 0);
+    const isNoop = success && dispatched === 0 && expired === 0 && pendingOrders === 0 && !errorMsg;
     if (source === "cron" && isNoop) return;
     try {
       await admin.from("dispatch_runs").insert({
@@ -173,7 +174,7 @@ Deno.serve(async (req) => {
 
     const orders = (candidates ?? []) as OrderRow[];
     if (orders.length === 0) {
-      const payload = { ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0 };
+      const payload = { ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0, pending_orders: 0 };
       await logFinish(payload, true);
       return json(payload);
     }
@@ -347,6 +348,7 @@ Deno.serve(async (req) => {
       mode: "auto",
       expired: expired?.length ?? 0,
       dispatched,
+      pending_orders: orders.length,
       details: dispatchResults,
     };
     await logFinish(payload, true);

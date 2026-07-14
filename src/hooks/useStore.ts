@@ -19,9 +19,10 @@ export function useStore() {
       .from('stores')
       .select('*')
       .eq('owner_id', userId)
-      .maybeSingle();
+      .order('created_at', { ascending: true })
+      .limit(1);
 
-    setStore(data);
+    setStore(data?.[0] ?? null);
     setLoading(false);
   }, [userId]);
 
