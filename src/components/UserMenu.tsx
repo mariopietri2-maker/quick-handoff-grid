@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Settings, Wallet,
   Users, FileText, Coffee, Pause, PackageX,
-  Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Map,
+  Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Map, Store, Headphones,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -25,7 +25,7 @@ export function UserMenu() {
   const { user, profile, signOut, isAdmin } = useAuth();
   const navigate = useNavigate();
   const isDriver = profile?.role === 'driver';
-  
+  const isStore = profile?.role === 'store'; 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -155,6 +155,16 @@ export function UserMenu() {
                     Driver
                   </span>
                 )}
+                {isStore && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-primary/15 px-2 py-0.5 text-[9.5px] font-heading font-bold text-primary uppercase tracking-wider">
+                    Store
+                  </span>
+                )}
+                {!isDriver && !isStore && (
+                  <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[9.5px] font-heading font-bold text-muted-foreground uppercase tracking-wider">
+                    Customer
+                  </span>
+                )}
               </div>
             </div>
           </div>
@@ -197,7 +207,7 @@ export function UserMenu() {
 
               <DropdownMenuSeparator className="my-1" />
 
-              {/* MAIN — fewer items */}
+              {/* MAIN — fewer items; support lives in Μηνύματα inbox, not map */}
               <DropdownMenuLabel className={labelClassName}>Μενού</DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=money')}>
                 <Wallet className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
@@ -205,11 +215,11 @@ export function UserMenu() {
               </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=inbox')}>
                 <Mail className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
-                Μηνύματα
+                Μηνύματα & Βοήθεια
               </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver/profile')}>
                 <UserCircle className="mr-2 h-4 w-4 shrink-0" />
-                Προφίλ
+                Προφίλ οδηγού
               </DropdownMenuItem>
               <DropdownMenuItem
                 className={itemClassName}
@@ -243,16 +253,48 @@ export function UserMenu() {
                 Επιστροφές
               </DropdownMenuItem>
             </>
+          ) : isStore ? (
+            <>
+              <DropdownMenuLabel className={labelClassName}>Κατάστημα</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/store')}>
+                <Store className="mr-2 h-4 w-4 shrink-0 text-primary" />
+                Πίνακας παραγγελιών
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/store?tab=settings')}>
+                <Settings className="mr-2 h-4 w-4 shrink-0" />
+                Προφίλ & ρυθμίσεις καταστήματος
+              </DropdownMenuItem>
+
+              <DropdownMenuSeparator className="my-1" />
+
+              <DropdownMenuLabel className={labelClassName}>Νομικά</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/terms')}>
+                <FileText className="mr-2 h-4 w-4 shrink-0" />
+                Όροι Χρήσης
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/privacy')}>
+                <Shield className="mr-2 h-4 w-4 shrink-0" />
+                Απόρρητο
+              </DropdownMenuItem>
+            </>
           ) : (
             <>
-              <DropdownMenuSeparator />
+              <DropdownMenuLabel className={labelClassName}>Λογαριασμός</DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/profile')}>
                 <UserCircle className="mr-2 h-4 w-4 shrink-0" />
-                Το Προφίλ μου
+                Το προφίλ μου
               </DropdownMenuItem>
-              <DropdownMenuItem className={itemClassName} onSelect={() => go('/')}>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/orders')}>
+                <ShoppingCart className="mr-2 h-4 w-4 shrink-0" />
+                Οι παραγγελίες μου
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/order')}>
                 <Home className="mr-2 h-4 w-4 shrink-0" />
                 Αρχική
+              </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/profile')}>
+                <Headphones className="mr-2 h-4 w-4 shrink-0" />
+                Βοήθεια παραγγελίας
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="my-1" />
