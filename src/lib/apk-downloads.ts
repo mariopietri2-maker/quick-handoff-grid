@@ -11,7 +11,7 @@ export const APK_DOWNLOADS = {
     subtitle: 'Παραγγελίες & παρακολούθηση',
     filename: 'fresh-customer-debug.apk',
     url: `${RELEASE_BASE}/fresh-customer-debug.apk`,
-    sizeLabel: '~8.1 MB',
+    sizeLabel: '~7.6 MB',
   },
   driver: {
     id: 'driver' as const,
