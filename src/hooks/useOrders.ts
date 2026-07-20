@@ -19,6 +19,12 @@ export interface OrderWithItems extends OrderRow {
 export function useStoreOrders(storeId: string | null) {
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
+  const [pendingIds, setPendingIds] = useState<string[]>([]);
+  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const burstCount = useRef(0);
+  const burstToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const ACTIVE_STATUSES = useRef(new Set(['placed', 'accepted', 'preparing', 'ready']));
 
   const fetchOrders = useCallback(async () => {
     if (!storeId) return;
@@ -27,7 +33,8 @@ export function useStoreOrders(storeId: string | null) {
       .select('*, order_items(*)')
       .eq('store_id', storeId)
       .in('status', ['placed', 'accepted', 'preparing', 'ready'])
-      .order('created_at', { ascending: false });
+      .order('created_at', { ascending: false })
+      .limit(100);
 
     if (!error && data) {
       setOrders(data as OrderWithItems[]);
@@ -35,11 +42,19 @@ export function useStoreOrders(storeId: string | null) {
     setLoading(false);
   }, [storeId]);
 
+  const scheduleRefetch = useCallback(() => {
+    if (refetchTimer.current) return;
+    refetchTimer.current = setTimeout(() => {
+      refetchTimer.current = null;
+      void fetchOrders();
+    }, 400);
+  }, [fetchOrders]);
+
   useEffect(() => {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Real-time subscription
+  // Real-time subscription — debounced refetch on INSERT, prune on UPDATE.
   useEffect(() => {
     if (!storeId) return;
 
@@ -55,65 +70,117 @@ export function useStoreOrders(storeId: string | null) {
         },
         (payload) => {
           if (payload.eventType === 'INSERT') {
-            fetchOrders();
-            playOrderSound();
-            const newOrder = payload.new as OrderRow;
-            showOrderNotification(newOrder.id, 0);
-            toast('🔔 New order received!', { duration: 5000 });
+            // Coalesce sound/toast during a rush so 50 inserts don't spam the kitchen.
+            burstCount.current += 1;
+            if (burstCount.current === 1) {
+              playOrderSound();
+            }
+            if (burstToastTimer.current) clearTimeout(burstToastTimer.current);
+            burstToastTimer.current = setTimeout(() => {
+              const n = burstCount.current;
+              burstCount.current = 0;
+              burstToastTimer.current = null;
+              if (n <= 0) return;
+              if (n === 1) {
+                const newOrder = payload.new as OrderRow;
+                showOrderNotification(newOrder.id, 0);
+                toast('🔔 Νέα παραγγελία!', { duration: 4500, id: 'store-new-orders-burst' });
+              } else {
+                toast(`🔔 ${n} νέες παραγγελίες!`, { duration: 5000, id: 'store-new-orders-burst' });
+              }
+            }, 450);
+            scheduleRefetch();
           } else if (payload.eventType === 'UPDATE') {
-            setOrders(prev =>
-              prev.map(order =>
-                order.id === (payload.new as OrderRow).id
-                  ? { ...order, ...(payload.new as OrderRow) }
-                  : order
-              )
-            );
+            const row = payload.new as OrderRow;
+            setOrders((prev) => {
+              if (!ACTIVE_STATUSES.current.has(row.status as string)) {
+                return prev.filter((o) => o.id !== row.id);
+              }
+              const exists = prev.some((o) => o.id === row.id);
+              if (!exists) {
+                // Status moved back into active set — refetch for items.
+                scheduleRefetch();
+                return prev;
+              }
+              return prev.map((order) =>
+                order.id === row.id ? { ...order, ...row } : order,
+              );
+            });
           } else if (payload.eventType === 'DELETE') {
-            setOrders(prev => prev.filter(o => o.id !== (payload.old as any).id));
+            setOrders((prev) => prev.filter((o) => o.id !== (payload.old as any).id));
           }
-        }
+        },
       )
       .subscribe();
 
     return () => {
+      if (refetchTimer.current) clearTimeout(refetchTimer.current);
+      if (burstToastTimer.current) clearTimeout(burstToastTimer.current);
       supabase.removeChannel(channel);
     };
-  }, [storeId, fetchOrders]);
+  }, [storeId, scheduleRefetch]);
 
   const updateOrderStatus = async (
     orderId: string,
     newStatus: string,
     options?: { estimatedPrepTime?: number },
-  ) => {
+  ): Promise<boolean> => {
     const patch: Database['public']['Tables']['orders']['Update'] = {
       status: newStatus as OrderRow['status'],
     };
     if (typeof options?.estimatedPrepTime === 'number' && !Number.isNaN(options.estimatedPrepTime)) {
       patch.estimated_prep_time = options.estimatedPrepTime;
     }
+
+    setPendingIds((p) => (p.includes(orderId) ? p : [...p, orderId]));
+
+    // Optimistic local update so the kitchen can keep moving during a rush.
+    let snapshot: OrderWithItems[] = [];
+    setOrders((prev) => {
+      snapshot = prev;
+      if (!ACTIVE_STATUSES.current.has(newStatus)) {
+        return prev.filter((o) => o.id !== orderId);
+      }
+      return prev.map((o) =>
+        o.id === orderId
+          ? {
+              ...o,
+              status: newStatus as OrderRow['status'],
+              ...(typeof patch.estimated_prep_time === 'number'
+                ? { estimated_prep_time: patch.estimated_prep_time }
+                : {}),
+            }
+          : o,
+      );
+    });
+
     const { error } = await supabase.rpc('transition_order_status' as never, {
       p_order_id: orderId,
       p_new_status: newStatus,
       p_estimated_prep_time: patch.estimated_prep_time ?? null,
     } as never);
 
-    if (error) {
-      toast.error(error.message || 'Failed to update order status');
-    } else {
-      toast.success(`Order updated → ${newStatus}`);
+    setPendingIds((p) => p.filter((id) => id !== orderId));
 
-      // Smart dispatch: trigger prediction when accepted/preparing
-      if (newStatus === 'accepted' || newStatus === 'preparing') {
-        supabase.functions.invoke('predict-dispatch-time', {
-          body: { order_id: orderId },
-        }).then(({ error: fnErr }) => {
-          if (fnErr) console.warn('Dispatch prediction failed:', fnErr);
-        });
-      }
+    if (error) {
+      setOrders(snapshot);
+      toast.error(error.message || 'Failed to update order status');
+      return false;
     }
+
+    toast.success(`Order updated → ${newStatus}`, { id: `order-status-${orderId}`, duration: 2000 });
+
+    if (newStatus === 'accepted' || newStatus === 'preparing') {
+      supabase.functions.invoke('predict-dispatch-time', {
+        body: { order_id: orderId },
+      }).then(({ error: fnErr }) => {
+        if (fnErr) console.warn('Dispatch prediction failed:', fnErr);
+      });
+    }
+    return true;
   };
 
-  return { orders, loading, updateOrderStatus, refetch: fetchOrders };
+  return { orders, loading, updateOrderStatus, refetch: fetchOrders, pendingIds };
 }
 
 const DECLINED_KEY = 'driver_declined_offers_v1';
