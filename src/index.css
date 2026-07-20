@@ -365,6 +365,22 @@
 
 
   /* ───────────────────────────────────────────────
+     Support desk shell — calm ops surface
+     ─────────────────────────────────────────────── */
+  .support-shell {
+    min-height: 100dvh;
+    background:
+      radial-gradient(900px 420px at 100% -10%, hsl(210 70% 48% / 0.07), transparent 55%),
+      hsl(var(--background));
+  }
+  .support-shell .support-header {
+    @apply sticky top-0 z-10 border-b border-border/70 bg-card/90 backdrop-blur-md;
+  }
+  .support-shell .support-empty {
+    @apply rounded-2xl border border-dashed border-border/80 bg-card/60 px-6 py-12 text-center;
+  }
+
+  /* ───────────────────────────────────────────────
      Admin "Notion / Retool" utility-dense shell
      Scoped to .admin-shell so it doesn't leak into
      customer / driver / store apps.

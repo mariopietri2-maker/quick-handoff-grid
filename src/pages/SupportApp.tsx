@@ -171,8 +171,8 @@ export default function SupportApp() {
     const PIcon = pcfg.icon;
 
     return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-10 bg-card border-b px-4 h-14 flex items-center gap-3">
+      <div className="support-shell">
+        <header className="support-header px-4 h-14 flex items-center gap-3">
           <Button variant="ghost" size="icon" onClick={() => setActiveTicket(null)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -188,8 +188,8 @@ export default function SupportApp() {
           <Badge variant="outline" className={cfg.color}>{cfg.label}</Badge>
         </header>
 
-        <div className="p-4 max-w-3xl mx-auto space-y-4">
-          <Card>
+        <div className="p-4 max-w-3xl mx-auto space-y-4 pb-8">
+          <Card className="shadow-sm">
             <CardContent className="p-4 space-y-3">
               <div className="flex items-start gap-3">
                 <div className={`h-10 w-10 rounded-lg bg-muted flex items-center justify-center ${cat.color}`}>
@@ -199,9 +199,13 @@ export default function SupportApp() {
                   <p className="font-heading font-semibold">{cat.label}</p>
                   <p className="text-xs text-muted-foreground">
                     {format(new Date(activeTicket.created_at), 'dd MMM yyyy, HH:mm')}
-                    {driver?.phone && ` · 📞 ${driver.phone}`}
+                    {driver?.phone && ` · ${driver.phone}`}
                   </p>
                 </div>
+                <span className="text-[10px] flex items-center gap-1 text-muted-foreground shrink-0">
+                  <AlarmClock className="h-3 w-3" />
+                  {differenceInMinutes(new Date(), new Date(activeTicket.created_at))}λ
+                </span>
               </div>
               {activeTicket.description && (
                 <p className="text-sm bg-muted/50 rounded-lg p-3">{activeTicket.description}</p>
@@ -236,6 +240,13 @@ export default function SupportApp() {
                   <Button size="sm" onClick={() => setResolveOpen(true)}>
                     <CheckCircle className="h-4 w-4 mr-1" /> Επίλυση
                   </Button>
+                  {driver?.phone && (
+                    <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
+                      <a href={`tel:${driver.phone}`}>
+                        <Phone className="h-3.5 w-3.5 mr-1" /> Κλήση
+                      </a>
+                    </Button>
+                  )}
                 </div>
               )}
             </CardContent>
@@ -247,7 +258,6 @@ export default function SupportApp() {
             <DriverProfilePanel driverId={activeTicket.driver_id} />
           ) : null}
 
-
           {activeTicket.driver_id && (
             <SupportActionToolbox
               ticket={activeTicket}
@@ -256,97 +266,17 @@ export default function SupportApp() {
             />
           )}
 
-          {/* Agent Toolbox */}
-          <Card>
-            <CardContent className="p-3 space-y-3">
-              <div className="flex items-center justify-between">
-                <p className="text-[11px] uppercase tracking-wide font-heading font-bold text-muted-foreground flex items-center gap-1.5">
-                  <Zap className="h-3.5 w-3.5 text-primary" /> Εργαλεία Agent
-                </p>
-                <span className="text-[10px] flex items-center gap-1 text-muted-foreground">
-                  <AlarmClock className="h-3 w-3" />
-                  Ηλικία: {differenceInMinutes(new Date(), new Date(activeTicket.created_at))}λ
-                </span>
-              </div>
-
-              <div className="flex flex-wrap gap-1.5">
-                {driver?.phone && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-[11px]"
-                    asChild
-                  >
-                    <a href={`tel:${driver.phone}`}>
-                      <Phone className="h-3 w-3 mr-1" /> Κλήση οδηγού
-                    </a>
-                  </Button>
-                )}
-                {driver?.phone && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-[11px]"
-                    onClick={() => {
-                      navigator.clipboard.writeText(driver.phone!);
-                      toast.success('Τηλέφωνο αντιγράφηκε');
-                    }}
-                  >
-                    <Copy className="h-3 w-3 mr-1" /> Αντιγραφή τηλ.
-                  </Button>
-                )}
-                {activeTicket.order_id && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    className="h-7 text-[11px]"
-                    onClick={() => {
-                      navigator.clipboard.writeText(activeTicket.order_id);
-                      toast.success('Order ID αντιγράφηκε');
-                    }}
-                  >
-                    <Hash className="h-3 w-3 mr-1" /> Order #{activeTicket.order_id.slice(0, 6)}
-                  </Button>
-                )}
-                <Button
-                  size="sm"
-                  variant="outline"
-                  className="h-7 text-[11px]"
-                  onClick={() => {
-                    navigator.clipboard.writeText(activeTicket.id);
-                    toast.success('Ticket ID αντιγράφηκε');
-                  }}
-                >
-                  <Copy className="h-3 w-3 mr-1" /> Ticket ID
-                </Button>
-              </div>
-
-              <div>
-                <p className="text-[10px] uppercase tracking-wide font-heading font-bold text-muted-foreground mb-1.5">
-                  Γρήγορες απαντήσεις
-                </p>
-                <div className="flex flex-wrap gap-1.5">
-                  {QUICK_REPLIES.map((q) => (
-                    <button
-                      key={q.label}
-                      onClick={() => chatRef.current?.setDraft(q.text)}
-                      className="text-[11px] px-2 py-1 rounded-md border bg-muted/40 hover:bg-muted transition-colors"
-                    >
-                      {q.label}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
           <SupportAIPanel
             ticketId={activeTicket.id}
             onUseReply={(text) => chatRef.current?.setDraft(text)}
           />
 
-          <div>
-            <h3 className="font-heading font-semibold text-sm mb-2 px-1">Συνομιλία</h3>
+          <div className="rounded-xl border bg-card overflow-hidden shadow-sm">
+            <div className="px-3 py-2 border-b bg-muted/30">
+              <p className="text-[11px] uppercase tracking-wide font-heading font-bold text-muted-foreground flex items-center gap-1.5">
+                <MessageSquare className="h-3.5 w-3.5 text-primary" /> Συνομιλία
+              </p>
+            </div>
             <TicketChat ref={chatRef} ticketId={activeTicket.id} priority={currentPriority} />
           </div>
         </div>
@@ -371,8 +301,8 @@ export default function SupportApp() {
 
   // List view
   return (
-    <div className="min-h-screen bg-background">
-      <header className="sticky top-0 z-10 bg-card border-b px-4 h-14 flex items-center justify-between gap-3">
+    <div className="support-shell">
+      <header className="support-header px-4 h-14 flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
           <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
             <Headphones className="h-5 w-5 text-primary" />
@@ -475,11 +405,18 @@ export default function SupportApp() {
 
         <div className="space-y-2">
           {filtered.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground text-sm">
-                Δεν υπάρχουν tickets σε αυτή την κατηγορία.
-              </CardContent>
-            </Card>
+            <div className="support-empty">
+              <MessageSquare className="h-8 w-8 text-muted-foreground/50 mx-auto mb-3" />
+              <p className="font-heading font-semibold text-sm mb-1">Καμία ουρά εδώ</p>
+              <p className="text-sm text-muted-foreground max-w-sm mx-auto">
+                Δεν υπάρχουν tickets σε αυτή την κατηγορία. Τα SOS εμφανίζονται πρώτα όταν υπάρχουν ανοιχτά αιτήματα.
+              </p>
+              {statusFilter !== 'all' && (
+                <Button size="sm" variant="outline" className="mt-4" onClick={() => setStatusFilter('all')}>
+                  Δες όλα τα tickets
+                </Button>
+              )}
+            </div>
           ) : (
             filtered.map((ticket) => {
               const driver = driverInfo(ticket.driver_id);
