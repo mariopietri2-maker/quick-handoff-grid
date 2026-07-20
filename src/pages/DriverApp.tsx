@@ -288,7 +288,6 @@ export default function DriverApp() {
                     ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
                     : null,
                 }}
-                driverId={user?.id}
                 onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                 
               />
@@ -612,7 +611,6 @@ export default function DriverApp() {
                             ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
                             : null,
                         }}
-                        driverId={user?.id}
                         onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
                         onFocusDestination={() => { setNavMode(true); }}
                       />
