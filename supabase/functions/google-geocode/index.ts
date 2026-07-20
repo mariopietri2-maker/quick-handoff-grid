@@ -39,7 +39,7 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const bounds = "39.55,20.70|39.78,21.00";
+    const bounds = "39.45,20.55|39.90,21.20";
     const gUrl = `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(q)}&region=gr&language=el&components=country:GR&bounds=${encodeURIComponent(bounds)}&key=${key}`;
     const res = await fetch(gUrl);
     const json = await res.json();

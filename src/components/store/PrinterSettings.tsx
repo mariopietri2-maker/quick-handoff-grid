@@ -36,7 +36,7 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
         delivery_fee: 2.0,
         tip_amount: 1.0,
         notes: 'Δοκιμαστική εκτύπωση',
-        delivery_address: 'Δοκιμή 123, Αθήνα',
+        delivery_address: 'Δοκιμή 123, Ιωάννινα',
         order_items: [
           { name: 'Δοκιμαστικό Προϊόν', quantity: 1, unit_price: 9.5 },
         ],

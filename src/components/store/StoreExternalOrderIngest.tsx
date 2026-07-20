@@ -17,6 +17,7 @@ import {
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { cn } from '@/lib/utils';
+import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
 
 type Source = 'manual' | 'efood' | 'wolt' | 'box' | 'other';
 type PaymentMethod = 'cash' | 'card';
@@ -229,6 +230,12 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const handleSubmit = async () => {
     if (!form.delivery_address.trim()) return toast.error('Συμπλήρωσε διεύθυνση');
     if (!totalAmount) return toast.error('Συμπλήρωσε αξία παραγγελίας');
+    if (form.delivery_lat == null || form.delivery_lng == null) {
+      return toast.error('Επίλεξε διεύθυνση από τη λίστα ή σημείωσέ την στον χάρτη.');
+    }
+    if (!isWithinIoanninaServiceArea(form.delivery_lat, form.delivery_lng)) {
+      return toast.error(OUT_OF_ZONE_MESSAGE);
+    }
 
     setSubmitting(true);
     const { error } = await supabase.rpc('create_external_order' as any, {
@@ -260,7 +267,12 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     }
   };
 
-  const ready = !!form.delivery_address.trim() && totalAmount > 0;
+  const ready =
+    !!form.delivery_address.trim() &&
+    totalAmount > 0 &&
+    form.delivery_lat != null &&
+    form.delivery_lng != null &&
+    isWithinIoanninaServiceArea(form.delivery_lat, form.delivery_lng);
   const noStoreCoords = !store?.latitude || !store?.longitude;
 
   return (

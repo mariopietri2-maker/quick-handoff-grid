@@ -23,6 +23,8 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
+import { toast } from 'sonner';
+import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -99,6 +101,10 @@ export default function CustomerApp() {
   const [pendingCoords, setPendingCoords] = useState<{ lat: number; lon: number } | null>(null);
   const saveAddress = (addr: string, coords?: { lat: number; lon: number } | null) => {
     const v = addr.trim();
+    if (v && (!coords || !isWithinIoanninaServiceArea(coords.lat, coords.lon))) {
+      toast.error(OUT_OF_ZONE_MESSAGE);
+      return;
+    }
     setDeliveryAddress(v);
     try {
       if (v) {
@@ -687,7 +693,11 @@ export default function CustomerApp() {
               <button
                 type="button"
                 onClick={() => saveAddress(pendingAddress, pendingCoords)}
-                disabled={!pendingAddress.trim()}
+                disabled={
+                  !pendingAddress.trim() ||
+                  !pendingCoords ||
+                  !isWithinIoanninaServiceArea(pendingCoords.lat, pendingCoords.lon)
+                }
                 className="c-bg-accent rounded-full px-5 py-2 text-sm font-extrabold disabled:opacity-50"
               >
                 Αποθήκευση
