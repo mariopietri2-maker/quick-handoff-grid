@@ -327,7 +327,7 @@ export default function AdminApp() {
         }
       }
     }
-    toast.success(newRole === 'm' ? 'Ρόλος M (elevated driver) ορίστηκε' : 'Ρόλος ενημερώθηκε');
+    toast.success(newRole === 'm' ? 'Ρόλος M (monitor οδηγών) ορίστηκε' : 'Ρόλος ενημερώθηκε');
     queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
     queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
   };
@@ -973,7 +973,7 @@ function UsersSection({ profiles, adminUserIds, driverCodeMap, onChangeRole, onT
                       <SelectContent>
                         {(['customer','driver','m','store'] as const).map(r => (
                           <SelectItem key={r} value={r}>
-                            {{ customer: 'Πελάτης', driver: 'Οδηγός', m: 'M (Lead)', store: 'Κατάστημα' }[r]}
+                            {{ customer: 'Πελάτης', driver: 'Οδηγός', m: 'M (Monitor)', store: 'Κατάστημα' }[r]}
                           </SelectItem>
                         ))}
                       </SelectContent>
