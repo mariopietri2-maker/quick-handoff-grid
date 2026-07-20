@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react';
 import {
-  LogOut, User, Home, UserCircle, Bell, Settings, TrendingUp, Wallet,
-  LifeBuoy, Users, Share2, FileText, HelpCircle, Star, Coffee, Pause, PackageX,
-  Shield, Bike, ShoppingCart, Repeat, RefreshCw,
+  LogOut, User, Home, UserCircle, Settings, Wallet,
+  Users, FileText, Coffee, Pause, PackageX,
+  Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Map,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -106,19 +106,6 @@ export function UserMenu() {
     setTimeout(() => navigate(path), 0);
   };
 
-  const handleShare = async () => {
-    const text = 'Γίνε Fresh Delivery driver και κέρδισε bonus καλωσορίσματος!';
-    const url = window.location.origin + '/auth';
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: 'Fresh Delivery Drivers', text, url });
-      } else {
-        await navigator.clipboard.writeText(`${text} ${url}`);
-        toast.success('Αντιγράφηκε ο σύνδεσμος');
-      }
-    } catch {}
-  };
-
   if (!user) return null;
 
   return (
@@ -165,7 +152,7 @@ export function UserMenu() {
                 )}
                 {isDriver && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-accent))]/15 px-2 py-0.5 text-[9.5px] font-heading font-bold text-[hsl(var(--driver-accent))] uppercase tracking-wider">
-                    <Star className="h-2.5 w-2.5" /> Driver
+                    Driver
                   </span>
                 )}
               </div>
@@ -176,6 +163,10 @@ export function UserMenu() {
             <>
               {/* SHIFT */}
               <DropdownMenuLabel className={labelClassName}>Βάρδια</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver')}>
+                <Map className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
+                Χάρτης
+              </DropdownMenuItem>
               {onBreak ? (
                 <DropdownMenuItem
                   className={`${itemClassName} bg-warning/10 text-warning focus:bg-warning/15 focus:text-warning data-[highlighted]:bg-warning/15 data-[highlighted]:text-warning`}
@@ -206,66 +197,50 @@ export function UserMenu() {
 
               <DropdownMenuSeparator className="my-1" />
 
-              {/* EARNINGS */}
-              <DropdownMenuLabel className={labelClassName}>Έσοδα</DropdownMenuLabel>
-              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=earnings')}>
-                <TrendingUp className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
-                Κέρδη & Στατιστικά
-              </DropdownMenuItem>
-              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=wallet')}>
+              {/* MAIN — fewer items */}
+              <DropdownMenuLabel className={labelClassName}>Μενού</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=money')}>
                 <Wallet className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
-                Πορτοφόλι
+                Χρήματα
               </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="my-1" />
-
-              {/* ACCOUNT */}
-              <DropdownMenuLabel className={labelClassName}>Λογαριασμός</DropdownMenuLabel>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=inbox')}>
+                <Mail className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
+                Μηνύματα
+              </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver/profile')}>
                 <UserCircle className="mr-2 h-4 w-4 shrink-0" />
-                Προφίλ & Έγγραφα
+                Προφίλ
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                className={itemClassName}
+                onSelect={(e) => {
+                  e.preventDefault();
+                  setMenuOpen(false);
+                  setTimeout(() => setSettingsOpen(true), 50);
+                }}
+              >
+                <Settings className="mr-2 h-4 w-4 shrink-0" />
+                Ρυθμίσεις
               </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver?tab=referral')}>
                 <Users className="mr-2 h-4 w-4 shrink-0" />
-                Πρόσκληση Οδηγών
+                Πρόσκληση οδηγών
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="my-1" />
 
-              {/* SETTINGS */}
-              <DropdownMenuLabel className={labelClassName}>Ρυθμίσεις</DropdownMenuLabel>
-              <DropdownMenuItem
-                className={itemClassName}
-                onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setSettingsOpen(true), 50); }}
-              >
-                <Settings className="mr-2 h-4 w-4 shrink-0" />
-                Ρυθμίσεις Εφαρμογής
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="my-1" />
-
-              {/* HELP */}
-              <DropdownMenuLabel className={labelClassName}>Βοήθεια</DropdownMenuLabel>
-              <DropdownMenuItem className={itemClassName} onSelect={() => { setMenuOpen(false); handleShare(); }}>
-                <Share2 className="mr-2 h-4 w-4 shrink-0" />
-                Μοιραστείτε την εφαρμογή
-              </DropdownMenuItem>
-
-              <DropdownMenuSeparator className="my-1" />
-
-              {/* LEGAL */}
-              <DropdownMenuLabel className={labelClassName}>Νομικά Έγγραφα</DropdownMenuLabel>
+              <DropdownMenuLabel className={labelClassName}>Νομικά</DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/terms')}>
-                <FileText className="mr-2 h-4 w-4 shrink-1" />
-                Όροι Χρήσης
+                <FileText className="mr-2 h-4 w-4 shrink-0" />
+                Όροι χρήσης
               </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/privacy')}>
-                <Shield className="mr-2 h-4 w-4 shrink-1" />
-                Απορρήτου
+                <Shield className="mr-2 h-4 w-4 shrink-0" />
+                Απόρρητο
               </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/refunds')}>
-                <RefreshCw className="mr-2 h-4 w-4 shrink-1" />
-                Επιστροφών
+                <RefreshCw className="mr-2 h-4 w-4 shrink-0" />
+                Επιστροφές
               </DropdownMenuItem>
             </>
           ) : (
@@ -282,7 +257,6 @@ export function UserMenu() {
 
               <DropdownMenuSeparator className="my-1" />
 
-              {/* LEGAL (non-driver) */}
               <DropdownMenuLabel className={labelClassName}>Νομικά Έγγραφα</DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/legal/terms')}>
                 <FileText className="mr-2 h-4 w-4 shrink-0" />
@@ -304,7 +278,7 @@ export function UserMenu() {
               <DropdownMenuSeparator className="my-1" />
               <DropdownMenuLabel className={labelClassName}>
                 <span className="inline-flex items-center gap-1.5">
-                  <Repeat className="h-3 w-3" /> Εναλλαγή Προβολής (Admin)
+                  <Repeat className="h-3 w-3" /> Admin
                 </span>
               </DropdownMenuLabel>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/admin')}>
