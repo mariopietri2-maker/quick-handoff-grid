@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 .env
 vite.config.ts.timestamp-*.mjs
+android-customer/
+android-driver/
+ios-customer/
+ios-driver/
+capacitor.config.shared.ts.bak
+supabase/.temp/

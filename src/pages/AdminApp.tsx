@@ -411,8 +411,17 @@ export default function AdminApp() {
                 <span className="h-3 w-px bg-border mx-0.5" />
                 <span className="text-[10.5px] font-medium tabular-nums text-foreground/80">v2.4</span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 relative"
+                title="Live παραγγελίες"
+                onClick={() => setActiveSection('live_ops')}
+              >
                 <Bell className="h-3.5 w-3.5" />
+                {(orders.data ?? []).some((o: any) => !['delivered', 'cancelled'].includes(o.status)) && (
+                  <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+                )}
               </Button>
               <div className="h-5 w-px bg-border mx-0.5" />
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
@@ -422,8 +431,8 @@ export default function AdminApp() {
             </div>
           </div>
 
-          {/* Live KPI strip — premium tiles with delta */}
-          {(() => {
+          {/* Live KPI strip — only on overview / live ops (keeps Settings & tables clean) */}
+          {['overview', 'overview_legacy', 'live_ops', 'orders', 'dispatch_debug'].includes(activeSection) && (() => {
             const today = new Date(); today.setHours(0,0,0,0);
             const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
             const todays = (orders.data ?? []).filter((o: any) => new Date(o.created_at) >= today);
@@ -631,7 +640,17 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
 
                 </tr>
               ))}
-              {!orders?.length && <tr><td colSpan={6} className="text-center text-muted-foreground py-10">Δεν υπάρχουν παραγγελίες</td></tr>}
+              {!orders?.length && (
+                <tr>
+                  <td colSpan={6} className="py-14 text-center">
+                    <div className="inline-flex flex-col items-center gap-2 text-muted-foreground">
+                      <ShoppingBag className="h-8 w-8 opacity-40" />
+                      <p className="text-[12.5px] font-medium">Δεν υπάρχουν παραγγελίες ακόμη</p>
+                      <p className="text-[11px] max-w-xs">Οι νέες παραγγελίες θα εμφανιστούν εδώ μόλις οι πελάτες παραγγείλουν.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -695,7 +714,17 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                   </tr>
                 );
               })}
-              {!stores.length && <tr><td colSpan={7} className="text-center text-muted-foreground py-10">Κανένα κατάστημα</td></tr>}
+              {!stores.length && (
+                <tr>
+                  <td colSpan={7} className="py-14 text-center">
+                    <div className="inline-flex flex-col items-center gap-2 text-muted-foreground">
+                      <Store className="h-8 w-8 opacity-40" />
+                      <p className="text-[12.5px] font-medium">Κανένα κατάστημα σε αυτό το φίλτρο</p>
+                      <p className="text-[11px]">Προσθέστε καταστήματα ή αλλάξτε το φίλτρο Ενεργά/Ανενεργά.</p>
+                    </div>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

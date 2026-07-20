@@ -23,9 +23,6 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
-import HomeGreeting from '@/components/customer/HomeGreeting';
-import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
-import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -33,6 +30,8 @@ type StoreRow = Database['public']['Tables']['stores']['Row'];
 export default function CustomerApp() {
   const t = useT();
   const cfg = useCustomerAppConfig();
+  const [bottomTab, setBottomTab] = useState<'discover' | 'food' | 'orders' | 'account'>('discover');
+  const [showAllOffers, setShowAllOffers] = useState(false);
 
   // Quick-action tiles (admin-configurable)
   const QUICK_TILE_TONES = [
@@ -377,42 +376,65 @@ export default function CustomerApp() {
         {/* ── AI-generated hero carousel ────────────────── */}
         {!isSearching && cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
-        {/* ── Promo carousel ─────────────────────────────── */}
-        {!isSearching && cfg.sections.show_promos && <PromoBannerCarousel />}
-
-        {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
-        {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (
-          <div id="one-plus-one-row">
-            <OfferRow
-              title="Προσφορές για σένα"
-              subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
-              eyebrow={
-                <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-[0_2px_6px_-1px_hsl(0_75%_45%/0.45)]">
-                  1+1
-                </span>
-              }
-              items={promotionOffers}
-              onSeeAll={() => setFilterTopRated(true)}
-            />
-          </div>
-        )}
-
-        {/* ── Free delivery row ─────────────────────────── */}
-        {!isSearching && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
-          <OfferRow
-            title="Δωρεάν delivery"
-            subtitle="Γεύματα χωρίς χρέωση παράδοσης"
-            tone="pink"
-            items={freeDeliveryOffers}
-            onSeeAll={() => setFilterFree(true)}
-            decoration={
-              <div className="bg-[hsl(0,75%,52%)] text-white rounded-full h-14 w-14 flex flex-col items-center justify-center text-[8.5px] font-black uppercase leading-[1.05] text-center -rotate-6 shadow-[0_4px_12px_-2px_hsl(0_75%_45%/0.5)]">
-                <span>Meal</span>
-                <span>for</span>
-                <span>one</span>
+        {/* ── Offers (collapsed by default — one CTA instead of stacked rows) ── */}
+        {!isSearching && selectedCategory === 'all' && (promotionOffers.length > 0 || freeDeliveryOffers.length > 0) && (
+          <div className="px-5 pt-4">
+            {!showAllOffers ? (
+              <button
+                type="button"
+                onClick={() => setShowAllOffers(true)}
+                className="w-full rounded-2xl border border-[hsl(0,0%,92%)] bg-white px-4 py-3.5 flex items-center justify-between gap-3 shadow-[0_1px_2px_hsl(0_0%_0%/0.04)] active:scale-[0.99] transition-transform"
+              >
+                <div className="text-left min-w-0">
+                  <p className="text-[15px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">Προσφορές κοντά σου</p>
+                  <p className="text-[12px] font-medium text-[hsl(0,0%,45%)] truncate">
+                    {[
+                      promotionOffers.length > 0 ? `${promotionOffers.length} προσφορές` : null,
+                      freeDeliveryOffers.length > 0 ? 'δωρεάν delivery' : null,
+                    ].filter(Boolean).join(' · ')}
+                  </p>
+                </div>
+                <span className="shrink-0 c-bg-accent rounded-full px-3.5 py-2 text-[12px] font-extrabold">Δες όλα</span>
+              </button>
+            ) : (
+              <div className="space-y-1 -mx-5">
+                {cfg.sections.show_promos && <PromoBannerCarousel />}
+                {promotionOffers.length > 0 && (
+                  <div id="one-plus-one-row">
+                    <OfferRow
+                      title="Προσφορές για σένα"
+                      subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
+                      eyebrow={
+                        <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md">
+                          1+1
+                        </span>
+                      }
+                      items={promotionOffers}
+                      onSeeAll={() => setFilterTopRated(true)}
+                    />
+                  </div>
+                )}
+                {freeDeliveryOffers.length > 0 && (
+                  <OfferRow
+                    title="Δωρεάν delivery"
+                    subtitle="Γεύματα χωρίς χρέωση παράδοσης"
+                    tone="pink"
+                    items={freeDeliveryOffers}
+                    onSeeAll={() => setFilterFree(true)}
+                  />
+                )}
+                <div className="px-5 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllOffers(false)}
+                    className="text-[12px] font-bold text-[hsl(0,0%,45%)] underline-offset-2 hover:underline"
+                  >
+                    Απόκρυψη προσφορών
+                  </button>
+                </div>
               </div>
-            }
-          />
+            )}
+          </div>
         )}
 
         {/* ── Pro subscription banner ────────────────────── */}
@@ -675,57 +697,75 @@ export default function CustomerApp() {
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
         <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSearch('');
-              setSelectedCategory('all');
-              setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 c-accent active:scale-95 transition-transform"
-          >
-            <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
-              <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
-            </span>
-            <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCategory('all');
-              const el = document.getElementById('nearby-stores');
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Φαγητό</span>
-          </button>
+          {([
+            {
+              id: 'discover' as const,
+              label: 'Ανακάλυψε',
+              icon: Compass,
+              onClick: () => {
+                setBottomTab('discover');
+                setSearch('');
+                setSelectedCategory('all');
+                setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              },
+            },
+            {
+              id: 'food' as const,
+              label: 'Φαγητό',
+              icon: UtensilsCrossed,
+              onClick: () => {
+                setBottomTab('food');
+                setSelectedCategory('all');
+                const el = document.getElementById('nearby-stores');
+                if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                else window.scrollTo({ top: document.body.scrollHeight * 0.45, behavior: 'smooth' });
+              },
+            },
+          ]).map((tab) => {
+            const active = bottomTab === tab.id;
+            const Icon = tab.icon;
+            return (
+              <button
+                key={tab.id}
+                type="button"
+                onClick={tab.onClick}
+                className={`flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform ${
+                  active ? 'c-accent' : 'text-[hsl(0,0%,40%)]'
+                }`}
+              >
+                <span className={`p-2 rounded-2xl ${active ? 'c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15' : ''}`}>
+                  <Icon className="h-[22px] w-[22px]" strokeWidth={active ? 2.4 : 2} />
+                </span>
+                <span className={`text-[10px] tracking-tight ${active ? 'font-extrabold' : 'font-bold'}`}>{tab.label}</span>
+              </button>
+            );
+          })}
           <Link
             to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
+            onClick={() => setBottomTab('orders')}
+            className={`flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform ${
+              bottomTab === 'orders' ? 'c-accent' : 'text-[hsl(0,0%,40%)]'
+            }`}
           >
-            <span className="p-2">
-              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
+            <span className={`p-2 rounded-2xl ${bottomTab === 'orders' ? 'c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15' : ''}`}>
+              <Receipt className="h-[22px] w-[22px]" strokeWidth={bottomTab === 'orders' ? 2.4 : 2} />
             </span>
-            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
+            <span className={`text-[10px] tracking-tight ${bottomTab === 'orders' ? 'font-extrabold' : 'font-bold'}`}>{t('customer.orders')}</span>
           </Link>
           <Link
             to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
+            onClick={() => setBottomTab('account')}
+            className={`flex flex-col items-center justify-center gap-1 active:scale-95 transition-transform ${
+              bottomTab === 'account' ? 'c-accent' : 'text-[hsl(0,0%,40%)]'
+            }`}
           >
-            <span className="p-2">
-              <User className="h-[22px] w-[22px]" strokeWidth={2} />
+            <span className={`p-2 rounded-2xl ${bottomTab === 'account' ? 'c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15' : ''}`}>
+              <User className="h-[22px] w-[22px]" strokeWidth={bottomTab === 'account' ? 2.4 : 2} />
             </span>
-            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
+            <span className={`text-[10px] tracking-tight ${bottomTab === 'account' ? 'font-extrabold' : 'font-bold'}`}>Λογαριασμός</span>
           </Link>
         </div>
-
-
       </nav>
 
       <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
