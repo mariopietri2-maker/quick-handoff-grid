@@ -7,6 +7,8 @@ import { escapeHtml, safeHttpsUrl } from '@/lib/escape-html';
 export interface DriverMapboxHandle {
   recenter: () => void;
   focusOn: (target: 'store' | 'customer') => void;
+  /** Fit driver + store + customer (+ route) into the visible map area. */
+  fitOverview: () => void;
 }
 
 export interface RouteStep {
@@ -28,7 +30,6 @@ export interface RouteInfo {
   duration: number; // seconds
   steps: RouteStep[];
 }
-
 
 interface NearbyStorePin {
   id: string;
@@ -55,7 +56,14 @@ interface DriverMapboxProps {
   nearbyStores?: NearbyStorePin[];
   /** When true: camera follows driver position with heading-up rotation + 3D tilt (like Google Maps nav) */
   followMode?: boolean;
+  /**
+   * Extra fitBounds padding so routes/pins aren't hidden under top chrome / bottom sheets.
+   * Values in CSS pixels.
+   */
+  overlayPadding?: { top?: number; bottom?: number; left?: number; right?: number };
 }
+
+const DEFAULT_PADDING = { top: 100, bottom: 220, left: 48, right: 48 };
 
 const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function DriverMapbox({
   className,
@@ -66,6 +74,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   onDriverPosUpdate,
   nearbyStores,
   followMode = false,
+  overlayPadding,
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -89,6 +98,13 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   useEffect(() => { followModeRef.current = followMode; }, [followMode]);
   // When the user manually pans/zooms/rotates during follow mode, pause auto-camera until they recenter
   const userInteractingRef = useRef(false);
+
+  const paddingRef = useRef({ ...DEFAULT_PADDING, ...overlayPadding });
+  useEffect(() => {
+    paddingRef.current = { ...DEFAULT_PADDING, ...overlayPadding };
+  }, [overlayPadding?.top, overlayPadding?.bottom, overlayPadding?.left, overlayPadding?.right]);
+
+  const getPadding = useCallback(() => ({ ...paddingRef.current }), []);
 
   // Compute bearing between two coords (fallback when GPS heading unavailable, e.g. desktop)
   const bearingBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
@@ -247,6 +263,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
     map.on('load', () => {
       addRouteLayers();
+      // Ensure the GL canvas matches the full-bleed container (esp. after Capacitor / lazy mount).
+      map.resize();
       // 3D buildings are expensive on mobile; only add them when the driver
       // enters turn-by-turn navigation (followMode). See effect below.
     });
@@ -262,7 +280,21 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     map.on('zoomstart', onUserMove);
 
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+
+    // Keep canvas sized when the viewport / sheet changes (orientation, keyboard, etc.)
+    const onWinResize = () => { try { map.resize(); } catch { /* noop */ } };
+    window.addEventListener('resize', onWinResize);
+    const ro = typeof ResizeObserver !== 'undefined' && mapContainer.current
+      ? new ResizeObserver(() => onWinResize())
+      : null;
+    if (ro && mapContainer.current) ro.observe(mapContainer.current);
+
+    return () => {
+      window.removeEventListener('resize', onWinResize);
+      ro?.disconnect();
+      map.remove();
+      mapRef.current = null;
+    };
   }, [token]);
 
 
@@ -585,7 +617,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
         const bounds = new mapboxgl.LngLatBounds();
         coords.forEach((c: [number, number]) => bounds.extend(c));
         bounds.extend([pos.lng, pos.lat]);
-        map.fitBounds(bounds, { padding: { top: 80, bottom: 200, left: 50, right: 50 }, maxZoom: 16 });
+        map.fitBounds(bounds, { padding: getPadding(), maxZoom: 16, duration: 600 });
       }
 
 
@@ -608,7 +640,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     } catch (e: any) {
       if (e.name !== 'AbortError') console.error('Route fetch error:', e);
     }
-  }, [pos, navigatingTo, storeLat, storeLng, customerLat, customerLng, token, onRouteUpdate]);
+  }, [pos, navigatingTo, storeLat, storeLng, customerLat, customerLng, token, onRouteUpdate, getPadding]);
 
   // Fetch route on change — fire fast on destination/nav change, then keep route fresh
   // without resetting the timer on every GPS tick (which used to delay routes indefinitely).
@@ -669,17 +701,69 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     const lng = target === 'store' ? storeLng : customerLng;
     if (lat == null || lng == null) return;
 
+    userInteractingRef.current = false;
     if (pos) {
       const bounds = new mapboxgl.LngLatBounds();
       bounds.extend([pos.lng, pos.lat]);
       bounds.extend([lng, lat]);
-      map.fitBounds(bounds, { padding: { top: 120, bottom: 260, left: 60, right: 60 }, maxZoom: 16, duration: 800 });
+      map.fitBounds(bounds, { padding: getPadding(), maxZoom: 16, duration: 800 });
     } else {
       map.flyTo({ center: [lng, lat], zoom: 15, duration: 800 });
     }
-  }, [storeLat, storeLng, customerLat, customerLng, pos]);
+  }, [storeLat, storeLng, customerLat, customerLng, pos, getPadding]);
 
-  useImperativeHandle(ref, () => ({ recenter, focusOn }), [recenter, focusOn]);
+  const fitOverview = useCallback(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    userInteractingRef.current = false;
+    // Drop follow pitch so the full area is readable
+    map.easeTo({ pitch: 0, bearing: 0, duration: 200 });
+
+    const bounds = new mapboxgl.LngLatBounds();
+    let hasPoint = false;
+    const add = (lng?: number | null, lat?: number | null) => {
+      if (lng == null || lat == null || !Number.isFinite(lng) || !Number.isFinite(lat)) return;
+      bounds.extend([lng, lat]);
+      hasPoint = true;
+    };
+    if (pos) add(pos.lng, pos.lat);
+    add(storeLng, storeLat);
+    add(customerLng, customerLat);
+    (nearbyStores ?? []).forEach((s) => add(s.longitude, s.latitude));
+
+    // Include current route geometry if present
+    try {
+      const src = map.getSource('route') as mapboxgl.GeoJSONSource | undefined;
+      const data: any = (src as any)?._data;
+      const coords: [number, number][] | undefined = data?.geometry?.coordinates;
+      if (Array.isArray(coords)) {
+        coords.forEach((c) => {
+          if (Array.isArray(c) && c.length >= 2) {
+            bounds.extend([c[0], c[1]]);
+            hasPoint = true;
+          }
+        });
+      }
+    } catch { /* noop */ }
+
+    if (!hasPoint) return;
+    map.resize();
+    requestAnimationFrame(() => {
+      map.fitBounds(bounds, { padding: getPadding(), maxZoom: 15.5, duration: 800 });
+    });
+  }, [pos, storeLat, storeLng, customerLat, customerLng, nearbyStores, getPadding]);
+
+  // When overlay padding changes (sheet expand/collapse), resize so tiles fill the viewport.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const t = setTimeout(() => {
+      try { map.resize(); } catch { /* noop */ }
+    }, 320);
+    return () => clearTimeout(t);
+  }, [overlayPadding?.top, overlayPadding?.bottom, overlayPadding?.left, overlayPadding?.right]);
+
+  useImperativeHandle(ref, () => ({ recenter, focusOn, fitOverview }), [recenter, focusOn, fitOverview]);
 
   if (loading || !token) {
     return (
@@ -689,7 +773,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     );
   }
 
-  return <div ref={mapContainer} className={className} style={{ minHeight: '200px' }} />;
+  return <div ref={mapContainer} className={className} style={{ minHeight: '200px', width: '100%', height: '100%' }} />;
 });
 
 export default DriverMapbox;
