@@ -120,7 +120,7 @@ export const NAV_SECTIONS = [
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
       { id: 'audit', label: 'Audit log' },
-      { id: 'remote_actions', label: 'Remote actions' },
+      { id: 'remote_actions', label: 'Μηνύματα & Remote' },
       { id: 'system_reset', label: '⚠ System reset' },
     ],
   },

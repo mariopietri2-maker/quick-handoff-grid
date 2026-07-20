@@ -15,8 +15,8 @@ import DriverCashWallet from '@/components/driver/DriverCashWallet';
 import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
-
 import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
+import DriverInbox from '@/components/driver/DriverInbox';
 
 import { useDriverOrders } from '@/hooks/useOrders';
 import { useDriverState } from '@/hooks/useDriverState';
@@ -38,7 +38,7 @@ import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { DriverPrefsApplier } from '@/components/driver/DriverPrefsApplier';
 
 
-type DriverTab = 'home' | 'earnings' | 'wallet' | 'referral';
+type DriverTab = 'home' | 'money' | 'inbox' | 'referral';
 
 export default function DriverApp() {
   const { user, isAdmin: isAdminRole } = useAuth();
@@ -81,7 +81,12 @@ export default function DriverApp() {
   const [searchParams, setSearchParams] = useSearchParams();
   
   const tabParam = searchParams.get('tab');
-  const activeTab: DriverTab = (tabParam === 'earnings' || tabParam === 'wallet' || tabParam === 'referral') ? tabParam : 'home';
+  // Backward-compat: old earnings/wallet URLs → money
+  const normalizedTab =
+    tabParam === 'earnings' || tabParam === 'wallet' ? 'money'
+    : tabParam === 'inbox' || tabParam === 'money' || tabParam === 'referral' ? tabParam
+    : 'home';
+  const activeTab: DriverTab = normalizedTab;
   const setActiveTab = (t: DriverTab) => {
     if (t === 'home') { searchParams.delete('tab'); setSearchParams(searchParams); }
     else { searchParams.set('tab', t); setSearchParams(searchParams); }
@@ -760,16 +765,19 @@ export default function DriverApp() {
             <div className="w-10" />
           </header>
           <div key={activeTab} className="flex-1 overflow-y-auto pb-6 animate-fade-in">
-            {activeTab === 'earnings' && (
+            {activeTab === 'money' && (
               <div className="px-4 py-4 space-y-4">
+                <div>
+                  <h2 className="font-heading font-extrabold text-[18px] text-[hsl(var(--driver-text))]">Χρήματα</h2>
+                  <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-0.5">Κέρδη, μετρητά βάρδιας & στόχοι</p>
+                </div>
                 <DriverWallet />
+                <DriverCashWallet />
                 <DriverGoalsCard />
                 <EarningsDashboard />
               </div>
             )}
-            {activeTab === 'wallet' && (
-              <div className="px-4 py-4"><DriverCashWallet /></div>
-            )}
+            {activeTab === 'inbox' && <DriverInbox />}
             {activeTab === 'referral' && (
               <div className="px-4 py-4"><DriverReferral /></div>
             )}
