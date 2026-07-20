@@ -11,6 +11,7 @@ export interface AuthedUser {
   isSupport: boolean;
   isStore: boolean;
   isDriver: boolean;
+  isM: boolean;
 }
 
 /**
@@ -49,7 +50,8 @@ export async function getAuthedUser(req: Request): Promise<AuthedUser | null> {
     isAdmin: roleSet.has("admin"),
     isSupport: roleSet.has("support"),
     isStore: roleSet.has("store"),
-    isDriver: roleSet.has("driver"),
+    isDriver: roleSet.has("driver") || roleSet.has("m"),
+    isM: roleSet.has("m"),
   };
 }
 

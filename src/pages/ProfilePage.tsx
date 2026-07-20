@@ -26,12 +26,13 @@ const roleConfig: Record<string, { label: string; icon: any; path: string }> = {
   admin:    { label: 'Admin',     icon: Shield,      path: '/admin'   },
   support:  { label: 'Support',   icon: Headphones,  path: '/support' },
   driver:   { label: 'Οδηγός',    icon: Car,         path: '/driver'  },
+  m:        { label: 'M (Lead)',  icon: Car,         path: '/driver'  },
   store:    { label: 'Κατάστημα', icon: Store,       path: '/store'   },
   customer: { label: 'Πελάτης',   icon: ShoppingBag, path: '/order'   },
 };
 
 export default function ProfilePage() {
-  const { user, profile, isAdmin, isSupport, signOut } = useAuth();
+  const { user, profile, isAdmin, isSupport, isM, signOut } = useAuth();
   const navigate = useNavigate();
   const [fullName, setFullName] = useState('');
   const [phone, setPhone] = useState('');
@@ -46,8 +47,8 @@ export default function ProfilePage() {
       navigate('/store?tab=settings', { replace: true });
       return;
     }
-    // Drivers use driver profile.
-    if (profile?.role === 'driver' && !isAdmin) {
+    // Drivers + M leads use driver profile.
+    if ((profile?.role === 'driver' || profile?.role === 'm' || isM) && !isAdmin) {
       navigate('/driver/profile', { replace: true });
       return;
     }
@@ -56,7 +57,7 @@ export default function ProfilePage() {
       const { data } = await supabase.from('profiles').select('phone').eq('user_id', user.id).single();
       setPhone(data?.phone ?? '');
     })();
-  }, [user, profile, navigate, isAdmin]);
+  }, [user, profile, navigate, isAdmin, isM]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -81,7 +82,7 @@ export default function ProfilePage() {
   if (isAdmin) availableRoles.push('admin');
   if (isSupport || isAdmin) availableRoles.push('support');
   if (isAdmin) {
-    availableRoles.push('driver', 'store', 'customer');
+    availableRoles.push('driver', 'm', 'store', 'customer');
   } else if (profile?.role) {
     if (!availableRoles.includes(profile.role)) availableRoles.push(profile.role);
     if (profile.role !== 'customer') availableRoles.push('customer');

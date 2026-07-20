@@ -20,12 +20,14 @@ Deno.serve(async (req) => {
 
   let body: { role?: string } = {};
   try { body = await req.json(); } catch { /* empty body */ }
-  const role = body.role === "driver" || body.role === "store" ? body.role : "customer";
+  const role = body.role === "driver" || body.role === "store" || body.role === "m"
+    ? body.role
+    : "customer";
 
   const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   const email = `test-${role}-${stamp}@freshdelivery.test`;
   const password = `Test!${stamp}${Math.random().toString(36).slice(2, 6)}`;
-  const fullName = `Test ${role.charAt(0).toUpperCase() + role.slice(1)} ${stamp.slice(-4)}`;
+  const fullName = `Test ${role.toUpperCase()} ${stamp.slice(-4)}`;
 
   const { data: created, error } = await admin.auth.admin.createUser({
     email,
@@ -47,10 +49,27 @@ Deno.serve(async (req) => {
     { user_id: userId, full_name: fullName, role },
     { onConflict: "user_id" },
   );
-  await admin.from("user_roles").upsert(
-    { user_id: userId, role },
-    { onConflict: "user_id,role" },
-  );
+  if (role === "m") {
+    await admin.from("user_roles").upsert(
+      [{ user_id: userId, role: "m" }, { user_id: userId, role: "driver" }],
+      { onConflict: "user_id,role" },
+    );
+    await admin.from("driver_profiles").upsert(
+      { user_id: userId, is_active: true },
+      { onConflict: "user_id" },
+    );
+  } else if (role !== "customer") {
+    await admin.from("user_roles").upsert(
+      { user_id: userId, role },
+      { onConflict: "user_id,role" },
+    );
+    if (role === "driver") {
+      await admin.from("driver_profiles").upsert(
+        { user_id: userId, is_active: true },
+        { onConflict: "user_id" },
+      );
+    }
+  }
 
   return new Response(
     JSON.stringify({ ok: true, email, password, user_id: userId, role }),

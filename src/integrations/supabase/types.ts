@@ -4087,7 +4087,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "driver" | "store" | "customer" | "admin" | "support"
+      app_role: "driver" | "store" | "customer" | "admin" | "support" | "m"
       discount_type: "percentage" | "fixed"
       order_status:
         | "pending"
