@@ -9,12 +9,12 @@ export async function placeOrder(page: Page): Promise<string> {
   await page.getByRole('button', { name: /προσθήκη|add/i }).first().click();
   await page.getByRole('button', { name: /καλάθι|cart|checkout/i }).first().click();
   await page.waitForURL(/\/checkout/);
-  // Cash on delivery — least flaky path
-  const cashOption = page.getByRole('radio', { name: /μετρητά|cash/i });
-  if (await cashOption.count()) await cashOption.check();
+  // Cash on delivery — payment methods are buttons, not radios
+  const cashOption = page.getByRole('button', { name: /μετρητά|cash/i });
+  if (await cashOption.count()) await cashOption.first().click();
   await page.getByRole('button', { name: /πληρωμή|παραγγελία|place order/i }).click();
-  await page.waitForURL(/\/orders\/([0-9a-f-]{36})/i, { timeout: 30_000 });
-  const m = page.url().match(/\/orders\/([0-9a-f-]{36})/i);
+  await page.waitForURL(/\/order-tracking\/([0-9a-f-]{36})/i, { timeout: 30_000 });
+  const m = page.url().match(/\/order-tracking\/([0-9a-f-]{36})/i);
   expect(m, 'order id in URL').toBeTruthy();
   return m![1];
 }
