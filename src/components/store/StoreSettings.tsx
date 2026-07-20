@@ -14,9 +14,14 @@ interface StoreSettingsProps {
 }
 
 export function StoreSettings({ storeId }: StoreSettingsProps) {
-  const { store, updateStore } = useStore();
+  const { stores, updateStore, selectStore } = useStore();
+  const store = stores.find((s) => s.id === storeId) ?? null;
   const [draft, setDraft] = useState({ name: '', address: '', phone: '', image_url: '' });
   const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (storeId) selectStore(storeId);
+  }, [storeId, selectStore]);
 
   useEffect(() => {
     if (store) {
@@ -44,7 +49,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
       address: draft.address.trim(),
       phone: draft.phone.trim() || null,
       image_url: draft.image_url.trim() || null,
-    } as any);
+    } as any, storeId);
     setSaving(false);
   };
 
@@ -67,7 +72,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             </div>
             <Switch
               checked={store.is_active ?? true}
-              onCheckedChange={(checked) => updateStore({ is_active: checked })}
+              onCheckedChange={(checked) => updateStore({ is_active: checked }, storeId)}
             />
           </div>
         </CardContent>
@@ -85,7 +90,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             </div>
             <Switch
               checked={store.busy_mode ?? false}
-              onCheckedChange={(checked) => updateStore({ busy_mode: checked })}
+              onCheckedChange={(checked) => updateStore({ busy_mode: checked }, storeId)}
             />
           </div>
           {store.busy_mode && (
@@ -111,7 +116,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
           <div className="space-y-2">
             <Slider
               value={[store.prep_buffer_minutes ?? 0]}
-              onValueChange={([val]) => updateStore({ prep_buffer_minutes: val })}
+              onValueChange={([val]) => updateStore({ prep_buffer_minutes: val }, storeId)}
               max={30}
               step={5}
             />
@@ -137,7 +142,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             </div>
             <Switch
               checked={(store as any).covers_delivery_fee ?? false}
-              onCheckedChange={(checked) => updateStore({ covers_delivery_fee: checked } as any)}
+              onCheckedChange={(checked) => updateStore({ covers_delivery_fee: checked } as any, storeId)}
             />
           </div>
           {(store as any).covers_delivery_fee && (

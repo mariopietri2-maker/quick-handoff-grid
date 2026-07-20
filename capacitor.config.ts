@@ -1,17 +1,21 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+/** Set CAPACITOR_DEV=1 for local web debugging / cleartext. */
+const isDev = process.env.CAPACITOR_DEV === '1';
+
 const config: CapacitorConfig = {
   appId: 'app.lovable.a8538a5288f34701a1b9d56a6120ba4c',
   appName: 'Fresh Delivery',
   webDir: 'dist',
   server: {
-    url: 'https://a8538a52-88f3-4701-a1b9-d56a6120ba4c.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
+    url: 'https://quick-handoff-grid.vercel.app',
+    cleartext: isDev,
   },
   android: {
     backgroundColor: '#1a1a2e',
-    webContentsDebuggingEnabled: true,
-    allowMixedContent: true,
+    // Debug APKs only — release builds must keep these false
+    webContentsDebuggingEnabled: isDev,
+    allowMixedContent: isDev,
   },
   ios: {
     backgroundColor: '#1a1a2e',

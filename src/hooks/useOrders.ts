@@ -657,16 +657,24 @@ export function useUserStore() {
 
   useEffect(() => {
     if (!user) return;
-    supabase
-      .from('stores')
-      .select('id')
-      .eq('owner_id', user.id)
-      .limit(1)
-      .single()
-      .then(({ data }) => {
-        setStoreId(data?.id ?? null);
-        setLoading(false);
-      });
+    let cancelled = false;
+    (async () => {
+      try {
+        const fromLs = localStorage.getItem('owner_selected_store_v1');
+        const { data } = await supabase
+          .from('stores')
+          .select('id')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: true });
+        if (cancelled) return;
+        const ids = (data ?? []).map((s) => s.id);
+        const preferred = (fromLs && ids.includes(fromLs) && fromLs) || ids[0] || null;
+        setStoreId(preferred);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => { cancelled = true; };
   }, [user]);
 
   return { storeId, loading };

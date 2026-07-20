@@ -1,5 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
-import { Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag, Package, Clock, Zap, PackagePlus, Wallet } from 'lucide-react';
+import {
+  Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
+  Package, Clock, Zap, PackagePlus, Wallet, ArrowLeft, LayoutGrid,
+} from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
@@ -15,6 +18,7 @@ import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderInges
 import StoreWalletCard from '@/components/store/StoreWalletCard';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { StoreDailyGoalCard } from '@/components/store/StoreDailyGoalCard';
+import { OwnerStoresPortal } from '@/components/store/OwnerStoresPortal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
@@ -25,23 +29,32 @@ import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission } from '@/lib/notifications';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 
+type ViewMode = 'portal' | 'manage' | 'create';
+
 export default function StoreApp() {
   const [notifPermission, setNotifPermission] = useState<NotificationPermission>(
-    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied'
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied',
   );
 
   const handleEnableNotifications = async () => {
     const granted = await requestNotificationPermission();
     setNotifPermission(granted ? 'granted' : 'denied');
   };
-  const { store, loading: storeLoading, createStore } = useStore();
+
+  const {
+    store, stores, selectedStoreId, selectStore, loading: storeLoading, createStore,
+  } = useStore();
   const { orders, loading: ordersLoading, updateOrderStatus, pendingIds } = useStoreOrders(store?.id ?? null);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
+  const [view, setView] = useState<ViewMode>('portal');
   const [activeTab, setActiveTab] = useState(() => {
     try {
       const t = new URLSearchParams(window.location.search).get('tab');
-      if (t && ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'wallet', 'promos', 'automation', 'settings'].includes(t)) {
+      if (
+        t &&
+        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'wallet', 'promos', 'automation', 'settings'].includes(t)
+      ) {
         return t;
       }
     } catch { /* noop */ }
@@ -49,7 +62,20 @@ export default function StoreApp() {
   });
   const tabsListRef = useRef<HTMLDivElement>(null);
 
-  // Keep tab in the URL so UserMenu can deep-link to settings / profile.
+  // Decide initial view once stores load
+  useEffect(() => {
+    if (storeLoading) return;
+    if (stores.length === 0) {
+      setView('create');
+      return;
+    }
+    if (selectedStoreId && stores.some((s) => s.id === selectedStoreId)) {
+      setView('manage');
+    } else {
+      setView('portal');
+    }
+  }, [storeLoading, stores, selectedStoreId]);
+
   useEffect(() => {
     const url = new URL(window.location.href);
     if (url.searchParams.get('tab') === activeTab) return;
@@ -57,7 +83,6 @@ export default function StoreApp() {
     window.history.replaceState({}, '', url.toString());
   }, [activeTab]);
 
-  // Keep the active tab visible inside the horizontally scrolling tab strip on mobile.
   useEffect(() => {
     const list = tabsListRef.current;
     if (!list) return;
@@ -67,46 +92,82 @@ export default function StoreApp() {
     }
   }, [activeTab]);
 
-  const newOrders = orders.filter(o => o.status === 'placed').length;
-  const kitchenOrders = orders.filter(o => o.status === 'accepted' || o.status === 'preparing').length;
-  const readyOrders = orders.filter(o => o.status === 'ready').length;
-  const loading = storeLoading || ordersLoading;
+  const newOrders = orders.filter((o) => o.status === 'placed').length;
+  const kitchenOrders = orders.filter((o) => o.status === 'accepted' || o.status === 'preparing').length;
+  const readyOrders = orders.filter((o) => o.status === 'ready').length;
+  const loading = storeLoading || (view === 'manage' && ordersLoading);
 
-  // Jump back to orders when a rush starts while the owner is in settings/menu.
   const prevNewRef = useRef(0);
   useEffect(() => {
+    if (view !== 'manage') return;
     if (newOrders > prevNewRef.current && activeTab !== 'orders') {
       setActiveTab('orders');
     }
     prevNewRef.current = newOrders;
-  }, [newOrders, activeTab]);
+  }, [newOrders, activeTab, view]);
 
   const handleCreateStore = async () => {
     if (!newStore.name || !newStore.address) return;
     setCreating(true);
-    await createStore(newStore);
+    const created = await createStore(newStore);
     setCreating(false);
+    if (created) {
+      setNewStore({ name: '', address: '', phone: '' });
+      setView('manage');
+    }
+  };
+
+  const openStore = (id: string) => {
+    selectStore(id);
+    setView('manage');
+    setActiveTab('orders');
+  };
+
+  const backToPortal = () => {
+    selectStore(null);
+    setView('portal');
   };
 
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-[var(--shadow-sm)]">
-        <div className="flex items-center gap-2">
-          <Store className="h-6 w-6 text-primary" />
-          <h1 className="font-heading font-bold text-lg text-foreground">DashStore</h1>
+        <div className="flex items-center gap-2 min-w-0">
+          {view === 'manage' && stores.length > 1 ? (
+            <Button variant="ghost" size="sm" className="h-8 gap-1.5 shrink-0" onClick={backToPortal}>
+              <ArrowLeft className="h-4 w-4" />
+              <span className="hidden sm:inline">Όλα</span>
+            </Button>
+          ) : (
+            <Store className="h-6 w-6 text-primary shrink-0" />
+          )}
+          <div className="min-w-0">
+            <h1 className="font-heading font-bold text-lg text-foreground truncate">
+              {view === 'manage' && store ? store.name : 'DashStore'}
+            </h1>
+            {view === 'manage' && stores.length > 1 && (
+              <p className="text-[11px] text-muted-foreground truncate">Portal · {stores.length} καταστήματα</p>
+            )}
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          {store && (
-            <Badge variant="outline" className={`font-heading ${store.is_active ? 'text-success border-success/30' : 'text-muted-foreground border-border'}`}>
+        <div className="flex items-center gap-2 shrink-0">
+          {view === 'manage' && stores.length > 1 && (
+            <Button variant="outline" size="sm" className="h-8 gap-1.5 hidden sm:inline-flex" onClick={backToPortal}>
+              <LayoutGrid className="h-3.5 w-3.5" />
+              Portal
+            </Button>
+          )}
+          {store && view === 'manage' && (
+            <Badge
+              variant="outline"
+              className={`font-heading ${store.is_active ? 'text-success border-success/30' : 'text-muted-foreground border-border'}`}
+            >
               {store.is_active ? '● Ανοιχτό' : '○ Κλειστό'}
             </Badge>
           )}
-          {newOrders > 0 && (
-            <Badge className="gradient-primary text-primary-foreground font-heading">
-              {newOrders} νέες
-            </Badge>
+          {view === 'manage' && newOrders > 0 && (
+            <Badge className="gradient-primary text-primary-foreground font-heading">{newOrders} νέες</Badge>
           )}
-          {store && <StoreSupportButton />}
+          {store && view === 'manage' && <StoreSupportButton />}
           <UserMenu />
         </div>
       </header>
@@ -117,28 +178,52 @@ export default function StoreApp() {
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
             <p className="text-muted-foreground font-heading">Φόρτωση...</p>
           </div>
-        ) : !store ? (
+        ) : view === 'create' || (view === 'portal' && stores.length === 0) ? (
           <div className="max-w-md mx-auto py-8">
+            {stores.length > 0 && (
+              <Button variant="ghost" size="sm" className="mb-3 gap-1.5" onClick={() => setView('portal')}>
+                <ArrowLeft className="h-4 w-4" /> Πίσω στο portal
+              </Button>
+            )}
             <Card className="shadow-[var(--shadow-lg)]">
               <CardContent className="p-6 space-y-4">
                 <div className="text-center mb-4">
                   <div className="h-16 w-16 rounded-2xl gradient-primary shadow-primary flex items-center justify-center mx-auto mb-3">
                     <Plus className="h-8 w-8 text-primary-foreground" />
                   </div>
-                  <h2 className="font-heading font-bold text-xl text-foreground">Ρύθμιση Καταστήματος</h2>
-                  <p className="text-sm text-muted-foreground mt-1">Δημιουργήστε το προφίλ του εστιατορίου σας για να αρχίσετε να δέχεστε παραγγελίες</p>
+                  <h2 className="font-heading font-bold text-xl text-foreground">
+                    {stores.length ? 'Νέο κατάστημα' : 'Ρύθμιση Καταστήματος'}
+                  </h2>
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Δημιούργησε προφίλ εστιατορίου για παραγγελίες στην πλατφόρμα
+                  </p>
                 </div>
                 <div>
                   <Label className="font-heading">Όνομα Καταστήματος</Label>
-                  <Input value={newStore.name} onChange={e => setNewStore(p => ({ ...p, name: e.target.value }))} placeholder="π.χ. Πιτσαρία Μάριος" maxLength={100} />
+                  <Input
+                    value={newStore.name}
+                    onChange={(e) => setNewStore((p) => ({ ...p, name: e.target.value }))}
+                    placeholder="π.χ. Πιτσαρία Μάριος"
+                    maxLength={100}
+                  />
                 </div>
                 <div>
                   <Label className="font-heading">Διεύθυνση</Label>
-                  <Input value={newStore.address} onChange={e => setNewStore(p => ({ ...p, address: e.target.value }))} placeholder="Οδός 123, Πόλη" maxLength={200} />
+                  <Input
+                    value={newStore.address}
+                    onChange={(e) => setNewStore((p) => ({ ...p, address: e.target.value }))}
+                    placeholder="Οδός 123, Ιωάννινα"
+                    maxLength={200}
+                  />
                 </div>
                 <div>
                   <Label className="font-heading">Τηλέφωνο (προαιρετικό)</Label>
-                  <Input value={newStore.phone} onChange={e => setNewStore(p => ({ ...p, phone: e.target.value }))} placeholder="210 1234567" maxLength={20} />
+                  <Input
+                    value={newStore.phone}
+                    onChange={(e) => setNewStore((p) => ({ ...p, phone: e.target.value }))}
+                    placeholder="26510 123456"
+                    maxLength={20}
+                  />
                 </div>
                 <Button
                   onClick={handleCreateStore}
@@ -150,6 +235,17 @@ export default function StoreApp() {
               </CardContent>
             </Card>
           </div>
+        ) : view === 'portal' ? (
+          <OwnerStoresPortal
+            stores={stores}
+            onSelect={openStore}
+            onCreateClick={() => setView('create')}
+          />
+        ) : !store ? (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground font-heading mb-3">Δεν βρέθηκε κατάστημα</p>
+            <Button onClick={backToPortal}>Πίσω στο portal</Button>
+          </div>
         ) : (
           <>
             {notifPermission === 'default' && (
@@ -157,7 +253,7 @@ export default function StoreApp() {
                 <Bell className="h-5 w-5 text-info flex-shrink-0" />
                 <div className="flex-1">
                   <p className="text-sm font-heading font-semibold text-foreground">Ενεργοποίηση ειδοποιήσεων</p>
-                  <p className="text-xs text-muted-foreground">Λάβετε ηχητικές ειδοποιήσεις όταν φτάνουν νέες παραγγελίες</p>
+                  <p className="text-xs text-muted-foreground">Ηχητικές ειδοποιήσεις για νέες παραγγελίες</p>
                 </div>
                 <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading">
                   Ενεργοποίηση
@@ -176,119 +272,107 @@ export default function StoreApp() {
               Νέα Custom Order (eFood / Wolt / Box)
             </Button>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList ref={tabsListRef} className="w-full mb-4 h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin">
-              <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
-                <ClipboardList className="h-4 w-4 mr-1.5" />
-                Παραγγελίες
-                {(newOrders + kitchenOrders + readyOrders) > 0 && (
-                  <Badge className="ml-1.5 h-5 min-w-5 px-1 flex items-center justify-center gradient-primary text-primary-foreground text-xs">
-                    {newOrders > 0 ? newOrders : newOrders + kitchenOrders + readyOrders}
-                  </Badge>
-                )}
-              </TabsTrigger>
-              <TabsTrigger value="external" className="flex-1 min-w-[110px] font-heading">
-                <PackagePlus className="h-4 w-4 mr-1.5" />
-                Custom Order
-              </TabsTrigger>
-              <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading">
-                <UtensilsCrossed className="h-4 w-4 mr-1.5" />
-                Μενού
-              </TabsTrigger>
-              <TabsTrigger value="inventory" className="flex-1 min-w-[90px] font-heading">
-                <Package className="h-4 w-4 mr-1.5" />
-                Απόθεμα
-              </TabsTrigger>
-              <TabsTrigger value="hours" className="flex-1 min-w-[80px] font-heading">
-                <Clock className="h-4 w-4 mr-1.5" />
-                Ωράριο
-              </TabsTrigger>
-              <TabsTrigger value="analytics" className="flex-1 min-w-[90px] font-heading">
-                <BarChart3 className="h-4 w-4 mr-1.5" />
-                Στατιστικά
-              </TabsTrigger>
-              <TabsTrigger value="wallet" className="flex-1 min-w-[90px] font-heading">
-                <Wallet className="h-4 w-4 mr-1.5" />
-                Πορτοφόλι
-              </TabsTrigger>
-              <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading">
-                <Tag className="h-4 w-4 mr-1.5" />
-                Προσφορές
-              </TabsTrigger>
-              <TabsTrigger value="automation" className="flex-1 min-w-[90px] font-heading">
-                <Zap className="h-4 w-4 mr-1.5" />
-                Auto
-              </TabsTrigger>
-              <TabsTrigger value="settings" className="flex-1 min-w-[90px] font-heading">
-                <Settings className="h-4 w-4 mr-1.5" />
-                Ρυθμίσεις
-              </TabsTrigger>
-            </TabsList>
+              <TabsList ref={tabsListRef} className="w-full mb-4 h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin">
+                <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
+                  <ClipboardList className="h-4 w-4 mr-1.5" />
+                  Παραγγελίες
+                  {newOrders + kitchenOrders + readyOrders > 0 && (
+                    <Badge className="ml-1.5 h-5 min-w-5 px-1 flex items-center justify-center gradient-primary text-primary-foreground text-xs">
+                      {newOrders > 0 ? newOrders : newOrders + kitchenOrders + readyOrders}
+                    </Badge>
+                  )}
+                </TabsTrigger>
+                <TabsTrigger value="external" className="flex-1 min-w-[110px] font-heading">
+                  <PackagePlus className="h-4 w-4 mr-1.5" />
+                  Custom Order
+                </TabsTrigger>
+                <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading">
+                  <UtensilsCrossed className="h-4 w-4 mr-1.5" />
+                  Μενού
+                </TabsTrigger>
+                <TabsTrigger value="inventory" className="flex-1 min-w-[90px] font-heading">
+                  <Package className="h-4 w-4 mr-1.5" />
+                  Απόθεμα
+                </TabsTrigger>
+                <TabsTrigger value="hours" className="flex-1 min-w-[80px] font-heading">
+                  <Clock className="h-4 w-4 mr-1.5" />
+                  Ωράριο
+                </TabsTrigger>
+                <TabsTrigger value="analytics" className="flex-1 min-w-[90px] font-heading">
+                  <BarChart3 className="h-4 w-4 mr-1.5" />
+                  Στατιστικά
+                </TabsTrigger>
+                <TabsTrigger value="wallet" className="flex-1 min-w-[90px] font-heading">
+                  <Wallet className="h-4 w-4 mr-1.5" />
+                  Πορτοφόλι
+                </TabsTrigger>
+                <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading">
+                  <Tag className="h-4 w-4 mr-1.5" />
+                  Προσφορές
+                </TabsTrigger>
+                <TabsTrigger value="automation" className="flex-1 min-w-[90px] font-heading">
+                  <Zap className="h-4 w-4 mr-1.5" />
+                  Auto
+                </TabsTrigger>
+                <TabsTrigger value="settings" className="flex-1 min-w-[90px] font-heading">
+                  <Settings className="h-4 w-4 mr-1.5" />
+                  Ρυθμίσεις
+                </TabsTrigger>
+              </TabsList>
 
-            <TabsContent value="orders">
-              {loading ? (
-                <div className="text-center py-16">
-                  <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                  <p className="text-muted-foreground font-heading">Φόρτωση παραγγελιών...</p>
-                </div>
-              ) : orders.length === 0 ? (
-                <div className="text-center py-16">
-                  <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                  <p className="font-heading text-foreground">Δεν υπάρχουν ενεργές παραγγελίες</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    Νέες παραγγελίες θα εμφανιστούν εδώ σε πραγματικό χρόνο
-                  </p>
-                  <div className="mt-4 flex items-center justify-center gap-2 text-sm text-success">
-                    <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                    Αναμονή για παραγγελίες...
+              <TabsContent value="orders">
+                {loading ? (
+                  <div className="text-center py-16">
+                    <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                    <p className="text-muted-foreground font-heading">Φόρτωση παραγγελιών...</p>
                   </div>
-                </div>
-              ) : (
-                <OrderQueue
-                  orders={orders}
-                  onStatusUpdate={updateOrderStatus}
-                  storeName={store.name}
-                  pendingIds={pendingIds}
-                />
-              )}
-            </TabsContent>
+                ) : orders.length === 0 ? (
+                  <div className="text-center py-16">
+                    <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                    <p className="font-heading text-foreground">Δεν υπάρχουν ενεργές παραγγελίες</p>
+                    <p className="text-sm text-muted-foreground mt-1">
+                      Νέες παραγγελίες θα εμφανιστούν εδώ σε πραγματικό χρόνο
+                    </p>
+                  </div>
+                ) : (
+                  <OrderQueue
+                    orders={orders}
+                    onStatusUpdate={updateOrderStatus}
+                    storeName={store.name}
+                    pendingIds={pendingIds}
+                  />
+                )}
+              </TabsContent>
 
-            <TabsContent value="external">
-              <StoreExternalOrderIngest storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="menu">
-              <MenuControl storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="inventory">
-              <InventoryControl storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="hours">
-              <StoreHoursManager storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="analytics">
-              <StoreAnalyticsDashboard storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="wallet">
-              <StoreWalletCard storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="promos">
-              <PromoManager storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="automation">
-              <AutoAcceptRules storeId={store.id} />
-            </TabsContent>
-
-            <TabsContent value="settings" className="space-y-4">
-              <StoreSettings storeId={store.id} />
-              <PrinterSettings storeName={store.name} />
-            </TabsContent>
-          </Tabs>
+              <TabsContent value="external">
+                <StoreExternalOrderIngest storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="menu">
+                <MenuControl storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="inventory">
+                <InventoryControl storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="hours">
+                <StoreHoursManager storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="analytics">
+                <StoreAnalyticsDashboard storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="wallet">
+                <StoreWalletCard storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="promos">
+                <PromoManager storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="automation">
+                <AutoAcceptRules storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="settings" className="space-y-4">
+                <StoreSettings storeId={store.id} />
+                <PrinterSettings storeName={store.name} />
+              </TabsContent>
+            </Tabs>
           </>
         )}
       </div>

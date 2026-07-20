@@ -1,5 +1,11 @@
+# Dependencies & build
+node_modules/
+dist/
+dist-ssr/
+*.local
+
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
@@ -7,27 +13,48 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-node_modules
-dist
-dist-ssr
-*.local
+# Environment (use .env.example — never commit real keys)
+.env
+.env.local
+.env.*.local
+.env.development
+.env.production
+.env.e2e
 
-# Editor directories and files
+# Editor
 .vscode/*
 !.vscode/extensions.json
-.idea
+.idea/
 .DS_Store
 *.suo
 *.ntvs*
 *.njsproj
 *.sln
 *.sw?
-.env
+
+# Vite / tooling
 vite.config.ts.timestamp-*.mjs
+supabase/.temp/
+
+# Capacitor generated / flavor builds (not source of truth)
 android-customer/
 android-driver/
 ios-customer/
 ios-driver/
 capacitor.config.shared.ts.bak
-supabase/.temp/
 mobile-apks/
+
+# Scratch / one-off SQL (canonical schema lives in supabase/migrations/)
+batch_*.sql
+*.sql.bak
+
+# Lockfile policy: npm (package-lock.json) is canonical — ignore Bun locks
+bun.lock
+bun.lockb
+
+# Local load / debug scripts
+scripts/load-sim-*.mjs
+
+# Lovable / misc leftovers
+.lovable/
+new.github
