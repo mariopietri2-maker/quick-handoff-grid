@@ -17,11 +17,14 @@ import {
 } from '@/components/ui/select';
 import {
   Radio, Zap, ShieldAlert, Timer, UserCog, PauseCircle, PlayCircle,
-  Wallet, RotateCcw, Loader2, Search, AlertTriangle, Layers,
+  Wallet, RotateCcw, Loader2, Search, AlertTriangle, Layers, MoreVertical,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatOrderNumber } from '@/lib/order-number';
 import AssignmentSettings from './AssignmentSettings';
+import {
+  DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu';
 
 type Dlg =
   | null | 'reassign' | 'extend' | 'pause' | 'credit_customer' | 'refund' | 'unassign' | 'cancel';
@@ -405,31 +408,40 @@ export default function DeliveryControlCenter() {
                       onClick={() => { setTarget({ orderId: o.id }); setDlg('reassign'); }}>
                       <UserCog className="h-3 w-3 mr-1" /> Ανάθεση
                     </Button>
-                    {o.driver_id && (
-                      <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]"
-                        onClick={() => { setTarget({ orderId: o.id }); setDlg('unassign'); }}>
-                        <RotateCcw className="h-3 w-3 mr-1" /> Αφαίρεση
-                      </Button>
-                    )}
-                    {isAdmin && (
-                      <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]"
-                        onClick={() => {
-                          setTarget({ orderId: o.id });
-                          setRefundAmt(String(o.total_amount ?? '')); setDlg('refund');
-                        }}>
-                        <Wallet className="h-3 w-3 mr-1" /> Refund
-                      </Button>
-                    )}
-                    {isAdmin && o.customer_id && (
-                      <Button size="sm" variant="outline" className="h-7 px-2 text-[11px]"
-                        onClick={() => { setTarget({ driverId: o.customer_id! }); setDlg('credit_customer'); }}>
-                        +€ Wallet
-                      </Button>
-                    )}
-                    <Button size="sm" variant="outline" className="h-7 px-2 text-[11px] text-destructive"
-                      onClick={() => { setTarget({ orderId: o.id }); setDlg('cancel'); }}>
-                      <AlertTriangle className="h-3 w-3 mr-1" /> Ακύρωση
-                    </Button>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button size="sm" variant="outline" className="h-7 w-7 p-0">
+                          <MoreVertical className="h-3.5 w-3.5" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end" className="w-48">
+                        {o.driver_id && (
+                          <DropdownMenuItem onClick={() => { setTarget({ orderId: o.id }); setDlg('unassign'); }}>
+                            <RotateCcw className="h-3.5 w-3.5 mr-2" /> Αφαίρεση οδηγού
+                          </DropdownMenuItem>
+                        )}
+                        {isAdmin && (
+                          <DropdownMenuItem onClick={() => {
+                            setTarget({ orderId: o.id });
+                            setRefundAmt(String(o.total_amount ?? '')); setDlg('refund');
+                          }}>
+                            <Wallet className="h-3.5 w-3.5 mr-2" /> Refund
+                          </DropdownMenuItem>
+                        )}
+                        {isAdmin && o.customer_id && (
+                          <DropdownMenuItem onClick={() => { setTarget({ driverId: o.customer_id! }); setDlg('credit_customer'); }}>
+                            <Wallet className="h-3.5 w-3.5 mr-2" /> +€ Wallet πελάτη
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem
+                          className="text-destructive focus:text-destructive"
+                          onClick={() => { setTarget({ orderId: o.id }); setDlg('cancel'); }}
+                        >
+                          <AlertTriangle className="h-3.5 w-3.5 mr-2" /> Ακύρωση
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
                 </div>
               </div>

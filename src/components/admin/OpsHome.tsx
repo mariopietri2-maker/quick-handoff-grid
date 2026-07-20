@@ -1,7 +1,7 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Activity, Clock, CheckCircle2, Star, Wallet, Zap, LayoutGrid, MapPin } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Clock, CheckCircle2, Zap, LayoutGrid, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DriverSupplyPanel from './DriverSupplyPanel';
 import { Button } from '@/components/ui/button';
@@ -212,8 +212,8 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
 
   return (
     <div className="space-y-3.5">
-      {/* KPI strip with sparklines */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
+      {/* Unique quality KPIs — revenue / live / drivers live in the sticky header strip */}
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
         <KpiCard
           label="Acceptance rate"
           value={`${metrics.acceptance.value.toFixed(0)}%`}
@@ -239,21 +239,6 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
           values={metrics.avgDelivery.series}
           tone={metrics.avgDelivery.value <= 30 ? 'good' : metrics.avgDelivery.value <= 45 ? 'warn' : 'bad'}
           icon={Activity}
-        />
-        <KpiCard
-          label="Revenue σήμερα"
-          value={`€${metrics.revenue.value.toFixed(0)}`}
-          trend={metrics.revenue.trend}
-          values={metrics.revenue.series}
-          tone="neutral"
-          icon={Wallet}
-        />
-        <KpiCard
-          label="Online drivers"
-          value={`${metrics.onlineNow}`}
-          values={metrics.utilSeries}
-          tone="neutral"
-          icon={Star}
         />
       </div>
 

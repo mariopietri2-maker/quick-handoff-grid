@@ -399,8 +399,17 @@ export default function AdminApp() {
                 <span className="h-3 w-px bg-border mx-0.5" />
                 <span className="text-[10.5px] font-medium tabular-nums text-foreground/80">v2.4</span>
               </div>
-              <Button variant="ghost" size="icon" className="h-8 w-8 relative">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 relative"
+                title="Live χάρτης & παραγγελίες"
+                onClick={() => setActiveSection('drivers_live_map')}
+              >
                 <Bell className="h-3.5 w-3.5" />
+                {(orders.data ?? []).some((o: any) => !['delivered', 'cancelled'].includes(o.status)) && (
+                  <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+                )}
               </Button>
               <div className="h-5 w-px bg-border mx-0.5" />
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
@@ -410,8 +419,8 @@ export default function AdminApp() {
             </div>
           </div>
 
-          {/* Live KPI strip — premium tiles with delta */}
-          {(() => {
+          {/* Live KPI strip — only on ops views (keeps Settings & tables clean) */}
+          {['overview', 'overview_legacy', 'live_ops', 'orders', 'delivery_control', 'dispatch_debug'].includes(activeSection) && (() => {
             const today = new Date(); today.setHours(0,0,0,0);
             const yesterday = new Date(today); yesterday.setDate(yesterday.getDate() - 1);
             const todays = (orders.data ?? []).filter((o: any) => new Date(o.created_at) >= today);
@@ -767,25 +776,27 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                     <td className="tabular-nums">{counts.active > 0 ? <Badge variant="secondary" className="h-5 px-1.5 text-[10.5px]">{counts.active}</Badge> : <span className="text-muted-foreground">0</span>}</td>
                     <td><Switch checked={dp?.is_active ?? true} onCheckedChange={() => dp && onToggle(driver.user_id, dp.is_active)} /></td>
                     <td>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`tabular-nums font-medium ${cash > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>€{cash.toFixed(2)}</span>
-                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={cash <= 0} onClick={() => onResetCash(driver.user_id, name)} title="Μηδενισμός ταμείου">Reset</Button>
-                      </div>
+                      <span className={`tabular-nums font-medium ${cash > 0 ? 'text-foreground' : 'text-muted-foreground'}`}>€{cash.toFixed(2)}</span>
                     </td>
                     <td>
-                      <div className="flex items-center gap-1.5">
-                        <span className={`tabular-nums font-medium ${walletTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}`} title={`Διαθέσιμο €${walletAvail.toFixed(2)} • Εκκρεμές €${walletPending.toFixed(2)}`}>€{walletTotal.toFixed(2)}</span>
-                        <Button size="sm" variant="ghost" className="h-6 px-1.5 text-[10px] text-muted-foreground hover:text-destructive" disabled={walletTotal <= 0} onClick={() => onResetWallet(driver.user_id, name)} title="Μηδενισμός πορτοφολιού">Reset</Button>
-                      </div>
+                      <span className={`tabular-nums font-medium ${walletTotal > 0 ? 'text-foreground' : 'text-muted-foreground'}`} title={`Διαθέσιμο €${walletAvail.toFixed(2)} • Εκκρεμές €${walletPending.toFixed(2)}`}>€{walletTotal.toFixed(2)}</span>
                     </td>
                     <td>
                       <div className="flex items-center justify-end gap-1 pr-2">
-                        <Button size="sm" variant="ghost" className="h-7 px-2 text-[10.5px]" onClick={() => onGrantBonus(driver.user_id, name)} title="Bonus">+€</Button>
                         <DropdownMenu>
                           <DropdownMenuTrigger asChild>
                             <Button size="sm" variant="ghost" className="h-7 w-7 p-0" title="Περισσότερα"><MoreVertical className="h-3.5 w-3.5" /></Button>
                           </DropdownMenuTrigger>
                           <DropdownMenuContent align="end" className="w-56">
+                            <DropdownMenuItem onClick={() => onGrantBonus(driver.user_id, name)}>
+                              <Plus className="h-3.5 w-3.5 mr-2" /> Bonus +€
+                            </DropdownMenuItem>
+                            <DropdownMenuItem disabled={cash <= 0} onClick={() => onResetCash(driver.user_id, name)}>
+                              <RotateCcw className="h-3.5 w-3.5 mr-2" /> Μηδενισμός ταμείου
+                            </DropdownMenuItem>
+                            <DropdownMenuItem disabled={walletTotal <= 0} onClick={() => onResetWallet(driver.user_id, name)}>
+                              <RotateCcw className="h-3.5 w-3.5 mr-2" /> Μηδενισμός πορτοφολιού
+                            </DropdownMenuItem>
                             <DropdownMenuItem onClick={() => onAdjustWallet(driver.user_id, name)}>
                               <Plus className="h-3.5 w-3.5 mr-2" /> Προσαρμογή πορτοφολιού
                             </DropdownMenuItem>

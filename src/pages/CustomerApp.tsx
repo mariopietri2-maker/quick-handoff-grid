@@ -23,9 +23,6 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
-import HomeGreeting from '@/components/customer/HomeGreeting';
-import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
-import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -90,6 +87,7 @@ export default function CustomerApp() {
   const [filterFree, setFilterFree] = useState(false);
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
+  const [showAllOffers, setShowAllOffers] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
@@ -274,30 +272,27 @@ export default function CustomerApp() {
       >
         {/* Soft accent glow */}
         <div className="pointer-events-none absolute -top-24 -right-24 h-56 w-56 rounded-full opacity-[0.07] blur-3xl c-bg-accent" />
-        <div className="max-w-2xl mx-auto px-5 pt-4 pb-3 relative">
-          <div className="flex items-center justify-between mb-4">
-            <button
-              type="button"
-              onClick={() => { setPendingAddress(deliveryAddress); setAddressOpen(true); }}
-              className="flex items-center gap-3 group max-w-[62%] active:scale-[0.98] transition-transform"
-            >
-              <div className="h-11 w-11 rounded-full c-bg-accent flex items-center justify-center shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] shrink-0">
-                <MapPin className="h-5 w-5" strokeWidth={2.5} />
-              </div>
-              <div className="text-left leading-tight min-w-0">
-                <div className="text-[10px] uppercase tracking-[0.12em] c-muted font-extrabold leading-none mb-1">Παράδοση</div>
-                <div className="flex items-center gap-1 text-[16px] font-extrabold text-[hsl(0,0%,9%)] truncate tracking-tight">
-                  <span className="truncate">{displayAddress}</span>
-                  <ChevronDown className="h-4 w-4 shrink-0 c-muted" strokeWidth={2.5} />
+        <div className="max-w-2xl mx-auto px-5 pt-3 pb-3 relative">
+          {/* Brand wordmark */}
+          <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center gap-2 min-w-0">
+              {cfg.branding.logo_url ? (
+                <img src={cfg.branding.logo_url} alt="" className="h-7 w-7 rounded-lg object-cover shrink-0" />
+              ) : (
+                <div className="h-7 w-7 rounded-lg c-bg-accent flex items-center justify-center shrink-0 shadow-[0_2px_8px_-2px_hsl(var(--c-accent)/0.4)]">
+                  <span className="text-[11px] font-black text-white leading-none">F</span>
                 </div>
-              </div>
-            </button>
-            <div className="flex items-center gap-2">
+              )}
+              <span className="font-heading font-black text-[17px] tracking-tight text-[hsl(0,0%,9%)] truncate">
+                {cfg.branding.app_name || 'Fresh Delivery'}
+              </span>
+            </div>
+            <div className="flex items-center gap-2 shrink-0">
               <LanguageToggle compact />
               {itemCount > 0 && (
                 <button
                   onClick={() => navigate('/checkout')}
-                  className="relative c-bg-accent rounded-full h-10 px-3.5 flex items-center gap-1.5 shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] active:scale-95 transition-transform"
+                  className="relative c-bg-accent rounded-full h-9 px-3 flex items-center gap-1.5 shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] active:scale-95 transition-transform"
                 >
                   <ShoppingBag className="h-4 w-4" strokeWidth={2.5} />
                   <span className="text-xs font-extrabold">{itemCount}</span>
@@ -306,7 +301,7 @@ export default function CustomerApp() {
               {!user ? (
                 <Link
                   to="/auth"
-                  className="text-xs font-extrabold c-accent c-bg-accent-soft px-3.5 py-2.5 rounded-full"
+                  className="text-xs font-extrabold c-accent c-bg-accent-soft px-3 py-2 rounded-full"
                 >
                   {t('customer.login')}
                 </Link>
@@ -314,13 +309,30 @@ export default function CustomerApp() {
                 <Link
                   to="/profile"
                   aria-label="Άνοιγμα προφίλ χρήστη"
-                  className="h-10 w-10 rounded-full bg-[hsl(0,0%,96%)] hover:bg-[hsl(0,0%,93%)] flex items-center justify-center transition-colors"
+                  className="h-9 w-9 rounded-full bg-[hsl(0,0%,96%)] hover:bg-[hsl(0,0%,93%)] flex items-center justify-center transition-colors"
                 >
-                  <User className="h-5 w-5 text-[hsl(0,0%,9%)]" strokeWidth={2} />
+                  <User className="h-4.5 w-4.5 text-[hsl(0,0%,9%)]" strokeWidth={2} />
                 </Link>
               )}
             </div>
           </div>
+
+          <button
+            type="button"
+            onClick={() => { setPendingAddress(deliveryAddress); setAddressOpen(true); }}
+            className="flex items-center gap-2.5 group w-full mb-3 active:scale-[0.99] transition-transform"
+          >
+            <div className="h-9 w-9 rounded-full c-bg-accent flex items-center justify-center shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.35)] shrink-0">
+              <MapPin className="h-4 w-4" strokeWidth={2.5} />
+            </div>
+            <div className="text-left leading-tight min-w-0 flex-1">
+              <div className="text-[10px] uppercase tracking-[0.12em] c-muted font-extrabold leading-none mb-0.5">Παράδοση σε</div>
+              <div className="flex items-center gap-1 text-[15px] font-extrabold text-[hsl(0,0%,9%)] truncate tracking-tight">
+                <span className="truncate">{displayAddress}</span>
+                <ChevronDown className="h-4 w-4 shrink-0 c-muted" strokeWidth={2.5} />
+              </div>
+            </div>
+          </button>
 
           {/* Search */}
           <div className="relative group">
@@ -379,42 +391,65 @@ export default function CustomerApp() {
         {/* ── AI-generated hero carousel ────────────────── */}
         {!isSearching && cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
-        {/* ── Promo carousel ─────────────────────────────── */}
-        {!isSearching && cfg.sections.show_promos && <PromoBannerCarousel />}
-
-        {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
-        {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (
-          <div id="one-plus-one-row">
-            <OfferRow
-              title="Προσφορές για σένα"
-              subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
-              eyebrow={
-                <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md shadow-[0_2px_6px_-1px_hsl(0_75%_45%/0.45)]">
-                  1+1
-                </span>
-              }
-              items={promotionOffers}
-              onSeeAll={() => setFilterTopRated(true)}
-            />
-          </div>
-        )}
-
-        {/* ── Free delivery row ─────────────────────────── */}
-        {!isSearching && selectedCategory === 'all' && freeDeliveryOffers.length > 0 && (
-          <OfferRow
-            title="Δωρεάν delivery"
-            subtitle="Γεύματα χωρίς χρέωση παράδοσης"
-            tone="pink"
-            items={freeDeliveryOffers}
-            onSeeAll={() => setFilterFree(true)}
-            decoration={
-              <div className="bg-[hsl(0,75%,52%)] text-white rounded-full h-14 w-14 flex flex-col items-center justify-center text-[8.5px] font-black uppercase leading-[1.05] text-center -rotate-6 shadow-[0_4px_12px_-2px_hsl(0_75%_45%/0.5)]">
-                <span>Meal</span>
-                <span>for</span>
-                <span>one</span>
+        {/* ── Offers (collapsed by default — one CTA instead of stacked rows) ── */}
+        {!isSearching && selectedCategory === 'all' && (promotionOffers.length > 0 || freeDeliveryOffers.length > 0 || cfg.sections.show_promos) && (
+          <div className="px-5 pt-4">
+            {!showAllOffers ? (
+              <button
+                type="button"
+                onClick={() => setShowAllOffers(true)}
+                className="w-full rounded-2xl border border-[hsl(0,0%,92%)] bg-white px-4 py-3.5 flex items-center justify-between gap-3 shadow-[0_1px_2px_hsl(0_0%_0%/0.04)] active:scale-[0.99] transition-transform"
+              >
+                <div className="text-left min-w-0">
+                  <p className="text-[15px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">Προσφορές κοντά σου</p>
+                  <p className="text-[12px] font-medium text-[hsl(0,0%,45%)] truncate">
+                    {[
+                      promotionOffers.length > 0 ? `${promotionOffers.length} προσφορές` : null,
+                      freeDeliveryOffers.length > 0 ? 'δωρεάν delivery' : null,
+                    ].filter(Boolean).join(' · ') || 'Δες διαθέσιμες προσφορές'}
+                  </p>
+                </div>
+                <span className="shrink-0 c-bg-accent rounded-full px-3.5 py-2 text-[12px] font-extrabold">Δες όλα</span>
+              </button>
+            ) : (
+              <div className="space-y-1 -mx-5">
+                {cfg.sections.show_promos && <PromoBannerCarousel />}
+                {promotionOffers.length > 0 && (
+                  <div id="one-plus-one-row">
+                    <OfferRow
+                      title="Προσφορές για σένα"
+                      subtitle="Επίλεξε από τα πιο αγαπημένα πιάτα"
+                      eyebrow={
+                        <span className="inline-flex items-center justify-center bg-[hsl(0,75%,52%)] text-white text-[11px] font-black px-1.5 py-0.5 rounded-md">
+                          1+1
+                        </span>
+                      }
+                      items={promotionOffers}
+                      onSeeAll={() => setFilterTopRated(true)}
+                    />
+                  </div>
+                )}
+                {freeDeliveryOffers.length > 0 && (
+                  <OfferRow
+                    title="Δωρεάν delivery"
+                    subtitle="Γεύματα χωρίς χρέωση παράδοσης"
+                    tone="pink"
+                    items={freeDeliveryOffers}
+                    onSeeAll={() => setFilterFree(true)}
+                  />
+                )}
+                <div className="px-5 pb-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowAllOffers(false)}
+                    className="text-[12px] font-bold text-[hsl(0,0%,45%)] underline-offset-2 hover:underline"
+                  >
+                    Απόκρυψη προσφορών
+                  </button>
+                </div>
               </div>
-            }
-          />
+            )}
+          </div>
         )}
 
         {/* ── Pro subscription banner ────────────────────── */}
@@ -484,12 +519,6 @@ export default function CustomerApp() {
                         <div className="w-full h-full flex items-center justify-center text-4xl emoji">🍽️</div>
                       )}
                       <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/35 to-transparent" />
-                      <div className="absolute top-2 left-2 bg-white/95 backdrop-blur rounded-full px-2 py-0.5 text-[10px] font-extrabold text-[hsl(0,0%,9%)] uppercase tracking-wider shadow-sm">
-                        Ad
-                      </div>
-                      <div className="absolute top-2 right-2 c-bg-accent rounded-full px-2 py-0.5 text-[10px] font-extrabold shadow-[0_4px_10px_-2px_hsl(var(--c-accent)/0.5)]">
-                        −15%
-                      </div>
                     </div>
 
                     <div className="flex items-center gap-1.5 mb-0.5">
@@ -501,7 +530,10 @@ export default function CustomerApp() {
                       )}
                     </div>
                     <p className="text-[11px] c-muted">
-                      {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')} · 0,99€
+                      {20 + (store.prep_buffer_minutes ?? 0)}-{35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}
+                      {Number((store as any).delivery_fee ?? 0) > 0
+                        ? ` · ${Number((store as any).delivery_fee).toFixed(2).replace('.', ',')}€`
+                        : ' · Δωρεάν'}
                     </p>
                   </button>
                 ))}
