@@ -78,8 +78,8 @@ export default function AdminDriversMap() {
       setDriverInfos(map);
 
       if (storesData) {
-        const DEFAULT_LAT = 39.1600;
-        const DEFAULT_LNG = 20.9853;
+        const DEFAULT_LAT = 39.6650;
+        const DEFAULT_LNG = 20.8537;
         const missingList: { id: string; name: string; address: string }[] = [];
         let missing = 0;
         const list = storesData.map(s => {
