@@ -34,32 +34,23 @@ export default function CustomerApp() {
   const [homeTab, setHomeTab] = useState<'discover' | 'food'>('discover');
 
   // Quick-action tiles (admin-configurable)
-  const QUICK_TILE_TONES = [
-    'bg-[hsl(var(--c-accent))] text-white',
-    'bg-[hsl(36,100%,95%)] text-[hsl(0,0%,9%)]',
-    'bg-[hsl(28,40%,92%)] text-[hsl(0,0%,9%)]',
-    'bg-[hsl(330,80%,95%)] text-[hsl(0,0%,9%)]',
-  ];
+  const TILE_TONE_CLASS: Record<string, string> = {
+    accent: 'bg-[hsl(var(--c-accent))] text-white',
+    cream: 'bg-[hsl(36,100%,95%)] text-[hsl(0,0%,9%)]',
+    warm: 'bg-[hsl(28,40%,92%)] text-[hsl(0,0%,9%)]',
+    pink: 'bg-[hsl(330,80%,95%)] text-[hsl(0,0%,9%)]',
+  };
+  const TILE_TONE_CYCLE = ['accent', 'cream', 'warm', 'pink'] as const;
   const QUICK_TILES = cfg.tiles.map((tile, i) => ({
     label: tile.label,
     emoji: tile.emoji,
     value: tile.category,
-    tone: QUICK_TILE_TONES[i % QUICK_TILE_TONES.length],
+    tone: TILE_TONE_CLASS[tile.tone ?? TILE_TONE_CYCLE[i % 4]] ?? TILE_TONE_CLASS.accent,
   }));
 
-  const CATEGORY_EMOJI: Record<string, string> = {
-    'πίτσες': '🍕', 'pizza': '🍕',
-    'burgers': '🍔', 'burger': '🍔',
-    'κρέπες': '🥞', 'crepes': '🥞',
-    'ζυμαρικά': '🍝', 'pasta': '🍝',
-    'σουβλάκια': '🥙', 'gyros': '🥙',
-    'σαλάτες': '🥗', 'salads': '🥗',
-    'γλυκά': '🍰', 'desserts': '🍰',
-    'ποτά': '🥤', 'drinks': '🥤',
-    'καφέδες': '☕', 'coffee': '☕',
-    'κυρίως': '🍽️', 'mains': '🍽️',
-    'combo': '🍱', 'ορεκτικά': '🥨', 'starters': '🥨',
-  };
+  const CATEGORY_EMOJI: Record<string, string> = Object.fromEntries(
+    (cfg.categories ?? []).map((c) => [c.key.toLowerCase(), c.emoji]),
+  );
 
   const [stores, setStores] = useState<StoreRow[]>([]);
   const [promotedStores, setPromotedStores] = useState<StoreRow[]>([]);
@@ -244,10 +235,10 @@ export default function CustomerApp() {
       if (!cats.some(c => c.includes(selectedCategory))) return false;
     }
     if (filterFree && Number((s as any).delivery_fee ?? 0.99) !== 0) return false;
-    if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
+    if (filterTopRated && (ratings[s.id]?.avg ?? 0) < (cfg.filters.top_min_rating || 4.5)) return false;
     if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
     return true;
-  }), [stores, debouncedSearch, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
+  }), [stores, debouncedSearch, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings, cfg.filters.top_min_rating]);
 
   return (
     <div
@@ -280,7 +271,9 @@ export default function CustomerApp() {
                 <img src={cfg.branding.logo_url} alt="" className="h-7 w-7 rounded-lg object-cover shrink-0" />
               ) : (
                 <div className="h-7 w-7 rounded-lg c-bg-accent flex items-center justify-center shrink-0 shadow-[0_2px_8px_-2px_hsl(var(--c-accent)/0.4)]">
-                  <span className="text-[11px] font-black text-white leading-none">F</span>
+                  <span className="text-[11px] font-black text-white leading-none">
+                    {(cfg.branding.monogram || cfg.branding.app_name || 'F').slice(0, 1).toUpperCase()}
+                  </span>
                 </div>
               )}
               <span className="font-heading font-black text-[17px] tracking-tight text-[hsl(0,0%,9%)] truncate">
@@ -338,7 +331,7 @@ export default function CustomerApp() {
           <div className="relative group">
             <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 c-muted group-focus-within:c-accent transition-colors" strokeWidth={2.5} />
             <Input
-              placeholder={t('customer.search_placeholder')}
+              placeholder={cfg.branding.search_placeholder || t('customer.search_placeholder')}
               value={search}
               onChange={e => onSearchChange(e.target.value)}
               className="pl-12 h-12 bg-[hsl(0,0%,96%)] border-0 rounded-2xl text-[15px] font-medium placeholder:c-muted focus-visible:ring-2 focus-visible:ring-[hsl(var(--c-accent))]/40 focus-visible:bg-white focus-visible:ring-offset-0 transition-all"
@@ -392,7 +385,7 @@ export default function CustomerApp() {
         {!isSearching && cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
         {/* ── Offers (collapsed by default — one CTA instead of stacked rows) ── */}
-        {!isSearching && selectedCategory === 'all' && (promotionOffers.length > 0 || freeDeliveryOffers.length > 0 || cfg.sections.show_promos) && (
+        {!isSearching && selectedCategory === 'all' && cfg.sections.show_offers_cta !== false && (promotionOffers.length > 0 || freeDeliveryOffers.length > 0 || cfg.sections.show_promos) && (
           <div className="px-5 pt-4">
             {!showAllOffers ? (
               <button
@@ -401,15 +394,15 @@ export default function CustomerApp() {
                 className="w-full rounded-2xl border border-[hsl(0,0%,92%)] bg-white px-4 py-3.5 flex items-center justify-between gap-3 shadow-[0_1px_2px_hsl(0_0%_0%/0.04)] active:scale-[0.99] transition-transform"
               >
                 <div className="text-left min-w-0">
-                  <p className="text-[15px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">Προσφορές κοντά σου</p>
+                  <p className="text-[15px] font-extrabold text-[hsl(0,0%,9%)] tracking-tight">{cfg.copy.offers_cta_title}</p>
                   <p className="text-[12px] font-medium text-[hsl(0,0%,45%)] truncate">
                     {[
                       promotionOffers.length > 0 ? `${promotionOffers.length} προσφορές` : null,
                       freeDeliveryOffers.length > 0 ? 'δωρεάν delivery' : null,
-                    ].filter(Boolean).join(' · ') || 'Δες διαθέσιμες προσφορές'}
+                    ].filter(Boolean).join(' · ') || cfg.copy.offers_cta_subtitle}
                   </p>
                 </div>
-                <span className="shrink-0 c-bg-accent rounded-full px-3.5 py-2 text-[12px] font-extrabold">Δες όλα</span>
+                <span className="shrink-0 c-bg-accent rounded-full px-3.5 py-2 text-[12px] font-extrabold">{cfg.copy.offers_cta_button}</span>
               </button>
             ) : (
               <div className="space-y-1 -mx-5">
@@ -492,10 +485,10 @@ export default function CustomerApp() {
             <div className="px-5 flex items-end justify-between mb-4">
               <div>
                 <h2 className="font-heading font-black text-[22px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
-                  {t('customer.popular')}
+                  {cfg.copy.promoted_title || t('customer.popular')}
                 </h2>
                 <p className="text-[10px] c-muted mt-1.5 font-black uppercase tracking-[0.14em]">
-                  Sponsored
+                  {cfg.copy.promoted_eyebrow}
                 </p>
               </div>
             </div>
@@ -551,7 +544,7 @@ export default function CustomerApp() {
                 ? `${t('customer.results_for')} "${debouncedSearch}"`
                 : selectedCategory !== 'all'
                   ? selectedCategory
-                  : t('customer.nearby')}
+                  : (cfg.copy.nearby_title || t('customer.nearby'))}
             </h2>
             <span className="text-[11px] c-muted font-extrabold bg-[hsl(0,0%,96%)] px-2.5 py-1 rounded-md tabular-nums">
               {filtered.length} {t('customer.stores_count')}
@@ -559,12 +552,13 @@ export default function CustomerApp() {
           </div>
 
           {/* Quick filters */}
+          {cfg.sections.show_filters !== false && (
           <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-5 px-5">
             {[
-              { key: 'free', label: 'Δωρεάν παράδοση', icon: BadgePercent, on: filterFree, toggle: () => setFilterFree(v => !v) },
-              { key: 'top', label: 'Κορυφαία 4.5+', icon: Star, on: filterTopRated, toggle: () => setFilterTopRated(v => !v) },
-              { key: 'fast', label: 'Γρήγορα', icon: Zap, on: filterFast, toggle: () => setFilterFast(v => !v) },
-            ].map(f => {
+              cfg.filters.show_free_delivery && { key: 'free', label: cfg.filters.free_label, icon: BadgePercent, on: filterFree, toggle: () => setFilterFree(v => !v) },
+              cfg.filters.show_top_rated && { key: 'top', label: cfg.filters.top_label, icon: Star, on: filterTopRated, toggle: () => setFilterTopRated(v => !v) },
+              cfg.filters.show_fast && { key: 'fast', label: cfg.filters.fast_label, icon: Zap, on: filterFast, toggle: () => setFilterFast(v => !v) },
+            ].filter(Boolean).map((f: any) => {
               const Icon = f.icon;
               return (
                 <button
@@ -590,6 +584,7 @@ export default function CustomerApp() {
               </button>
             )}
           </div>
+          )}
 
 
           {loading ? (
@@ -607,10 +602,10 @@ export default function CustomerApp() {
               <div className="h-16 w-16 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center mx-auto mb-4">
                 <MapPin className="h-7 w-7 c-muted" />
               </div>
-              <p className="font-heading font-bold text-[17px] text-[hsl(0,0%,9%)]">{t('customer.no_results')}</p>
+              <p className="font-heading font-bold text-[17px] text-[hsl(0,0%,9%)]">{cfg.copy.empty_title || t('customer.no_results')}</p>
               <p className="text-sm c-muted mt-1.5 max-w-xs mx-auto">
                 {isSearching || filterFree || filterTopRated || filterFast
-                  ? t('customer.try_search')
+                  ? (cfg.copy.empty_subtitle || t('customer.try_search'))
                   : t('customer.check_back')}
               </p>
               {(isSearching || filterFree || filterTopRated || filterFast) && (
@@ -625,7 +620,7 @@ export default function CustomerApp() {
                   }}
                   className="mt-5 inline-flex items-center h-10 px-5 rounded-full c-bg-accent text-sm font-bold active:scale-95 transition-transform"
                 >
-                  Καθαρισμός φίλτρων
+                  {cfg.copy.empty_clear_label}
                 </button>
               )}
             </div>
@@ -748,7 +743,7 @@ export default function CustomerApp() {
                   <span className={`c-nav-icon ${discoverActive ? 'c-nav-icon-active' : ''}`}>
                     <Compass className="h-[22px] w-[22px]" strokeWidth={discoverActive ? 2.4 : 2} />
                   </span>
-                  <span className={`c-nav-label ${discoverActive ? 'c-nav-label-active' : ''}`}>Ανακάλυψε</span>
+                  <span className={`c-nav-label ${discoverActive ? 'c-nav-label-active' : ''}`}>{cfg.copy.nav_discover}</span>
                 </button>
                 <button
                   type="button"
@@ -764,7 +759,7 @@ export default function CustomerApp() {
                   <span className={`c-nav-icon ${foodActive ? 'c-nav-icon-active' : ''}`}>
                     <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={foodActive ? 2.4 : 2} />
                   </span>
-                  <span className={`c-nav-label ${foodActive ? 'c-nav-label-active' : ''}`}>Φαγητό</span>
+                  <span className={`c-nav-label ${foodActive ? 'c-nav-label-active' : ''}`}>{cfg.copy.nav_food}</span>
                 </button>
                 <Link
                   to={user ? '/orders' : '/auth'}
@@ -773,7 +768,7 @@ export default function CustomerApp() {
                   <span className={`c-nav-icon ${onOrders ? 'c-nav-icon-active' : ''}`}>
                     <Receipt className="h-[22px] w-[22px]" strokeWidth={onOrders ? 2.4 : 2} />
                   </span>
-                  <span className={`c-nav-label ${onOrders ? 'c-nav-label-active' : ''}`}>{t('customer.orders')}</span>
+                  <span className={`c-nav-label ${onOrders ? 'c-nav-label-active' : ''}`}>{cfg.copy.nav_orders || t('customer.orders')}</span>
                 </Link>
                 <Link
                   to={user ? '/profile' : '/auth'}
@@ -782,7 +777,7 @@ export default function CustomerApp() {
                   <span className={`c-nav-icon ${onProfile ? 'c-nav-icon-active' : ''}`}>
                     <User className="h-[22px] w-[22px]" strokeWidth={onProfile ? 2.4 : 2} />
                   </span>
-                  <span className={`c-nav-label ${onProfile ? 'c-nav-label-active' : ''}`}>Λογαριασμός</span>
+                  <span className={`c-nav-label ${onProfile ? 'c-nav-label-active' : ''}`}>{cfg.copy.nav_account}</span>
                 </Link>
               </>
             );
@@ -794,8 +789,8 @@ export default function CustomerApp() {
         <SheetContent side="bottom" className="rounded-t-[22px] px-5 pb-6 max-h-[88vh] overflow-y-auto">
           <div className="mx-auto mt-1 mb-3 h-1 w-10 rounded-full bg-[hsl(0,0%,86%)]" aria-hidden />
           <SheetHeader className="text-left space-y-1">
-            <SheetTitle className="font-heading font-bold text-[18px]">Διεύθυνση παράδοσης</SheetTitle>
-            <p className="text-[13px] c-muted font-medium">Πού θέλεις να σου φέρουμε το φαγητό;</p>
+            <SheetTitle className="font-heading font-bold text-[18px]">{cfg.copy.address_sheet_title}</SheetTitle>
+            <p className="text-[13px] c-muted font-medium">{cfg.copy.address_sheet_hint}</p>
           </SheetHeader>
           <div className="mt-4 space-y-3">
             <AddressAutocomplete

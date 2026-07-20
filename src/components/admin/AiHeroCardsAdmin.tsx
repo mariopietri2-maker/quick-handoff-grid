@@ -8,7 +8,7 @@ import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Sparkles, Trash2, Upload, Loader2, ArrowUp, ArrowDown, Image as ImageIcon } from 'lucide-react';
 import { toast } from 'sonner';
-import { DEFAULT_CONFIG, type CustomerAppConfig, type HeroCard } from '@/hooks/useCustomerAppConfig';
+import { DEFAULT_CONFIG, mergeCustomerAppConfig, type CustomerAppConfig, type HeroCard } from '@/hooks/useCustomerAppConfig';
 
 export default function AiHeroCardsAdmin() {
   const [config, setConfig] = useState<CustomerAppConfig>(DEFAULT_CONFIG);
@@ -30,11 +30,7 @@ export default function AiHeroCardsAdmin() {
       .select('published_config')
       .maybeSingle();
     const cfg = data?.published_config ?? {};
-    setConfig({
-      ...DEFAULT_CONFIG,
-      ...cfg,
-      hero_cards: Array.isArray(cfg.hero_cards) ? cfg.hero_cards : [],
-    });
+    setConfig(mergeCustomerAppConfig(cfg));
     setLoaded(true);
   };
   useEffect(() => { load(); }, []);

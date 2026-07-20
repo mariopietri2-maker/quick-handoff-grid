@@ -4,10 +4,13 @@ import promoHero1 from '@/assets/promo-hero-1.jpg';
 import promoHero2 from '@/assets/promo-hero-2.jpg';
 import promoHero3 from '@/assets/promo-hero-3.jpg';
 
-const HERO_IMAGES = [promoHero1, promoHero2, promoHero3];
+const FALLBACK_IMAGES = [promoHero1, promoHero2, promoHero3];
 
 export default function PromoBannerCarousel() {
   const cfg = useCustomerAppConfig();
+  const accent = cfg.branding.accent_hsl;
+  const accentDark = cfg.branding.accent_dark_hsl;
+
   const promos = useMemo(
     () =>
       cfg.promos
@@ -17,7 +20,9 @@ export default function PromoBannerCarousel() {
           title: p.title,
           subtitle: p.subtitle,
           code: p.code,
-          image: HERO_IMAGES[i % HERO_IMAGES.length],
+          gradient: p.gradient,
+          image: p.image_url || FALLBACK_IMAGES[i % FALLBACK_IMAGES.length],
+          hasCustomImage: Boolean(p.image_url),
         })),
     [cfg.promos],
   );
@@ -51,12 +56,31 @@ export default function PromoBannerCarousel() {
               i === current ? 'opacity-100' : 'opacity-0 pointer-events-none'
             }`}
           >
-            <img
-              src={p.image}
-              alt={p.title}
-              className="absolute inset-0 w-full h-full object-cover"
-              loading="lazy"
-            />
+            {p.hasCustomImage ? (
+              <img
+                src={p.image}
+                alt={p.title}
+                className="absolute inset-0 w-full h-full object-cover"
+                loading="lazy"
+              />
+            ) : p.gradient === 'dark' ? (
+              <div className="absolute inset-0 bg-gradient-to-br from-[hsl(0,0%,12%)] via-[hsl(0,0%,18%)] to-[hsl(0,0%,8%)]" />
+            ) : (
+              <>
+                <img
+                  src={p.image}
+                  alt=""
+                  className="absolute inset-0 w-full h-full object-cover opacity-40"
+                  loading="lazy"
+                />
+                <div
+                  className="absolute inset-0"
+                  style={{
+                    background: `linear-gradient(135deg, hsl(${accent} / 0.92), hsl(${accentDark} / 0.85))`,
+                  }}
+                />
+              </>
+            )}
             <div className="absolute inset-0 bg-gradient-to-r from-black/70 via-black/35 to-transparent" />
             <div className="relative h-full p-5 flex flex-col justify-between">
               <div className="flex items-start justify-between">

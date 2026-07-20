@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
+import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 
 /**
- * Polished, professional brand splash for the customer app.
- * A refined monogram mark with subtle motion — no emoji, no clutter.
+ * Polished brand splash for the customer app.
+ * Uses published branding (name, logo, monogram, tagline, accents).
  */
 export default function AppSplash() {
+  const cfg = useCustomerAppConfig();
   const [phase, setPhase] = useState<'in' | 'out' | 'done'>(() => {
     try {
       if (sessionStorage.getItem('customer_splash_shown') === '1') return 'done';
@@ -13,6 +15,10 @@ export default function AppSplash() {
   });
 
   useEffect(() => {
+    if (!cfg.sections.show_splash) {
+      setPhase('done');
+      return;
+    }
     if (phase === 'done') return;
     const t1 = setTimeout(() => setPhase('out'), 1400);
     const t2 = setTimeout(() => {
@@ -20,9 +26,15 @@ export default function AppSplash() {
       try { sessionStorage.setItem('customer_splash_shown', '1'); } catch {}
     }, 2000);
     return () => { clearTimeout(t1); clearTimeout(t2); };
-  }, [phase]);
+  }, [phase, cfg.sections.show_splash]);
 
-  if (phase === 'done') return null;
+  if (!cfg.sections.show_splash || phase === 'done') return null;
+
+  const accent = cfg.branding.accent_hsl || '4 90% 47%';
+  const accentDark = cfg.branding.accent_dark_hsl || '4 90% 38%';
+  const monogram = (cfg.branding.monogram || cfg.branding.app_name || 'F').slice(0, 1).toUpperCase();
+  const name = cfg.branding.app_name || 'Fresh Delivery';
+  const tagline = cfg.branding.tagline || 'Fast · Fresh · Local';
 
   return (
     <div
@@ -31,7 +43,7 @@ export default function AppSplash() {
       }`}
       style={{
         background:
-          'radial-gradient(120% 80% at 50% 20%, hsl(var(--c-accent, 4 90% 47%)) 0%, hsl(var(--c-accent-dark, 4 90% 38%)) 70%, hsl(4 85% 28%) 100%)',
+          `radial-gradient(120% 80% at 50% 20%, hsl(${accent}) 0%, hsl(${accentDark}) 70%, hsl(4 85% 28%) 100%)`,
       }}
       aria-hidden
     >
@@ -42,45 +54,45 @@ export default function AppSplash() {
         @keyframes splashBar { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
       `}</style>
 
-      {/* soft vignette */}
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(60%_50%_at_50%_100%,hsl(0_0%_0%/0.35),transparent_70%)]" />
 
       <div className="relative flex flex-col items-center">
-        {/* pulsing ring */}
         <div
           className="absolute top-0 h-[120px] w-[120px] rounded-full border border-white/25"
           style={{ animation: 'splashRingPulse 2.4s ease-in-out infinite' }}
         />
-        {/* mark */}
         <div
-          className="h-[120px] w-[120px] rounded-[32px] bg-white flex items-center justify-center shadow-[0_24px_60px_-16px_hsl(0_0%_0%/0.45),inset_0_1px_0_hsl(0_0%_100%/0.9)]"
+          className="h-[120px] w-[120px] rounded-[32px] bg-white flex items-center justify-center shadow-[0_24px_60px_-16px_hsl(0_0%_0%/0.45),inset_0_1px_0_hsl(0_0%_100%/0.9)] overflow-hidden"
           style={{ animation: 'splashMarkIn 700ms cubic-bezier(.2,.9,.3,1) both' }}
         >
-          <span
-            className="font-heading font-black text-[56px] leading-none tracking-tight bg-clip-text text-transparent"
-            style={{
-              backgroundImage:
-                'linear-gradient(135deg, hsl(var(--c-accent, 4 90% 47%)), hsl(var(--c-accent-dark, 4 90% 38%)))',
-            }}
-          >
-            F
-          </span>
+          {cfg.branding.logo_url ? (
+            <img src={cfg.branding.logo_url} alt="" className="h-full w-full object-cover" />
+          ) : (
+            <span
+              className="font-heading font-black text-[56px] leading-none tracking-tight bg-clip-text text-transparent"
+              style={{
+                backgroundImage: `linear-gradient(135deg, hsl(${accent}), hsl(${accentDark}))`,
+              }}
+            >
+              {monogram}
+            </span>
+          )}
         </div>
 
-        {/* wordmark */}
         <div
           className="mt-7 text-center"
           style={{ animation: 'splashTextIn 600ms ease-out 250ms both' }}
         >
-          <div className="font-heading font-black text-white text-[26px] tracking-tight leading-none">
-            Fresh Delivery
+          <div className="font-heading font-black text-white text-[26px] tracking-tight leading-none px-6">
+            {name}
           </div>
-          <div className="mt-2 text-white/70 text-[11px] font-bold tracking-[0.32em] uppercase">
-            Fast · Fresh · Local
-          </div>
+          {tagline && (
+            <div className="mt-2 text-white/70 text-[11px] font-bold tracking-[0.32em] uppercase">
+              {tagline}
+            </div>
+          )}
         </div>
 
-        {/* progress bar */}
         <div className="mt-8 h-[2px] w-[140px] rounded-full bg-white/15 overflow-hidden">
           <div
             className="h-full w-full bg-white/90 origin-left"
