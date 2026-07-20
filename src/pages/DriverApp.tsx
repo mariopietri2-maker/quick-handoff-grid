@@ -13,7 +13,6 @@ import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
 import { DriverWallet } from '@/components/driver/DriverWallet';
 import DriverCashWallet from '@/components/driver/DriverCashWallet';
 import { DriverReferral } from '@/components/driver/DriverReferral';
-import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
 import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
 import DriverInbox from '@/components/driver/DriverInbox';
@@ -434,9 +433,7 @@ export default function DriverApp() {
                   </div>
                   <span className="font-heading font-extrabold text-[hsl(var(--driver-text))] text-[12.5px] tracking-tight truncate">Fresh Delivery</span>
                 </div>
-                <div className="shrink-0 pointer-events-auto flex items-center gap-2">
-                  <DriverSupportButton orderId={activeDelivery?.id} />
-                </div>
+                <div className="w-10 shrink-0" aria-hidden />
               </div>
             </div>
           )}
@@ -461,10 +458,9 @@ export default function DriverApp() {
             </div>
           )}
 
-          {/* Floating action stack — right side, in-app turn-by-turn (support / re-route / recenter) */}
+          {/* Floating action stack — map controls only (support lives in Μηνύματα) */}
           {isNavActive && (
             <div className="fixed right-3 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-3 pointer-events-auto animate-pop">
-              <DriverSupportButton orderId={activeDelivery?.id} />
               <button
                 onClick={() => mapRef.current?.fitOverview()}
                 className="h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center shadow-lg hover:bg-accent active:scale-90 transition-all"

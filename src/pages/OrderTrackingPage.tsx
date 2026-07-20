@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, MessageCircle, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star, Copy } from 'lucide-react';
+import { ArrowLeft, Phone, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -8,6 +8,7 @@ import type { Database } from '@/integrations/supabase/types';
 import { ReviewForm } from '@/components/ReviewForm';
 import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
+import { CustomerSupportButton } from '@/components/customer/CustomerSupportButton';
 import { SEO } from '@/components/SEO';
 import { formatOrderNumber } from '@/lib/order-number';
 
@@ -294,12 +295,7 @@ export default function OrderTrackingPage() {
                     <Phone className="h-5 w-5" />
                   </a>
                 )}
-                <button
-                  onClick={() => navigate('/support')}
-                  className="h-11 w-11 rounded-full bg-primary/15 text-primary flex items-center justify-center active:scale-95 transition-transform"
-                >
-                  <MessageCircle className="h-5 w-5" />
-                </button>
+                <CustomerSupportButton orderId={order.id} />
               </div>
             </div>
           )}

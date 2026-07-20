@@ -152,7 +152,15 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
 
   const send = async (messageText: string, attachment: ComposerAttachment | null) => {
     if ((!messageText.trim() && !attachment) || !user) return;
-    const senderRole = isAdmin ? 'admin' : profile?.role === 'support' ? 'support' : 'driver';
+    const senderRole = isAdmin
+      ? 'admin'
+      : profile?.role === 'support'
+        ? 'support'
+        : profile?.role === 'store'
+          ? 'store'
+          : profile?.role === 'customer'
+            ? 'customer'
+            : 'driver';
     const optimistic: Message = {
       id: crypto.randomUUID(),
       ticket_id: ticketId,
@@ -236,7 +244,15 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
                     <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
                   )}
                   <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {m.sender_role === 'driver' ? 'Οδηγός' : isAgentMsg ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη') : m.sender_role}
+                    {m.sender_role === 'driver'
+                      ? 'Οδηγός'
+                      : m.sender_role === 'store'
+                        ? 'Κατάστημα'
+                        : m.sender_role === 'customer'
+                          ? 'Πελάτης'
+                          : isAgentMsg
+                            ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη')
+                            : m.sender_role}
                     {' · '}
                     {format(new Date(m.created_at), 'HH:mm')}
                   </p>
