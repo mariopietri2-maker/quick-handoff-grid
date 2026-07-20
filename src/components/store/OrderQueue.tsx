@@ -27,8 +27,6 @@ interface OrderQueueProps {
   pendingIds?: Set<string> | string[];
 }
 
-type QueueFilter = 'new' | 'kitchen' | 'ready' | 'all';
-
 const statusConfig: Record<string, { label: string; variant: 'destructive' | 'default' | 'secondary'; bg: string; chip: string }> = {
   placed: { label: 'Νέα', variant: 'destructive', bg: 'bg-primary/10 border-primary/30', chip: 'bg-primary text-primary-foreground' },
   accepted: { label: 'Αποδεκτή', variant: 'default', bg: 'bg-info/10 border-info/30', chip: 'bg-info/15 text-info border border-info/30' },
@@ -38,12 +36,6 @@ const statusConfig: Record<string, { label: string; variant: 'destructive' | 'de
 
 const PREP_PRESETS = [10, 15, 20, 30, 45];
 
-const FILTERS: { id: QueueFilter; label: string; match: (s: string) => boolean }[] = [
-  { id: 'new', label: 'Νέες', match: (s) => s === 'placed' },
-  { id: 'kitchen', label: 'Κουζίνα', match: (s) => s === 'accepted' || s === 'preparing' },
-  { id: 'ready', label: 'Έτοιμες', match: (s) => s === 'ready' },
-  { id: 'all', label: 'Όλες', match: () => true },
-];
 
 function itemCount(order: OrderWithItems) {
   return (order.order_items ?? []).reduce((n, i) => n + (Number(i.quantity) || 0), 0);
@@ -83,7 +75,6 @@ export function OrderQueue({
   storeName = 'Κατάστημα',
   pendingIds,
 }: OrderQueueProps) {
-  const [filter, setFilter] = useState<QueueFilter>('new');
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [prepTimes, setPrepTimes] = useState<Record<string, number>>({});
   const [busyLocal, setBusyLocal] = useState<Record<string, boolean>>({});
@@ -98,37 +89,10 @@ export function OrderQueue({
     return () => window.clearInterval(id);
   }, []);
 
-  // Default filter: jump to New when new orders appear; otherwise kitchen/ready.
-  const counts = useMemo(() => {
-    let neu = 0, kitchen = 0, ready = 0;
-    for (const o of orders) {
-      if (o.status === 'placed') neu++;
-      else if (o.status === 'accepted' || o.status === 'preparing') kitchen++;
-      else if (o.status === 'ready') ready++;
-    }
-    return { neu, kitchen, ready, all: orders.length };
-  }, [orders]);
-
-  useEffect(() => {
-    if (counts.neu > 0 && filter !== 'new' && filter !== 'all') {
-      // Don't yank the cook off kitchen mid-rush unless they were on empty New.
-    }
-    if (filter === 'new' && counts.neu === 0 && counts.kitchen > 0) {
-      setFilter('kitchen');
-    } else if (filter === 'kitchen' && counts.kitchen === 0 && counts.ready > 0 && counts.neu === 0) {
-      setFilter('ready');
-    }
-  }, [counts.neu, counts.kitchen, counts.ready, filter]);
-
   const pendingSet = useMemo(() => {
     if (!pendingIds) return new Set<string>();
     return pendingIds instanceof Set ? pendingIds : new Set(pendingIds);
   }, [pendingIds]);
-
-  const visible = useMemo(() => {
-    const match = FILTERS.find((f) => f.id === filter)?.match ?? (() => true);
-    return orders.filter((o) => match(o.status)).sort(sortForKitchen);
-  }, [orders, filter]);
 
   const nextNew = useMemo(
     () => orders.filter((o) => o.status === 'placed').sort(sortForKitchen)[0] ?? null,
@@ -193,294 +157,257 @@ export function OrderQueue({
     setExpanded((p) => ({ ...p, [id]: !p[id] }));
   };
 
-  const countFor = (id: QueueFilter) => {
-    if (id === 'new') return counts.neu;
-    if (id === 'kitchen') return counts.kitchen;
-    if (id === 'ready') return counts.ready;
-    return counts.all;
-  };
+  const columns = useMemo(() => {
+    const neu = orders.filter((o) => o.status === 'placed').sort(sortForKitchen);
+    const kitchen = orders
+      .filter((o) => o.status === 'accepted' || o.status === 'preparing')
+      .sort(sortForKitchen);
+    const ready = orders.filter((o) => o.status === 'ready').sort(sortForKitchen);
+    return [
+      { id: 'new' as const, label: 'Νέες', items: neu, accent: 'border-primary/30 bg-primary/5' },
+      { id: 'kitchen' as const, label: 'Κουζίνα', items: kitchen, accent: 'border-warning/30 bg-warning/5' },
+      { id: 'ready' as const, label: 'Έτοιμες', items: ready, accent: 'border-success/30 bg-success/5' },
+    ];
+  }, [orders]);
 
-  return (
-    <div className="space-y-3">
-      {/* Queue filter strip */}
-      <div className="sticky top-[57px] z-30 -mx-1 px-1 py-1 bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/80">
-        <div className="flex gap-1.5 overflow-x-auto scrollbar-thin pb-1">
-          {FILTERS.map((f) => {
-            const n = countFor(f.id);
-            const active = filter === f.id;
-            return (
-              <button
-                key={f.id}
-                type="button"
-                onClick={() => setFilter(f.id)}
-                className={`shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-heading font-semibold border transition-colors ${
-                  active
-                    ? 'bg-foreground text-background border-foreground'
-                    : 'bg-card text-foreground border-border hover:bg-muted/60'
-                }`}
-              >
-                {f.label}
-                <span
-                  className={`min-w-[1.25rem] h-5 px-1 rounded-full text-[10px] flex items-center justify-center ${
-                    active ? 'bg-background/20 text-background' : n > 0 && f.id === 'new' ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
-                  }`}
-                >
-                  {n}
-                </span>
-              </button>
-            );
-          })}
-        </div>
+  const renderCard = (order: OrderWithItems) => {
+    const config = statusConfig[order.status] || statusConfig.placed;
+    const nextAction = getNextAction(order.status);
+    const items = order.order_items || [];
+    const open = !!expanded[order.id] || order.status === 'placed';
+    const currentPrep = getPrep(order);
+    const busy = isBusy(order.id);
+    const age = getTimeSince(order.created_at, now);
+    const urgent = order.status === 'placed' && (Date.now() - new Date(order.created_at).getTime()) > 5 * 60_000;
 
-        {/* Sticky next-new attention bar */}
-        {nextNew && (filter === 'new' || filter === 'all') && (
-          <div className="mt-2 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
+    return (
+      <div
+        key={order.id}
+        className={`rounded-xl border-2 ${config.bg} shadow-[var(--shadow-sm)] overflow-hidden shrink-0 w-[min(100%,320px)] sm:w-full ${urgent ? 'ring-2 ring-destructive/40' : ''}`}
+      >
+        <div className="flex items-stretch gap-2 p-2.5">
+          <button
+            type="button"
+            onClick={() => toggleExpand(order.id)}
+            className="flex-1 min-w-0 text-left flex items-center gap-2"
+            aria-expanded={open}
+          >
+            <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-heading font-bold ${config.chip}`}>
+              {config.label}
+            </span>
             <div className="min-w-0 flex-1">
-              <p className="text-[10px] font-heading font-bold uppercase tracking-wider text-primary">
-                Επόμενη προς αποδοχή
-              </p>
-              <p className="text-sm font-heading font-bold text-foreground truncate">
-                {formatOrderNumber(nextNew)}
-                <span className="text-muted-foreground font-medium">
-                  {' '}· {getTimeSince(nextNew.created_at, now)} · {itemCount(nextNew)} προϊόντα · €{Number(nextNew.total_amount).toFixed(2)}
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <span className="font-mono font-bold text-sm text-foreground">{formatOrderNumber(order)}</span>
+                <span className={`text-[11px] flex items-center gap-0.5 ${urgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
+                  <Clock className="h-3 w-3" />
+                  {age}
                 </span>
+                {order.driver_id && (
+                  <span className="text-[10px] text-info inline-flex items-center gap-0.5">
+                    <Car className="h-3 w-3" /> Οδηγός
+                  </span>
+                )}
+              </div>
+              <p className="text-[11px] text-muted-foreground truncate">
+                {itemCount(order)} προϊόντα · €{Number(order.total_amount).toFixed(2)}
+                {order.notes ? ' · 📝' : ''}
+                {!open && items[0] ? ` · ${items[0].quantity}x ${items[0].name}` : ''}
               </p>
             </div>
-            <div className="flex items-center gap-1 shrink-0">
-              {PREP_PRESETS.slice(0, 3).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPrep(nextNew.id, p)}
-                  className={`h-7 px-2 rounded-md text-[10px] font-heading font-bold border ${
-                    getPrep(nextNew) === p ? 'bg-primary text-primary-foreground border-primary' : 'bg-card border-border'
-                  }`}
-                >
-                  {p}λ
-                </button>
-              ))}
+            {open ? (
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
+            ) : (
+              <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
+            )}
+          </button>
+
+          <div className="flex items-center gap-1 shrink-0">
+            <PrintTicketButton order={order} storeName={storeName} />
+            {nextAction && (
               <Button
                 size="sm"
-                className="h-9 font-heading gradient-primary text-primary-foreground shadow-primary"
-                disabled={isBusy(nextNew.id)}
-                onClick={() => handleAdvance(nextNew, 'preparing')}
+                disabled={busy}
+                className={`h-9 px-3 font-heading font-semibold ${
+                  order.status === 'placed'
+                    ? 'gradient-primary text-primary-foreground'
+                    : 'gradient-success text-success-foreground'
+                }`}
+                onClick={() => handleAdvance(order, nextAction.next)}
               >
-                {isBusy(nextNew.id) ? '…' : `Αποδοχή ${getPrep(nextNew)}λ`}
+                {busy ? '…' : nextAction.short}
               </Button>
+            )}
+          </div>
+        </div>
+
+        {open && (
+          <div className="px-3 pb-3 space-y-2.5 border-t border-border/60 pt-2.5">
+            <div className="space-y-1">
+              {items.map((item, i) => (
+                <div key={i} className="flex justify-between text-sm gap-2">
+                  <span className="text-foreground">{item.quantity}x {item.name}</span>
+                  <span className="text-muted-foreground shrink-0">€{Number(item.unit_price).toFixed(2)}</span>
+                </div>
+              ))}
+              <div className="flex justify-between font-heading font-semibold pt-1.5 border-t border-border text-sm">
+                <span>Σύνολο</span>
+                <span>€{Number(order.total_amount).toFixed(2)}</span>
+              </div>
+            </div>
+
+            {order.notes && (
+              <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-2">
+                📝 {order.notes}
+              </div>
+            )}
+
+            {order.status === 'placed' && (
+              <div className="rounded-lg bg-card border border-border p-2.5 space-y-2">
+                <div className="flex items-center gap-2">
+                  <Timer className="h-4 w-4 text-primary" />
+                  <span className="font-heading text-xs font-semibold">Χρόνος ετοιμασίας</span>
+                </div>
+                <div className="flex items-center justify-between gap-2">
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setPrep(order.id, currentPrep - 5)}>
+                    <Minus className="h-3.5 w-3.5" />
+                  </Button>
+                  <div className="text-center">
+                    <span className="font-heading font-bold text-xl">{currentPrep}</span>
+                    <span className="text-xs text-muted-foreground ml-1">λεπτά</span>
+                  </div>
+                  <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setPrep(order.id, currentPrep + 5)}>
+                    <Plus className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  {PREP_PRESETS.map((p) => (
+                    <Button
+                      key={p}
+                      type="button"
+                      variant={currentPrep === p ? 'default' : 'outline'}
+                      size="sm"
+                      className="h-7 px-2.5 text-xs font-heading"
+                      onClick={() => setPrep(order.id, p)}
+                    >
+                      {p}λ
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {order.status !== 'placed' && !!order.estimated_prep_time && order.estimated_prep_time > 0 && (
+              <div className="flex items-center gap-2 text-sm text-warning">
+                <Timer className="h-4 w-4" />
+                <span>~{order.estimated_prep_time} λεπτά εκτίμηση</span>
+              </div>
+            )}
+
+            <div className="flex items-center gap-2">
+              {nextAction && (
+                <Button
+                  className={`flex-1 h-11 font-heading font-semibold ${
+                    order.status === 'placed'
+                      ? 'gradient-primary shadow-primary text-primary-foreground'
+                      : 'gradient-success text-success-foreground'
+                  }`}
+                  disabled={busy}
+                  onClick={() => handleAdvance(order, nextAction.next)}
+                >
+                  {busy ? 'Ενημέρωση…' : nextAction.label}
+                  <ChevronRight className="ml-1 h-5 w-5" />
+                </Button>
+              )}
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    className="h-11 w-11 text-destructive border-destructive/30 hover:bg-destructive/10"
+                    disabled={!!order.driver_id || busy}
+                    title={order.driver_id ? 'Έχει ανατεθεί σε οδηγό' : 'Ακύρωση'}
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Ακύρωση {formatOrderNumber(order)};</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Η παραγγελία θα αφαιρεθεί από την ουρά. Επιστροφές χρημάτων γίνονται ξεχωριστά.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Όχι</AlertDialogCancel>
+                    <AlertDialogAction
+                      onClick={async () => {
+                        const { error } = await supabase.rpc('transition_order_status' as never, {
+                          p_order_id: order.id,
+                          p_new_status: 'cancelled',
+                          p_estimated_prep_time: null,
+                        } as never);
+                        if (error) toast.error(error.message || 'Η ακύρωση απέτυχε');
+                        else toast.success('Παραγγελία ακυρώθηκε');
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >
+                      Ναι, ακύρωση
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
             </div>
           </div>
         )}
       </div>
+    );
+  };
 
-      {visible.length === 0 ? (
-        <div className="text-center py-12 rounded-xl border border-dashed border-border bg-card/40">
-          <Package className="h-8 w-8 text-muted-foreground mx-auto mb-2" />
-          <p className="font-heading text-sm text-foreground">Καμία παραγγελία εδώ</p>
-          <p className="text-xs text-muted-foreground mt-1">
-            {filter === 'new' ? 'Οι νέες θα εμφανιστούν αυτόματα' : 'Δοκιμάστε άλλη ουρά'}
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-2">
-          {visible.map((order) => {
-            const config = statusConfig[order.status] || statusConfig.placed;
-            const nextAction = getNextAction(order.status);
-            const items = order.order_items || [];
-            const open = !!expanded[order.id] || order.status === 'placed';
-            const currentPrep = getPrep(order);
-            const busy = isBusy(order.id);
-            const age = getTimeSince(order.created_at, now);
-            const urgent = order.status === 'placed' && (Date.now() - new Date(order.created_at).getTime()) > 5 * 60_000;
-
-            return (
-              <div
-                key={order.id}
-                className={`rounded-xl border-2 ${config.bg} shadow-[var(--shadow-sm)] overflow-hidden ${urgent ? 'ring-2 ring-destructive/40' : ''}`}
-              >
-                {/* Compact header row — always visible */}
-                <div className="flex items-stretch gap-2 p-2.5 sm:p-3">
-                  <button
-                    type="button"
-                    onClick={() => toggleExpand(order.id)}
-                    className="flex-1 min-w-0 text-left flex items-center gap-2"
-                    aria-expanded={open}
-                  >
-                    <span className={`shrink-0 rounded-md px-2 py-0.5 text-[10px] font-heading font-bold ${config.chip}`}>
-                      {config.label}
-                    </span>
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className="font-mono font-bold text-sm text-foreground">{formatOrderNumber(order)}</span>
-                        <span className={`text-[11px] flex items-center gap-0.5 ${urgent ? 'text-destructive font-semibold' : 'text-muted-foreground'}`}>
-                          <Clock className="h-3 w-3" />
-                          {age}
-                        </span>
-                        {order.driver_id && (
-                          <span className="text-[10px] text-info inline-flex items-center gap-0.5">
-                            <Car className="h-3 w-3" /> Οδηγός
-                          </span>
-                        )}
-                      </div>
-                      <p className="text-[11px] text-muted-foreground truncate">
-                        {itemCount(order)} προϊόντα · €{Number(order.total_amount).toFixed(2)}
-                        {order.notes ? ' · 📝' : ''}
-                        {!open && items[0] ? ` · ${items[0].quantity}x ${items[0].name}` : ''}
-                      </p>
-                    </div>
-                    {open ? (
-                      <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4 text-muted-foreground shrink-0" />
-                    )}
-                  </button>
-
-                  <div className="flex items-center gap-1 shrink-0">
-                    <PrintTicketButton order={order} storeName={storeName} />
-                    {nextAction && (
-                      <Button
-                        size="sm"
-                        disabled={busy}
-                        className={`h-9 px-3 font-heading font-semibold ${
-                          order.status === 'placed'
-                            ? 'gradient-primary text-primary-foreground'
-                            : 'gradient-success text-success-foreground'
-                        }`}
-                        onClick={() => handleAdvance(order, nextAction.next)}
-                      >
-                        {busy ? '…' : nextAction.short}
-                      </Button>
-                    )}
-                    {order.status === 'ready' && (
-                      <span className="hidden sm:inline text-[10px] font-heading font-semibold text-success px-2">
-                        Αναμονή οδηγού
-                      </span>
-                    )}
-                  </div>
-                </div>
-
-                {/* Expanded details */}
-                {open && (
-                  <div className="px-3 pb-3 space-y-2.5 border-t border-border/60 pt-2.5">
-                    <div className="space-y-1">
-                      {items.map((item, i) => (
-                        <div key={i} className="flex justify-between text-sm gap-2">
-                          <span className="text-foreground">{item.quantity}x {item.name}</span>
-                          <span className="text-muted-foreground shrink-0">€{Number(item.unit_price).toFixed(2)}</span>
-                        </div>
-                      ))}
-                      <div className="flex justify-between font-heading font-semibold pt-1.5 border-t border-border text-sm">
-                        <span>Σύνολο</span>
-                        <span>€{Number(order.total_amount).toFixed(2)}</span>
-                      </div>
-                    </div>
-
-                    {order.notes && (
-                      <div className="text-sm text-muted-foreground bg-muted/50 rounded-lg p-2">
-                        📝 {order.notes}
-                      </div>
-                    )}
-
-                    {order.status === 'placed' && (
-                      <div className="rounded-lg bg-card border border-border p-2.5 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Timer className="h-4 w-4 text-primary" />
-                          <span className="font-heading text-xs font-semibold">Χρόνος ετοιμασίας</span>
-                        </div>
-                        <div className="flex items-center justify-between gap-2">
-                          <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setPrep(order.id, currentPrep - 5)}>
-                            <Minus className="h-3.5 w-3.5" />
-                          </Button>
-                          <div className="text-center">
-                            <span className="font-heading font-bold text-xl">{currentPrep}</span>
-                            <span className="text-xs text-muted-foreground ml-1">λεπτά</span>
-                          </div>
-                          <Button type="button" variant="outline" size="icon" className="h-8 w-8" onClick={() => setPrep(order.id, currentPrep + 5)}>
-                            <Plus className="h-3.5 w-3.5" />
-                          </Button>
-                        </div>
-                        <div className="flex flex-wrap gap-1.5">
-                          {PREP_PRESETS.map((p) => (
-                            <Button
-                              key={p}
-                              type="button"
-                              variant={currentPrep === p ? 'default' : 'outline'}
-                              size="sm"
-                              className="h-7 px-2.5 text-xs font-heading"
-                              onClick={() => setPrep(order.id, p)}
-                            >
-                              {p}λ
-                            </Button>
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {order.status !== 'placed' && !!order.estimated_prep_time && order.estimated_prep_time > 0 && (
-                      <div className="flex items-center gap-2 text-sm text-warning">
-                        <Timer className="h-4 w-4" />
-                        <span>~{order.estimated_prep_time} λεπτά εκτίμηση</span>
-                      </div>
-                    )}
-
-                    <div className="flex items-center gap-2">
-                      {nextAction && (
-                        <Button
-                          className={`flex-1 h-11 font-heading font-semibold ${
-                            order.status === 'placed'
-                              ? 'gradient-primary shadow-primary text-primary-foreground'
-                              : 'gradient-success text-success-foreground'
-                          }`}
-                          disabled={busy}
-                          onClick={() => handleAdvance(order, nextAction.next)}
-                        >
-                          {busy ? 'Ενημέρωση…' : nextAction.label}
-                          <ChevronRight className="ml-1 h-5 w-5" />
-                        </Button>
-                      )}
-                      <AlertDialog>
-                        <AlertDialogTrigger asChild>
-                          <Button
-                            variant="outline"
-                            size="icon"
-                            className="h-11 w-11 text-destructive border-destructive/30 hover:bg-destructive/10"
-                            disabled={!!order.driver_id || busy}
-                            title={order.driver_id ? 'Έχει ανατεθεί σε οδηγό' : 'Ακύρωση'}
-                          >
-                            <Trash2 className="h-4 w-4" />
-                          </Button>
-                        </AlertDialogTrigger>
-                        <AlertDialogContent>
-                          <AlertDialogHeader>
-                            <AlertDialogTitle>Ακύρωση {formatOrderNumber(order)};</AlertDialogTitle>
-                            <AlertDialogDescription>
-                              Η παραγγελία θα αφαιρεθεί από την ουρά. Επιστροφές χρημάτων γίνονται ξεχωριστά.
-                            </AlertDialogDescription>
-                          </AlertDialogHeader>
-                          <AlertDialogFooter>
-                            <AlertDialogCancel>Όχι</AlertDialogCancel>
-                            <AlertDialogAction
-                              onClick={async () => {
-                                const { error } = await supabase.rpc('transition_order_status' as never, {
-                                  p_order_id: order.id,
-                                  p_new_status: 'cancelled',
-                                  p_estimated_prep_time: null,
-                                } as never);
-                                if (error) toast.error(error.message || 'Η ακύρωση απέτυχε');
-                                else toast.success('Παραγγελία ακυρώθηκε');
-                              }}
-                              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                            >
-                              Ναι, ακύρωση
-                            </AlertDialogAction>
-                          </AlertDialogFooter>
-                        </AlertDialogContent>
-                      </AlertDialog>
-                    </div>
-                  </div>
-                )}
+  return (
+    <div className="space-y-3">
+      {/* Mobile: horizontal scroll boards · Desktop: 3 columns */}
+      <div className="flex gap-3 overflow-x-auto pb-2 snap-x snap-mandatory sm:grid sm:grid-cols-3 sm:overflow-visible sm:pb-0 sm:snap-none">
+        {columns.map((col) => (
+          <section
+            key={col.id}
+            className={`snap-start shrink-0 w-[85vw] max-w-[360px] sm:w-auto sm:max-w-none rounded-2xl border ${col.accent} p-2.5 space-y-2 min-h-[12rem]`}
+          >
+            <div className="flex items-center justify-between px-1 sticky top-[57px] z-20 bg-inherit/95 backdrop-blur py-1">
+              <h3 className="font-heading font-bold text-sm text-foreground">{col.label}</h3>
+              <span className="min-w-[1.5rem] h-6 px-1.5 rounded-full text-[11px] font-heading font-bold flex items-center justify-center bg-card border border-border">
+                {col.items.length}
+              </span>
+            </div>
+            {col.items.length === 0 ? (
+              <div className="rounded-xl border border-dashed border-border/70 bg-card/40 py-8 text-center">
+                <Package className="h-6 w-6 text-muted-foreground mx-auto mb-1.5" />
+                <p className="text-xs text-muted-foreground">Κενή</p>
               </div>
-            );
-          })}
+            ) : (
+              <div className="flex flex-col gap-2">
+                {col.items.map((order) => renderCard(order))}
+              </div>
+            )}
+          </section>
+        ))}
+      </div>
+
+      {nextNew && (
+        <div className="sm:hidden rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
+          <div className="min-w-0 flex-1">
+            <p className="text-[10px] font-heading font-bold uppercase tracking-wider text-primary">Επόμενη</p>
+            <p className="text-sm font-heading font-bold text-foreground truncate">
+              {formatOrderNumber(nextNew)} · {getTimeSince(nextNew.created_at, now)}
+            </p>
+          </div>
+          <Button
+            size="sm"
+            className="h-9 font-heading gradient-primary text-primary-foreground"
+            disabled={isBusy(nextNew.id)}
+            onClick={() => handleAdvance(nextNew, 'preparing')}
+          >
+            {isBusy(nextNew.id) ? '…' : `Αποδοχή ${getPrep(nextNew)}λ`}
+          </Button>
         </div>
       )}
     </div>

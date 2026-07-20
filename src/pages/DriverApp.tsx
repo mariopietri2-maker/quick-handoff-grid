@@ -10,12 +10,9 @@ import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { StackedOfferCard } from '@/components/driver/StackedOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
-import { DriverWallet } from '@/components/driver/DriverWallet';
-import DriverCashWallet from '@/components/driver/DriverCashWallet';
+import { DriverMoneyPanel } from '@/components/driver/DriverMoneyPanel';
 import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
-import { EarningsDashboard } from '@/components/driver/EarningsDashboard';
-import DriverGoalsCard from '@/components/driver/DriverGoalsCard';
 import DriverInbox from '@/components/driver/DriverInbox';
 
 import { useDriverOrders } from '@/hooks/useOrders';
@@ -26,6 +23,7 @@ import SurgeStatusBadge from '@/components/driver/SurgeStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import type { RouteInfo, DriverMapboxHandle } from '@/components/driver/DriverMapbox';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
+import { getDriverPayoutBreakdown } from '@/lib/driver-payout';
 // Lazy-load the map: mapbox-gl is large (~800KB) and was blocking the driver app's initial paint.
 const DriverMapbox = lazyWithRetry(() => import('@/components/driver/DriverMapbox'));
 
@@ -292,7 +290,7 @@ export default function DriverApp() {
                   customerPhone: customerInfo?.phone || null,
                   status: activeDelivery.status ?? 'accepted',
                   items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
-                  estimatedPayout: (Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0)) || Number((activeDelivery as any).driver_payout ?? 0) || Math.max(2, Number(activeDelivery.distance_km ?? 0) * 0.5 + 2),
+                  estimatedPayout: getDriverPayoutBreakdown(activeDelivery as any).total,
                   pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
                   predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
                   notes: (activeDelivery as any).notes ?? null,
@@ -354,7 +352,7 @@ export default function DriverApp() {
                       </div>
                       <div className="flex items-center gap-2 flex-wrap text-xs text-muted-foreground">
                         <span className="rounded-lg bg-muted px-2 py-1">{offer.order_items?.length ?? 0} τεμ.</span>
-                        <span className="rounded-lg bg-muted px-2 py-1">€{Number(offer.delivery_fee ?? offer.driver_payout ?? 0).toFixed(2)} οδηγός</span>
+                        <span className="rounded-lg bg-muted px-2 py-1">€{getDriverPayoutBreakdown(offer as any).total.toFixed(2)} οδηγός</span>
                         {offer.distance_km != null && <span className="rounded-lg bg-muted px-2 py-1">{Number(offer.distance_km).toFixed(1)} χλμ</span>}
                       </div>
                     </div>
@@ -643,10 +641,10 @@ export default function DriverApp() {
                                   storeName: offer.store_name || storeInfo?.name || 'Ίδιο κατάστημα',
                                   storeAddress: offer.store_address || storeInfo?.address || 'Παραλαβή',
                                   deliveryAddress: offer.delivery_address || 'Πελάτης',
-                                  estimatedPayout: (Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0) + Number((offer as any).driver_pool_bonus ?? 0)) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
-                                  basePay: Number(offer.delivery_fee ?? 0) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
-                                  tipAmount: Number(offer.tip_amount ?? 0),
-                                  poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
+                                  estimatedPayout: (() => { const p = getDriverPayoutBreakdown(offer as any); return p.total; })(),
+                                  basePay: getDriverPayoutBreakdown(offer as any).basePay,
+                                  tipAmount: getDriverPayoutBreakdown(offer as any).tipAmount,
+                                  poolBonus: 0,
                                   paymentMethod: (offer as any).payment_method ?? null,
                                   cashToCollect: (offer as any).payment_method === 'cash'
                                     ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
@@ -685,7 +683,7 @@ export default function DriverApp() {
                             customerPhone: customerInfo?.phone || null,
                             status: activeDelivery.status ?? 'accepted',
                             items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
-                            estimatedPayout: (Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0)) || Number((activeDelivery as any).driver_payout ?? 0) || Math.max(2, Number(activeDelivery.distance_km ?? 0) * 0.5 + 2),
+                            estimatedPayout: getDriverPayoutBreakdown(activeDelivery as any).total,
                             pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
                             predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
                             notes: (activeDelivery as any).notes ?? null,
@@ -733,10 +731,10 @@ export default function DriverApp() {
                                 storeName: offer.store_name || 'Κατάστημα',
                                 storeAddress: offer.store_address || 'Διεύθυνση καταστήματος',
                                 deliveryAddress: offer.delivery_address || 'Πελάτης',
-                                estimatedPayout: (Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0) + Number((offer as any).driver_pool_bonus ?? 0)) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
-                                basePay: Number(offer.delivery_fee ?? 0) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
-                                tipAmount: Number(offer.tip_amount ?? 0),
-                                poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
+                                estimatedPayout: (() => { const p = getDriverPayoutBreakdown(offer as any); return p.total; })(),
+                                basePay: getDriverPayoutBreakdown(offer as any).basePay,
+                                tipAmount: getDriverPayoutBreakdown(offer as any).tipAmount,
+                                poolBonus: 0,
                                 paymentMethod: (offer as any).payment_method ?? null,
                                 cashToCollect: (offer as any).payment_method === 'cash'
                                   ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
@@ -835,12 +833,9 @@ export default function DriverApp() {
               <div className="px-4 py-4 space-y-4">
                 <div>
                   <h2 className="font-heading font-extrabold text-[18px] text-[hsl(var(--driver-text))]">Χρήματα</h2>
-                  <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-0.5">Κέρδη, μετρητά βάρδιας & στόχοι</p>
+                  <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-0.5">Υπόλοιπο, σημερινά κέρδη & μετρητά βάρδιας</p>
                 </div>
-                <DriverWallet />
-                <DriverCashWallet />
-                <DriverGoalsCard />
-                <EarningsDashboard />
+                <DriverMoneyPanel />
               </div>
             )}
             {activeTab === 'inbox' && <DriverInbox />}

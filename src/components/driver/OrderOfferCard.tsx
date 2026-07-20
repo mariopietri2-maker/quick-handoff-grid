@@ -88,12 +88,17 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
       <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10.5px] font-heading font-semibold uppercase tracking-[0.08em] text-[hsl(var(--driver-text-muted))]">
-            Εκτιμώμενη αμοιβή
+            Αμοιβή
           </p>
           <p className="font-heading font-extrabold text-[34px] leading-none tabular-nums tracking-tight text-[hsl(var(--driver-text))] mt-1">
             {((offer.basePay ?? 0) + (offer.tipAmount ?? 0) + (offer.poolBonus ?? 0) || offer.estimatedPayout).toFixed(2)}
             <span className="text-[20px] font-bold text-[hsl(var(--driver-text-muted))] ml-0.5">€</span>
           </p>
+          {(offer.tipAmount ?? 0) > 0 && (
+            <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-1 font-heading">
+              βάση €{(offer.basePay ?? 0).toFixed(2)} + φιλοδώρημα €{(offer.tipAmount ?? 0).toFixed(2)}
+            </p>
+          )}
           {/* Payment method badge */}
           {(isCash || isCard) && (
             <div className="mt-2 inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[11px] font-heading font-bold border"

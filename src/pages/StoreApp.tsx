@@ -172,7 +172,7 @@ export default function StoreApp() {
         </div>
       </header>
 
-      <div className="p-4 max-w-3xl mx-auto">
+      <div className={`p-4 mx-auto ${view === 'manage' ? 'max-w-7xl' : 'max-w-3xl'}`}>
         {storeLoading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
