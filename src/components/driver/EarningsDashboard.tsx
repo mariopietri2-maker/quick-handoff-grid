@@ -6,6 +6,10 @@ import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { format, startOfDay, endOfDay, addDays, isSameDay, isToday, isYesterday, getISOWeek } from 'date-fns';
 import { el } from 'date-fns/locale';
 import { shortenAddress } from '@/lib/address-utils';
+import {
+  CompletedOrderDetailSheet,
+  type CompletedOrderRef,
+} from '@/components/driver/CompletedOrderDetailSheet';
 
 interface EarningRow {
   id: string;
@@ -41,6 +45,7 @@ export function EarningsDashboard() {
   const [rows, setRows] = useState<EarningRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [incomeOpen, setIncomeOpen] = useState(true);
+  const [detailRef, setDetailRef] = useState<CompletedOrderRef>(null);
 
   useEffect(() => {
     if (!user) return;
@@ -284,8 +289,18 @@ export function EarningsDashboard() {
                         const total = Number(d.total ?? base + tip + bonus);
                         const addr = shortenAddress(d.orders?.delivery_address ?? '');
                         const dist = d.orders?.distance_km;
+                        const canOpen = Boolean(d.order_id);
                         return (
-                          <div key={d.id} className="rounded-xl bg-card border border-[hsl(var(--driver-border))] p-3 space-y-2">
+                          <button
+                            key={d.id}
+                            type="button"
+                            disabled={!canOpen}
+                            onClick={() => {
+                              if (!d.order_id) return;
+                              setDetailRef({ orderId: d.order_id, earningId: d.id });
+                            }}
+                            className="w-full text-left rounded-xl bg-card border border-[hsl(var(--driver-border))] p-3 space-y-2 transition-colors hover:border-[hsl(var(--driver-accent))]/40 active:bg-[hsl(var(--driver-surface))] disabled:opacity-70"
+                          >
                             <div className="flex items-center justify-between gap-2">
                               <div className="flex items-center gap-1.5 text-[12px] text-[hsl(var(--driver-text-muted))]">
                                 <Clock className="h-3.5 w-3.5" />
@@ -336,7 +351,13 @@ export function EarningsDashboard() {
                                 <p className="font-heading font-bold text-[13px] tabular-nums text-[hsl(var(--driver-text))]">{mask(`${bonus.toFixed(2).replace('.', ',')} €`)}</p>
                               </div>
                             </div>
-                          </div>
+
+                            {canOpen && (
+                              <p className="text-[11px] font-heading font-semibold text-[hsl(var(--driver-accent))] pt-0.5">
+                                Δες πλήρη ανάλυση →
+                              </p>
+                            )}
+                          </button>
                         );
                       })}
                     </div>
@@ -347,6 +368,14 @@ export function EarningsDashboard() {
           </div>
         )}
       </div>
+
+      <CompletedOrderDetailSheet
+        refTarget={detailRef}
+        open={Boolean(detailRef?.orderId)}
+        onOpenChange={(open) => {
+          if (!open) setDetailRef(null);
+        }}
+      />
     </div>
   );
 }
