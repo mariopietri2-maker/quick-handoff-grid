@@ -17,6 +17,8 @@
     "mobile:driver:sync": "node scripts/mobile-sync.mjs driver",
     "mobile:customer:open": "cp capacitor.customer.config.ts capacitor.config.ts && npx cap open android",
     "mobile:driver:open": "cp capacitor.driver.config.ts capacitor.config.ts && npx cap open android",
+    "mobile:customer:apk": "node scripts/mobile-build-apk.mjs customer",
+    "mobile:driver:apk": "node scripts/mobile-build-apk.mjs driver",
     "build:mobile:customer": "VITE_MOBILE_APP=customer vite build",
     "build:mobile:driver": "VITE_MOBILE_APP=driver vite build"
   },

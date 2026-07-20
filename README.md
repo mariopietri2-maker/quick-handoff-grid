@@ -122,8 +122,15 @@ Fresh Delivery is a comprehensive food delivery solution built with modern web t
 Capacitor shells for separate store apps — see **[MOBILE.md](./MOBILE.md)**.
 
 ```bash
+# Android Studio
 npm run mobile:customer:sync && npm run mobile:customer:open
 npm run mobile:driver:sync && npm run mobile:driver:open
+
+# Or build installable debug APKs (needs ANDROID_HOME)
+npm run mobile:customer:apk
+npm run mobile:driver:apk
+# → mobile-apks/fresh-customer-debug.apk
+# → mobile-apks/fresh-driver-debug.apk
 ```
 
 ---

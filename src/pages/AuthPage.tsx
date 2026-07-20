@@ -23,7 +23,10 @@ export default function AuthPage() {
   useEffect(() => {
     if (user && profile) {
       if (flavor === 'driver') {
-        navigate(profile.role === 'driver' ? '/driver' : '/auth', { replace: true });
+        if (profile.role === 'driver') {
+          navigate('/driver', { replace: true });
+        }
+        // Non-drivers stay on /auth — no redirect loop
         return;
       }
       if (flavor === 'customer') {
@@ -78,7 +81,9 @@ export default function AuthPage() {
       <h1 className="sr-only">Σύνδεση & Εγγραφή στο Fresh Delivery</h1>
       {/* Header */}
       <header className="px-4 py-4 flex items-center justify-center">
-        <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
+        <span className="font-heading font-extrabold text-xl text-primary">
+          {flavor === 'driver' ? 'Fresh Driver' : flavor === 'customer' ? 'Fresh Customer' : 'Fresh Delivery'}
+        </span>
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
@@ -88,7 +93,11 @@ export default function AuthPage() {
               {isLogin ? 'Καλώς Ήρθατε' : 'Δημιουργία Λογαριασμού'}
             </CardTitle>
             <p className="text-sm text-[hsl(220,10%,55%)] mt-1">
-              {isLogin ? 'Συνδεθείτε για να συνεχίσετε' : 'Εγγραφείτε σε λίγα δευτερόλεπτα'}
+              {flavor === 'driver'
+                ? (isLogin ? 'Σύνδεση οδηγού' : 'Εγγραφή — ζητήστε ρόλο οδηγού από τον διαχειριστή')
+                : flavor === 'customer'
+                ? (isLogin ? 'Σύνδεση πελάτη' : 'Δημιουργήστε λογαριασμό πελάτη')
+                : (isLogin ? 'Συνδεθείτε για να συνεχίσετε' : 'Εγγραφείτε σε λίγα δευτερόλεπτα')}
             </p>
           </CardHeader>
           <CardContent>
