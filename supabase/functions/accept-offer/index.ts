@@ -109,17 +109,18 @@ Deno.serve(async (req) => {
       action: "accepted",
     });
 
-    // STACKING: if the driver already has other active orders, attach this new
-    // order to the existing batch (or create one) and re-run the smart router
-    // so the stop sequence is recomputed across all active orders.
-    const { data: otherActive } = await admin
-      .from("orders")
-      .select("id, batch_id")
-      .eq("driver_id", user.id)
-      .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
-      .neq("id", offer.order_id);
+    // STACKING: only when enabled and driver already has other active orders
+    const stackingOn = settings?.stacking_enabled !== false && maxStack > 1;
+    const { data: otherActive } = stackingOn
+      ? await admin
+          .from("orders")
+          .select("id, batch_id")
+          .eq("driver_id", user.id)
+          .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
+          .neq("id", offer.order_id)
+      : { data: [] as { id: string; batch_id: string | null }[] };
 
-    if (otherActive && otherActive.length > 0) {
+    if (stackingOn && otherActive && otherActive.length > 0) {
       const existingBatch = otherActive.find((o) => o.batch_id)?.batch_id ?? crypto.randomUUID();
       // Link this order to the batch; optimizer will recompute stop_sequence
       await admin

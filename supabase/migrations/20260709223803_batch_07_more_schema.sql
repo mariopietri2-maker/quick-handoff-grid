@@ -660,7 +660,8 @@ FOR SELECT
 TO authenticated
 USING (true);
 
-CREATE OR REPLACE VIEW public.stores_public
+DROP VIEW IF EXISTS public.stores_public;
+CREATE VIEW public.stores_public
 WITH (security_invoker = true) AS
 SELECT id, name, address, latitude, longitude, phone, image_url,
        is_active, busy_mode, prep_buffer_minutes, created_at, updated_at, owner_id

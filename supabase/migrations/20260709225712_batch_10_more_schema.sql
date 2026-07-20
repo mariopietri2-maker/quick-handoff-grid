@@ -691,6 +691,7 @@ FROM public.platform_settings;
 -- The view runs as invoker, so we need a permissive SELECT policy on the
 -- underlying table only for these columns. Simpler: bypass via SECURITY DEFINER
 -- function that returns a single row.
+DROP FUNCTION IF EXISTS public.get_platform_settings_public();
 CREATE OR REPLACE FUNCTION public.get_platform_settings_public()
 RETURNS TABLE (
   platform_service_fee numeric,
