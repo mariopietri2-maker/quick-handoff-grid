@@ -27,16 +27,7 @@ interface StoreInfo {
   address: string | null;
   latitude: number | null;
   longitude: number | null;
-  ext_billing_mode: string | null;
-  ext_commission_pct: number | null;
-  ext_flat_fee: number | null;
-  ext_margin_pct: number | null;
-}
-
-interface PayRates {
-  base_pay: number;
-  per_km_rate: number;
-  min_pay: number;
+  commission_pct?: number | null;
 }
 
 interface FormState {
@@ -54,7 +45,7 @@ interface FormState {
 }
 
 const blankForm: FormState = {
-  source: 'efood',
+  source: 'manual',
   total_amount: '',
   delivery_address: '',
   delivery_lat: null,
@@ -64,7 +55,7 @@ const blankForm: FormState = {
   notes: '',
   external_ref: '',
   items_summary: '',
-  payment_method: 'card',
+  payment_method: 'cash',
 };
 
 interface Props {
@@ -72,12 +63,9 @@ interface Props {
 }
 
 /**
- * Unified Custom Order flow for stores:
- * - Pickup is locked to this store, dropoff via AddressAutocomplete.
- * - Mapbox Directions auto-computes driving km.
- * - Store edits all order info AND order price.
- * - The 85/10/5 split & driver pay are READ-ONLY (computed, not editable).
- * - AI / QR import auto-fills the form.
+ * Store Custom Order — same lifecycle as in-app:
+ * placed → kitchen accept/prep/ready → auto-dispatch offers → deliver.
+ * Fees/payouts use the same formulas as place_order.
  */
 export default function StoreExternalOrderIngest({ storeId }: Props) {
   const { token: mapboxToken } = useMapboxToken();
@@ -90,36 +78,39 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const [parsing, setParsing] = useState(false);
   const [scanText, setScanText] = useState('');
 
-  const [rates, setRates] = useState<PayRates>({ base_pay: 3, per_km_rate: 0.5, min_pay: 3 });
-  /** Server-side tiered commission % (via commission_pct_for_amount) — preview only. */
-  const [tieredPct, setTieredPct] = useState(15);
+  const [customerFee, setCustomerFee] = useState({ base: 1.5, perKm: 0.5 });
+  const [driverPay, setDriverPay] = useState(0);
+  const [storeCommPct, setStoreCommPct] = useState(15);
 
   useEffect(() => {
     supabase
       .from('stores')
-      .select('id, name, address, latitude, longitude, ext_billing_mode, ext_commission_pct, ext_flat_fee, ext_margin_pct' as any)
+      .select('id, name, address, latitude, longitude')
       .eq('id', storeId)
       .maybeSingle()
-      .then(({ data }) => { if (data) setStore(data as unknown as StoreInfo); });
+      .then(({ data }) => {
+        if (data) setStore(data as unknown as StoreInfo);
+      });
   }, [storeId]);
 
-  // Resolve effective driver-pay rates: store override -> platform default.
   useEffect(() => {
     let cancelled = false;
     (async () => {
-      const [{ data: ov }, { data: ps }] = await Promise.all([
-        supabase.from('store_pricing_overrides').select('base_pay, per_km_rate, min_pay').eq('store_id', storeId).maybeSingle() as any,
-        supabase.from('platform_settings').select('base_pay, per_km_rate, min_pay').eq('id', 1).maybeSingle() as any,
-      ]);
-      if (cancelled) return;
-      setRates({
-        base_pay: Number(ov?.base_pay ?? ps?.base_pay ?? 3),
-        per_km_rate: Number(ov?.per_km_rate ?? ps?.per_km_rate ?? 0.5),
-        min_pay: Number(ov?.min_pay ?? ps?.min_pay ?? 3),
+      const { data: ps } = await supabase
+        .from('platform_settings')
+        .select('customer_base_fee, customer_per_km_fee, default_commission_pct' as any)
+        .eq('id', 1)
+        .maybeSingle() as any;
+      if (cancelled || !ps) return;
+      setCustomerFee({
+        base: Number(ps.customer_base_fee ?? 1.5),
+        perKm: Number(ps.customer_per_km_fee ?? 0.5),
       });
+      const d = Number(ps.default_commission_pct);
+      if (d > 0) setStoreCommPct(d);
     })();
     return () => { cancelled = true; };
-  }, [storeId]);
+  }, []);
 
   // Mapbox Directions: real driving km from store → dropoff.
   useEffect(() => {
@@ -145,44 +136,28 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const totalAmount = Number(form.total_amount) || 0;
   const distanceKm = km ?? 0;
 
-  // Preview: resolve tiered % from the same RPC the server uses.
-  useEffect(() => {
-    if (totalAmount <= 0) {
-      setTieredPct(15);
-      return;
-    }
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.rpc('commission_pct_for_amount', { p_amount: totalAmount });
-      if (!cancelled && data != null) setTieredPct(Number(data));
-    })();
-    return () => { cancelled = true; };
-  }, [totalAmount]);
-
-  // Driver pay mirrors server: GREATEST(min_pay, base_pay + per_km_rate * km)
-  const driverPay = useMemo(
-    () => +Math.max(rates.min_pay, rates.base_pay + rates.per_km_rate * distanceKm).toFixed(2),
-    [rates, distanceKm],
+  const deliveryFee = useMemo(
+    () => +Math.max(0, customerFee.base + customerFee.perKm * distanceKm).toFixed(2),
+    [customerFee, distanceKm],
   );
 
-  // Store charge mirrors server's ext_billing_mode logic.
-  const billingMode = (store?.ext_billing_mode || 'tiered') as
-    'tiered' | 'commission' | 'flat_fee' | 'driver_plus_margin';
-  const commissionPct = Number(store?.ext_commission_pct ?? 15);
-  const flatFee = Number(store?.ext_flat_fee ?? 0);
-  const marginPct = Number(store?.ext_margin_pct ?? 0);
+  // Same driver quote as in-app
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('quote_driver_payout', {
+        p_store_id: storeId,
+        p_distance_km: distanceKm,
+      });
+      if (!cancelled && data != null) setDriverPay(Number(data));
+    })();
+    return () => { cancelled = true; };
+  }, [storeId, distanceKm]);
 
-  const storeCharge = useMemo(() => {
-    switch (billingMode) {
-      case 'commission':         return +(totalAmount * commissionPct / 100).toFixed(2);
-      case 'flat_fee':           return +flatFee.toFixed(2);
-      case 'driver_plus_margin': return +(driverPay * (1 + marginPct / 100)).toFixed(2);
-      case 'tiered':
-      default:                   return +(totalAmount * tieredPct / 100).toFixed(2);
-    }
-  }, [billingMode, totalAmount, commissionPct, flatFee, marginPct, driverPay, tieredPct]);
-
-  const storeKeeps = +(totalAmount - storeCharge).toFixed(2);
+  const storeKeeps = useMemo(
+    () => +(totalAmount * (100 - storeCommPct) / 100).toFixed(2),
+    [totalAmount, storeCommPct],
+  );
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(p => ({ ...p, [k]: v }));
@@ -287,7 +262,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       <div>
         <h2 className="font-heading font-bold text-xl text-foreground">Νέα Custom Order</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Τα χιλιόμετρα μετριούνται αυτόματα από τη διεύθυνση. Η αμοιβή οδηγού & η χρέωση καταστήματος υπολογίζονται με βάση τις ρυθμίσεις χρέωσης που έχει ορίσει ο διαχειριστής για το κατάστημά σου.
+          Ίδια ροή με in-app: μπαίνει στην κουζίνα → Έτοιμη → προσφορά σε οδηγούς μέσω auto-dispatch.
+          Έξοδα παράδοσης & αμοιβή οδηγού υπολογίζονται όπως στις κανονικές παραγγελίες.
         </p>
       </div>
 
@@ -487,30 +463,39 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
 
               <Separator />
 
-              {/* The two numbers the store actually cares about */}
+              {/* In-app style summary */}
               <div className="space-y-2">
                 <div className="rounded-lg border border-border/60 bg-background px-3 py-3 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Wallet className="h-3.5 w-3.5" /> Κρατάς καθαρά
+                    <Wallet className="h-3.5 w-3.5" /> Κρατάς (~{storeCommPct}%)
                   </span>
                   <span className="font-heading font-bold text-xl tabular-nums text-success">
                     €{storeKeeps.toFixed(2)}
                   </span>
                 </div>
 
-                <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-3 flex items-center justify-between">
+                <div className="rounded-lg border border-border/60 bg-background px-3 py-2.5 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5 text-primary" /> Θα χρεωθείς
+                    <Building2 className="h-3.5 w-3.5" /> Έξοδα παράδοσης
                   </span>
-                  <span className="font-heading font-bold text-xl tabular-nums text-primary">
-                    €{storeCharge.toFixed(2)}
+                  <span className="font-heading font-bold text-sm tabular-nums">
+                    €{deliveryFee.toFixed(2)}
+                  </span>
+                </div>
+
+                <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 flex items-center justify-between">
+                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
+                    <Navigation className="h-3.5 w-3.5 text-primary" /> Αμοιβή οδηγού
+                  </span>
+                  <span className="font-heading font-bold text-sm tabular-nums text-primary">
+                    €{driverPay.toFixed(2)}
                   </span>
                 </div>
               </div>
 
               <p className="text-[10px] text-muted-foreground leading-snug flex items-center gap-1 pt-1 border-t">
                 <Lock className="h-2.5 w-2.5" />
-                Αμοιβή οδηγού & χιλιόμετρα υπολογίζονται αυτόματα από το σύστημα.
+                Ίδια χρέωση με in-app · ο οδηγός εισπράττει μετρητά όταν επιλέξεις μετρητά.
               </p>
             </CardContent>
           </Card>
