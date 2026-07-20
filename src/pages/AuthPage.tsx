@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate } from 'react-router-dom';
+import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -13,12 +13,13 @@ function roleHome(opts: {
   isAdmin: boolean;
   isSupport: boolean;
   role: string;
+  nextPath: string;
 }): string {
   if (opts.isAdmin) return '/admin';
   if (opts.isSupport) return '/support';
   if (opts.role === 'driver') return '/driver';
   if (opts.role === 'store') return '/store';
-  return '/order';
+  return opts.nextPath || '/order';
 }
 
 export default function AuthPage() {
@@ -28,11 +29,20 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { signIn, signUp, user, profile, isAdmin, isSupport, loading } = useAuth();
+  const navigate = useNavigate();
+
+  const nextPath = (() => {
+    try {
+      const q = new URLSearchParams(window.location.search).get('next');
+      if (q && q.startsWith('/') && !q.startsWith('//')) return q;
+    } catch { /* noop */ }
+    return '/order';
+  })();
 
   // Don't paint the login form while session/profile resolve or while redirecting.
   if (loading || (user && !profile)) {
     return (
-      <div className="min-h-screen bg-[hsl(220,20%,7%)] flex items-center justify-center">
+      <div className="min-h-[100dvh] bg-[hsl(220,20%,7%)] flex items-center justify-center">
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
@@ -41,7 +51,7 @@ export default function AuthPage() {
   if (user && profile) {
     return (
       <Navigate
-        to={roleHome({ isAdmin, isSupport, role: profile.role })}
+        to={roleHome({ isAdmin, isSupport, role: profile.role, nextPath })}
         replace
       />
     );
@@ -101,15 +111,23 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[hsl(220,20%,7%)] flex flex-col">
+    <div className="min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain customer-scroll bg-[hsl(220,20%,7%)] flex flex-col">
       <SEO
         title="Σύνδεση & Εγγραφή — Fresh Delivery"
         description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο Fresh Delivery ως πελάτης, οδηγός ή κατάστημα και ξεκινήστε άμεσα."
         path="/auth"
       />
       <h1 className="sr-only">Σύνδεση & Εγγραφή στο Fresh Delivery</h1>
-      <header className="px-4 py-4 flex items-center justify-center">
+      <header className="px-4 py-4 flex items-center justify-between gap-2">
+        <button
+          type="button"
+          onClick={() => navigate('/order')}
+          className="text-sm font-semibold text-[hsl(220,10%,70%)] hover:text-white px-2 py-1"
+        >
+          ← Πίσω
+        </button>
         <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
+        <span className="w-14" aria-hidden />
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
@@ -214,6 +232,13 @@ export default function AuthPage() {
                   </>
                 ) : isLogin ? 'Σύνδεση' : 'Δημιουργία & είσοδος'}
               </Button>
+              <button
+                type="button"
+                onClick={() => navigate('/order')}
+                className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
+              >
+                Συνέχεια χωρίς λογαριασμό
+              </button>
             </form>
           </CardContent>
         </Card>

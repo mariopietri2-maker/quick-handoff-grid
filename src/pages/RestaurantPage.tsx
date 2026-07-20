@@ -82,7 +82,7 @@ export default function RestaurantPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-background">
         {/* Skeleton */}
         <div className="h-56 bg-muted animate-pulse" />
         <div className="max-w-2xl mx-auto px-4 pt-5 space-y-4">
@@ -101,14 +101,17 @@ export default function RestaurantPage() {
 
   if (!store) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-background flex flex-col items-center justify-center gap-3 px-6">
         <p className="text-muted-foreground font-heading">Το εστιατόριο δεν βρέθηκε</p>
+        <button type="button" onClick={() => navigate('/order')} className="text-sm font-bold text-primary underline">
+          Πίσω στα εστιατόρια
+        </button>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background pb-24">
+    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-background pb-24">
       <SEO
         title={`${store.name} — Μενού & Παραγγελία | Fresh Delivery`}
         description={`Παραγγείλτε online από ${store.name}. Δείτε το μενού, τιμές και διαθεσιμότητα και απολαύστε γρήγορη παράδοση στην πόρτα σας.`}

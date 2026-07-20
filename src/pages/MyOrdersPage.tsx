@@ -58,7 +58,13 @@ export default function MyOrdersPage() {
   };
 
   useEffect(() => {
-    if (!user) return;
+    if (!user) {
+      setOrders([]);
+      setLoading(false);
+      return;
+    }
+    let cancelled = false;
+    setLoading(true);
     supabase
       .from('orders')
       .select('*')
@@ -66,9 +72,11 @@ export default function MyOrdersPage() {
       .order('created_at', { ascending: false })
       .limit(20)
       .then(({ data }) => {
+        if (cancelled) return;
         setOrders(data ?? []);
         setLoading(false);
       });
+    return () => { cancelled = true; };
   }, [user]);
 
   const formatDate = (dateStr: string) => {
@@ -78,7 +86,7 @@ export default function MyOrdersPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-full bg-background pb-4">
       <SEO
         title="Οι παραγγελίες μου — Fresh Delivery"
         description="Δείτε το ιστορικό παραγγελιών σας, παρακολουθήστε ενεργές αποστολές και επαναλάβετε αγαπημένες παραγγελίες."
@@ -99,6 +107,17 @@ export default function MyOrdersPage() {
         {loading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+          </div>
+        ) : !user ? (
+          <div className="text-center py-16 space-y-3">
+            <Package className="h-12 w-12 text-muted-foreground mx-auto" />
+            <p className="font-heading text-foreground">Συνδεθείτε για τις παραγγελίες σας</p>
+            <Button onClick={() => navigate('/auth?next=/orders')} className="font-heading">
+              Σύνδεση
+            </Button>
+            <button type="button" onClick={() => navigate('/order')} className="block mx-auto text-sm text-muted-foreground underline">
+              Συνέχεια χωρίς λογαριασμό
+            </button>
           </div>
         ) : orders.length === 0 ? (
           <div className="text-center py-16">
