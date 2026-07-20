@@ -130,11 +130,12 @@ export function OrderQueue({ orders, onStatusUpdate, storeName = 'Κατάστη
                         <AlertDialogCancel>Όχι</AlertDialogCancel>
                         <AlertDialogAction
                           onClick={async () => {
-                            const { error } = await supabase
-                              .from('orders')
-                              .update({ status: 'cancelled' as any })
-                              .eq('id', order.id);
-                            if (error) toast.error('Η ακύρωση απέτυχε');
+                            const { error } = await supabase.rpc('transition_order_status' as never, {
+                              p_order_id: order.id,
+                              p_new_status: 'cancelled',
+                              p_estimated_prep_time: null,
+                            } as never);
+                            if (error) toast.error(error.message || 'Η ακύρωση απέτυχε');
                             else toast.success('Παραγγελία ακυρώθηκε');
                           }}
                           className="bg-destructive text-destructive-foreground hover:bg-destructive/90"

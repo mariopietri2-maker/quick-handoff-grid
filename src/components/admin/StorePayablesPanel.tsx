@@ -13,6 +13,7 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, TrendingUp, FileText } from 'lucide-react';
+import { escapeHtml } from '@/lib/escape-html';
 
 const VAT_RATE = 0.24;
 
@@ -162,7 +163,7 @@ export default function StorePayablesPanel() {
       .actions{margin-top:24px;text-align:right} button{padding:8px 16px;border:1px solid #111;background:#111;color:#fff;border-radius:6px;cursor:pointer;font-size:13px}
       @media print {.actions{display:none}}
     </style></head><body>
-      <h1>Τιμολόγιο Υπηρεσιών${titleSuffix ? ' · ' + titleSuffix : ''}</h1>
+      <h1>Τιμολόγιο Υπηρεσιών${titleSuffix ? ' · ' + escapeHtml(titleSuffix) : ''}</h1>
       <div class="meta">№ ${invoiceNo} · Ημερομηνία: ${today} · ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</div>
       <table>
         <thead><tr><th>Κατάστημα</th><th class="r">Ροή</th><th class="r">Καθαρό</th><th class="r">ΦΠΑ ${(VAT_RATE*100).toFixed(0)}%</th><th class="r">Σύνολο</th></tr></thead>

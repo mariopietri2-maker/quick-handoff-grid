@@ -44,7 +44,7 @@ export function PostDeliveryTipCard({ orderId, driverName, initialTip }: Props) 
     } as never);
     setSubmitting(false);
     if (error) {
-      toast.error('Δεν ήταν δυνατή η προσθήκη φιλοδωρήματος');
+      toast.error(error.message || 'Δεν ήταν δυνατή η προσθήκη φιλοδωρήματος');
       return;
     }
     setSubmitted(true);

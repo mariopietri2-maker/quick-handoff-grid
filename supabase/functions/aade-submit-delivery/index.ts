@@ -2,11 +2,20 @@
 // Idempotent: skips if report already 'sent'. Called by trigger via pg_net or manually by admin.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { getAuthedUser, hasCronSecret, unauthorized } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+    const authHeader = req.headers.get("Authorization") ?? "";
+    const isService = authHeader === `Bearer ${serviceKey}`;
+    if (!isService && !hasCronSecret(req)) {
+      const user = await getAuthedUser(req);
+      if (!user?.isAdmin) return unauthorized(corsHeaders as Record<string, string>);
+    }
+
     const body = await req.json().catch(() => ({}));
     const orderId: string | undefined = body.order_id;
     if (!orderId) {

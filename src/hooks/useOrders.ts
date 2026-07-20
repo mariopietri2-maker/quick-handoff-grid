@@ -91,13 +91,14 @@ export function useStoreOrders(storeId: string | null) {
     if (typeof options?.estimatedPrepTime === 'number' && !Number.isNaN(options.estimatedPrepTime)) {
       patch.estimated_prep_time = options.estimatedPrepTime;
     }
-    const { error } = await supabase
-      .from('orders')
-      .update(patch)
-      .eq('id', orderId);
+    const { error } = await supabase.rpc('transition_order_status' as never, {
+      p_order_id: orderId,
+      p_new_status: newStatus,
+      p_estimated_prep_time: patch.estimated_prep_time ?? null,
+    } as never);
 
     if (error) {
-      toast.error('Failed to update order status');
+      toast.error(error.message || 'Failed to update order status');
     } else {
       toast.success(`Order updated → ${newStatus}`);
 
@@ -468,18 +469,13 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     // ADMIN PRIORITY: admins always win — they can claim/steal any order
     // directly, even if a driver already has it. Bypass the offer-accept flow.
     if (adminOverride) {
-      const patch: Database['public']['Tables']['orders']['Update'] = {
-        driver_id: user.id,
-        status: 'accepted',
-        stacked_with_order_id: null,
-      };
-      const { error } = await supabase
-        .from('orders')
-        .update(patch)
-        .eq('id', orderId);
+      const { error } = await supabase.rpc('admin_assign_order_driver' as never, {
+        p_order_id: orderId,
+        p_driver_id: user.id,
+      } as never);
 
       if (error) {
-        toast.error('Failed to claim order');
+        toast.error(error.message || 'Failed to claim order');
       } else {
         fetchOrders();
       }
@@ -501,22 +497,13 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       return;
     }
 
-    // MANUAL mode (or stacked offer with no pending_offer) → legacy direct claim
-    const isStacking = !!activeDelivery && activeDelivery.id !== orderId;
-    const patch: Database['public']['Tables']['orders']['Update'] = {
-      driver_id: user.id,
-      status: 'accepted',
-    };
-    if (isStacking) patch.stacked_with_order_id = activeDelivery!.id;
-
-    const { error } = await supabase
-      .from('orders')
-      .update(patch)
-      .eq('id', orderId);
-
+    // MANUAL mode → server-side claim with capacity check
+    const { error } = await supabase.rpc('driver_claim_order' as never, {
+      p_order_id: orderId,
+    } as never);
 
     if (error) {
-      toast.error('Failed to accept order');
+      toast.error(error.message || 'Failed to accept order');
     } else {
       supabase.from('driver_offer_events').insert({
         driver_id: user.id,
@@ -552,11 +539,11 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   };
 
   const updateDeliveryStatus = async (orderId: string, newStatus: string) => {
-    const { error } = await supabase
-      .from('orders')
-      .update({ status: newStatus as OrderRow['status'] })
-      .eq('id', orderId);
-
+    const { error } = await supabase.rpc('transition_order_status' as never, {
+      p_order_id: orderId,
+      p_new_status: newStatus,
+      p_estimated_prep_time: null,
+    } as never);
 
     if (error) {
       console.error('[updateDeliveryStatus]', { orderId, newStatus, error });

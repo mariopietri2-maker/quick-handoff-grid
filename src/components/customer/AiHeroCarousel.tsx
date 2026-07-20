@@ -50,9 +50,21 @@ export function AiHeroCarousel() {
           <button
             key={card.id}
             onClick={() => {
-              if (card.cta_link) {
-                if (card.cta_link.startsWith('http')) window.location.href = card.cta_link;
-                else navigate(card.cta_link);
+              if (!card.cta_link) return;
+              const link = card.cta_link.trim();
+              if (link.startsWith('/')) {
+                navigate(link);
+                return;
+              }
+              try {
+                const u = new URL(link);
+                const allowed = ['freshdelivery.app', 'quick-handoff-grid.vercel.app'];
+                if ((u.protocol === 'https:' || u.protocol === 'http:') &&
+                    allowed.some(d => u.hostname === d || u.hostname.endsWith(`.${d}`))) {
+                  window.location.href = u.toString();
+                }
+              } catch {
+                /* ignore unsafe links */
               }
             }}
             className="snap-center shrink-0 w-full text-left"
