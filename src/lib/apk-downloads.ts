@@ -4,13 +4,17 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
 
+/** Production site — used for printable / static QR PNGs. */
+export const SITE_ORIGIN = 'https://quick-handoff-grid.vercel.app';
+
 export const APK_DOWNLOADS = {
   customer: {
     id: 'customer' as const,
     title: 'Πελάτης',
     subtitle: 'Παραγγελίες & παρακολούθηση',
     filename: 'fresh-customer-debug.apk',
-    url: `${RELEASE_BASE}/fresh-customer-debug.apk`,
+    /** Direct file URL — never put this in an <a href> on page load (Android auto-downloads). */
+    fileUrl: `${RELEASE_BASE}/fresh-customer-debug.apk`,
     sizeLabel: '~7.6 MB',
   },
   driver: {
@@ -18,9 +22,28 @@ export const APK_DOWNLOADS = {
     title: 'Οδηγός',
     subtitle: 'Χάρτης, προσφορές & παραδόσεις',
     filename: 'fresh-driver-debug.apk',
-    url: `${RELEASE_BASE}/fresh-driver-debug.apk`,
+    fileUrl: `${RELEASE_BASE}/fresh-driver-debug.apk`,
     sizeLabel: '~7.6 MB',
   },
 } as const;
 
 export type ApkFlavor = keyof typeof APK_DOWNLOADS;
+
+/** Landing URL encoded into QR codes (opens chooser page, does not start a download). */
+export function apkLandingUrl(flavor: ApkFlavor, origin = SITE_ORIGIN): string {
+  return `${origin.replace(/\/$/, '')}/download?app=${flavor}`;
+}
+
+/** Start an APK download only after an explicit user gesture. */
+export function startApkDownload(flavor: ApkFlavor) {
+  const apk = APK_DOWNLOADS[flavor];
+  const a = document.createElement('a');
+  a.href = apk.fileUrl;
+  a.rel = 'noopener noreferrer';
+  a.target = '_blank';
+  // Do NOT set download= — cross-origin APKs ignore it and some browsers
+  // treat download+apk href as an immediate install prompt.
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}

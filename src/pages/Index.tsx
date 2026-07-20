@@ -108,7 +108,7 @@ const Index = () => {
               className="inline-flex font-heading font-semibold"
               onClick={() => navigate('/download')}
             >
-              APK
+              Apps
             </Button>
             <Button
               size="sm" variant="ghost"
@@ -173,7 +173,7 @@ const Index = () => {
               className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
               onClick={() => navigate('/download')}
             >
-              Κατέβασε APK
+              Android apps
             </Button>
             <Button
               size="lg" variant="outline"
