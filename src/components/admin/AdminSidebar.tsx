@@ -35,6 +35,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'overview',
     tabs: [
       { id: 'overview', label: 'Επισκόπηση' },
+      { id: 'capacity', label: 'Χωρητικότητα' },
       { id: 'analytics', label: 'Αναλυτικά' },
     ],
   },
