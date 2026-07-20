@@ -88,8 +88,6 @@ npm run lint
 
 `/store` is a **portal**: map of all owned stores → pick one to manage orders, menu, hours, wallet, promos.
 
-Admin toolbar (top-right, before logout) has a **Stores** button that opens this portal.
-
 Stores need lat/lng to appear on driver/admin maps (Ioannina center ≈ `39.6650, 20.8537`).
 
 ---

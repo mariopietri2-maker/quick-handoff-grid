@@ -500,18 +500,6 @@ export default function AdminApp() {
                   <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
                 )}
               </Button>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
-                title="Διαχείριση καταστημάτων"
-                asChild
-              >
-                <Link to="/store">
-                  <Store className="h-3.5 w-3.5" />
-                  <span className="hidden sm:inline">Stores</span>
-                </Link>
-              </Button>
               <div className="h-5 w-px bg-border mx-0.5" />
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
                 <LogOut className="h-3.5 w-3.5" />
