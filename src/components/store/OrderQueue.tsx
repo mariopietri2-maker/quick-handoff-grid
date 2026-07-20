@@ -232,6 +232,11 @@ export function OrderQueue({
             <span className="font-mono font-extrabold text-[13px] tabular-nums text-foreground shrink-0 leading-none">
               {formatOrderNumber(order)}
             </span>
+            {order.source && order.source !== 'in_app' && (
+              <span className="text-[9px] font-heading font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+                {order.source}
+              </span>
+            )}
             <span
               className={cn(
                 'text-[10px] font-heading font-semibold tabular-nums shrink-0',

@@ -275,30 +275,16 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         (o) => o.driver_id !== user.id,
       );
     } else if (mode === 'auto') {
-      // AUTO MODE: show two buckets, merged into one list:
-      //   (a) orders specifically OFFERED to this driver by the dispatcher
-      //   (b) BROADCAST orders — manual/external custom orders that are open
-      //       to any online driver. Drivers see them as soon as the store
-      //       creates them (placed/accepted/preparing) so they can plan ahead,
-      //       but they can only actually claim once status === 'ready'.
+      // AUTO MODE: only orders specifically OFFERED by auto-dispatch
+      // (same path for in-app and custom/external — no broadcast shortcut).
       const nowIso = new Date().toISOString();
 
-      const [{ data: myPending }, { data: broadcast }] = await Promise.all([
-        supabase
-          .from('pending_offers')
-          .select('id, order_id, expires_at')
-          .eq('driver_id', user.id)
-          .eq('status', 'pending')
-          .gt('expires_at', nowIso),
-        supabase
-          .from('orders')
-          .select('*, order_items(*)')
-          .is('driver_id', null)
-          .or('source.in.(manual,efood,wolt,box,other,external),payment_method.eq.external')
-          .in('status', ['placed', 'accepted', 'preparing', 'ready'])
-          .order('created_at', { ascending: false })
-          .limit(20),
-      ]);
+      const { data: myPending } = await supabase
+        .from('pending_offers')
+        .select('id, order_id, expires_at')
+        .eq('driver_id', user.id)
+        .eq('status', 'pending')
+        .gt('expires_at', nowIso);
 
       const orderIds = (myPending ?? []).map((p) => p.order_id);
       let offered: OrderWithItems[] = [];
@@ -316,18 +302,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         }
       }
 
-      const broadcastFiltered = ((broadcast as OrderWithItems[]) ?? []).filter(
-        (o) => !declinedRef.current[o.id],
-      );
-
-      // Merge, dedupe by id (offered takes precedence so we keep the offer id)
-      const seen = new Set<string>();
-      availableOrders = [];
-      for (const o of [...offered, ...broadcastFiltered]) {
-        if (seen.has(o.id)) continue;
-        seen.add(o.id);
-        availableOrders.push(o);
-      }
+      availableOrders = offered.filter((o) => !declinedRef.current[o.id]);
     } else {
       // MANUAL MODE: legacy free-for-all
       const { data: available } = await supabase
