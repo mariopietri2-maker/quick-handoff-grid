@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck, Home, Wallet as WalletIcon, Mail } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { useAuth } from '@/hooks/useAuth';
@@ -128,6 +128,10 @@ export default function DriverApp() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(true);
+  // Offline: keep the sheet open so the go-online slider is never clipped
+  useEffect(() => {
+    if (!isOnline) setSheetCollapsed(false);
+  }, [isOnline]);
   const sheetDragStartY = useRef<number | null>(null);
   const sheetDragMoved = useRef(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
@@ -377,8 +381,8 @@ export default function DriverApp() {
     // Collapsed sheet ≈ 18vh; expanded ≈ 48vh — pad for the covered band + chrome
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
     const bottom = sheetCollapsed
-      ? Math.max(160, Math.round(vh * 0.20) + 56)
-      : Math.max(280, Math.round(vh * 0.50) + 40);
+      ? Math.max(140, Math.round(vh * 0.20) + 24)
+      : Math.max(260, Math.round(vh * 0.50) + 24);
     return { top: 96, bottom, left: 40, right: 40 };
   })();
 
@@ -798,7 +802,7 @@ export default function DriverApp() {
             </div>
             <div className="w-10" />
           </header>
-          <div key={activeTab} className="flex-1 overflow-y-auto pb-24 animate-fade-in">
+          <div key={activeTab} className="flex-1 overflow-y-auto pb-8 animate-fade-in">
             {activeTab === 'money' && (
               <div className="px-4 py-4 space-y-4">
                 <div>
@@ -817,44 +821,6 @@ export default function DriverApp() {
             )}
           </div>
         </>
-      )}
-
-      {/* Bottom tab bar — always available outside turn-by-turn */}
-      {!isNavActive && (
-        <nav
-          className="fixed bottom-0 left-0 right-0 z-40 border-t border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface))]/95 backdrop-blur-xl safe-area-bottom"
-        >
-          <div className="grid grid-cols-4 max-w-lg mx-auto px-1 pt-1.5 pb-1.5">
-            {([
-              { id: 'home' as const, label: 'Χάρτης', icon: Home },
-              { id: 'money' as const, label: 'Χρήματα', icon: WalletIcon },
-              { id: 'inbox' as const, label: 'Μηνύματα', icon: Mail },
-              { id: 'referral' as const, label: 'Invite', icon: Zap },
-            ]).map((tab) => {
-              const active = activeTab === tab.id;
-              const Icon = tab.icon;
-              return (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex flex-col items-center gap-0.5 py-1.5 rounded-xl transition-colors ${
-                    active
-                      ? 'text-[hsl(var(--driver-accent))]'
-                      : 'text-[hsl(var(--driver-text-muted))]'
-                  }`}
-                >
-                  <span className={`p-1.5 rounded-xl ${active ? 'bg-[hsl(var(--driver-accent))]/12' : ''}`}>
-                    <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
-                  </span>
-                  <span className={`text-[10px] font-heading ${active ? 'font-extrabold' : 'font-semibold'}`}>
-                    {tab.label}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-        </nav>
       )}
     </div>
   );
