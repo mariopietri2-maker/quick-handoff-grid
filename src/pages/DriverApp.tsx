@@ -499,6 +499,12 @@ export default function DriverApp() {
                 phone={navigatingTo === 'store'
                   ? (storeInfo?.phone ?? null)
                   : (customerInfo?.phone ?? null)}
+                destLat={navigatingTo === 'store'
+                  ? (storeInfo?.latitude ?? null)
+                  : (activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null)}
+                destLng={navigatingTo === 'store'
+                  ? (storeInfo?.longitude ?? null)
+                  : (activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null)}
                 onExit={() => setNavMode(false)}
               />
             </div>

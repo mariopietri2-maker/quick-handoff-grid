@@ -45,8 +45,8 @@ async function markOrderPaid(orderId: string, paidCents: number | null, sessionI
       (Number(order.total_amount) + Number(order.delivery_fee || 0) + Number(order.tip_amount || 0)) * 100,
     );
 
-  // Allow small VAT/rounding drift (±€1) when automatic_tax is enabled
-  if (paidCents != null && Math.abs(paidCents - expected) > 100) {
+  // Allow small rounding drift (±5¢). Prefer expected_charge_cents from checkout.
+  if (paidCents != null && Math.abs(paidCents - expected) > 5) {
     console.error("markOrderPaid amount mismatch", { orderId, paidCents, expected });
     await getSupabase()
       .from("orders")

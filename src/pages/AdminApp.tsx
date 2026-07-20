@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Input } from '@/components/ui/input';
 import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
-import AdminSidebar, { findParentSection, getTabsForSection } from '@/components/admin/AdminSidebar';
+import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
 // Eagerly load only the default landing tab — everything else is lazy.
@@ -51,11 +51,28 @@ const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDocto
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
 const DeliveryControlCenter  = lazy(() => import('@/components/admin/DeliveryControlCenter'));
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
+
+const ALL_ADMIN_TAB_IDS = new Set([
+  ...NAV_SECTIONS.flatMap((s) => s.tabs.map((t) => t.id)),
+  'dispatch_debug',
+  'system_health',
+  'driver_map_editor',
+  'live_ops',
+  'overview_legacy',
+]);
+
+function resolveSectionParam(raw: string | null): string | null {
+  if (!raw) return null;
+  if (ALL_ADMIN_TAB_IDS.has(raw)) return raw;
+  // Allow parent section ids → default tab
+  const parent = NAV_SECTIONS.find((s) => s.id === raw);
+  return parent?.defaultTab ?? null;
+}
 
 const statusColors: Record<string, string> = {
   pending:   'bg-yellow-500/10 text-yellow-700 dark:text-yellow-400 border-yellow-500/30',
@@ -82,11 +99,30 @@ export default function AdminApp() {
   const { signOut } = useAuth();
   const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets, storeWallets } = useAdminData();
   const queryClient = useQueryClient();
-  const [activeSection, setActiveSection] = useState('overview');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [activeSection, setActiveSectionState] = useState(() => {
+    return resolveSectionParam(new URLSearchParams(window.location.search).get('section')) ?? 'overview';
+  });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsSearch, setSettingsSearch] = useState('');
+
+  const setActiveSection = (id: string) => {
+    setActiveSectionState(id);
+    setSearchParams((prev) => {
+      const next = new URLSearchParams(prev);
+      next.set('section', id);
+      return next;
+    }, { replace: true });
+  };
+
+  // Honor deep links like /admin?section=drivers_live_map
+  useEffect(() => {
+    const fromUrl = resolveSectionParam(searchParams.get('section'));
+    if (fromUrl && fromUrl !== activeSection) setActiveSectionState(fromUrl);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   useEffect(() => {
     if (findParentSection(activeSection) !== 'settings') setSettingsSearch('');
