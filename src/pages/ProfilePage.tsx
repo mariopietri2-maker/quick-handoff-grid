@@ -42,9 +42,9 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
-    // Store owners have a dedicated account profile tab (like drivers).
+    // Store owners have a dedicated account profile page (like drivers).
     if (profile?.role === 'store' && !isAdmin) {
-      navigate('/store?tab=profile', { replace: true });
+      navigate('/store/profile', { replace: true });
       return;
     }
     // Drivers use driver profile. M leads land on /m monitor (not customer profile).
