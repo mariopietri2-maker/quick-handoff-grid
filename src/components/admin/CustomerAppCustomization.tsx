@@ -282,6 +282,8 @@ export default function CustomerAppCustomization() {
                 ['show_promoted', 'Sponsored / Δημοφιλή'],
                 ['show_nearby', 'Κοντινά εστιατόρια'],
                 ['show_hero_carousel', 'AI hero carousel'],
+                ['show_ai_spotlight', 'AI spotlight (μεσαία κάρτα)'],
+                ['show_ai_strip', 'AI strip (οριζόντιες κάρτες)'],
                 ['show_order_again', 'Λωρίδα «Παράγγειλε ξανά»'],
                 ['show_pro_delivery', 'Pro delivery banner'],
               ] as const).map(([key, label]) => (

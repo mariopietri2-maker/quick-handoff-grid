@@ -22,6 +22,7 @@ import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
+import { AiSpotlightCard, AiCardStrip } from '@/components/customer/AiSpotlightCard';
 import ProBanner from '@/components/customer/ProBanner';
 import HomeGreeting from '@/components/customer/HomeGreeting';
 import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
@@ -415,8 +416,18 @@ export default function CustomerApp() {
           />
         )}
 
+        {/* ── AI spotlight (mid-feed) ─────────────────────── */}
+        {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_spotlight !== false && (
+          <AiSpotlightCard />
+        )}
+
         {/* ── Pro subscription banner ────────────────────── */}
         {!isSearching && cfg.sections.show_pro_delivery && selectedCategory === 'all' && <ProBanner />}
+
+        {/* ── AI strip (compact horizontal) ──────────────── */}
+        {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_strip !== false && (
+          <AiCardStrip />
+        )}
 
         {/* ── Category chips strip ───────────────────────── */}
         {cfg.sections.show_categories && (

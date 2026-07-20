@@ -109,7 +109,7 @@ export const NAV_SECTIONS = [
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
       { id: 'customer_app_config', label: '🎨 Customer app' },
-      { id: 'ai_hero_cards', label: '✨ AI Hero Cards' },
+      { id: 'ai_hero_cards', label: '✨ AI Cards & Motion' },
       { id: 'aade_compliance', label: '🇬🇷 ΑΑΔΕ / myDATA' },
       { id: 'feature_flags', label: 'Feature flags' },
       { id: 'overrides', label: 'Operational overrides' },

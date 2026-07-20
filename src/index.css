@@ -196,7 +196,10 @@
 
   @media (prefers-reduced-motion: reduce) {
     .animate-fade-in, .animate-slide-up, .animate-slide-down, .animate-slide-in-right,
-    .animate-pop, .animate-scale-in, .animate-shimmer, .animate-float, .animate-glow-pulse {
+    .animate-pop, .animate-scale-in, .animate-shimmer, .animate-float, .animate-glow-pulse,
+    .animate-kenburns, .animate-ai-text-in, .animate-ai-fade-swap, .animate-ai-slide-swap,
+    .animate-ai-shimmer-sweep, .animate-ai-pulse-ring,
+    .ai-card-media, .ai-card-content > * {
       animation: none !important;
     }
     .interactive, .hover-lift, .hover-scale, .press-scale {
@@ -361,6 +364,70 @@
   }
   .customer-shell h1, .customer-shell h2, .customer-shell h3 {
     letter-spacing: -0.02em;
+  }
+
+  /* AI marketing cards — professional motion shells */
+  .customer-shell .ai-card-shell {
+    position: relative;
+    overflow: hidden;
+    isolation: isolate;
+  }
+  .customer-shell .ai-card-media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    will-change: transform;
+  }
+  .customer-shell .ai-card-media.is-kenburns {
+    animation: kenburns 12s ease-out forwards;
+  }
+  .customer-shell .ai-card-media.is-parallax {
+    transform: scale(1.08);
+    transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+  .customer-shell .ai-card-shell:hover .ai-card-media.is-parallax {
+    transform: scale(1.14) translateY(-1%);
+  }
+  .customer-shell .ai-card-veil {
+    position: absolute;
+    inset: 0;
+    background:
+      linear-gradient(115deg, hsl(0 0% 0% / 0.72) 0%, hsl(0 0% 0% / 0.28) 48%, transparent 78%),
+      linear-gradient(to top, hsl(0 0% 0% / 0.45), transparent 42%);
+    pointer-events: none;
+  }
+  .customer-shell .ai-card-shimmer {
+    position: absolute;
+    inset: 0;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .customer-shell .ai-card-shimmer::after {
+    content: "";
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    width: 38%;
+    background: linear-gradient(90deg, transparent, hsl(0 0% 100% / 0.18), transparent);
+    animation: ai-shimmer-sweep 3.2s ease-in-out infinite;
+  }
+  .customer-shell .ai-card-content > .ai-in-1 { animation: ai-text-in 0.5s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 40ms; }
+  .customer-shell .ai-card-content > .ai-in-2 { animation: ai-text-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 110ms; }
+  .customer-shell .ai-card-content > .ai-in-3 { animation: ai-text-in 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 180ms; }
+  .customer-shell .ai-card-content > .ai-in-4 { animation: ai-text-in 0.65s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: 250ms; }
+  .customer-shell .ai-badge-pulse {
+    position: relative;
+  }
+  .customer-shell .ai-badge-pulse::before {
+    content: "";
+    position: absolute;
+    inset: -3px;
+    border-radius: 999px;
+    border: 1px solid hsl(var(--c-accent) / 0.45);
+    animation: ai-pulse-ring 2.4s ease-out infinite;
   }
 
 

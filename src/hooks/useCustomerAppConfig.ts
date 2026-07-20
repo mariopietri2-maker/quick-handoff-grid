@@ -1,15 +1,33 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type HeroMotion = 'kenburns' | 'fade' | 'slide' | 'parallax' | 'none';
+export type HeroPlacement = 'hero' | 'spotlight' | 'strip';
+
 export type HeroCard = {
   id: string;
   title: string;
   subtitle?: string;
   cta_label?: string;
   cta_link?: string;
-  image_data_url: string; // base64 data URL
+  /** Legacy base64 data URL (still supported). Prefer image_url. */
+  image_data_url?: string;
+  /** Preferred: public storage URL from app-branding bucket. */
+  image_url?: string | null;
   enabled: boolean;
+  /** Where the card renders on the customer home. Default: hero */
+  placement?: HeroPlacement;
+  /** Entrance / ambient motion preset. Default: kenburns */
+  motion?: HeroMotion;
+  /** Badge label above the title (default "AI Pick"). */
+  badge?: string;
+  /** Soft accent wash color as HSL without wrapper, e.g. "4 90% 47%". */
+  accent_hsl?: string;
 };
+
+export function heroCardImage(card: Pick<HeroCard, 'image_url' | 'image_data_url'>): string | null {
+  return card.image_url || card.image_data_url || null;
+}
 
 export type CustomerAppConfig = {
   branding: {
@@ -36,6 +54,8 @@ export type CustomerAppConfig = {
     show_promoted: boolean;
     show_nearby: boolean;
     show_hero_carousel: boolean;
+    show_ai_spotlight: boolean;
+    show_ai_strip: boolean;
     show_pro_delivery: boolean;
     show_order_again: boolean;
   };
@@ -66,6 +86,8 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     show_promoted: true,
     show_nearby: true,
     show_hero_carousel: true,
+    show_ai_spotlight: true,
+    show_ai_strip: true,
     show_pro_delivery: false,
     show_order_again: false,
   },
