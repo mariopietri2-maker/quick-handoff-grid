@@ -1,17 +1,25 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
+/**
+ * Default / shared Capacitor config.
+ * Prefer flavor configs for store builds:
+ *   - capacitor.customer.config.ts
+ *   - capacitor.driver.config.ts
+ */
 const config: CapacitorConfig = {
-  appId: 'app.lovable.a8538a5288f34701a1b9d56a6120ba4c',
+  appId: 'com.freshdelivery.app',
   appName: 'Fresh Delivery',
   webDir: 'dist',
   server: {
-    url: 'https://a8538a52-88f3-4701-a1b9-d56a6120ba4c.lovableproject.com?forceHideBadge=true',
-    cleartext: true,
+    // Load the live SPA so native shells stay in sync with Vercel deploys.
+    // For offline/store builds, remove `server` and ship the bundled `dist/`.
+    url: 'https://quick-handoff-grid.vercel.app',
+    cleartext: false,
   },
   android: {
     backgroundColor: '#1a1a2e',
     webContentsDebuggingEnabled: true,
-    allowMixedContent: true,
+    allowMixedContent: false,
   },
   ios: {
     backgroundColor: '#1a1a2e',
