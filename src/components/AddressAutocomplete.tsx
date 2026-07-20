@@ -19,18 +19,22 @@ interface AddressAutocompleteProps {
   onChange: (address: string, lat?: number, lon?: number) => void;
   placeholder?: string;
   maxLength?: number;
+  /** Optional map center [lng, lat]. Defaults to Ioannina. */
+  initialCenter?: [number, number];
 }
 
-// Default map center (Athens) — stores currently operate in Attica
-const DEFAULT_CENTER: [number, number] = [23.7275, 37.9838]; // [lng, lat]
+// Default map center — platform operates in Ioannina
+const DEFAULT_CENTER: [number, number] = [20.8527, 39.6650]; // [lng, lat]
 // Bias geocoding to mainland Greece + islands (minLng, minLat, maxLng, maxLat)
 const GREECE_BBOX = '19.3,34.7,29.7,41.8';
+const MARKER_COLOR = '#2563eb';
 
 export function AddressAutocomplete({
   value,
   onChange,
   placeholder = 'Εισάγετε τη διεύθυνση παράδοσης',
   maxLength = 200,
+  initialCenter,
 }: AddressAutocompleteProps) {
   const { token, loading: tokenLoading } = useMapboxToken();
   const [query, setQuery] = useState(value);
@@ -48,8 +52,18 @@ export function AddressAutocomplete({
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markerRef = useRef<mapboxgl.Marker | null>(null);
+  const mapPinRef = useRef(mapPin);
+  const onChangeRef = useRef(onChange);
+  const tokenRef = useRef(token);
+  const centerRef = useRef<[number, number]>(initialCenter ?? DEFAULT_CENTER);
 
   useEffect(() => { setQuery(value); }, [value]);
+  useEffect(() => { mapPinRef.current = mapPin; }, [mapPin]);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+  useEffect(() => { tokenRef.current = token; }, [token]);
+  useEffect(() => {
+    centerRef.current = initialCenter ?? DEFAULT_CENTER;
+  }, [initialCenter]);
 
   useEffect(() => {
     const handler = (e: MouseEvent) => {
@@ -73,8 +87,9 @@ export function AddressAutocomplete({
       // Detect a house number in the user query (e.g. "Δημοκρατίας 12")
       const numMatch = q.match(/\b(\d{1,4}[A-Za-zΑ-Ωα-ω]?)\b/);
       const typedNumber = numMatch ? numMatch[1] : null;
+      const [proxLng, proxLat] = centerRef.current;
 
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${GREECE_BBOX}&proximity=${DEFAULT_CENTER[0]},${DEFAULT_CENTER[1]}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${GREECE_BBOX}&proximity=${proxLng},${proxLat}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
       const res = await fetch(url);
       const data = await res.json();
       const features = (data.features ?? []) as Array<{
@@ -164,34 +179,35 @@ export function AddressAutocomplete({
   const reverseGeocode = useCallback(async (lat: number, lon: number) => {
     setReverseLoading(true);
     try {
-      if (!token) throw new Error('no token');
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${token}&language=el&limit=1`;
+      const t = tokenRef.current;
+      if (!t) throw new Error('no token');
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${t}&language=el&limit=1`;
       const res = await fetch(url);
       const data = await res.json();
       const name = data.features?.[0]?.place_name as string | undefined;
       if (name) {
         setQuery(name);
-        onChange(name, lat, lon);
+        onChangeRef.current(name, lat, lon);
       } else {
         const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
         setQuery(fallback);
-        onChange(fallback, lat, lon);
+        onChangeRef.current(fallback, lat, lon);
       }
       hasCoordsRef.current = true;
     } catch {
       const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
       setQuery(fallback);
-      onChange(fallback, lat, lon);
+      onChangeRef.current(fallback, lat, lon);
       hasCoordsRef.current = true;
     } finally {
       setReverseLoading(false);
     }
-  }, [token, onChange]);
+  }, []);
 
-  const handleMapClick = (lat: number, lon: number) => {
+  const handleMapClick = useCallback((lat: number, lon: number) => {
     setMapPin({ lat, lon });
     reverseGeocode(lat, lon);
-  };
+  }, [reverseGeocode]);
 
   const confirmMapPin = () => {
     setShowMap(false);
@@ -227,40 +243,122 @@ export function AddressAutocomplete({
     );
   };
 
-  // Init map when shown
+  // Init map when shown — keep container mounted so the ref exists, and resize
+  // aggressively (bottom sheets / expanding panels often start at 0×0).
   useEffect(() => {
-    if (!showMap || !token || !mapContainer.current || mapRef.current) return;
-    mapboxgl.accessToken = token;
-    const center: [number, number] = mapPin ? [mapPin.lon, mapPin.lat] : DEFAULT_CENTER;
-    const map = new mapboxgl.Map({
-      container: mapContainer.current,
-      style: 'mapbox://styles/mapbox/streets-v12',
-      center,
-      zoom: 14,
-      attributionControl: false,
-    });
-    map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-    map.on('click', (e) => {
-      handleMapClick(e.lngLat.lat, e.lngLat.lng);
-    });
-    mapRef.current = map;
+    if (!showMap || !token) return;
 
-    return () => {
-      map.remove();
-      mapRef.current = null;
+    let cancelled = false;
+    let ro: ResizeObserver | null = null;
+    const timers: number[] = [];
+    let raf = 0;
+
+    const destroy = () => {
+      if (ro) {
+        try { ro.disconnect(); } catch { /* noop */ }
+        ro = null;
+      }
+      timers.forEach((id) => window.clearTimeout(id));
+      timers.length = 0;
+      if (raf) cancelAnimationFrame(raf);
+      if (mapRef.current) {
+        try { mapRef.current.remove(); } catch { /* noop */ }
+        mapRef.current = null;
+      }
       markerRef.current = null;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [showMap, token]);
 
-  // Update / create marker
+    const tryInit = (): boolean => {
+      if (cancelled || mapRef.current || !mapContainer.current) return false;
+
+      const el = mapContainer.current;
+      // Defer if the sheet/panel hasn't laid out yet (0×0 → blank Mapbox canvas).
+      if (el.clientWidth < 2 || el.clientHeight < 2) return false;
+
+      mapboxgl.accessToken = token;
+      const pin = mapPinRef.current;
+      const center: [number, number] = pin
+        ? [pin.lon, pin.lat]
+        : centerRef.current;
+
+      const map = new mapboxgl.Map({
+        container: el,
+        style: 'mapbox://styles/mapbox/streets-v12',
+        center,
+        zoom: pin ? 16 : 14,
+        attributionControl: false,
+      });
+      map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
+      map.on('click', (e) => {
+        handleMapClick(e.lngLat.lat, e.lngLat.lng);
+      });
+
+      const resize = () => {
+        try { map.resize(); } catch { /* noop */ }
+      };
+      map.on('load', () => {
+        resize();
+        requestAnimationFrame(resize);
+      });
+
+      window.addEventListener('resize', resize);
+      const shell = el.parentElement ?? el;
+      if (typeof ResizeObserver !== 'undefined') {
+        ro = new ResizeObserver(() => resize());
+        ro.observe(shell);
+      }
+      [50, 200, 400, 700].forEach((ms) => {
+        timers.push(window.setTimeout(resize, ms));
+      });
+
+      // Preserve listener cleanup via map.remove(); also drop window listener.
+      const prevRemove = map.remove.bind(map);
+      map.remove = () => {
+        window.removeEventListener('resize', resize);
+        prevRemove();
+      };
+
+      mapRef.current = map;
+
+      // If a pin was set before the map finished mounting (GPS path), drop marker now.
+      if (pin) {
+        markerRef.current = new mapboxgl.Marker({ color: MARKER_COLOR })
+          .setLngLat([pin.lon, pin.lat])
+          .addTo(map);
+      }
+      return true;
+    };
+
+    const schedule = () => {
+      if (cancelled || mapRef.current) return;
+      if (tryInit()) return;
+      raf = requestAnimationFrame(() => {
+        if (cancelled || mapRef.current) return;
+        if (tryInit()) return;
+        timers.push(window.setTimeout(schedule, 80));
+      });
+    };
+
+    schedule();
+    // Keep trying briefly while bottom-sheet / expand animations finish.
+    timers.push(window.setTimeout(schedule, 120));
+    timers.push(window.setTimeout(schedule, 350));
+    timers.push(window.setTimeout(schedule, 600));
+
+    return () => {
+      cancelled = true;
+      destroy();
+    };
+  }, [showMap, token, handleMapClick]);
+
+  // Update / create marker when pin changes after map is ready
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapPin) return;
     if (markerRef.current) {
       markerRef.current.setLngLat([mapPin.lon, mapPin.lat]);
     } else {
-      markerRef.current = new mapboxgl.Marker({ color: 'hsl(var(--primary))' })
+      markerRef.current = new mapboxgl.Marker({ color: MARKER_COLOR })
         .setLngLat([mapPin.lon, mapPin.lat])
         .addTo(map);
     }
@@ -282,7 +380,7 @@ export function AddressAutocomplete({
         <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
           {(loading || tokenLoading) && <Loader2 className="h-4 w-4 text-muted-foreground animate-spin" />}
           {query && !loading && (
-            <button onClick={clear} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
+            <button type="button" onClick={clear} className="h-6 w-6 rounded-full bg-muted flex items-center justify-center">
               <X className="h-3 w-3 text-muted-foreground" />
             </button>
           )}
@@ -294,6 +392,7 @@ export function AddressAutocomplete({
           {results.map((r, i) => (
             <button
               key={i}
+              type="button"
               onClick={() => selectResult(r)}
               className="w-full text-left px-3 py-2.5 text-sm hover:bg-accent transition-colors flex items-start gap-2 border-b border-border last:border-0"
             >
@@ -344,17 +443,17 @@ export function AddressAutocomplete({
 
       {showMap && (
         <div className="rounded-xl overflow-hidden border border-border space-y-2">
-          <div className="relative h-64 bg-muted">
-            {tokenLoading || !token ? (
-              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
+          <div className="relative h-64 min-h-[16rem] bg-muted">
+            {/* Always mount the container so the map can init as soon as size + token are ready */}
+            <div ref={mapContainer} className="absolute inset-0" />
+            {(tokenLoading || !token) && (
+              <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-4 text-center bg-muted">
                 {tokenLoading ? (
                   <Loader2 className="h-6 w-6 animate-spin text-primary" />
                 ) : (
                   <p className="text-sm text-muted-foreground">Ο χάρτης δεν φορτώθηκε. Δοκιμάστε ξανά αργότερα.</p>
                 )}
               </div>
-            ) : (
-              <div ref={mapContainer} className="absolute inset-0" />
             )}
             <button
               type="button"

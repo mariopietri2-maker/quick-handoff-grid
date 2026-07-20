@@ -18,6 +18,7 @@ import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
 import { isPaymentsConfigured } from '@/lib/stripe';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SEO } from '@/components/SEO';
+import { useMapboxToken } from '@/hooks/useMapboxToken';
 
 interface AppliedPromo {
   id: string;
@@ -30,9 +31,11 @@ export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, storeId, storeName, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
   const { user } = useAuth();
+  const { token: mapboxToken } = useMapboxToken();
   const [address, setAddress] = useState('');
   const [deliveryCoords, setDeliveryCoords] = useState<{ lat: number; lon: number } | null>(null);
   const [deliveryFee, setDeliveryFee] = useState(0.99);
+  const [storeCenter, setStoreCenter] = useState<[number, number] | null>(null);
 
   useEffect(() => {
     (supabase as any).rpc('get_platform_settings_public')
@@ -43,6 +46,25 @@ export default function CheckoutPage() {
         }
       });
   }, []);
+
+  // Prefetch store coords for map bias + driving distance (avoids a second round-trip on submit).
+  useEffect(() => {
+    if (!storeId) {
+      setStoreCenter(null);
+      return;
+    }
+    let cancelled = false;
+    supabase
+      .from('stores')
+      .select('latitude, longitude')
+      .eq('id', storeId)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (cancelled || !data?.latitude || !data?.longitude) return;
+        setStoreCenter([Number(data.longitude), Number(data.latitude)]);
+      });
+    return () => { cancelled = true; };
+  }, [storeId]);
 
   // Prefill address — first try the customer's saved default address,
   // otherwise fall back to whatever they typed on the home page (stored
@@ -188,35 +210,32 @@ export default function CheckoutPage() {
       // Compute driving distance via Mapbox if we have both store + delivery coords
       let distanceKm: number | null = null;
       try {
-        const { data: storeData } = await supabase
-          .from('stores')
-          .select('latitude, longitude')
-          .eq('id', storeId)
-          .maybeSingle();
+        const storeLng = storeCenter?.[0];
+        const storeLat = storeCenter?.[1];
         if (
-          storeData?.latitude && storeData?.longitude &&
+          storeLat != null && storeLng != null &&
           deliveryCoords?.lat && deliveryCoords?.lon
         ) {
           // Same-address guard: block when within ~30m of the store
           const toRad = (d: number) => (d * Math.PI) / 180;
-          const dLat = toRad(deliveryCoords.lat - storeData.latitude);
-          const dLon = toRad(deliveryCoords.lon - storeData.longitude);
+          const dLat = toRad(deliveryCoords.lat - storeLat);
+          const dLon = toRad(deliveryCoords.lon - storeLng);
           const a = Math.sin(dLat / 2) ** 2 +
-            Math.cos(toRad(storeData.latitude)) * Math.cos(toRad(deliveryCoords.lat)) * Math.sin(dLon / 2) ** 2;
+            Math.cos(toRad(storeLat)) * Math.cos(toRad(deliveryCoords.lat)) * Math.sin(dLon / 2) ** 2;
           const meters = 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
           if (meters < 30) {
             toast.error('Η διεύθυνση παράδοσης ταυτίζεται με το κατάστημα. Διάλεξε διαφορετική.');
             setSubmitting(false);
             return;
           }
-          const { data: tokenRes } = await supabase.functions.invoke('get-mapbox-token');
-          const token = tokenRes?.token;
+          // Prefer the Vite-embedded public token (edge get-mapbox-token is often JWT-blocked).
+          const token = mapboxToken || (import.meta.env.VITE_MAPBOX_TOKEN as string | undefined);
           if (token) {
-            const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${storeData.longitude},${storeData.latitude};${deliveryCoords.lon},${deliveryCoords.lat}?access_token=${token}&overview=false`;
+            const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${storeLng},${storeLat};${deliveryCoords.lon},${deliveryCoords.lat}?access_token=${token}&overview=false`;
             const res = await fetch(url);
             const json = await res.json();
-            const meters = json?.routes?.[0]?.distance;
-            if (typeof meters === 'number') distanceKm = +(meters / 1000).toFixed(2);
+            const routeMeters = json?.routes?.[0]?.distance;
+            if (typeof routeMeters === 'number') distanceKm = +(routeMeters / 1000).toFixed(2);
           }
         }
       } catch {
@@ -358,8 +377,10 @@ export default function CheckoutPage() {
               value={address}
               onChange={(addr, lat, lon) => {
                 setAddress(addr);
-                if (lat && lon) setDeliveryCoords({ lat, lon });
+                if (lat != null && lon != null) setDeliveryCoords({ lat, lon });
+                else if (!addr) setDeliveryCoords(null);
               }}
+              initialCenter={storeCenter ?? undefined}
             />
             <SavedAddresses
               currentAddress={address}
