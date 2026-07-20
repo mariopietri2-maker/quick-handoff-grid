@@ -25,6 +25,7 @@ interface Settings {
   dist_fairness_weight: number;
   dist_rating_weight: number;
   dist_distance_weight: number;
+  dist_target_hourly_eur: number;
   max_stacked_orders: number;
   stack_max_detour_minutes: number;
   stacking_enabled: boolean;
@@ -40,7 +41,7 @@ export default function AssignmentSettings() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('platform_settings')
-        .select('assignment_mode, distribution_mode, dist_search_radius_km, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, dist_vehicle_rules_enabled, dist_bike_max_km, dist_motorcycle_max_km, dist_car_min_value, dist_min_driver_rating, dist_min_acceptance_rate, dist_fairness_weight, dist_rating_weight, dist_distance_weight, max_stacked_orders, stack_max_detour_minutes, stacking_enabled')
+        .select('assignment_mode, distribution_mode, dist_search_radius_km, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, dist_vehicle_rules_enabled, dist_bike_max_km, dist_motorcycle_max_km, dist_car_min_value, dist_min_driver_rating, dist_min_acceptance_rate, dist_fairness_weight, dist_rating_weight, dist_distance_weight, dist_target_hourly_eur, max_stacked_orders, stack_max_detour_minutes, stacking_enabled')
         .eq('id', 1)
         .maybeSingle();
       if (error) throw error;
@@ -49,7 +50,7 @@ export default function AssignmentSettings() {
   });
 
   useEffect(() => {
-    if (data) setS(data);
+    if (data) setS({ ...data, dist_target_hourly_eur: Number((data as any).dist_target_hourly_eur ?? 10) });
   }, [data]);
 
   if (isLoading || !s) {
@@ -69,12 +70,16 @@ export default function AssignmentSettings() {
     const { error } = await supabase
       .from('platform_settings')
       .update({
+        distribution_mode: 'fair_earnings',
         dist_search_radius_km: s.dist_search_radius_km,
         dist_offer_timeout_seconds: s.dist_offer_timeout_seconds,
         dist_wave_size: s.dist_wave_size,
         dist_max_waves: s.dist_max_waves,
         stacking_enabled: s.stacking_enabled,
         max_stacked_orders: s.max_stacked_orders,
+        dist_distance_weight: s.dist_distance_weight,
+        dist_fairness_weight: s.dist_fairness_weight,
+        dist_target_hourly_eur: s.dist_target_hourly_eur,
       } as any)
       .eq('id', 1);
     setSaving(false);
@@ -97,8 +102,8 @@ export default function AssignmentSettings() {
         </CardHeader>
         <CardContent className="space-y-3">
           <p className="text-xs text-muted-foreground">
-            Το σύστημα στέλνει προσφορές σε κύματα στους πλησιέστερους διαθέσιμους οδηγούς
-            (GPS &lt; 15 λεπτά, ενεργό προφίλ). Το Auto/Manual ελέγχεται πάνω στο Dispatch hub.
+            Προτεραιότητα στους <strong>πλησιέστερους</strong> οδηγούς στο κατάστημα, με επιπλέον
+            βάρος σε όσους είναι κάτω από τον στόχο €/ώρα ώστε όλοι να πλησιάζουν τον στόχο.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="space-y-1.5">
@@ -143,6 +148,50 @@ export default function AssignmentSettings() {
               />
             </div>
           </div>
+
+          <div className="rounded-lg border border-border p-3 space-y-3 bg-muted/30">
+            <p className="text-sm font-medium">Δίκαιη κατανομή (€/ώρα)</p>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <div className="space-y-1.5">
+                <Label className="text-xs">Στόχος €/ώρα</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={50}
+                  step={0.5}
+                  value={s.dist_target_hourly_eur}
+                  onChange={(e) => update('dist_target_hourly_eur', Number(e.target.value) || 10)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Βάρος απόστασης (πλησιέστερος)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={s.dist_distance_weight}
+                  onChange={(e) => update('dist_distance_weight', Number(e.target.value) || 0.55)}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs">Βάρος δικαιοσύνης (€/ώρα)</Label>
+                <Input
+                  type="number"
+                  min={0}
+                  max={1}
+                  step={0.05}
+                  value={s.dist_fairness_weight}
+                  onChange={(e) => update('dist_fairness_weight', Number(e.target.value) || 0.35)}
+                />
+              </div>
+            </div>
+            <p className="text-[11px] text-muted-foreground">
+              Προεπιλογή: στόχος €10/ώρα · απόσταση 0.55 · δικαιοσύνη 0.35. Όσοι κερδίζουν λιγότερα
+              από τον στόχο παίρνουν προτεραιότητα όταν είναι σχετικά κοντά στο κατάστημα.
+            </p>
+          </div>
+
           <div className="flex items-center justify-between gap-3 rounded-lg border border-border p-3">
             <div>
               <p className="text-sm font-medium">Stacking παραγγελιών</p>

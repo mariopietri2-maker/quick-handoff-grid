@@ -2115,6 +2115,7 @@ export type Database = {
           dist_offer_timeout_seconds: number
           dist_rating_weight: number
           dist_search_radius_km: number
+          dist_target_hourly_eur: number
           dist_vehicle_rules_enabled: boolean
           dist_wave_size: number
           distribution_mode: string
@@ -2191,6 +2192,7 @@ export type Database = {
           dist_offer_timeout_seconds?: number
           dist_rating_weight?: number
           dist_search_radius_km?: number
+          dist_target_hourly_eur?: number
           dist_vehicle_rules_enabled?: boolean
           dist_wave_size?: number
           distribution_mode?: string
@@ -2267,6 +2269,7 @@ export type Database = {
           dist_offer_timeout_seconds?: number
           dist_rating_weight?: number
           dist_search_radius_km?: number
+          dist_target_hourly_eur?: number
           dist_vehicle_rules_enabled?: boolean
           dist_wave_size?: number
           distribution_mode?: string
@@ -3903,60 +3906,26 @@ export type Database = {
         }
         Returns: number
       }
-      nearby_active_drivers:
-        | {
-            Args: {
-              _exclude_drivers?: string[]
-              _limit?: number
-              _order_value?: number
-              _store_lat: number
-              _store_lng: number
-            }
-            Returns: {
-              distance_km: number
-              driver_id: string
-              score: number
-              vehicle_type: string
-            }[]
-          }
-        | {
-            Args: {
-              _exclude_drivers?: string[]
-              _limit?: number
-              _order_value?: number
-              _store_id?: string
-              _store_lat: number
-              _store_lng: number
-            }
-            Returns: {
-              active_orders: number
-              distance_km: number
-              driver_id: string
-              is_stack: boolean
-              score: number
-              vehicle_type: string
-            }[]
-          }
-        | {
-            Args: {
-              _dropoff_lat?: number
-              _dropoff_lng?: number
-              _exclude_drivers?: string[]
-              _limit?: number
-              _order_value?: number
-              _store_id?: string
-              _store_lat: number
-              _store_lng: number
-            }
-            Returns: {
-              active_orders: number
-              distance_km: number
-              driver_id: string
-              is_stack: boolean
-              score: number
-              vehicle_type: string
-            }[]
-          }
+      nearby_active_drivers: {
+        Args: {
+          _dropoff_lat?: number
+          _dropoff_lng?: number
+          _exclude_drivers?: string[]
+          _limit?: number
+          _order_value?: number
+          _store_id?: string
+          _store_lat: number
+          _store_lng: number
+        }
+        Returns: {
+          active_orders: number
+          distance_km: number
+          driver_id: string
+          is_stack: boolean
+          score: number
+          vehicle_type: string
+        }[]
+      }
       next_stop_sequence: { Args: { _batch_id: string }; Returns: number }
       open_surge_event: {
         Args: {
