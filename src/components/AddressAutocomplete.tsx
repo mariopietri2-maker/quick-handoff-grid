@@ -21,10 +21,10 @@ interface AddressAutocompleteProps {
   maxLength?: number;
 }
 
-// Ioannina center
-const IOANNINA: [number, number] = [20.8537, 39.6650]; // [lng, lat]
-// Bias bbox around Ioannina region (minLng, minLat, maxLng, maxLat)
-const IOANNINA_BBOX = '20.7,39.55,20.95,39.75';
+// Default map center (Athens) — stores currently operate in Attica
+const DEFAULT_CENTER: [number, number] = [23.7275, 37.9838]; // [lng, lat]
+// Bias geocoding to mainland Greece + islands (minLng, minLat, maxLng, maxLat)
+const GREECE_BBOX = '19.3,34.7,29.7,41.8';
 
 export function AddressAutocomplete({
   value,
@@ -74,7 +74,7 @@ export function AddressAutocomplete({
       const numMatch = q.match(/\b(\d{1,4}[A-Za-zΑ-Ωα-ω]?)\b/);
       const typedNumber = numMatch ? numMatch[1] : null;
 
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${IOANNINA_BBOX}&proximity=${IOANNINA[0]},${IOANNINA[1]}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${GREECE_BBOX}&proximity=${DEFAULT_CENTER[0]},${DEFAULT_CENTER[1]}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
       const res = await fetch(url);
       const data = await res.json();
       const features = (data.features ?? []) as Array<{
@@ -231,7 +231,7 @@ export function AddressAutocomplete({
   useEffect(() => {
     if (!showMap || !token || !mapContainer.current || mapRef.current) return;
     mapboxgl.accessToken = token;
-    const center: [number, number] = mapPin ? [mapPin.lon, mapPin.lat] : IOANNINA;
+    const center: [number, number] = mapPin ? [mapPin.lon, mapPin.lat] : DEFAULT_CENTER;
     const map = new mapboxgl.Map({
       container: mapContainer.current,
       style: 'mapbox://styles/mapbox/streets-v12',
@@ -346,8 +346,12 @@ export function AddressAutocomplete({
         <div className="rounded-xl overflow-hidden border border-border space-y-2">
           <div className="relative h-64 bg-muted">
             {tokenLoading || !token ? (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+              <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-4 text-center">
+                {tokenLoading ? (
+                  <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                ) : (
+                  <p className="text-sm text-muted-foreground">Ο χάρτης δεν φορτώθηκε. Δοκιμάστε ξανά αργότερα.</p>
+                )}
               </div>
             ) : (
               <div ref={mapContainer} className="absolute inset-0" />

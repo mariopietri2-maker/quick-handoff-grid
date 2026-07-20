@@ -26,6 +26,23 @@ function writeLocal(t: string) {
   } catch { /* ignore */ }
 }
 
+async function fetchTokenFromEdge(): Promise<string | null> {
+  const { data: { session } } = await supabase.auth.getSession();
+  const headers: Record<string, string> = {};
+  if (session?.access_token) {
+    headers.Authorization = `Bearer ${session.access_token}`;
+  }
+
+  const { data, error } = await supabase.functions.invoke('get-mapbox-token', {
+    headers: Object.keys(headers).length ? headers : undefined,
+  });
+
+  if (!error && data?.token && typeof data.token === 'string') {
+    return data.token;
+  }
+  return null;
+}
+
 export function prefetchMapboxToken(): Promise<string | null> {
   if (cachedToken) return Promise.resolve(cachedToken);
   const local = readLocal();
@@ -34,31 +51,64 @@ export function prefetchMapboxToken(): Promise<string | null> {
     return Promise.resolve(local);
   }
   if (inflight) return inflight;
-  inflight = supabase.functions.invoke('get-mapbox-token').then(({ data, error }) => {
-    inflight = null;
-    if (!error && data?.token) {
-      cachedToken = data.token;
-      writeLocal(data.token);
-      return data.token;
-    }
-    return null;
-  }).catch(() => { inflight = null; return null; });
+  inflight = fetchTokenFromEdge()
+    .then((token) => {
+      inflight = null;
+      if (token) {
+        cachedToken = token;
+        writeLocal(token);
+        return token;
+      }
+      return null;
+    })
+    .catch(() => {
+      inflight = null;
+      return null;
+    });
   return inflight;
 }
 
 export function useMapboxToken() {
-  const initial = cachedToken ?? readLocal();
+  const initial = cachedToken ?? readLocal() ?? ENV_TOKEN ?? null;
   if (initial && !cachedToken) cachedToken = initial;
   const [token, setToken] = useState<string | null>(initial);
   const [loading, setLoading] = useState(!initial);
 
   useEffect(() => {
-    if (initial) return;
-    prefetchMapboxToken().then((t) => {
-      if (t) setToken(t);
+    let cancelled = false;
+
+    const apply = (t: string | null) => {
+      if (cancelled || !t) return;
+      cachedToken = t;
+      setToken(t);
       setLoading(false);
+    };
+
+    if (initial) {
+      setLoading(false);
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    prefetchMapboxToken().then((t) => {
+      if (cancelled) return;
+      if (t) apply(t);
+      else setLoading(false);
     });
-  }, []);
+
+    // Retry after auth settles — boot prefetch often runs before login.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (cachedToken || cancelled) return;
+      if (!session) return;
+      prefetchMapboxToken().then((t) => apply(t));
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
+  }, [initial]);
 
   return { token, loading };
 }

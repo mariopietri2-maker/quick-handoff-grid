@@ -231,5 +231,13 @@ export default function LiveTrackingMap({
     place();
   }, [driverPos]);
 
-  return <div ref={container} className="absolute inset-0" />;
+  return (
+    <div ref={container} className="absolute inset-0">
+      {!token && (
+        <div className="absolute inset-0 flex items-center justify-center bg-muted/80 text-sm text-muted-foreground px-6 text-center">
+          Ο χάρτης δεν είναι διαθέσιμος αυτή τη στιγμή
+        </div>
+      )}
+    </div>
+  );
 }
