@@ -9,12 +9,21 @@ interface AuthContextType {
   profile: { role: string; full_name: string | null; public_code?: string | null } | null;
   isAdmin: boolean;
   isSupport: boolean;
-  signUp: (email: string, password: string, fullName: string, role: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    role: string,
+  ) => Promise<{ error: Error | null; session: Session | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+function normalizeEmail(email: string) {
+  return email.trim().toLowerCase();
+}
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
@@ -42,17 +51,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   useEffect(() => {
-    // onAuthStateChange must NOT be async and must NOT await Supabase calls
-    // directly inside the callback — doing so causes a deadlock because the
-    // SDK fires the callback synchronously while the auth token is still being
-    // committed. Defer any DB work with setTimeout to break the cycle.
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      (_event, session) => {
-        setSession(session);
-        setUser(session?.user ?? null);
+    // Restore existing session on load (in addition to auth events).
+    supabase.auth.getSession().then(({ data: { session: existing } }) => {
+      setSession(existing);
+      setUser(existing?.user ?? null);
+      if (existing?.user) {
+        fetchProfile(existing.user.id).finally(() => setLoading(false));
+      } else {
+        setLoading(false);
+      }
+    });
 
-        if (session?.user) {
-          const userId = session.user.id;
+    // onAuthStateChange must NOT await Supabase calls directly inside the
+    // callback — that deadlocks while the SDK commits the auth token.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      (_event, nextSession) => {
+        setSession(nextSession);
+        setUser(nextSession?.user ?? null);
+
+        if (nextSession?.user) {
+          const userId = nextSession.user.id;
           setTimeout(() => {
             fetchProfile(userId).finally(() => setLoading(false));
           }, 0);
@@ -68,27 +86,64 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => subscription.unsubscribe();
   }, []);
 
-  const signUp = async (email: string, password: string, fullName: string, role: string) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
+  const signIn = async (email: string, password: string) => {
+    const { error } = await supabase.auth.signInWithPassword({
+      email: normalizeEmail(email),
       password,
-      options: { data: { full_name: fullName } },
     });
-
-    if (!error && data.user) {
-      await supabase
-        .from('profiles')
-        .update({ role: role as any })
-        .eq('user_id', data.user.id);
-      await fetchProfile(data.user.id);
-    }
-
     return { error: error as Error | null };
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    return { error: error as Error | null };
+  const signUp = async (email: string, password: string, fullName: string, _role: string) => {
+    const emailNorm = normalizeEmail(email);
+
+    const { data, error } = await supabase.auth.signUp({
+      email: emailNorm,
+      password,
+      options: {
+        data: { full_name: fullName.trim() },
+        emailRedirectTo: `${window.location.origin}/order`,
+      },
+    });
+
+    // Account already exists → try signing in with the same password.
+    if (error) {
+      const msg = (error.message || '').toLowerCase();
+      if (msg.includes('already registered') || msg.includes('already been registered') || msg.includes('user already')) {
+        const login = await signIn(emailNorm, password);
+        if (!login.error) {
+          const { data: cur } = await supabase.auth.getSession();
+          return { error: null, session: cur.session };
+        }
+        return {
+          error: new Error('Υπάρχει ήδη λογαριασμός με αυτό το email. Ο κωδικός δεν ταιριάζει — δοκιμάστε Σύνδεση ή άλλον κωδικό.'),
+          session: null,
+        };
+      }
+      return { error: error as Error, session: null };
+    }
+
+    // Autoconfirm should return a session; if not, sign in immediately so the
+    // user is never stuck on "check your email" / invalid credentials.
+    let session = data.session;
+    if (!session) {
+      const { data: loginData, error: loginError } = await supabase.auth.signInWithPassword({
+        email: emailNorm,
+        password,
+      });
+      if (loginError) {
+        return { error: loginError as Error, session: null };
+      }
+      session = loginData.session;
+    }
+
+    if (session?.user) {
+      // Profile row is created by handle_new_user trigger. Do NOT update role
+      // here — protect_profile_role blocks non-admin role changes.
+      await fetchProfile(session.user.id);
+    }
+
+    return { error: null, session };
   };
 
   const signOut = async () => {
