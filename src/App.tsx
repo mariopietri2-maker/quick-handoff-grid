@@ -25,6 +25,7 @@ const ProfilePage = lazyWithRetry(() => import("./pages/ProfilePage.tsx"));
 const StoreApp = lazyWithRetry(() => import("./pages/StoreApp.tsx"));
 const AdminApp = lazyWithRetry(() => import("./pages/AdminApp.tsx"));
 const SupportApp = lazyWithRetry(() => import("./pages/SupportApp.tsx"));
+const MonitorApp = lazyWithRetry(() => import("./pages/MonitorApp.tsx"));
 const CustomerApp = lazyWithRetry(() => import("./pages/CustomerApp.tsx"));
 const CustomerLayout = lazyWithRetry(() => import("./components/customer/CustomerLayout.tsx"));
 const RestaurantPage = lazyWithRetry(() => import("./pages/RestaurantPage.tsx"));
@@ -113,6 +114,11 @@ const App = () => (
                     <Route path="/admin" element={
                       <ProtectedRoute allowedRoles={['admin']}>
                         <AdminApp />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/m" element={
+                      <ProtectedRoute allowedRoles={['m']}>
+                        <MonitorApp />
                       </ProtectedRoute>
                     } />
                     <Route path="/support" element={
