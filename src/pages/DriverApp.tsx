@@ -830,9 +830,13 @@ export default function DriverApp() {
           <div key={activeTab} className="flex-1 overflow-y-auto pb-8 animate-fade-in">
             {activeTab === 'money' && (
               <div className="px-4 py-4 space-y-4">
-                <div>
-                  <h2 className="font-heading font-extrabold text-[18px] text-[hsl(var(--driver-text))]">Χρήματα</h2>
-                  <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-0.5">Υπόλοιπο, σημερινά κέρδη & μετρητά βάρδιας</p>
+                <div className="animate-slide-down">
+                  <h2 className="font-heading font-extrabold text-[20px] tracking-tight text-[hsl(var(--driver-text))]">
+                    Χρήματα
+                  </h2>
+                  <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] mt-0.5">
+                    Υπόλοιπο, σημερινά κέρδη και ταμείο βάρδιας
+                  </p>
                 </div>
                 <DriverMoneyPanel />
               </div>
