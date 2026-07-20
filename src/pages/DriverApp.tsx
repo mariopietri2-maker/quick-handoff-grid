@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck, Home, Wallet as WalletIcon, Banknote } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { useAuth } from '@/hooks/useAuth';
@@ -487,7 +487,7 @@ export default function DriverApp() {
           )}
 
 
-          <div className={`fixed bottom-0 left-0 right-0 z-20 ${sheetCollapsed ? 'max-h-[18vh]' : 'max-h-[72vh]'} overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain transition-[max-height] duration-300 ease-out ${isNavActive ? 'hidden' : ''}`}>
+          <div className={`fixed bottom-0 left-0 right-0 z-20 ${sheetCollapsed ? 'max-h-[18vh]' : 'max-h-[72vh]'} overflow-y-auto px-3 pb-20 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain transition-[max-height] duration-300 ease-out ${isNavActive ? 'hidden' : ''}`}>
             {/* Recenter button — pinned just above the sheet */}
             <div className="flex justify-end pb-2 pointer-events-auto">
               <button
@@ -534,8 +534,13 @@ export default function DriverApp() {
 
               {!isNavActive && (
                 <>
-                  <AnnouncementsBanner audience="drivers" />
-                  <SurgeStatusBadge />
+                  {/* Keep map sheet focused during an active delivery */}
+                  {!activeDelivery && (
+                    <>
+                      <AnnouncementsBanner audience="drivers" />
+                      <SurgeStatusBadge />
+                    </>
+                  )}
 
                   {/* On-break banner */}
                   {onBreak && (
@@ -759,7 +764,7 @@ export default function DriverApp() {
             </div>
             <div className="w-10" />
           </header>
-          <div key={activeTab} className="flex-1 overflow-y-auto pb-6 animate-fade-in">
+          <div key={activeTab} className="flex-1 overflow-y-auto pb-24 animate-fade-in">
             {activeTab === 'earnings' && (
               <div className="px-4 py-4 space-y-4">
                 <DriverWallet />
@@ -775,6 +780,44 @@ export default function DriverApp() {
             )}
           </div>
         </>
+      )}
+
+      {/* Bottom tab bar — always available outside turn-by-turn */}
+      {!isNavActive && (
+        <nav
+          className="fixed bottom-0 left-0 right-0 z-40 border-t border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface))]/95 backdrop-blur-xl safe-area-bottom"
+        >
+          <div className="grid grid-cols-4 max-w-lg mx-auto px-1 pt-1.5 pb-1.5">
+            {([
+              { id: 'home' as const, label: 'Χάρτης', icon: Home },
+              { id: 'earnings' as const, label: 'Κέρδη', icon: WalletIcon },
+              { id: 'wallet' as const, label: 'Μετρητά', icon: Banknote },
+              { id: 'referral' as const, label: 'Invite', icon: Zap },
+            ]).map((tab) => {
+              const active = activeTab === tab.id;
+              const Icon = tab.icon;
+              return (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex flex-col items-center gap-0.5 py-1.5 rounded-xl transition-colors ${
+                    active
+                      ? 'text-[hsl(var(--driver-accent))]'
+                      : 'text-[hsl(var(--driver-text-muted))]'
+                  }`}
+                >
+                  <span className={`p-1.5 rounded-xl ${active ? 'bg-[hsl(var(--driver-accent))]/12' : ''}`}>
+                    <Icon className="h-5 w-5" strokeWidth={active ? 2.4 : 2} />
+                  </span>
+                  <span className={`text-[10px] font-heading ${active ? 'font-extrabold' : 'font-semibold'}`}>
+                    {tab.label}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </nav>
       )}
     </div>
   );
