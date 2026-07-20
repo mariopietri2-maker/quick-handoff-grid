@@ -277,6 +277,9 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
               <Button size="sm" onClick={() => onNavigate?.('delivery_control')}>
                 <Zap className="h-3.5 w-3.5 mr-1.5" /> Dispatch
               </Button>
+              <Button size="sm" variant="outline" onClick={() => onNavigate?.('capacity')}>
+                <Activity className="h-3.5 w-3.5 mr-1.5" /> Χωρητικότητα
+              </Button>
               <Button size="sm" variant="outline" onClick={() => onNavigate?.('orders')}>
                 <LayoutGrid className="h-3.5 w-3.5 mr-1.5" /> Pipeline
               </Button>

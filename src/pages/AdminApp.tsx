@@ -52,6 +52,7 @@ const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDocto
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
 const DeliveryControlCenter  = lazy(() => import('@/components/admin/DeliveryControlCenter'));
+const CapacityPanel          = lazy(() => import('@/components/admin/CapacityPanel'));
 import { Link, useSearchParams } from 'react-router-dom';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
@@ -369,6 +370,8 @@ export default function AdminApp() {
     switch (activeSection) {
       case 'overview':
         return <OpsHome onNavigate={setActiveSection} />;
+      case 'capacity':
+        return <CapacityPanel onNavigate={setActiveSection} />;
       case 'overview_legacy':
         return <OpsHome onNavigate={setActiveSection} />;
       case 'live_ops':
