@@ -17,7 +17,6 @@ import AutoAcceptRules from '@/components/store/AutoAcceptRules';
 import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderIngest';
 import StoreWalletCard from '@/components/store/StoreWalletCard';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
-import { StoreDailyGoalCard } from '@/components/store/StoreDailyGoalCard';
 import { OwnerStoresPortal } from '@/components/store/OwnerStoresPortal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -265,11 +264,6 @@ export default function StoreApp() {
               </div>
             )}
             <AnnouncementsBanner audience="store_owners" />
-            {activeTab !== 'orders' && (
-              <div className="mb-4">
-                <StoreDailyGoalCard storeId={store.id} />
-              </div>
-            )}
             <Button
               onClick={() => setActiveTab('external')}
               className="w-full mb-4 h-12 gradient-primary text-primary-foreground font-heading gap-2 sm:hidden"
