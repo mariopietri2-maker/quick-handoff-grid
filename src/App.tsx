@@ -12,7 +12,8 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
-import Index from "./pages/Index.tsx";
+import { MobileAppGate } from "@/components/MobileAppGate";
+import RootEntry from "@/components/RootEntry";
 
 // Lazy-load every non-landing route so the initial bundle stays small.
 // This dramatically improves first paint across all apps.
@@ -75,8 +76,9 @@ const App = () => (
                 <MaintenanceBanner />
                 <Suspense fallback={<RouteFallback />}>
                   <RouteErrorBoundary>
+                  <MobileAppGate>
                   <Routes>
-                    <Route path="/" element={<Index />} />
+                    <Route path="/" element={<RootEntry />} />
                     <Route path="/auth" element={<AuthPage />} />
                     <Route path="/order" element={<CustomerApp />} />
                     <Route path="/restaurant/:id" element={<RestaurantPage />} />
@@ -116,6 +118,7 @@ const App = () => (
                     <Route path="/legal/:doc" element={<LegalPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </MobileAppGate>
                   </RouteErrorBoundary>
                 </Suspense>
               </CartProvider>
