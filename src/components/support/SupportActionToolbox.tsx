@@ -46,8 +46,13 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
   const [editAddress, setEditAddress] = useState('');
   const [editReason, setEditReason] = useState('');
 
-  const driverId = ticket.driver_id as string;
+  const driverId = ticket.driver_id as string | null;
   const orderId = ticket.order_id as string | null;
+  const requesterRole = (ticket.requester_role as string | null) ?? (driverId ? 'driver' : null);
+  const isDriverTicket = requesterRole === 'driver' && !!driverId;
+  const customerId = requesterRole === 'customer'
+    ? (ticket.requester_id as string | null)
+    : null;
 
   const reset = () => {
     setAmount(''); setReason(''); setTitle(''); setBody(''); setSeverity('info'); setSuspending(true);
@@ -71,16 +76,34 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
     if (!amt || amt <= 0 || amt > creditMax) return toast.error(`Ποσό 0–${creditMax}€`);
     if (!reason.trim()) return toast.error('Συμπλήρωσε αιτιολογία');
     setLoading(true);
-    const { error } = await (supabase as any).rpc('support_credit_wallet', {
-      p_driver_id: driverId, p_amount: amt, p_reason: reason,
-    });
-    if (error) { toast.error(error.message); setLoading(false); return; }
-    await sendChatNote(`💰 Πιστώθηκαν ${amt.toFixed(2)}€ στο πορτοφόλι σου: ${reason}`);
+
+    if (isDriverTicket && driverId) {
+      const { error } = await (supabase as any).rpc('support_credit_wallet', {
+        p_driver_id: driverId, p_amount: amt, p_reason: reason,
+      });
+      if (error) { toast.error(error.message); setLoading(false); return; }
+      await sendChatNote(`💰 Πιστώθηκαν ${amt.toFixed(2)}€ στο πορτοφόλι σου: ${reason}`);
+    } else if (customerId) {
+      const { error } = await (supabase as any).rpc('credit_customer_wallet', {
+        p_user_id: customerId,
+        p_amount: amt,
+        p_type: 'admin_adjust',
+        p_description: reason,
+      });
+      if (error) { toast.error(error.message); setLoading(false); return; }
+      await sendChatNote(`💰 Πιστώθηκαν ${amt.toFixed(2)}€ στο πορτοφόλι πελάτη: ${reason}`);
+    } else {
+      toast.error('Δεν υπάρχει πορτοφόλι για πίστωση σε αυτό το ticket');
+      setLoading(false);
+      return;
+    }
+
     toast.success('Πορτοφόλι πιστώθηκε');
     close();
   };
 
   const submitSuspend = async () => {
+    if (!driverId) return;
     if (suspending && !reason.trim()) return toast.error('Συμπλήρωσε λόγο');
     setLoading(true);
     const { error } = await (supabase as any).rpc('support_suspend_driver', {
@@ -98,6 +121,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
   };
 
   const submitBroadcast = async () => {
+    if (!driverId) return;
     if (!title.trim() || !body.trim()) return toast.error('Συμπλήρωσε τίτλο και μήνυμα');
     setLoading(true);
     const { error } = await (supabase as any).from('driver_notifications').insert({
@@ -115,7 +139,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
     // Bump priority + insert fraud signal as escalation marker
     await (supabase as any).from('support_tickets').update({ priority: 'sos', status: 'in_progress' }).eq('id', ticket.id);
     await (supabase as any).from('fraud_signals').insert({
-      user_id: driverId,
+      user_id: ticket.requester_id || driverId,
       signal_type: 'emergency_escalation',
       severity: 'high',
       details: {
@@ -196,17 +220,22 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
         </p>
 
         <div className="grid grid-cols-2 gap-1.5">
-          <ToolBtn icon={MapPin} label="Θέση οδηγού" onClick={() => setOpen('location')} />
-          <ToolBtn icon={BellRing} label="Push μήνυμα" onClick={() => setOpen('broadcast')} />
-          <ToolBtn icon={Wallet} label="Πίστωση €" onClick={() => setOpen('credit')} />
-          
-          <ToolBtn icon={Ban} label="Αναστολή" tone="warn" onClick={() => setOpen('suspend')} />
-          <ToolBtn
-            icon={RotateCcw}
-            label="Αλλαγή οδηγού"
-            disabled={!orderId}
-            onClick={() => setOpen('unassign')}
-          />
+          {isDriverTicket && (
+            <>
+              <ToolBtn icon={MapPin} label="Θέση οδηγού" onClick={() => setOpen('location')} />
+              <ToolBtn icon={BellRing} label="Push μήνυμα" onClick={() => setOpen('broadcast')} />
+              <ToolBtn icon={Ban} label="Αναστολή" tone="warn" onClick={() => setOpen('suspend')} />
+              <ToolBtn
+                icon={RotateCcw}
+                label="Αλλαγή οδηγού"
+                disabled={!orderId}
+                onClick={() => setOpen('unassign')}
+              />
+            </>
+          )}
+          {(isDriverTicket || customerId) && (
+            <ToolBtn icon={Wallet} label="Πίστωση €" onClick={() => setOpen('credit')} />
+          )}
           <ToolBtn
             icon={Pencil}
             label="Τροπ. παραγγελίας"
@@ -224,19 +253,25 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
         </div>
 
         {/* Location dialog (separate component) */}
-        <DriverLocationDialog
-          open={open === 'location'}
-          onOpenChange={(o) => !o && close()}
-          driverId={driverId}
-          driverName={driver?.full_name ?? undefined}
-        />
+        {isDriverTicket && driverId && (
+          <DriverLocationDialog
+            open={open === 'location'}
+            onOpenChange={(o) => !o && close()}
+            driverId={driverId}
+            driverName={driver?.full_name ?? undefined}
+          />
+        )}
 
         {/* Credit wallet */}
         <Dialog open={open === 'credit'} onOpenChange={(o) => !o && close()}>
           <DialogContent>
             <DialogHeader>
               <DialogTitle className="flex items-center gap-2"><Wallet className="h-5 w-5" /> Πίστωση πορτοφολιού</DialogTitle>
-              <DialogDescription>Έως {creditMax}€ ανά αίτημα ({isAdmin ? 'admin – 30 φορές/μήνα' : 'support – 5 φορές/μήνα'}). Καταγράφεται στο ιστορικό συναλλαγών του οδηγού.</DialogDescription>
+              <DialogDescription>
+                {isDriverTicket
+                  ? `Έως ${creditMax}€ ανά αίτημα (${isAdmin ? 'admin – 30 φορές/μήνα' : 'support – 5 φορές/μήνα'}). Καταγράφεται στο ιστορικό συναλλαγών του οδηγού.`
+                  : `Πίστωση πορτοφολιού πελάτη έως ${creditMax}€.`}
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div>
@@ -245,7 +280,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
               </div>
               <div>
                 <Label>Αιτιολογία</Label>
-                <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="π.χ. Αποζημίωση καυσίμου λόγω λάθος διεύθυνσης" />
+                <Textarea rows={2} value={reason} onChange={(e) => setReason(e.target.value)} placeholder="π.χ. Αποζημίωση λόγω λάθος παραγγελίας" />
               </div>
             </div>
             <DialogFooter>
