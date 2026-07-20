@@ -407,6 +407,11 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                     delivery_lng: lon ?? null,
                   }))}
                   placeholder="Που πάει το delivery;"
+                  initialCenter={
+                    store?.latitude && store?.longitude
+                      ? [Number(store.longitude), Number(store.latitude)]
+                      : undefined
+                  }
                 />
               </div>
 
