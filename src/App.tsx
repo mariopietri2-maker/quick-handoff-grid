@@ -32,6 +32,7 @@ const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.tsx"));
 const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage.tsx"));
 const NotFound = lazy(() => import("./pages/NotFound.tsx"));
 const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
+const DownloadAppPage = lazy(() => import("./pages/DownloadAppPage.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -119,6 +120,7 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path="/legal/:doc" element={<LegalPage />} />
+                    <Route path="/download" element={<DownloadAppPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   </MobileAppGate>
