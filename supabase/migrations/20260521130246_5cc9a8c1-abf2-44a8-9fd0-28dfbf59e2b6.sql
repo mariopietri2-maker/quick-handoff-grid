@@ -105,32 +105,41 @@ USING (
 );
 
 -- ============================================================
--- 3) Realtime: scope broadcast channels
+-- 3) Realtime: scope broadcast channels (skip if table missing)
 -- ============================================================
 DO $$
 DECLARE r record;
 BEGIN
+  IF to_regclass('realtime.messages') IS NULL THEN
+    RAISE NOTICE 'realtime.messages missing — skipping realtime topic policies';
+    RETURN;
+  END IF;
+
   FOR r IN SELECT policyname FROM pg_policies
            WHERE schemaname='realtime' AND tablename='messages' LOOP
     EXECUTE format('DROP POLICY IF EXISTS %I ON realtime.messages;', r.policyname);
   END LOOP;
+
+  EXECUTE $p$
+    CREATE POLICY "Users read own realtime topics"
+    ON realtime.messages FOR SELECT
+    TO authenticated
+    USING (
+      (realtime.topic() LIKE ('user:' || auth.uid()::text || '%'))
+      OR is_support_or_admin(auth.uid())
+    )
+  $p$;
+
+  EXECUTE $p$
+    CREATE POLICY "Users send to own realtime topics"
+    ON realtime.messages FOR INSERT
+    TO authenticated
+    WITH CHECK (
+      (realtime.topic() LIKE ('user:' || auth.uid()::text || '%'))
+      OR is_support_or_admin(auth.uid())
+    )
+  $p$;
 END $$;
-
-CREATE POLICY "Users read own realtime topics"
-ON realtime.messages FOR SELECT
-TO authenticated
-USING (
-  (realtime.topic() LIKE ('user:' || auth.uid()::text || '%'))
-  OR is_support_or_admin(auth.uid())
-);
-
-CREATE POLICY "Users send to own realtime topics"
-ON realtime.messages FOR INSERT
-TO authenticated
-WITH CHECK (
-  (realtime.topic() LIKE ('user:' || auth.uid()::text || '%'))
-  OR is_support_or_admin(auth.uid())
-);
 
 -- ============================================================
 -- 4) Server-side place_order RPC
