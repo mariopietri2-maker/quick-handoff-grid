@@ -10,6 +10,13 @@ const config: CapacitorConfig = {
   server: {
     url: 'https://quick-handoff-grid.vercel.app',
     cleartext: isDev,
+    androidScheme: 'https',
+    allowNavigation: [
+      'https://ojkesspghyqmjmupybva.supabase.co/*',
+      'https://*.supabase.co/*',
+      'https://quick-handoff-grid.vercel.app/*',
+      'https://api.mapbox.com/*',
+    ],
   },
   android: {
     backgroundColor: '#1a1a2e',
@@ -23,6 +30,7 @@ const config: CapacitorConfig = {
     scrollEnabled: false,
   },
   plugins: {
+    CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#1a1a2e',
