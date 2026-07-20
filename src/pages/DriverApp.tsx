@@ -122,7 +122,7 @@ export default function DriverApp() {
   const handleDecline = (id: string) => { declineOrder(id); };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
-  const [sheetCollapsed, setSheetCollapsed] = useState(false);
+  const [sheetCollapsed, setSheetCollapsed] = useState(true);
   const sheetDragStartY = useRef<number | null>(null);
   const sheetDragMoved = useRef(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
@@ -365,6 +365,19 @@ export default function DriverApp() {
   }
 
 
+  // Keep map fitBounds clear of top chrome + bottom sheet / nav card
+  const mapOverlayPadding = (() => {
+    if (isNavActive) {
+      return { top: 140, bottom: 220, left: 48, right: 72 };
+    }
+    // Collapsed sheet ≈ 18vh; expanded ≈ 48vh — pad for the covered band + chrome
+    const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const bottom = sheetCollapsed
+      ? Math.max(160, Math.round(vh * 0.20) + 56)
+      : Math.max(280, Math.round(vh * 0.50) + 40);
+    return { top: 96, bottom, left: 40, right: 40 };
+  })();
+
   return (
     <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden overscroll-none">
       <DriverPrefsApplier
@@ -373,11 +386,11 @@ export default function DriverApp() {
         hasActiveDelivery={!!activeDelivery}
       />
       {activeTab === 'home' ? (
-        <div className="flex-1 relative">
-          <Suspense fallback={<div className="fixed inset-0 z-0 bg-muted/40" />}>
+        <div className="flex-1 relative min-h-0">
+          <Suspense fallback={<div className="absolute inset-0 z-0 bg-muted/40" />}>
             <DriverMapbox
               ref={mapRef}
-              className="fixed inset-0 z-0"
+              className="absolute inset-0 z-0 w-full h-full"
               storeLat={storeInfo?.latitude}
               storeLng={storeInfo?.longitude}
               storeName={storeInfo?.name}
@@ -390,6 +403,7 @@ export default function DriverApp() {
               onDriverPosUpdate={setDriverPos}
               nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
               followMode={isNavActive}
+              overlayPadding={mapOverlayPadding}
             />
           </Suspense>
 
@@ -448,7 +462,7 @@ export default function DriverApp() {
             <div className="fixed right-3 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-3 pointer-events-auto animate-pop">
               <DriverSupportButton orderId={activeDelivery?.id} />
               <button
-                onClick={() => mapRef.current?.focusOn(navigatingTo!)}
+                onClick={() => mapRef.current?.fitOverview()}
                 className="h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center shadow-lg hover:bg-accent active:scale-90 transition-all"
                 aria-label="Προβολή ολόκληρης διαδρομής"
                 title="Προβολή ολόκληρης διαδρομής"
@@ -487,9 +501,20 @@ export default function DriverApp() {
           )}
 
 
-          <div className={`fixed bottom-0 left-0 right-0 z-20 ${sheetCollapsed ? 'max-h-[18vh]' : 'max-h-[72vh]'} overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain transition-[max-height] duration-300 ease-out ${isNavActive ? 'hidden' : ''}`}>
-            {/* Recenter button — pinned just above the sheet */}
-            <div className="flex justify-end pb-2 pointer-events-auto">
+          <div className={`fixed bottom-0 left-0 right-0 z-20 ${sheetCollapsed ? 'max-h-[20vh]' : 'max-h-[48vh]'} overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain transition-[max-height] duration-300 ease-out ${isNavActive ? 'hidden' : ''}`}>
+            {/* Map controls — pinned just above the sheet */}
+            <div className="flex justify-end gap-2 pb-2 pointer-events-auto">
+              <button
+                onClick={() => {
+                  setSheetCollapsed(true);
+                  setTimeout(() => mapRef.current?.fitOverview(), 340);
+                }}
+                className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90"
+                aria-label="Προβολή ολόκληρου χάρτη"
+                title="Προβολή ολόκληρου χάρτη"
+              >
+                <Navigation className="h-5 w-5 text-[hsl(var(--driver-text))]" />
+              </button>
               <button
                 onClick={() => mapRef.current?.recenter()}
                 className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90"
