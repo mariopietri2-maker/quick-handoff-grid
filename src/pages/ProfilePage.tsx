@@ -82,7 +82,7 @@ export default function ProfilePage() {
   const initials = (fullName || user.email || '?').charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-screen bg-muted/40">
+    <div className="min-h-full bg-muted/40 pb-4">
       <SEO
         title="Το προφίλ μου — Fresh Delivery"
         description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh Delivery."
@@ -93,7 +93,7 @@ export default function ProfilePage() {
       {/* Sticky header */}
       <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
         <div className="container max-w-2xl flex items-center justify-between px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate(-1)} aria-label="Πίσω">
+          <Button variant="ghost" size="icon" onClick={() => navigate('/order')} aria-label="Πίσω">
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <h1 className="font-heading font-bold text-base text-foreground">Το Προφίλ μου</h1>

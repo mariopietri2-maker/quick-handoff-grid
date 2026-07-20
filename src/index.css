@@ -149,7 +149,8 @@
     overscroll-behavior: none;
   }
 
-  /* Native (Capacitor) full-bleed: lock to dynamic viewport, no overscroll bands */
+  /* Native (Capacitor) full-bleed: lock to dynamic viewport, no overscroll bands.
+     Pages must provide their own scroll container (.customer-scroll / .driver-shell overflow). */
   html.is-native,
   html.is-native body,
   html.is-native #root {
@@ -157,6 +158,13 @@
     max-height: 100dvh;
     overflow: hidden;
     background: hsl(220 25% 97%);
+  }
+
+  /* Customer scrollport — required on native so content below the fold is reachable */
+  .customer-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+    touch-action: pan-y;
   }
 
   h1, h2, h3, h4, h5, h6 {
