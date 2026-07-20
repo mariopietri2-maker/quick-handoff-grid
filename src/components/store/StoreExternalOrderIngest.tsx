@@ -12,7 +12,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   Loader2, Sparkles, ScanLine, FileText, Send,
-  MapPin, Navigation, Building2, Bike, TrendingUp, Wallet, Lock,
+  MapPin, Navigation, Building2, Wallet, Lock,
 } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -92,6 +92,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const [scanText, setScanText] = useState('');
 
   const [rates, setRates] = useState<PayRates>({ base_pay: 3, per_km_rate: 0.5, min_pay: 3 });
+  /** Server-side tiered commission % (via commission_pct_for_amount) — preview only. */
+  const [tieredPct, setTieredPct] = useState(15);
 
   useEffect(() => {
     supabase
@@ -144,6 +146,20 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const totalAmount = Number(form.total_amount) || 0;
   const distanceKm = km ?? 0;
 
+  // Preview: resolve tiered % from the same RPC the server uses.
+  useEffect(() => {
+    if (totalAmount <= 0) {
+      setTieredPct(15);
+      return;
+    }
+    let cancelled = false;
+    (async () => {
+      const { data } = await supabase.rpc('commission_pct_for_amount', { p_amount: totalAmount });
+      if (!cancelled && data != null) setTieredPct(Number(data));
+    })();
+    return () => { cancelled = true; };
+  }, [totalAmount]);
+
   // Driver pay mirrors server: GREATEST(min_pay, base_pay + per_km_rate * km)
   const driverPay = useMemo(
     () => +Math.max(rates.min_pay, rates.base_pay + rates.per_km_rate * distanceKm).toFixed(2),
@@ -163,19 +179,11 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       case 'flat_fee':           return +flatFee.toFixed(2);
       case 'driver_plus_margin': return +(driverPay * (1 + marginPct / 100)).toFixed(2);
       case 'tiered':
-      default:                   return +(totalAmount * 0.15).toFixed(2);
+      default:                   return +(totalAmount * tieredPct / 100).toFixed(2);
     }
-  }, [billingMode, totalAmount, commissionPct, flatFee, marginPct, driverPay]);
+  }, [billingMode, totalAmount, commissionPct, flatFee, marginPct, driverPay, tieredPct]);
 
-  const platformProfit = +(storeCharge - driverPay).toFixed(2);
   const storeKeeps = +(totalAmount - storeCharge).toFixed(2);
-
-  const billingLabel: Record<string, string> = {
-    tiered: `Προμήθεια ~15% (commission tiers — ίδιο με internal)`,
-    commission: `Προμήθεια ${commissionPct}% επί παραγγελίας`,
-    flat_fee: `Σταθερό €${flatFee.toFixed(2)} ανά παραγγελία`,
-    driver_plus_margin: `Αμοιβή οδηγού + ${marginPct}% margin`,
-  };
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
     setForm(p => ({ ...p, [k]: v }));
@@ -238,6 +246,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     }
 
     setSubmitting(true);
+    // Do NOT pass payout/charge overrides — RPC rejects them for store owners
+    // and computes driver_payout + store_charge server-side from rates/km/billing mode.
     const { error } = await supabase.rpc('create_external_order' as any, {
       p_store_id: storeId,
       p_source: form.source,
@@ -252,14 +262,12 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       p_external_ref: form.external_ref || null,
       p_items_summary: form.items_summary || null,
       p_payment_method: form.payment_method,
-      // Driver pay is computed here from km — store cannot override.
-      p_driver_payout_override: driverPay,
     } as any);
     setSubmitting(false);
     if (error) {
       toast.error(error.message);
     } else {
-      toast.success('Παραγγελία εστάλη στους οδηγούς ✓');
+      toast.success('Η παραγγελία δημιουργήθηκε — εμφανίζεται στην κουζίνα ✓');
       setForm(blankForm);
       setKm(null);
       setPasteText('');
@@ -457,7 +465,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
               className="w-full h-11 gap-2 gradient-primary text-primary-foreground font-heading"
             >
               {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
-              Αποστολή στους Οδηγούς
+              Αποστολή παραγγελίας
             </Button>
           </CardContent>
         </Card>
@@ -509,30 +517,6 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
           </Card>
         </div>
       </div>
-    </div>
-  );
-}
-
-function SplitRow({
-  icon: Icon, label, pct, amount, tone,
-}: {
-  icon: React.ComponentType<{ className?: string }>;
-  label: string; pct?: string; amount: number; tone: string;
-}) {
-  return (
-    <div className="flex items-center justify-between rounded-lg border border-border/60 bg-muted/30 px-3 py-2">
-      <div className="flex items-center gap-2 min-w-0">
-        <span className={cn('h-6 w-6 rounded-md bg-background flex items-center justify-center shrink-0', tone)}>
-          <Icon className="h-3 w-3" />
-        </span>
-        <div className="min-w-0">
-          <p className="text-xs font-medium truncate">{label}</p>
-          {pct ? <p className="text-[10px] text-muted-foreground">{pct}</p> : null}
-        </div>
-      </div>
-      <span className={cn('font-heading font-bold text-sm tabular-nums', tone)}>
-        €{amount.toFixed(2)}
-      </span>
     </div>
   );
 }
