@@ -99,8 +99,9 @@ Fresh Delivery is a comprehensive food delivery solution built with modern web t
    ```env
    VITE_SUPABASE_URL=your_supabase_url
    VITE_SUPABASE_ANON_KEY=your_anon_key
+   VITE_PAYMENTS_CLIENT_TOKEN=your_stripe_publishable_key
+   # Optional client-side Mapbox fallback (preferred: edge function get-mapbox-token)
    VITE_MAPBOX_TOKEN=your_mapbox_token
-   VITE_STRIPE_PUBLIC_KEY=your_stripe_key
    ```
 
 4. **Start the development server**
