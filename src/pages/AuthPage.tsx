@@ -15,42 +15,64 @@ export default function AuthPage() {
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp, user, profile, isAdmin, isSupport } = useAuth();
+  const { signIn, signUp, user, profile, isAdmin, isSupport, loading } = useAuth();
   const navigate = useNavigate();
 
   useEffect(() => {
-    if (user && profile) {
-      if (isAdmin) navigate('/admin', { replace: true });
-      else if (isSupport) navigate('/support', { replace: true });
-      else if (profile.role === 'driver') navigate('/driver', { replace: true });
-      else if (profile.role === 'store') navigate('/store', { replace: true });
-      else navigate('/order', { replace: true });
-    }
-  }, [user, profile, isAdmin, isSupport, navigate]);
+    if (loading || !user || !profile) return;
+    if (isAdmin) navigate('/admin', { replace: true });
+    else if (isSupport) navigate('/support', { replace: true });
+    else if (profile.role === 'driver') navigate('/driver', { replace: true });
+    else if (profile.role === 'store') navigate('/store', { replace: true });
+    else navigate('/order', { replace: true });
+  }, [user, profile, isAdmin, isSupport, loading, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setSubmitting(true);
 
+    const emailNorm = email.trim().toLowerCase();
+    if (!emailNorm || !password) {
+      toast.error('Συμπληρώστε email και κωδικό');
+      setSubmitting(false);
+      return;
+    }
+
     try {
       if (isLogin) {
-        const { error } = await signIn(email, password);
+        const { error } = await signIn(emailNorm, password);
         if (error) {
-          toast.error(error.message);
+          const msg = (error.message || '').toLowerCase();
+          if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
+            toast.error('Λάθος email ή κωδικός. Αν δεν έχετε λογαριασμό, πατήστε Εγγραφή.');
+          } else if (msg.includes('email not confirmed')) {
+            toast.error('Το email δεν έχει επιβεβαιωθεί. Ξαναδοκιμάστε σε λίγο ή κάντε νέα εγγραφή.');
+          } else {
+            toast.error(error.message);
+          }
         } else {
-          toast.success('Καλώς ήρθατε ξανά!');
+          toast.success('Καλώς ήρθατε!');
         }
       } else {
         if (!fullName.trim()) {
           toast.error('Παρακαλώ εισάγετε το όνομά σας');
-          setSubmitting(false);
           return;
         }
-        const { error } = await signUp(email, password, fullName, 'customer');
+        if (password.length < 6) {
+          toast.error('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
+          return;
+        }
+        const { error, session } = await signUp(emailNorm, password, fullName, 'customer');
         if (error) {
           toast.error(error.message);
+          if ((error.message || '').toLowerCase().includes('υπάρχει ήδη')) {
+            setIsLogin(true);
+          }
+        } else if (session) {
+          toast.success('Συνδεθήκατε! Καλώς ήρθατε.');
         } else {
-          toast.success('Ο λογαριασμός δημιουργήθηκε! Ελέγξτε το email σας για επιβεβαίωση.');
+          toast.error('Η εγγραφή ολοκληρώθηκε αλλά η σύνδεση απέτυχε. Δοκιμάστε Σύνδεση με τον ίδιο κωδικό.');
+          setIsLogin(true);
         }
       }
     } finally {
@@ -66,7 +88,6 @@ export default function AuthPage() {
         path="/auth"
       />
       <h1 className="sr-only">Σύνδεση & Εγγραφή στο Fresh Delivery</h1>
-      {/* Header */}
       <header className="px-4 py-4 flex items-center justify-center">
         <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
       </header>
@@ -75,14 +96,38 @@ export default function AuthPage() {
         <Card className="w-full max-w-md shadow-[var(--shadow-lg)] border-[hsl(220,20%,14%)] bg-[hsl(220,20%,10%)] animate-scale-in">
           <CardHeader className="text-center pb-2">
             <CardTitle className="font-heading text-2xl text-[hsl(220,14%,96%)]">
-              {isLogin ? 'Καλώς Ήρθατε' : 'Δημιουργία Λογαριασμού'}
+              {isLogin ? 'Σύνδεση' : 'Εγγραφή'}
             </CardTitle>
             <p className="text-sm text-[hsl(220,10%,55%)] mt-1">
-              {isLogin ? 'Συνδεθείτε για να συνεχίσετε' : 'Εγγραφείτε σε λίγα δευτερόλεπτα'}
+              {isLogin ? 'Μπείτε με email και κωδικό' : 'Δημιουργήστε λογαριασμό πελάτη'}
             </p>
+            <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[hsl(220,20%,14%)] p-1">
+              <button
+                type="button"
+                onClick={() => setIsLogin(true)}
+                className={`h-10 rounded-md font-heading text-sm transition-colors ${
+                  isLogin
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)]'
+                }`}
+              >
+                Σύνδεση
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsLogin(false)}
+                className={`h-10 rounded-md font-heading text-sm transition-colors ${
+                  !isLogin
+                    ? 'bg-primary text-primary-foreground'
+                    : 'text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)]'
+                }`}
+              >
+                Εγγραφή
+              </button>
+            </div>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
               {!isLogin && (
                 <div className="space-y-2">
                   <Label htmlFor="fullName" className="font-heading text-[hsl(220,14%,96%)]">Ονοματεπώνυμο</Label>
@@ -90,6 +135,8 @@ export default function AuthPage() {
                     <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
                     <Input
                       id="fullName"
+                      name="name"
+                      autoComplete="name"
                       placeholder="Το ονοματεπώνυμό σας"
                       value={fullName}
                       onChange={(e) => setFullName(e.target.value)}
@@ -105,7 +152,9 @@ export default function AuthPage() {
                   <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
                   <Input
                     id="email"
+                    name="email"
                     type="email"
+                    autoComplete="email"
                     placeholder="you@example.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
@@ -121,8 +170,10 @@ export default function AuthPage() {
                   <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
                   <Input
                     id="password"
+                    name="password"
                     type="password"
-                    placeholder="••••••••"
+                    autoComplete={isLogin ? 'current-password' : 'new-password'}
+                    placeholder="Τουλάχιστον 6 χαρακτήρες"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
@@ -141,17 +192,9 @@ export default function AuthPage() {
                     <Loader2 className="mr-2 h-5 w-5 animate-spin" />
                     Παρακαλώ περιμένετε...
                   </>
-                ) : isLogin ? 'Σύνδεση' : 'Δημιουργία Λογαριασμού'}
+                ) : isLogin ? 'Σύνδεση' : 'Δημιουργία & είσοδος'}
               </Button>
             </form>
-            <div className="mt-4 text-center">
-              <button
-                onClick={() => setIsLogin(!isLogin)}
-                className="text-sm text-primary hover:underline font-heading transition-colors"
-              >
-                {isLogin ? 'Δεν έχετε λογαριασμό; Εγγραφή' : 'Έχετε ήδη λογαριασμό; Σύνδεση'}
-              </button>
-            </div>
           </CardContent>
         </Card>
       </main>

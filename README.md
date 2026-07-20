@@ -97,12 +97,18 @@ Fresh Delivery is a comprehensive food delivery solution built with modern web t
    ```
    Set the following:
    ```env
-   VITE_SUPABASE_URL=https://ajkefntritjjynzofprq.supabase.co
+   VITE_SUPABASE_URL=https://ojkesspghyqmjmupybva.supabase.co
    VITE_SUPABASE_ANON_KEY=your_anon_key
    VITE_PAYMENTS_CLIENT_TOKEN=your_stripe_publishable_key
    # Optional client-side Mapbox fallback (preferred: edge function get-mapbox-token)
    VITE_MAPBOX_TOKEN=your_mapbox_token
    ```
+
+   Supabase Auth (Dashboard → Authentication):
+   - Keep **Confirm email** disabled / `mailer_autoconfirm` on until custom SMTP is configured
+     (otherwise signup emails never arrive and login shows “Invalid login credentials”)
+   - **Site URL** must be `https://quick-handoff-grid.vercel.app`
+   - Redirect allow-list should include the Vercel app and `http://localhost:5173`
 
    Edge function secrets (Supabase dashboard):
    - `CRON_SECRET` — required for `auto-dispatch` scheduler (anon JWT is no longer accepted)
