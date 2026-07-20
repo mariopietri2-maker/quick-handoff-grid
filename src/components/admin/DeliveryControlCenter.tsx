@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { formatOrderNumber } from '@/lib/order-number';
+import AssignmentSettings from './AssignmentSettings';
 
 type Dlg =
   | null | 'reassign' | 'extend' | 'pause' | 'credit_customer' | 'refund' | 'unassign' | 'cancel';
@@ -106,20 +107,26 @@ export default function DeliveryControlCenter() {
     },
   });
 
-  // Dispatch kill switch state
-  const { data: flag } = useQuery({
-    queryKey: ['dcc-dispatch-flag'],
-    refetchInterval: 20000,
+  // Dispatch settings — single source of truth (platform_settings)
+  const { data: dispatchSettings } = useQuery({
+    queryKey: ['dcc-dispatch-settings'],
+    refetchInterval: 15000,
     queryFn: async () => {
-      const { data } = await (supabase as any)
-        .from('feature_flags')
-        .select('key,is_enabled')
-        .eq('key', 'dispatch_enabled')
+      const { data } = await supabase
+        .from('platform_settings')
+        .select('auto_dispatch_enabled, assignment_mode, dist_offer_timeout_seconds')
+        .eq('id', 1)
         .maybeSingle();
-      return data;
+      return data as {
+        auto_dispatch_enabled?: boolean;
+        assignment_mode?: string;
+        dist_offer_timeout_seconds?: number;
+      } | null;
     },
   });
-  const dispatchOn = flag?.is_enabled !== false;
+  const dispatchOn = dispatchSettings?.auto_dispatch_enabled !== false;
+  const assignmentMode = dispatchSettings?.assignment_mode ?? 'auto';
+  const offerTimeout = dispatchSettings?.dist_offer_timeout_seconds ?? 60;
 
   // Realtime refresh
   useEffect(() => {
@@ -224,11 +231,31 @@ export default function DeliveryControlCenter() {
   const toggleDispatch = async () => {
     if (!isAdmin) return toast.error('Μόνο admin');
     setBusy(true);
-    const { error } = await (supabase.rpc as any)('admin_set_dispatch_enabled', { p_enabled: !dispatchOn });
+    const next = !dispatchOn;
+    const { error } = await supabase
+      .from('platform_settings')
+      .update({ auto_dispatch_enabled: next } as never)
+      .eq('id', 1);
+    try {
+      await (supabase.rpc as any)('admin_set_dispatch_enabled', { p_enabled: next });
+    } catch { /* optional legacy sync */ }
     setBusy(false);
     if (error) return toast.error(error.message);
-    toast.success(dispatchOn ? 'Dispatch stopped' : 'Dispatch resumed');
-    qc.invalidateQueries({ queryKey: ['dcc-dispatch-flag'] });
+    toast.success(next ? 'Auto-dispatch ενεργό' : 'Auto-dispatch σε παύση');
+    qc.invalidateQueries({ queryKey: ['dcc-dispatch-settings'] });
+  };
+
+  const setAssignmentMode = async (mode: 'auto' | 'manual') => {
+    if (!isAdmin) return toast.error('Μόνο admin');
+    setBusy(true);
+    const { error } = await supabase
+      .from('platform_settings')
+      .update({ assignment_mode: mode } as never)
+      .eq('id', 1);
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(mode === 'auto' ? 'Αυτόματη ανάθεση' : 'Χειροκίνητη ανάθεση');
+    qc.invalidateQueries({ queryKey: ['dcc-dispatch-settings'] });
   };
 
   const runDispatchNow = async () => {
@@ -263,22 +290,37 @@ export default function DeliveryControlCenter() {
           </p>
         </div>
 
-        {/* Global kill switch + manual dispatch */}
-        <div className="flex items-center gap-2">
-          <Card className={dispatchOn ? '' : 'border-destructive/40 bg-destructive/5'}>
+        {/* Global kill switch + mode + manual dispatch */}
+        <div className="flex items-center gap-2 flex-wrap">
+          <Card className={dispatchOn && assignmentMode === 'auto' ? '' : 'border-destructive/40 bg-destructive/5'}>
             <CardContent className="p-2.5 flex items-center gap-3">
               <div className="flex items-center gap-2">
-                {dispatchOn
+                {dispatchOn && assignmentMode === 'auto'
                   ? <Radio className="h-4 w-4 text-emerald-600" />
                   : <ShieldAlert className="h-4 w-4 text-destructive" />}
                 <div className="text-xs">
-                  <p className="font-semibold leading-tight">Global Dispatch</p>
-                  <p className="text-[10px] text-muted-foreground">{dispatchOn ? 'Active' : 'PAUSED'}</p>
+                  <p className="font-semibold leading-tight">Auto-dispatch</p>
+                  <p className="text-[10px] text-muted-foreground">
+                    {assignmentMode !== 'auto' ? 'MANUAL mode' : dispatchOn ? `Active · ${offerTimeout}s offers` : 'PAUSED'}
+                  </p>
                 </div>
               </div>
               <Switch checked={dispatchOn} disabled={!isAdmin || busy} onCheckedChange={toggleDispatch} />
             </CardContent>
           </Card>
+          <Select
+            value={assignmentMode === 'auto' ? 'auto' : 'manual'}
+            onValueChange={(v) => setAssignmentMode(v as 'auto' | 'manual')}
+            disabled={!isAdmin || busy}
+          >
+            <SelectTrigger className="w-[140px] h-10 text-xs">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="auto">Αυτόματο</SelectItem>
+              <SelectItem value="manual">Χειροκίνητο</SelectItem>
+            </SelectContent>
+          </Select>
           <Button size="sm" variant="outline" onClick={runDispatchNow} disabled={busy}>
             <Zap className="h-3.5 w-3.5 mr-1.5" /> Τρέξε dispatch τώρα
           </Button>
@@ -554,6 +596,9 @@ export default function DeliveryControlCenter() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Dispatch tuning — moved here from Orders table (single place) */}
+      <AssignmentSettings />
     </div>
   );
 }

@@ -16,7 +16,6 @@ import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
 // Eagerly load only the default landing tab — everything else is lazy.
 import OpsHome from '@/components/admin/OpsHome';
-const AdminOverview = lazy(() => import('@/components/admin/AdminOverview'));
 const OrdersKanban  = lazy(() => import('@/components/admin/OrdersKanban'));
 
 // Lazy-load every other admin panel so the admin shell stays small and fast.
@@ -27,7 +26,6 @@ const SupportTicketsManager  = lazy(() => import('@/components/admin/SupportTick
 const PricingSettings        = lazy(() => import('@/components/admin/PricingSettings'));
 const SupportRoleManager     = lazy(() => import('@/components/admin/SupportRoleManager'));
 const DriverMapSettings      = lazy(() => import('@/components/admin/DriverMapSettings'));
-const DriverMapEditor        = lazy(() => import('@/components/admin/DriverMapEditor'));
 const AdminLiveDriversMap    = lazy(() => import('@/components/admin/AdminLiveDriversMap'));
 const ServiceZonesEditor     = lazy(() => import('@/components/admin/ServiceZonesEditor'));
 const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
@@ -40,8 +38,6 @@ const ExternalOrderIngest    = lazy(() => import('@/components/admin/ExternalOrd
 const StoreBillingSettings   = lazy(() => import('@/components/admin/StoreBillingSettings'));
 const StorePromotionsManager = lazy(() => import('@/components/admin/StorePromotionsManager'));
 const SystemResetPanel       = lazy(() => import('@/components/admin/SystemResetPanel'));
-const LiveOpsDashboard       = lazy(() => import('@/components/admin/LiveOpsDashboard'));
-const DispatchDiagnostics    = lazy(() => import('@/components/admin/DispatchDiagnostics'));
 const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerAppCustomization'));
 const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
@@ -49,12 +45,7 @@ const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
 const LedgerPanel            = lazy(() => import('@/components/admin/LedgerPanel'));
-const AssignmentSettings     = lazy(() => import('@/components/admin/AssignmentSettings'));
-const SystemHealthPanel      = lazy(() => import('@/components/admin/SystemHealthPanel'));
 const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsagePanel'));
-const LedgerExplorer         = lazy(() => import('@/components/admin/LedgerExplorer'));
-const BasketDashboard        = lazy(() => import('@/components/admin/BasketDashboard'));
-const MoneyEnginePanel       = lazy(() => import('@/components/admin/MoneyEnginePanel'));
 const BufferDistributor      = lazy(() => import('@/components/admin/BufferDistributor'));
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
@@ -271,15 +262,13 @@ export default function AdminApp() {
   const renderContent = () => {
     switch (activeSection) {
       case 'overview':
-        return <OpsHome />;
+        return <OpsHome onNavigate={setActiveSection} />;
       case 'overview_legacy':
-        return (
-          <AdminOverview orders={orders.data ?? []} stores={stores.data ?? []} profiles={profiles.data ?? []} reviews={reviews.data ?? []} earnings={earnings.data ?? []} />
-        );
+        return <OpsHome onNavigate={setActiveSection} />;
       case 'live_ops':
-        return <LiveOpsDashboard />;
+        return <AdminLiveDriversMap />;
       case 'system_health':
-        return <SystemHealthPanel />;
+        return <SystemDoctorPanel />;
       case 'cloud_usage':
         return <CloudUsagePanel />;
       case 'analytics':
@@ -287,6 +276,7 @@ export default function AdminApp() {
       case 'audit':
         return <AdminAuditTab />;
       case 'delivery_control':
+      case 'dispatch_debug':
         return <DeliveryControlCenter />;
       case 'orders':
         return <OrdersKanban />;
@@ -322,7 +312,7 @@ export default function AdminApp() {
       case 'driver_map_settings':
         return <DriverMapSettings />;
       case 'driver_map_editor':
-        return <DriverMapEditor />;
+        return <AdminLiveDriversMap />;
       case 'drivers_live_map':
         return <AdminLiveDriversMap />;
       case 'service_zones':
@@ -343,8 +333,6 @@ export default function AdminApp() {
         return <CannedRepliesManager />;
       case 'external_orders':
         return <ExternalOrderIngest />;
-      case 'dispatch_debug':
-        return <DispatchDiagnostics />;
       case 'store_billing':
         return <StoreBillingSettings />;
       case 'promotions':
@@ -578,7 +566,6 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
   return (
     <div className="space-y-3">
       <SectionHeader title="Παραγγελίες" count={orders?.length ?? 0} sub="ζωντανή ροή & ανάθεση" />
-      <AssignmentSettings />
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">

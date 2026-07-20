@@ -1,20 +1,15 @@
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
-import { TrendingUp, TrendingDown, Activity, Clock, CheckCircle2, AlertTriangle, Star, Wallet } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, Clock, CheckCircle2, Star, Wallet, Zap, LayoutGrid, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import DriverSupplyPanel from './DriverSupplyPanel';
-import OrdersKanban from './OrdersKanban';
-import { format, subDays, startOfDay } from 'date-fns';
+import { Button } from '@/components/ui/button';
+import { subDays, startOfDay } from 'date-fns';
 
 /**
- * DoorDash-style admin ops home.
- *
- * Sections:
- *   1. KPI strip with target + 7-day sparkline trend (Acceptance, On-time %, Avg delivery, Revenue, Driver utilization)
- *   2. Driver supply panel (right rail)
- *   3. Live orders Kanban pipeline (main)
- *   4. Recent activity feed
+ * Admin ops home — KPI strip + driver supply + shortcuts.
+ * Kanban / live map live in their own tabs (no duplicates here).
  */
 
 interface KpiProps {
@@ -83,7 +78,7 @@ function KpiCard({ label, value, target, trend, values, tone = 'neutral', icon: 
   );
 }
 
-export default function OpsHome() {
+export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => void }) {
   // Fetch last 8 days of orders for trends + today's snapshot
   const { data } = useQuery({
     queryKey: ['ops-home-metrics'],
@@ -101,7 +96,22 @@ export default function OpsHome() {
         .select('action, created_at')
         .gte('created_at', since)
         .limit(2000);
-      return { orders: orders ?? [], states: states ?? [], offers: offers ?? [] };
+      const { count: pendingOffers } = await supabase
+        .from('pending_offers')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'pending');
+      const { count: unassignedReady } = await supabase
+        .from('orders')
+        .select('id', { count: 'exact', head: true })
+        .eq('status', 'ready')
+        .is('driver_id', null);
+      return {
+        orders: orders ?? [],
+        states: states ?? [],
+        offers: offers ?? [],
+        pendingOffers: pendingOffers ?? 0,
+        unassignedReady: unassignedReady ?? 0,
+      };
     },
   });
 
@@ -184,6 +194,8 @@ export default function OpsHome() {
       revenue: { value: revToday, trend: revTrend, series: revSeries },
       onlineNow,
       utilSeries,
+      pendingOffers: data.pendingOffers,
+      unassignedReady: data.unassignedReady,
     };
   }, [data]);
 
@@ -242,10 +254,37 @@ export default function OpsHome() {
         />
       </div>
 
-      {/* Main grid: kanban + supply rail */}
+      {/* Shortcuts + supply — no duplicate Kanban here */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3.5">
-        <div className="min-w-0">
-          <OrdersKanban />
+        <div className="min-w-0 space-y-3">
+          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+              <div>
+                <p className="font-heading font-bold text-sm">Γρήγορες ενέργειες</p>
+                <p className="text-xs text-muted-foreground">
+                  {metrics.unassignedReady > 0
+                    ? `${metrics.unassignedReady} έτοιμες χωρίς οδηγό · ${metrics.pendingOffers} ενεργές προσφορές`
+                    : `${metrics.pendingOffers} ενεργές προσφορές`}
+                </p>
+              </div>
+              {metrics.unassignedReady > 0 && (
+                <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1">
+                  Χρειάζεται dispatch
+                </span>
+              )}
+            </div>
+            <div className="flex flex-wrap gap-2">
+              <Button size="sm" onClick={() => onNavigate?.('delivery_control')}>
+                <Zap className="h-3.5 w-3.5 mr-1.5" /> Dispatch
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => onNavigate?.('orders')}>
+                <LayoutGrid className="h-3.5 w-3.5 mr-1.5" /> Pipeline
+              </Button>
+              <Button size="sm" variant="outline" onClick={() => onNavigate?.('drivers_live_map')}>
+                <MapPin className="h-3.5 w-3.5 mr-1.5" /> Live χάρτης
+              </Button>
+            </div>
+          </div>
         </div>
         <div className="space-y-3.5">
           <DriverSupplyPanel />
