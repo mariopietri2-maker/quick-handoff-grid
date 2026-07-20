@@ -1526,10 +1526,32 @@ BEGIN
 END;
 $$;
 
-GRANT EXECUTE ON FUNCTION public.nearby_active_drivers TO authenticated, service_role;
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'nearby_active_drivers'
+  LOOP
+    EXECUTE format('GRANT EXECUTE ON FUNCTION %s TO authenticated, service_role', r.sig);
+  END LOOP;
+END $$;
 
 -- Source: 20260429020415_54fa852d-4d76-48c9-9d77-9f228d4df59c.sql
-REVOKE EXECUTE ON FUNCTION public.nearby_active_drivers FROM PUBLIC, anon;
+DO $$
+DECLARE r record;
+BEGIN
+  FOR r IN
+    SELECT p.oid::regprocedure AS sig
+    FROM pg_proc p
+    JOIN pg_namespace n ON n.oid = p.pronamespace
+    WHERE n.nspname = 'public' AND p.proname = 'nearby_active_drivers'
+  LOOP
+    EXECUTE format('REVOKE EXECUTE ON FUNCTION %s FROM PUBLIC, anon', r.sig);
+  END LOOP;
+END $$;
 
 -- Source: 20260429193003_415dffa4-998d-46e1-a2f8-17dbd7b58b3f.sql
 ALTER TABLE public.platform_settings ADD COLUMN IF NOT EXISTS platform_service_fee numeric NOT NULL DEFAULT 0.99;
