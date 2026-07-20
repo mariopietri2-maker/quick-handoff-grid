@@ -50,16 +50,19 @@ function Sparkline({ values, tone = 'good' }: { values: number[]; tone?: KpiProp
 
 function KpiCard({ label, value, target, trend, values, tone = 'neutral', icon: Icon }: KpiProps) {
   const trendIsGood = (trend ?? 0) >= 0;
+  const accentBar =
+    tone === 'good' ? 'bg-success' :
+    tone === 'warn' ? 'bg-warning' :
+    tone === 'bad' ? 'bg-destructive' : 'bg-primary';
   return (
-    <div className="rounded-xl border border-border bg-card p-3 hover:shadow-sm transition-shadow">
-      <div className="flex items-center justify-between mb-1">
-        <div className="flex items-center gap-1.5">
-          <Icon className="h-3.5 w-3.5 text-muted-foreground" />
-          <p className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{label}</p>
-        </div>
+    <div className="admin-kpi">
+      <span className={cn('admin-kpi-accent', accentBar)} />
+      <div className="admin-kpi-label">
+        <Icon className="h-3 w-3" />
+        {label}
         {typeof trend === 'number' && (
           <span className={cn(
-            'text-[10.5px] font-semibold tabular-nums flex items-center gap-0.5',
+            'ml-auto text-[10px] font-semibold tabular-nums normal-case tracking-normal flex items-center gap-0.5',
             trendIsGood ? 'text-success' : 'text-destructive',
           )}>
             {trendIsGood ? <TrendingUp className="h-2.5 w-2.5" /> : <TrendingDown className="h-2.5 w-2.5" />}
@@ -69,8 +72,8 @@ function KpiCard({ label, value, target, trend, values, tone = 'neutral', icon: 
       </div>
       <div className="flex items-end justify-between gap-2">
         <div>
-          <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
-          {target && <p className="text-[10px] text-muted-foreground mt-1">target {target}</p>}
+          <p className="admin-kpi-value">{value}</p>
+          {target && <p className="admin-kpi-sub">target {target}</p>}
         </div>
         <Sparkline values={values} tone={tone} />
       </div>
@@ -257,30 +260,30 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
       {/* Shortcuts + supply — no duplicate Kanban here */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3.5">
         <div className="min-w-0 space-y-3">
-          <div className="rounded-xl border border-border bg-card p-4 space-y-3">
+          <div className="admin-card p-3.5 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
-                <p className="font-heading font-bold text-sm">Γρήγορες ενέργειες</p>
-                <p className="text-xs text-muted-foreground">
+                <p className="admin-section-title text-[14px]">Γρήγορες ενέργειες</p>
+                <p className="admin-section-sub">
                   {metrics.unassignedReady > 0
                     ? `${metrics.unassignedReady} έτοιμες χωρίς οδηγό · ${metrics.pendingOffers} ενεργές προσφορές`
                     : `${metrics.pendingOffers} ενεργές προσφορές`}
                 </p>
               </div>
               {metrics.unassignedReady > 0 && (
-                <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1">
+                <span className="admin-pill border-amber-500/30 bg-amber-500/10 text-amber-800 dark:text-amber-300">
                   Χρειάζεται dispatch
                 </span>
               )}
             </div>
             <div className="flex flex-wrap gap-2">
-              <Button size="sm" onClick={() => onNavigate?.('delivery_control')}>
+              <Button size="sm" className="h-8 text-[12px]" onClick={() => onNavigate?.('delivery_control')}>
                 <Zap className="h-3.5 w-3.5 mr-1.5" /> Dispatch
               </Button>
-              <Button size="sm" variant="outline" onClick={() => onNavigate?.('orders')}>
+              <Button size="sm" variant="outline" className="h-8 text-[12px]" onClick={() => onNavigate?.('orders')}>
                 <LayoutGrid className="h-3.5 w-3.5 mr-1.5" /> Pipeline
               </Button>
-              <Button size="sm" variant="outline" onClick={() => onNavigate?.('drivers_live_map')}>
+              <Button size="sm" variant="outline" className="h-8 text-[12px]" onClick={() => onNavigate?.('drivers_live_map')}>
                 <MapPin className="h-3.5 w-3.5 mr-1.5" /> Live χάρτης
               </Button>
             </div>

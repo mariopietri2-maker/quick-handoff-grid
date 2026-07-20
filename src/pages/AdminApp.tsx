@@ -426,13 +426,13 @@ export default function AdminApp() {
             const orderDelta = todays.length > 0 && yesterdays.length > 0 ? ((todays.length - yesterdays.length) / yesterdays.length) * 100 : null;
             const revDelta = revenueToday > 0 && revenueYesterday > 0 ? ((revenueToday - revenueYesterday) / revenueYesterday) * 100 : null;
             return (
-              <div className="px-3 lg:px-4 py-2 border-t border-border/40 bg-gradient-to-b from-muted/10 to-transparent overflow-x-auto">
-                <div className="flex gap-2 min-w-max">
-                  <KpiTile icon={Activity} label="Live παραγγελίες" value={String(live)} accent="primary" pulse={live > 0} />
+              <div className="admin-kpi-strip overflow-x-auto">
+                <div className="flex gap-1.5 min-w-max">
+                  <KpiTile icon={Activity} label="Live" value={String(live)} accent="primary" pulse={live > 0} />
                   <KpiTile icon={ShoppingBag} label="Σήμερα" value={String(todays.length)} accent="info" delta={orderDelta} />
-                  <KpiTile icon={TrendingUp} label="Τζίρος σήμερα" value={`€${revenueToday.toFixed(0)}`} accent="foreground" delta={revDelta} />
-                  <KpiTile icon={Wallet} label="Admin κερδίζει" value={`€${adminToday.toFixed(2)}`} accent="success" />
-                  <KpiTile icon={Bike} label="Ενεργοί οδηγοί" value={String(activeDrivers)} accent="warning" />
+                  <KpiTile icon={TrendingUp} label="Τζίρος" value={`€${revenueToday.toFixed(0)}`} accent="foreground" delta={revDelta} />
+                  <KpiTile icon={Wallet} label="Admin" value={`€${adminToday.toFixed(2)}`} accent="success" />
+                  <KpiTile icon={Bike} label="Οδηγοί" value={String(activeDrivers)} accent="warning" />
                 </div>
               </div>
             );
@@ -914,22 +914,22 @@ function KpiTile({
   const showDelta = typeof delta === 'number' && isFinite(delta);
   const deltaUp = showDelta && delta! >= 0;
   return (
-    <div className="relative flex items-center gap-2.5 pl-3 pr-3.5 h-11 rounded-lg bg-card border border-border/70 shadow-[0_1px_0_0_hsl(var(--border)/0.5)] hover:border-border transition-colors shrink-0 overflow-hidden">
+    <div className="relative flex items-center gap-2 pl-2.5 pr-3 h-9 rounded-md bg-card border border-border/70 shrink-0 overflow-hidden">
       <span className={cn('absolute left-0 top-0 bottom-0 w-[2px]', a.bar)} />
-      <span className={cn('relative flex items-center justify-center h-6 w-6 rounded-md', a.bg, a.text)}>
-        <Icon className="h-3.5 w-3.5" />
+      <span className={cn('relative flex items-center justify-center h-5 w-5 rounded', a.bg, a.text)}>
+        <Icon className="h-3 w-3" />
         {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse ring-2 ring-card" />}
       </span>
-      <div className="flex flex-col leading-tight">
-        <span className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground font-semibold">{label}</span>
-        <div className="flex items-baseline gap-1.5">
-          <span className={cn('text-[14px] font-bold tabular-nums', a.text)}>{value}</span>
+      <div className="flex flex-col leading-none gap-0.5">
+        <span className="text-[9px] uppercase tracking-[0.08em] text-muted-foreground font-semibold">{label}</span>
+        <div className="flex items-baseline gap-1">
+          <span className={cn('text-[13px] font-bold tabular-nums', a.text)}>{value}</span>
           {showDelta && (
             <span className={cn(
-              'text-[10px] font-semibold tabular-nums',
+              'text-[9.5px] font-semibold tabular-nums',
               deltaUp ? 'text-success' : 'text-destructive',
             )}>
-              {deltaUp ? '▲' : '▼'} {Math.abs(delta!).toFixed(0)}%
+              {deltaUp ? '▲' : '▼'}{Math.abs(delta!).toFixed(0)}%
             </span>
           )}
         </div>

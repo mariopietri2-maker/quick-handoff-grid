@@ -453,6 +453,46 @@
   .admin-section-sub {
     @apply text-[12px] text-muted-foreground;
   }
+
+  .admin-empty {
+    @apply flex flex-col items-center justify-center text-center py-10 px-4;
+  }
+  .admin-empty-title {
+    @apply text-[13px] font-semibold text-foreground;
+  }
+  .admin-empty-hint {
+    @apply text-[12px] text-muted-foreground mt-1 max-w-xs;
+  }
+
+  /* Compact sticky KPI strip under top bar */
+  .admin-kpi-strip {
+    @apply px-3 lg:px-4 py-1.5 border-t border-border/40 bg-card/80;
+  }
+}
+
+/* Customer empty + bottom nav active helpers */
+@layer components {
+  .customer-shell .c-empty {
+    @apply text-center py-14 px-4;
+  }
+  .customer-shell .c-nav-item {
+    @apply flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,42%)] active:scale-95 transition-transform;
+  }
+  .customer-shell .c-nav-item-active {
+    color: hsl(var(--c-accent));
+  }
+  .customer-shell .c-nav-icon {
+    @apply p-2 rounded-2xl;
+  }
+  .customer-shell .c-nav-icon-active {
+    @apply c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15;
+  }
+  .customer-shell .c-nav-label {
+    @apply text-[10px] font-bold tracking-tight;
+  }
+  .customer-shell .c-nav-label-active {
+    @apply font-extrabold;
+  }
 }
 
 /* ───────────────────────────────────────────────

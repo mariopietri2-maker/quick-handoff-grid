@@ -2,7 +2,7 @@ import { useState, useEffect, useMemo, useRef } from 'react';
 import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Star, Zap, BadgePercent } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import type { Database } from '@/integrations/supabase/types';
@@ -33,6 +33,8 @@ type StoreRow = Database['public']['Tables']['stores']['Row'];
 export default function CustomerApp() {
   const t = useT();
   const cfg = useCustomerAppConfig();
+  const location = useLocation();
+  const [homeTab, setHomeTab] = useState<'discover' | 'food'>('discover');
 
   // Quick-action tiles (admin-configurable)
   const QUICK_TILE_TONES = [
@@ -569,14 +571,31 @@ export default function CustomerApp() {
               ))}
             </div>
           ) : filtered.length === 0 ? (
-            <div className="text-center py-16">
+            <div className="c-empty">
               <div className="h-16 w-16 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center mx-auto mb-4">
                 <MapPin className="h-7 w-7 c-muted" />
               </div>
-              <p className="font-heading font-extrabold text-[hsl(0,0%,9%)]">{t('customer.no_results')}</p>
-              <p className="text-sm c-muted mt-1">
-                {isSearching ? t('customer.try_search') : t('customer.check_back')}
+              <p className="font-heading font-bold text-[17px] text-[hsl(0,0%,9%)]">{t('customer.no_results')}</p>
+              <p className="text-sm c-muted mt-1.5 max-w-xs mx-auto">
+                {isSearching || filterFree || filterTopRated || filterFast
+                  ? t('customer.try_search')
+                  : t('customer.check_back')}
               </p>
+              {(isSearching || filterFree || filterTopRated || filterFast) && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearch('');
+                    setSelectedCategory('all');
+                    setFilterFree(false);
+                    setFilterTopRated(false);
+                    setFilterFast(false);
+                  }}
+                  className="mt-5 inline-flex items-center h-10 px-5 rounded-full c-bg-accent text-sm font-bold active:scale-95 transition-transform"
+                >
+                  Καθαρισμός φίλτρων
+                </button>
+              )}
             </div>
           ) : (
             <div className="space-y-6">
@@ -671,67 +690,80 @@ export default function CustomerApp() {
 
       {/* ── Bottom tab bar ─────────────────────────────── */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
+        className="fixed bottom-0 left-0 right-0 z-50 bg-white/90 backdrop-blur-2xl border-t border-[hsl(0,0%,92%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.10)]"
         style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
       >
-        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSearch('');
-              setSelectedCategory('all');
-              setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 c-accent active:scale-95 transition-transform"
-          >
-            <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
-              <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
-            </span>
-            <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCategory('all');
-              const el = document.getElementById('nearby-stores');
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Φαγητό</span>
-          </button>
-          <Link
-            to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
-          </Link>
-          <Link
-            to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <User className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
-          </Link>
+        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-1.5 pb-1.5">
+          {(() => {
+            const onOrders = location.pathname.startsWith('/orders');
+            const onProfile = location.pathname.startsWith('/profile');
+            const onHome = !onOrders && !onProfile;
+            const discoverActive = onHome && homeTab === 'discover';
+            const foodActive = onHome && homeTab === 'food';
+            return (
+              <>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHomeTab('discover');
+                    setSearch('');
+                    setSelectedCategory('all');
+                    setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                  }}
+                  className={`c-nav-item ${discoverActive ? 'c-nav-item-active' : ''}`}
+                >
+                  <span className={`c-nav-icon ${discoverActive ? 'c-nav-icon-active' : ''}`}>
+                    <Compass className="h-[22px] w-[22px]" strokeWidth={discoverActive ? 2.4 : 2} />
+                  </span>
+                  <span className={`c-nav-label ${discoverActive ? 'c-nav-label-active' : ''}`}>Ανακάλυψε</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setHomeTab('food');
+                    setSelectedCategory('all');
+                    const el = document.getElementById('nearby-stores');
+                    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                    else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
+                  }}
+                  className={`c-nav-item ${foodActive ? 'c-nav-item-active' : ''}`}
+                >
+                  <span className={`c-nav-icon ${foodActive ? 'c-nav-icon-active' : ''}`}>
+                    <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={foodActive ? 2.4 : 2} />
+                  </span>
+                  <span className={`c-nav-label ${foodActive ? 'c-nav-label-active' : ''}`}>Φαγητό</span>
+                </button>
+                <Link
+                  to={user ? '/orders' : '/auth'}
+                  className={`c-nav-item ${onOrders ? 'c-nav-item-active' : ''}`}
+                >
+                  <span className={`c-nav-icon ${onOrders ? 'c-nav-icon-active' : ''}`}>
+                    <Receipt className="h-[22px] w-[22px]" strokeWidth={onOrders ? 2.4 : 2} />
+                  </span>
+                  <span className={`c-nav-label ${onOrders ? 'c-nav-label-active' : ''}`}>{t('customer.orders')}</span>
+                </Link>
+                <Link
+                  to={user ? '/profile' : '/auth'}
+                  className={`c-nav-item ${onProfile ? 'c-nav-item-active' : ''}`}
+                >
+                  <span className={`c-nav-icon ${onProfile ? 'c-nav-icon-active' : ''}`}>
+                    <User className="h-[22px] w-[22px]" strokeWidth={onProfile ? 2.4 : 2} />
+                  </span>
+                  <span className={`c-nav-label ${onProfile ? 'c-nav-label-active' : ''}`}>Λογαριασμός</span>
+                </Link>
+              </>
+            );
+          })()}
         </div>
-
-
       </nav>
 
       <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
-          <SheetHeader>
-            <SheetTitle>Διεύθυνση παράδοσης</SheetTitle>
+        <SheetContent side="bottom" className="rounded-t-[22px] px-5 pb-6 max-h-[88vh] overflow-y-auto">
+          <div className="mx-auto mt-1 mb-3 h-1 w-10 rounded-full bg-[hsl(0,0%,86%)]" aria-hidden />
+          <SheetHeader className="text-left space-y-1">
+            <SheetTitle className="font-heading font-bold text-[18px]">Διεύθυνση παράδοσης</SheetTitle>
+            <p className="text-[13px] c-muted font-medium">Πού θέλεις να σου φέρουμε το φαγητό;</p>
           </SheetHeader>
           <div className="mt-4 space-y-3">
             <AddressAutocomplete
@@ -742,12 +774,12 @@ export default function CustomerApp() {
                 else if (!addr) setPendingCoords(null);
               }}
             />
-            <div className="flex justify-end gap-2 pt-2">
+            <div className="flex justify-end gap-2 pt-1">
               {deliveryAddress && (
                 <button
                   type="button"
                   onClick={() => { setPendingCoords(null); saveAddress('', null); }}
-                  className="text-sm font-semibold text-[hsl(0,0%,40%)] px-3 py-2"
+                  className="text-sm font-semibold text-[hsl(0,0%,40%)] px-3 py-2.5"
                 >
                   Καθαρισμός
                 </button>
@@ -756,7 +788,7 @@ export default function CustomerApp() {
                 type="button"
                 onClick={() => saveAddress(pendingAddress, pendingCoords)}
                 disabled={!pendingAddress.trim()}
-                className="c-bg-accent rounded-full px-5 py-2 text-sm font-extrabold disabled:opacity-50"
+                className="c-bg-accent rounded-full px-6 py-2.5 text-sm font-bold disabled:opacity-50 active:scale-95 transition-transform"
               >
                 Αποθήκευση
               </button>

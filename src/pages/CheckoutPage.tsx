@@ -264,24 +264,24 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="min-h-screen bg-background">
+      <div className="customer-shell min-h-screen bg-[hsl(0,0%,98%)]">
         <SEO
           title="Καλάθι αγορών — Fresh Delivery"
           description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο Fresh Delivery."
           path="/checkout"
           noindex
         />
-        <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-          <button onClick={() => navigate('/order')} aria-label="Επιστροφή στα εστιατόρια" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-            <ArrowLeft className="h-5 w-5 text-foreground" />
+        <header className="bg-white/90 backdrop-blur-xl border-b border-[hsl(0,0%,92%)] px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
+          <button onClick={() => navigate('/order')} aria-label="Επιστροφή στα εστιατόρια" className="h-10 w-10 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center">
+            <ArrowLeft className="h-5 w-5 text-[hsl(0,0%,9%)]" />
           </button>
-          <h1 className="font-heading font-bold text-lg text-foreground">Το Καλάθι σας</h1>
+          <h1 className="font-heading font-bold text-lg text-[hsl(0,0%,9%)]">Το Καλάθι σας</h1>
         </header>
-        <div className="text-center py-16 px-4">
-          <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-          <p className="font-heading text-xl text-foreground">Το καλάθι σας είναι άδειο</p>
-          <p className="text-sm text-muted-foreground mt-1">Περιηγηθείτε σε εστιατόρια και προσθέστε προϊόντα</p>
-          <Button onClick={() => navigate('/order')} className="mt-6 gradient-primary text-primary-foreground font-heading shadow-primary">
+        <div className="c-empty">
+          <ShoppingBag className="h-14 w-14 c-muted mx-auto mb-4" />
+          <p className="font-heading font-bold text-[18px] text-[hsl(0,0%,9%)]">Το καλάθι σας είναι άδειο</p>
+          <p className="text-sm c-muted mt-1.5">Περιηγηθείτε σε εστιατόρια και προσθέστε προϊόντα</p>
+          <Button onClick={() => navigate('/order')} className="mt-6 c-bg-accent rounded-full h-11 px-6 font-bold">
             Περιήγηση Εστιατορίων
           </Button>
         </div>
@@ -290,7 +290,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="min-h-screen bg-background pb-32">
+    <div className="customer-shell min-h-screen bg-[hsl(0,0%,98%)] pb-32">
       <SEO
         title="Ολοκλήρωση παραγγελίας — Fresh Delivery"
         description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."
@@ -298,22 +298,22 @@ export default function CheckoutPage() {
         noindex
       />
       <PaymentTestModeBanner />
-      <header className="bg-card/85 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
-          <ArrowLeft className="h-5 w-5 text-foreground" />
+      <header className="bg-white/90 backdrop-blur-xl border-b border-[hsl(0,0%,92%)] px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
+        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center active:scale-95 transition-transform">
+          <ArrowLeft className="h-5 w-5 text-[hsl(0,0%,9%)]" />
         </button>
         <div className="min-w-0">
-          <p className="text-[10px] uppercase tracking-[0.14em] font-extrabold text-muted-foreground leading-none">Checkout</p>
-          <h1 className="font-heading font-extrabold text-[17px] text-foreground leading-tight truncate">{storeName}</h1>
+          <p className="text-[10px] uppercase tracking-[0.14em] font-bold c-muted leading-none">Checkout</p>
+          <h1 className="font-heading font-bold text-[17px] text-[hsl(0,0%,9%)] leading-tight truncate">{storeName}</h1>
         </div>
-        <div className="ml-auto bg-primary/10 text-primary rounded-full px-3 py-1.5 text-xs font-extrabold tabular-nums">
+        <div className="ml-auto c-bg-accent-soft rounded-full px-3 py-1.5 text-xs font-bold tabular-nums">
           {grandTotal.toFixed(2)}€
         </div>
       </header>
 
-      <main className="max-w-lg mx-auto p-4 space-y-4">
+      <main className="max-w-lg mx-auto p-4 space-y-3">
         {/* Cart Items */}
-        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
+        <Card className="c-card rounded-2xl border-[hsl(0,0%,92%)] shadow-none">
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τα Προϊόντα σας</h2>
             {items.map(item => (
@@ -333,10 +333,10 @@ export default function CheckoutPage() {
                   <span className="font-heading font-bold text-sm w-5 text-center text-foreground tabular-nums">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                    className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center"
+                    className="h-8 w-8 rounded-full c-bg-accent flex items-center justify-center"
                     aria-label="Αύξηση"
                   >
-                    <Plus className="h-3.5 w-3.5 text-primary-foreground" />
+                    <Plus className="h-3.5 w-3.5 text-white" />
                   </button>
                   <span className="font-heading font-semibold text-sm text-foreground w-14 text-right tabular-nums">
                     {(item.price * item.quantity).toFixed(2)}€
@@ -348,10 +348,10 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Delivery Address */}
-        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
+        <Card className="c-card rounded-2xl border-[hsl(0,0%,92%)] shadow-none">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <MapPin className="h-5 w-5 text-primary" />
+              <MapPin className="h-5 w-5 c-accent" />
               <h2 className="font-heading font-semibold text-foreground">Διεύθυνση Παράδοσης</h2>
             </div>
             <AddressAutocomplete
@@ -374,7 +374,7 @@ export default function CheckoutPage() {
         <ScheduledDeliveryPicker value={scheduledFor} onChange={setScheduledFor} />
 
 
-        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
+        <Card className="c-card rounded-2xl border-[hsl(0,0%,92%)] shadow-none">
           <CardContent className="p-4 space-y-2">
             <Label className="font-heading">Σημειώσεις Παραγγελίας (προαιρετικά)</Label>
             <Textarea
@@ -388,7 +388,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Tip Selection */}
-        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
+        <Card className="c-card rounded-2xl border-[hsl(0,0%,92%)] shadow-none">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <span className="text-lg">💰</span>
@@ -403,8 +403,8 @@ export default function CheckoutPage() {
                     onClick={() => setTipOption(opt)}
                     className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
                       isSelected
-                        ? 'gradient-primary text-primary-foreground shadow-primary'
-                        : 'bg-muted text-foreground hover:bg-accent'
+                        ? 'c-bg-accent text-white shadow-[0_6px_16px_-6px_hsl(var(--c-accent)/0.45)]'
+                        : 'bg-[hsl(0,0%,96%)] text-[hsl(0,0%,9%)] hover:bg-[hsl(0,0%,93%)]'
                     }`}
                   >
                     {opt === 'custom' ? 'Άλλο' : `${opt}%`}
@@ -441,7 +441,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Payment method */}
-        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
+        <Card className="c-card rounded-2xl border-[hsl(0,0%,92%)] shadow-none">
           <CardContent className="p-4 space-y-3">
             <h2 className="font-heading font-semibold text-foreground">Τρόπος πληρωμής</h2>
             <div className="grid grid-cols-2 gap-2">
@@ -451,8 +451,8 @@ export default function CheckoutPage() {
                 disabled={!cardEnabled}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'card'
-                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
-                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                    ? 'border-[hsl(var(--c-accent))] bg-[hsl(var(--c-accent-soft))] text-[hsl(0,0%,9%)]'
+                    : 'border-[hsl(0,0%,90%)] bg-white text-[hsl(0,0%,45%)] hover:border-[hsl(var(--c-accent))]/40'
                 } ${!cardEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <CreditCard className="h-5 w-5" />
@@ -464,8 +464,8 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('cash')}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'cash'
-                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
-                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                    ? 'border-[hsl(var(--c-accent))] bg-[hsl(var(--c-accent-soft))] text-[hsl(0,0%,9%)]'
+                    : 'border-[hsl(0,0%,90%)] bg-white text-[hsl(0,0%,45%)] hover:border-[hsl(var(--c-accent))]/40'
                 }`}
               >
                 <Banknote className="h-5 w-5" />
@@ -481,10 +481,10 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Promo Code */}
-        <Card className={`rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)] ${appliedPromo ? 'border-success/30' : ''}`}>
+        <Card className={`c-card rounded-2xl border-[hsl(0,0%,92%)] shadow-none ${appliedPromo ? 'border-success/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
-              <Tag className="h-5 w-5 text-primary" />
+              <Tag className="h-5 w-5 c-accent" />
               <h2 className="font-heading font-semibold text-foreground">Κωδικός Προσφοράς</h2>
             </div>
             {appliedPromo ? (
@@ -528,7 +528,7 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Order Summary */}
-        <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
+        <Card className="c-card rounded-2xl border-[hsl(0,0%,92%)] shadow-none">
           <CardContent className="p-4 space-y-2">
             <h2 className="font-heading font-semibold text-foreground">Σύνοψη Παραγγελίας</h2>
             <div className="flex justify-between text-sm">
@@ -568,12 +568,12 @@ export default function CheckoutPage() {
       </main>
 
       {/* Place Order Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur border-t border-border z-50">
+      <div className="fixed bottom-0 left-0 right-0 p-4 bg-white/90 backdrop-blur-xl border-t border-[hsl(0,0%,92%)] z-50" style={{ paddingBottom: "max(1rem, env(safe-area-inset-bottom))" }}>
         <div className="max-w-lg mx-auto">
           <Button
             onClick={handlePlaceOrder}
             disabled={submitting || !address.trim()}
-            className="w-full h-16 gradient-primary shadow-primary text-primary-foreground font-heading text-base rounded-2xl flex items-center justify-between px-6 active:scale-[0.99] transition-transform"
+            className="w-full h-14 c-bg-accent shadow-[0_10px_24px_-10px_hsl(var(--c-accent)/0.55)] text-white font-heading text-base rounded-2xl flex items-center justify-between px-5 active:scale-[0.99] transition-transform"
           >
             <span className="flex items-center gap-2">
               {paymentMethod === 'card' ? <CreditCard className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}

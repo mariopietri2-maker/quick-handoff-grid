@@ -278,15 +278,15 @@ export default function DeliveryControlCenter() {
   };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Header */}
       <div className="flex items-start justify-between gap-3 flex-wrap">
         <div>
-          <h2 className="font-heading font-extrabold text-xl flex items-center gap-2">
-            <Zap className="h-5 w-5 text-primary" /> Delivery Control Center
+          <h2 className="admin-section-title flex items-center gap-2 text-[16px]">
+            <Zap className="h-4 w-4 text-primary" /> Dispatch
           </h2>
-          <p className="text-sm text-muted-foreground">
-            Ζωντανές παρεμβάσεις σε παραγγελίες, οδηγούς, προσφορές και dispatch.
+          <p className="admin-section-sub">
+            Ζωντανές παρεμβάσεις σε παραγγελίες, οδηγούς και προσφορές.
           </p>
         </div>
 
@@ -336,7 +336,10 @@ export default function DeliveryControlCenter() {
         </CardHeader>
         <CardContent className="p-3 pt-0">
           {offers.length === 0 ? (
-            <p className="text-xs text-muted-foreground py-4 text-center">Καμία ενεργή προσφορά.</p>
+            <div className="admin-empty py-8">
+              <p className="admin-empty-title">Καμία ενεργή προσφορά</p>
+              <p className="admin-empty-hint">Όταν το auto-dispatch στείλει προσφορές, θα εμφανιστούν εδώ.</p>
+            </div>
           ) : (
             <div className="space-y-1.5 max-h-64 overflow-auto">
               {offers.map(o => {
