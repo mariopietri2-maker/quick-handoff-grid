@@ -5,6 +5,7 @@ import {
   Banknote,
   CheckCircle2,
   AlertTriangle,
+  ChevronRight,
   Lock,
   TrendingUp,
   Package,
@@ -15,13 +16,18 @@ import { useDriverWallet } from '@/hooks/useDriverWallet';
 import { useEarnings } from '@/hooks/useEarnings';
 import { useDriverState } from '@/hooks/useDriverState';
 import { supabase } from '@/integrations/supabase/client';
+import {
+  CompletedOrderDetailSheet,
+  type CompletedOrderRef,
+} from '@/components/driver/CompletedOrderDetailSheet';
 
-/** Polished money tab — balance, today, shift cash, activity. */
+/** Polished money tab — balance, today, shift cash, activity + order detail. */
 export function DriverMoneyPanel() {
   const { wallet, transactions, loading } = useDriverWallet();
-  const { today, week } = useEarnings();
+  const { today, week, recentEarnings } = useEarnings();
   const { state } = useDriverState();
   const [cap, setCap] = useState(200);
+  const [detailRef, setDetailRef] = useState<CompletedOrderRef>(null);
   const [ackResetAt, setAckResetAt] = useState<string | null>(() =>
     typeof window !== 'undefined' ? localStorage.getItem('driver_cash_reset_ack') : null,
   );
@@ -47,7 +53,8 @@ export function DriverMoneyPanel() {
   const balance = Number(wallet?.available_balance ?? 0);
   const pending = Number(wallet?.pending_balance ?? 0);
   const withdrawn = Number(wallet?.total_withdrawn ?? 0);
-  const recent = transactions.slice(0, 10);
+  const recent = transactions.slice(0, 12);
+  const deliveries = recentEarnings.slice(0, 12);
 
   const cash = Number(state?.shift_cash_balance ?? 0);
   const cashPct = Math.min((cash / Math.max(cap, 1)) * 100, 100);
@@ -60,6 +67,11 @@ export function DriverMoneyPanel() {
     if (!lastReset) return;
     localStorage.setItem('driver_cash_reset_ack', lastReset);
     setAckResetAt(lastReset);
+  };
+
+  const openOrder = (orderId: string | null | undefined, earningId?: string) => {
+    if (!orderId) return;
+    setDetailRef({ orderId, earningId });
   };
 
   return (
@@ -118,10 +130,13 @@ export function DriverMoneyPanel() {
               {today.trips} {today.trips === 1 ? 'παράδοση' : 'παραδόσεις'}
             </span>
           </div>
-          <div className="grid grid-cols-3 gap-2">
+          <div className={`grid gap-2 ${today.bonuses > 0 ? 'grid-cols-4' : 'grid-cols-3'}`}>
             <Stat label="Σύνολο" value={`${today.total.toFixed(2)}€`} emphasize />
             <Stat label="Βασική" value={`${today.basePay.toFixed(2)}€`} />
             <Stat label="Tips" value={`${today.tips.toFixed(2)}€`} />
+            {today.bonuses > 0 && (
+              <Stat label="Extras" value={`${today.bonuses.toFixed(2)}€`} />
+            )}
           </div>
         </div>
       </section>
@@ -234,6 +249,73 @@ export function DriverMoneyPanel() {
         </div>
       </section>
 
+      {/* Recent deliveries — tap for pay / tip / extras / km */}
+      <section className="rounded-[20px] driver-glass overflow-hidden">
+        <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
+          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Παραδόσεις</p>
+          <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
+            πάτα για λεπτομέρειες
+          </span>
+        </div>
+
+        {deliveries.length === 0 ? (
+          <div className="px-4 py-10 text-center">
+            <div className="h-12 w-12 rounded-2xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex items-center justify-center mx-auto mb-3">
+              <Package className="h-5 w-5 text-[hsl(var(--driver-text-muted))]" />
+            </div>
+            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Καμία παράδοση ακόμα</p>
+            <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-1">
+              Μετά από κάθε παράδοση θα βλέπεις αμοιβή, tip, extras και χλμ.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-[hsl(var(--driver-border))]">
+            {deliveries.map((e, i) => {
+              const tip = Number(e.tip ?? 0);
+              const bonus = Number(e.bonus ?? 0);
+              const total = Number(e.total ?? Number(e.base_pay) + tip + bonus);
+              return (
+                <li key={e.id}>
+                  <button
+                    type="button"
+                    onClick={() => openOrder(e.order_id, e.id)}
+                    disabled={!e.order_id}
+                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[hsl(var(--driver-surface))]/70 active:bg-[hsl(var(--driver-surface))] disabled:opacity-60 animate-fade-in"
+                    style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}
+                  >
+                    <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))]">
+                      <Package className="h-4 w-4" strokeWidth={2.25} />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[13.5px] font-heading font-semibold text-[hsl(var(--driver-text))] truncate leading-tight">
+                        Παράδοση · {Number(e.base_pay).toFixed(2)}€
+                        {tip > 0 ? ` + tip ${tip.toFixed(2)}€` : ''}
+                        {bonus > 0 ? ` + extra ${bonus.toFixed(2)}€` : ''}
+                      </p>
+                      <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 tabular-nums">
+                        {new Date(e.created_at).toLocaleDateString('el-GR', {
+                          weekday: 'short',
+                          day: '2-digit',
+                          month: 'short',
+                          hour: '2-digit',
+                          minute: '2-digit',
+                        })}
+                      </p>
+                    </div>
+                    <span className="font-heading font-extrabold text-[15px] tabular-nums shrink-0 text-[hsl(var(--driver-accent))]">
+                      {total.toFixed(2)}€
+                    </span>
+                    {e.order_id && (
+                      <ChevronRight className="h-4 w-4 shrink-0 text-[hsl(var(--driver-text-muted))]" />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+
       {/* Activity */}
       <section className="rounded-[20px] driver-glass overflow-hidden">
         <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
@@ -258,21 +340,48 @@ export function DriverMoneyPanel() {
         ) : (
           <ul className="divide-y divide-[hsl(var(--driver-border))]">
             {recent.map((tx, i) => {
+              const isCredit = [
+                'earning_credit',
+                'deposit',
+                'bonus',
+                'admin_credit',
+                'extra_tip',
+                'quest_reward',
+                'refund',
+                'manual_credit',
+                'support_credit',
+                'referral_bonus',
+              ].includes(tx.type);
               const isEarn = tx.type === 'earning_credit';
-              return (
-                <li
-                  key={tx.id}
-                  className="flex items-center gap-3 px-4 py-3.5 animate-fade-in"
-                  style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}
-                >
+              const hasOrder = Boolean(tx.order_id);
+              const label = isEarn
+                ? 'Κέρδος παράδοσης'
+                : tx.type === 'extra_tip'
+                  ? 'Έξτρα tip'
+                  : tx.type === 'admin_credit' || tx.type === 'support_credit'
+                    ? 'Μπόνους διαχειριστή'
+                    : tx.type === 'quest_reward'
+                      ? 'Μπόνους αποστολής'
+                      : tx.type === 'bonus'
+                        ? 'Μπόνους'
+                        : tx.description || (isCredit ? 'Πίστωση' : 'Ανάληψη');
+
+              const rowClass =
+                'w-full flex items-center gap-3 px-4 py-3.5 text-left animate-fade-in' +
+                (hasOrder
+                  ? ' transition-colors hover:bg-[hsl(var(--driver-surface))]/70 active:bg-[hsl(var(--driver-surface))]'
+                  : '');
+
+              const inner = (
+                <>
                   <div
                     className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
-                      isEarn
+                      isCredit
                         ? 'bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))]'
                         : 'bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text-muted))]'
                     }`}
                   >
-                    {isEarn ? (
+                    {isCredit ? (
                       <ArrowDownCircle className="h-4 w-4" strokeWidth={2.25} />
                     ) : (
                       <ArrowUpCircle className="h-4 w-4" strokeWidth={2.25} />
@@ -280,7 +389,7 @@ export function DriverMoneyPanel() {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-[13.5px] font-heading font-semibold text-[hsl(var(--driver-text))] truncate leading-tight">
-                      {isEarn ? 'Κέρδος παράδοσης' : tx.description || 'Ανάληψη'}
+                      {label}
                     </p>
                     <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 tabular-nums">
                       {new Date(tx.created_at).toLocaleDateString('el-GR', {
@@ -291,21 +400,53 @@ export function DriverMoneyPanel() {
                         minute: '2-digit',
                       })}
                       {tx.status === 'pending' ? ' · εκκρεμεί' : ''}
+                      {hasOrder ? ' · λεπτομέρειες' : ''}
                     </p>
                   </div>
                   <span
                     className={`font-heading font-extrabold text-[15px] tabular-nums shrink-0 ${
-                      isEarn ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
+                      isCredit ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
                     }`}
                   >
-                    {isEarn ? '+' : '−'}{Number(tx.amount).toFixed(2)}€
+                    {isCredit ? '+' : '−'}
+                    {Number(tx.amount).toFixed(2)}€
                   </span>
+                  {hasOrder && (
+                    <ChevronRight className="h-4 w-4 shrink-0 text-[hsl(var(--driver-text-muted))]" />
+                  )}
+                </>
+              );
+
+              return (
+                <li
+                  key={tx.id}
+                  style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}
+                >
+                  {hasOrder ? (
+                    <button
+                      type="button"
+                      className={rowClass}
+                      onClick={() => openOrder(tx.order_id)}
+                    >
+                      {inner}
+                    </button>
+                  ) : (
+                    <div className={rowClass}>{inner}</div>
+                  )}
                 </li>
               );
             })}
           </ul>
         )}
       </section>
+
+      <CompletedOrderDetailSheet
+        refTarget={detailRef}
+        open={Boolean(detailRef?.orderId)}
+        onOpenChange={(open) => {
+          if (!open) setDetailRef(null);
+        }}
+      />
     </div>
   );
 }
