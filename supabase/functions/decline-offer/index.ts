@@ -1,11 +1,12 @@
 // Driver declines a pending offer.
 // Marks declined + logs event so dispatch can advance.
+// If the order has no remaining pending offers, kick auto-dispatch immediately.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-secret",
 };
 
 Deno.serve(async (req) => {
@@ -14,15 +15,15 @@ Deno.serve(async (req) => {
   const authHeader = req.headers.get("Authorization");
   if (!authHeader) return json({ error: "missing auth" }, 401);
 
+  const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
+  const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+
   const supabase = createClient(
-    Deno.env.get("SUPABASE_URL")!,
+    supabaseUrl,
     Deno.env.get("SUPABASE_ANON_KEY")!,
     { global: { headers: { Authorization: authHeader } } },
   );
-  const admin = createClient(
-    Deno.env.get("SUPABASE_URL")!,
-    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
-  );
+  const admin = createClient(supabaseUrl, serviceKey);
 
   try {
     const { data: { user }, error: userErr } = await supabase.auth.getUser();
@@ -52,7 +53,35 @@ Deno.serve(async (req) => {
       action: "declined",
     });
 
-    return json({ ok: true });
+    // If this was the last live offer for the order, advance the wave now
+    // instead of waiting for the next cron tick (~30s).
+    const { count } = await admin
+      .from("pending_offers")
+      .select("id", { count: "exact", head: true })
+      .eq("order_id", offer.order_id)
+      .eq("status", "pending");
+
+    let redispatched = false;
+    if ((count ?? 0) === 0) {
+      try {
+        const cron = Deno.env.get("CRON_SECRET");
+        await fetch(`${supabaseUrl}/functions/v1/auto-dispatch`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${serviceKey}`,
+            apikey: serviceKey,
+            ...(cron ? { "X-Cron-Secret": cron } : {}),
+          },
+          body: JSON.stringify({ manual: true, reason: "decline_advance" }),
+        });
+        redispatched = true;
+      } catch (e) {
+        console.warn("decline-offer redispatch failed", e);
+      }
+    }
+
+    return json({ ok: true, redispatched });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return json({ error: msg }, 500);
