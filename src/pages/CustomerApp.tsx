@@ -667,7 +667,7 @@ export default function CustomerApp() {
       </main>
 
       <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl">
+        <SheetContent side="bottom" className="rounded-t-2xl max-h-[90dvh] overflow-y-auto">
           <SheetHeader>
             <SheetTitle>Διεύθυνση παράδοσης</SheetTitle>
           </SheetHeader>
