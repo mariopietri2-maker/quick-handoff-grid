@@ -94,21 +94,29 @@ USING (
 -- 4. Realtime: require authentication for Broadcast/Presence on realtime.messages
 DO $$
 BEGIN
+  IF to_regclass('realtime.messages') IS NULL THEN
+    RAISE NOTICE 'realtime.messages missing — skipping realtime RLS policies';
+    RETURN;
+  END IF;
+
   EXECUTE 'ALTER TABLE realtime.messages ENABLE ROW LEVEL SECURITY';
-EXCEPTION WHEN others THEN NULL;
+
+  EXECUTE 'DROP POLICY IF EXISTS "Authenticated can read realtime messages" ON realtime.messages';
+  EXECUTE 'DROP POLICY IF EXISTS "Authenticated can write realtime messages" ON realtime.messages';
+
+  EXECUTE $p$
+    CREATE POLICY "Authenticated can read realtime messages"
+    ON realtime.messages
+    FOR SELECT
+    TO authenticated
+    USING (true)
+  $p$;
+
+  EXECUTE $p$
+    CREATE POLICY "Authenticated can write realtime messages"
+    ON realtime.messages
+    FOR INSERT
+    TO authenticated
+    WITH CHECK (true)
+  $p$;
 END$$;
-
-DROP POLICY IF EXISTS "Authenticated can read realtime messages" ON realtime.messages;
-DROP POLICY IF EXISTS "Authenticated can write realtime messages" ON realtime.messages;
-
-CREATE POLICY "Authenticated can read realtime messages"
-ON realtime.messages
-FOR SELECT
-TO authenticated
-USING (true);
-
-CREATE POLICY "Authenticated can write realtime messages"
-ON realtime.messages
-FOR INSERT
-TO authenticated
-WITH CHECK (true);
