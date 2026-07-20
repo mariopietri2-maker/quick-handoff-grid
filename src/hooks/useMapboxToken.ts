@@ -27,6 +27,10 @@ function writeLocal(t: string) {
 }
 
 async function fetchTokenFromEdge(): Promise<string | null> {
+  // Prefer the build-time public token — edge get-mapbox-token is often
+  // blocked by gateway JWT even when verify_jwt=false in config.toml.
+  if (ENV_TOKEN) return ENV_TOKEN;
+
   const { data: { session } } = await supabase.auth.getSession();
   const headers: Record<string, string> = {};
   if (session?.access_token) {
