@@ -120,7 +120,7 @@ export default function DriverApp() {
     if (driverActive === false && isOnline) setIsOnline(false);
   }, [driverActive, isOnline]);
 
-  const { tracking, error: locError } = useDriverLocation(isOnline);
+  const { error: locError, published: gpsPublished } = useDriverLocation(isOnline);
   const { stores: nearbyStores } = useNearbyStoresForDriver();
   const driverPrefs = useDriverAppPrefs();
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
@@ -764,14 +764,36 @@ export default function DriverApp() {
                             <div className="relative h-10 w-10 mx-auto mb-2">
                               <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
                               <div className="relative h-10 w-10 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
-                                <Zap className="h-5 w-5 text-primary" />
+                                {locError || !gpsPublished ? (
+                                  <Navigation className="h-5 w-5 text-primary" />
+                                ) : (
+                                  <Zap className="h-5 w-5 text-primary" />
+                                )}
                               </div>
                             </div>
-                            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
-                            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
-                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
-                              <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
-                            </div>
+                            {locError ? (
+                              <>
+                                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Χρειάζεται GPS</p>
+                                <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1 px-2">
+                                  Ενεργοποίησε την τοποθεσία για να λαμβάνεις προσφορές παραγγελιών.
+                                </p>
+                              </>
+                            ) : !gpsPublished ? (
+                              <>
+                                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Σύνδεση GPS…</p>
+                                <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">
+                                  Μόλις σταλεί η θέση σου, θα εμφανιστούν προσφορές.
+                                </p>
+                              </>
+                            ) : (
+                              <>
+                                <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
+                                <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
+                                  <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
+                                  <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
+                                </div>
+                              </>
+                            )}
                           </div>
                         )}
                         {isOnline && loading && (

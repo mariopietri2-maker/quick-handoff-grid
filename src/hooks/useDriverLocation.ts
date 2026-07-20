@@ -26,6 +26,8 @@ export function useDriverLocation(isActive: boolean) {
   const { user } = useAuth();
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** True once we've successfully upserted at least one GPS row this online session. */
+  const [published, setPublished] = useState(false);
   const watchIdRef = useRef<string | number | null>(null);
   const intervalRef = useRef<number | null>(null);
   const lastPosRef = useRef<NormalizedPos | null>(null);
@@ -40,7 +42,7 @@ export function useDriverLocation(isActive: boolean) {
       return;
     }
     try {
-      await supabase
+      const { error: upsertErr } = await supabase
         .from('driver_locations')
         .upsert(
           {
@@ -53,6 +55,7 @@ export function useDriverLocation(isActive: boolean) {
           } as any,
           { onConflict: 'driver_id' }
         );
+      if (!upsertErr) setPublished(true);
     } catch {
       // Network blip — keep last pos for next tick / online event
       lastPosRef.current = pos;
@@ -78,6 +81,7 @@ export function useDriverLocation(isActive: boolean) {
       cleanupRef.current = null;
       lastPosRef.current = null;
       setTracking(false);
+      setPublished(false);
       // Driver explicitly toggled offline (isActive=false) — clear row.
       void goHardOffline();
       return;
@@ -85,6 +89,37 @@ export function useDriverLocation(isActive: boolean) {
 
     let cancelled = false;
     setError(null);
+    setPublished(false);
+
+    const readOnce = async (): Promise<NormalizedPos | null> => {
+      try {
+        if (isNative) {
+          const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 });
+          return {
+            latitude: p.coords.latitude,
+            longitude: p.coords.longitude,
+            speed: p.coords.speed ?? null,
+            heading: p.coords.heading ?? null,
+          };
+        }
+        if (!('geolocation' in navigator)) return null;
+        return await new Promise<NormalizedPos | null>((resolve) => {
+          navigator.geolocation.getCurrentPosition(
+            (pos) =>
+              resolve({
+                latitude: pos.coords.latitude,
+                longitude: pos.coords.longitude,
+                speed: pos.coords.speed ?? null,
+                heading: pos.coords.heading ?? null,
+              }),
+            () => resolve(null),
+            { enableHighAccuracy: true, maximumAge: 5_000, timeout: 8_000 },
+          );
+        });
+      } catch {
+        return null;
+      }
+    };
 
     const start = async () => {
       try {
@@ -138,11 +173,19 @@ export function useDriverLocation(isActive: boolean) {
 
         setTracking(true);
 
+        // Publish ASAP so auto-dispatch can see us online — don't wait for
+        // the throttled interval (up to 15s when stationary).
+        const immediate = await readOnce();
+        if (!cancelled && immediate) {
+          lastPosRef.current = immediate;
+          await sendLocation(immediate);
+        }
+
         // Throttled push loop. Wakes every TICK_MS but only actually upserts
         // when (a) enough time has passed for the driver's current speed and
         // (b) the position moved more than MIN_MOVE_M from the last push.
-        let lastSentAt = 0;
-        let lastSentPos: NormalizedPos | null = null;
+        let lastSentAt = immediate && !cancelled ? Date.now() : 0;
+        let lastSentPos: NormalizedPos | null = immediate && !cancelled ? immediate : null;
         const distanceM = (a: NormalizedPos, b: NormalizedPos) => {
           const dLat = (b.latitude - a.latitude) * 111_000;
           const dLng = (b.longitude - a.longitude) * 111_000 * Math.cos(a.latitude * Math.PI / 180);
@@ -226,5 +269,5 @@ export function useDriverLocation(isActive: boolean) {
     };
   }, [isActive, user, sendLocation, goHardOffline]);
 
-  return { tracking, error };
+  return { tracking, error, published };
 }
