@@ -43,9 +43,16 @@ type DriverTab = 'home' | 'money' | 'inbox' | 'referral';
 
 export default function DriverApp() {
   const { user, isAdmin: isAdminRole } = useAuth();
-  // Admins can toggle between "Admin Driver Ops" and the regular driver experience
+  // Admins default to the normal driver experience (offers via auto-dispatch).
+  // Ops queue is opt-in via the "Ops" toggle — stored in localStorage.
   const [adminAsDriver, setAdminAsDriver] = useState<boolean>(() => {
-    try { return localStorage.getItem('admin_as_driver') === '1'; } catch { return false; }
+    try {
+      const v = localStorage.getItem('admin_as_driver');
+      if (v === null) return true; // first visit: drive as normal driver
+      return v === '1';
+    } catch {
+      return true;
+    }
   });
   const isAdmin = isAdminRole && !adminAsDriver;
   const toggleAdminView = () => {
@@ -258,11 +265,11 @@ export default function DriverApp() {
               {isAdminRole && (
                 <button
                   onClick={toggleAdminView}
-                  className="h-8 px-2.5 rounded-lg text-[11px] font-heading font-bold border border-border bg-card hover:bg-muted transition-colors flex items-center gap-1.5"
-                  title="Εναλλαγή σε προβολή κανονικού οδηγού"
+                  className="h-9 px-3 rounded-lg text-[12px] font-heading font-bold border border-primary/30 bg-primary text-primary-foreground hover:opacity-90 transition-opacity flex items-center gap-1.5 shadow-sm"
+                  title="Οδήγησε σαν κανονικός οδηγός — λαμβάνεις προσφορές από το auto-dispatch"
                 >
-                  <Car className="h-3.5 w-3.5" />
-                  Driver view
+                  <Car className="h-4 w-4" />
+                  Κανονικός οδηγός
                 </button>
               )}
               <UserMenu />
