@@ -1,9 +1,10 @@
-import { lazy, Suspense } from 'react';
+import { Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { envMobileFlavor, mobileHomePath } from '@/lib/mobileApp';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
-const Index = lazy(() => import('@/pages/Index'));
+const Index = lazyWithRetry(() => import('@/pages/Index'));
 
 function BootSpinner() {
   return (
