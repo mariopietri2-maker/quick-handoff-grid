@@ -56,14 +56,17 @@ Schema changes belong only in `supabase/migrations/`. Old root `batch_*.sql` scr
 git clone https://github.com/mariopietri2-maker/quick-handoff-grid.git
 cd quick-handoff-grid
 npm install
-cp .env.example .env.local
+cp .env.example .env.local   # optional overrides
+# Or rely on committed .env.development / .env.production (public client keys only)
 ```
 
-Fill `.env.local` (or Vercel env) from `.env.example`:
+Vite **bakes** `VITE_*` into the client bundle at build time. This repo keeps
+`.env.production` with public anon/publishable keys so Vercel deploys work
+without dashboard env. Override with live Stripe `pk_live_…` on Vercel when ready.
 
 | Variable | Notes |
 |---|---|
-| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Supabase project |
+| `VITE_SUPABASE_URL` / `VITE_SUPABASE_ANON_KEY` | Supabase project (public anon) |
 | `VITE_PAYMENTS_CLIENT_TOKEN` | Stripe **publishable** key (`pk_live_…` in prod) |
 | `VITE_MAPBOX_TOKEN` | Optional client fallback; prefer edge `get-mapbox-token` |
 
