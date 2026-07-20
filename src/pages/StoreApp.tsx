@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
-  Package, Clock, Zap, PackagePlus, Wallet, ArrowLeft, LayoutGrid, UserCircle,
+  Package, Clock, Zap, PackagePlus, Wallet, ArrowLeft, LayoutGrid,
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,7 +18,6 @@ import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderInges
 import StoreWalletCard from '@/components/store/StoreWalletCard';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { StoreDailyGoalCard } from '@/components/store/StoreDailyGoalCard';
-import { StoreOwnerProfilePanel } from '@/components/store/StoreOwnerProfilePanel';
 import { OwnerStoresPortal } from '@/components/store/OwnerStoresPortal';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -54,7 +53,7 @@ export default function StoreApp() {
       const t = new URLSearchParams(window.location.search).get('tab');
       if (
         t &&
-        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'wallet', 'promos', 'automation', 'settings', 'profile'].includes(t)
+        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'wallet', 'promos', 'automation', 'settings'].includes(t)
       ) {
         return t;
       }
@@ -169,17 +168,6 @@ export default function StoreApp() {
             <Badge className="gradient-primary text-primary-foreground font-heading">{newOrders} νέες</Badge>
           )}
           {store && view === 'manage' && <StoreSupportButton />}
-          {view === 'manage' && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="h-8 gap-1.5 font-heading"
-              onClick={() => setActiveTab('profile')}
-            >
-              <UserCircle className="h-3.5 w-3.5" />
-              <span className="hidden sm:inline">Προφίλ</span>
-            </Button>
-          )}
           <UserMenu />
         </div>
       </header>
@@ -277,9 +265,11 @@ export default function StoreApp() {
               </div>
             )}
             <AnnouncementsBanner audience="store_owners" />
-            <div className="mb-4">
-              <StoreDailyGoalCard storeId={store.id} />
-            </div>
+            {activeTab !== 'orders' && (
+              <div className="mb-4">
+                <StoreDailyGoalCard storeId={store.id} />
+              </div>
+            )}
             <Button
               onClick={() => setActiveTab('external')}
               className="w-full mb-4 h-12 gradient-primary text-primary-foreground font-heading gap-2 sm:hidden"
@@ -334,10 +324,6 @@ export default function StoreApp() {
                   <Settings className="h-4 w-4 mr-1.5" />
                   Ρυθμίσεις
                 </TabsTrigger>
-                <TabsTrigger value="profile" className="flex-1 min-w-[90px] font-heading">
-                  <UserCircle className="h-4 w-4 mr-1.5" />
-                  Προφίλ
-                </TabsTrigger>
               </TabsList>
 
               <TabsContent value="orders">
@@ -391,14 +377,6 @@ export default function StoreApp() {
               <TabsContent value="settings" className="space-y-4">
                 <StoreSettings storeId={store.id} />
                 <PrinterSettings storeName={store.name} />
-              </TabsContent>
-              <TabsContent value="profile">
-                <StoreOwnerProfilePanel
-                  onOpenSettings={(storeId) => {
-                    if (storeId) selectStore(storeId);
-                    setActiveTab('settings');
-                  }}
-                />
               </TabsContent>
             </Tabs>
           </>

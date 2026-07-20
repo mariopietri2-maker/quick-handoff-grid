@@ -319,24 +319,16 @@ export function DriverMoneyPanel() {
         )}
       </section>
 
-      {/* Other wallet activity — withdrawals, admin/quest extras (not delivery credits) */}
+      {/* Other wallet activity — only when there are non-delivery txs */}
+      {recent.length > 0 && (
       <section className="rounded-[20px] driver-glass overflow-hidden">
         <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
-          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Άλλες κινήσεις</p>
-          {recent.length > 0 && (
-            <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
-              Τελευταίες {recent.length}
-            </span>
-          )}
+          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Κινήσεις</p>
+          <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
+            Τελευταίες {recent.length}
+          </span>
         </div>
 
-        {recent.length === 0 ? (
-          <div className="px-4 py-8 text-center">
-            <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] leading-relaxed">
-              Εδώ εμφανίζονται αναλήψεις, μπόνους admin / quest και έξτρα tips — όχι οι παραδόσεις (είναι από πάνω).
-            </p>
-          </div>
-        ) : (
           <ul className="divide-y divide-[hsl(var(--driver-border))]">
             {recent.map((tx, i) => {
               const isCredit = [
@@ -432,8 +424,8 @@ export function DriverMoneyPanel() {
               );
             })}
           </ul>
-        )}
       </section>
+      )}
 
       <CompletedOrderDetailSheet
         refTarget={detailRef}
