@@ -172,7 +172,11 @@ export default function StoreApp() {
         </div>
       </header>
 
-      <div className="p-4 max-w-3xl mx-auto">
+      <div
+        className={`mx-auto p-3 sm:p-4 ${
+          view === 'manage' && activeTab === 'orders' ? 'max-w-[1680px]' : 'max-w-3xl p-4'
+        }`}
+      >
         {storeLoading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -261,9 +265,11 @@ export default function StoreApp() {
               </div>
             )}
             <AnnouncementsBanner audience="store_owners" />
-            <div className="mb-4">
-              <StoreDailyGoalCard storeId={store.id} />
-            </div>
+            {activeTab !== 'orders' && (
+              <div className="mb-4">
+                <StoreDailyGoalCard storeId={store.id} />
+              </div>
+            )}
             <Button
               onClick={() => setActiveTab('external')}
               className="w-full mb-4 h-12 gradient-primary text-primary-foreground font-heading gap-2 sm:hidden"
@@ -272,7 +278,7 @@ export default function StoreApp() {
               Νέα Custom Order (eFood / Wolt / Box)
             </Button>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList ref={tabsListRef} className="w-full mb-4 h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin">
+              <TabsList ref={tabsListRef} className={`w-full h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin ${activeTab === 'orders' ? 'mb-2' : 'mb-4'}`}>
                 <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
                   <ClipboardList className="h-4 w-4 mr-1.5" />
                   Παραγγελίες
