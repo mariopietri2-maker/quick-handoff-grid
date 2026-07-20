@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, loading, profile, isAdmin, isSupport, isStore } = useAuth();
+  const { user, loading, profile, isAdmin, isSupport, isStore, isM } = useAuth();
 
   if (loading || (user && !profile)) {
     return (
@@ -42,8 +42,16 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <>{children}</>;
   }
 
+  // Driver app: regular drivers + elevated M leads
+  if (
+    allowedRoles?.includes('driver') &&
+    (profile?.role === 'driver' || profile?.role === 'm' || isM || allowedRoles.includes('m'))
+  ) {
+    return <>{children}</>;
+  }
+
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
-    if (profile.role === 'driver') return <Navigate to="/driver" replace />;
+    if (profile.role === 'driver' || profile.role === 'm') return <Navigate to="/driver" replace />;
     if (profile.role === 'store') return <Navigate to="/store" replace />;
     return <Navigate to="/" replace />;
   }
