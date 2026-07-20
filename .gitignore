@@ -13,12 +13,13 @@ yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
 
-# Environment (use .env.example — never commit real keys)
+# Environment — keep secrets out of git.
+# Public Vite client keys ARE committed in .env.production / .env.development
+# because Vercel builds embed them at compile time (no dashboard env set yet).
+# Never commit Stripe secret keys (sk_/whsec_) or the Supabase service role.
 .env
 .env.local
 .env.*.local
-.env.development
-.env.production
 .env.e2e
 
 # Editor
