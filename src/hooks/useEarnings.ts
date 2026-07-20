@@ -99,5 +99,10 @@ export function useEarnings() {
     });
   }, [earnings]);
 
-  return { today, week, weekBreakdown, loading, refetch: fetchEarnings };
+  const recentEarnings = useMemo(
+    () => earnings.filter((e) => Boolean(e.order_id)).slice(0, 30),
+    [earnings],
+  );
+
+  return { today, week, weekBreakdown, recentEarnings, loading, refetch: fetchEarnings };
 }

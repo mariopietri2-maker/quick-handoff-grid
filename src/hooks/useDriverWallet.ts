@@ -15,6 +15,7 @@ interface WalletTransaction {
   status: string;
   description: string | null;
   created_at: string;
+  order_id: string | null;
 }
 
 interface CashDebt {
@@ -38,7 +39,7 @@ export function useDriverWallet() {
     if (!user) return;
     const [walletRes, txRes, cashRes] = await Promise.all([
       supabase.from('driver_wallets').select('available_balance, pending_balance, total_withdrawn').eq('driver_id', user.id).maybeSingle(),
-      supabase.from('wallet_transactions').select('*').eq('driver_id', user.id).order('created_at', { ascending: false }).limit(20),
+      supabase.from('wallet_transactions').select('id, type, amount, status, description, created_at, order_id').eq('driver_id', user.id).order('created_at', { ascending: false }).limit(30),
       (supabase as any).from('driver_cash_debts').select('id, order_id, cash_collected, amount_owed, settled, created_at').eq('driver_id', user.id).order('created_at', { ascending: false }).limit(20),
     ]);
     if (walletRes.data) setWallet(walletRes.data);
