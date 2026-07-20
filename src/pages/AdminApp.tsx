@@ -304,13 +304,30 @@ export default function AdminApp() {
       return;
     }
     // Keep user_roles in sync for RLS / edge helpers that use has_role()
-    if (['store', 'driver', 'customer', 'support'].includes(newRole)) {
-      await supabase.from('user_roles').delete().eq('user_id', userId).in('role', ['store', 'driver', 'customer', 'support'] as any);
-      if (newRole !== 'customer') {
+    // Role M = elevated driver → keep both `m` and `driver` capability flags.
+    if (['store', 'driver', 'customer', 'support', 'm'].includes(newRole)) {
+      await supabase.from('user_roles').delete().eq('user_id', userId).in('role', ['store', 'driver', 'customer', 'support', 'm'] as any);
+      if (newRole === 'm') {
+        await supabase.from('user_roles').upsert(
+          [{ user_id: userId, role: 'm' as any }, { user_id: userId, role: 'driver' as any }],
+          { onConflict: 'user_id,role' },
+        );
+        // Ensure driver profile exists so dispatch / nearby_active_drivers includes them
+        await supabase.from('driver_profiles').upsert(
+          { user_id: userId, is_active: true } as any,
+          { onConflict: 'user_id' },
+        );
+      } else if (newRole !== 'customer') {
         await supabase.from('user_roles').upsert({ user_id: userId, role: newRole as any }, { onConflict: 'user_id,role' });
+        if (newRole === 'driver') {
+          await supabase.from('driver_profiles').upsert(
+            { user_id: userId, is_active: true } as any,
+            { onConflict: 'user_id' },
+          );
+        }
       }
     }
-    toast.success('Ρόλος ενημερώθηκε');
+    toast.success(newRole === 'm' ? 'Ρόλος M (elevated driver) ορίστηκε' : 'Ρόλος ενημερώθηκε');
     queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
     queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
   };
@@ -954,7 +971,11 @@ function UsersSection({ profiles, adminUserIds, driverCodeMap, onChangeRole, onT
                     <Select value={profile.role} onValueChange={val => onChangeRole(profile.user_id, val)}>
                       <SelectTrigger className="w-28 h-7 text-[11.5px]"><SelectValue /></SelectTrigger>
                       <SelectContent>
-                        {['customer','driver','store'].map(r => <SelectItem key={r} value={r}>{{ customer: 'Πελάτης', driver: 'Οδηγός', store: 'Κατάστημα' }[r]}</SelectItem>)}
+                        {(['customer','driver','m','store'] as const).map(r => (
+                          <SelectItem key={r} value={r}>
+                            {{ customer: 'Πελάτης', driver: 'Οδηγός', m: 'M (Lead)', store: 'Κατάστημα' }[r]}
+                          </SelectItem>
+                        ))}
                       </SelectContent>
                     </Select>
                   </td>
