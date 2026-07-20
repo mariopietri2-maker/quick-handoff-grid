@@ -1,4 +1,4 @@
-import { lazy, Suspense } from "react";
+import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
@@ -14,25 +14,26 @@ import ConnectionStatus from "@/components/ConnectionStatus";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { MobileAppGate } from "@/components/MobileAppGate";
 import RootEntry from "@/components/RootEntry";
+import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Lazy-load every non-landing route so the initial bundle stays small.
-// This dramatically improves first paint across all apps.
-const AuthPage = lazy(() => import("./pages/AuthPage.tsx"));
-const DriverApp = lazy(() => import("./pages/DriverApp.tsx"));
-const DriverProfilePage = lazy(() => import("./pages/DriverProfilePage.tsx"));
-const ProfilePage = lazy(() => import("./pages/ProfilePage.tsx"));
-const StoreApp = lazy(() => import("./pages/StoreApp.tsx"));
-const AdminApp = lazy(() => import("./pages/AdminApp.tsx"));
-const SupportApp = lazy(() => import("./pages/SupportApp.tsx"));
-const CustomerApp = lazy(() => import("./pages/CustomerApp.tsx"));
-const CustomerLayout = lazy(() => import("./components/customer/CustomerLayout.tsx"));
-const RestaurantPage = lazy(() => import("./pages/RestaurantPage.tsx"));
-const CheckoutPage = lazy(() => import("./pages/CheckoutPage.tsx"));
-const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.tsx"));
-const MyOrdersPage = lazy(() => import("./pages/MyOrdersPage.tsx"));
-const NotFound = lazy(() => import("./pages/NotFound.tsx"));
-const LegalPage = lazy(() => import("./pages/LegalPage.tsx"));
-const DownloadAppPage = lazy(() => import("./pages/DownloadAppPage.tsx"));
+// lazyWithRetry auto-reloads once if a deploy invalidated old chunk hashes.
+const AuthPage = lazyWithRetry(() => import("./pages/AuthPage.tsx"));
+const DriverApp = lazyWithRetry(() => import("./pages/DriverApp.tsx"));
+const DriverProfilePage = lazyWithRetry(() => import("./pages/DriverProfilePage.tsx"));
+const ProfilePage = lazyWithRetry(() => import("./pages/ProfilePage.tsx"));
+const StoreApp = lazyWithRetry(() => import("./pages/StoreApp.tsx"));
+const AdminApp = lazyWithRetry(() => import("./pages/AdminApp.tsx"));
+const SupportApp = lazyWithRetry(() => import("./pages/SupportApp.tsx"));
+const CustomerApp = lazyWithRetry(() => import("./pages/CustomerApp.tsx"));
+const CustomerLayout = lazyWithRetry(() => import("./components/customer/CustomerLayout.tsx"));
+const RestaurantPage = lazyWithRetry(() => import("./pages/RestaurantPage.tsx"));
+const CheckoutPage = lazyWithRetry(() => import("./pages/CheckoutPage.tsx"));
+const OrderTrackingPage = lazyWithRetry(() => import("./pages/OrderTrackingPage.tsx"));
+const MyOrdersPage = lazyWithRetry(() => import("./pages/MyOrdersPage.tsx"));
+const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
+const LegalPage = lazyWithRetry(() => import("./pages/LegalPage.tsx"));
+const DownloadAppPage = lazyWithRetry(() => import("./pages/DownloadAppPage.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
