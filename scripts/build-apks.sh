@@ -4,6 +4,32 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+# yyMMddHH — bump so devices treat this as a newer install than prior debug APKs.
+# Kept under Android's 32-bit versionCode max (~2.1e9).
+VERSION_CODE="${APK_VERSION_CODE:-$(date -u +%y%m%d%H)}"
+VERSION_NAME="${APK_VERSION_NAME:-1.0.${VERSION_CODE}}"
+
+bump_version() {
+  local app_dir="$1"
+  local gradle="$app_dir/app/build.gradle"
+  if [ ! -f "$gradle" ]; then
+    echo "missing $gradle" >&2
+    exit 1
+  fi
+  # Portable in-place edit for versionCode / versionName in defaultConfig
+  python3 - "$gradle" "$VERSION_CODE" "$VERSION_NAME" <<'PY'
+import re, sys
+path, code, name = sys.argv[1], sys.argv[2], sys.argv[3]
+text = open(path).read()
+text2 = re.sub(r"versionCode\s+\d+", f"versionCode {code}", text, count=1)
+text2 = re.sub(r'versionName\s+"[^"]*"', f'versionName "{name}"', text2, count=1)
+if text2 == text:
+    raise SystemExit(f"failed to bump versions in {path}")
+open(path, "w").write(text2)
+print(f"versionCode={code} versionName={name} -> {path}")
+PY
+}
+
 write_cap_config() {
   local flavor="$1"
   local app_dir="$2"
@@ -51,6 +77,11 @@ sync_flavor() {
   local app_id="$3"
   local app_name="$4"
 
+  if [ ! -d "$app_dir" ]; then
+    echo "missing $app_dir - run npx cap add android with flavor configs first" >&2
+    exit 1
+  fi
+
   echo "==> web build ($flavor)"
   VITE_MOBILE_APP="$flavor" npm run build
 
@@ -61,6 +92,7 @@ sync_flavor() {
   cp -a dist/. "$public/"
 
   write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
+  bump_version "$app_dir"
 
   echo "==> gradle assembleDebug ($flavor)"
   (cd "$app_dir" && ./gradlew clean assembleDebug)
@@ -70,6 +102,9 @@ sync_flavor() {
   echo "==> wrote mobile-apks/fresh-${flavor}-debug.apk"
 }
 
+echo "==> APK versionCode=$VERSION_CODE versionName=$VERSION_NAME"
 sync_flavor customer android-customer com.freshdelivery.customer "Fresh Customer"
 sync_flavor driver android-driver com.freshdelivery.driver "Fresh Driver"
 ls -lah mobile-apks/
+sha256sum mobile-apks/*.apk
+

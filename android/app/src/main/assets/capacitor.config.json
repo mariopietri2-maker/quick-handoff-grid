@@ -1,0 +1,37 @@
+{
+	"appId": "app.lovable.a8538a5288f34701a1b9d56a6120ba4c",
+	"appName": "Fresh Delivery",
+	"webDir": "dist",
+	"server": {
+		"url": "https://quick-handoff-grid.vercel.app",
+		"cleartext": false,
+		"androidScheme": "https",
+		"allowNavigation": [
+			"https://ojkesspghyqmjmupybva.supabase.co/*",
+			"https://*.supabase.co/*",
+			"https://quick-handoff-grid.vercel.app/*",
+			"https://api.mapbox.com/*"
+		]
+	},
+	"android": {
+		"backgroundColor": "#1a1a2e",
+		"webContentsDebuggingEnabled": false,
+		"allowMixedContent": false
+	},
+	"ios": {
+		"backgroundColor": "#1a1a2e",
+		"contentInset": "never",
+		"scrollEnabled": false
+	},
+	"plugins": {
+		"CapacitorHttp": { "enabled": true },
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#1a1a2e",
+			"overlaysWebView": true
+		},
+		"SplashScreen": {
+			"backgroundColor": "#1a1a2e"
+		}
+	}
+}
