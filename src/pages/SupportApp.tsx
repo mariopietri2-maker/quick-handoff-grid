@@ -48,6 +48,7 @@ const priorityConfig: Record<TicketPriority, { label: string; color: string; ico
 };
 
 const categoryConfig: Record<string, { label: string; icon: any; color: string }> = {
+  // Driver
   emergency: { label: 'Έκτακτο', icon: AlertTriangle, color: 'text-red-500' },
   customer_issue: { label: 'Πελάτης', icon: MessageSquare, color: 'text-blue-500' },
   vehicle_issue: { label: 'Όχημα', icon: Car, color: 'text-orange-500' },
@@ -56,7 +57,24 @@ const categoryConfig: Record<string, { label: string; icon: any; color: string }
   wrong_address: { label: 'Λάθος Διεύθυνση', icon: AlertTriangle, color: 'text-orange-500' },
   payment: { label: 'Πληρωμή', icon: AlertTriangle, color: 'text-purple-500' },
   accident: { label: 'Ατύχημα', icon: AlertTriangle, color: 'text-red-600' },
+  navigation: { label: 'Πλοήγηση', icon: Car, color: 'text-indigo-500' },
+  // Customer
+  late_delivery: { label: 'Καθυστέρηση', icon: Clock, color: 'text-amber-500' },
+  missing_items: { label: 'Λείπουν προϊόντα', icon: AlertTriangle, color: 'text-orange-500' },
+  wrong_order: { label: 'Λάθος παραγγελία', icon: AlertTriangle, color: 'text-red-500' },
+  address_issue: { label: 'Διεύθυνση', icon: AlertTriangle, color: 'text-indigo-500' },
+  driver_issue: { label: 'Οδηγός', icon: Car, color: 'text-blue-500' },
+  refund: { label: 'Επιστροφή', icon: AlertTriangle, color: 'text-emerald-500' },
+  // Store
+  order_issue: { label: 'Παραγγελία', icon: AlertTriangle, color: 'text-amber-500' },
+  kitchen_issue: { label: 'Κουζίνα', icon: AlertTriangle, color: 'text-orange-500' },
   other: { label: 'Άλλο', icon: MessageSquare, color: 'text-muted-foreground' },
+};
+
+const roleLabels: Record<string, string> = {
+  driver: 'Οδηγός',
+  customer: 'Πελάτης',
+  store: 'Κατάστημα',
 };
 
 export default function SupportApp() {
@@ -85,7 +103,7 @@ export default function SupportApp() {
   const { data: profiles } = useQuery({
     queryKey: ['support-profiles'],
     queryFn: async () => {
-      const { data } = await supabase.from('profiles').select('user_id, full_name, phone');
+      const { data } = await supabase.from('profiles').select('user_id, full_name, phone, role');
       return data ?? [];
     },
   });
@@ -103,7 +121,18 @@ export default function SupportApp() {
     };
   }, [queryClient]);
 
-  const driverInfo = (id: string) => profiles?.find((p) => p.user_id === id);
+  const profileInfo = (id: string | null | undefined) =>
+    id ? profiles?.find((p) => p.user_id === id) : undefined;
+
+  /** Prefer requester (customer/store/driver); fall back to legacy driver_id. */
+  const ticketSubject = (ticket: any) => {
+    const requesterId = ticket.requester_id || ticket.driver_id;
+    const p = profileInfo(requesterId);
+    const role = ticket.requester_role || (ticket.driver_id ? 'driver' : null);
+    const name = p?.full_name
+      ?? (requesterId ? `${requesterId.slice(0, 8)}…` : 'Άγνωστος');
+    return { name, phone: p?.phone ?? null, role, requesterId };
+  };
 
   const updateStatus = async (id: string, status: string) => {
     const { error } = await supabase.from('support_tickets').update({ status }).eq('id', id);
@@ -162,13 +191,16 @@ export default function SupportApp() {
 
   // Detail view
   if (activeTicket) {
-    const driver = driverInfo(activeTicket.driver_id);
+    const subject = ticketSubject(activeTicket);
+    const driver = profileInfo(activeTicket.driver_id);
     const cat = categoryConfig[activeTicket.category] ?? categoryConfig.other;
     const CatIcon = cat.icon;
     const cfg = statusConfig[activeTicket.status] ?? statusConfig.open;
     const currentPriority: TicketPriority = (activeTicket.priority ?? 'normal') as TicketPriority;
     const pcfg = priorityConfig[currentPriority];
     const PIcon = pcfg.icon;
+    const isDriverTicket = (activeTicket.requester_role ?? 'driver') === 'driver' && !!activeTicket.driver_id;
+    const callPhone = subject.phone || driver?.phone;
 
     return (
       <div className="support-shell">
@@ -177,10 +209,11 @@ export default function SupportApp() {
             <ArrowLeft className="h-5 w-5" />
           </Button>
           <div className="flex-1 min-w-0">
-            <p className="font-heading font-semibold truncate">
-              {driver?.full_name ?? (activeTicket.driver_id ? activeTicket.driver_id.slice(0, 8) : 'Άγνωστος')}
+            <p className="font-heading font-semibold truncate">{subject.name}</p>
+            <p className="text-xs text-muted-foreground">
+              Ticket #{activeTicket.id?.slice(0, 8) ?? '—'}
+              {subject.role ? ` · ${roleLabels[subject.role] ?? subject.role}` : ''}
             </p>
-            <p className="text-xs text-muted-foreground">Ticket #{activeTicket.id?.slice(0, 8) ?? '—'}</p>
           </div>
           <Badge variant="outline" className={`${pcfg.color} text-[10px] gap-1`}>
             <PIcon className="h-3 w-3" /> {pcfg.label}
@@ -199,7 +232,7 @@ export default function SupportApp() {
                   <p className="font-heading font-semibold">{cat.label}</p>
                   <p className="text-xs text-muted-foreground">
                     {format(new Date(activeTicket.created_at), 'dd MMM yyyy, HH:mm')}
-                    {driver?.phone && ` · ${driver.phone}`}
+                    {callPhone && ` · ${callPhone}`}
                   </p>
                 </div>
                 <span className="text-[10px] flex items-center gap-1 text-muted-foreground shrink-0">
@@ -240,9 +273,9 @@ export default function SupportApp() {
                   <Button size="sm" onClick={() => setResolveOpen(true)}>
                     <CheckCircle className="h-4 w-4 mr-1" /> Επίλυση
                   </Button>
-                  {driver?.phone && (
+                  {callPhone && (
                     <Button size="sm" variant="outline" className="h-8 text-xs" asChild>
-                      <a href={`tel:${driver.phone}`}>
+                      <a href={`tel:${callPhone}`}>
                         <Phone className="h-3.5 w-3.5 mr-1" /> Κλήση
                       </a>
                     </Button>
@@ -258,13 +291,14 @@ export default function SupportApp() {
             <DriverProfilePanel driverId={activeTicket.driver_id} />
           ) : null}
 
-          {activeTicket.driver_id && (
-            <SupportActionToolbox
-              ticket={activeTicket}
-              driver={driver}
-              onDriverChanged={() => queryClient.invalidateQueries({ queryKey: ['support-driver-profile', activeTicket.driver_id] })}
-            />
-          )}
+          <SupportActionToolbox
+            ticket={activeTicket}
+            driver={isDriverTicket ? driver : undefined}
+            onDriverChanged={() =>
+              activeTicket.driver_id &&
+              queryClient.invalidateQueries({ queryKey: ['support-driver-profile', activeTicket.driver_id] })
+            }
+          />
 
           <SupportAIPanel
             ticketId={activeTicket.id}
@@ -419,7 +453,7 @@ export default function SupportApp() {
             </div>
           ) : (
             filtered.map((ticket) => {
-              const driver = driverInfo(ticket.driver_id);
+              const subject = ticketSubject(ticket);
               const cat = categoryConfig[ticket.category] ?? categoryConfig.other;
               const CatIcon = cat.icon;
               const cfg = statusConfig[ticket.status] ?? statusConfig.open;
@@ -437,7 +471,7 @@ export default function SupportApp() {
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
                           <p className="font-heading font-semibold text-sm truncate">
-                            {driver?.full_name ?? (ticket.driver_id ? ticket.driver_id.slice(0, 8) : 'Άγνωστος')}
+                            {subject.name}
                           </p>
                           <div className="flex items-center gap-1 shrink-0">
                             {(() => {
@@ -454,7 +488,10 @@ export default function SupportApp() {
                             <Badge variant="outline" className={`${cfg.color} text-[10px]`}>{cfg.label}</Badge>
                           </div>
                         </div>
-                        <p className="text-xs text-muted-foreground mt-0.5">{cat.label}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {cat.label}
+                          {subject.role ? ` · ${roleLabels[subject.role] ?? subject.role}` : ''}
+                        </p>
                         {ticket.description && (
                           <p className="text-xs text-foreground/80 mt-1 line-clamp-2">{ticket.description}</p>
                         )}

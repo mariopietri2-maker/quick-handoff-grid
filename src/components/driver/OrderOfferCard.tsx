@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard, MessageSquare } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
+import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
+import { formatDriverDistance } from '@/lib/driver-nav';
 
 interface OrderOffer {
   id: string;
@@ -42,10 +44,14 @@ function computeSecondsLeft(expiresAt?: string | null, fallback = 60): number {
 }
 
 export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutSec = 60 }: OrderOfferCardProps) {
+  const prefs = loadDriverAppPrefs();
   const totalWindow = expiresAt
     ? Math.max(1, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)) || timeoutSec
     : timeoutSec;
   const [secondsLeft, setSecondsLeft] = useState(() => computeSecondsLeft(expiresAt, timeoutSec));
+  const distanceLabel = offer.totalDistance
+    ? formatDriverDistance(offer.totalDistance * 1000, prefs.distanceUnit)
+    : '—';
 
   // Sound + vibration are handled centrally in `useOrders` via
   // `playOfferAlert`. Do NOT play another chime here — that caused the
@@ -149,7 +155,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
         {/* Info chips */}
         <div className="flex items-center gap-1.5 mt-4 flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-[hsl(var(--driver-surface-muted))] text-[11.5px] font-medium text-[hsl(var(--driver-text))]">
-            <Navigation className="h-3 w-3 text-[hsl(var(--driver-info))]" />{offer.totalDistance || '—'} χλμ
+            <Navigation className="h-3 w-3 text-[hsl(var(--driver-info))]" />{distanceLabel}
           </span>
           <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-[hsl(var(--driver-surface-muted))] text-[11.5px] font-medium text-[hsl(var(--driver-text))]">
             <Clock className="h-3 w-3 text-[hsl(var(--driver-info))]" />~{offer.estimatedTime} λεπ

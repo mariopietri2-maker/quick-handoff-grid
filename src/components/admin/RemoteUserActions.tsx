@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -17,6 +17,7 @@ import { useAuth } from '@/hooks/useAuth';
 export default function RemoteUserActions() {
   const { user: me } = useAuth();
   const [search, setSearch] = useState('');
+  const [debouncedSearch, setDebouncedSearch] = useState('');
   const [roleFilter, setRoleFilter] = useState<'all' | 'driver' | 'customer' | 'store'>('driver');
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [actionDialog, setActionDialog] = useState<null | 'reset' | 'message' | 'ban'>(null);
@@ -25,12 +26,17 @@ export default function RemoteUserActions() {
   const [severity, setSeverity] = useState<'info' | 'warning' | 'urgent'>('info');
   const [busy, setBusy] = useState(false);
 
+  useEffect(() => {
+    const t = window.setTimeout(() => setDebouncedSearch(search.trim()), 300);
+    return () => window.clearTimeout(t);
+  }, [search]);
+
   const { data: profiles, isLoading, refetch } = useQuery({
-    queryKey: ['remote-profiles', search, roleFilter],
+    queryKey: ['remote-profiles', debouncedSearch, roleFilter],
     queryFn: async () => {
       let q = supabase.from('profiles').select('user_id, full_name, role, phone, created_at').limit(80);
       if (roleFilter !== 'all') q = q.eq('role', roleFilter);
-      if (search) q = q.or(`full_name.ilike.%${search}%,phone.ilike.%${search}%`);
+      if (debouncedSearch) q = q.or(`full_name.ilike.%${debouncedSearch}%,phone.ilike.%${debouncedSearch}%`);
       const { data } = await q.order('created_at', { ascending: false });
       return data ?? [];
     },

@@ -1,10 +1,12 @@
 import { useEffect, useState } from 'react';
-import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
+import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote, ExternalLink } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
+import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
+import { openExternalNav } from '@/lib/driver-nav';
 
 interface DeliveryItem { name: string; quantity: number; }
 
@@ -57,6 +59,14 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
   const isCash = (delivery.paymentMethod ?? '').toLowerCase() === 'cash';
   const cashDue = Number(delivery.cashToCollect ?? 0);
   const [cashConfirmed, setCashConfirmed] = useState(false);
+  const prefs = loadDriverAppPrefs();
+  const navTarget = isGoingToStore
+    ? { lat: delivery.storeLat, lng: delivery.storeLng, label: delivery.storeName }
+    : isGoingToCustomer
+      ? { lat: delivery.deliveryLat, lng: delivery.deliveryLng, label: delivery.customerName }
+      : null;
+  const canExternalNav = navTarget?.lat != null && navTarget?.lng != null
+    && Number.isFinite(navTarget.lat) && Number.isFinite(navTarget.lng);
   useEffect(() => {
     if (confirmDeliver) {
       setCashConfirmed(false);
@@ -196,13 +206,26 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
           </div>
 
           {(isGoingToStore || isGoingToCustomer) && (
-            <button
-              onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
-              className="mt-3.5 w-full h-11 rounded-full bg-[hsl(var(--driver-info))] text-white text-[13.5px] font-heading font-bold flex items-center justify-center gap-2 hover:brightness-105 transition-all active:scale-[0.98] shadow-[0_6px_18px_-6px_hsl(200_75%_46%/0.45)]"
-            >
-              <Navigation className="h-4 w-4" strokeWidth={2.5} />
-              Πλοήγηση
-            </button>
+            <div className="mt-3.5 flex gap-2">
+              <button
+                onClick={() => onFocusDestination?.(isGoingToStore ? 'store' : 'customer')}
+                className="flex-1 h-11 rounded-full bg-[hsl(var(--driver-info))] text-white text-[13.5px] font-heading font-bold flex items-center justify-center gap-2 hover:brightness-105 transition-all active:scale-[0.98] shadow-[0_6px_18px_-6px_hsl(200_75%_46%/0.45)]"
+              >
+                <Navigation className="h-4 w-4" strokeWidth={2.5} />
+                Πλοήγηση
+              </button>
+              {canExternalNav && (
+                <button
+                  type="button"
+                  onClick={() => openExternalNav(navTarget!.lat!, navTarget!.lng!, prefs.navApp, navTarget!.label)}
+                  className="h-11 w-11 shrink-0 rounded-full bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] text-[hsl(var(--driver-info))] flex items-center justify-center hover:bg-[hsl(var(--driver-info))]/10 active:scale-95 transition-all"
+                  aria-label="Εξωτερική πλοήγηση"
+                  title="Εξωτερική πλοήγηση"
+                >
+                  <ExternalLink className="h-4 w-4" strokeWidth={2.5} />
+                </button>
+              )}
+            </div>
           )}
         </div>
 

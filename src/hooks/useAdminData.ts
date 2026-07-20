@@ -1,10 +1,26 @@
+import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 
+/** Poll only while the admin tab is visible — avoids background request storms. */
+function useVisibleRefetchInterval(ms: number): number | false {
+  const [visible, setVisible] = useState(
+    () => typeof document === 'undefined' || document.visibilityState === 'visible',
+  );
+  useEffect(() => {
+    const onVis = () => setVisible(document.visibilityState === 'visible');
+    document.addEventListener('visibilitychange', onVis);
+    return () => document.removeEventListener('visibilitychange', onVis);
+  }, []);
+  return visible ? ms : false;
+}
+
 export function useAdminData() {
+  const poll = useVisibleRefetchInterval(30_000);
+
   const orders = useQuery({
     queryKey: ['admin-orders'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('orders')
@@ -18,7 +34,7 @@ export function useAdminData() {
 
   const stores = useQuery({
     queryKey: ['admin-stores'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('stores')
@@ -31,7 +47,7 @@ export function useAdminData() {
 
   const profiles = useQuery({
     queryKey: ['admin-profiles'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('profiles')
@@ -44,7 +60,7 @@ export function useAdminData() {
 
   const earnings = useQuery({
     queryKey: ['admin-earnings'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('earnings')
@@ -57,7 +73,7 @@ export function useAdminData() {
 
   const reviews = useQuery({
     queryKey: ['admin-reviews'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('reviews')
@@ -70,7 +86,7 @@ export function useAdminData() {
 
   const userRoles = useQuery({
     queryKey: ['admin-user-roles'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_roles')
@@ -82,7 +98,7 @@ export function useAdminData() {
 
   const driverProfiles = useQuery({
     queryKey: ['admin-driver-profiles'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_profiles')
@@ -95,7 +111,7 @@ export function useAdminData() {
 
   const driverStates = useQuery({
     queryKey: ['admin-driver-states'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('driver_state')
@@ -107,7 +123,7 @@ export function useAdminData() {
 
   const driverWallets = useQuery({
     queryKey: ['admin-driver-wallets'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_wallets')
@@ -119,7 +135,7 @@ export function useAdminData() {
 
   const storeWallets = useQuery({
     queryKey: ['admin-store-wallets'],
-    refetchInterval: 30_000,
+    refetchInterval: poll,
     queryFn: async () => {
       const { data, error } = await (supabase as any)
         .from('store_wallets')
