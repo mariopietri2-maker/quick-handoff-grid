@@ -226,7 +226,7 @@ export default function ExternalOrderIngest() {
                 <Textarea
                   value={pasteText}
                   onChange={e => setPasteText(e.target.value)}
-                  placeholder={`π.χ.\nΝέα παραγγελία efood #A12345\nΣύνολο: 18.40€\nΔιεύθυνση: Ερμού 12, Αθήνα\nΓιάννης 6912345678\n2x Πίτσα Μαργαρίτα, 1x Κόκα Κόλα`}
+                  placeholder={`π.χ.\nΝέα παραγγελία efood #A12345\nΣύνολο: 18.40€\nΔιεύθυνση: Δημοκρατίας 12, Ιωάννινα\nΓιάννης 6912345678\n2x Πίτσα Μαργαρίτα, 1x Κόκα Κόλα`}
                   rows={6}
                   className="text-xs font-mono"
                 />
@@ -290,7 +290,7 @@ export default function ExternalOrderIngest() {
                 </div>
                 <div className="sm:col-span-2">
                   <Label className="text-xs">Διεύθυνση Παράδοσης *</Label>
-                  <Input value={form.delivery_address} onChange={e => update('delivery_address', e.target.value)} placeholder="Ερμού 12, Αθήνα" />
+                  <Input value={form.delivery_address} onChange={e => update('delivery_address', e.target.value)} placeholder="Δημοκρατίας 12, Ιωάννινα" />
                 </div>
                 <div>
                   <Label className="text-xs">Όνομα πελάτη</Label>

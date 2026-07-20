@@ -22,7 +22,7 @@ interface ServiceZone {
   is_active: boolean;
 }
 
-const DEFAULT_CENTER: [number, number] = [20.9853, 39.6650]; // Ιωάννινα
+const DEFAULT_CENTER: [number, number] = [20.8537, 39.6650]; // Ιωάννινα
 const CIRCLE_POINTS = 64;
 
 /** Generate a GeoJSON Polygon approximating a circle (radius in km) around [lng,lat]. */
@@ -156,7 +156,7 @@ export default function ServiceZonesEditor() {
     const c = map ? map.getCenter() : { lng: DEFAULT_CENTER[0], lat: DEFAULT_CENTER[1] };
     const { data, error } = await supabase
       .from('service_zones')
-      .insert({ city, center_latitude: c.lat, center_longitude: c.lng, radius_km: 5, is_active: true })
+      .insert({ city, center_latitude: c.lat, center_longitude: c.lng, radius_km: 18, is_active: true })
       .select()
       .single();
     setCreating(false);

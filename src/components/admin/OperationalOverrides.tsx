@@ -143,16 +143,16 @@ export default function OperationalOverrides() {
           <div className="space-y-3">
             <div>
               <Label className="text-xs">Όνομα</Label>
-              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="π.χ. Κέντρο Αθήνας" />
+              <Input value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} placeholder="π.χ. Κέντρο Ιωαννίνων" />
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
                 <Label className="text-xs">Latitude</Label>
-                <Input value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} placeholder="37.9755" />
+                <Input value={form.latitude} onChange={e => setForm({ ...form, latitude: e.target.value })} placeholder="39.6650" />
               </div>
               <div>
                 <Label className="text-xs">Longitude</Label>
-                <Input value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} placeholder="23.7348" />
+                <Input value={form.longitude} onChange={e => setForm({ ...form, longitude: e.target.value })} placeholder="20.8537" />
               </div>
             </div>
             <div className="grid grid-cols-2 gap-2">
