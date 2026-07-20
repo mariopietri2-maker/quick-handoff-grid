@@ -386,11 +386,11 @@ export default function DriverApp() {
         hasActiveDelivery={!!activeDelivery}
       />
       {activeTab === 'home' ? (
-        <div className="flex-1 relative min-h-0">
+        <div className="flex-1 relative min-h-0 w-full">
           <Suspense fallback={<div className="absolute inset-0 z-0 bg-muted/40" />}>
             <DriverMapbox
               ref={mapRef}
-              className="absolute inset-0 z-0 w-full h-full"
+              className="absolute inset-0 z-0 w-full h-full min-h-0"
               storeLat={storeInfo?.latitude}
               storeLng={storeInfo?.longitude}
               storeName={storeInfo?.name}

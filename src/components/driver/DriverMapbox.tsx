@@ -265,6 +265,9 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       addRouteLayers();
       // Ensure the GL canvas matches the full-bleed container (esp. after Capacitor / lazy mount).
       map.resize();
+      requestAnimationFrame(() => {
+        try { map.resize(); } catch { /* noop */ }
+      });
       // 3D buildings are expensive on mobile; only add them when the driver
       // enters turn-by-turn navigation (followMode). See effect below.
     });
@@ -284,14 +287,18 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     // Keep canvas sized when the viewport / sheet changes (orientation, keyboard, etc.)
     const onWinResize = () => { try { map.resize(); } catch { /* noop */ } };
     window.addEventListener('resize', onWinResize);
-    const ro = typeof ResizeObserver !== 'undefined' && mapContainer.current
+    const shell = mapContainer.current?.parentElement ?? mapContainer.current;
+    const ro = typeof ResizeObserver !== 'undefined' && shell
       ? new ResizeObserver(() => onWinResize())
       : null;
-    if (ro && mapContainer.current) ro.observe(mapContainer.current);
+    if (ro && shell) ro.observe(shell);
+    // Catch late layout (fonts, safe-area, mobile browser chrome).
+    const bootTimers = [50, 200, 600].map((ms) => window.setTimeout(onWinResize, ms));
 
     return () => {
       window.removeEventListener('resize', onWinResize);
       ro?.disconnect();
+      bootTimers.forEach((id) => window.clearTimeout(id));
       map.remove();
       mapRef.current = null;
     };
@@ -765,6 +772,9 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
   useImperativeHandle(ref, () => ({ recenter, focusOn, fitOverview }), [recenter, focusOn, fitOverview]);
 
+  // Outer wrapper owns absolute/fixed fill. Mapbox sets `.mapboxgl-map { position: relative }`
+  // on the container it mounts into — if that node also carries inset-0, the map collapses
+  // to a thin strip and the driver shell background shows through.
   if (loading || !token) {
     return (
       <div className={`bg-muted/50 flex items-center justify-center ${className}`}>
@@ -773,7 +783,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     );
   }
 
-  return <div ref={mapContainer} className={className} style={{ minHeight: '200px', width: '100%', height: '100%' }} />;
+  return (
+    <div className={className} data-driver-map-shell="">
+      <div
+        ref={mapContainer}
+        className="driver-map-root"
+        style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', minHeight: '100%' }}
+      />
+    </div>
+  );
 });
 
 export default DriverMapbox;
