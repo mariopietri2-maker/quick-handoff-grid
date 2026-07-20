@@ -56,7 +56,7 @@ export function useNearbyStoresForDriver() {
 
     const IOANNINA_LAT = 39.6650;
     const IOANNINA_LNG = 20.8537;
-    const MAX_KM = 15;
+    const MAX_KM = 18;
     const distKm = (lat: number, lng: number) => {
       const toRad = (d: number) => (d * Math.PI) / 180;
       const dLat = toRad(lat - IOANNINA_LAT);

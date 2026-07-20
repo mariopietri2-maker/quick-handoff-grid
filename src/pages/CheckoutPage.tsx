@@ -19,6 +19,7 @@ import { isPaymentsConfigured } from '@/lib/stripe';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SEO } from '@/components/SEO';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
+import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
 
 interface AppliedPromo {
   id: string;
@@ -201,6 +202,14 @@ export default function CheckoutPage() {
     }
     if (!address.trim()) {
       toast.error('Παρακαλώ εισάγετε διεύθυνση παράδοσης');
+      return;
+    }
+    if (!deliveryCoords?.lat || !deliveryCoords?.lon) {
+      toast.error('Επίλεξε διεύθυνση από τη λίστα ή σημείωσέ την στον χάρτη.');
+      return;
+    }
+    if (!isWithinIoanninaServiceArea(deliveryCoords.lat, deliveryCoords.lon)) {
+      toast.error(OUT_OF_ZONE_MESSAGE);
       return;
     }
     if (!storeId || items.length === 0) return;

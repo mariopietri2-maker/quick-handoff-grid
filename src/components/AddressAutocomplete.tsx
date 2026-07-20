@@ -7,6 +7,12 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { geocodeAddress } from '@/lib/geocode';
+import {
+  IOANNINA_GEOCODE_BBOX,
+  IOANNINA_MAP_CENTER,
+  OUT_OF_ZONE_MESSAGE,
+  isWithinIoanninaServiceArea,
+} from '@/lib/geo-defaults';
 
 interface AddressResult {
   display_name: string;
@@ -23,11 +29,9 @@ interface AddressAutocompleteProps {
   initialCenter?: [number, number];
 }
 
-// Default map center — platform operates in Ioannina
-const DEFAULT_CENTER: [number, number] = [20.8527, 39.6650]; // [lng, lat]
-// Bias geocoding to mainland Greece + islands (minLng, minLat, maxLng, maxLat)
-const GREECE_BBOX = '19.3,34.7,29.7,41.8';
+const DEFAULT_CENTER: [number, number] = IOANNINA_MAP_CENTER;
 const MARKER_COLOR = '#2563eb';
+const ZONE_TOAST = OUT_OF_ZONE_MESSAGE;
 
 export function AddressAutocomplete({
   value,
@@ -89,7 +93,7 @@ export function AddressAutocomplete({
       const typedNumber = numMatch ? numMatch[1] : null;
       const [proxLng, proxLat] = centerRef.current;
 
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${GREECE_BBOX}&proximity=${proxLng},${proxLat}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
+      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${IOANNINA_GEOCODE_BBOX}&proximity=${proxLng},${proxLat}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
       const res = await fetch(url);
       const data = await res.json();
       const features = (data.features ?? []) as Array<{
@@ -108,18 +112,21 @@ export function AddressAutocomplete({
 
       const chosen = withNumber.length > 0 ? withNumber : features;
 
-      const mapped: AddressResult[] = chosen.map(f => {
-        let label = f.place_name;
-        // If user typed a number but result doesn't have one, inject it for clarity
-        if (typedNumber && !f.address && f.place_type?.includes('address') && f.text) {
-          label = label.replace(f.text, `${f.text} ${typedNumber}`);
-        }
-        return {
-          display_name: label,
-          lon: f.center[0],
-          lat: f.center[1],
-        };
-      });
+      const mapped: AddressResult[] = chosen
+        .map(f => {
+          let label = f.place_name;
+          // If user typed a number but result doesn't have one, inject it for clarity
+          if (typedNumber && !f.address && f.place_type?.includes('address') && f.text) {
+            label = label.replace(f.text, `${f.text} ${typedNumber}`);
+          }
+          return {
+            display_name: label,
+            lon: f.center[0],
+            lat: f.center[1],
+          };
+        })
+        // Hard-lock suggestions to Ioannina service area
+        .filter(r => isWithinIoanninaServiceArea(r.lat, r.lon));
       setResults(mapped);
       setOpen(mapped.length > 0);
       setNoResults(mapped.length === 0 && q.length >= 3);
@@ -150,6 +157,10 @@ export function AddressAutocomplete({
     if (q.length < 5) return;
     const res = await geocodeAddress(q);
     if (res) {
+      if (!isWithinIoanninaServiceArea(res.latitude, res.longitude)) {
+        toast.error(ZONE_TOAST);
+        return;
+      }
       hasCoordsRef.current = true;
       onChange(res.formatted || q, res.latitude, res.longitude);
       setQuery(res.formatted || q);
@@ -157,6 +168,10 @@ export function AddressAutocomplete({
   };
 
   const selectResult = (r: AddressResult) => {
+    if (!isWithinIoanninaServiceArea(r.lat, r.lon)) {
+      toast.error(ZONE_TOAST);
+      return;
+    }
     setQuery(r.display_name);
     onChange(r.display_name, r.lat, r.lon);
     hasCoordsRef.current = true;
@@ -177,6 +192,10 @@ export function AddressAutocomplete({
   };
 
   const reverseGeocode = useCallback(async (lat: number, lon: number) => {
+    if (!isWithinIoanninaServiceArea(lat, lon)) {
+      toast.error(ZONE_TOAST);
+      return;
+    }
     setReverseLoading(true);
     try {
       const t = tokenRef.current;
@@ -205,6 +224,10 @@ export function AddressAutocomplete({
   }, []);
 
   const handleMapClick = useCallback((lat: number, lon: number) => {
+    if (!isWithinIoanninaServiceArea(lat, lon)) {
+      toast.error(ZONE_TOAST);
+      return;
+    }
     setMapPin({ lat, lon });
     reverseGeocode(lat, lon);
   }, [reverseGeocode]);
@@ -224,6 +247,11 @@ export function AddressAutocomplete({
       (pos) => {
         const lat = pos.coords.latitude;
         const lon = pos.coords.longitude;
+        if (!isWithinIoanninaServiceArea(lat, lon)) {
+          setGpsLoading(false);
+          toast.error(ZONE_TOAST);
+          return;
+        }
         setMapPin({ lat, lon });
         setShowMap(true);
         reverseGeocode(lat, lon);
@@ -472,7 +500,9 @@ export function AddressAutocomplete({
           </div>
           <div className="px-3 pb-3 flex items-center gap-2">
             <p className="text-xs text-muted-foreground flex-1">
-              {mapPin ? 'Πατήστε ξανά για αλλαγή τοποθεσίας' : 'Πατήστε στον χάρτη για να ορίσετε τοποθεσία'}
+              {mapPin
+                ? 'Πατήστε ξανά για αλλαγή τοποθεσίας'
+                : 'Πατήστε στον χάρτη (Ιωάννινα & γύρω περιοχή)'}
             </p>
             <Button size="sm" disabled={!mapPin} onClick={confirmMapPin} className="gap-1.5">
               <MapPin className="h-3.5 w-3.5" />

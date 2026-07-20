@@ -23,7 +23,7 @@ interface StoreRow {
 const ACTIVE_STATUSES = ['placed', 'accepted', 'preparing', 'ready'];
 const DEFAULT_LAT = 39.6650; // Ιωάννινα (matches driver map)
 const DEFAULT_LNG = 20.8537;
-const MAX_KM = 15;
+const MAX_KM = 18;
 
 function distKm(lat: number, lng: number) {
   const toRad = (d: number) => (d * Math.PI) / 180;
