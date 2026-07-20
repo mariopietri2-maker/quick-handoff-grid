@@ -63,7 +63,7 @@ export default function CustomOrderDialog() {
       toast.error(error.message);
       return;
     }
-    const parsed = data as {
+    const parsed = (data?.data ?? data) as {
       total_amount?: number; delivery_address?: string;
       customer_name?: string; customer_phone?: string;
       items_summary?: string; notes?: string;
