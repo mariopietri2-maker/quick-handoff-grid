@@ -256,9 +256,13 @@ export function UserMenu() {
                 <Store className="mr-2 h-4 w-4 shrink-0 text-primary" />
                 Πίνακας παραγγελιών
               </DropdownMenuItem>
+              <DropdownMenuItem className={itemClassName} onSelect={() => go('/store/profile')}>
+                <UserCircle className="mr-2 h-4 w-4 shrink-0" />
+                Προφίλ λογαριασμού
+              </DropdownMenuItem>
               <DropdownMenuItem className={itemClassName} onSelect={() => go('/store?tab=settings')}>
                 <Settings className="mr-2 h-4 w-4 shrink-0" />
-                Προφίλ & ρυθμίσεις καταστήματος
+                Ρυθμίσεις καταστήματος
               </DropdownMenuItem>
 
               <DropdownMenuSeparator className="my-1" />
