@@ -72,7 +72,23 @@ export default function OrderTrackingPage() {
           .select('name, latitude, longitude')
           .eq('id', oRes.data.store_id)
           .maybeSingle();
-        if (s) { setStoreName(s.name); setStoreLat(s.latitude); setStoreLng(s.longitude); }
+        if (s) {
+          setStoreName(s.name);
+          setStoreLat(s.latitude != null ? Number(s.latitude) : null);
+          setStoreLng(s.longitude != null ? Number(s.longitude) : null);
+        } else {
+          // Fallback if stores_public view is missing / restricted
+          const { data: s2 } = await supabase
+            .from('stores')
+            .select('name, latitude, longitude')
+            .eq('id', oRes.data.store_id)
+            .maybeSingle();
+          if (s2) {
+            setStoreName(s2.name);
+            setStoreLat(s2.latitude != null ? Number(s2.latitude) : null);
+            setStoreLng(s2.longitude != null ? Number(s2.longitude) : null);
+          }
+        }
         if (oRes.data.driver_id) {
           const { data: p } = await supabase.from('profiles').select('full_name, phone').eq('user_id', oRes.data.driver_id).single();
           if (p) { setDriverName(p.full_name); setDriverPhone(p.phone); }

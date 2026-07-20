@@ -1,0 +1,336 @@
+import { useEffect, useState } from 'react';
+import {
+  ArrowDownCircle,
+  ArrowUpCircle,
+  Banknote,
+  CheckCircle2,
+  AlertTriangle,
+  Lock,
+  TrendingUp,
+  Package,
+  Wallet,
+  X,
+} from 'lucide-react';
+import { useDriverWallet } from '@/hooks/useDriverWallet';
+import { useEarnings } from '@/hooks/useEarnings';
+import { useDriverState } from '@/hooks/useDriverState';
+import { supabase } from '@/integrations/supabase/client';
+
+/** Polished money tab — balance, today, shift cash, activity. */
+export function DriverMoneyPanel() {
+  const { wallet, transactions, loading } = useDriverWallet();
+  const { today, week } = useEarnings();
+  const { state } = useDriverState();
+  const [cap, setCap] = useState(200);
+  const [ackResetAt, setAckResetAt] = useState<string | null>(() =>
+    typeof window !== 'undefined' ? localStorage.getItem('driver_cash_reset_ack') : null,
+  );
+
+  useEffect(() => {
+    (supabase as any)
+      .rpc('get_platform_settings_public')
+      .then(({ data }: any) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row?.max_cash_cap != null) setCap(Number(row.max_cash_cap));
+      });
+  }, []);
+
+  if (loading) {
+    return (
+      <div className="text-center py-16 animate-fade-in">
+        <div className="h-9 w-9 border-[3px] border-[hsl(var(--driver-accent))] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-[hsl(var(--driver-text-muted))] font-heading text-sm">Φόρτωση…</p>
+      </div>
+    );
+  }
+
+  const balance = Number(wallet?.available_balance ?? 0);
+  const pending = Number(wallet?.pending_balance ?? 0);
+  const withdrawn = Number(wallet?.total_withdrawn ?? 0);
+  const recent = transactions.slice(0, 10);
+
+  const cash = Number(state?.shift_cash_balance ?? 0);
+  const cashPct = Math.min((cash / Math.max(cap, 1)) * 100, 100);
+  const cashCapped = cash >= cap;
+  const cashWarn = !cashCapped && cashPct >= 80;
+  const lastReset = state?.last_cash_reset_at ?? null;
+  const showResetNotice = !!lastReset && lastReset !== ackResetAt;
+
+  const dismissReset = () => {
+    if (!lastReset) return;
+    localStorage.setItem('driver_cash_reset_ack', lastReset);
+    setAckResetAt(lastReset);
+  };
+
+  return (
+    <div className="space-y-4 animate-fade-in">
+      {/* Hero balance */}
+      <section className="relative overflow-hidden rounded-[22px] driver-gradient-earn shadow-[0_16px_40px_-18px_hsl(162_58%_28%/0.55)]">
+        <div
+          className="pointer-events-none absolute inset-0 opacity-40"
+          style={{
+            background:
+              'radial-gradient(ellipse 80% 70% at 100% 0%, hsl(0 0% 100% / 0.28), transparent 55%), radial-gradient(ellipse 60% 50% at 0% 100%, hsl(172 60% 30% / 0.35), transparent 50%)',
+          }}
+        />
+        <div className="relative p-5 pb-4">
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-xl bg-white/15 border border-white/20 flex items-center justify-center">
+                <Wallet className="h-4 w-4 text-white" strokeWidth={2.25} />
+              </div>
+              <div>
+                <p className="text-white/75 text-[10px] font-heading font-semibold uppercase tracking-[0.14em] leading-none">
+                  Διαθέσιμο υπόλοιπο
+                </p>
+                <p className="text-white/55 text-[11px] mt-1 leading-none">Πιστώνεται με κάθε παράδοση</p>
+              </div>
+            </div>
+            {pending > 0 && (
+              <span className="shrink-0 rounded-full bg-white/15 border border-white/20 px-2.5 h-7 inline-flex items-center text-[11px] font-heading font-bold text-white/90 tabular-nums">
+                +{pending.toFixed(2)}€ εκκρεμεί
+              </span>
+            )}
+          </div>
+
+          <p className="mt-4 font-heading font-extrabold text-[42px] leading-none tracking-tight text-white tabular-nums">
+            {balance.toFixed(2)}
+            <span className="text-[22px] font-bold text-white/70 ml-1">€</span>
+          </p>
+
+          <div className="mt-4 flex items-center gap-3 text-[11px] text-white/65 font-heading">
+            <span className="inline-flex items-center gap-1">
+              <TrendingUp className="h-3 w-3" />
+              Εβδομάδα {week.total.toFixed(2)}€
+            </span>
+            {withdrawn > 0 && (
+              <span className="text-white/45">· Αναλήψεις {withdrawn.toFixed(2)}€</span>
+            )}
+          </div>
+        </div>
+
+        {/* Today strip */}
+        <div className="relative mx-3 mb-3 rounded-2xl bg-white/12 border border-white/15 backdrop-blur-sm px-3.5 py-3">
+          <div className="flex items-center justify-between mb-2.5">
+            <p className="text-[10px] font-heading font-bold uppercase tracking-[0.12em] text-white/70">Σήμερα</p>
+            <span className="inline-flex items-center gap-1 text-[11px] text-white/80 font-heading font-semibold">
+              <Package className="h-3 w-3" />
+              {today.trips} {today.trips === 1 ? 'παράδοση' : 'παραδόσεις'}
+            </span>
+          </div>
+          <div className="grid grid-cols-3 gap-2">
+            <Stat label="Σύνολο" value={`${today.total.toFixed(2)}€`} emphasize />
+            <Stat label="Βασική" value={`${today.basePay.toFixed(2)}€`} />
+            <Stat label="Tips" value={`${today.tips.toFixed(2)}€`} />
+          </div>
+        </div>
+      </section>
+
+      {/* Shift cash */}
+      <section
+        className={`rounded-[20px] driver-glass overflow-hidden ${
+          cashCapped
+            ? 'ring-2 ring-destructive/40'
+            : cashWarn
+              ? 'ring-2 ring-[hsl(var(--driver-warm))]/35'
+              : ''
+        }`}
+      >
+        <div className="px-4 pt-4 pb-3 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div
+              className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                cashCapped
+                  ? 'bg-destructive/12 text-destructive'
+                  : cashWarn
+                    ? 'bg-[hsl(var(--driver-warm))]/15 text-[hsl(var(--driver-warm))]'
+                    : 'bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))]'
+              }`}
+            >
+              <Banknote className="h-5 w-5" strokeWidth={2.25} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))] leading-tight">
+                Ταμείο βάρδιας
+              </p>
+              <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5">
+                Μετρητά που κρατάς τώρα
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] px-2 h-6 text-[9.5px] font-heading font-bold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
+            <Lock className="h-2.5 w-2.5" />
+            Μόνο admin
+          </span>
+        </div>
+
+        <div className="px-4 pb-2">
+          <p
+            className={`font-heading font-extrabold text-[28px] leading-none tabular-nums tracking-tight ${
+              cashCapped ? 'text-destructive' : 'text-[hsl(var(--driver-text))]'
+            }`}
+          >
+            {cash.toFixed(2)}
+            <span className="text-[15px] font-semibold text-[hsl(var(--driver-text-muted))] ml-1">
+              / {cap.toFixed(0)}€
+            </span>
+          </p>
+          <div className="mt-3 h-2 rounded-full bg-[hsl(var(--driver-surface-muted))] overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-500 ${
+                cashCapped
+                  ? 'bg-destructive'
+                  : cashWarn
+                    ? 'bg-[hsl(var(--driver-warm))]'
+                    : 'bg-[hsl(var(--driver-accent))]'
+              }`}
+              style={{ width: `${cashPct}%` }}
+            />
+          </div>
+        </div>
+
+        <div className="px-4 pb-4 pt-2 space-y-2">
+          {showResetNotice && (
+            <div className="flex items-start gap-2 rounded-xl bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/25 p-3">
+              <CheckCircle2 className="h-4 w-4 text-[hsl(var(--driver-accent))] shrink-0 mt-0.5" />
+              <div className="text-[12px] leading-relaxed flex-1 min-w-0">
+                <p className="font-heading font-bold text-[hsl(var(--driver-accent))] mb-0.5">
+                  Το ταμείο μηδενίστηκε
+                </p>
+                <p className="text-[hsl(var(--driver-text-muted))]">
+                  {new Date(lastReset!).toLocaleString('el-GR', {
+                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                  })}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={dismissReset}
+                className="text-[hsl(var(--driver-text-muted))] hover:text-[hsl(var(--driver-text))] p-0.5"
+                aria-label="Κλείσιμο"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          )}
+
+          {cashCapped ? (
+            <div className="flex items-start gap-2 rounded-xl bg-destructive/10 border border-destructive/25 p-3">
+              <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+              <p className="text-[12px] leading-relaxed text-[hsl(var(--driver-text))]">
+                <span className="font-heading font-bold text-destructive">Όριο μετρητών. </span>
+                Παρέδωσε τα χρήματα σε διαχειριστή για νέες παραγγελίες.
+              </p>
+            </div>
+          ) : cashWarn ? (
+            <p className="text-[12px] text-[hsl(var(--driver-warm))] leading-relaxed px-0.5">
+              Πλησιάζεις το όριο (€{cap}). Σκέψου να παραδώσεις μετρητά σύντομα.
+            </p>
+          ) : (
+            <p className="text-[11.5px] text-[hsl(var(--driver-text-muted))] leading-relaxed px-0.5">
+              Μόνο ο διαχειριστής μπορεί να μηδενίσει το ταμείο μετά την παράδοση μετρητών.
+            </p>
+          )}
+        </div>
+      </section>
+
+      {/* Activity */}
+      <section className="rounded-[20px] driver-glass overflow-hidden">
+        <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
+          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Κινήσεις</p>
+          {recent.length > 0 && (
+            <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
+              Τελευταίες {recent.length}
+            </span>
+          )}
+        </div>
+
+        {recent.length === 0 ? (
+          <div className="px-4 py-10 text-center">
+            <div className="h-12 w-12 rounded-2xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex items-center justify-center mx-auto mb-3">
+              <TrendingUp className="h-5 w-5 text-[hsl(var(--driver-text-muted))]" />
+            </div>
+            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Καμία κίνηση ακόμα</p>
+            <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-1">
+              Τα κέρδη εμφανίζονται εδώ μετά από κάθε παράδοση.
+            </p>
+          </div>
+        ) : (
+          <ul className="divide-y divide-[hsl(var(--driver-border))]">
+            {recent.map((tx, i) => {
+              const isEarn = tx.type === 'earning_credit';
+              return (
+                <li
+                  key={tx.id}
+                  className="flex items-center gap-3 px-4 py-3.5 animate-fade-in"
+                  style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}
+                >
+                  <div
+                    className={`h-10 w-10 rounded-xl flex items-center justify-center shrink-0 ${
+                      isEarn
+                        ? 'bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))]'
+                        : 'bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text-muted))]'
+                    }`}
+                  >
+                    {isEarn ? (
+                      <ArrowDownCircle className="h-4 w-4" strokeWidth={2.25} />
+                    ) : (
+                      <ArrowUpCircle className="h-4 w-4" strokeWidth={2.25} />
+                    )}
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-[13.5px] font-heading font-semibold text-[hsl(var(--driver-text))] truncate leading-tight">
+                      {isEarn ? 'Κέρδος παράδοσης' : tx.description || 'Ανάληψη'}
+                    </p>
+                    <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 tabular-nums">
+                      {new Date(tx.created_at).toLocaleDateString('el-GR', {
+                        weekday: 'short',
+                        day: '2-digit',
+                        month: 'short',
+                        hour: '2-digit',
+                        minute: '2-digit',
+                      })}
+                      {tx.status === 'pending' ? ' · εκκρεμεί' : ''}
+                    </p>
+                  </div>
+                  <span
+                    className={`font-heading font-extrabold text-[15px] tabular-nums shrink-0 ${
+                      isEarn ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
+                    }`}
+                  >
+                    {isEarn ? '+' : '−'}{Number(tx.amount).toFixed(2)}€
+                  </span>
+                </li>
+              );
+            })}
+          </ul>
+        )}
+      </section>
+    </div>
+  );
+}
+
+function Stat({
+  label,
+  value,
+  emphasize,
+}: {
+  label: string;
+  value: string;
+  emphasize?: boolean;
+}) {
+  return (
+    <div className="min-w-0">
+      <p className="text-[9.5px] font-heading font-semibold uppercase tracking-[0.1em] text-white/55 truncate">
+        {label}
+      </p>
+      <p
+        className={`font-heading font-bold tabular-nums truncate mt-0.5 ${
+          emphasize ? 'text-[17px] text-white' : 'text-[15px] text-white/90'
+        }`}
+      >
+        {value}
+      </p>
+    </div>
+  );
+}
