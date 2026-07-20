@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useState } from 'react';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -9,6 +9,18 @@ import { Mail, Lock, User, Loader as Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
 
+function roleHome(opts: {
+  isAdmin: boolean;
+  isSupport: boolean;
+  role: string;
+}): string {
+  if (opts.isAdmin) return '/admin';
+  if (opts.isSupport) return '/support';
+  if (opts.role === 'driver') return '/driver';
+  if (opts.role === 'store') return '/store';
+  return '/order';
+}
+
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
   const [email, setEmail] = useState('');
@@ -16,16 +28,24 @@ export default function AuthPage() {
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { signIn, signUp, user, profile, isAdmin, isSupport, loading } = useAuth();
-  const navigate = useNavigate();
 
-  useEffect(() => {
-    if (loading || !user || !profile) return;
-    if (isAdmin) navigate('/admin', { replace: true });
-    else if (isSupport) navigate('/support', { replace: true });
-    else if (profile.role === 'driver') navigate('/driver', { replace: true });
-    else if (profile.role === 'store') navigate('/store', { replace: true });
-    else navigate('/order', { replace: true });
-  }, [user, profile, isAdmin, isSupport, loading, navigate]);
+  // Don't paint the login form while session/profile resolve or while redirecting.
+  if (loading || (user && !profile)) {
+    return (
+      <div className="min-h-screen bg-[hsl(220,20%,7%)] flex items-center justify-center">
+        <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
+      </div>
+    );
+  }
+
+  if (user && profile) {
+    return (
+      <Navigate
+        to={roleHome({ isAdmin, isSupport, role: profile.role })}
+        replace
+      />
+    );
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
