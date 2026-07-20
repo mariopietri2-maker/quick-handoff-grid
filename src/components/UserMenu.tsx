@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Settings, Wallet,
   Users, FileText, Coffee, Pause, PackageX,
-  Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Map, Store, Headphones,
+  Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Store, Headphones,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -173,10 +173,6 @@ export function UserMenu() {
             <>
               {/* SHIFT */}
               <DropdownMenuLabel className={labelClassName}>Βάρδια</DropdownMenuLabel>
-              <DropdownMenuItem className={itemClassName} onSelect={() => go('/driver')}>
-                <Map className="mr-2 h-4 w-4 shrink-0 text-[hsl(var(--driver-accent))]" />
-                Χάρτης
-              </DropdownMenuItem>
               {onBreak ? (
                 <DropdownMenuItem
                   className={`${itemClassName} bg-warning/10 text-warning focus:bg-warning/15 focus:text-warning data-[highlighted]:bg-warning/15 data-[highlighted]:text-warning`}
