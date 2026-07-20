@@ -35,7 +35,7 @@ export default function StoreApp() {
     setNotifPermission(granted ? 'granted' : 'denied');
   };
   const { store, loading: storeLoading, createStore } = useStore();
-  const { orders, loading: ordersLoading, updateOrderStatus } = useStoreOrders(store?.id ?? null);
+  const { orders, loading: ordersLoading, updateOrderStatus, pendingIds } = useStoreOrders(store?.id ?? null);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [activeTab, setActiveTab] = useState('orders');
@@ -52,7 +52,18 @@ export default function StoreApp() {
   }, [activeTab]);
 
   const newOrders = orders.filter(o => o.status === 'placed').length;
+  const kitchenOrders = orders.filter(o => o.status === 'accepted' || o.status === 'preparing').length;
+  const readyOrders = orders.filter(o => o.status === 'ready').length;
   const loading = storeLoading || ordersLoading;
+
+  // Jump back to orders when a rush starts while the owner is in settings/menu.
+  const prevNewRef = useRef(0);
+  useEffect(() => {
+    if (newOrders > prevNewRef.current && activeTab !== 'orders') {
+      setActiveTab('orders');
+    }
+    prevNewRef.current = newOrders;
+  }, [newOrders, activeTab]);
 
   const handleCreateStore = async () => {
     if (!newStore.name || !newStore.address) return;
@@ -84,7 +95,7 @@ export default function StoreApp() {
         </div>
       </header>
 
-      <div className="p-4 max-w-2xl mx-auto">
+      <div className="p-4 max-w-3xl mx-auto">
         {storeLoading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
@@ -153,9 +164,9 @@ export default function StoreApp() {
               <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
                 <ClipboardList className="h-4 w-4 mr-1.5" />
                 Παραγγελίες
-                {newOrders > 0 && (
-                  <Badge className="ml-1.5 h-5 w-5 p-0 flex items-center justify-center gradient-primary text-primary-foreground text-xs">
-                    {newOrders}
+                {(newOrders + kitchenOrders + readyOrders) > 0 && (
+                  <Badge className="ml-1.5 h-5 min-w-5 px-1 flex items-center justify-center gradient-primary text-primary-foreground text-xs">
+                    {newOrders > 0 ? newOrders : newOrders + kitchenOrders + readyOrders}
                   </Badge>
                 )}
               </TabsTrigger>
@@ -216,7 +227,12 @@ export default function StoreApp() {
                   </div>
                 </div>
               ) : (
-                <OrderQueue orders={orders} onStatusUpdate={updateOrderStatus} storeName={store.name} />
+                <OrderQueue
+                  orders={orders}
+                  onStatusUpdate={updateOrderStatus}
+                  storeName={store.name}
+                  pendingIds={pendingIds}
+                />
               )}
             </TabsContent>
 
