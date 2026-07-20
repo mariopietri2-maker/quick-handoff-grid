@@ -307,7 +307,7 @@ export default function LiveTrackingMap({
   return (
     <div className="absolute inset-0 bg-muted">
       <div ref={container} className="absolute inset-0" />
-      {(tokenLoading || (!token && tokenLoading !== false)) && (
+      {(tokenLoading) && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted/90">
           <Loader2 className="h-7 w-7 animate-spin text-primary" />
         </div>
