@@ -77,6 +77,8 @@ export default function AuthPage() {
             toast.error('Λάθος email ή κωδικός. Αν δεν έχετε λογαριασμό, πατήστε Εγγραφή.');
           } else if (msg.includes('email not confirmed')) {
             toast.error('Το email δεν έχει επιβεβαιωθεί. Ξαναδοκιμάστε σε λίγο ή κάντε νέα εγγραφή.');
+          } else if (msg.includes('αποτυχία σύνδεσης') || msg.includes('failed to fetch') || msg.includes('network')) {
+            toast.error('Δεν υπάρχει σύνδεση με τον διακομιστή. Ελέγξτε το internet και ξαναδοκιμάστε.');
           } else {
             toast.error(error.message);
           }

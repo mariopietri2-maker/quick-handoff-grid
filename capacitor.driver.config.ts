@@ -5,6 +5,16 @@ const config: CapacitorConfig = {
   appId: 'com.freshdelivery.driver',
   appName: 'Fresh Driver',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+    hostname: 'localhost',
+    allowNavigation: [
+      'https://ojkesspghyqmjmupybva.supabase.co/*',
+      'https://*.supabase.co/*',
+      'https://quick-handoff-grid.vercel.app/*',
+      'https://api.mapbox.com/*',
+    ],
+  },
   android: {
     path: 'android-driver',
     backgroundColor: '#0f172a',
@@ -17,6 +27,8 @@ const config: CapacitorConfig = {
     scrollEnabled: false,
   },
   plugins: {
+    // Route fetch/XHR through native HTTP — fixes "Failed to fetch" login in WebView
+    CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#0f172a',

@@ -5,6 +5,16 @@ const config: CapacitorConfig = {
   appId: 'com.freshdelivery.customer',
   appName: 'Fresh Customer',
   webDir: 'dist',
+  server: {
+    androidScheme: 'https',
+    hostname: 'localhost',
+    allowNavigation: [
+      'https://ojkesspghyqmjmupybva.supabase.co/*',
+      'https://*.supabase.co/*',
+      'https://quick-handoff-grid.vercel.app/*',
+      'https://api.mapbox.com/*',
+    ],
+  },
   android: {
     path: 'android-customer',
     backgroundColor: '#0f172a',
@@ -17,6 +27,7 @@ const config: CapacitorConfig = {
     scrollEnabled: false,
   },
   plugins: {
+    CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
       backgroundColor: '#0f172a',
