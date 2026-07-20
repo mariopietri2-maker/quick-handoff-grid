@@ -42,13 +42,13 @@ import { DriverPrefsApplier } from '@/components/driver/DriverPrefsApplier';
 type DriverTab = 'home' | 'money' | 'inbox' | 'referral';
 
 export default function DriverApp() {
-  const { user, isAdmin: isAdminRole, isM } = useAuth();
+  const { user, isAdmin: isAdminRole } = useAuth();
   // Admins can toggle between "Admin Driver Ops" and the regular driver experience.
-  // Role M always has elevated ops privileges (floor lead).
+  // Role M uses /m for live monitoring — not order ops override here.
   const [adminAsDriver, setAdminAsDriver] = useState<boolean>(() => {
     try { return localStorage.getItem('admin_as_driver') === '1'; } catch { return false; }
   });
-  const isAdmin = (isAdminRole && !adminAsDriver) || isM;
+  const isAdmin = isAdminRole && !adminAsDriver;
   const toggleAdminView = () => {
     setAdminAsDriver(prev => {
       const next = !prev;
@@ -250,9 +250,7 @@ export default function DriverApp() {
                 <ShieldCheck className="h-5 w-5 text-primary" />
               </div>
               <div className="min-w-0">
-                <p className="text-[11px] font-heading font-bold uppercase tracking-wider text-muted-foreground">
-                  {isM && !isAdminRole ? 'M Driver Ops' : 'Admin Driver Ops'}
-                </p>
+                <p className="text-[11px] font-heading font-bold uppercase tracking-wider text-muted-foreground">Admin Driver Ops</p>
                 <h1 className="font-heading text-lg font-extrabold truncate">Έτοιμες Παραγγελίες</h1>
               </div>
             </div>
@@ -267,9 +265,6 @@ export default function DriverApp() {
                   <Car className="h-3.5 w-3.5" />
                   Driver view
                 </button>
-              )}
-              {isM && !isAdminRole && (
-                <Badge variant="outline" className="font-heading text-[10px] border-primary/40 text-primary">M</Badge>
               )}
               <UserMenu />
             </div>

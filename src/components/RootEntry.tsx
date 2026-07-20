@@ -35,7 +35,8 @@ export default function RootEntry() {
   if (user && profile) {
     // Admins/support keep the landing (role switcher + app links live there).
     if (!isAdmin && !isSupport) {
-      if (profile.role === 'driver' || profile.role === 'm') return <Navigate to="/driver" replace />;
+      if (profile.role === 'm') return <Navigate to="/m" replace />;
+      if (profile.role === 'driver') return <Navigate to="/driver" replace />;
       if (profile.role === 'store') return <Navigate to="/store" replace />;
       return <Navigate to="/order" replace />;
     }

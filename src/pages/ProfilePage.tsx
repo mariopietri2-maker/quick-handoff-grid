@@ -11,7 +11,7 @@ import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
   FileText, RefreshCw, Ticket, Gift, MapPin, Heart, Receipt, ChevronRight,
-  Settings as SettingsIcon, Wallet,
+  Settings as SettingsIcon, Wallet, Radio,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -26,7 +26,7 @@ const roleConfig: Record<string, { label: string; icon: any; path: string }> = {
   admin:    { label: 'Admin',     icon: Shield,      path: '/admin'   },
   support:  { label: 'Support',   icon: Headphones,  path: '/support' },
   driver:   { label: 'Οδηγός',    icon: Car,         path: '/driver'  },
-  m:        { label: 'M (Lead)',  icon: Car,         path: '/driver'  },
+  m:        { label: 'M (Lead)',  icon: Radio,        path: '/m'      },
   store:    { label: 'Κατάστημα', icon: Store,       path: '/store'   },
   customer: { label: 'Πελάτης',   icon: ShoppingBag, path: '/order'   },
 };
@@ -47,8 +47,12 @@ export default function ProfilePage() {
       navigate('/store?tab=settings', { replace: true });
       return;
     }
-    // Drivers + M leads use driver profile.
-    if ((profile?.role === 'driver' || profile?.role === 'm' || isM) && !isAdmin) {
+    // Drivers use driver profile. M leads land on /m monitor (not customer profile).
+    if (profile?.role === 'm' || isM) {
+      navigate('/m', { replace: true });
+      return;
+    }
+    if (profile?.role === 'driver' && !isAdmin) {
       navigate('/driver/profile', { replace: true });
       return;
     }
