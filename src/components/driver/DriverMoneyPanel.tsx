@@ -53,7 +53,10 @@ export function DriverMoneyPanel() {
   const balance = Number(wallet?.available_balance ?? 0);
   const pending = Number(wallet?.pending_balance ?? 0);
   const withdrawn = Number(wallet?.total_withdrawn ?? 0);
-  const recent = transactions.slice(0, 12);
+  // Delivery payouts live in Παραδόσεις — keep Κινήσεις for non-delivery wallet activity only
+  const recent = transactions
+    .filter((tx) => tx.type !== 'earning_credit')
+    .slice(0, 12);
   const deliveries = recentEarnings.slice(0, 12);
 
   const cash = Number(state?.shift_cash_balance ?? 0);
@@ -316,10 +319,10 @@ export function DriverMoneyPanel() {
         )}
       </section>
 
-      {/* Activity */}
+      {/* Other wallet activity — withdrawals, admin/quest extras (not delivery credits) */}
       <section className="rounded-[20px] driver-glass overflow-hidden">
         <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
-          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Κινήσεις</p>
+          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Άλλες κινήσεις</p>
           {recent.length > 0 && (
             <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
               Τελευταίες {recent.length}
@@ -328,20 +331,15 @@ export function DriverMoneyPanel() {
         </div>
 
         {recent.length === 0 ? (
-          <div className="px-4 py-10 text-center">
-            <div className="h-12 w-12 rounded-2xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex items-center justify-center mx-auto mb-3">
-              <TrendingUp className="h-5 w-5 text-[hsl(var(--driver-text-muted))]" />
-            </div>
-            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Καμία κίνηση ακόμα</p>
-            <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-1">
-              Τα κέρδη εμφανίζονται εδώ μετά από κάθε παράδοση.
+          <div className="px-4 py-8 text-center">
+            <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] leading-relaxed">
+              Εδώ εμφανίζονται αναλήψεις, μπόνους admin / quest και έξτρα tips — όχι οι παραδόσεις (είναι από πάνω).
             </p>
           </div>
         ) : (
           <ul className="divide-y divide-[hsl(var(--driver-border))]">
             {recent.map((tx, i) => {
               const isCredit = [
-                'earning_credit',
                 'deposit',
                 'bonus',
                 'admin_credit',
@@ -352,11 +350,9 @@ export function DriverMoneyPanel() {
                 'support_credit',
                 'referral_bonus',
               ].includes(tx.type);
-              const isEarn = tx.type === 'earning_credit';
               const hasOrder = Boolean(tx.order_id);
-              const label = isEarn
-                ? 'Κέρδος παράδοσης'
-                : tx.type === 'extra_tip'
+              const label =
+                tx.type === 'extra_tip'
                   ? 'Έξτρα tip'
                   : tx.type === 'admin_credit' || tx.type === 'support_credit'
                     ? 'Μπόνους διαχειριστή'
@@ -400,7 +396,6 @@ export function DriverMoneyPanel() {
                         minute: '2-digit',
                       })}
                       {tx.status === 'pending' ? ' · εκκρεμεί' : ''}
-                      {hasOrder ? ' · λεπτομέρειες' : ''}
                     </p>
                   </div>
                   <span
