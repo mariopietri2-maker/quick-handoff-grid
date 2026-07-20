@@ -10,6 +10,8 @@ interface AuthContextType {
   isAdmin: boolean;
   isSupport: boolean;
   isStore: boolean;
+  /** Elevated driver (floor lead) — role M */
+  isM: boolean;
   signUp: (
     email: string,
     password: string,
@@ -34,6 +36,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSupport, setIsSupport] = useState(false);
   const [isStore, setIsStore] = useState(false);
+  const [isM, setIsM] = useState(false);
 
   const fetchProfile = async (userId: string) => {
     const { data } = await supabase
@@ -51,6 +54,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsAdmin(roleList.includes('admin'));
     setIsSupport(roleList.includes('support'));
     setIsStore(roleList.includes('store'));
+    setIsM(roleList.includes('m') || (data as any)?.role === 'm');
   };
 
   useEffect(() => {
@@ -82,6 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setIsAdmin(false);
           setIsSupport(false);
           setIsStore(false);
+          setIsM(false);
           setLoading(false);
         }
       }
@@ -171,10 +176,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setProfile(null);
     setIsAdmin(false);
     setIsSupport(false);
+    setIsStore(false);
+    setIsM(false);
   };
 
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, isAdmin, isSupport, isStore, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, isAdmin, isSupport, isStore, isM, signUp, signIn, signOut }}>
       {children}
     </AuthContext.Provider>
   );

@@ -96,12 +96,12 @@ const App = () => (
                     <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
                     <Route path="/driver" element={
-                      <ProtectedRoute allowedRoles={['driver']}>
+                      <ProtectedRoute allowedRoles={['driver', 'm']}>
                         <DriverApp />
                       </ProtectedRoute>
                     } />
                     <Route path="/driver/profile" element={
-                      <ProtectedRoute allowedRoles={['driver']}>
+                      <ProtectedRoute allowedRoles={['driver', 'm']}>
                         <DriverProfilePage />
                       </ProtectedRoute>
                     } />

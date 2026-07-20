@@ -17,7 +17,7 @@ function roleHome(opts: {
 }): string {
   if (opts.isAdmin) return '/admin';
   if (opts.isSupport) return '/support';
-  if (opts.role === 'driver') return '/driver';
+  if (opts.role === 'driver' || opts.role === 'm') return '/driver';
   if (opts.role === 'store') return '/store';
   return opts.nextPath || '/order';
 }
