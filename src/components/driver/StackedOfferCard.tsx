@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useMemo } from 'react';
 import { Layers, Timer, MapPin, Store, Banknote, CreditCard, Plus, X, Check, EyeOff } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
@@ -31,28 +31,63 @@ interface Props {
   timeoutSec?: number;
 }
 
-function secsLeft(expiresAt?: string | null, fallback = 60) {
-  if (!expiresAt) return fallback;
-  return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000));
+function formatCountdown(seconds: number) {
+  const s = Math.max(0, seconds);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, '0')}`;
 }
 
 export function StackedOfferCard({
   offer, index, onAccept, onDecline, onRemove, expiresAt, timeoutSec = 60,
 }: Props) {
-  const totalWindow = expiresAt
-    ? Math.max(1, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)) || timeoutSec
-    : timeoutSec;
-  const [left, setLeft] = useState(() => secsLeft(expiresAt, timeoutSec));
+  const expiresAtMs = useMemo(
+    () => (expiresAt ? new Date(expiresAt).getTime() : null),
+    [expiresAt],
+  );
+  const totalWindowRef = useRef(timeoutSec);
+  const localEndRef = useRef(Date.now() + timeoutSec * 1000);
+  const declinedRef = useRef(false);
+
+  useEffect(() => {
+    declinedRef.current = false;
+    if (expiresAtMs && Number.isFinite(expiresAtMs)) {
+      totalWindowRef.current = Math.max(1, Math.ceil((expiresAtMs - Date.now()) / 1000));
+      localEndRef.current = expiresAtMs;
+    } else {
+      totalWindowRef.current = Math.max(1, timeoutSec);
+      localEndRef.current = Date.now() + timeoutSec * 1000;
+    }
+  }, [offer.id, expiresAtMs, timeoutSec]);
+
+  const [left, setLeft] = useState(() => {
+    if (expiresAt) return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000));
+    return timeoutSec;
+  });
 
   useEffect(() => () => { stopOfferAlert(); }, []);
 
   useEffect(() => {
-    if (left <= 0) { onDecline(offer.id); return; }
-    const t = setTimeout(() => setLeft(secsLeft(expiresAt, left - 1)), 1000);
-    return () => clearTimeout(t);
-  }, [left, offer.id, onDecline, expiresAt]);
+    const tick = () => {
+      const end = expiresAtMs && Number.isFinite(expiresAtMs) ? expiresAtMs : localEndRef.current;
+      const next = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      setLeft(next);
+      if (next <= 0 && !declinedRef.current) {
+        declinedRef.current = true;
+        onDecline(offer.id);
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 250);
+    const onVis = () => { if (document.visibilityState === 'visible') tick(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [offer.id, expiresAtMs, onDecline]);
 
-  const progress = Math.max(0, Math.min(100, (left / totalWindow) * 100));
+  const progress = Math.max(0, Math.min(100, (left / totalWindowRef.current) * 100));
   const urgent = left <= 15;
   const isCash = offer.paymentMethod === 'cash';
   const isCard = ['card', 'wallet', 'paid'].includes(offer.paymentMethod ?? '');
@@ -85,14 +120,14 @@ export function StackedOfferCard({
             : 'bg-[hsl(var(--driver-surface-muted))] border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
         }`}>
           <Timer className={`h-3 w-3 ${urgent ? 'animate-pulse' : ''}`} />
-          0:{String(left).padStart(2, '0')}
+          {formatCountdown(left)}
         </div>
       </div>
 
       {/* Hairline timer */}
       <div className="h-[3px] bg-[hsl(var(--driver-surface-muted))]">
         <div
-          className={`h-full transition-all duration-1000 ease-linear ${urgent ? 'bg-destructive' : 'bg-[hsl(var(--driver-accent))]'}`}
+          className={`h-full transition-[width] duration-200 ease-linear ${urgent ? 'bg-destructive' : 'bg-[hsl(var(--driver-accent))]'}`}
           style={{ width: `${progress}%` }}
         />
       </div>

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo } from 'react';
 import { Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard, MessageSquare } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
@@ -24,7 +24,6 @@ interface OrderOffer {
   customerNotes?: string | null;
 }
 
-
 interface OrderOfferCardProps {
   offer: OrderOffer;
   onAccept: (id: string) => void;
@@ -35,48 +34,73 @@ interface OrderOfferCardProps {
   timeoutSec?: number;
 }
 
-function computeSecondsLeft(expiresAt?: string | null, fallback = 60): number {
-  if (expiresAt) {
-    const ms = new Date(expiresAt).getTime() - Date.now();
-    return Math.max(0, Math.ceil(ms / 1000));
-  }
-  return fallback;
+function formatCountdown(seconds: number) {
+  const s = Math.max(0, seconds);
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, '0')}`;
 }
 
 export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutSec = 60 }: OrderOfferCardProps) {
   const prefs = loadDriverAppPrefs();
-  const totalWindow = expiresAt
-    ? Math.max(1, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)) || timeoutSec
-    : timeoutSec;
-  const [secondsLeft, setSecondsLeft] = useState(() => computeSecondsLeft(expiresAt, timeoutSec));
   const distanceLabel = offer.totalDistance
     ? formatDriverDistance(offer.totalDistance * 1000, prefs.distanceUnit)
     : '—';
 
-  // Sound + vibration are handled centrally in `useOrders` via
-  // `playOfferAlert`. Do NOT play another chime here — that caused the
-  // double-sound bug and kept ringing after the card unmounted.
+  const expiresAtMs = useMemo(
+    () => (expiresAt ? new Date(expiresAt).getTime() : null),
+    [expiresAt],
+  );
 
-  // Stop any ringing alert as soon as the offer card unmounts (accept,
-  // decline, or auto-timeout) so the driver gets immediate silence.
+  // Fixed window for progress bar — set once per offer (not every tick).
+  const totalWindowRef = useRef(timeoutSec);
+  const localEndRef = useRef<number>(Date.now() + timeoutSec * 1000);
+  const declinedRef = useRef(false);
+
+  useEffect(() => {
+    declinedRef.current = false;
+    if (expiresAtMs && Number.isFinite(expiresAtMs)) {
+      totalWindowRef.current = Math.max(1, Math.ceil((expiresAtMs - Date.now()) / 1000));
+      localEndRef.current = expiresAtMs;
+    } else {
+      totalWindowRef.current = Math.max(1, timeoutSec);
+      localEndRef.current = Date.now() + timeoutSec * 1000;
+    }
+  }, [offer.id, expiresAtMs, timeoutSec]);
+
+  const [secondsLeft, setSecondsLeft] = useState(() => {
+    if (expiresAt) {
+      return Math.max(0, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000));
+    }
+    return timeoutSec;
+  });
+
   useEffect(() => {
     return () => { stopOfferAlert(); };
   }, []);
 
-
+  // Wall-clock countdown — survives tab throttling better than chained setTimeout.
   useEffect(() => {
-    if (secondsLeft <= 0) {
-      onDecline(offer.id);
-      return;
-    }
-    const timer = setTimeout(
-      () => setSecondsLeft(computeSecondsLeft(expiresAt, secondsLeft - 1)),
-      1000,
-    );
-    return () => clearTimeout(timer);
-  }, [secondsLeft, offer.id, onDecline, expiresAt]);
+    const tick = () => {
+      const end = expiresAtMs && Number.isFinite(expiresAtMs) ? expiresAtMs : localEndRef.current;
+      const left = Math.max(0, Math.ceil((end - Date.now()) / 1000));
+      setSecondsLeft(left);
+      if (left <= 0 && !declinedRef.current) {
+        declinedRef.current = true;
+        onDecline(offer.id);
+      }
+    };
+    tick();
+    const id = window.setInterval(tick, 250);
+    const onVis = () => { if (document.visibilityState === 'visible') tick(); };
+    document.addEventListener('visibilitychange', onVis);
+    return () => {
+      window.clearInterval(id);
+      document.removeEventListener('visibilitychange', onVis);
+    };
+  }, [offer.id, expiresAtMs, onDecline]);
 
-  const progress = Math.max(0, Math.min(100, (secondsLeft / totalWindow) * 100));
+  const progress = Math.max(0, Math.min(100, (secondsLeft / totalWindowRef.current) * 100));
   const isUrgent = secondsLeft <= 15;
 
   const isCash = offer.paymentMethod === 'cash';
@@ -84,7 +108,6 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
 
   return (
     <div className="driver-card overflow-hidden">
-      {/* Header — payout primary, timer secondary */}
       <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
           <p className="text-[10.5px] font-heading font-semibold uppercase tracking-[0.08em] text-[hsl(var(--driver-text-muted))]">
@@ -99,7 +122,6 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
               βάση €{(offer.basePay ?? 0).toFixed(2)} + φιλοδώρημα €{(offer.tipAmount ?? 0).toFixed(2)}
             </p>
           )}
-          {/* Payment method badge */}
           {(isCash || isCard) && (
             <div className="mt-2 inline-flex items-center gap-1.5 px-2 h-6 rounded-full text-[11px] font-heading font-bold border"
               style={isCash
@@ -119,20 +141,18 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
         }`}>
           <Timer className={`h-3.5 w-3.5 ${isUrgent ? 'animate-pulse' : ''}`} />
           <span className="font-mono font-bold text-[13px] tabular-nums">
-            0:{String(secondsLeft).padStart(2, '0')}
+            {formatCountdown(secondsLeft)}
           </span>
         </div>
       </div>
 
-      {/* Hairline progress */}
       <div className="h-[3px] bg-[hsl(var(--driver-surface-muted))]">
         <div
-          className={`h-full transition-all duration-1000 ease-linear ${isUrgent ? 'bg-destructive' : 'bg-[hsl(var(--driver-accent))]'}`}
+          className={`h-full transition-[width] duration-200 ease-linear ${isUrgent ? 'bg-destructive' : 'bg-[hsl(var(--driver-accent))]'}`}
           style={{ width: `${progress}%` }}
         />
       </div>
 
-      {/* Route */}
       <div className="px-5 pt-4 pb-4">
         <div className="flex items-stretch gap-3">
           <div className="flex flex-col items-center pt-1.5">
@@ -157,7 +177,6 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
           </div>
         </div>
 
-        {/* Info chips */}
         <div className="flex items-center gap-1.5 mt-4 flex-wrap">
           <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-[hsl(var(--driver-surface-muted))] text-[11.5px] font-medium text-[hsl(var(--driver-text))]">
             <Navigation className="h-3 w-3 text-[hsl(var(--driver-info))]" />{distanceLabel}
@@ -170,7 +189,6 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
           </span>
         </div>
 
-        {/* Payout breakdown */}
         {(offer.basePay !== undefined || offer.poolBonus) && (
           <div className="mt-3 pt-3 border-t border-[hsl(var(--driver-border))] grid grid-cols-2 gap-y-1.5 text-[11.5px]">
             <span className="text-[hsl(var(--driver-text-muted))]">Βασική</span>
@@ -186,7 +204,6 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
           </div>
         )}
 
-        {/* Customer notes */}
         {offer.customerNotes && offer.customerNotes.trim().length > 0 && (
           <div className="mt-3 px-3 py-2.5 rounded-xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex gap-2">
             <MessageSquare className="h-3.5 w-3.5 mt-0.5 text-[hsl(var(--driver-info))] flex-shrink-0" />
@@ -197,7 +214,6 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
           </div>
         )}
 
-        {/* Actions */}
         <div className="flex gap-2.5 mt-5">
           <button
             onClick={() => { stopOfferAlert(); onDecline(offer.id); }}

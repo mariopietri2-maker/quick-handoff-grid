@@ -127,13 +127,14 @@ export default function DriverApp() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(true);
-  // Offline / offers / active delivery: keep sheet expanded so controls aren't clipped
+  // Offline: expand so toggle is reachable. Offers/active: expand and lock open for a clean card.
   useEffect(() => {
     if (!isOnline) setSheetCollapsed(false);
   }, [isOnline]);
   useEffect(() => {
     if (offers.length > 0 || activeDelivery) setSheetCollapsed(false);
   }, [offers.length, activeDelivery]);
+  const offerFocus = !activeDelivery && offers.length > 0;
   const sheetDragStartY = useRef<number | null>(null);
   const sheetDragMoved = useRef(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
@@ -384,7 +385,9 @@ export default function DriverApp() {
     // Collapsed dock is compact (~toggle only); expanded uses ~half viewport
     const bottom = sheetCollapsed
       ? Math.max(120, Math.round(vh * 0.16) + 28)
-      : Math.max(260, Math.round(vh * 0.48) + 24);
+      : offerFocus
+        ? Math.max(320, Math.round(vh * 0.58) + 24)
+        : Math.max(260, Math.round(vh * 0.48) + 24);
     return { top: 96, bottom, left: 40, right: 40 };
   })();
 
@@ -551,28 +554,32 @@ export default function DriverApp() {
               className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[28px] shadow-[0_-12px_32px_-12px_hsl(220,18%,14%,0.18)] transition-[max-height] duration-300 ease-out ${
                 showCompactOnlineDock
                   ? 'overflow-hidden'
-                  : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                  : offerFocus
+                    ? 'max-h-[72vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                    : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
               }`}
             >
               <div
-                className="w-full flex items-center justify-center pt-2.5 pb-2 group cursor-grab active:cursor-grabbing touch-none select-none"
+                className={`w-full flex items-center justify-center pt-2.5 pb-2 group select-none ${
+                  offerFocus ? 'cursor-default' : 'cursor-grab active:cursor-grabbing touch-none'
+                }`}
                 role="button"
                 tabIndex={0}
                 aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
                 title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
-                onClick={() => { if (!sheetDragMoved.current) setSheetCollapsed(v => !v); }}
-                onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; sheetDragMoved.current = false; }}
+                onClick={() => { if (offerFocus) return; if (!sheetDragMoved.current) setSheetCollapsed(v => !v); }}
+                onTouchStart={(e) => { if (offerFocus) return; sheetDragStartY.current = e.touches[0].clientY; sheetDragMoved.current = false; }}
                 onTouchMove={(e) => {
-                  if (sheetDragStartY.current == null) return;
+                  if (offerFocus || sheetDragStartY.current == null) return;
                   const dy = e.touches[0].clientY - sheetDragStartY.current;
                   if (Math.abs(dy) > 8) sheetDragMoved.current = true;
                   if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
                   else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
                 }}
                 onTouchEnd={() => { sheetDragStartY.current = null; }}
-                onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); sheetDragStartY.current = e.clientY; sheetDragMoved.current = false; }}
+                onPointerDown={(e) => { if (offerFocus) return; (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); sheetDragStartY.current = e.clientY; sheetDragMoved.current = false; }}
                 onPointerMove={(e) => {
-                  if (sheetDragStartY.current == null) return;
+                  if (offerFocus || sheetDragStartY.current == null) return;
                   const dy = e.clientY - sheetDragStartY.current;
                   if (Math.abs(dy) > 8) sheetDragMoved.current = true;
                   if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
@@ -581,7 +588,11 @@ export default function DriverApp() {
                 onPointerUp={() => { sheetDragStartY.current = null; }}
                 onPointerCancel={() => { sheetDragStartY.current = null; }}
               >
-                <span className="h-1.5 w-12 rounded-full bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70 transition-colors" />
+                <span className={`h-1.5 w-12 rounded-full transition-colors ${
+                  offerFocus
+                    ? 'bg-[hsl(var(--driver-text-muted))]/20'
+                    : 'bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70'
+                }`} />
               </div>
 
               <div
@@ -614,7 +625,7 @@ export default function DriverApp() {
                   </div>
                 ) : (
                   <>
-                    {!activeDelivery && (
+                    {!activeDelivery && offers.length === 0 && (
                       <>
                         <AnnouncementsBanner audience="drivers" />
                         <SurgeStatusBadge />
@@ -710,19 +721,6 @@ export default function DriverApp() {
 
                     {!activeDelivery && isOnline && !onBreak && !cashCapped && !loading && offers.length > 0 && (
                       <div className="space-y-3 animate-slide-up">
-                        <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">
-                              {isAdmin ? 'Όλες οι Διαθέσιμες' : 'Νέες Παραγγελίες'}
-                            </h3>
-                            {isAdmin && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5">
-                                Ops
-                              </span>
-                            )}
-                          </div>
-                          <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5 animate-pop">{offers.length}</Badge>
-                        </div>
                         {offers.map((offer, i) => (
                           <div key={offer.id} className="animate-pop" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
                             <OrderOfferCard
@@ -755,9 +753,10 @@ export default function DriverApp() {
                       </div>
                     )}
 
-                    {!activeDelivery && (
+                    {/* Online dock — hide while an offer is on screen for a clean accept UI */}
+                    {!activeDelivery && offers.length === 0 && (
                       <div className="rounded-2xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))]/60 overflow-hidden transition-all duration-500 ease-out animate-scale-in">
-                        {isOnline && !loading && offers.length === 0 && (
+                        {isOnline && !loading && (
                           <div className="p-4 text-center animate-fade-in">
                             <div className="relative h-10 w-10 mx-auto mb-2">
                               <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
