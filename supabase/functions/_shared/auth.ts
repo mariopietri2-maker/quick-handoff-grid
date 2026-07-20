@@ -2,7 +2,7 @@
 // Most Lovable-managed functions deploy with verify_jwt = false, so we validate
 // the caller's JWT explicitly here.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
 
 export interface AuthedUser {
   id: string;

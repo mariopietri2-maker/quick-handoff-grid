@@ -7,7 +7,7 @@ interface ProtectedRouteProps {
 }
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
-  const { user, loading, profile, isAdmin, isSupport } = useAuth();
+  const { user, loading, profile, isAdmin, isSupport, isStore } = useAuth();
 
   if (loading || (user && !profile)) {
     return (
@@ -34,6 +34,11 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
   if (allowedRoles?.includes('support')) {
     if (!isSupport) return <Navigate to="/" replace />;
+    return <>{children}</>;
+  }
+
+  // Store portal: allow profile.role=store OR user_roles store membership
+  if (allowedRoles?.includes('store') && (isStore || profile?.role === 'store')) {
     return <>{children}</>;
   }
 

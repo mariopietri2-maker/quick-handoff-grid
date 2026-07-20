@@ -1,7 +1,7 @@
 // Driver accepts a pending offer.
 // Atomically: claims the order, marks this offer accepted, cancels sibling offers.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",

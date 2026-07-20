@@ -2,7 +2,7 @@
 // Designed to be invoked by a scheduled job (cron) once per day.
 // Computes yesterday's order/revenue stats and writes a row to store_daily_summary_log.
 
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.45.0';
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.101.1';
 import { getAuthedUser, hasCronSecret, unauthorized } from '../_shared/auth.ts';
 
 const corsHeaders = {
