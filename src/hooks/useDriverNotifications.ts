@@ -9,9 +9,8 @@ import {
 } from '@/lib/push-notifications';
 
 /**
- * Subscribes the logged-in driver to support-pushed notifications.
- * - Shows a sonner toast with appropriate severity
- * - Marks the row as read after display
+ * Subscribes the logged-in driver to admin/support notifications.
+ * Shows toast + OS notification, but leaves rows unread so they appear in Inbox.
  */
 export function useDriverNotifications() {
   const { user } = useAuth();
@@ -19,31 +18,22 @@ export function useDriverNotifications() {
   useEffect(() => {
     if (!user) return;
 
-    // Initialize OS-level notifications (asks permission once)
     void initNotificationChannels();
     void ensureNotificationPermission();
 
-    // 1) Catch-up on any unread (sent while app was closed)
+    // Catch-up toast for unread (do NOT mark read — inbox owns that)
     (async () => {
       const { data } = await (supabase as any)
         .from('driver_notifications')
         .select('id, title, body, severity')
         .eq('driver_id', user.id)
         .is('read_at', null)
-        .order('created_at', { ascending: true })
-        .limit(10);
+        .order('created_at', { ascending: false })
+        .limit(3);
 
       (data ?? []).forEach((n: any) => showNotification(n));
-      const ids = (data ?? []).map((n: any) => n.id);
-      if (ids.length) {
-        await (supabase as any)
-          .from('driver_notifications')
-          .update({ read_at: new Date().toISOString() })
-          .in('id', ids);
-      }
     })();
 
-    // 2) Realtime stream
     const channel = supabase
       .channel(`driver-notifications-${user.id}`)
       .on(
@@ -54,14 +44,9 @@ export function useDriverNotifications() {
           table: 'driver_notifications',
           filter: `driver_id=eq.${user.id}`,
         },
-        async (payload) => {
-          const n = payload.new as any;
-          showNotification(n);
-          await (supabase as any)
-            .from('driver_notifications')
-            .update({ read_at: new Date().toISOString() })
-            .eq('id', n.id);
-        }
+        (payload) => {
+          showNotification(payload.new as any);
+        },
       )
       .subscribe();
 
@@ -81,10 +66,8 @@ function showNotification(n: { title: string; body: string; severity: string }) 
       toast.warning(`⚠️ ${n.title}`, opts);
       break;
     default:
-      toast.info(`📢 ${n.title}`, opts);
+      toast.info(`✉️ ${n.title}`, opts);
   }
-  // Also fire an OS-level notification so the driver hears/sees it when app
-  // is in the background or screen is off.
   void showOsNotification({
     title: n.title,
     body: n.body,

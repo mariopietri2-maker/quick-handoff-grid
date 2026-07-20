@@ -117,8 +117,8 @@ export const NAV_SECTIONS = [
       { id: 'cloud_usage', label: 'Cloud usage' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'audit', label: 'Audit log' },
-      { id: 'remote_actions', label: 'Remote actions' },
-      { id: 'system_reset', label: 'System reset' },
+      { id: 'remote_actions', label: 'Μηνύματα & Remote' },
+      { id: 'system_reset', label: '⚠ System reset' },
     ],
   },
 ] as const;
