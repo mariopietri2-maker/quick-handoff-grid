@@ -46,39 +46,21 @@ interface CandidateDriver {
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
-  // Allow internal callers: pg_cron job (sends our project's anon JWT in apikey),
-  // CRON_SECRET, or admin user.
-  const apikeyHeader = req.headers.get("apikey") ?? "";
+  // Allow internal callers: CRON_SECRET or admin user only.
+  // Do NOT trust the public anon JWT as a cron credential.
   const authHeader = req.headers.get("Authorization") ?? "";
-  const bearerToken = authHeader.startsWith("Bearer ") ? authHeader.slice(7).trim() : "";
-  const projectRef = (Deno.env.get("SUPABASE_URL") ?? "").match(/https?:\/\/([^.]+)\./)?.[1] ?? "";
-  const looksLikeProjectAnonJwt = (token: string): boolean => {
-    if (!token || token.split(".").length !== 3) return false;
-    try {
-      const payload = JSON.parse(atob(token.split(".")[1].replace(/-/g, "+").replace(/_/g, "/")));
-      return payload?.ref === projectRef && (payload?.role === "anon" || payload?.role === "service_role");
-    } catch { return false; }
-  };
-  // Internal cron callers may send the project anon JWT in EITHER the apikey
-  // header OR the Authorization Bearer header (pg_cron net.http_post varies).
-  const isInternalCron =
-    looksLikeProjectAnonJwt(apikeyHeader) || looksLikeProjectAnonJwt(bearerToken);
-  if (!isInternalCron && !hasCronSecret(req)) {
+  if (!hasCronSecret(req)) {
     const user = await getAuthedUser(req);
     if (!user?.isAdmin) {
       console.warn("auto-dispatch unauthorized", {
-        hasApikey: !!apikeyHeader,
+        hasCron: false,
         hasAuth: !!authHeader,
-        apikeyLooksProject: looksLikeProjectAnonJwt(apikeyHeader),
-        bearerLooksProject: looksLikeProjectAnonJwt(bearerToken),
-        projectRef,
       });
       return unauthorized(corsHeaders);
     }
   }
 
-
-
+  const isInternalCron = hasCronSecret(req);
   const admin = createClient(supabaseUrl, serviceKey);
   const startedAt = new Date();
   const source = isInternalCron ? "cron" : "manual";

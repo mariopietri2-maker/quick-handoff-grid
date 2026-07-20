@@ -97,12 +97,17 @@ Fresh Delivery is a comprehensive food delivery solution built with modern web t
    ```
    Set the following:
    ```env
-   VITE_SUPABASE_URL=your_supabase_url
+   VITE_SUPABASE_URL=https://ajkefntritjjynzofprq.supabase.co
    VITE_SUPABASE_ANON_KEY=your_anon_key
    VITE_PAYMENTS_CLIENT_TOKEN=your_stripe_publishable_key
    # Optional client-side Mapbox fallback (preferred: edge function get-mapbox-token)
    VITE_MAPBOX_TOKEN=your_mapbox_token
    ```
+
+   Edge function secrets (Supabase dashboard):
+   - `CRON_SECRET` — required for `auto-dispatch` scheduler (anon JWT is no longer accepted)
+   - `SUPABASE_SERVICE_ROLE_KEY`, Stripe webhook secrets, Mapbox/Google keys as used by functions
+
 
 4. **Start the development server**
    ```bash
