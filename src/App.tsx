@@ -21,6 +21,7 @@ import { lazyWithRetry } from "@/lib/lazyWithRetry";
 const AuthPage = lazyWithRetry(() => import("./pages/AuthPage.tsx"));
 const DriverApp = lazyWithRetry(() => import("./pages/DriverApp.tsx"));
 const DriverProfilePage = lazyWithRetry(() => import("./pages/DriverProfilePage.tsx"));
+const StoreProfilePage = lazyWithRetry(() => import("./pages/StoreProfilePage.tsx"));
 const ProfilePage = lazyWithRetry(() => import("./pages/ProfilePage.tsx"));
 const StoreApp = lazyWithRetry(() => import("./pages/StoreApp.tsx"));
 const AdminApp = lazyWithRetry(() => import("./pages/AdminApp.tsx"));
@@ -109,6 +110,11 @@ const App = () => (
                     <Route path="/store" element={
                       <ProtectedRoute allowedRoles={['store']}>
                         <StoreApp />
+                      </ProtectedRoute>
+                    } />
+                    <Route path="/store/profile" element={
+                      <ProtectedRoute allowedRoles={['store']}>
+                        <StoreProfilePage />
                       </ProtectedRoute>
                     } />
                     <Route path="/admin" element={
