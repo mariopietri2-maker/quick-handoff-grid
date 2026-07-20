@@ -91,10 +91,26 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email: normalizeEmail(email),
-      password,
-    });
+    const emailNorm = normalizeEmail(email);
+    const attempt = () =>
+      supabase.auth.signInWithPassword({
+        email: emailNorm,
+        password,
+      });
+
+    let { error } = await attempt();
+    // Capacitor / flaky mobile networks often surface a raw TypeError "Failed to fetch"
+    if (error && /failed to fetch|networkerror|load failed|fetch/i.test(error.message || '')) {
+      await new Promise((r) => setTimeout(r, 450));
+      ({ error } = await attempt());
+    }
+    if (error && /failed to fetch|networkerror|load failed/i.test(error.message || '')) {
+      return {
+        error: new Error(
+          'Αποτυχία σύνδεσης με τον διακομιστή. Ελέγξτε το internet και δοκιμάστε ξανά.',
+        ),
+      };
+    }
     return { error: error as Error | null };
   };
 
