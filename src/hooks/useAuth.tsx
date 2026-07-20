@@ -9,7 +9,12 @@ interface AuthContextType {
   profile: { role: string; full_name: string | null; public_code?: string | null } | null;
   isAdmin: boolean;
   isSupport: boolean;
-  signUp: (email: string, password: string, fullName: string, role: string) => Promise<{ error: Error | null }>;
+  signUp: (
+    email: string,
+    password: string,
+    fullName: string,
+    role: string,
+  ) => Promise<{ error: Error | null; session: Session | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
 }
@@ -72,7 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } },
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: `${window.location.origin}/auth`,
+      },
     });
 
     if (!error && data.user) {
@@ -80,10 +88,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         .from('profiles')
         .update({ role: role as any })
         .eq('user_id', data.user.id);
-      await fetchProfile(data.user.id);
+      if (data.session) {
+        await fetchProfile(data.user.id);
+      }
     }
 
-    return { error: error as Error | null };
+    return { error: error as Error | null, session: data.session ?? null };
   };
 
   const signIn = async (email: string, password: string) => {

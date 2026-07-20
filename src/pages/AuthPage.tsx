@@ -36,7 +36,14 @@ export default function AuthPage() {
       if (isLogin) {
         const { error } = await signIn(email, password);
         if (error) {
-          toast.error(error.message);
+          const msg = (error.message || '').toLowerCase();
+          if (msg.includes('invalid login') || msg.includes('invalid credentials')) {
+            toast.error('Λάθος email ή κωδικός. Αν μόλις κάνατε εγγραφή, δοκιμάστε ξανά σε λίγα δευτερόλεπτα.');
+          } else if (msg.includes('email not confirmed')) {
+            toast.error('Το email δεν έχει επιβεβαιωθεί ακόμα. Επικοινωνήστε με υποστήριξη αν δεν λάβατε μήνυμα.');
+          } else {
+            toast.error(error.message);
+          }
         } else {
           toast.success('Καλώς ήρθατε ξανά!');
         }
@@ -46,11 +53,26 @@ export default function AuthPage() {
           setSubmitting(false);
           return;
         }
-        const { error } = await signUp(email, password, fullName, 'customer');
+        if (password.length < 6) {
+          toast.error('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
+          setSubmitting(false);
+          return;
+        }
+        const { error, session } = await signUp(email, password, fullName, 'customer');
         if (error) {
-          toast.error(error.message);
+          const msg = (error.message || '').toLowerCase();
+          if (msg.includes('already registered') || msg.includes('already been registered')) {
+            toast.error('Υπάρχει ήδη λογαριασμός με αυτό το email. Δοκιμάστε σύνδεση.');
+            setIsLogin(true);
+          } else {
+            toast.error(error.message);
+          }
+        } else if (session) {
+          toast.success('Ο λογαριασμός δημιουργήθηκε! Καλώς ήρθατε.');
         } else {
-          toast.success('Ο λογαριασμός δημιουργήθηκε! Ελέγξτε το email σας για επιβεβαίωση.');
+          // Confirmation required (SMTP project) — rare after autoconfirm
+          toast.success('Ο λογαριασμός δημιουργήθηκε. Αν ζητηθεί επιβεβαίωση, ελέγξτε το email σας.');
+          setIsLogin(true);
         }
       }
     } finally {
