@@ -14,7 +14,7 @@ interface Props {
   initialTip: number;
 }
 
-export function PostDeliveryTipCard({ orderId, driverId, driverName, initialTip }: Props) {
+export function PostDeliveryTipCard({ orderId, driverName, initialTip }: Props) {
   const { user } = useAuth();
   const [extraTip, setExtraTip] = useState<number | 'custom'>(0);
   const [customTip, setCustomTip] = useState('');
@@ -38,23 +38,10 @@ export function PostDeliveryTipCard({ orderId, driverId, driverName, initialTip 
   const handleSubmit = async () => {
     if (!user || tipAmount <= 0) return;
     setSubmitting(true);
-    // Record additional tip as wallet transaction credit to driver
-    const { error } = await supabase.from('wallet_transactions').insert({
-      driver_id: driverId,
-      type: 'extra_tip',
-      amount: tipAmount,
-      status: 'completed',
-      description: `Επιπλέον φιλοδώρημα από πελάτη`,
-      order_id: orderId,
-    });
-    // Also bump the driver's wallet
-    if (!error) {
-      await supabase.rpc('admin_adjust_wallet' as never, {
-        p_driver_id: driverId,
-        p_amount: tipAmount,
-        p_description: `Επιπλέον φιλοδώρημα παραγγελίας`,
-      } as never).then(() => {}, () => {}); // best effort, may fail without admin
-    }
+    const { error } = await supabase.rpc('add_post_delivery_tip' as never, {
+      p_order_id: orderId,
+      p_amount: tipAmount,
+    } as never);
     setSubmitting(false);
     if (error) {
       toast.error('Δεν ήταν δυνατή η προσθήκη φιλοδωρήματος');
