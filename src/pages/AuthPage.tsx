@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Loader as Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
+import { envMobileFlavor, mobileHomePath } from '@/lib/mobileApp';
 
 export default function AuthPage() {
   const [isLogin, setIsLogin] = useState(true);
@@ -17,16 +18,25 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
   const { signIn, signUp, user, profile, isAdmin, isSupport } = useAuth();
   const navigate = useNavigate();
+  const flavor = envMobileFlavor();
 
   useEffect(() => {
     if (user && profile) {
+      if (flavor === 'driver') {
+        navigate(profile.role === 'driver' ? '/driver' : '/auth', { replace: true });
+        return;
+      }
+      if (flavor === 'customer') {
+        navigate('/order', { replace: true });
+        return;
+      }
       if (isAdmin) navigate('/admin', { replace: true });
       else if (isSupport) navigate('/support', { replace: true });
       else if (profile.role === 'driver') navigate('/driver', { replace: true });
       else if (profile.role === 'store') navigate('/store', { replace: true });
-      else navigate('/order', { replace: true });
+      else navigate(mobileHomePath('customer'), { replace: true });
     }
-  }, [user, profile, isAdmin, isSupport, navigate]);
+  }, [user, profile, isAdmin, isSupport, navigate, flavor]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

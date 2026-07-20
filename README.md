@@ -117,6 +117,17 @@ Fresh Delivery is a comprehensive food delivery solution built with modern web t
 
 ---
 
+## 📱 Mobile (Customer + Driver)
+
+Capacitor shells for separate store apps — see **[MOBILE.md](./MOBILE.md)**.
+
+```bash
+npm run mobile:customer:sync && npm run mobile:customer:open
+npm run mobile:driver:sync && npm run mobile:driver:open
+```
+
+---
+
 ## 📋 Available Commands
 
 ```bash

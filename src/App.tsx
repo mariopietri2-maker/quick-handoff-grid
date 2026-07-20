@@ -12,6 +12,7 @@ import { ProtectedRoute } from "@/components/ProtectedRoute";
 import MaintenanceBanner from "@/components/MaintenanceBanner";
 import ConnectionStatus from "@/components/ConnectionStatus";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
+import { MobileAppGate } from "@/components/MobileAppGate";
 import Index from "./pages/Index.tsx";
 
 // Lazy-load every non-landing route so the initial bundle stays small.
@@ -75,6 +76,7 @@ const App = () => (
                 <MaintenanceBanner />
                 <Suspense fallback={<RouteFallback />}>
                   <RouteErrorBoundary>
+                  <MobileAppGate>
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<AuthPage />} />
@@ -116,6 +118,7 @@ const App = () => (
                     <Route path="/legal/:doc" element={<LegalPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
+                  </MobileAppGate>
                   </RouteErrorBoundary>
                 </Suspense>
               </CartProvider>
