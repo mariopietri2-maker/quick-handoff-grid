@@ -1,5 +1,4 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
-import { getAuthedUser, unauthorized } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -11,10 +10,9 @@ serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  // Require an authenticated app user — Mapbox quota should not be drained by anonymous bots.
-  const user = await getAuthedUser(req);
-  if (!user) return unauthorized(corsHeaders);
-
+  // Public Mapbox pk.* tokens are designed to ship in browsers. Serving them
+  // without a user session lets address pickers / guest checkout maps work.
+  // Restrict the token by HTTP referrer in the Mapbox dashboard.
   const token = Deno.env.get("MAPBOX_PUBLIC_TOKEN");
   if (!token) {
     return new Response(JSON.stringify({ error: "MAPBOX_PUBLIC_TOKEN not configured" }), {
