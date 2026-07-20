@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { Phone, CheckCircle2, ChevronRight, Navigation, Package, Store, MapPin, Clock, Lock, StickyNote } from 'lucide-react';
 import { WaitTimeBonusBanner } from './WaitTimeBonusBanner';
 import { shortenAddress } from '@/lib/address-utils';
-import { supabase } from '@/integrations/supabase/client';
-import ProofOfHandoff from './ProofOfHandoff';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
@@ -39,7 +37,6 @@ interface ActiveDeliveryData {
 
 interface ActiveDeliveryProps {
   delivery: ActiveDeliveryData;
-  driverId?: string;
   onStatusUpdate: (status: string) => void;
   onFocusDestination?: (target: 'store' | 'customer') => void;
 }
@@ -51,7 +48,7 @@ const statusSteps = [
   { key: 'delivered', label: 'Παραδόθηκε', icon: CheckCircle2 },
 ];
 
-export function ActiveDelivery({ delivery, driverId, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
+export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }: ActiveDeliveryProps) {
 
   const isGoingToStore = ['accepted', 'preparing', 'ready', 'arrived'].includes(delivery.status);
   const isGoingToCustomer = delivery.status === 'picked_up';
@@ -309,17 +306,7 @@ export function ActiveDelivery({ delivery, driverId, onStatusUpdate, onFocusDest
             </div>
           )}
 
-          {cashOk && driverId ? (
-            <ProofOfHandoff
-              orderId={delivery.id}
-              driverId={driverId}
-              onUploaded={async (path) => {
-                await supabase.from('orders').update({ photo_verification_url: path } as any).eq('id', delivery.id);
-                setConfirmDeliver(false);
-                onStatusUpdate('delivered');
-              }}
-            />
-          ) : cashOk && !driverId ? (
+          {cashOk ? (
             <button
               onClick={() => { setConfirmDeliver(false); onStatusUpdate('delivered'); }}
               className="w-full h-12 rounded-full bg-foreground text-background hover:bg-foreground/90 font-heading font-bold text-[15px]"
