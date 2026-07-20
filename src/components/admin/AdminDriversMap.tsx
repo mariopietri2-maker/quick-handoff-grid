@@ -37,7 +37,12 @@ interface DriverInfo {
   code: string | null;
 }
 
-export default function AdminDriversMap() {
+interface AdminDriversMapProps {
+  /** Hide store edit / geocode controls — for role M monitor. */
+  readOnly?: boolean;
+}
+
+export default function AdminDriversMap({ readOnly = false }: AdminDriversMapProps) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const markersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
@@ -62,7 +67,7 @@ export default function AdminDriversMap() {
   useEffect(() => {
     async function load() {
       const [{ data: profiles }, { data: driverProfiles }, { data: storesData }] = await Promise.all([
-        supabase.from('profiles').select('user_id, full_name').eq('role', 'driver' as any),
+        supabase.from('profiles').select('user_id, full_name').in('role', ['driver', 'm'] as any),
         supabase.from('driver_profiles').select('user_id, driver_code' as any),
         supabase.from('stores').select('id, name, address, latitude, longitude, is_active'),
       ]);
@@ -312,7 +317,7 @@ export default function AdminDriversMap() {
       <div className="flex items-center justify-between flex-wrap gap-3">
         <h2 className="font-heading font-bold text-xl">Live Χάρτης</h2>
         <div className="flex flex-wrap items-center gap-3">
-          {missingCoords.length > 0 && (
+          {!readOnly && missingCoords.length > 0 && (
             <Button
               size="sm"
               variant="outline"
@@ -326,22 +331,25 @@ export default function AdminDriversMap() {
               Αυτόματη τοποθέτηση ({missingCoords.length})
             </Button>
           )}
-          <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
-            <Switch id="edit-stores" checked={editStores} onCheckedChange={setEditStores} />
-            <Label htmlFor="edit-stores" className="text-xs cursor-pointer">
-              Μετακίνηση καταστημάτων
-            </Label>
-          </div>
+          {!readOnly && (
+            <div className="flex items-center gap-2 rounded-md border border-border px-3 py-1.5">
+              <Switch id="edit-stores" checked={editStores} onCheckedChange={setEditStores} />
+              <Label htmlFor="edit-stores" className="text-xs cursor-pointer">
+                Μετακίνηση καταστημάτων
+              </Label>
+            </div>
+          )}
           <Badge variant="outline" className="gap-1.5">
             <span className="h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
             {locations.length} οδηγοί
           </Badge>
           <Badge variant="outline" className="gap-1.5">
-            🏪 {stores.length} καταστήματα
+            <span className="h-2 w-2 rounded-full bg-orange-500" />
+            {stores.filter(s => s.is_active !== false).length} καταστήματα
           </Badge>
         </div>
       </div>
-      {editStores && (
+      {editStores && !readOnly && (
         <div className="rounded-md border border-accent/40 bg-accent/10 px-3 py-2 text-xs text-foreground">
           {selectedStoreId
             ? <>📍 <strong>{stores.find(s => s.id === selectedStoreId)?.name}</strong> επιλέχθηκε — κλικ οπουδήποτε στον χάρτη για να το τοποθετήσεις.</>
