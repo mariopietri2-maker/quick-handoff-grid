@@ -11,6 +11,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { DriverTicketChat } from '@/components/driver/DriverTicketChat';
 import { format } from 'date-fns';
+import { hasSupportPhone, SUPPORT_PHONE } from '@/lib/support-phone';
 
 type Category = {
   key: string;
@@ -30,8 +31,6 @@ const CATEGORIES: Category[] = [
   { key: 'payment',        label: 'Πληρωμές',    hint: 'Κέρδη, πορτοφόλι',          icon: CreditCard,    tone: 'bg-emerald-500 text-white' },
   { key: 'app_issue',      label: 'Εφαρμογή',    hint: 'Bug, σφάλμα',               icon: Smartphone,    tone: 'bg-slate-600 text-white' },
 ];
-
-const SUPPORT_PHONE = '+302100000000';
 
 const statusLabel: Record<string, { label: string; tone: string }> = {
   open: { label: 'Ανοιχτό', tone: 'bg-red-500/15 text-red-600 border-red-500/30' },
@@ -195,18 +194,20 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
           <div className="p-5 overflow-y-auto flex-1">
             {view === 'menu' && (
               <>
-                <a
-                  href={`tel:${SUPPORT_PHONE}`}
-                  className="flex items-center gap-3 p-3 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/15 transition-colors"
-                >
-                  <span className="h-10 w-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
-                    <Phone className="h-5 w-5" />
-                  </span>
-                  <div className="flex-1 min-w-0">
-                    <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Άμεση Κλήση</p>
-                    <p className="text-[11px] text-[hsl(var(--driver-text-muted))]">Μέσος χρόνος αναμονής 30s</p>
-                  </div>
-                </a>
+                {hasSupportPhone && (
+                  <a
+                    href={`tel:${SUPPORT_PHONE}`}
+                    className="flex items-center gap-3 p-3 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/15 transition-colors"
+                  >
+                    <span className="h-10 w-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                      <Phone className="h-5 w-5" />
+                    </span>
+                    <div className="flex-1 min-w-0">
+                      <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Άμεση Κλήση</p>
+                      <p className="text-[11px] text-[hsl(var(--driver-text-muted))]">Μέσος χρόνος αναμονής 30s</p>
+                    </div>
+                  </a>
+                )}
 
                 {tickets.length > 0 && (
                   <button

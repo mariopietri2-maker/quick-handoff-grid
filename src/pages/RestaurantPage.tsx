@@ -8,7 +8,6 @@ import { toast } from 'sonner';
 import type { Database } from '@/integrations/supabase/types';
 import { ReviewList, RatingBadge } from '@/components/ReviewList';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
-import GroupOrderShare from '@/components/customer/GroupOrderShare';
 import { MenuItemBadges } from '@/components/customer/MenuItemBadges';
 import { SEO } from '@/components/SEO';
 
@@ -219,9 +218,6 @@ export default function RestaurantPage() {
             Πολυάσχολο — αυξημένοι χρόνοι παράδοσης
           </div>
         )}
-        <div className="mt-3">
-          <GroupOrderShare storeId={store.id} />
-        </div>
       </main>
 
       {/* Category Tabs (sticky under the floating header on scroll) */}

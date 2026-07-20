@@ -1,4 +1,6 @@
-import { Phone, X } from 'lucide-react';
+import { ExternalLink, Phone, X } from 'lucide-react';
+import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
+import { formatDriverDistance, openExternalNav } from '@/lib/driver-nav';
 
 interface NavBottomCardProps {
   title: string;
@@ -8,6 +10,8 @@ interface NavBottomCardProps {
   /** Remaining distance in meters */
   distanceMeters: number;
   phone?: string | null;
+  destLat?: number | null;
+  destLng?: number | null;
   onExit: () => void;
 }
 
@@ -19,14 +23,13 @@ function formatDuration(seconds: number) {
   return `${h}ω ${m}λ`;
 }
 
-function formatDistance(m: number) {
-  if (m < 1000) return `${Math.round(m)} μ`;
-  return `${(m / 1000).toFixed(1)} χλμ`;
-}
-
 export function NavBottomCard({
-  title, subtitle, durationSec, distanceMeters, phone, onExit,
+  title, subtitle, durationSec, distanceMeters, phone, destLat, destLng, onExit,
 }: NavBottomCardProps) {
+  const prefs = loadDriverAppPrefs();
+  const canExternal = destLat != null && destLng != null
+    && Number.isFinite(destLat) && Number.isFinite(destLng);
+
   return (
     <div className="rounded-t-[28px] bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] shadow-[0_-12px_32px_-12px_hsl(220,18%,14%,0.18)] overflow-hidden">
       {/* drag affordance */}
@@ -44,9 +47,21 @@ export function NavBottomCard({
               {title}
             </p>
             <p className="text-[13px] text-[hsl(var(--driver-text-muted))] mt-1 tabular-nums">
-              {formatDuration(durationSec)} · {formatDistance(distanceMeters)}
+              {formatDuration(durationSec)} · {formatDriverDistance(distanceMeters, prefs.distanceUnit)}
             </p>
           </div>
+
+          {canExternal && (
+            <button
+              type="button"
+              onClick={() => openExternalNav(destLat!, destLng!, prefs.navApp, title)}
+              className="h-12 w-12 rounded-full bg-[hsl(var(--driver-info))]/10 border border-[hsl(var(--driver-info))]/25 flex items-center justify-center hover:bg-[hsl(var(--driver-info))]/15 active:scale-95 transition-all"
+              aria-label="Άνοιγμα εξωτερικής πλοήγησης"
+              title="Εξωτερική πλοήγηση"
+            >
+              <ExternalLink className="h-5 w-5 text-[hsl(var(--driver-info))]" strokeWidth={2.5} />
+            </button>
+          )}
 
           {phone && (
             <a

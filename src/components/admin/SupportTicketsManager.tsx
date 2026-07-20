@@ -24,7 +24,25 @@ const categoryLabels: Record<string, string> = {
   app_issue: 'Πρόβλημα Εφαρμογής',
   payment: 'Πληρωμή',
   accident: 'Ατύχημα',
+  emergency: 'Έκτακτο',
+  vehicle_issue: 'Όχημα',
+  customer_issue: 'Πελάτης',
+  navigation: 'Πλοήγηση',
+  late_delivery: 'Καθυστέρηση',
+  missing_items: 'Λείπουν',
+  wrong_order: 'Λάθος παραγγελία',
+  address_issue: 'Διεύθυνση',
+  driver_issue: 'Οδηγός',
+  refund: 'Επιστροφή',
+  order_issue: 'Παραγγελία',
+  kitchen_issue: 'Κουζίνα',
   other: 'Άλλο',
+};
+
+const roleLabels: Record<string, string> = {
+  driver: 'Οδηγός',
+  customer: 'Πελάτης',
+  store: 'Κατάστημα',
 };
 
 export default function SupportTicketsManager() {
@@ -54,9 +72,12 @@ export default function SupportTicketsManager() {
     },
   });
 
-  const getDriverName = (driverId: string) => {
-    const p = profiles?.find((pr) => pr.user_id === driverId);
-    return p?.full_name || driverId.slice(0, 8);
+  const ticketSubject = (ticket: any) => {
+    const id = ticket.requester_id || ticket.driver_id;
+    const p = id ? profiles?.find((pr) => pr.user_id === id) : null;
+    const role = ticket.requester_role || (ticket.driver_id ? 'driver' : null);
+    const name = p?.full_name || (id ? id.slice(0, 8) : '—');
+    return { name, role };
   };
 
   const handleUpdateStatus = async (ticketId: string, newStatus: string) => {
@@ -139,7 +160,7 @@ export default function SupportTicketsManager() {
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Οδηγός</TableHead>
+                <TableHead>Χρήστης</TableHead>
                 <TableHead>Κατηγορία</TableHead>
                 <TableHead>Περιγραφή</TableHead>
                 <TableHead>Κατάσταση</TableHead>
@@ -150,9 +171,17 @@ export default function SupportTicketsManager() {
             <TableBody>
               {filtered.map((ticket) => {
                 const cfg = statusConfig[ticket.status] ?? statusConfig.open;
+                const subject = ticketSubject(ticket);
                 return (
                   <TableRow key={ticket.id}>
-                    <TableCell className="font-semibold">{getDriverName(ticket.driver_id)}</TableCell>
+                    <TableCell className="font-semibold">
+                      {subject.name}
+                      {subject.role && (
+                        <span className="block text-[10px] font-normal text-muted-foreground">
+                          {roleLabels[subject.role] ?? subject.role}
+                        </span>
+                      )}
+                    </TableCell>
                     <TableCell>
                       <Badge variant="outline">{categoryLabels[ticket.category] ?? ticket.category}</Badge>
                     </TableCell>
