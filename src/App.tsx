@@ -24,6 +24,7 @@ const StoreApp = lazy(() => import("./pages/StoreApp.tsx"));
 const AdminApp = lazy(() => import("./pages/AdminApp.tsx"));
 const SupportApp = lazy(() => import("./pages/SupportApp.tsx"));
 const CustomerApp = lazy(() => import("./pages/CustomerApp.tsx"));
+const CustomerLayout = lazy(() => import("./components/customer/CustomerLayout.tsx"));
 const RestaurantPage = lazy(() => import("./pages/RestaurantPage.tsx"));
 const CheckoutPage = lazy(() => import("./pages/CheckoutPage.tsx"));
 const OrderTrackingPage = lazy(() => import("./pages/OrderTrackingPage.tsx"));
@@ -78,16 +79,18 @@ const App = () => (
                   <Routes>
                     <Route path="/" element={<Index />} />
                     <Route path="/auth" element={<AuthPage />} />
-                    <Route path="/order" element={<CustomerApp />} />
+                    <Route element={<CustomerLayout />}>
+                      <Route path="/order" element={<CustomerApp />} />
+                      <Route path="/orders" element={<MyOrdersPage />} />
+                      <Route path="/profile" element={
+                        <ProtectedRoute>
+                          <ProfilePage />
+                        </ProtectedRoute>
+                      } />
+                    </Route>
                     <Route path="/restaurant/:id" element={<RestaurantPage />} />
                     <Route path="/checkout" element={<CheckoutPage />} />
                     <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
-                    <Route path="/orders" element={<MyOrdersPage />} />
-                    <Route path="/profile" element={
-                      <ProtectedRoute>
-                        <ProfilePage />
-                      </ProtectedRoute>
-                    } />
                     <Route path="/driver" element={
                       <ProtectedRoute allowedRoles={['driver']}>
                         <DriverApp />

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useRef } from 'react';
-import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Compass, UtensilsCrossed, Receipt, Star, Zap, BadgePercent } from 'lucide-react';
+import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Star, Zap, BadgePercent } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link } from 'react-router-dom';
@@ -23,9 +23,6 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
-import HomeGreeting from '@/components/customer/HomeGreeting';
-import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
-import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -241,7 +238,8 @@ export default function CustomerApp() {
     if (!matchesSearch) return false;
     if (selectedCategory !== 'all') {
       const cats = storeCategories[s.id] ?? [];
-      if (!cats.some(c => c.includes(selectedCategory))) return false;
+      const needle = selectedCategory.toLowerCase();
+      if (!cats.some(c => c.toLowerCase().includes(needle) || needle.includes(c.toLowerCase()))) return false;
     }
     if (filterFree && Number((s as any).delivery_fee ?? 0.99) !== 0) return false;
     if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
@@ -250,14 +248,7 @@ export default function CustomerApp() {
   }), [stores, debouncedSearch, selectedCategory, storeCategories, filterFree, filterTopRated, filterFast, ratings]);
 
   return (
-    <div
-      className="customer-shell min-h-screen pb-24"
-      style={{
-        ['--c-accent' as any]: cfg.branding.accent_hsl,
-        ['--c-accent-dark' as any]: cfg.branding.accent_dark_hsl,
-        ['--c-accent-soft' as any]: `${cfg.branding.accent_hsl} / 0.10`,
-      }}
-    >
+    <>
       <AppSplash />
       <SEO
         title="Παραγγείλτε φαγητό online — Fresh Delivery"
@@ -669,65 +660,6 @@ export default function CustomerApp() {
         )}
       </main>
 
-      {/* ── Bottom tab bar ─────────────────────────────── */}
-      <nav
-        className="fixed bottom-0 left-0 right-0 z-50 bg-white/85 backdrop-blur-2xl border-t border-[hsl(0,0%,93%)] shadow-[0_-8px_24px_-16px_hsl(0_0%_0%/0.12)]"
-        style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
-      >
-        <div className="max-w-2xl mx-auto grid grid-cols-4 pt-2 pb-2">
-          <button
-            type="button"
-            onClick={() => {
-              setSearch('');
-              setSelectedCategory('all');
-              setFilterFree(false); setFilterTopRated(false); setFilterFast(false);
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 c-accent active:scale-95 transition-transform"
-          >
-            <span className="p-2 rounded-2xl c-bg-accent-soft ring-1 ring-[hsl(var(--c-accent))]/15 shadow-[inset_0_1px_0_hsl(0_0%_100%/0.6)]">
-              <Compass className="h-[22px] w-[22px]" strokeWidth={2.4} />
-            </span>
-            <span className="text-[10px] font-extrabold tracking-tight">Ανακάλυψε</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setSelectedCategory('all');
-              const el = document.getElementById('nearby-stores');
-              if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-              else window.scrollTo({ top: document.body.scrollHeight * 0.5, behavior: 'smooth' });
-            }}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <UtensilsCrossed className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Φαγητό</span>
-          </button>
-          <Link
-            to={user ? '/orders' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">{t('customer.orders')}</span>
-          </Link>
-          <Link
-            to={user ? '/profile' : '/auth'}
-            className="flex flex-col items-center justify-center gap-1 text-[hsl(0,0%,40%)] active:scale-95 transition-transform"
-          >
-            <span className="p-2">
-              <User className="h-[22px] w-[22px]" strokeWidth={2} />
-            </span>
-            <span className="text-[10px] font-bold tracking-tight">Λογαριασμός</span>
-          </Link>
-        </div>
-
-
-      </nav>
-
       <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
         <SheetContent side="bottom" className="rounded-t-2xl">
           <SheetHeader>
@@ -764,7 +696,7 @@ export default function CustomerApp() {
           </div>
         </SheetContent>
       </Sheet>
-    </div>
+    </>
   );
 }
 
