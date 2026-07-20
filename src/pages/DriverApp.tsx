@@ -129,10 +129,13 @@ export default function DriverApp() {
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(true);
-  // Offline: keep the sheet open so the go-online slider is never clipped
+  // Offline / offers / active delivery: keep sheet expanded so controls aren't clipped
   useEffect(() => {
     if (!isOnline) setSheetCollapsed(false);
   }, [isOnline]);
+  useEffect(() => {
+    if (offers.length > 0 || activeDelivery) setSheetCollapsed(false);
+  }, [offers.length, activeDelivery]);
   const sheetDragStartY = useRef<number | null>(null);
   const sheetDragMoved = useRef(false);
   const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
@@ -379,13 +382,20 @@ export default function DriverApp() {
     if (isNavActive) {
       return { top: 140, bottom: 220, left: 48, right: 72 };
     }
-    // Collapsed sheet ≈ 18vh; expanded ≈ 48vh — pad for the covered band + chrome
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    // Collapsed dock is compact (~toggle only); expanded uses ~half viewport
     const bottom = sheetCollapsed
-      ? Math.max(140, Math.round(vh * 0.20) + 24)
-      : Math.max(260, Math.round(vh * 0.50) + 24);
+      ? Math.max(120, Math.round(vh * 0.16) + 28)
+      : Math.max(260, Math.round(vh * 0.48) + 24);
     return { top: 96, bottom, left: 40, right: 40 };
   })();
+
+  const showCompactOnlineDock =
+    sheetCollapsed &&
+    !activeDelivery &&
+    !onBreak &&
+    !cashCapped &&
+    offers.length === 0;
 
   return (
     <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden overscroll-none">
@@ -516,9 +526,9 @@ export default function DriverApp() {
           )}
 
 
-          <div className={`fixed bottom-0 left-0 right-0 z-20 ${sheetCollapsed ? 'max-h-[20vh]' : 'max-h-[48vh]'} overflow-y-auto px-3 pb-3 safe-area-bottom pointer-events-none scrollbar-thin overscroll-contain transition-[max-height] duration-300 ease-out ${isNavActive ? 'hidden' : ''}`}>
-            {/* Map controls — pinned just above the sheet */}
-            <div className="flex justify-end gap-2 pb-2 pointer-events-auto">
+          {/* Bottom dock — solid sheet (no clipped glass lip over the map) */}
+          <div className={`fixed bottom-0 left-0 right-0 z-20 pointer-events-none ${isNavActive ? 'hidden' : ''}`}>
+            <div className="flex justify-end gap-2 px-3 pb-2 pointer-events-auto">
               <button
                 onClick={() => {
                   setSheetCollapsed(true);
@@ -538,73 +548,190 @@ export default function DriverApp() {
                 <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
               </button>
             </div>
-            {/* Drag handle — tap to toggle, or swipe up/down to expand/collapse */}
+
             <div
-              className="pointer-events-auto w-full flex items-center justify-center pt-2 pb-3 -mb-1 group cursor-grab active:cursor-grabbing touch-none select-none"
-              role="button"
-              tabIndex={0}
-              aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
-              title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
-              onClick={() => { if (!sheetDragMoved.current) setSheetCollapsed(v => !v); }}
-              onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; sheetDragMoved.current = false; }}
-              onTouchMove={(e) => {
-                if (sheetDragStartY.current == null) return;
-                const dy = e.touches[0].clientY - sheetDragStartY.current;
-                if (Math.abs(dy) > 8) sheetDragMoved.current = true;
-                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
-                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
-              }}
-              onTouchEnd={() => { sheetDragStartY.current = null; }}
-              onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); sheetDragStartY.current = e.clientY; sheetDragMoved.current = false; }}
-              onPointerMove={(e) => {
-                if (sheetDragStartY.current == null) return;
-                const dy = e.clientY - sheetDragStartY.current;
-                if (Math.abs(dy) > 8) sheetDragMoved.current = true;
-                if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
-                else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
-              }}
-              onPointerUp={() => { sheetDragStartY.current = null; }}
-              onPointerCancel={() => { sheetDragStartY.current = null; }}
+              className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[28px] shadow-[0_-12px_32px_-12px_hsl(220,18%,14%,0.18)] transition-[max-height] duration-300 ease-out ${
+                showCompactOnlineDock
+                  ? 'overflow-hidden'
+                  : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
+              }`}
             >
-              <span className="h-1.5 w-14 rounded-full bg-[hsl(var(--driver-text-muted))]/50 group-active:bg-[hsl(var(--driver-text-muted))]/80 transition-colors" />
-            </div>
-            <div className="pointer-events-auto space-y-2.5 animate-slide-up">
+              <div
+                className="w-full flex items-center justify-center pt-2.5 pb-2 group cursor-grab active:cursor-grabbing touch-none select-none"
+                role="button"
+                tabIndex={0}
+                aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
+                title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
+                onClick={() => { if (!sheetDragMoved.current) setSheetCollapsed(v => !v); }}
+                onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; sheetDragMoved.current = false; }}
+                onTouchMove={(e) => {
+                  if (sheetDragStartY.current == null) return;
+                  const dy = e.touches[0].clientY - sheetDragStartY.current;
+                  if (Math.abs(dy) > 8) sheetDragMoved.current = true;
+                  if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
+                  else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
+                }}
+                onTouchEnd={() => { sheetDragStartY.current = null; }}
+                onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); sheetDragStartY.current = e.clientY; sheetDragMoved.current = false; }}
+                onPointerMove={(e) => {
+                  if (sheetDragStartY.current == null) return;
+                  const dy = e.clientY - sheetDragStartY.current;
+                  if (Math.abs(dy) > 8) sheetDragMoved.current = true;
+                  if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
+                  else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
+                }}
+                onPointerUp={() => { sheetDragStartY.current = null; }}
+                onPointerCancel={() => { sheetDragStartY.current = null; }}
+              >
+                <span className="h-1.5 w-12 rounded-full bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70 transition-colors" />
+              </div>
 
-              {/* (In nav mode the dark banner + bottom card are rendered as fixed overlays above) */}
-
-              {!isNavActive && (
-                <>
-                  {/* Keep map sheet focused during an active delivery */}
-                  {!activeDelivery && (
-                    <>
-                      <AnnouncementsBanner audience="drivers" />
-                      <SurgeStatusBadge />
-                    </>
-                  )}
-
-                  {/* On-break banner */}
-                  {onBreak && (
-                    <div className="px-3 py-2.5 rounded-xl bg-warning/15 border border-warning/30 driver-glass flex items-center gap-2">
-                      <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
+              <div
+                className="px-3 space-y-2.5"
+                style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
+              >
+                {showCompactOnlineDock ? (
+                  <div className="pb-1 space-y-2.5 animate-fade-in">
+                    <div className="flex items-center justify-center gap-2 px-1">
+                      {isOnline ? (
+                        <>
+                          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
+                          <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text-muted))]">
+                            {loading ? 'Αναζήτηση…' : 'Αναμονή παραγγελιών'}
+                          </p>
+                        </>
+                      ) : (
+                        <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text-muted))]">
+                          Εκτός σύνδεσης — σύρε για online
+                        </p>
+                      )}
                     </div>
-                  )}
+                    <SlideToggle
+                      isOn={isOnline}
+                      onToggle={setIsOnline}
+                      onLabel="Είσαι Online"
+                      offLabel="Σύρε για να συνδεθείς"
+                      disabled={driverActive !== true}
+                    />
+                  </div>
+                ) : (
+                  <>
+                    {!activeDelivery && (
+                      <>
+                        <AnnouncementsBanner audience="drivers" />
+                        <SurgeStatusBadge />
+                      </>
+                    )}
 
-                  {/* Active delivery card */}
-                  {activeDelivery && (
-                    <>
-                      <StackedOrderBanner orderId={activeDelivery.id} />
+                    {onBreak && (
+                      <div className="px-3 py-2.5 rounded-xl bg-warning/15 border border-warning/30 driver-glass flex items-center gap-2">
+                        <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
+                      </div>
+                    )}
 
-                      {/* Stacked offers — same store, on the path */}
-                      {stackedOffers.length > 0 && (
-                        <div className="space-y-2.5 animate-slide-up">
-                          {stackedOffers.map((offer, idx) => (
-                            <StackedOfferCard
-                              key={offer.id}
-                              index={idx + 2}
+                    {activeDelivery && (
+                      <>
+                        <StackedOrderBanner orderId={activeDelivery.id} />
+                        {stackedOffers.length > 0 && (
+                          <div className="space-y-2.5 animate-slide-up">
+                            {stackedOffers.map((offer, idx) => (
+                              <StackedOfferCard
+                                key={offer.id}
+                                index={idx + 2}
+                                offer={{
+                                  id: offer.id,
+                                  storeName: offer.store_name || storeInfo?.name || 'Ίδιο κατάστημα',
+                                  storeAddress: offer.store_address || storeInfo?.address || 'Παραλαβή',
+                                  deliveryAddress: offer.delivery_address || 'Πελάτης',
+                                  estimatedPayout: (Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0) + Number((offer as any).driver_pool_bonus ?? 0)) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
+                                  basePay: Number(offer.delivery_fee ?? 0) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
+                                  tipAmount: Number(offer.tip_amount ?? 0),
+                                  poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
+                                  paymentMethod: (offer as any).payment_method ?? null,
+                                  cashToCollect: (offer as any).payment_method === 'cash'
+                                    ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
+                                    : null,
+                                  totalDistance: Number(offer.distance_km ?? 0),
+                                  estimatedTime: offer.estimated_prep_time ?? 20,
+                                  itemCount: offer.order_items?.length ?? 0,
+                                }}
+                                onAccept={acceptOrder}
+                                onDecline={handleDecline}
+                                onRemove={handleDecline}
+                                expiresAt={offerExpiresAt[offer.id] ?? null}
+                                timeoutSec={offerTimeoutSec}
+                              />
+                            ))}
+                          </div>
+                        )}
+                        {locError && (
+                          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
+                            <Navigation className="h-3.5 w-3.5 text-destructive" />
+                            <span className="text-xs font-heading text-destructive">GPS: {locError}</span>
+                          </div>
+                        )}
+                        <ActiveDelivery
+                          delivery={{
+                            id: activeDelivery.id,
+                            storeName: storeInfo?.name || 'Σημείο Παραλαβής',
+                            storeAddress: storeInfo?.address || 'Διεύθυνση',
+                            storePhone: storeInfo?.phone || null,
+                            storeLat: storeInfo?.latitude ?? null,
+                            storeLng: storeInfo?.longitude ?? null,
+                            deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
+                            deliveryLat: activeDelivery.delivery_latitude ?? deliveryCoords?.lat ?? null,
+                            deliveryLng: activeDelivery.delivery_longitude ?? deliveryCoords?.lng ?? null,
+                            customerName: customerInfo?.name || 'Πελάτης',
+                            customerPhone: customerInfo?.phone || null,
+                            status: activeDelivery.status ?? 'accepted',
+                            items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
+                            estimatedPayout: (Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0)) || Number((activeDelivery as any).driver_payout ?? 0) || Math.max(2, Number(activeDelivery.distance_km ?? 0) * 0.5 + 2),
+                            pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
+                            predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
+                            notes: (activeDelivery as any).notes ?? null,
+                            paymentMethod: (activeDelivery as any).payment_method ?? null,
+                            cashToCollect: (activeDelivery as any).payment_method === 'cash'
+                              ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
+                              : null,
+                          }}
+                          onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
+                          onFocusDestination={() => { setNavMode(true); }}
+                        />
+                      </>
+                    )}
+
+                    {!activeDelivery && isOnline && !onBreak && cashCapped && (
+                      <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-4 animate-pop">
+                        <p className="font-heading font-bold text-sm text-destructive mb-1">🚫 Όριο μετρητών συμπληρώθηκε</p>
+                        <p className="text-xs text-foreground/80 leading-relaxed">
+                          Έχεις €{Number(driverState?.shift_cash_balance ?? 0).toFixed(2)} σε μετρητά (όριο €{maxCashCap}).
+                          Παρέδωσε τα χρήματα στον διαχειριστή για να ξεκινήσουν νέες παραγγελίες.
+                        </p>
+                      </div>
+                    )}
+
+                    {!activeDelivery && isOnline && !onBreak && !cashCapped && !loading && offers.length > 0 && (
+                      <div className="space-y-3 animate-slide-up">
+                        <div className="flex items-center justify-between px-1">
+                          <div className="flex items-center gap-2">
+                            <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">
+                              {isAdmin ? 'Όλες οι Διαθέσιμες' : 'Νέες Παραγγελίες'}
+                            </h3>
+                            {isAdmin && (
+                              <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5">
+                                Ops
+                              </span>
+                            )}
+                          </div>
+                          <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5 animate-pop">{offers.length}</Badge>
+                        </div>
+                        {offers.map((offer, i) => (
+                          <div key={offer.id} className="animate-pop" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
+                            <OrderOfferCard
                               offer={{
                                 id: offer.id,
-                                storeName: offer.store_name || storeInfo?.name || 'Ίδιο κατάστημα',
-                                storeAddress: offer.store_address || storeInfo?.address || 'Παραλαβή',
+                                storeName: offer.store_name || 'Κατάστημα',
+                                storeAddress: offer.store_address || 'Διεύθυνση καταστήματος',
                                 deliveryAddress: offer.delivery_address || 'Πελάτης',
                                 estimatedPayout: (Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0) + Number((offer as any).driver_pool_bonus ?? 0)) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
                                 basePay: Number(offer.delivery_fee ?? 0) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
@@ -614,166 +741,66 @@ export default function DriverApp() {
                                 cashToCollect: (offer as any).payment_method === 'cash'
                                   ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
                                   : null,
-                                totalDistance: Number(offer.distance_km ?? 0),
+                                customerNotes: (offer as any).notes ?? null,
+                                perKmRate: 0.50,
+                                totalDistance: Number((offer as any).distance_km ?? 0),
                                 estimatedTime: offer.estimated_prep_time ?? 20,
                                 itemCount: offer.order_items?.length ?? 0,
                               }}
                               onAccept={acceptOrder}
                               onDecline={handleDecline}
-                              onRemove={handleDecline}
                               expiresAt={offerExpiresAt[offer.id] ?? null}
                               timeoutSec={offerTimeoutSec}
                             />
-                          ))}
-                        </div>
-                      )}
-                      {locError && (
-                        <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
-                          <Navigation className="h-3.5 w-3.5 text-destructive" />
-                          <span className="text-xs font-heading text-destructive">GPS: {locError}</span>
-                        </div>
-                      )}
-                      <ActiveDelivery
-                        delivery={{
-                          id: activeDelivery.id,
-                          storeName: storeInfo?.name || 'Σημείο Παραλαβής',
-                          storeAddress: storeInfo?.address || 'Διεύθυνση',
-                          storePhone: storeInfo?.phone || null,
-                          storeLat: storeInfo?.latitude ?? null,
-                          storeLng: storeInfo?.longitude ?? null,
-                          deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
-                          deliveryLat: activeDelivery.delivery_latitude ?? deliveryCoords?.lat ?? null,
-                          deliveryLng: activeDelivery.delivery_longitude ?? deliveryCoords?.lng ?? null,
-                          customerName: customerInfo?.name || 'Πελάτης',
-                          customerPhone: customerInfo?.phone || null,
-                          status: activeDelivery.status ?? 'accepted',
-                          items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
-                          estimatedPayout: (Number(activeDelivery.delivery_fee ?? 0) + Number(activeDelivery.tip_amount ?? 0)) || Number((activeDelivery as any).driver_payout ?? 0) || Math.max(2, Number(activeDelivery.distance_km ?? 0) * 0.5 + 2),
-                          pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
-                          predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
-                          notes: (activeDelivery as any).notes ?? null,
-                          paymentMethod: (activeDelivery as any).payment_method ?? null,
-                          cashToCollect: (activeDelivery as any).payment_method === 'cash'
-                            ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
-                            : null,
-                        }}
-                        onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
-                        onFocusDestination={() => { setNavMode(true); }}
-                      />
-                    </>
-                  )}
+                          </div>
+                        ))}
+                      </div>
+                    )}
 
-              {/* Cash cap banner — blocks new offers */}
-              {!activeDelivery && isOnline && !onBreak && cashCapped && (
-                <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-4 animate-pop">
-                  <p className="font-heading font-bold text-sm text-destructive mb-1">🚫 Όριο μετρητών συμπληρώθηκε</p>
-                  <p className="text-xs text-foreground/80 leading-relaxed">
-                    Έχεις €{Number(driverState?.shift_cash_balance ?? 0).toFixed(2)} σε μετρητά (όριο €{maxCashCap}).
-                    Παρέδωσε τα χρήματα στον διαχειριστή για να ξεκινήσουν νέες παραγγελίες.
-                  </p>
-                </div>
-              )}
-
-              {/* Order offer cards */}
-              {!activeDelivery && isOnline && !onBreak && !cashCapped && !loading && offers.length > 0 && (
-                <div className="space-y-3 animate-slide-up">
-                  <div className="flex items-center justify-between px-1">
-                    <div className="flex items-center gap-2">
-                      <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">
-                        {isAdmin ? 'Όλες οι Διαθέσιμες' : 'Νέες Παραγγελίες'}
-                      </h3>
-                      {isAdmin && (
-                        <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5">
-                          Ops
-                        </span>
-                      )}
-                    </div>
-                    <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5 animate-pop">{offers.length}</Badge>
-                  </div>
-                  {offers.map((offer, i) => (
-                    <div key={offer.id} className="animate-pop" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
-                      <OrderOfferCard
-                        offer={{
-                          id: offer.id,
-                          storeName: offer.store_name || 'Κατάστημα',
-                          storeAddress: offer.store_address || 'Διεύθυνση καταστήματος',
-                          deliveryAddress: offer.delivery_address || 'Πελάτης',
-                          estimatedPayout: (Number(offer.delivery_fee ?? 0) + Number(offer.tip_amount ?? 0) + Number((offer as any).driver_pool_bonus ?? 0)) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
-                          basePay: Number(offer.delivery_fee ?? 0) || Number((offer as any).driver_payout ?? 0) || Math.max(2, Number(offer.distance_km ?? 0) * 0.5 + 2),
-                          tipAmount: Number(offer.tip_amount ?? 0),
-                          poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
-                          paymentMethod: (offer as any).payment_method ?? null,
-                          cashToCollect: (offer as any).payment_method === 'cash'
-                            ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
-                            : null,
-                          customerNotes: (offer as any).notes ?? null,
-                          perKmRate: 0.50,
-                          totalDistance: Number((offer as any).distance_km ?? 0),
-                          estimatedTime: offer.estimated_prep_time ?? 20,
-                          itemCount: offer.order_items?.length ?? 0,
-                        }}
-                        onAccept={acceptOrder}
-                        onDecline={handleDecline}
-                        expiresAt={offerExpiresAt[offer.id] ?? null}
-                        timeoutSec={offerTimeoutSec}
-                      />
-                    </div>
-                  ))}
-                </div>
-              )}
-
-              {/* Combined Online/Offline + Waiting state */}
-              {!activeDelivery && (
-                <div className="driver-glass rounded-2xl overflow-hidden transition-all duration-500 ease-out animate-scale-in">
-                  {/* Waiting for orders (online, no offers) */}
-                  {isOnline && !loading && offers.length === 0 && (
-                    <div className="p-5 text-center animate-fade-in">
-                      <div className="relative h-12 w-12 mx-auto mb-3">
-                        <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
-                        <div className="relative h-12 w-12 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
-                          <Zap className="h-6 w-6 text-primary" />
+                    {!activeDelivery && (
+                      <div className="rounded-2xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))]/60 overflow-hidden transition-all duration-500 ease-out animate-scale-in">
+                        {isOnline && !loading && offers.length === 0 && (
+                          <div className="p-4 text-center animate-fade-in">
+                            <div className="relative h-10 w-10 mx-auto mb-2">
+                              <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
+                              <div className="relative h-10 w-10 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
+                                <Zap className="h-5 w-5 text-primary" />
+                              </div>
+                            </div>
+                            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
+                            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
+                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
+                              <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
+                            </div>
+                          </div>
+                        )}
+                        {isOnline && loading && (
+                          <div className="p-4 text-center animate-fade-in">
+                            <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+                            <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
+                          </div>
+                        )}
+                        {!isOnline && (
+                          <div className="p-4 text-center animate-fade-in">
+                            <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-2" />
+                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
+                            <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Σύρετε για να συνδεθείτε</p>
+                          </div>
+                        )}
+                        <div className="px-3 pb-3 pt-1">
+                          <SlideToggle
+                            isOn={isOnline}
+                            onToggle={setIsOnline}
+                            onLabel="Είσαι Online"
+                            offLabel="Σύρε για να συνδεθείς"
+                            disabled={driverActive !== true}
+                          />
                         </div>
                       </div>
-                      <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
-                      <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
-                        <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
-                        <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Loading */}
-                  {isOnline && loading && (
-                    <div className="p-5 text-center animate-fade-in">
-                      <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                      <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
-                    </div>
-                  )}
-
-                  {/* Offline message */}
-                  {!isOnline && (
-                    <div className="p-5 text-center animate-fade-in">
-                      <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-2" />
-                      <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
-                      <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Σύρετε για να συνδεθείτε</p>
-                    </div>
-                  )}
-
-                  {/* Slide to go Online/Offline */}
-                  <div className="px-4 pb-4 pt-1">
-                    <SlideToggle
-                      isOn={isOnline}
-                      onToggle={setIsOnline}
-                      onLabel="Είσαι Online"
-                      offLabel="Σύρε για να συνδεθείς"
-                      disabled={driverActive !== true}
-                    />
-                  </div>
-                </div>
-              )}
-                </>
-              )}
-
+                    )}
+                  </>
+                )}
+              </div>
             </div>
           </div>
         </div>
