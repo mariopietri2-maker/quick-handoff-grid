@@ -110,7 +110,7 @@ Deno.serve(async (req) => {
 
     const s: Settings = {
       assignment_mode: settings?.assignment_mode ?? "auto",
-      dist_offer_timeout_seconds: settings?.dist_offer_timeout_seconds ?? 30,
+      dist_offer_timeout_seconds: settings?.dist_offer_timeout_seconds ?? 60,
       dist_wave_size: settings?.dist_wave_size ?? 3,
       dist_max_waves: settings?.dist_max_waves ?? 3,
     };

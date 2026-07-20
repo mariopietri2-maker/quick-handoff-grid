@@ -167,14 +167,14 @@ export default function SystemDoctorPanel() {
     }
 
     try {
-      const { data: offers } = await (supabase as any).from('dispatch_offers').select('id')
+      const { data: offers } = await (supabase as any).from('pending_offers').select('id')
         .eq('status', 'pending').lt('expires_at', new Date().toISOString());
       r.push({ id: 'expired_offers', group: 'drivers', label: 'Ληγμένα offers', icon: Bell,
         status: !offers?.length ? 'ok' : 'warn',
         message: !offers?.length ? 'Καθαρά' : `${offers.length} pending offers ληγμένα`,
         fix: offers?.length ? async () => {
           const ids = offers.map((o: any) => o.id);
-          const { error } = await (supabase as any).from('dispatch_offers').update({ status: 'expired' }).in('id', ids);
+          const { error } = await (supabase as any).from('pending_offers').update({ status: 'expired' }).in('id', ids);
           if (error) throw error;
         } : undefined, fixLabel: 'Mark expired' });
     } catch (e: any) {
@@ -250,13 +250,13 @@ export default function SystemDoctorPanel() {
     }
 
     try {
-      const { data } = await (supabase as any).from('dispatch_offers').select('id')
+      const { data } = await (supabase as any).from('pending_offers').select('id')
         .in('status', ['declined', 'expired']).lt('created_at', ago(48 * 3600_000)).limit(500);
       r.push({ id: 'old_offers', group: 'data', label: 'Παλιά offers >48h', icon: FileWarning,
         status: !data?.length ? 'ok' : 'ok',
         message: !data?.length ? 'Καθαρό' : `${data.length}+ έτοιμα για καθαρισμό`,
         fix: data?.length ? async () => {
-          const { error } = await (supabase as any).from('dispatch_offers').delete()
+          const { error } = await (supabase as any).from('pending_offers').delete()
             .in('status', ['declined', 'expired']).lt('created_at', ago(48 * 3600_000));
           if (error) throw error;
         } : undefined, fixLabel: 'Purge' });
