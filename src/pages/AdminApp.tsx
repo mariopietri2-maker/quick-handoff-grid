@@ -121,14 +121,21 @@ export default function AdminApp() {
 
   // Actions
   const handleUpdateOrderStatus = async (orderId: string, status: string) => {
-    const { error } = await supabase.from('orders').update({ status: status as any }).eq('id', orderId);
-    if (error) toast.error('Αποτυχία ενημέρωσης');
+    const { error } = await supabase.rpc('transition_order_status' as never, {
+      p_order_id: orderId,
+      p_new_status: status,
+      p_estimated_prep_time: null,
+    } as never);
+    if (error) toast.error(error.message || 'Αποτυχία ενημέρωσης');
     else { toast.success('Ενημερώθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
   };
 
   const handleAssignDriver = async (orderId: string, driverId: string) => {
-    const { error } = await supabase.from('orders').update({ driver_id: driverId === 'unassign' ? null : driverId }).eq('id', orderId);
-    if (error) toast.error('Αποτυχία ανάθεσης');
+    const { error } = await supabase.rpc('admin_assign_order_driver' as never, {
+      p_order_id: orderId,
+      p_driver_id: driverId === 'unassign' ? null : driverId,
+    } as never);
+    if (error) toast.error(error.message || 'Αποτυχία ανάθεσης');
     else { toast.success('Ανατέθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
   };
 

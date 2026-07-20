@@ -22,11 +22,11 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    // Require either an authenticated user (any role — customers call this right
-    // after creating their order) OR a valid CRON_SECRET for internal callers.
+    // Require authenticated user with ownership OR CRON_SECRET.
+    let caller = null as Awaited<ReturnType<typeof getAuthedUser>>;
     if (!hasCronSecret(req)) {
-      const user = await getAuthedUser(req);
-      if (!user) return unauthorized(corsHeaders);
+      caller = await getAuthedUser(req);
+      if (!caller) return unauthorized(corsHeaders);
     }
 
     const { order_id } = (await req.json()) as RequestBody;
@@ -40,10 +40,27 @@ Deno.serve(async (req) => {
     // Load order
     const { data: order, error: oErr } = await supabase
       .from("orders")
-      .select("id, store_id, total_amount, distance_km, estimated_prep_time, created_at, status")
+      .select("id, store_id, total_amount, distance_km, estimated_prep_time, created_at, status, customer_id")
       .eq("id", order_id)
       .maybeSingle();
     if (oErr || !order) throw new Error("Order not found");
+
+    if (caller && !caller.isAdmin && !caller.isSupport) {
+      const ownsAsCustomer = order.customer_id === caller.id;
+      let ownsAsStore = false;
+      if (caller.isStore) {
+        const { data: store } = await supabase
+          .from("stores")
+          .select("id")
+          .eq("id", order.store_id)
+          .eq("owner_id", caller.id)
+          .maybeSingle();
+        ownsAsStore = !!store;
+      }
+      if (!ownsAsCustomer && !ownsAsStore) {
+        return unauthorized(corsHeaders);
+      }
+    }
 
     // Historical avg prep
     const { data: avgData } = await supabase.rpc("get_store_avg_prep_minutes", {
