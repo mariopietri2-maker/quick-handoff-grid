@@ -256,6 +256,24 @@
       0 8px 24px -8px hsl(220 18% 14% / 0.10);
   }
 
+  /* Driver map: keep the GL canvas filling the shell even after Mapbox
+     forces `.mapboxgl-map { position: relative }` on its container. */
+  [data-driver-map-shell] {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden;
+    background: hsl(var(--driver-bg));
+  }
+  [data-driver-map-shell] .driver-map-root,
+  [data-driver-map-shell] .mapboxgl-map,
+  [data-driver-map-shell] .mapboxgl-canvas-container,
+  [data-driver-map-shell] .mapboxgl-canvas {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
   /* Wolt-style card: white, hairline, soft layered elevation */
   .driver-card {
     background: hsl(var(--driver-surface));
