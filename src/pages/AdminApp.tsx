@@ -57,6 +57,7 @@ import { toast } from 'sonner';
 import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
+import { useAdminPermissions, ADMIN_SECTION_CAPABILITY } from '@/hooks/useAdminPermissions';
 
 const ALL_ADMIN_TAB_IDS = new Set([
   ...NAV_SECTIONS.flatMap((s) => s.tabs.map((t) => t.id)),
@@ -98,6 +99,7 @@ const roleLabels: Record<string, string> = {
 
 export default function AdminApp() {
   const { signOut } = useAuth();
+  const perms = useAdminPermissions();
   const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets, storeWallets } = useAdminData();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -110,6 +112,11 @@ export default function AdminApp() {
   const [settingsSearch, setSettingsSearch] = useState('');
 
   const setActiveSection = (id: string) => {
+    const needed = ADMIN_SECTION_CAPABILITY[id];
+    if (needed && !perms.loading && !perms.can(needed)) {
+      toast.error('Δεν έχεις δικαίωμα για αυτή την ενότητα');
+      return;
+    }
     setActiveSectionState(id);
     setSearchParams((prev) => {
       const next = new URLSearchParams(prev);
@@ -168,17 +175,25 @@ export default function AdminApp() {
   };
 
   const handleRefundOrder = async (orderId: string, total: number) => {
-    const raw = prompt(`Ποσό επιστροφής € (μέγιστο €${total.toFixed(2)}):`, total.toFixed(2));
+    if (!perms.canManageOrders && !perms.canManageFinances) {
+      toast.error('Δεν έχεις δικαίωμα επιστροφών');
+      return;
+    }
+    const raw = prompt(`Ποσό επιστροφής στο πορτοφόλι € (μέγιστο €${total.toFixed(2)}):`, total.toFixed(2));
     if (!raw) return;
     const amount = Number(raw.replace(',', '.'));
     if (!Number.isFinite(amount) || amount <= 0) { toast.error('Μη έγκυρο ποσό'); return; }
     const reason = prompt('Αιτία:', '') || null;
     const { error } = await (supabase.rpc as any)('admin_refund_order', { p_order_id: orderId, p_amount: amount, p_reason: reason });
     if (error) toast.error(error.message || 'Αποτυχία');
-    else { toast.success(`Επιστράφηκαν €${amount.toFixed(2)}`); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
+    else { toast.success(`Πίστωση πορτοφολιού €${amount.toFixed(2)}`); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
   };
 
   const handleForceOrderStatus = async (orderId: string, status: string) => {
+    if (!perms.canManageOrders) {
+      toast.error('Δεν έχεις δικαίωμα αλλαγής κατάστασης');
+      return;
+    }
     const { error } = await (supabase.rpc as any)('admin_force_order_status', { p_order_id: orderId, p_status: status });
     if (error) toast.error(error.message || 'Αποτυχία');
     else { toast.success('Κατάσταση άλλαξε'); queryClient.invalidateQueries({ queryKey: ['admin-orders'] }); }
@@ -279,12 +294,32 @@ export default function AdminApp() {
 
 
   const handleChangeRole = async (userId: string, newRole: string) => {
+    if (!perms.canManageUsers) {
+      toast.error('Δεν έχεις δικαίωμα διαχείρισης χρηστών');
+      return;
+    }
     const { error } = await supabase.from('profiles').update({ role: newRole as any }).eq('user_id', userId);
-    if (error) toast.error('Αποτυχία');
-    else { toast.success('Ρόλος ενημερώθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-profiles'] }); }
+    if (error) {
+      toast.error('Αποτυχία');
+      return;
+    }
+    // Keep user_roles in sync for RLS / edge helpers that use has_role()
+    if (['store', 'driver', 'customer', 'support'].includes(newRole)) {
+      await supabase.from('user_roles').delete().eq('user_id', userId).in('role', ['store', 'driver', 'customer', 'support'] as any);
+      if (newRole !== 'customer') {
+        await supabase.from('user_roles').upsert({ user_id: userId, role: newRole as any }, { onConflict: 'user_id,role' });
+      }
+    }
+    toast.success('Ρόλος ενημερώθηκε');
+    queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    queryClient.invalidateQueries({ queryKey: ['admin-user-roles'] });
   };
 
   const handleToggleAdmin = async (userId: string, isCurrentlyAdmin: boolean) => {
+    if (!perms.canManageUsers) {
+      toast.error('Δεν έχεις δικαίωμα διαχείρισης χρηστών');
+      return;
+    }
     if (isCurrentlyAdmin) {
       const { error } = await supabase.from('user_roles').delete().eq('user_id', userId).eq('role', 'admin');
       if (error) toast.error('Αποτυχία');
@@ -297,6 +332,23 @@ export default function AdminApp() {
   };
 
   const renderContent = () => {
+    const needed = ADMIN_SECTION_CAPABILITY[activeSection];
+    if (needed && !perms.loading && !perms.can(needed)) {
+      return (
+        <Card className="max-w-lg mx-auto mt-10">
+          <CardContent className="p-6 text-center space-y-2">
+            <Shield className="h-8 w-8 text-muted-foreground mx-auto" />
+            <h2 className="font-heading font-bold text-lg">Περιορισμένη πρόσβαση</h2>
+            <p className="text-sm text-muted-foreground">
+              Δεν έχεις δικαίωμα για αυτή την ενότητα. Ζήτησε από full admin να ενημερώσει τα permissions σου.
+            </p>
+            <Button variant="outline" size="sm" onClick={() => setActiveSection('overview')}>
+              Επιστροφή
+            </Button>
+          </CardContent>
+        </Card>
+      );
+    }
     switch (activeSection) {
       case 'overview':
         return <OpsHome onNavigate={setActiveSection} />;
@@ -447,6 +499,18 @@ export default function AdminApp() {
                 {(orders.data ?? []).some((o: any) => !['delivered', 'cancelled'].includes(o.status)) && (
                   <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
                 )}
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground"
+                title="Διαχείριση καταστημάτων"
+                asChild
+              >
+                <Link to="/store">
+                  <Store className="h-3.5 w-3.5" />
+                  <span className="hidden sm:inline">Stores</span>
+                </Link>
               </Button>
               <div className="h-5 w-px bg-border mx-0.5" />
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">

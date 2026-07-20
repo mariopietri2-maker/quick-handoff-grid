@@ -71,10 +71,10 @@ Fresh Delivery is a comprehensive food delivery solution built with modern web t
 ## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js** 16+ or **Bun** 1.0+
+- **Node.js** 20+ (recommended 22) or **Bun** 1.0+
 - **Supabase account** with project credentials
 - **Mapbox API key**
-- **Stripe API keys** (for payments)
+- **Stripe API keys** (for payments — use live keys in production via Vercel/Supabase secrets)
 
 ### Installation
 

@@ -4,7 +4,7 @@
 //   - if all wave offers expired/declined → advance to next wave
 //   - if max waves exhausted → leave as-is (admin fallback)
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
 import { getAuthedUser, hasCronSecret, unauthorized } from "../_shared/auth.ts";
 
 const corsHeaders = {

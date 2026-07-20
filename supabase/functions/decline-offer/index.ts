@@ -2,7 +2,7 @@
 // Marks declined + logs event so dispatch can advance.
 // If the order has no remaining pending offers, kick auto-dispatch immediately.
 
-import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
