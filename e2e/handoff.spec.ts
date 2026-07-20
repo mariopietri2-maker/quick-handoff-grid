@@ -45,7 +45,7 @@ test.describe('Customer → Store → Driver handoff', () => {
     await driver.getByRole('button', { name: /παράδοση|deliver|complete/i }).first().click();
 
     // 7. Customer order tracking reflects "delivered" via realtime
-    await customer.goto(`/orders/${orderId}`);
+    await customer.goto(`/order-tracking/${orderId}`);
     await expect(customer.getByText(/παραδόθηκε|delivered/i)).toBeVisible({ timeout: 20_000 });
   });
 
@@ -57,7 +57,7 @@ test.describe('Customer → Store → Driver handoff', () => {
     await waitForOrderCard(store, orderId);
 
     // Customer cancels
-    await customer.goto(`/orders/${orderId}`);
+    await customer.goto(`/order-tracking/${orderId}`);
     await customer.getByRole('button', { name: /ακύρωση|cancel/i }).first().click();
     await customer.getByRole('button', { name: /επιβεβαίωση|confirm/i }).first().click();
 

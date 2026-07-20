@@ -46,6 +46,22 @@ Deno.serve(async (req) => {
       return json({ error: "offer expired" }, 410);
     }
 
+    // Capacity / stacking guard
+    const { data: settings } = await admin
+      .from("platform_settings")
+      .select("max_stacked_orders, stacking_enabled")
+      .eq("id", 1)
+      .maybeSingle();
+    const maxStack = Math.max(1, Number(settings?.max_stacked_orders ?? 1));
+    const { count: activeCount } = await admin
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("driver_id", user.id)
+      .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"]);
+    if ((activeCount ?? 0) >= maxStack) {
+      return json({ error: "driver at capacity" }, 409);
+    }
+
     // Atomic claim (soft reservation): only succeeds if order still unassigned.
     // Physical pickup is gated elsewhere until the store flips status to 'ready'.
     const { data: claimed, error: claimErr } = await admin

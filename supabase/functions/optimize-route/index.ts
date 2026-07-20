@@ -72,6 +72,7 @@ Deno.serve(async (req) => {
   const admin = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
 
   let resolvedDriverId: string | null = null;
+  let isAdmin = false;
   if (!isService) {
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL")!,
@@ -81,24 +82,55 @@ Deno.serve(async (req) => {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return json({ error: "unauthorized" }, 401);
     resolvedDriverId = user.id;
+
+    const adminCheck = createClient(Deno.env.get("SUPABASE_URL")!, serviceKey);
+    const { data: roles } = await adminCheck
+      .from("user_roles")
+      .select("role")
+      .eq("user_id", user.id);
+    isAdmin = (roles ?? []).some((r: { role: string }) => r.role === "admin");
   }
 
   try {
     const body = await req.json().catch(() => ({}));
-    const driverId = (body.driver_id as string | undefined) ?? resolvedDriverId;
+    // Non-service callers may only optimize their own active orders.
+    // Explicit batch_id / other driver_id requires service role or admin.
+    const requestedDriverId = body.driver_id as string | undefined;
     const explicitBatchId = body.batch_id as string | undefined;
-    if (!driverId && !explicitBatchId) return json({ error: "driver_id or batch_id required" }, 400);
 
+    let driverId: string | null = null;
+    if (isService || isAdmin) {
+      driverId = requestedDriverId ?? resolvedDriverId;
+    } else {
+      driverId = resolvedDriverId;
+      if (requestedDriverId && requestedDriverId !== resolvedDriverId) {
+        return json({ error: "forbidden" }, 403);
+      }
+    }
+
+    if (!driverId && !(explicitBatchId && (isService || isAdmin))) {
+      return json({ error: "driver_id or batch_id required" }, 400);
+    }
 
     // 1) Load the driver's active orders (or the batch's orders)
     let q = admin
       .from("orders")
-      .select("id, batch_id, store_id, status, delivery_latitude, delivery_longitude")
+      .select("id, batch_id, store_id, status, delivery_latitude, delivery_longitude, driver_id")
       .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"]);
-    q = explicitBatchId ? q.eq("batch_id", explicitBatchId) : q.eq("driver_id", driverId);
+    if (explicitBatchId && (isService || isAdmin)) {
+      q = q.eq("batch_id", explicitBatchId);
+    } else {
+      q = q.eq("driver_id", driverId);
+    }
     const { data: orders } = await q;
     if (!orders || orders.length === 0) {
       return json({ ok: true, batch_id: null, stops: [] });
+    }
+
+    // Ownership check for non-admin authenticated callers
+    if (!isService && !isAdmin) {
+      const foreign = orders.some((o: { driver_id: string | null }) => o.driver_id !== resolvedDriverId);
+      if (foreign) return json({ error: "forbidden" }, 403);
     }
 
     // 2) Resolve store coords

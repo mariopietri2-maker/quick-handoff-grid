@@ -107,6 +107,10 @@ Deno.serve(async (req) => {
 
     if (lineItems.length === 0) return jsonError('Order has no items', 400);
 
+    const expectedCents = Math.round(
+      (Number(order.total_amount) + Number(order.delivery_fee || 0) + Number(order.tip_amount || 0)) * 100,
+    );
+
     const stripe = createStripeClient(body.environment);
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
@@ -122,14 +126,26 @@ Deno.serve(async (req) => {
         userId,
         storeId: order.store_id,
         customerName: profile?.full_name ?? '',
+        expectedChargeCents: String(expectedCents),
       },
       payment_intent_data: {
         metadata: {
           orderId: order.id,
           userId,
+          expectedChargeCents: String(expectedCents),
         },
       },
     });
+
+    // Persist expected charge + session for webhook validation (service role)
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    await admin.from('orders').update({
+      expected_charge_cents: expectedCents,
+      stripe_session_id: session.id,
+    }).eq('id', order.id);
 
     return new Response(
       JSON.stringify({ clientSecret: session.client_secret }),
