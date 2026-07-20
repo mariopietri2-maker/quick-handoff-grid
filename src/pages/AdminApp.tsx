@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { supabase } from '@/integrations/supabase/client';
@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
+import { lazyWithRetry as lazy } from '@/lib/lazyWithRetry';
 // Eagerly load only the default landing tab — everything else is lazy.
 import OpsHome from '@/components/admin/OpsHome';
 const OrdersKanban  = lazy(() => import('@/components/admin/OrdersKanban'));

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
@@ -25,8 +25,9 @@ import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import SurgeStatusBadge from '@/components/driver/SurgeStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
 import type { RouteInfo, DriverMapboxHandle } from '@/components/driver/DriverMapbox';
+import { lazyWithRetry } from '@/lib/lazyWithRetry';
 // Lazy-load the map: mapbox-gl is large (~800KB) and was blocking the driver app's initial paint.
-const DriverMapbox = lazy(() => import('@/components/driver/DriverMapbox'));
+const DriverMapbox = lazyWithRetry(() => import('@/components/driver/DriverMapbox'));
 
 import { TurnByTurnBanner } from '@/components/driver/TurnByTurnBanner';
 import { NavBottomCard } from '@/components/driver/NavBottomCard';
