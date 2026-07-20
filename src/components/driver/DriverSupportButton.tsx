@@ -103,10 +103,12 @@ export function DriverSupportButton({ orderId }: { orderId?: string }) {
       .from('support_tickets')
       .insert({
         driver_id: user.id,
+        requester_id: user.id,
+        requester_role: 'driver',
         category: category.key,
         description: description || null,
         order_id: orderId || null,
-      })
+      } as any)
       .select('id, category, description, status, created_at, order_id')
       .single();
     setSubmitting(false);

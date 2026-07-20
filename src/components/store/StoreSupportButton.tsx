@@ -78,6 +78,7 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
         .from('support_tickets')
         .select('id, category, description, status, created_at, order_id')
         .eq('requester_id', user.id)
+        .eq('requester_role', 'store')
         .order('created_at', { ascending: false })
         .limit(20);
       if (active) setTickets((data ?? []) as Ticket[]);
@@ -171,8 +172,8 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
                 {view === 'category' && category
                   ? category.hint
                   : view === 'chat'
-                  ? 'Συνομιλία σε πραγματικό χρόνο με την υποστήριξη'
-                  : 'Διαθέσιμοι 24/7 για άμεση βοήθεια.'}
+                  ? 'Συνομιλία κουζίνας / καταστήματος με την υποστήριξη'
+                  : 'Βοήθεια για παραγγελίες, οδηγούς & κουζίνα — ξεχωριστή ουρά από πελάτες/οδηγούς.'}
               </DialogDescription>
             </DialogHeader>
           </div>

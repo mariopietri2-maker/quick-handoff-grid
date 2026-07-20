@@ -20,6 +20,7 @@ import { SEO } from '@/components/SEO';
 import { SavedAddresses } from '@/components/SavedAddresses';
 import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard';
 import { CustomerWalletCard } from '@/components/customer/CustomerWalletCard';
+import { CustomerSupportButton } from '@/components/customer/CustomerSupportButton';
 
 const roleConfig: Record<string, { label: string; icon: any; path: string }> = {
   admin:    { label: 'Admin',     icon: Shield,      path: '/admin'   },
@@ -40,12 +41,22 @@ export default function ProfilePage() {
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
+    // Store owners use store settings — not the customer profile page.
+    if (profile?.role === 'store' && !isAdmin) {
+      navigate('/store?tab=settings', { replace: true });
+      return;
+    }
+    // Drivers use driver profile.
+    if (profile?.role === 'driver' && !isAdmin) {
+      navigate('/driver/profile', { replace: true });
+      return;
+    }
     setFullName(profile?.full_name ?? '');
     (async () => {
       const { data } = await supabase.from('profiles').select('phone').eq('user_id', user.id).single();
       setPhone(data?.phone ?? '');
     })();
-  }, [user, profile, navigate]);
+  }, [user, profile, navigate, isAdmin]);
 
   const handleSave = async () => {
     if (!user) return;
@@ -185,6 +196,11 @@ export default function ProfilePage() {
         <section className="grid grid-cols-2 gap-3">
           <TileButton to="/orders" icon={Receipt} tone="primary" label="Παραγγελίες μου" hint="Ιστορικό & επανάληψη" />
           <TileAction onClick={() => setSheet('wallet')} icon={Ticket} tone="emerald" label="Κουπόνια" hint="Υπόλοιπο & κινήσεις" />
+        </section>
+
+        {/* Customer order help — separate queue from store/driver support */}
+        <section>
+          <CustomerSupportButton variant="row" />
         </section>
 
         {/* Perks & Social */}

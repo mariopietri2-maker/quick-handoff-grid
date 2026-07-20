@@ -38,8 +38,24 @@ export default function StoreApp() {
   const { orders, loading: ordersLoading, updateOrderStatus, pendingIds } = useStoreOrders(store?.id ?? null);
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
-  const [activeTab, setActiveTab] = useState('orders');
+  const [activeTab, setActiveTab] = useState(() => {
+    try {
+      const t = new URLSearchParams(window.location.search).get('tab');
+      if (t && ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'wallet', 'promos', 'automation', 'settings'].includes(t)) {
+        return t;
+      }
+    } catch { /* noop */ }
+    return 'orders';
+  });
   const tabsListRef = useRef<HTMLDivElement>(null);
+
+  // Keep tab in the URL so UserMenu can deep-link to settings / profile.
+  useEffect(() => {
+    const url = new URL(window.location.href);
+    if (url.searchParams.get('tab') === activeTab) return;
+    url.searchParams.set('tab', activeTab);
+    window.history.replaceState({}, '', url.toString());
+  }, [activeTab]);
 
   // Keep the active tab visible inside the horizontally scrolling tab strip on mobile.
   useEffect(() => {
