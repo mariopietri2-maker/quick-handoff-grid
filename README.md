@@ -3,7 +3,12 @@
 Real-time food delivery marketplace for **Ιωάννινα** — customers, multi-store restaurant owners, drivers, admin ops, and support.
 
 **Live:** https://quick-handoff-grid.vercel.app  
+**Railway mirror:** https://quick-handoff-grid-production.up.railway.app  
 **Android APKs:** https://quick-handoff-grid.vercel.app/download
+
+Vercel and Railway both serve the same SPA against the **same** Supabase project
+(`ojkesspghyqmjmupybva`). Production builds force those keys from `.env.production`
+so a stale host env cannot point Railway at a different database.
 
 ---
 
@@ -28,7 +33,7 @@ Real-time food delivery marketplace for **Ιωάννινα** — customers, mult
 - **Payments:** Stripe (set **live** keys in Vercel + Supabase secrets for production)
 - **Mobile:** Capacitor 8 (customer + driver debug APKs)
 - **Tests:** Vitest (unit), Playwright (e2e)
-- **Host:** Vercel (`vercel.json` SPA rewrites)
+- **Host:** Vercel + Railway (`vercel.json` / `railway.toml` SPA)
 
 Package manager: **npm** (`package-lock.json`). Node **20+** (22 recommended).
 
@@ -72,8 +77,12 @@ without dashboard env. Override with live Stripe `pk_live_…` on Vercel when re
 
 ### Supabase Auth
 - Site URL: `https://quick-handoff-grid.vercel.app`
-- Redirects: production URL + `http://localhost:5173`
+- Redirects: production URL + Railway mirror + `http://localhost:5173`
 - Disable email confirm until SMTP is configured (otherwise signup looks broken)
+
+Vercel and Railway must use the **same** Supabase project (`ojkesspghyqmjmupybva`).
+`npm run build` forces those keys from `.env.production` so stale Railway dashboard
+`VITE_SUPABASE_*` values cannot point at another database.
 
 ### Edge secrets (Supabase Dashboard → Edge Functions)
 `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, Stripe live/test keys + webhook secrets, `MAPBOX_PUBLIC_TOKEN`, etc.
