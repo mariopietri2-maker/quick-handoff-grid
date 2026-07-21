@@ -68,6 +68,8 @@ interface DriverMapboxProps {
    * Values in CSS pixels.
    */
   overlayPadding?: { top?: number; bottom?: number; left?: number; right?: number };
+  /** When true, freeze map pan/zoom so the incoming offer stays the focus. */
+  interactionLocked?: boolean;
 }
 
 const DEFAULT_PADDING = { top: 100, bottom: 220, left: 48, right: 48 };
@@ -83,6 +85,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   nearbyStores,
   followMode = false,
   overlayPadding,
+  interactionLocked = false,
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -111,6 +114,27 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   useEffect(() => {
     paddingRef.current = { ...DEFAULT_PADDING, ...overlayPadding };
   }, [overlayPadding?.top, overlayPadding?.bottom, overlayPadding?.left, overlayPadding?.right]);
+
+  // Freeze pan/zoom while an offer is on screen so the driver focuses on Accept/Decline.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const handlers = [
+      'dragPan',
+      'scrollZoom',
+      'boxZoom',
+      'dragRotate',
+      'touchZoomRotate',
+      'keyboard',
+      'doubleClickZoom',
+    ] as const;
+    for (const h of handlers) {
+      try {
+        if (interactionLocked) map[h].disable();
+        else map[h].enable();
+      } catch { /* map handler may be unavailable */ }
+    }
+  }, [interactionLocked]);
 
   const getPadding = useCallback(() => ({ ...paddingRef.current }), []);
 
