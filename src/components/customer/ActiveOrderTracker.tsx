@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { Bike, ChevronRight, MapPin } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 interface ActiveOrder {
   id: string;
@@ -45,8 +46,7 @@ export function ActiveOrderTracker() {
       setOrder(data ? { id: data.id, status: data.status, store_name: data.stores?.name } : null);
     };
     load();
-    const ch = supabase
-      .channel(`customer-active-${user.id}`)
+    const ch = openRealtimeChannel(`customer-active-${user.id}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders', filter: `customer_id=eq.${user.id}` }, load)
       .subscribe();
     return () => { cancelled = true; supabase.removeChannel(ch); };
