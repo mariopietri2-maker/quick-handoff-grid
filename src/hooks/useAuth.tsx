@@ -1,7 +1,8 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
-import { envMobileFlavor } from '@/lib/mobileApp';
+import { mobileHomePath, resolveMobileFlavor } from '@/lib/mobileApp';
+import { syncRoleForMobileShell } from '@/lib/syncAppRole';
 
 interface AuthContextType {
   user: User | null;
@@ -59,13 +60,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsM(roleList.includes('m') || (data as any)?.role === 'm');
   };
 
+  /** Customer app → customer role, Driver app → driver role (Capacitor appId aware). */
+  const applyShellRole = async (userId: string) => {
+    try {
+      await syncRoleForMobileShell();
+    } catch {
+      /* RoleAccessGate / next login can retry */
+    }
+    await fetchProfile(userId);
+  };
+
   useEffect(() => {
-    // Restore existing session on load (in addition to auth events).
-    supabase.auth.getSession().then(({ data: { session: existing } }) => {
+    // Warm flavor cache early (native appId).
+    void resolveMobileFlavor();
+
+    supabase.auth.getSession().then(async ({ data: { session: existing } }) => {
       setSession(existing);
       setUser(existing?.user ?? null);
       if (existing?.user) {
-        fetchProfile(existing.user.id).finally(() => setLoading(false));
+        await applyShellRole(existing.user.id).finally(() => setLoading(false));
       } else {
         setLoading(false);
       }
@@ -81,7 +94,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (nextSession?.user) {
           const userId = nextSession.user.id;
           setTimeout(() => {
-            fetchProfile(userId).finally(() => setLoading(false));
+            applyShellRole(userId).finally(() => setLoading(false));
           }, 0);
         } else {
           setProfile(null);
@@ -118,12 +131,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         ),
       };
     }
+    // Role sync runs via onAuthStateChange → applyShellRole.
     return { error: error as Error | null };
   };
 
   const signUp = async (email: string, password: string, fullName: string, _role: string) => {
     const emailNorm = normalizeEmail(email);
-    const redirectPath = envMobileFlavor() === 'driver' ? '/driver' : '/order';
+    const flavor = await resolveMobileFlavor();
+    const redirectPath = mobileHomePath(flavor === 'shared' ? 'customer' : flavor);
 
     const { data, error } = await supabase.auth.signUp({
       email: emailNorm,
@@ -141,6 +156,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const login = await signIn(emailNorm, password);
         if (!login.error) {
           const { data: cur } = await supabase.auth.getSession();
+          if (cur.session?.user) await applyShellRole(cur.session.user.id);
           return { error: null, session: cur.session };
         }
         return {
@@ -166,17 +182,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
 
     if (session?.user) {
-      // Profile row is created by handle_new_user trigger. Do NOT update role
-      // here via client UPDATE — protect_profile_role blocks non-admin changes.
-      // Driver APK: promote customer → pending driver via SECURITY DEFINER RPC.
-      if (envMobileFlavor() === 'driver') {
-        try {
-          await (supabase as any).rpc('request_driver_access');
-        } catch {
-          // RoleAccessGate still lets them request manually.
-        }
-      }
-      await fetchProfile(session.user.id);
+      // Assign role from shell: customer app → customer, driver app → driver.
+      await applyShellRole(session.user.id);
     }
 
     return { error: null, session };

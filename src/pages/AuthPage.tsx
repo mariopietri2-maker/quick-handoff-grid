@@ -8,14 +8,14 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Loader as Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
-import { envMobileFlavor, mobileHomePath } from '@/lib/mobileApp';
+import { mobileHomePath, useMobileFlavor, type MobileAppFlavor } from '@/lib/mobileApp';
 
 function roleHome(opts: {
   isAdmin: boolean;
   isSupport: boolean;
   role: string;
   nextPath: string;
-  flavor: ReturnType<typeof envMobileFlavor>;
+  flavor: MobileAppFlavor;
 }): string {
   if (opts.isAdmin && opts.flavor === 'shared') return '/admin';
   if (opts.isSupport && opts.flavor === 'shared') return '/support';
@@ -36,8 +36,9 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
   const { signIn, signUp, user, profile, isAdmin, isSupport, loading } = useAuth();
   const navigate = useNavigate();
-  const flavor = envMobileFlavor();
+  const { flavor, ready: flavorReady } = useMobileFlavor();
   const isDriverShell = flavor === 'driver';
+  const isCustomerShell = flavor === 'customer';
   const shellHome = mobileHomePath(flavor);
 
   const nextPath = (() => {
@@ -48,8 +49,8 @@ export default function AuthPage() {
     return isDriverShell ? '/driver' : '/order';
   })();
 
-  // Don't paint the login form while session/profile resolve or while redirecting.
-  if (loading || (user && !profile)) {
+  // Don't paint the login form while session/profile/flavor resolve or while redirecting.
+  if (!flavorReady || loading || (user && !profile)) {
     return (
       <div className="min-h-[100dvh] bg-[hsl(220,20%,7%)] flex items-center justify-center">
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -146,7 +147,7 @@ export default function AuthPage() {
           <span className="w-14" aria-hidden />
         )}
         <span className="font-heading font-extrabold text-xl text-primary">
-          {isDriverShell ? 'Fresh Driver' : 'Fresh Delivery'}
+          {isDriverShell ? 'Fresh Driver' : isCustomerShell ? 'Fresh Customer' : 'Fresh Delivery'}
         </span>
         <span className="w-14" aria-hidden />
       </header>
@@ -161,8 +162,10 @@ export default function AuthPage() {
               {isLogin
                 ? 'Μπείτε με email και κωδικό'
                 : isDriverShell
-                  ? 'Δημιουργήστε λογαριασμό οδηγού (χρειάζεται έγκριση)'
-                  : 'Δημιουργήστε λογαριασμό πελάτη'}
+                  ? 'Δημιουργήστε λογαριασμό οδηγού (αυτόματος ρόλος · χρειάζεται έγκριση)'
+                  : isCustomerShell
+                    ? 'Δημιουργήστε λογαριασμό πελάτη (αυτόματος ρόλος)'
+                    : 'Δημιουργήστε λογαριασμό πελάτη'}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[hsl(220,20%,14%)] p-1">
               <button
