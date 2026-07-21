@@ -86,7 +86,7 @@ export function PostDeliveryTipCard({ orderId, driverName, initialTip }: Props) 
                 key={String(opt)}
                 onClick={() => setExtraTip(opt)}
                 className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
-                  selected ? 'gradient-primary text-primary-foreground' : 'bg-card text-foreground border border-border'
+                  selected ? 'bg-[hsl(0,0%,9%)] text-white' : 'bg-card text-foreground border border-border'
                 }`}
               >
                 {opt === 'custom' ? 'Άλλο' : `+${opt}€`}
@@ -107,7 +107,7 @@ export function PostDeliveryTipCard({ orderId, driverName, initialTip }: Props) 
         <Button
           onClick={handleSubmit}
           disabled={submitting || tipAmount <= 0}
-          className="w-full gradient-primary text-primary-foreground"
+          className="w-full bg-[hsl(0,0%,9%)] text-white"
         >
           {submitting ? 'Αποστολή...' : `Δώσε φιλοδώρημα ${tipAmount > 0 ? tipAmount.toFixed(2) + '€' : ''}`}
         </Button>

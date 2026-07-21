@@ -127,7 +127,7 @@ export default function CustomerAppCustomization() {
                   <Input
                     value={draft.branding.accent_hsl}
                     onChange={e => setDraft({ ...draft, branding: { ...draft.branding, accent_hsl: e.target.value } })}
-                    placeholder="4 90% 47%"
+                    placeholder="152 100% 39%"
                   />
                   <div className="h-9 w-9 rounded-md border" style={{ background: `hsl(${draft.branding.accent_hsl})` }} />
                 </div>
@@ -138,7 +138,7 @@ export default function CustomerAppCustomization() {
                   <Input
                     value={draft.branding.accent_dark_hsl}
                     onChange={e => setDraft({ ...draft, branding: { ...draft.branding, accent_dark_hsl: e.target.value } })}
-                    placeholder="4 90% 38%"
+                    placeholder="152 100% 28%"
                   />
                   <div className="h-9 w-9 rounded-md border" style={{ background: `hsl(${draft.branding.accent_dark_hsl})` }} />
                 </div>

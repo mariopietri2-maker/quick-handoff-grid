@@ -31,7 +31,7 @@ export default function AppSplash() {
       }`}
       style={{
         background:
-          'radial-gradient(120% 80% at 50% 20%, hsl(var(--c-accent, 4 90% 47%)) 0%, hsl(var(--c-accent-dark, 4 90% 38%)) 70%, hsl(4 85% 28%) 100%)',
+          'radial-gradient(120% 80% at 50% 20%, hsl(var(--c-accent, 152 100% 39%)) 0%, hsl(var(--c-accent-dark, 152 100% 28%)) 70%, hsl(152 100% 18%) 100%)',
       }}
       aria-hidden
     >
@@ -60,7 +60,7 @@ export default function AppSplash() {
             className="font-heading font-black text-[56px] leading-none tracking-tight bg-clip-text text-transparent"
             style={{
               backgroundImage:
-                'linear-gradient(135deg, hsl(var(--c-accent, 4 90% 47%)), hsl(var(--c-accent-dark, 4 90% 38%)))',
+                'linear-gradient(135deg, hsl(var(--c-accent, 152 100% 39%)), hsl(var(--c-accent-dark, 152 100% 28%)))',
             }}
           >
             F

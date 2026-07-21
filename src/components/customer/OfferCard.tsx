@@ -19,14 +19,13 @@ export interface OfferItem {
   original_price?: number | null;
   /** Optional small badge text under the price, e.g. "1+1 Προσφορά" */
   badge?: string | null;
-  /** Optional red sticker (top-right of image), e.g. "Meal for one" */
+  /** Optional sticker (top-left of image) */
   sticker?: string | null;
 }
 
 /**
- * efood-inspired offer card. Image with floating "+" + delivery chip on top,
- * price + optional strikethrough below, store footer with rating & ETA.
- * Tapping the card opens the store; tapping "+" adds the item to cart.
+ * Offer card: image with floating "+" + delivery chip,
+ * price + optional strikethrough, store footer with rating & ETA.
  */
 export function OfferCard({ item, variant = 'default' }: { item: OfferItem; variant?: 'default' | 'wide' }) {
   const navigate = useNavigate();
@@ -84,10 +83,10 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
           <span className="text-[10px] font-extrabold text-[hsl(0,0%,9%)]">{feeLabel}</span>
         </div>
 
-        {/* Optional red sticker (top-left, slightly rotated) */}
+        {/* Optional promo sticker */}
         {item.sticker && (
           <div className="absolute top-2 left-2 -rotate-6">
-            <div className="bg-[hsl(0,75%,52%)] text-white text-[9px] font-black uppercase leading-tight px-2 py-1 rounded-md shadow-[0_2px_6px_-1px_hsl(0_75%_45%/0.5)] tracking-wide text-center">
+            <div className="bg-[hsl(0,0%,9%)] text-white text-[9px] font-black uppercase leading-tight px-2 py-1 rounded-md shadow-sm tracking-wide text-center">
               {item.sticker}
             </div>
           </div>
@@ -112,7 +111,7 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
         </div>
 
         {item.badge && (
-          <div className="inline-flex items-center bg-[hsl(0,75%,96%)] text-[hsl(0,75%,45%)] text-[10px] font-extrabold px-1.5 py-0.5 rounded">
+          <div className="inline-flex items-center bg-[hsl(var(--c-accent-soft))] text-[hsl(var(--c-accent-dark))] text-[10px] font-extrabold px-1.5 py-0.5 rounded">
             {item.badge}
           </div>
         )}

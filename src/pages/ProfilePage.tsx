@@ -95,7 +95,7 @@ export default function ProfilePage() {
   const initials = (fullName || user.email || '?').charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-full bg-white pb-4">
+    <div className="customer-shell min-h-full bg-white pb-4">
       <SEO
         title="Το προφίλ μου — Fresh Delivery"
         description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh Delivery."
