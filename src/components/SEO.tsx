@@ -16,15 +16,17 @@ interface SEOProps {
  * Per-route head metadata. Drop into the top of any page component to
  * give it a unique title/description/canonical and matching OpenGraph tags.
  */
-export function SEO({ title, description, path, type = 'website', image, jsonLd, noindex }: SEOProps) {
+export function SEO({ title, description = '', path, type = 'website', image, jsonLd, noindex }: SEOProps) {
   const url = `${SITE}${path}`;
-  const t = title.length > 60 ? title.slice(0, 57) + '…' : title;
+  const safeTitle = title ?? '';
+  const safeDescription = description ?? '';
+  const t = safeTitle.length > 60 ? safeTitle.slice(0, 57) + '…' : safeTitle;
   const d =
-    description.length > 160
-      ? description.slice(0, 157) + '…'
-      : description.length < 50
-        ? description + ' Παραγγείλτε φαγητό online στο Fresh Delivery.'.slice(0, 160 - description.length)
-        : description;
+    safeDescription.length > 160
+      ? safeDescription.slice(0, 157) + '…'
+      : safeDescription.length < 50
+        ? safeDescription + ' Παραγγείλτε φαγητό online στο Fresh Delivery.'.slice(0, 160 - safeDescription.length)
+        : safeDescription;
   const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 
   return (
