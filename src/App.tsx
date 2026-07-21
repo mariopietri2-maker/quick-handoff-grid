@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes } from "react-router-dom";
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -15,6 +15,7 @@ import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { MobileAppGate } from "@/components/MobileAppGate";
 import RootEntry from "@/components/RootEntry";
 import { PushBootstrap } from "@/components/PushBootstrap";
+import { PwaManifestSwitcher } from "@/components/PwaManifestSwitcher";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Lazy-load every non-landing route so the initial bundle stays small.
@@ -36,7 +37,6 @@ const OrderTrackingPage = lazyWithRetry(() => import("./pages/OrderTrackingPage.
 const MyOrdersPage = lazyWithRetry(() => import("./pages/MyOrdersPage.tsx"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const LegalPage = lazyWithRetry(() => import("./pages/LegalPage.tsx"));
-const DownloadAppPage = lazyWithRetry(() => import("./pages/DownloadAppPage.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -84,6 +84,7 @@ const App = () => (
                   <RouteErrorBoundary>
                   <MobileAppGate>
                   <PushBootstrap />
+                  <PwaManifestSwitcher />
                   <Routes>
                     <Route path="/" element={<RootEntry />} />
                     <Route path="/auth" element={<AuthPage />} />
@@ -135,7 +136,8 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path="/legal/:doc" element={<LegalPage />} />
-                    <Route path="/download" element={<DownloadAppPage />} />
+                    {/* Old Android APK landing — store is a PWA now */}
+                    <Route path="/download" element={<Navigate to="/store" replace />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   </MobileAppGate>

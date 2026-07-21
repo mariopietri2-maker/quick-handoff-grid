@@ -105,13 +105,6 @@ const Index = () => {
           <div className="flex items-center gap-2">
             <Button
               size="sm" variant="ghost"
-              className="inline-flex font-heading font-semibold"
-              onClick={() => navigate('/download')}
-            >
-              Apps
-            </Button>
-            <Button
-              size="sm" variant="ghost"
               className="hidden sm:inline-flex font-heading font-semibold"
               onClick={() => navigate('/auth')}
             >
@@ -167,13 +160,6 @@ const Index = () => {
             >
               Παραγγελία Φαγητού
               <ArrowRight className="ml-2 h-5 w-5" />
-            </Button>
-            <Button
-              size="lg" variant="outline"
-              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
-              onClick={() => navigate('/download')}
-            >
-              Android apps
             </Button>
             <Button
               size="lg" variant="outline"
