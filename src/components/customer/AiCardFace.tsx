@@ -4,7 +4,11 @@ import { heroCardImage } from '@/hooks/useCustomerAppConfig';
 import { Sparkles } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
-const ALLOWED_HOSTS = ['freshdelivery.app', 'quick-handoff-grid.vercel.app'];
+const ALLOWED_HOSTS = [
+  'freshdelivery.app',
+  'quick-handoff-grid-production.up.railway.app',
+  'quick-handoff-grid.vercel.app',
+];
 
 export function useHeroCardNavigate() {
   const navigate = useNavigate();
