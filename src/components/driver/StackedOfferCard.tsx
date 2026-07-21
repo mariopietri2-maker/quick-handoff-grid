@@ -47,7 +47,7 @@ function StackedOfferCardInner({
     : timeoutSec;
   const [left, setLeft] = useState(() => secsLeft(expiresAt, timeoutSec));
 
-  useEffect(() => () => { stopOfferAlert(); }, []);
+  // Sound stop is handled on accept/decline and when offers clear in useOrders.
 
   useEffect(() => {
     let declined = false;

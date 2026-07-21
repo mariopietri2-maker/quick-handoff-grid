@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { playOrderSound, showOrderNotification } from '@/lib/notifications';
-import { playOfferAlert } from '@/lib/driver-sound-prefs';
+import { playOfferAlert, stopOfferAlert } from '@/lib/driver-sound-prefs';
 import { isAppActive, notifyDriverOfferLocal } from '@/lib/push-register';
 
 import type { Database } from '@/integrations/supabase/types';
@@ -385,18 +385,19 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   }, [fetchOrders]);
 
 
-  // Persistent alert: ring once immediately, then every ~8s while offers are
-  // open in the foreground. Longer gap cuts main-thread / audio lag on the
-  // offer sheet. Background phones still get LocalNotification + FCM.
+  // Persistent alert: ring while unaccepted offers are on screen (foreground).
+  // Background/locked phones rely on LocalNotification + remote FCM.
   const ringableKey = offers.map(o => o.id).sort().join(',');
   useEffect(() => {
-    if (activeDelivery) return;
-    if (!ringableKey) return;
+    if (activeDelivery || !ringableKey) {
+      stopOfferAlert();
+      return;
+    }
     if (!isAppActive()) return;
     playOfferAlert();
     const id = setInterval(() => {
       if (isAppActive()) playOfferAlert();
-    }, 8000);
+    }, 4000);
     return () => clearInterval(id);
   }, [ringableKey, activeDelivery]);
 

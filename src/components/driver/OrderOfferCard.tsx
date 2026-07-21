@@ -83,7 +83,8 @@ function OrderOfferCardInner({
     [offer.basePay, offer.tipAmount, offer.poolBonus, offer.estimatedPayout],
   );
 
-  useEffect(() => () => { stopOfferAlert(); }, []);
+  // Do NOT stopOfferAlert on unmount — React remounts / Strict Mode would kill
+  // the ring started by useOrders. Accept / decline / empty-offer cleanup stop it.
 
   // Single interval driven by wall-clock expiry — avoids cascading 1s setTimeout re-renders stacking.
   useEffect(() => {
