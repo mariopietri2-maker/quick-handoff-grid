@@ -255,7 +255,19 @@ export default function LiveTrackingMap({
       })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, [token, mapReady, storeLat, storeLng, deliveryLat, deliveryLng, driverPos, status]);
+  }, [token, mapReady, storeLat, storeLng, deliveryLat, deliveryLng, status]);
+
+  // Re-fit bounds when the driver appears, without re-hitting Directions.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady || !driverPos) return;
+    try {
+      const bounds = map.getBounds();
+      if (bounds && !bounds.contains(driverPos)) {
+        map.panTo(driverPos, { duration: 600 });
+      }
+    } catch { /* map may be mid-style */ }
+  }, [driverPos, mapReady]);
 
   // ── animate driver marker ─────────────────────────
   useEffect(() => {

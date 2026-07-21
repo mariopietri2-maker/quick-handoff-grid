@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X, Banknote, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -10,16 +10,21 @@ import { useCart } from '@/hooks/useCart';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SavedAddresses } from '@/components/SavedAddresses';
 import ScheduledDeliveryPicker from '@/components/customer/ScheduledDeliveryPicker';
-import { OrderCheckout } from '@/components/OrderCheckout';
 import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
 import { isPaymentsConfigured } from '@/lib/stripe';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SEO } from '@/components/SEO';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
+
+const AddressAutocomplete = lazy(() =>
+  import('@/components/AddressAutocomplete').then((m) => ({ default: m.AddressAutocomplete })),
+);
+const OrderCheckout = lazy(() =>
+  import('@/components/OrderCheckout').then((m) => ({ default: m.OrderCheckout })),
+);
 
 interface AppliedPromo {
   id: string;
@@ -382,15 +387,17 @@ export default function CheckoutPage() {
               <MapPin className="h-5 w-5 text-primary" />
               <h2 className="font-heading font-semibold text-foreground">Διεύθυνση Παράδοσης</h2>
             </div>
-            <AddressAutocomplete
-              value={address}
-              onChange={(addr, lat, lon) => {
-                setAddress(addr);
-                if (lat != null && lon != null) setDeliveryCoords({ lat, lon });
-                else if (!addr) setDeliveryCoords(null);
-              }}
-              initialCenter={storeCenter ?? undefined}
-            />
+            <Suspense fallback={<div className="h-12 rounded-lg bg-muted animate-pulse" />}>
+              <AddressAutocomplete
+                value={address}
+                onChange={(addr, lat, lon) => {
+                  setAddress(addr);
+                  if (lat != null && lon != null) setDeliveryCoords({ lat, lon });
+                  else if (!addr) setDeliveryCoords(null);
+                }}
+                initialCenter={storeCenter ?? undefined}
+              />
+            </Suspense>
             <SavedAddresses
               currentAddress={address}
               onSelect={(addr, lat, lon) => {
@@ -633,11 +640,13 @@ export default function CheckoutPage() {
           </DialogHeader>
           <div className="px-6 pb-6 max-h-[80vh] overflow-y-auto">
             {pendingOrderId && (
-              <OrderCheckout
-                orderId={pendingOrderId}
-                returnPath={`/order-tracking/${pendingOrderId}`}
-                onError={(msg) => toast.error(msg)}
-              />
+              <Suspense fallback={<div className="h-40 rounded-lg bg-muted animate-pulse" />}>
+                <OrderCheckout
+                  orderId={pendingOrderId}
+                  returnPath={`/order-tracking/${pendingOrderId}`}
+                  onError={(msg) => toast.error(msg)}
+                />
+              </Suspense>
             )}
           </div>
         </DialogContent>

@@ -68,6 +68,15 @@ interface DriverMapboxProps {
    * Values in CSS pixels.
    */
   overlayPadding?: { top?: number; bottom?: number; left?: number; right?: number };
+  /** Optional external GPS — when set, map adopts these coords. */
+  externalPos?: { lat: number; lng: number; heading: number | null } | null;
+  /**
+   * When true, never start an internal watchPosition — parent owns GPS
+   * (even while externalPos is still null waiting for the first fix).
+   */
+  useExternalGps?: boolean;
+  /** When false, map stays mounted but hidden (tab switch) — triggers resize on show. */
+  visible?: boolean;
   /** When true, freeze map pan/zoom so the incoming offer stays the focus. */
   interactionLocked?: boolean;
 }
@@ -86,6 +95,9 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   followMode = false,
   overlayPadding,
   interactionLocked = false,
+  externalPos = null,
+  useExternalGps = false,
+  visible = true,
 }, ref) {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
@@ -149,8 +161,9 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     return (toDeg(Math.atan2(y, x)) + 360) % 360;
   };
 
-  // Watch position (now also captures heading)
+  // Watch position — skipped when parent owns GPS (Capacitor / useDriverLocation).
   useEffect(() => {
+    if (useExternalGps) return;
     if (!('geolocation' in navigator)) return;
     watchRef.current = navigator.geolocation.watchPosition(
       (p) => {
@@ -171,11 +184,31 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
     );
     return () => { if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current); };
-  }, []);
+  }, [useExternalGps]);
 
-  // Forward live driver position to parent (for in-app turn-by-turn UI)
-  useEffect(() => { onDriverPosUpdate?.(pos); }, [pos, onDriverPosUpdate]);
+  // Adopt parent GPS stream (single watch).
+  useEffect(() => {
+    if (!useExternalGps || !externalPos) return;
+    lastPosRef.current = { lat: externalPos.lat, lng: externalPos.lng };
+    setPos(externalPos);
+  }, [useExternalGps, externalPos?.lat, externalPos?.lng, externalPos?.heading]);
 
+  // Forward live driver position to parent only when map owns the watch.
+  useEffect(() => {
+    if (useExternalGps) return;
+    onDriverPosUpdate?.(pos);
+  }, [pos, onDriverPosUpdate, useExternalGps]);
+
+  // Tab switches keep the map mounted but hidden — resize when shown again.
+  useEffect(() => {
+    if (!visible) return;
+    const map = mapRef.current;
+    if (!map) return;
+    const id = window.setTimeout(() => {
+      try { map.resize(); } catch { /* ignore */ }
+    }, 50);
+    return () => window.clearTimeout(id);
+  }, [visible]);
 
   // Auto day/night style based on local hour (06-19 = day)
   const isDaytime = () => {

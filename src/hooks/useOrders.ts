@@ -412,25 +412,18 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       }, 400);
     };
 
-    const isRelevant = (row: Partial<OrderRow> | null | undefined) => {
-      if (!row) return false;
-      if (adminOverride) return true;
-      if (row.driver_id === user.id) return true;
-      if (row.driver_id == null) return true;
-      return false;
-    };
-
+    // Own orders only — pending_offers channel covers new work. Avoids fleet-wide fanout.
     const ordersChannel = supabase
       .channel(`driver-orders-${user.id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          if (payload.eventType === 'DELETE') return;
-          if (isRelevant(payload.new as OrderRow) || isRelevant(payload.old as OrderRow)) {
-            scheduleRefetch();
-          }
-        }
+        {
+          event: '*',
+          schema: 'public',
+          table: 'orders',
+          filter: `driver_id=eq.${user.id}`,
+        },
+        () => { scheduleRefetch(); },
       )
       .subscribe();
 

@@ -110,24 +110,11 @@ export function useNearbyStoresForDriver() {
       refreshCounts();
     })();
 
-    // Refresh counts on order status changes (debounced)
-    const ch = supabase
-      .channel('driver-map-store-orders')
-      .on('postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'orders' },
-        () => scheduleRefresh()
-      )
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'orders' },
-        () => scheduleRefresh()
-      )
-      .subscribe();
-
+    // Counts refresh on a timer only — avoid unfiltered orders realtime fanout.
     const interval = setInterval(refreshCounts, 60_000);
 
     return () => {
       mounted = false;
-      supabase.removeChannel(ch);
       clearInterval(interval);
       if (countsRefresh) clearTimeout(countsRefresh);
     };
