@@ -1,7 +1,8 @@
 import { useCustomerAppConfig, heroCardImage } from '@/hooks/useCustomerAppConfig';
 import { AiCardFace, useHeroCardNavigate } from '@/components/customer/AiCardFace';
+import { useT } from '@/lib/i18n';
 
-/** Mid-feed large spotlight AI card (first enabled spotlight placement). */
+/** Mid-feed large spotlight card (first enabled spotlight placement). */
 export function AiSpotlightCard() {
   const config = useCustomerAppConfig();
   const onNavigate = useHeroCardNavigate();
@@ -22,10 +23,11 @@ export function AiSpotlightCard() {
   );
 }
 
-/** Horizontal strip of compact AI cards for secondary promotions. */
+/** Horizontal strip of compact cards for secondary recommendations. */
 export function AiCardStrip() {
   const config = useCustomerAppConfig();
   const onNavigate = useHeroCardNavigate();
+  const t = useT();
   const cards = (config.hero_cards ?? []).filter(
     (c) => c.enabled && heroCardImage(c) && c.placement === 'strip',
   );
@@ -36,10 +38,10 @@ export function AiCardStrip() {
       <div className="px-5 flex items-end justify-between mb-3">
         <div>
           <h2 className="font-heading font-black text-[18px] text-[hsl(0,0%,9%)] tracking-tight leading-none">
-            AI επιλογές
+            {t('customer.recommended')}
           </h2>
           <p className="text-[10px] c-muted mt-1.5 font-black uppercase tracking-[0.14em]">
-            Curated for you
+            {t('customer.recommended_sub')}
           </p>
         </div>
       </div>
