@@ -30,6 +30,9 @@ const translations: Record<string, Record<Lang, string>> = {
   'customer.profile': { el: 'Προφίλ', en: 'Profile' },
   'customer.wallet': { el: 'Πορτοφόλι', en: 'Wallet' },
   'customer.refer_friends': { el: 'Πρόσκληση φίλων', en: 'Invite friends' },
+  'customer.recommended': { el: 'Προτεινόμενα για σένα', en: 'Recommended for you' },
+  'customer.recommended_badge': { el: 'Για σένα', en: 'For you' },
+  'customer.recommended_sub': { el: 'Επιλογές κοντά σου', en: 'Picks near you' },
 
   // Categories
   'cat.all': { el: 'Όλα', en: 'All' },
