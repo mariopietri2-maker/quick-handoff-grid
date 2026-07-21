@@ -385,9 +385,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   }, [fetchOrders]);
 
 
-  // Persistent alert: keep ringing every ~4s while there are unaccepted
-  // offers AND the app is in the foreground. Background/locked phones rely
-  // on OS LocalNotification (below) + remote FCM via send-push.
+  // Persistent alert: ring once immediately, then every ~8s while offers are
+  // open in the foreground. Longer gap cuts main-thread / audio lag on the
+  // offer sheet. Background phones still get LocalNotification + FCM.
   const ringableKey = offers.map(o => o.id).sort().join(',');
   useEffect(() => {
     if (activeDelivery) return;
@@ -396,7 +396,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     playOfferAlert();
     const id = setInterval(() => {
       if (isAppActive()) playOfferAlert();
-    }, 4000);
+    }, 8000);
     return () => clearInterval(id);
   }, [ringableKey, activeDelivery]);
 
