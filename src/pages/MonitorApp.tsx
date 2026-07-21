@@ -107,7 +107,12 @@ export default function MonitorApp() {
 
   return (
     <div className="min-h-[100dvh] bg-background text-foreground">
-      <SEO title="M Monitor — Οδηγοί" path="/m" noindex />
+      <SEO
+        title="M Monitor — Οδηγοί"
+        description="Ζωντανή παρακολούθηση οδηγών Fresh Delivery — μόνο θέσεις GPS."
+        path="/m"
+        noindex
+      />
 
       <header className="sticky top-0 z-30 border-b border-border bg-card/95 backdrop-blur safe-area-top">
         <div className="px-4 py-3 flex items-center justify-between gap-3 max-w-6xl mx-auto">
