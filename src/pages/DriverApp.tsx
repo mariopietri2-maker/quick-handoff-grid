@@ -39,6 +39,7 @@ import { geocodeAddress, warmMapboxToken } from '@/lib/geocode';
 import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { DriverPrefsApplier } from '@/components/driver/DriverPrefsApplier';
 import { getDriverPayoutBreakdown } from '@/lib/driver-payout';
+import { primeDriverAudio } from '@/lib/driver-sound-prefs';
 
 
 type DriverTab = 'home' | 'money' | 'inbox' | 'referral';
@@ -81,6 +82,8 @@ export default function DriverApp() {
   });
   useEffect(() => {
     try { localStorage.setItem('driver_is_online_v1', isOnline ? '1' : '0'); } catch {}
+    // Going online is a user gesture path — unlock WebView audio for offer alerts.
+    if (isOnline) primeDriverAudio();
   }, [isOnline]);
 
   // Mirror online toggle to driver_state.shift_started_at so admin/dispatch
@@ -706,7 +709,10 @@ export default function DriverApp() {
                     </div>
                     <SlideToggle
                       isOn={isOnline}
-                      onToggle={setIsOnline}
+                      onToggle={(next) => {
+                        if (next) primeDriverAudio();
+                        setIsOnline(next);
+                      }}
                       onLabel="Είσαι Online"
                       offLabel="Σύρε για να συνδεθείς"
                       disabled={driverActive !== true}
