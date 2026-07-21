@@ -1,7 +1,7 @@
 import { Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { envMobileFlavor, mobileHomePath } from '@/lib/mobileApp';
+import { mobileHomePath, useMobileFlavor } from '@/lib/mobileApp';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 
 const Index = lazyWithRetry(() => import('@/pages/Index'));
@@ -20,15 +20,15 @@ function BootSpinner() {
  */
 export default function RootEntry() {
   const { user, profile, loading, isAdmin, isSupport } = useAuth();
-  const flavor = envMobileFlavor();
+  const { flavor, ready: flavorReady } = useMobileFlavor();
 
-  // Build-time mobile flavor — sync, no flash of Index.
-  if (flavor === 'customer' || flavor === 'driver') {
+  // Mobile shells (env or Capacitor appId) — sync redirect, no flash of Index.
+  if (flavorReady && (flavor === 'customer' || flavor === 'driver')) {
     return <Navigate to={mobileHomePath(flavor)} replace />;
   }
 
-  // Wait for session before deciding — avoids ~1s marketing flash then hop.
-  if (loading || (user && !profile)) {
+  // Wait for session / native flavor before deciding — avoids marketing flash.
+  if (!flavorReady || loading || (user && !profile)) {
     return <BootSpinner />;
   }
 
