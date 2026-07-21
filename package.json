@@ -15,7 +15,11 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
-    "test:e2e:ui": "playwright test --ui"
+    "test:e2e:ui": "playwright test --ui",
+    "mobile:apk": "./scripts/build-apks.sh",
+    "mobile:play-setup": "./scripts/setup-play-signing.sh",
+    "mobile:play-aab": "./scripts/build-store-aabs.sh",
+    "mobile:ios-sync": "./scripts/sync-ios-apps.sh"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",
