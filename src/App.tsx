@@ -14,6 +14,7 @@ import ConnectionStatus from "@/components/ConnectionStatus";
 import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { MobileAppGate } from "@/components/MobileAppGate";
 import RootEntry from "@/components/RootEntry";
+import { PushBootstrap } from "@/components/PushBootstrap";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 
 // Lazy-load every non-landing route so the initial bundle stays small.
@@ -82,6 +83,7 @@ const App = () => (
                 <Suspense fallback={<RouteFallback />}>
                   <RouteErrorBoundary>
                   <MobileAppGate>
+                  <PushBootstrap />
                   <Routes>
                     <Route path="/" element={<RootEntry />} />
                     <Route path="/auth" element={<AuthPage />} />

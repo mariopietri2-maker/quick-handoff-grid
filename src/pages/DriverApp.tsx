@@ -3,6 +3,7 @@ import { useSearchParams, Link } from 'react-router-dom';
 import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
+import { startPushRegistration } from '@/lib/push-register';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Badge } from '@/components/ui/badge';
@@ -105,6 +106,11 @@ export default function DriverApp() {
     else { searchParams.set('tab', t); setSearchParams(searchParams); }
   };
   useDriverNotifications();
+  // Remote + local push registration (offers when phone locked need FCM tokens).
+  useEffect(() => {
+    if (!user) return;
+    void startPushRegistration(user.id);
+  }, [user]);
 
   useEffect(() => {
     if (!user) return;

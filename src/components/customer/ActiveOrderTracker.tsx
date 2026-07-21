@@ -15,8 +15,8 @@ const STATUS_LABEL: Record<string, string> = {
   accepted: 'Έγινε δεκτή',
   preparing: 'Ετοιμάζεται',
   ready: 'Έτοιμη για παραλαβή',
-  picked_up: 'Ο οδηγός είναι καθ’ οδόν',
-  arrived: 'Ο οδηγός έφτασε',
+  picked_up: 'Ο οδηγός έρχεται',
+  arrived: 'Ο οδηγός στο κατάστημα',
 };
 
 const ACTIVE_STATUSES = ['placed', 'accepted', 'preparing', 'ready', 'picked_up', 'arrived'];

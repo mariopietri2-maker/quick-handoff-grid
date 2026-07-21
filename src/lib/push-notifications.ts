@@ -33,8 +33,12 @@ export async function showOsNotification(opts: {
   body: string;
   tag?: string;
   vibrate?: boolean;
+  channelId?: string;
 }) {
-  if (!permissionGranted) return;
+  if (!permissionGranted) {
+    await ensureNotificationPermission();
+    if (!permissionGranted) return;
+  }
   try {
     if (isNative) {
       await LocalNotifications.schedule({
@@ -45,12 +49,11 @@ export async function showOsNotification(opts: {
             body: opts.body,
             schedule: { at: new Date(Date.now() + 50) },
             smallIcon: 'ic_stat_icon_config_sample',
-            channelId: 'driver-offers',
+            channelId: opts.channelId ?? 'driver-offers',
           },
         ],
       });
     } else if ('Notification' in window && Notification.permission === 'granted') {
-      // Use ServiceWorker registration when available so notifications persist
       const reg = 'serviceWorker' in navigator
         ? await navigator.serviceWorker.getRegistration().catch(() => null)
         : null;
@@ -72,7 +75,7 @@ export async function showOsNotification(opts: {
   }
 }
 
-// Set up Android channel for high-priority offer alerts
+/** Android notification channels (high importance for offers + order updates). */
 export async function initNotificationChannels() {
   if (!isNative) return;
   try {
@@ -84,8 +87,23 @@ export async function initNotificationChannels() {
       visibility: 1,
       vibration: true,
       lights: true,
+      sound: 'default',
     });
   } catch (e) {
-    console.warn('createChannel error', e);
+    console.warn('createChannel driver-offers error', e);
+  }
+  try {
+    await LocalNotifications.createChannel({
+      id: 'customer-orders',
+      name: 'Παραγγελίες',
+      description: 'Ενημερώσεις κατάστασης παραγγελίας και άφιξη οδηγού',
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+      sound: 'default',
+    });
+  } catch (e) {
+    console.warn('createChannel customer-orders error', e);
   }
 }

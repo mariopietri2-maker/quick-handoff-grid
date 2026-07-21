@@ -11,7 +11,6 @@ import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
 import AppSplash from '@/components/customer/AppSplash';
 import OrderAgainRow from '@/components/customer/OrderAgainRow';
-import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -93,7 +92,6 @@ export default function CustomerApp() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
-  useCustomerOrderNotifications();
 
   // Delivery address (persisted locally; falls back to city label)
   const [addressOpen, setAddressOpen] = useState(false);
@@ -138,7 +136,7 @@ export default function CustomerApp() {
       const [storesRes, menuRes, promoRes, offerRes] = await Promise.all([
         (supabase as any)
           .from('stores_public')
-          .select('id, name, image_url, is_active, delivery_fee, prep_buffer_minutes, covers_delivery_fee, promotion_status, promotion_starts_at, promotion_ends_at, busy_mode')
+          .select('id, name, address, image_url, is_active, prep_buffer_minutes, covers_delivery_fee, promotion_status, promotion_starts_at, promotion_ends_at, busy_mode')
           .eq('is_active', true)
           .order('name')
           .limit(200),
@@ -150,7 +148,7 @@ export default function CustomerApp() {
           .not('category', 'is', null)
           .limit(800),
         (supabase as any).from('stores_public')
-          .select('id, name, image_url, is_active, delivery_fee, prep_buffer_minutes, covers_delivery_fee, promotion_status, promotion_starts_at, promotion_ends_at')
+          .select('id, name, address, image_url, is_active, prep_buffer_minutes, covers_delivery_fee, promotion_status, promotion_starts_at, promotion_ends_at')
           .eq('is_active', true)
           .eq('promotion_status', 'active')
           .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
@@ -166,6 +164,8 @@ export default function CustomerApp() {
           .limit(40),
       ]);
       if (cancelled) return;
+      if (storesRes.error) console.warn('stores_public load failed', storesRes.error.message);
+      if (promoRes.error) console.warn('stores_public promo load failed', promoRes.error.message);
       const storeRows = (storesRes.data ?? []) as StoreRow[];
       setStores(storeRows);
       setPromotedStores((promoRes.data ?? []) as StoreRow[]);
@@ -195,7 +195,7 @@ export default function CustomerApp() {
             store_name: s.name,
             store_image_url: (s as any).image_url ?? null,
             store_prep_buffer_minutes: (s as any).prep_buffer_minutes ?? 0,
-            delivery_fee: Number((s as any).delivery_fee ?? 0.99),
+            delivery_fee: (s as any).covers_delivery_fee ? 0 : 0.99,
           } satisfies OfferItem;
         });
       setOfferItems(offers);
@@ -257,14 +257,14 @@ export default function CustomerApp() {
   const filtered = useMemo(() => stores.filter(s => {
     const q = debouncedSearch.toLowerCase();
     const matchesSearch = !q || s.name.toLowerCase().includes(q) ||
-      s.address.toLowerCase().includes(q);
+      (s.address ?? '').toLowerCase().includes(q);
     if (!matchesSearch) return false;
     if (selectedCategory !== 'all') {
       const cats = storeCategories[s.id] ?? [];
       const needle = selectedCategory.toLowerCase();
       if (!cats.some(c => c.toLowerCase().includes(needle) || needle.includes(c.toLowerCase()))) return false;
     }
-    if (filterFree && Number((s as any).delivery_fee ?? 0.99) !== 0) return false;
+    if (filterFree && !(s as any).covers_delivery_fee) return false;
     if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
     if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
     return true;
@@ -657,13 +657,13 @@ export default function CustomerApp() {
                       <h3 className="font-heading font-extrabold text-[16px] text-[hsl(0,0%,9%)] truncate">
                         {store.name}
                       </h3>
-                      <p className="text-[12px] c-muted mt-0.5 truncate">{store.address}</p>
+                      <p className="text-[12px] c-muted mt-0.5 truncate">{store.address || 'Ιωάννινα'}</p>
                       <div className="flex items-center gap-1.5 mt-1.5 flex-wrap">
-                        {Number((store as any).delivery_fee ?? 0.99) === 0 ? (
+                        {(store as any).covers_delivery_fee ? (
                           <span className="text-[11px] font-bold text-success bg-success/10 px-2 py-0.5 rounded-full"><span className="emoji">🛵</span> {t('customer.delivery')} 0€</span>
                         ) : (
                           <span className="text-[11px] font-bold c-bg-accent-soft px-2 py-0.5 rounded-full">
-                            {Number((store as any).delivery_fee ?? 0.99).toFixed(2).replace('.', ',')}€ {t('customer.delivery')}
+                            0,99€ {t('customer.delivery')}
                           </span>
                         )}
                         {Number((store as any).min_order_value ?? 0) > 0 && (
