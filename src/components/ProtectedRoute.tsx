@@ -1,5 +1,7 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { envMobileFlavor } from '@/lib/mobileApp';
+import RoleAccessGate from '@/components/RoleAccessGate';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -8,6 +10,7 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, profile, isAdmin, isSupport, isStore, isM } = useAuth();
+  const flavor = envMobileFlavor();
 
   if (loading || (user && !profile)) {
     return (
@@ -29,17 +32,28 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   if (isAdmin) return <>{children}</>;
 
   if (allowedRoles?.includes('admin')) {
+    // Never bounce mobile shells to `/` — that loops with MobileAppGate.
+    if (flavor === 'driver' || flavor === 'customer') {
+      return <RoleAccessGate required={flavor === 'driver' ? 'driver' : 'customer'} />;
+    }
     return <Navigate to="/" replace />;
   }
 
   if (allowedRoles?.includes('support')) {
-    if (!isSupport) return <Navigate to="/" replace />;
+    if (!isSupport) {
+      if (flavor === 'driver') return <RoleAccessGate required="driver" />;
+      if (flavor === 'customer') return <RoleAccessGate required="customer" />;
+      return <Navigate to="/" replace />;
+    }
     return <>{children}</>;
   }
 
   // Role M monitor panel
   if (allowedRoles?.includes('m')) {
-    if (!isM && profile?.role !== 'm') return <Navigate to="/" replace />;
+    if (!isM && profile?.role !== 'm') {
+      if (flavor === 'driver') return <RoleAccessGate required="driver" />;
+      return <Navigate to="/" replace />;
+    }
     return <>{children}</>;
   }
 
@@ -60,6 +74,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     if (profile.role === 'm') return <Navigate to="/driver" replace />;
     if (profile.role === 'driver') return <Navigate to="/driver" replace />;
     if (profile.role === 'store') return <Navigate to="/store" replace />;
+
+    // Driver/customer APKs: show a gate instead of <Navigate to="/"> which
+    // fights MobileAppGate and paints a blank white WebView.
+    if (flavor === 'driver' || allowedRoles.includes('driver')) {
+      return <RoleAccessGate required="driver" />;
+    }
+    if (flavor === 'customer') {
+      return <RoleAccessGate required="customer" />;
+    }
     return <Navigate to="/" replace />;
   }
 

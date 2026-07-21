@@ -8,18 +8,23 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Loader as Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
+import { envMobileFlavor, mobileHomePath } from '@/lib/mobileApp';
 
 function roleHome(opts: {
   isAdmin: boolean;
   isSupport: boolean;
   role: string;
   nextPath: string;
+  flavor: ReturnType<typeof envMobileFlavor>;
 }): string {
-  if (opts.isAdmin) return '/admin';
-  if (opts.isSupport) return '/support';
+  if (opts.isAdmin && opts.flavor === 'shared') return '/admin';
+  if (opts.isSupport && opts.flavor === 'shared') return '/support';
   if (opts.role === 'm') return '/driver';
   if (opts.role === 'driver') return '/driver';
-  if (opts.role === 'store') return '/store';
+  if (opts.role === 'store' && opts.flavor === 'shared') return '/store';
+  // Driver APK: never send new/customer accounts to /order (redirect loop).
+  if (opts.flavor === 'driver') return '/driver';
+  if (opts.flavor === 'customer') return '/order';
   return opts.nextPath || '/order';
 }
 
@@ -31,13 +36,16 @@ export default function AuthPage() {
   const [submitting, setSubmitting] = useState(false);
   const { signIn, signUp, user, profile, isAdmin, isSupport, loading } = useAuth();
   const navigate = useNavigate();
+  const flavor = envMobileFlavor();
+  const isDriverShell = flavor === 'driver';
+  const shellHome = mobileHomePath(flavor);
 
   const nextPath = (() => {
     try {
       const q = new URLSearchParams(window.location.search).get('next');
       if (q && q.startsWith('/') && !q.startsWith('//')) return q;
     } catch { /* noop */ }
-    return '/order';
+    return isDriverShell ? '/driver' : '/order';
   })();
 
   // Don't paint the login form while session/profile resolve or while redirecting.
@@ -52,7 +60,7 @@ export default function AuthPage() {
   if (user && profile) {
     return (
       <Navigate
-        to={roleHome({ isAdmin, isSupport, role: profile.role, nextPath })}
+        to={roleHome({ isAdmin, isSupport, role: profile.role, nextPath, flavor })}
         replace
       />
     );
@@ -102,7 +110,11 @@ export default function AuthPage() {
             setIsLogin(true);
           }
         } else if (session) {
-          toast.success('Συνδεθήκατε! Καλώς ήρθατε.');
+          toast.success(
+            isDriverShell
+              ? 'Εγγραφή ολοκληρώθηκε. Αναμονή έγκρισης οδηγού.'
+              : 'Συνδεθήκατε! Καλώς ήρθατε.',
+          );
         } else {
           toast.error('Η εγγραφή ολοκληρώθηκε αλλά η σύνδεση απέτυχε. Δοκιμάστε Σύνδεση με τον ίδιο κωδικό.');
           setIsLogin(true);
@@ -116,20 +128,26 @@ export default function AuthPage() {
   return (
     <div className="min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain customer-scroll bg-[hsl(220,20%,7%)] flex flex-col">
       <SEO
-        title="Σύνδεση & Εγγραφή — Fresh Delivery"
-        description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο Fresh Delivery ως πελάτης, οδηγός ή κατάστημα και ξεκινήστε άμεσα."
+        title={isDriverShell ? 'Σύνδεση οδηγού — Fresh Delivery' : 'Σύνδεση & Εγγραφή — Fresh Delivery'}
+        description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο Fresh Delivery."
         path="/auth"
       />
       <h1 className="sr-only">Σύνδεση & Εγγραφή στο Fresh Delivery</h1>
       <header className="px-4 py-4 flex items-center justify-between gap-2">
-        <button
-          type="button"
-          onClick={() => navigate('/order')}
-          className="text-sm font-semibold text-[hsl(220,10%,70%)] hover:text-white px-2 py-1"
-        >
-          ← Πίσω
-        </button>
-        <span className="font-heading font-extrabold text-xl text-primary">Fresh Delivery</span>
+        {flavor === 'shared' ? (
+          <button
+            type="button"
+            onClick={() => navigate('/order')}
+            className="text-sm font-semibold text-[hsl(220,10%,70%)] hover:text-white px-2 py-1"
+          >
+            ← Πίσω
+          </button>
+        ) : (
+          <span className="w-14" aria-hidden />
+        )}
+        <span className="font-heading font-extrabold text-xl text-primary">
+          {isDriverShell ? 'Fresh Driver' : 'Fresh Delivery'}
+        </span>
         <span className="w-14" aria-hidden />
       </header>
 
@@ -140,7 +158,11 @@ export default function AuthPage() {
               {isLogin ? 'Σύνδεση' : 'Εγγραφή'}
             </CardTitle>
             <p className="text-sm text-[hsl(220,10%,55%)] mt-1">
-              {isLogin ? 'Μπείτε με email και κωδικό' : 'Δημιουργήστε λογαριασμό πελάτη'}
+              {isLogin
+                ? 'Μπείτε με email και κωδικό'
+                : isDriverShell
+                  ? 'Δημιουργήστε λογαριασμό οδηγού (χρειάζεται έγκριση)'
+                  : 'Δημιουργήστε λογαριασμό πελάτη'}
             </p>
             <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[hsl(220,20%,14%)] p-1">
               <button
@@ -235,13 +257,15 @@ export default function AuthPage() {
                   </>
                 ) : isLogin ? 'Σύνδεση' : 'Δημιουργία & είσοδος'}
               </Button>
-              <button
-                type="button"
-                onClick={() => navigate('/order')}
-                className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
-              >
-                Συνέχεια χωρίς λογαριασμό
-              </button>
+              {!isDriverShell && (
+                <button
+                  type="button"
+                  onClick={() => navigate(shellHome === '/' ? '/order' : shellHome)}
+                  className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
+                >
+                  Συνέχεια χωρίς λογαριασμό
+                </button>
+              )}
             </form>
           </CardContent>
         </Card>

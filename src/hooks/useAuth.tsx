@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import { envMobileFlavor } from '@/lib/mobileApp';
 
 interface AuthContextType {
   user: User | null;
@@ -20,6 +21,7 @@ interface AuthContextType {
   ) => Promise<{ error: Error | null; session: Session | null }>;
   signIn: (email: string, password: string) => Promise<{ error: Error | null }>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -121,13 +123,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signUp = async (email: string, password: string, fullName: string, _role: string) => {
     const emailNorm = normalizeEmail(email);
+    const redirectPath = envMobileFlavor() === 'driver' ? '/driver' : '/order';
 
     const { data, error } = await supabase.auth.signUp({
       email: emailNorm,
       password,
       options: {
         data: { full_name: fullName.trim() },
-        emailRedirectTo: `${window.location.origin}/order`,
+        emailRedirectTo: `${window.location.origin}${redirectPath}`,
       },
     });
 
@@ -164,7 +167,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (session?.user) {
       // Profile row is created by handle_new_user trigger. Do NOT update role
-      // here — protect_profile_role blocks non-admin role changes.
+      // here via client UPDATE — protect_profile_role blocks non-admin changes.
+      // Driver APK: promote customer → pending driver via SECURITY DEFINER RPC.
+      if (envMobileFlavor() === 'driver') {
+        try {
+          await (supabase as any).rpc('request_driver_access');
+        } catch {
+          // RoleAccessGate still lets them request manually.
+        }
+      }
       await fetchProfile(session.user.id);
     }
 
@@ -180,8 +191,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsM(false);
   };
 
+  const refreshProfile = async () => {
+    const uid = (await supabase.auth.getUser()).data.user?.id ?? user?.id;
+    if (uid) await fetchProfile(uid);
+  };
+
   return (
-    <AuthContext.Provider value={{ user, session, loading, profile, isAdmin, isSupport, isStore, isM, signUp, signIn, signOut }}>
+    <AuthContext.Provider value={{ user, session, loading, profile, isAdmin, isSupport, isStore, isM, signUp, signIn, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );
