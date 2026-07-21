@@ -19,7 +19,7 @@ interface OfferRowProps {
 
 /**
  * Horizontally-scrolling row of OfferCards with a section header.
- * Mirrors the efood "1+1 προσφορές" / "Δωρεάν delivery" rows.
+ * Horizontal offer rail for promotions and free-delivery picks.
  */
 export function OfferRow({
   title,

@@ -127,6 +127,8 @@ App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver`
 
 ## Payments note
 
+**Launch:** publish Uber green branding (done in DB), hide test stores, set Stripe **live** `pk_live_…` + edge secrets before public launch.
+
 Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with live keys on Vercel and matching live secrets + webhook endpoint on Supabase. In-app refunds credit the **customer wallet** (see `/legal/refunds`); original-card Stripe refunds are manual/support only today.
 
 ---

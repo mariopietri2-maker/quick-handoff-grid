@@ -16,6 +16,8 @@ import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
 import { isPaymentsConfigured } from '@/lib/stripe';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SEO } from '@/components/SEO';
+import { customerAccentStyle } from '@/lib/customer-theme';
+import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
 
@@ -36,6 +38,7 @@ interface AppliedPromo {
 export default function CheckoutPage() {
   const navigate = useNavigate();
   const { items, storeId, storeName, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
+  const cfg = useCustomerAppConfig();
   const { user } = useAuth();
   const { token: mapboxToken } = useMapboxToken();
   const [address, setAddress] = useState('');
@@ -202,7 +205,7 @@ export default function CheckoutPage() {
   const handlePlaceOrder = async () => {
     if (!user) {
       toast.error('Παρακαλώ συνδεθείτε για να κάνετε παραγγελία');
-      navigate('/auth');
+      navigate('/auth?next=/checkout');
       return;
     }
     if (!address.trim()) {
@@ -297,7 +300,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-background">
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
         <SEO
           title="Καλάθι αγορών — Fresh Delivery"
           description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο Fresh Delivery."
@@ -314,7 +317,7 @@ export default function CheckoutPage() {
           <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <p className="font-heading text-xl text-foreground">Το καλάθι σας είναι άδειο</p>
           <p className="text-sm text-muted-foreground mt-1">Περιηγηθείτε σε εστιατόρια και προσθέστε προϊόντα</p>
-          <Button onClick={() => navigate('/order')} className="mt-6 gradient-primary text-primary-foreground font-heading shadow-primary">
+          <Button onClick={() => navigate('/order')} className="mt-6 bg-[hsl(0,0%,9%)] text-white font-heading">
             Περιήγηση Εστιατορίων
           </Button>
         </div>
@@ -323,7 +326,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-background pb-32">
+    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white pb-32" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
       <SEO
         title="Ολοκλήρωση παραγγελίας — Fresh Delivery"
         description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."
@@ -339,7 +342,7 @@ export default function CheckoutPage() {
           <p className="text-[10px] uppercase tracking-[0.14em] font-extrabold text-muted-foreground leading-none">Checkout</p>
           <h1 className="font-heading font-extrabold text-[17px] text-foreground leading-tight truncate">{storeName}</h1>
         </div>
-        <div className="ml-auto bg-primary/10 text-primary rounded-full px-3 py-1.5 text-xs font-extrabold tabular-nums">
+        <div className="ml-auto bg-[hsl(var(--c-accent-soft))] text-[hsl(var(--c-accent-dark))] rounded-full px-3 py-1.5 text-xs font-extrabold tabular-nums">
           {grandTotal.toFixed(2)}€
         </div>
       </header>
@@ -366,10 +369,10 @@ export default function CheckoutPage() {
                   <span className="font-heading font-bold text-sm w-5 text-center text-foreground tabular-nums">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                    className="h-8 w-8 rounded-full gradient-primary flex items-center justify-center"
+                    className="h-8 w-8 rounded-full bg-[hsl(0,0%,9%)] flex items-center justify-center"
                     aria-label="Αύξηση"
                   >
-                    <Plus className="h-3.5 w-3.5 text-primary-foreground" />
+                    <Plus className="h-3.5 w-3.5 text-white" />
                   </button>
                   <span className="font-heading font-semibold text-sm text-foreground w-14 text-right tabular-nums">
                     {(item.price * item.quantity).toFixed(2)}€
@@ -440,7 +443,7 @@ export default function CheckoutPage() {
                     onClick={() => setTipOption(opt)}
                     className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
                       isSelected
-                        ? 'gradient-primary text-primary-foreground shadow-primary'
+                        ? 'bg-[hsl(0,0%,9%)] text-white'
                         : 'bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
@@ -488,7 +491,7 @@ export default function CheckoutPage() {
                 disabled={!cardEnabled}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'card'
-                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
+                    ? 'border-[hsl(0,0%,9%)] bg-[hsl(0,0%,96%)] text-foreground shadow-primary'
                     : 'border-border bg-card text-muted-foreground hover:border-primary/40'
                 } ${!cardEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
@@ -501,7 +504,7 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('cash')}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'cash'
-                    ? 'border-primary bg-primary/5 text-foreground shadow-primary'
+                    ? 'border-[hsl(0,0%,9%)] bg-[hsl(0,0%,96%)] text-foreground shadow-primary'
                     : 'border-border bg-card text-muted-foreground hover:border-primary/40'
                 }`}
               >
@@ -610,7 +613,7 @@ export default function CheckoutPage() {
           <Button
             onClick={handlePlaceOrder}
             disabled={submitting || !address.trim()}
-            className="w-full h-16 gradient-primary shadow-primary text-primary-foreground font-heading text-base rounded-2xl flex items-center justify-between px-6 active:scale-[0.99] transition-transform"
+            className="w-full h-16 bg-[hsl(0,0%,9%)] text-white font-heading text-base rounded-2xl flex items-center justify-between px-6 active:scale-[0.99] transition-transform"
           >
             <span className="flex items-center gap-2">
               {paymentMethod === 'card' ? <CreditCard className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}

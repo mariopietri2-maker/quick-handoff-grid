@@ -2,6 +2,7 @@ import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useCart } from '@/hooks/useCart';
+import { customerAccentStyle } from '@/lib/customer-theme';
 import CustomerBottomNav from '@/components/customer/CustomerBottomNav';
 import CustomerFloatingCart from '@/components/customer/CustomerFloatingCart';
 
@@ -35,11 +36,7 @@ export default function CustomerLayout() {
   return (
     <div
       className="customer-shell customer-scroll h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain"
-      style={{
-        ['--c-accent' as any]: cfg.branding.accent_hsl,
-        ['--c-accent-dark' as any]: cfg.branding.accent_dark_hsl,
-        ['--c-accent-soft' as any]: `${cfg.branding.accent_hsl} / 0.10`,
-      }}
+      style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
       <div className={`min-h-full ${padBottom}`}>
         <Outlet />

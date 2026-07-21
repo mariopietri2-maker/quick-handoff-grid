@@ -303,7 +303,7 @@ export function CustomerSupportButton({
                   type="button"
                   disabled={submitting || (!description.trim() && !category.urgent)}
                   onClick={handleSubmit}
-                  className="w-full h-11 rounded-xl gradient-primary text-primary-foreground font-heading font-bold flex items-center justify-center gap-2 disabled:opacity-50"
+                  className="w-full h-11 rounded-xl bg-[hsl(0,0%,9%)] text-white font-heading font-bold flex items-center justify-center gap-2 disabled:opacity-50"
                 >
                   <Send className="h-4 w-4" />
                   {submitting ? 'Αποστολή…' : 'Αποστολή αιτήματος'}

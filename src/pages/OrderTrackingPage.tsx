@@ -10,6 +10,7 @@ import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 import { CustomerSupportButton } from '@/components/customer/CustomerSupportButton';
 import { SEO } from '@/components/SEO';
+import { customerAccentStyle } from '@/lib/customer-theme';
 import { formatOrderNumber } from '@/lib/order-number';
 import { useDriverProximityAlert } from '@/hooks/useCustomerOrderNotifications';
 
@@ -169,7 +170,7 @@ export default function OrderTrackingPage() {
   const showMap = !isCancelled && !isDelivered;
 
   return (
-    <div className="fixed inset-0 bg-background overflow-hidden">
+    <div className="customer-shell fixed inset-0 bg-white overflow-hidden" style={customerAccentStyle()}>
       <SEO
         title={`Παρακολούθηση παραγγελίας ${formatOrderNumber(order as any)} — Fresh Delivery`}
         description="Παρακολουθήστε την παραγγελία σας σε πραγματικό χρόνο, δείτε την εκτιμώμενη ώρα παράδοσης και επικοινωνήστε με τον οδηγό."
@@ -181,7 +182,7 @@ export default function OrderTrackingPage() {
       {showThankYou && (
         <div
           className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center animate-in fade-in duration-500"
-          style={{ background: 'linear-gradient(180deg, hsl(var(--primary)) 0%, hsl(var(--primary) / 0.85) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, hsl(152 100% 32%) 0%, hsl(152 100% 24%) 100%)' }}
         >
           <div className="text-8xl mb-6 animate-bounce">🎉</div>
           <h1 className="font-heading font-extrabold text-4xl text-primary-foreground mb-3">
@@ -212,7 +213,7 @@ export default function OrderTrackingPage() {
           onDriverPos={setLiveDriverPos}
         />
       ) : (
-        <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-background flex items-center justify-center">
+        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--c-accent-soft))] to-background flex items-center justify-center">
           <span className="text-[120px] opacity-20">{headline.emoji}</span>
         </div>
       )}

@@ -20,6 +20,8 @@ import { ReviewList, RatingBadge } from '@/components/ReviewList';
 import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { MenuItemBadges } from '@/components/customer/MenuItemBadges';
 import { SEO } from '@/components/SEO';
+import { customerAccentStyle } from '@/lib/customer-theme';
+import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
@@ -28,6 +30,7 @@ export default function RestaurantPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { addItem, items, updateQuantity, itemCount, total, storeId: cartStoreId } = useCart();
+  const cfg = useCustomerAppConfig();
   const [store, setStore] = useState<StoreRow | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -185,6 +188,7 @@ export default function RestaurantPage() {
       className={`customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white ${
         cartForThisStore ? 'pb-28' : 'pb-8'
       }`}
+      style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
       <SEO
         title={`${store.name} — Μενού & Παραγγελία | Fresh Delivery`}
@@ -224,7 +228,7 @@ export default function RestaurantPage() {
             <button
               type="button"
               onClick={() => navigate('/checkout')}
-              className="ml-auto c-bg-accent rounded-full px-3 py-1.5 text-xs font-extrabold flex items-center gap-1.5 shadow-[0_4px_12px_-2px_hsl(var(--c-accent)/0.4)] active:scale-95 transition-transform"
+              className="ml-auto rounded-full px-3 py-1.5 text-xs font-extrabold flex items-center gap-1.5 bg-[hsl(0,0%,9%)] text-white active:scale-95 transition-transform"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
               {itemCount}
@@ -426,10 +430,10 @@ export default function RestaurantPage() {
             <button
               type="button"
               onClick={() => navigate('/checkout')}
-              className="pointer-events-auto w-full h-14 c-bg-accent rounded-2xl shadow-[0_10px_28px_-8px_hsl(var(--c-accent)/0.55)] flex items-center justify-between px-4 active:scale-[0.985] transition-transform"
+              className="pointer-events-auto w-full h-14 rounded-2xl bg-[hsl(0,0%,9%)] text-white shadow-[0_10px_28px_-8px_hsl(0_0%_0%/0.45)] flex items-center justify-between px-4 active:scale-[0.985] transition-transform"
             >
               <div className="flex items-center gap-3">
-                <span className="h-8 min-w-8 px-2 rounded-lg bg-white text-[hsl(var(--c-accent))] font-black text-sm flex items-center justify-center tabular-nums">
+                <span className="h-8 min-w-8 px-2 rounded-lg bg-white text-[hsl(0,0%,9%)] font-black text-sm flex items-center justify-center tabular-nums">
                   {itemCount}
                 </span>
                 <span className="font-heading font-extrabold text-[15px] tracking-tight">Καλάθι</span>
