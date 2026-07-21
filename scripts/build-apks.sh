@@ -4,9 +4,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# MMDDHHMM — unique per minute, always fits in Android's 32-bit versionCode.
-# (yyMMddHHmm overflows Integer.MAX_VALUE.)
-VERSION_CODE="${APK_VERSION_CODE:-$(date -u +%m%d%H%M)}"
+# MMDDHHMM — unique per minute. Strip leading zeros so Groovy doesn't treat
+# it as an invalid octal (e.g. July → 0721… fails). Always fits 32-bit int.
+VERSION_CODE="${APK_VERSION_CODE:-$(date -u +%-m%d%H%M)}"
 VERSION_NAME="${APK_VERSION_NAME:-1.0.${VERSION_CODE}}"
 
 bump_version() {
