@@ -9,10 +9,58 @@ interface FavoriteRow {
   menu_item_id: string | null;
 }
 
+type Listener = (rows: FavoriteRow[]) => void;
+
+let cacheUserId: string | null = null;
+let cacheRows: FavoriteRow[] = [];
+let cacheLoading = false;
+const listeners = new Set<Listener>();
+
+function emit() {
+  listeners.forEach((fn) => fn(cacheRows));
+}
+
+async function loadFavorites(userId: string) {
+  cacheLoading = true;
+  const { data } = await supabase
+    .from('customer_favorites' as any)
+    .select('id, store_id, menu_item_id')
+    .eq('user_id', userId);
+  cacheRows = (data ?? []) as any;
+  cacheUserId = userId;
+  cacheLoading = false;
+  emit();
+}
+
 export function useFavorites() {
   const { user } = useAuth();
-  const [favorites, setFavorites] = useState<FavoriteRow[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [favorites, setFavorites] = useState<FavoriteRow[]>(
+    () => (user && cacheUserId === user.id ? cacheRows : []),
+  );
+  const [loading, setLoading] = useState(() => !user || cacheLoading || cacheUserId !== user?.id);
+
+  useEffect(() => {
+    if (!user) {
+      cacheUserId = null;
+      cacheRows = [];
+      setFavorites([]);
+      setLoading(false);
+      return;
+    }
+    const onUpdate: Listener = (rows) => {
+      setFavorites(rows);
+      setLoading(false);
+    };
+    listeners.add(onUpdate);
+    if (cacheUserId === user.id && !cacheLoading) {
+      setFavorites(cacheRows);
+      setLoading(false);
+    } else {
+      setLoading(true);
+      void loadFavorites(user.id);
+    }
+    return () => { listeners.delete(onUpdate); };
+  }, [user?.id]);
 
   const fetchFavorites = useCallback(async () => {
     if (!user) {
@@ -20,17 +68,8 @@ export function useFavorites() {
       setLoading(false);
       return;
     }
-    const { data } = await supabase
-      .from('customer_favorites' as any)
-      .select('id, store_id, menu_item_id')
-      .eq('user_id', user.id);
-    setFavorites((data ?? []) as any);
-    setLoading(false);
+    await loadFavorites(user.id);
   }, [user]);
-
-  useEffect(() => {
-    fetchFavorites();
-  }, [fetchFavorites]);
 
   const isStoreFavorite = (storeId: string) =>
     favorites.some((f) => f.store_id === storeId);
@@ -48,17 +87,19 @@ export function useFavorites() {
         .from('customer_favorites' as any)
         .delete()
         .eq('id', existing.id);
-      if (!error) {
-        setFavorites((prev) => prev.filter((f) => f.id !== existing.id));
-      }
+      if (error) { toast.error('Αποτυχία'); return; }
+      cacheRows = cacheRows.filter((f) => f.id !== existing.id);
+      emit();
     } else {
       const { data, error } = await supabase
         .from('customer_favorites' as any)
         .insert({ user_id: user.id, store_id: storeId, menu_item_id: null } as any)
         .select('id, store_id, menu_item_id')
         .single();
-      if (!error && data) {
-        setFavorites((prev) => [...prev, data as any]);
+      if (error) { toast.error('Αποτυχία'); return; }
+      if (data) {
+        cacheRows = [...cacheRows, data as any];
+        emit();
         toast.success('Προστέθηκε στα αγαπημένα ❤️');
       }
     }
@@ -75,17 +116,19 @@ export function useFavorites() {
         .from('customer_favorites' as any)
         .delete()
         .eq('id', existing.id);
-      if (!error) {
-        setFavorites((prev) => prev.filter((f) => f.id !== existing.id));
-      }
+      if (error) { toast.error('Αποτυχία'); return; }
+      cacheRows = cacheRows.filter((f) => f.id !== existing.id);
+      emit();
     } else {
       const { data, error } = await supabase
         .from('customer_favorites' as any)
         .insert({ user_id: user.id, store_id: null, menu_item_id: itemId } as any)
         .select('id, store_id, menu_item_id')
         .single();
-      if (!error && data) {
-        setFavorites((prev) => [...prev, data as any]);
+      if (error) { toast.error('Αποτυχία'); return; }
+      if (data) {
+        cacheRows = [...cacheRows, data as any];
+        emit();
         toast.success('Προστέθηκε στα αγαπημένα ❤️');
       }
     }

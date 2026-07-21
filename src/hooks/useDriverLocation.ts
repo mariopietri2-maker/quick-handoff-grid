@@ -7,10 +7,10 @@ import { Geolocation } from '@capacitor/geolocation';
 // Dynamic push cadence: stationary drivers push rarely (saves battery + network);
 // moving drivers push often (dispatcher needs accuracy). Tuned per GPS speed.
 const TICK_MS = 2_000;             // scheduler tick (cheap)
-const MIN_INTERVAL_STATIONARY = 15_000;
-const MIN_INTERVAL_SLOW = 8_000;
-const MIN_INTERVAL_FAST = 4_000;
-const MIN_MOVE_M = 8;              // don't re-send if position barely changed
+const MIN_INTERVAL_STATIONARY = 20_000;
+const MIN_INTERVAL_SLOW = 10_000;
+const MIN_INTERVAL_FAST = 5_000;
+const MIN_MOVE_M = 12;             // don't re-send if position barely changed
 
 
 interface NormalizedPos {
@@ -26,10 +26,12 @@ export function useDriverLocation(isActive: boolean) {
   const { user } = useAuth();
   const [tracking, setTracking] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [position, setPosition] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
   const watchIdRef = useRef<string | number | null>(null);
   const intervalRef = useRef<number | null>(null);
   const lastPosRef = useRef<NormalizedPos | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
+  const lastUiPushRef = useRef(0);
 
   const sendLocation = useCallback(async (pos: NormalizedPos) => {
     if (!user) return;
@@ -77,6 +79,7 @@ export function useDriverLocation(isActive: boolean) {
       cleanupRef.current?.();
       cleanupRef.current = null;
       lastPosRef.current = null;
+      setPosition(null);
       setTracking(false);
       // Driver explicitly toggled offline (isActive=false) — clear row.
       void goHardOffline();
@@ -103,12 +106,18 @@ export function useDriverLocation(isActive: boolean) {
                 return;
               }
               if (!pos) return;
-              lastPosRef.current = {
+              const next = {
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 speed: pos.coords.speed ?? null,
                 heading: pos.coords.heading ?? null,
               };
+              lastPosRef.current = next;
+              const now = Date.now();
+              if (now - lastUiPushRef.current >= 400) {
+                lastUiPushRef.current = now;
+                setPosition({ lat: next.latitude, lng: next.longitude, heading: next.heading });
+              }
             }
           );
           if (cancelled) {
@@ -123,12 +132,18 @@ export function useDriverLocation(isActive: boolean) {
           }
           const id = navigator.geolocation.watchPosition(
             (pos) => {
-              lastPosRef.current = {
+              const next = {
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 speed: pos.coords.speed ?? null,
                 heading: pos.coords.heading ?? null,
               };
+              lastPosRef.current = next;
+              const now = Date.now();
+              if (now - lastUiPushRef.current >= 400) {
+                lastUiPushRef.current = now;
+                setPosition({ lat: next.latitude, lng: next.longitude, heading: next.heading });
+              }
             },
             (err) => { setError(err.message); setTracking(false); },
             { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
@@ -177,7 +192,9 @@ export function useDriverLocation(isActive: boolean) {
           const now = Date.now();
           const minInterval = intervalForSpeed(pos.speed);
           const moved = lastSentPos ? distanceM(lastSentPos, pos) : Infinity;
-          if (now - lastSentAt < minInterval && moved < MIN_MOVE_M) return;
+          if (now - lastSentAt < minInterval) return;
+          // Also skip tiny moves once the interval has elapsed (stationary drift).
+          if (moved < MIN_MOVE_M && lastSentPos) return;
           lastSentAt = now;
           lastSentPos = pos;
           sendLocation(pos);
@@ -226,5 +243,5 @@ export function useDriverLocation(isActive: boolean) {
     };
   }, [isActive, user, sendLocation, goHardOffline]);
 
-  return { tracking, error };
+  return { tracking, error, position };
 }

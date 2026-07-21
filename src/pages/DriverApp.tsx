@@ -10,14 +10,10 @@ import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
 import { StackedOfferCard } from '@/components/driver/StackedOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
 import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
-import { DriverMoneyPanel } from '@/components/driver/DriverMoneyPanel';
-import { DriverReferral } from '@/components/driver/DriverReferral';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
-import DriverInbox from '@/components/driver/DriverInbox';
 
 import { useDriverOrders } from '@/hooks/useOrders';
 import { useDriverState } from '@/hooks/useDriverState';
-import { useEarnings } from '@/hooks/useEarnings';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import SurgeStatusBadge from '@/components/driver/SurgeStatusBadge';
 import { supabase } from '@/integrations/supabase/client';
@@ -25,6 +21,13 @@ import type { RouteInfo, DriverMapboxHandle } from '@/components/driver/DriverMa
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
 // Lazy-load the map: mapbox-gl is large (~800KB) and was blocking the driver app's initial paint.
 const DriverMapbox = lazyWithRetry(() => import('@/components/driver/DriverMapbox'));
+const DriverMoneyPanel = lazyWithRetry(() =>
+  import('@/components/driver/DriverMoneyPanel').then((m) => ({ default: m.DriverMoneyPanel })),
+);
+const DriverInbox = lazyWithRetry(() => import('@/components/driver/DriverInbox'));
+const DriverReferral = lazyWithRetry(() =>
+  import('@/components/driver/DriverReferral').then((m) => ({ default: m.DriverReferral })),
+);
 
 import { TurnByTurnBanner } from '@/components/driver/TurnByTurnBanner';
 import { NavBottomCard } from '@/components/driver/NavBottomCard';
@@ -101,7 +104,6 @@ export default function DriverApp() {
     if (t === 'home') { searchParams.delete('tab'); setSearchParams(searchParams); }
     else { searchParams.set('tab', t); setSearchParams(searchParams); }
   };
-  useEarnings();
   useDriverNotifications();
 
   useEffect(() => {
@@ -129,7 +131,7 @@ export default function DriverApp() {
     if (driverActive === false && isOnline) setIsOnline(false);
   }, [driverActive, isOnline]);
 
-  const { tracking, error: locError } = useDriverLocation(isOnline);
+  const { error: locError, position: onlinePos } = useDriverLocation(isOnline);
   const { stores: nearbyStores } = useNearbyStoresForDriver();
   const driverPrefs = useDriverAppPrefs();
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
@@ -147,7 +149,9 @@ export default function DriverApp() {
   }, [offers.length, activeDelivery]);
   const sheetDragStartY = useRef<number | null>(null);
   const sheetDragMoved = useRef(false);
-  const [driverPos, setDriverPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
+  // Offline: map owns GPS for the blue-dot. Online: useDriverLocation is the single watch.
+  const [offlineMapPos, setOfflineMapPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
+  const driverPos = isOnline ? onlinePos : offlineMapPos;
   const mapRef = useRef<DriverMapboxHandle>(null);
 
   const navigatingTo = activeDelivery
@@ -419,8 +423,15 @@ export default function DriverApp() {
         onForceOffline={() => setIsOnline(false)}
         hasActiveDelivery={!!activeDelivery}
       />
-      {activeTab === 'home' ? (
-        <div className="flex-1 relative min-h-0 w-full">
+      {/* Map stays mounted across tabs so Mapbox doesn't remount on Money/Inbox. */}
+      <div
+        className={
+          activeTab === 'home'
+            ? 'flex-1 relative min-h-0 w-full'
+            : 'absolute inset-0 opacity-0 pointer-events-none z-0 overflow-hidden'
+        }
+        aria-hidden={activeTab !== 'home'}
+      >
           <Suspense fallback={<div className="absolute inset-0 z-0 bg-muted/40" />}>
             <DriverMapbox
               ref={mapRef}
@@ -437,7 +448,10 @@ export default function DriverApp() {
               customerAddress={activeDelivery?.delivery_address}
               navigatingTo={navigatingTo}
               onRouteUpdate={setRouteInfo}
-              onDriverPosUpdate={setDriverPos}
+              onDriverPosUpdate={isOnline ? undefined : setOfflineMapPos}
+              useExternalGps={isOnline}
+              externalPos={isOnline ? onlinePos : null}
+              visible={activeTab === 'home'}
               nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
               followMode={isNavActive}
               overlayPadding={mapOverlayPadding}
@@ -877,7 +891,8 @@ export default function DriverApp() {
             </div>
           </div>
         </div>
-      ) : (
+
+      {activeTab !== 'home' && (
         /* ─── NON-MAP TABS ─── */
         <>
           <header className="relative z-30 px-4 py-3 flex items-center justify-between bg-[hsl(var(--driver-surface))]/95 backdrop-blur-xl border-b border-[hsl(var(--driver-border))] safe-area-top animate-slide-down">
@@ -903,16 +918,18 @@ export default function DriverApp() {
             </div>
             <div className="w-10" />
           </header>
-          <div key={activeTab} className="flex-1 overflow-y-auto pb-8 animate-fade-in">
-            {activeTab === 'money' && (
-              <div className="px-4 py-4">
-                <DriverMoneyPanel />
-              </div>
-            )}
-            {activeTab === 'inbox' && <DriverInbox />}
-            {activeTab === 'referral' && (
-              <div className="px-4 py-4"><DriverReferral /></div>
-            )}
+          <div key={activeTab} className="flex-1 overflow-y-auto pb-8 animate-fade-in relative z-10">
+            <Suspense fallback={<div className="p-6 text-sm text-muted-foreground">Φόρτωση…</div>}>
+              {activeTab === 'money' && (
+                <div className="px-4 py-4">
+                  <DriverMoneyPanel />
+                </div>
+              )}
+              {activeTab === 'inbox' && <DriverInbox />}
+              {activeTab === 'referral' && (
+                <div className="px-4 py-4"><DriverReferral /></div>
+              )}
+            </Suspense>
           </div>
         </>
       )}

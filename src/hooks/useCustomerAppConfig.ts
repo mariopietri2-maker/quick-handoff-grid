@@ -71,32 +71,55 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
   },
 };
 
-/** Reads the PUBLISHED customer app config + subscribes to live updates. */
+function mergeConfig(cfg: any): CustomerAppConfig {
+  return {
+    ...DEFAULT_CONFIG,
+    ...cfg,
+    branding: { ...DEFAULT_CONFIG.branding, ...(cfg?.branding ?? {}) },
+    sections: { ...DEFAULT_CONFIG.sections, ...(cfg?.sections ?? {}) },
+  };
+}
+
+// ── Shared singleton so CustomerLayout + home + carousels share one fetch/channel ──
+let cachedConfig: CustomerAppConfig = DEFAULT_CONFIG;
+let bootstrapped = false;
+let inflight: Promise<void> | null = null;
+const listeners = new Set<(c: CustomerAppConfig) => void>();
+
+async function loadPublishedConfig() {
+  const { data } = await (supabase as any)
+    .from('customer_app_config')
+    .select('published_config')
+    .maybeSingle();
+  const cfg = data?.published_config;
+  if (cfg && Object.keys(cfg).length) {
+    cachedConfig = mergeConfig(cfg);
+    listeners.forEach((fn) => fn(cachedConfig));
+  }
+}
+
+function ensureConfigSubscription() {
+  if (bootstrapped) return;
+  bootstrapped = true;
+  inflight = loadPublishedConfig().finally(() => { inflight = null; });
+  supabase
+    .channel('customer-app-config-shared')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, () => {
+      void loadPublishedConfig();
+    })
+    .subscribe();
+}
+
+/** Reads the PUBLISHED customer app config + subscribes to live updates (shared). */
 export function useCustomerAppConfig(): CustomerAppConfig {
-  const [config, setConfig] = useState<CustomerAppConfig>(DEFAULT_CONFIG);
+  const [config, setConfig] = useState<CustomerAppConfig>(cachedConfig);
 
   useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const { data } = await (supabase as any)
-        .from('customer_app_config')
-        .select('published_config')
-        .maybeSingle();
-      if (!mounted) return;
-      const cfg = data?.published_config;
-      if (cfg && Object.keys(cfg).length) {
-        setConfig({ ...DEFAULT_CONFIG, ...cfg, branding: { ...DEFAULT_CONFIG.branding, ...(cfg.branding ?? {}) }, sections: { ...DEFAULT_CONFIG.sections, ...(cfg.sections ?? {}) } });
-      }
-    };
-    load();
-    const channel = supabase
-      .channel(`customer-app-config-${Math.random().toString(36).slice(2)}`)
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, load)
-      .subscribe();
-    return () => {
-      mounted = false;
-      supabase.removeChannel(channel);
-    };
+    ensureConfigSubscription();
+    setConfig(cachedConfig);
+    listeners.add(setConfig);
+    if (inflight) void inflight.then(() => setConfig(cachedConfig));
+    return () => { listeners.delete(setConfig); };
   }, []);
 
   return config;

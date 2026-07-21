@@ -7,17 +7,16 @@ export interface StoreRating {
 }
 
 /**
- * Fetches aggregate ratings (average + count) for a list of store IDs.
- * Stable, order-independent dedup key prevents refetch storms when the
- * caller passes a new array reference each render (e.g. filtered lists
- * recomputed on every keystroke).
+ * Fetches aggregate ratings (average + count) for a list of store IDs
+ * from store_ratings_public — one row per store, not every review.
  */
 export function useStoreRatings(storeIds: string[]) {
   const [ratings, setRatings] = useState<Record<string, StoreRating>>({});
 
   const key = useMemo(
-    () => [...new Set(storeIds)].sort().join(','),
-    [storeIds.join('|')], // eslint-disable-line react-hooks/exhaustive-deps
+    () => [...new Set(storeIds.filter(Boolean))].sort().join(','),
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [storeIds.join('|')],
   );
 
   useEffect(() => {
@@ -28,21 +27,20 @@ export function useStoreRatings(storeIds: string[]) {
     const ids = key.split(',');
     let cancelled = false;
     (async () => {
-      const { data } = await supabase
-        .from('reviews')
-        .select('store_id, rating')
+      const { data, error } = await (supabase as any)
+        .from('store_ratings_public')
+        .select('store_id, avg_rating, review_count')
         .in('store_id', ids);
-      if (cancelled || !data) return;
-      const map: Record<string, { sum: number; count: number }> = {};
-      for (const r of data) {
-        if (!map[r.store_id]) map[r.store_id] = { sum: 0, count: 0 };
-        map[r.store_id].sum += r.rating;
-        map[r.store_id].count += 1;
-      }
+      if (cancelled) return;
       const result: Record<string, StoreRating> = {};
-      for (const id of ids) {
-        const m = map[id];
-        result[id] = m ? { avg: +(m.sum / m.count).toFixed(1), count: m.count } : { avg: 0, count: 0 };
+      for (const id of ids) result[id] = { avg: 0, count: 0 };
+      if (!error && data) {
+        for (const r of data as any[]) {
+          result[r.store_id] = {
+            avg: Number(r.avg_rating ?? 0),
+            count: Number(r.review_count ?? 0),
+          };
+        }
       }
       setRatings(result);
     })();
