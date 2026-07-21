@@ -387,24 +387,28 @@ export default function DriverApp() {
 
 
   // Keep map fitBounds clear of top chrome + bottom sheet / nav card
+  // Uber-style modes:
+  // - idle → compact online/offline toggle (GO bar)
+  // - offer / delivery / break / cash-cap → job UI only (no online toggle)
+  const hasIncomingOffers = !activeDelivery && offers.length > 0;
+  const showJobSheet = !!activeDelivery || hasIncomingOffers || onBreak || cashCapped;
+  const showCompactOnlineDock =
+    sheetCollapsed &&
+    !showJobSheet;
+
+  // Offer / trip sheets need more height than the idle GO bar (Uber-like)
   const mapOverlayPadding = (() => {
     if (isNavActive) {
       return { top: 140, bottom: 220, left: 48, right: 72 };
     }
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
-    // Collapsed dock is compact (~toggle only); expanded uses ~half viewport
-    const bottom = sheetCollapsed
+    const bottom = showCompactOnlineDock
       ? Math.max(120, Math.round(vh * 0.16) + 28)
-      : Math.max(260, Math.round(vh * 0.48) + 24);
+      : hasIncomingOffers || activeDelivery
+        ? Math.max(320, Math.round(vh * 0.58) + 24)
+        : Math.max(260, Math.round(vh * 0.48) + 24);
     return { top: 96, bottom, left: 40, right: 40 };
   })();
-
-  const showCompactOnlineDock =
-    sheetCollapsed &&
-    !activeDelivery &&
-    !onBreak &&
-    !cashCapped &&
-    offers.length === 0;
 
   return (
     <div className="h-[100dvh] w-screen max-w-full flex flex-col driver-shell bg-[hsl(var(--driver-bg))] overflow-hidden overscroll-none">
@@ -572,28 +576,47 @@ export default function DriverApp() {
               className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[28px] shadow-[0_-12px_32px_-12px_hsl(220,18%,14%,0.18)] transition-[max-height] duration-300 ease-out ${
                 showCompactOnlineDock
                   ? 'overflow-hidden'
-                  : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                  : hasIncomingOffers || activeDelivery
+                    ? 'max-h-[62vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                    : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
               }`}
             >
+              {/* Drag handle — locked during offers so the job card stays focused */}
               <div
-                className="w-full flex items-center justify-center pt-2.5 pb-2 group cursor-grab active:cursor-grabbing touch-none select-none"
+                className={`w-full flex items-center justify-center pt-2.5 pb-2 group select-none ${
+                  hasIncomingOffers
+                    ? 'cursor-default'
+                    : 'cursor-grab active:cursor-grabbing touch-none'
+                }`}
                 role="button"
                 tabIndex={0}
                 aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
-                title={sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
-                onClick={() => { if (!sheetDragMoved.current) setSheetCollapsed(v => !v); }}
-                onTouchStart={(e) => { sheetDragStartY.current = e.touches[0].clientY; sheetDragMoved.current = false; }}
+                title={hasIncomingOffers ? 'Νέα προσφορά' : sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
+                onClick={() => {
+                  if (hasIncomingOffers) return;
+                  if (!sheetDragMoved.current) setSheetCollapsed(v => !v);
+                }}
+                onTouchStart={(e) => {
+                  if (hasIncomingOffers) return;
+                  sheetDragStartY.current = e.touches[0].clientY;
+                  sheetDragMoved.current = false;
+                }}
                 onTouchMove={(e) => {
-                  if (sheetDragStartY.current == null) return;
+                  if (hasIncomingOffers || sheetDragStartY.current == null) return;
                   const dy = e.touches[0].clientY - sheetDragStartY.current;
                   if (Math.abs(dy) > 8) sheetDragMoved.current = true;
                   if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
                   else if (dy > 24 && !sheetCollapsed) { setSheetCollapsed(true); sheetDragStartY.current = null; }
                 }}
                 onTouchEnd={() => { sheetDragStartY.current = null; }}
-                onPointerDown={(e) => { (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId); sheetDragStartY.current = e.clientY; sheetDragMoved.current = false; }}
+                onPointerDown={(e) => {
+                  if (hasIncomingOffers) return;
+                  (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
+                  sheetDragStartY.current = e.clientY;
+                  sheetDragMoved.current = false;
+                }}
                 onPointerMove={(e) => {
-                  if (sheetDragStartY.current == null) return;
+                  if (hasIncomingOffers || sheetDragStartY.current == null) return;
                   const dy = e.clientY - sheetDragStartY.current;
                   if (Math.abs(dy) > 8) sheetDragMoved.current = true;
                   if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
@@ -635,14 +658,15 @@ export default function DriverApp() {
                   </div>
                 ) : (
                   <>
-                    {!activeDelivery && (
+                    {/* Idle expanded only — never compete with offers/trips */}
+                    {!showJobSheet && (
                       <>
                         <AnnouncementsBanner audience="drivers" />
                         <SurgeStatusBadge />
                       </>
                     )}
 
-                    {onBreak && (
+                    {onBreak && !activeDelivery && !hasIncomingOffers && (
                       <div className="px-3 py-2.5 rounded-xl bg-warning/15 border border-warning/30 driver-glass flex items-center gap-2">
                         <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
                       </div>
@@ -729,20 +753,16 @@ export default function DriverApp() {
                       </div>
                     )}
 
-                    {!activeDelivery && isOnline && !onBreak && !cashCapped && !loading && offers.length > 0 && (
-                      <div className="space-y-3 animate-slide-up">
-                        <div className="flex items-center justify-between px-1">
-                          <div className="flex items-center gap-2">
-                            <h3 className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">
-                              {isAdmin ? 'Όλες οι Διαθέσιμες' : 'Νέες Παραγγελίες'}
-                            </h3>
-                            {isAdmin && (
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-primary bg-primary/10 border border-primary/30 rounded px-1.5 py-0.5">
-                                Ops
-                              </span>
-                            )}
-                          </div>
-                          <Badge className="bg-primary text-primary-foreground font-heading text-[10px] px-2 py-0.5 animate-pop">{offers.length}</Badge>
+                    {/* Offer mode — Uber-style: only the offer, no online toggle */}
+                    {hasIncomingOffers && isOnline && !onBreak && !cashCapped && !loading && (
+                      <div className="space-y-3 animate-slide-up pb-1">
+                        <div className="flex items-center justify-between px-0.5">
+                          <p className="text-[11px] font-heading font-semibold uppercase tracking-wide text-[hsl(var(--driver-text-muted))]">
+                            Νέα προσφορά
+                          </p>
+                          <span className="tabular-nums text-[11px] font-heading font-bold text-primary">
+                            {offers.length > 1 ? `${offers.length} διαθέσιμες` : 'Αποδοχή ή απόρριψη'}
+                          </span>
                         </div>
                         {offers.map((offer, i) => (
                           <div key={offer.id} className="animate-pop" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
@@ -776,9 +796,10 @@ export default function DriverApp() {
                       </div>
                     )}
 
-                    {!activeDelivery && (
+                    {/* Online toggle — only when idle (no offer / trip). Uber GO bar pattern. */}
+                    {!showJobSheet && (
                       <div className="rounded-2xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))]/60 overflow-hidden transition-all duration-500 ease-out animate-scale-in">
-                        {isOnline && !loading && offers.length === 0 && (
+                        {isOnline && !loading && (
                           <div className="p-4 text-center animate-fade-in">
                             <div className="relative h-10 w-10 mx-auto mb-2">
                               <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
