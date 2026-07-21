@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowLeft, Package, Clock, CheckCircle2, RotateCcw } from 'lucide-react';
+import { Package, RotateCcw } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -86,21 +86,23 @@ export default function MyOrdersPage() {
   };
 
   return (
-    <div className="min-h-full bg-background pb-4">
+    <div className="min-h-full bg-white pb-4">
       <SEO
         title="Οι παραγγελίες μου — Fresh Delivery"
         description="Δείτε το ιστορικό παραγγελιών σας, παρακολουθήστε ενεργές αποστολές και επαναλάβετε αγαπημένες παραγγελίες."
         path="/orders"
         noindex
       />
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate('/order')} aria-label="Επιστροφή στα εστιατόρια" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center">
-          <ArrowLeft className="h-5 w-5 text-foreground" />
-        </button>
-        <h1 className="font-heading font-bold text-lg text-foreground">Οι Παραγγελίες μου</h1>
+      <header
+        className="bg-white border-b border-[hsl(0,0%,92%)] px-4 py-4 sticky top-0 z-40"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
+        <h1 className="font-heading font-extrabold text-[22px] text-[hsl(0,0%,9%)] tracking-tight">
+          Παραγγελίες
+        </h1>
       </header>
 
-      <main className="max-w-lg mx-auto p-4 space-y-4">
+      <main className="max-w-2xl mx-auto p-4 space-y-4">
         <RewardsCard />
         <CustomerWalletCard />
         <CustomerReferralCard />

@@ -319,10 +319,9 @@
   }
 
   /* ───────────────────────────────────────────────
-     Customer shell — DoorDash-style: bold red accent,
-     crisp white surfaces, heavy headings, generous radius.
-     Scoped to .customer-shell so the brand-blue token
-     stays the source of truth everywhere else.
+     Customer shell — Uber Eats–inspired structure:
+     white surfaces, near-black type, green accent.
+     Admin branding can still override --c-accent.
      ─────────────────────────────────────────────── */
   .customer-shell {
     --c-bg: 0 0% 100%;
@@ -331,10 +330,10 @@
     --c-border: 0 0% 90%;
     --c-text: 0 0% 9%;
     --c-text-muted: 0 0% 38%;
-    --c-accent: 4 90% 47%;            /* DoorDash red */
-    --c-accent-soft: 4 90% 47% / 0.10;
-    --c-accent-dark: 4 90% 38%;
-    --c-radius: 14px;
+    --c-accent: 152 100% 39%;         /* Uber Eats green */
+    --c-accent-soft: 152 100% 39% / 0.12;
+    --c-accent-dark: 152 100% 28%;
+    --c-radius: 12px;
     background: hsl(var(--c-bg));
     color: hsl(var(--c-text));
   }
@@ -357,7 +356,7 @@
     border-radius: 999px;
   }
   .customer-shell .c-gradient-hero {
-    background: linear-gradient(120deg, hsl(4 90% 47%), hsl(14 95% 55%) 60%, hsl(28 95% 58%));
+    background: linear-gradient(120deg, hsl(152 100% 32%), hsl(152 80% 42%) 55%, hsl(168 70% 48%));
   }
   .customer-shell .c-gradient-dark {
     background: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 18%));

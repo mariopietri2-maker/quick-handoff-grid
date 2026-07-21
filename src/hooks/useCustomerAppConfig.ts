@@ -21,7 +21,7 @@ export type HeroCard = {
   motion?: HeroMotion;
   /** Badge label above the title (default "Για σένα"). */
   badge?: string;
-  /** Soft accent wash color as HSL without wrapper, e.g. "4 90% 47%". */
+  /** Soft accent wash color as HSL without wrapper, e.g. "152 100% 39%". */
   accent_hsl?: string;
 };
 
@@ -65,8 +65,8 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
   branding: {
     app_name: 'Fresh Delivery',
     city_label: 'Ιωάννινα',
-    accent_hsl: '4 90% 47%',
-    accent_dark_hsl: '4 90% 38%',
+    accent_hsl: '152 100% 39%',
+    accent_dark_hsl: '152 100% 28%',
     logo_url: null,
   },
   tiles: [
