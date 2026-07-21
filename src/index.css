@@ -316,6 +316,15 @@
     padding-bottom: env(safe-area-inset-bottom, 0px);
   }
 
+  /*
+   * Mapbox blanks inside ancestors with CSS transform (Radix Sheet/Dialog).
+   * AddressAutocomplete sets html[data-address-map-open] while the pin map is open.
+   */
+  html[data-address-map-open] [data-radix-dialog-content],
+  html[data-address-map-open] [role="dialog"] {
+    transform: none !important;
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
     scrollbar-color: hsl(225 15% 25% / 0.5) transparent;
