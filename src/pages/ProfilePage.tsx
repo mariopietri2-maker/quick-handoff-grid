@@ -8,7 +8,7 @@ import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import {
-  ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
+  User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
   FileText, RefreshCw, Ticket, Gift, MapPin, Heart, Receipt, ChevronRight,
   Settings as SettingsIcon, Wallet,
@@ -95,7 +95,7 @@ export default function ProfilePage() {
   const initials = (fullName || user.email || '?').charAt(0).toUpperCase();
 
   return (
-    <div className="min-h-full bg-muted/40 pb-4">
+    <div className="min-h-full bg-white pb-4">
       <SEO
         title="Το προφίλ μου — Fresh Delivery"
         description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh Delivery."
@@ -104,15 +104,17 @@ export default function ProfilePage() {
       />
 
       {/* Sticky header */}
-      <header className="sticky top-0 z-20 border-b border-border bg-background/85 backdrop-blur-md">
-        <div className="container max-w-2xl flex items-center justify-between px-4 py-3">
-          <Button variant="ghost" size="icon" onClick={() => navigate('/order')} aria-label="Πίσω">
-            <ArrowLeft className="h-5 w-5" />
-          </Button>
-          <h1 className="font-heading font-bold text-base text-foreground">Το Προφίλ μου</h1>
+      <header
+        className="sticky top-0 z-20 border-b border-[hsl(0,0%,92%)] bg-white"
+        style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
+      >
+        <div className="max-w-2xl mx-auto flex items-center justify-between px-4 py-4">
+          <h1 className="font-heading font-extrabold text-[22px] text-[hsl(0,0%,9%)] tracking-tight">
+            Λογαριασμός
+          </h1>
           <Sheet open={editOpen} onOpenChange={setEditOpen}>
             <SheetTrigger asChild>
-              <Button variant="ghost" size="icon" aria-label="Επεξεργασία">
+              <Button variant="ghost" size="icon" aria-label="Επεξεργασία" className="rounded-full">
                 <SettingsIcon className="h-5 w-5" />
               </Button>
             </SheetTrigger>

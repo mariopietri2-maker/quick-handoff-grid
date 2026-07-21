@@ -15,10 +15,15 @@ const translations: Record<string, Record<Lang, string>> = {
 
   // Customer app
   'customer.orders': { el: 'Παραγγελίες', en: 'Orders' },
+  'customer.tab_home': { el: 'Αρχική', en: 'Home' },
+  'customer.tab_browse': { el: 'Αναζήτηση', en: 'Browse' },
+  'customer.tab_account': { el: 'Λογαριασμός', en: 'Account' },
+  'customer.view_cart': { el: 'Προβολή καλαθιού', en: 'View cart' },
+  'customer.deliver_now': { el: 'Παράδοση τώρα', en: 'Deliver now' },
   'customer.login': { el: 'Σύνδεση', en: 'Sign in' },
-  'customer.search_placeholder': { el: 'Αναζήτηση καταστημάτων ή φαγητού', en: 'Search restaurants or food' },
-  'customer.popular': { el: 'Δημοφιλή', en: 'Popular' },
-  'customer.nearby': { el: 'Κοντινά Εστιατόρια', en: 'Nearby Restaurants' },
+  'customer.search_placeholder': { el: 'Φαγητό, καταστήματα, κουζίνες', en: 'Food, restaurants, cuisines' },
+  'customer.popular': { el: 'Προτεινόμενα', en: 'Featured' },
+  'customer.nearby': { el: 'Όλα τα καταστήματα', en: 'All stores' },
   'customer.no_results': { el: 'Δεν βρέθηκαν εστιατόρια', en: 'No restaurants found' },
   'customer.try_search': { el: 'Δοκιμάστε διαφορετική αναζήτηση', en: 'Try a different search' },
   'customer.check_back': { el: 'Ελέγξτε ξανά σύντομα', en: 'Check back soon' },
@@ -33,6 +38,11 @@ const translations: Record<string, Record<Lang, string>> = {
   'customer.recommended': { el: 'Προτεινόμενα για σένα', en: 'Recommended for you' },
   'customer.recommended_badge': { el: 'Για σένα', en: 'For you' },
   'customer.recommended_sub': { el: 'Επιλογές κοντά σου', en: 'Picks near you' },
+  'customer.filter_offers': { el: 'Προσφορές', en: 'Offers' },
+  'customer.filter_under_30': { el: 'Κάτω από 30 λεπ', en: 'Under 30 min' },
+  'customer.filter_top': { el: 'Κορυφαία', en: 'Top rated' },
+  'customer.clear_filters': { el: 'Καθαρισμός', en: 'Clear' },
+  'customer.categories': { el: 'Κατηγορίες', en: 'Categories' },
 
   // Categories
   'cat.all': { el: 'Όλα', en: 'All' },
