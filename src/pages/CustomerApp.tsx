@@ -11,7 +11,6 @@ import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
 import AppSplash from '@/components/customer/AppSplash';
 import OrderAgainRow from '@/components/customer/OrderAgainRow';
-import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -28,6 +27,7 @@ import HomeGreeting from '@/components/customer/HomeGreeting';
 import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
 import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
 import { storeMatchesCategory } from '@/lib/category-match';
+import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -93,7 +93,7 @@ export default function CustomerApp() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
-  useCustomerOrderNotifications();
+  // Order-status toasts/push: PushBootstrap only (avoid duplicate realtime channel).
 
   // Delivery address (persisted locally; falls back to city label)
   const [addressOpen, setAddressOpen] = useState(false);
@@ -190,10 +190,7 @@ export default function CustomerApp() {
       if (pending) return;
       pending = setTimeout(() => { pending = null; load(); }, 800);
     };
-    // Unique channel name avoids Strict Mode remount racing removeChannel +
-    // re-subscribe on the same topic ("cannot add postgres_changes after subscribe").
-    const channel = supabase
-      .channel(`customer-stores-feed-${Math.random().toString(36).slice(2, 9)}`)
+    const channel = openRealtimeChannel('customer-stores-feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, scheduleReload)
       .subscribe();
 

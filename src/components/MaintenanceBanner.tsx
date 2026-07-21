@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { AlertTriangle } from 'lucide-react';
+import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 export default function MaintenanceBanner() {
   const [data, setData] = useState<{ maintenance_mode: boolean; maintenance_message: string | null } | null>(null);
@@ -13,7 +14,7 @@ export default function MaintenanceBanner() {
     };
     load();
     const id = setInterval(load, 30_000);
-    const ch = supabase.channel('maintenance')
+    const ch = openRealtimeChannel('maintenance')
       .on('postgres_changes' as any, { event: '*', schema: 'public', table: 'platform_settings' }, () => load())
       .subscribe();
     return () => { clearInterval(id); supabase.removeChannel(ch); };

@@ -10,6 +10,7 @@ import {
 } from '@/lib/notifications';
 import { startPushRegistration } from '@/lib/push-register';
 import { initNotificationChannels } from '@/lib/push-notifications';
+import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 const statusToastLabels: Record<string, string> = {
   accepted: 'Η παραγγελία σου έγινε δεκτή ✅',
@@ -26,7 +27,7 @@ const statusToastLabels: Record<string, string> = {
  * browser/OS notification + in-app toast + soft chime on every transition.
  * Also registers the device for remote push (FCM) when running in the APK.
  *
- * Mount this hook once at the customer-app shell level.
+ * Prefer mounting once via PushBootstrap (not also in CustomerApp).
  */
 export function useCustomerOrderNotifications() {
   const { user } = useAuth();
@@ -39,8 +40,7 @@ export function useCustomerOrderNotifications() {
     requestNotificationPermission().catch(() => {});
     void startPushRegistration(user.id);
 
-    const channel = supabase
-      .channel(`customer-orders-${user.id}`)
+    const channel = openRealtimeChannel(`customer-orders-${user.id}`)
       .on(
         'postgres_changes',
         {
