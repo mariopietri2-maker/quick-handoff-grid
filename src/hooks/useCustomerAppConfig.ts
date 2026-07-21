@@ -103,10 +103,14 @@ function mergeConfig(cfg: any): CustomerAppConfig {
   };
 }
 
-// Shared singleton so CustomerLayout + home + carousels share one fetch/channel
+// Shared singleton so CustomerLayout + home + carousels share one fetch/channel.
+// Important: only ONE realtime channel may call .subscribe(); mounting the hook
+// in several components must not re-attach postgres_changes after subscribe().
 let cachedConfig: CustomerAppConfig = DEFAULT_CONFIG;
 let cacheLoaded = false;
 let inflight: Promise<void> | null = null;
+let realtimeStarted = false;
+let sharedChannel: ReturnType<typeof supabase.channel> | null = null;
 const listeners = new Set<(c: CustomerAppConfig) => void>();
 
 function emit(cfg: CustomerAppConfig) {
@@ -124,6 +128,24 @@ async function loadShared() {
   cacheLoaded = true;
 }
 
+function ensureRealtime() {
+  if (realtimeStarted) return;
+  realtimeStarted = true;
+  sharedChannel = supabase
+    .channel('customer-app-config-shared')
+    .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, () => {
+      void loadShared();
+    })
+    .subscribe();
+}
+
+function releaseRealtimeIfIdle() {
+  if (listeners.size > 0 || !sharedChannel) return;
+  supabase.removeChannel(sharedChannel);
+  sharedChannel = null;
+  realtimeStarted = false;
+}
+
 /** Reads the PUBLISHED customer app config + subscribes to live updates. */
 export function useCustomerAppConfig(): CustomerAppConfig {
   const [config, setConfig] = useState<CustomerAppConfig>(cachedConfig);
@@ -139,16 +161,11 @@ export function useCustomerAppConfig(): CustomerAppConfig {
       setConfig(cachedConfig);
     }
 
-    const channel = supabase
-      .channel('customer-app-config-shared')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, () => {
-        void loadShared();
-      })
-      .subscribe();
+    ensureRealtime();
 
     return () => {
       listeners.delete(setConfig);
-      supabase.removeChannel(channel);
+      releaseRealtimeIfIdle();
     };
   }, []);
 
