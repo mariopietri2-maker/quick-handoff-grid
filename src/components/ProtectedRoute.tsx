@@ -48,25 +48,26 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
     return <>{children}</>;
   }
 
-  // Role M monitor panel
-  if (allowedRoles?.includes('m')) {
-    if (!isM && profile?.role !== 'm') {
-      if (flavor === 'driver') return <RoleAccessGate required="driver" />;
-      return <Navigate to="/" replace />;
-    }
-    return <>{children}</>;
-  }
-
   // Store portal: allow profile.role=store OR user_roles store membership
   if (allowedRoles?.includes('store') && (isStore || profile?.role === 'store')) {
     return <>{children}</>;
   }
 
-  // Driver app: regular drivers + M (still drivers) can deliver
+  // Driver app (/driver): allowedRoles is ['driver','m'] — regular drivers MUST pass.
+  // This must run BEFORE the m-only check, or every driver hits RoleAccessGate.
   if (
     allowedRoles?.includes('driver') &&
     (profile?.role === 'driver' || profile?.role === 'm' || isM)
   ) {
+    return <>{children}</>;
+  }
+
+  // Monitor panel (/m) — m-only routes (do not use when 'driver' is also allowed).
+  if (allowedRoles?.includes('m') && !allowedRoles.includes('driver')) {
+    if (!isM && profile?.role !== 'm') {
+      if (flavor === 'driver') return <RoleAccessGate required="driver" />;
+      return <Navigate to="/" replace />;
+    }
     return <>{children}</>;
   }
 
