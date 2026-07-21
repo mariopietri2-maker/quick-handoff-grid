@@ -63,7 +63,9 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
           // Ignore outside-pointer events that originate from another Radix
           // popper (Select / Dropdown / Popover / Tooltip / Toast), otherwise
           // tapping a Select option inside a Sheet closes the entire Sheet.
-          if (target?.closest('[data-radix-popper-content-wrapper],[data-sonner-toast],[data-radix-toast-root]')) {
+          // Also ignore the address pin map portal (rendered outside the sheet
+          // so Mapbox isn't blanked by CSS transform on SheetContent).
+          if (target?.closest('[data-radix-popper-content-wrapper],[data-sonner-toast],[data-radix-toast-root],[data-address-map-portal]')) {
             e.preventDefault();
             return;
           }
@@ -71,7 +73,7 @@ const SheetContent = React.forwardRef<React.ElementRef<typeof SheetPrimitive.Con
         }}
         onInteractOutside={(e) => {
           const target = e.target as HTMLElement | null;
-          if (target?.closest('[data-radix-popper-content-wrapper],[data-sonner-toast],[data-radix-toast-root]')) {
+          if (target?.closest('[data-radix-popper-content-wrapper],[data-sonner-toast],[data-radix-toast-root],[data-address-map-portal]')) {
             e.preventDefault();
             return;
           }
