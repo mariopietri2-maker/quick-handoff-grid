@@ -56,7 +56,7 @@ export default function DriverApp() {
     });
   };
   const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, offerExpiresAt, offerTimeoutSec } = useDriverOrders({ adminOverride: isAdmin });
-  const { state: driverState } = useDriverState();
+  const { state: driverState, update: updateDriverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
   useEffect(() => { warmMapboxToken(); }, []);
@@ -78,6 +78,15 @@ export default function DriverApp() {
   useEffect(() => {
     try { localStorage.setItem('driver_is_online_v1', isOnline ? '1' : '0'); } catch {}
   }, [isOnline]);
+
+  // Mirror online toggle to driver_state.shift_started_at so admin/dispatch
+  // treat the driver as on-shift (does not reset cash balance).
+  useEffect(() => {
+    if (!user || !driverState) return;
+    if (isOnline && !driverState.shift_started_at) {
+      void updateDriverState({ shift_started_at: new Date().toISOString() });
+    }
+  }, [isOnline, user, driverState?.shift_started_at]);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   

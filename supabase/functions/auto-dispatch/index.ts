@@ -1,8 +1,9 @@
 // Auto-dispatch engine
-// Run on a cron every ~30s. For each order needing dispatch:
-//   - if no live offers → start wave 1 with N nearest eligible drivers
+// Run on a cron every ~30s while auto_dispatch_enabled. Forever loop:
+//   - if no live offers → offer to N closest eligible drivers (wave)
 //   - if all wave offers expired/declined → advance to next wave
-//   - if max waves exhausted → leave as-is (admin fallback)
+//   - if max waves exhausted → restart from wave 1 with a fresh driver pool
+// Scoring (nearby_active_drivers): closest-first + soft €target/hour fairness.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
 import { getAuthedUser, hasCronSecret, unauthorized } from "../_shared/auth.ts";
@@ -94,7 +95,7 @@ Deno.serve(async (req) => {
     // 1) Load settings
     const { data: settings } = await admin
       .from("platform_settings")
-      .select("assignment_mode, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, auto_dispatch_enabled")
+      .select("assignment_mode, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, auto_dispatch_enabled, dist_search_radius_km")
       .eq("id", 1)
       .single();
 
@@ -108,6 +109,7 @@ Deno.serve(async (req) => {
       });
     }
 
+    const searchRadiusKm = Number((settings as { dist_search_radius_km?: number } | null)?.dist_search_radius_km ?? 15) || 15;
     const s: Settings = {
       assignment_mode: settings?.assignment_mode ?? "auto",
       dist_offer_timeout_seconds: settings?.dist_offer_timeout_seconds ?? 60,
@@ -278,7 +280,14 @@ Deno.serve(async (req) => {
         }
 
         if (list.length === 0) {
-          list = await loadAvailableOnlineDrivers(admin, anchorLat, anchorLng, excludeList, s.dist_wave_size);
+          list = await loadAvailableOnlineDrivers(
+            admin,
+            anchorLat,
+            anchorLng,
+            excludeList,
+            s.dist_wave_size,
+            searchRadiusKm,
+          );
         }
         return list;
       };
@@ -354,41 +363,66 @@ async function loadAvailableOnlineDrivers(
   anchorLng: number,
   exclude: string[],
   limit: number,
+  radiusKm = 15,
 ): Promise<CandidateDriver[]> {
-  // Get all active drivers with their current location and active order count
-  const { data } = await admin
+  // Nested PostgREST embeds fail here (no FK from driver_profiles → locations).
+  // Query tables separately and join in memory — closest last-known GPS wins.
+  const { data: profiles, error: profErr } = await admin
     .from("driver_profiles")
-    .select("user_id, driver_locations(latitude, longitude, updated_at), driver_state(on_break, is_online)")
+    .select("user_id")
     .eq("is_active", true)
     .is("suspended_at", null)
-    .limit(Math.max(limit * 8, limit));
+    .limit(200);
+  if (profErr || !profiles?.length) return [];
 
-  // Get drivers with active orders (those already have a delivery in progress)
-  const { data: busyDrivers } = await admin
-    .from("orders")
-    .select("driver_id")
-    .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
-    .not("driver_id", "is", null);
+  const ids = profiles.map((p: { user_id: string }) => p.user_id);
+  const [{ data: locations }, { data: states }, { data: busyDrivers }, { data: liveOffers }] =
+    await Promise.all([
+      admin
+        .from("driver_locations")
+        .select("driver_id, latitude, longitude, updated_at")
+        .in("driver_id", ids)
+        .gt("updated_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
+      admin.from("driver_state").select("driver_id, on_break").in("driver_id", ids),
+      admin
+        .from("orders")
+        .select("driver_id")
+        .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
+        .not("driver_id", "is", null),
+      admin.from("pending_offers").select("driver_id").eq("status", "pending").in("driver_id", ids),
+    ]);
 
-  const busyDriverSet = new Set((busyDrivers ?? []).map((o: any) => o.driver_id));
+  const locByDriver = new Map<string, { lat: number; lng: number; at: number }>();
+  for (const loc of locations ?? []) {
+    const lat = loc.latitude != null ? Number(loc.latitude) : null;
+    const lng = loc.longitude != null ? Number(loc.longitude) : null;
+    if (lat == null || lng == null) continue;
+    locByDriver.set(loc.driver_id, { lat, lng, at: new Date(loc.updated_at).getTime() });
+  }
+  const onBreak = new Set(
+    (states ?? []).filter((s: { on_break?: boolean }) => !!s.on_break).map((s: { driver_id: string }) => s.driver_id),
+  );
+  const busyDriverSet = new Set((busyDrivers ?? []).map((o: { driver_id: string }) => o.driver_id));
+  const pendingOfferDrivers = new Set((liveOffers ?? []).map((o: { driver_id: string }) => o.driver_id));
 
-  return (data ?? [])
-    // Exclude: drivers in the exclude list, drivers on break, drivers with active orders
-    .filter((row: any) => 
-      !exclude.includes(row.user_id) && 
-      !row.driver_state?.on_break &&
-      !busyDriverSet.has(row.user_id)
+  return ids
+    .filter(
+      (id: string) =>
+        !exclude.includes(id) &&
+        !onBreak.has(id) &&
+        !busyDriverSet.has(id) &&
+        !pendingOfferDrivers.has(id) &&
+        locByDriver.has(id),
     )
-    .map((row: any) => {
-      const loc = Array.isArray(row.driver_locations) ? row.driver_locations[0] : row.driver_locations;
-      const lat = loc?.latitude != null ? Number(loc.latitude) : null;
-      const lng = loc?.longitude != null ? Number(loc.longitude) : null;
-      // If no recent GPS, still offer (assume far) so order doesn't sit unassigned.
-      const distance = lat != null && lng != null
-        ? haversineKm(anchorLat, anchorLng, lat, lng)
-        : 9999;
-      return { driver_id: row.user_id, distance_km: Number(distance.toFixed(2)), score: Number(distance.toFixed(3)) };
+    .map((id: string) => {
+      const loc = locByDriver.get(id)!;
+      const distance = haversineKm(anchorLat, anchorLng, loc.lat, loc.lng);
+      // Soft stale penalty so fresher GPS ranks ahead when distances are similar.
+      const ageHours = Math.max(0, (Date.now() - loc.at) / 3_600_000);
+      const score = distance + Math.min(ageHours, 6) * 0.5;
+      return { driver_id: id, distance_km: Number(distance.toFixed(2)), score: Number(score.toFixed(3)) };
     })
+    .filter((d: CandidateDriver) => d.distance_km <= radiusKm)
     .sort((a: CandidateDriver, b: CandidateDriver) => a.score - b.score)
     .slice(0, limit);
 }

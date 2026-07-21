@@ -2158,6 +2158,7 @@ export type Database = {
           surge_ratio_high_threshold: number
           surge_ratio_low_threshold: number
           surge_time_peak_multiplier: number
+          target_hourly_eur: number
           updated_at: string
         }
         Insert: {
@@ -2234,6 +2235,7 @@ export type Database = {
           surge_ratio_high_threshold?: number
           surge_ratio_low_threshold?: number
           surge_time_peak_multiplier?: number
+          target_hourly_eur?: number
           updated_at?: string
         }
         Update: {
@@ -2310,6 +2312,7 @@ export type Database = {
           surge_ratio_high_threshold?: number
           surge_ratio_low_threshold?: number
           surge_time_peak_multiplier?: number
+          target_hourly_eur?: number
           updated_at?: string
         }
         Relationships: []
