@@ -2,9 +2,9 @@
 
 Real-time food delivery marketplace for **Ιωάννινα** — customers, multi-store restaurant owners, drivers, admin ops, and support.
 
-**Live:** https://quick-handoff-grid.vercel.app  
-**Railway mirror:** https://quick-handoff-grid-production.up.railway.app  
-**Android APKs:** https://quick-handoff-grid.vercel.app/download
+**Live (Railway — primary while Vercel is rate-limited):** https://quick-handoff-grid-production.up.railway.app  
+**Vercel (may lag during build limits):** https://quick-handoff-grid.vercel.app  
+**Android APKs:** https://quick-handoff-grid-production.up.railway.app/download
 
 Vercel and Railway both serve the same SPA against the **same** Supabase project
 (`ojkesspghyqmjmupybva`). Production builds force those keys from `.env.production`
@@ -76,13 +76,17 @@ without dashboard env. Override with live Stripe `pk_live_…` on Vercel when re
 | `VITE_MAPBOX_TOKEN` | Optional client fallback; prefer edge `get-mapbox-token` |
 
 ### Supabase Auth
-- Site URL: `https://quick-handoff-grid.vercel.app`
-- Redirects: production URL + Railway mirror + `http://localhost:5173`
+- Site URL: `https://quick-handoff-grid-production.up.railway.app` (primary)
+- Redirects: Railway + Vercel + `http://localhost:5173`
 - Disable email confirm until SMTP is configured (otherwise signup looks broken)
 
 Vercel and Railway must use the **same** Supabase project (`ojkesspghyqmjmupybva`).
 `npm run build` forces those keys from `.env.production` so stale Railway dashboard
 `VITE_SUPABASE_*` values cannot point at another database.
+
+### Push (FCM)
+See [`docs/FIREBASE_PUSH.md`](docs/FIREBASE_PUSH.md) — place `google-services.json` under
+`mobile-signing/firebase/` and run `./scripts/set-fcm-secret.sh` before rebuild.
 
 ### Edge secrets (Supabase Dashboard → Edge Functions)
 `SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, Stripe live/test keys + webhook secrets, `MAPBOX_PUBLIC_TOKEN`, etc.

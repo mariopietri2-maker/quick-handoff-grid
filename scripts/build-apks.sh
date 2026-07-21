@@ -61,8 +61,8 @@ write_cap_config() {
     "allowNavigation": [
       "https://ojkesspghyqmjmupybva.supabase.co/*",
       "https://*.supabase.co/*",
-      "https://quick-handoff-grid.vercel.app/*",
       "https://quick-handoff-grid-production.up.railway.app/*",
+      "https://quick-handoff-grid.vercel.app/*",
       "https://api.mapbox.com/*"
     ]
   },
@@ -113,6 +113,12 @@ sync_flavor() {
 }
 
 echo "==> APK versionCode=$VERSION_CODE versionName=$VERSION_NAME"
+# Apply Firebase google-services.json when the owner has dropped files in
+# mobile-signing/firebase/ (see docs/FIREBASE_PUSH.md). Missing files are OK —
+# APKs still build; killed-app FCM simply won't register.
+if [ -x "$ROOT/scripts/apply-firebase-android.sh" ] || [ -f "$ROOT/scripts/apply-firebase-android.sh" ]; then
+  bash "$ROOT/scripts/apply-firebase-android.sh" || true
+fi
 sync_flavor customer android-customer com.freshdelivery.customer "Fresh Customer"
 sync_flavor driver android-driver com.freshdelivery.driver "Fresh Driver"
 ls -lah mobile-apks/
