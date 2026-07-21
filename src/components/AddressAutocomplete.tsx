@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
-import { createPortal } from 'react-dom';
+import * as DialogPrimitive from '@radix-ui/react-dialog';
 import { MapPin, Loader2, X, Navigation, Crosshair } from 'lucide-react';
 import { toast } from 'sonner';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
-import { mapboxgl, ensureMapboxWorker } from '@/lib/mapbox-gl';
+import { Dialog, DialogOverlay, DialogPortal, DialogTitle } from '@/components/ui/dialog';
+import { mapboxgl } from '@/lib/mapbox-gl';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { geocodeAddress } from '@/lib/geocode';
 import {
@@ -81,16 +82,6 @@ export function AddressAutocomplete({
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // Lock page scroll while the fullscreen pin map is open.
-  useEffect(() => {
-    if (!showMap) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.body.style.overflow = prev;
-    };
-  }, [showMap]);
-
   const search = useCallback(async (q: string) => {
     if (q.length < 3 || !token) {
       setResults([]);
@@ -100,7 +91,6 @@ export function AddressAutocomplete({
     setLoading(true);
     setNoResults(false);
     try {
-      // Detect a house number in the user query (e.g. "Δημοκρατίας 12")
       const numMatch = q.match(/\b(\d{1,4}[A-Za-zΑ-Ωα-ω]?)\b/);
       const typedNumber = numMatch ? numMatch[1] : null;
       const [proxLng, proxLat] = centerRef.current;
@@ -116,8 +106,6 @@ export function AddressAutocomplete({
         text?: string;
       }>;
 
-      // If user typed a number, prefer features that actually include it.
-      // Mapbox returns the house number in feature.address for "address" results.
       const withNumber = typedNumber
         ? features.filter(f => f.address && String(f.address) === typedNumber)
         : features;
@@ -127,7 +115,6 @@ export function AddressAutocomplete({
       const mapped: AddressResult[] = chosen
         .map(f => {
           let label = f.place_name;
-          // If user typed a number but result doesn't have one, inject it for clarity
           if (typedNumber && !f.address && f.place_type?.includes('address') && f.text) {
             label = label.replace(f.text, `${f.text} ${typedNumber}`);
           }
@@ -137,7 +124,6 @@ export function AddressAutocomplete({
             lat: f.center[1],
           };
         })
-        // Hard-lock suggestions to Ioannina service area
         .filter(r => isWithinIoanninaServiceArea(r.lat, r.lon));
       setResults(mapped);
       setOpen(mapped.length > 0);
@@ -162,8 +148,6 @@ export function AddressAutocomplete({
   };
 
   const handleBlur = async () => {
-    // If user typed an address but never picked a suggestion, resolve via Google
-    // (more accurate for Greek street numbers than Mapbox autocomplete).
     if (hasCoordsRef.current) return;
     const q = query.trim();
     if (q.length < 5) return;
@@ -249,10 +233,6 @@ export function AddressAutocomplete({
     setNoResults(false);
   };
 
-  const closeMap = () => {
-    setShowMap(false);
-  };
-
   const locateGPS = () => {
     if (!navigator.geolocation) {
       toast.error('Η τοποθεσία GPS δεν υποστηρίζεται στη συσκευή σας');
@@ -287,7 +267,7 @@ export function AddressAutocomplete({
     );
   };
 
-  // Init map in a body portal — escapes Sheet/Dialog CSS transforms that blank Mapbox.
+  // Nested Dialog escapes Sheet aria-hidden/inert and avoids CSS transform on the map root.
   useEffect(() => {
     if (!showMap || !token) return;
 
@@ -317,7 +297,6 @@ export function AddressAutocomplete({
       const el = mapContainer.current;
       if (el.clientWidth < 2 || el.clientHeight < 2) return false;
 
-      ensureMapboxWorker();
       mapboxgl.accessToken = token;
       setMapError(null);
 
@@ -358,7 +337,7 @@ export function AddressAutocomplete({
         ro = new ResizeObserver(() => resize());
         ro.observe(shell);
       }
-      [50, 150, 300, 500, 800].forEach((ms) => {
+      [40, 120, 250, 450, 700].forEach((ms) => {
         timers.push(window.setTimeout(resize, ms));
       });
 
@@ -388,7 +367,8 @@ export function AddressAutocomplete({
       });
     };
 
-    schedule();
+    // Wait one frame for Dialog content to mount + lay out.
+    timers.push(window.setTimeout(schedule, 0));
     timers.push(window.setTimeout(schedule, 100));
     timers.push(window.setTimeout(schedule, 280));
     timers.push(window.setTimeout(schedule, 550));
@@ -399,7 +379,6 @@ export function AddressAutocomplete({
     };
   }, [showMap, token, handleMapClick, mapRetry]);
 
-  // Update / create marker when pin changes after map is ready
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapPin) return;
@@ -413,104 +392,12 @@ export function AddressAutocomplete({
     map.easeTo({ center: [mapPin.lon, mapPin.lat], zoom: Math.max(map.getZoom(), 16), duration: 800 });
   }, [mapPin]);
 
-  const mapOverlay =
-    showMap &&
-    typeof document !== 'undefined' &&
-    createPortal(
-      <div
-        data-address-map-portal
-        className="fixed inset-0 z-[200] flex flex-col bg-background"
-        role="dialog"
-        aria-modal="true"
-        aria-label="Επιλογή διεύθυνσης στον χάρτη"
-      >
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3 safe-area-top">
-          <button
-            type="button"
-            onClick={closeMap}
-            className="h-9 w-9 rounded-full bg-muted flex items-center justify-center shrink-0"
-            aria-label="Κλείσιμο"
-          >
-            <X className="h-4 w-4" />
-          </button>
-          <div className="min-w-0 flex-1">
-            <p className="text-sm font-semibold text-foreground truncate">Σημειώστε στον χάρτη</p>
-            <p className="text-xs text-muted-foreground truncate">
-              {mapPin
-                ? 'Πατήστε ξανά για αλλαγή τοποθεσίας'
-                : 'Πατήστε στον χάρτη (Ιωάννινα & γύρω περιοχή)'}
-            </p>
-          </div>
-          <Button size="sm" disabled={!mapPin} onClick={confirmMapPin} className="gap-1.5 shrink-0">
-            <MapPin className="h-3.5 w-3.5" />
-            Επιβεβαίωση
-          </Button>
-        </div>
-
-        <div className="relative min-h-0 flex-1 bg-muted">
-          <div ref={mapContainer} className="absolute inset-0" />
-
-          {(tokenLoading || !token) && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-4 text-center bg-muted">
-              {tokenLoading ? (
-                <Loader2 className="h-6 w-6 animate-spin text-primary" />
-              ) : (
-                <>
-                  <p className="text-sm text-muted-foreground">Ο χάρτης δεν φορτώθηκε.</p>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    onClick={() => setMapRetry((n) => n + 1)}
-                  >
-                    Δοκιμή ξανά
-                  </Button>
-                </>
-              )}
-            </div>
-          )}
-
-          {mapError && token && (
-            <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-4 text-center bg-muted/95">
-              <p className="text-sm text-muted-foreground">Ο χάρτης δεν φόρτωσε. Δοκιμάστε ξανά.</p>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={() => {
-                  setMapError(null);
-                  setMapRetry((n) => n + 1);
-                }}
-              >
-                Δοκιμή ξανά
-              </Button>
-            </div>
-          )}
-
-          <button
-            type="button"
-            onClick={locateGPS}
-            disabled={gpsLoading}
-            className="absolute bottom-4 right-4 z-10 h-11 w-11 bg-card rounded-full shadow-md flex items-center justify-center border border-border hover:bg-accent transition-colors disabled:opacity-50"
-            title="Η τοποθεσία μου"
-          >
-            {gpsLoading ? <Loader2 className="h-5 w-5 animate-spin text-primary" /> : <Crosshair className="h-5 w-5 text-primary" />}
-          </button>
-
-          {reverseLoading && (
-            <div className="absolute top-3 right-3 z-10 bg-card/90 rounded-full p-1.5 shadow">
-              <Loader2 className="h-4 w-4 animate-spin text-primary" />
-            </div>
-          )}
-        </div>
-
-        {mapPin && query && (
-          <div className="border-t border-border px-4 py-3 safe-area-bottom">
-            <p className="text-xs text-muted-foreground mb-0.5">Επιλεγμένη διεύθυνση</p>
-            <p className="text-sm font-medium text-foreground line-clamp-2">{query}</p>
-          </div>
-        )}
-      </div>,
-      document.body,
-    );
+  const openMapPicker = (e?: React.MouseEvent) => {
+    e?.preventDefault();
+    e?.stopPropagation();
+    setMapError(null);
+    setShowMap(true);
+  };
 
   return (
     <div ref={containerRef} className="relative space-y-2">
@@ -554,11 +441,11 @@ export function AddressAutocomplete({
         <div className="bg-muted/50 rounded-lg p-3 text-center space-y-2">
           <p className="text-sm text-muted-foreground">Δεν βρέθηκε η διεύθυνση</p>
           <div className="flex justify-center gap-2">
-            <Button variant="outline" size="sm" onClick={() => setShowMap(true)} className="gap-2">
+            <Button variant="outline" size="sm" type="button" onClick={openMapPicker} className="gap-2">
               <Navigation className="h-4 w-4" />
               Σημειώστε στον χάρτη
             </Button>
-            <Button variant="outline" size="sm" onClick={locateGPS} disabled={gpsLoading} className="gap-2">
+            <Button variant="outline" size="sm" type="button" onClick={locateGPS} disabled={gpsLoading} className="gap-2">
               {gpsLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Crosshair className="h-4 w-4" />}
               Τοποθεσία GPS
             </Button>
@@ -570,7 +457,7 @@ export function AddressAutocomplete({
         <div className="flex items-center gap-3">
           <button
             type="button"
-            onClick={() => setShowMap(true)}
+            onClick={openMapPicker}
             className="flex items-center gap-1.5 text-xs text-primary hover:underline underline-offset-2"
           >
             <Navigation className="h-3.5 w-3.5" />
@@ -588,7 +475,122 @@ export function AddressAutocomplete({
         </div>
       )}
 
-      {mapOverlay}
+      <Dialog open={showMap} onOpenChange={setShowMap}>
+        <DialogPortal>
+          <DialogOverlay className="z-[200]" />
+          {/*
+            Flex-centered shell with transform:none — Mapbox blanks under CSS
+            translate (default DialogContent) and Sheet slide animations.
+            Nested Dialog also escapes the parent Sheet's aria-hidden/inert.
+            Size ~50% of previous fullscreen picker.
+          */}
+          <DialogPrimitive.Content
+            data-address-map-portal
+            aria-describedby={undefined}
+            onOpenAutoFocus={(e) => e.preventDefault()}
+            onPointerDownOutside={(e) => {
+              // Keep parent Sheet open when interacting with this nested map dialog.
+              e.preventDefault();
+            }}
+            onInteractOutside={(e) => {
+              e.preventDefault();
+            }}
+            className="fixed inset-0 z-[201] flex items-center justify-center p-4 outline-none"
+            style={{ transform: 'none' }}
+          >
+            <div className="flex w-full max-w-md flex-col overflow-hidden rounded-xl border border-border bg-background shadow-lg h-[50vh] max-h-[360px] min-h-[220px]">
+              <div className="flex items-center gap-2 border-b border-border px-3 py-2.5 shrink-0">
+                <button
+                  type="button"
+                  onClick={() => setShowMap(false)}
+                  className="h-8 w-8 rounded-full bg-muted flex items-center justify-center shrink-0"
+                  aria-label="Κλείσιμο"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+                <div className="min-w-0 flex-1">
+                  <DialogTitle className="text-sm font-semibold text-foreground truncate">
+                    Σημειώστε στον χάρτη
+                  </DialogTitle>
+                  <p className="text-[11px] text-muted-foreground truncate">
+                    {mapPin
+                      ? 'Πατήστε ξανά για αλλαγή'
+                      : 'Πατήστε στον χάρτη (Ιωάννινα)'}
+                  </p>
+                </div>
+                <Button size="sm" disabled={!mapPin} onClick={confirmMapPin} className="gap-1.5 shrink-0 h-8">
+                  <MapPin className="h-3.5 w-3.5" />
+                  OK
+                </Button>
+              </div>
+
+              <div className="relative min-h-0 flex-1 bg-muted">
+                <div ref={mapContainer} className="absolute inset-0" />
+
+                {(tokenLoading || !token) && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-4 text-center bg-muted">
+                    {tokenLoading ? (
+                      <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                    ) : (
+                      <>
+                        <p className="text-sm text-muted-foreground">Ο χάρτης δεν φορτώθηκε.</p>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          type="button"
+                          onClick={() => setMapRetry((n) => n + 1)}
+                        >
+                          Δοκιμή ξανά
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {mapError && token && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-4 text-center bg-muted/95">
+                    <p className="text-sm text-muted-foreground">Ο χάρτης δεν φόρτωσε. Δοκιμάστε ξανά.</p>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      type="button"
+                      onClick={() => {
+                        setMapError(null);
+                        setMapRetry((n) => n + 1);
+                      }}
+                    >
+                      Δοκιμή ξανά
+                    </Button>
+                  </div>
+                )}
+
+                <button
+                  type="button"
+                  onClick={locateGPS}
+                  disabled={gpsLoading}
+                  className="absolute bottom-3 right-3 z-10 h-9 w-9 bg-card rounded-full shadow-md flex items-center justify-center border border-border hover:bg-accent transition-colors disabled:opacity-50"
+                  title="Η τοποθεσία μου"
+                >
+                  {gpsLoading ? <Loader2 className="h-4 w-4 animate-spin text-primary" /> : <Crosshair className="h-4 w-4 text-primary" />}
+                </button>
+
+                {reverseLoading && (
+                  <div className="absolute top-2 right-2 z-10 bg-card/90 rounded-full p-1.5 shadow">
+                    <Loader2 className="h-4 w-4 animate-spin text-primary" />
+                  </div>
+                )}
+              </div>
+
+              {mapPin && query && (
+                <div className="border-t border-border px-3 py-2 shrink-0">
+                  <p className="text-[11px] text-muted-foreground">Επιλεγμένη διεύθυνση</p>
+                  <p className="text-xs font-medium text-foreground line-clamp-2">{query}</p>
+                </div>
+              )}
+            </div>
+          </DialogPrimitive.Content>
+        </DialogPortal>
+      </Dialog>
     </div>
   );
 }
