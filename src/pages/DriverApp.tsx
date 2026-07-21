@@ -902,7 +902,10 @@ export default function DriverApp() {
                         <div className="px-3 pb-3 pt-1">
                           <SlideToggle
                             isOn={isOnline}
-                            onToggle={setIsOnline}
+                            onToggle={(next) => {
+                              if (next) primeDriverAudio();
+                              setIsOnline(next);
+                            }}
                             onLabel="Είσαι Online"
                             offLabel="Σύρε για να συνδεθείς"
                             disabled={driverActive !== true}
