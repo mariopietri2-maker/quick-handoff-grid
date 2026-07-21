@@ -1,0 +1,6 @@
+# Local Play upload keys — NEVER commit these.
+*.jks
+*.keystore
+key.properties
+*.pem
+passwords.txt

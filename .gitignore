@@ -44,6 +44,15 @@ ios-customer/
 ios-driver/
 capacitor.config.shared.ts.bak
 mobile-apks/
+store-bundles/
+*.aab
+
+# Play upload keys (generate with scripts/setup-play-signing.sh)
+mobile-signing/*.jks
+mobile-signing/*.keystore
+mobile-signing/key.properties
+mobile-signing/passwords.txt
+mobile-signing/*.pem
 
 # Scratch / one-off SQL (canonical schema lives in supabase/migrations/)
 batch_*.sql

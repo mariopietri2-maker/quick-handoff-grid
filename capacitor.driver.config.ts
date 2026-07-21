@@ -18,7 +18,8 @@ const config: CapacitorConfig = {
   android: {
     path: 'android-driver',
     backgroundColor: '#0f172a',
-    webContentsDebuggingEnabled: true,
+    // Enable only for local debug APKs; store builds omit this via build-store-aabs.sh
+    webContentsDebuggingEnabled: process.env.CAPACITOR_DEV === '1',
   },
   ios: {
     path: 'ios-driver',

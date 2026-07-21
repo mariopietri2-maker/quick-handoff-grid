@@ -98,13 +98,18 @@ Stores need lat/lng to appear on driver/admin maps (Ioannina center ≈ `39.6650
 ## Mobile APKs
 
 ```bash
-./scripts/build-apks.sh
+./scripts/build-apks.sh          # debug APKs (sideload / /download)
+./scripts/setup-play-signing.sh  # once: create Play upload keystores
+./scripts/build-store-aabs.sh    # signed .aab for Google Play
+./scripts/sync-ios-apps.sh       # scaffold ios-customer + ios-driver (archive on a Mac)
 ```
 
 Debug APKs are published on GitHub release `mobile-apks-v1`. The `/download` page never auto-starts an APK download — users tap **Download** or scan a QR that opens the landing page.
 
-Release builds: do **not** set `CAPACITOR_DEV=1` (keeps cleartext / web debugging off).
+**Play Store / App Store:** see [`docs/STORE_PUBLISHING.md`](docs/STORE_PUBLISHING.md).  
+Release Android builds: do **not** set `CAPACITOR_DEV=1`. Store AABs omit WebView debugging.
 
+App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver`
 ---
 
 ## Payments note
