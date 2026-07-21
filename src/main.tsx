@@ -3,11 +3,10 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { initNativeStatusBar } from "./lib/native-status-bar";
-import { prefetchMapboxToken } from "./hooks/useMapboxToken";
 
 void initNativeStatusBar();
-// Warm the Mapbox token cache during app boot so the first map paints instantly
-void prefetchMapboxToken();
+// Mapbox token is fetched on demand by useMapboxToken — do not warm it on boot
+// so customer home stays free of the 1.7MB mapbox-gl chunk.
 
 createRoot(document.getElementById("root")!).render(
   <HelmetProvider>

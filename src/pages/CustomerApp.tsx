@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { Suspense, lazy, useState, useEffect, useMemo, useRef } from 'react';
 import { Search, MapPin, Clock, ChevronDown, ShoppingBag, User, Star, Zap, BadgePercent } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -17,7 +17,6 @@ import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
@@ -25,6 +24,10 @@ import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import ProBanner from '@/components/customer/ProBanner';
 import { toast } from 'sonner';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
+
+const AddressAutocomplete = lazy(() =>
+  import('@/components/AddressAutocomplete').then((m) => ({ default: m.AddressAutocomplete })),
+);
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -133,14 +136,26 @@ export default function CustomerApp() {
     async function load() {
       const nowIso = new Date().toISOString();
       const [storesRes, menuRes, promoRes, offerRes] = await Promise.all([
-        (supabase as any).from('stores_public').select('*').eq('is_active', true).order('name'),
-        supabase.from('menu_items').select('store_id, category').eq('is_available', true),
+        (supabase as any)
+          .from('stores_public')
+          .select('id, name, image_url, is_active, delivery_fee, prep_buffer_minutes, covers_delivery_fee, promotion_status, promotion_starts_at, promotion_ends_at, busy_mode')
+          .eq('is_active', true)
+          .order('name')
+          .limit(200),
+        // Distinct-ish category index — hard cap so home never downloads the full catalog.
+        supabase
+          .from('menu_items')
+          .select('store_id, category')
+          .eq('is_available', true)
+          .not('category', 'is', null)
+          .limit(800),
         (supabase as any).from('stores_public')
-          .select('*')
+          .select('id, name, image_url, is_active, delivery_fee, prep_buffer_minutes, covers_delivery_fee, promotion_status, promotion_starts_at, promotion_ends_at')
           .eq('is_active', true)
           .eq('promotion_status', 'active')
           .or(`promotion_ends_at.is.null,promotion_ends_at.gte.${nowIso}`)
-          .order('promotion_starts_at', { ascending: false }),
+          .order('promotion_starts_at', { ascending: false })
+          .limit(40),
         // Offer cards: menu items that have images, taken from active stores.
         supabase
           .from('menu_items')
@@ -194,7 +209,8 @@ export default function CustomerApp() {
     };
     const channel = supabase
       .channel('customer-stores-feed')
-      .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, scheduleReload)
+      .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'stores' }, scheduleReload)
+      .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'stores' }, scheduleReload)
       .subscribe();
 
     return () => {
@@ -683,15 +699,19 @@ export default function CustomerApp() {
             <SheetTitle>Διεύθυνση παράδοσης</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-3">
-            <AddressAutocomplete
-              value={pendingAddress}
-              onMapOpenChange={setAddressMapOpen}
-              onChange={(addr, lat, lon) => {
-                setPendingAddress(addr);
-                if (lat != null && lon != null) setPendingCoords({ lat, lon });
-                else if (!addr) setPendingCoords(null);
-              }}
-            />
+            {addressOpen && (
+              <Suspense fallback={<div className="h-12 rounded-lg bg-muted animate-pulse" />}>
+                <AddressAutocomplete
+                  value={pendingAddress}
+                  onMapOpenChange={setAddressMapOpen}
+                  onChange={(addr, lat, lon) => {
+                    setPendingAddress(addr);
+                    if (lat != null && lon != null) setPendingCoords({ lat, lon });
+                    else if (!addr) setPendingCoords(null);
+                  }}
+                />
+              </Suspense>
+            )}
             <div className="flex justify-end gap-2 pt-2">
               {deliveryAddress && (
                 <button
