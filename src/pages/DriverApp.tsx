@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useSearchParams, Link } from 'react-router-dom';
 import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
@@ -40,13 +40,14 @@ import { getDriverPayoutBreakdown } from '@/lib/driver-payout';
 type DriverTab = 'home' | 'money' | 'inbox' | 'referral';
 
 export default function DriverApp() {
-  const { user, isAdmin: isAdminRole } = useAuth();
+  const { user, isAdmin: isAdminRole, isM } = useAuth();
   // Admins can toggle between "Admin Driver Ops" and the regular driver experience.
-  // Role M uses /m for live monitoring — not order ops override here.
+  // Role M delivers like a normal driver and opens /m for the live fleet map.
   const [adminAsDriver, setAdminAsDriver] = useState<boolean>(() => {
     try { return localStorage.getItem('admin_as_driver') === '1'; } catch { return false; }
   });
   const isAdmin = isAdminRole && !adminAsDriver;
+  const showMonitorLink = isM;
   const toggleAdminView = () => {
     setAdminAsDriver(prev => {
       const next = !prev;
@@ -431,6 +432,16 @@ export default function DriverApp() {
               <div className="px-3 pt-3 pb-2 flex items-center justify-between gap-2">
                 <div className="shrink-0 pointer-events-auto flex items-center gap-1.5">
                   <UserMenu />
+                  {showMonitorLink && (
+                    <Link
+                      to="/m"
+                      className="h-9 px-2.5 rounded-full text-[10.5px] font-heading font-bold border border-border bg-card/95 backdrop-blur-md shadow-lg hover:bg-card transition-colors flex items-center gap-1 text-foreground"
+                      title="Live χάρτης οδηγών"
+                    >
+                      <Radio className="h-3.5 w-3.5 text-primary" />
+                      Live
+                    </Link>
+                  )}
                   {isAdminRole && adminAsDriver && (
                     <button
                       onClick={toggleAdminView}
