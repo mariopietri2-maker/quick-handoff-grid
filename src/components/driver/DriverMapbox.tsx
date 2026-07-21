@@ -3,6 +3,7 @@ import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { escapeHtml, safeHttpsUrl } from '@/lib/escape-html';
+import { readyEtaShortTag } from '@/lib/driver-ready-eta';
 
 export interface DriverMapboxHandle {
   recenter: () => void;
@@ -45,6 +46,12 @@ interface DriverMapboxProps {
   storeLat?: number | null;
   storeLng?: number | null;
   storeName?: string;
+  /** Order status for the active store pin ready tag */
+  storeOrderStatus?: string | null;
+  /** Absolute predicted ready timestamp for the active order */
+  storePredictedReadyAt?: string | null;
+  /** Fallback prep minutes when predicted_ready_at is missing */
+  storeEstimatedPrepMin?: number | null;
   customerLat?: number | null;
   customerLng?: number | null;
   customerName?: string;
@@ -68,6 +75,7 @@ const DEFAULT_PADDING = { top: 100, bottom: 220, left: 48, right: 48 };
 const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function DriverMapbox({
   className,
   storeLat, storeLng, storeName,
+  storeOrderStatus, storePredictedReadyAt, storeEstimatedPrepMin,
   customerLat, customerLng, customerName, customerAddress,
   navigatingTo,
   onRouteUpdate,
@@ -425,7 +433,14 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
 
 
-  // Store marker
+  // Store marker — badge shows ready / minutes-until-ready while heading to store
+  const [readyTick, setReadyTick] = useState(0);
+  useEffect(() => {
+    if (!storePredictedReadyAt || storeOrderStatus === 'ready') return;
+    const id = window.setInterval(() => setReadyTick((n) => n + 1), 15_000);
+    return () => window.clearInterval(id);
+  }, [storePredictedReadyAt, storeOrderStatus]);
+
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -434,13 +449,24 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     if (storeLat != null && storeLng != null) {
       const el = document.createElement('div');
       const isTarget = navigatingTo === 'store';
-      el.innerHTML = `<div style="width:40px;height:40px;background:${isTarget ? '#f97316' : '#f97316'};border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(249,115,22,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">🏪</div>`;
+      const tag = readyEtaShortTag(storePredictedReadyAt, storeOrderStatus, storeEstimatedPrepMin);
+      const badgeBg = tag?.ready ? '#16a34a' : '#ea580c';
+      const badge = tag
+        ? `<div style="position:absolute;top:-10px;left:50%;transform:translateX(-50%);white-space:nowrap;padding:2px 7px;background:${badgeBg};color:#fff;border-radius:999px;border:2px solid #fff;font-size:10px;font-weight:800;line-height:1.2;font-family:system-ui,sans-serif;box-shadow:0 2px 8px rgba(0,0,0,0.25);letter-spacing:0.02em;">${escapeHtml(tag.text)}</div>`
+        : '';
+      el.style.position = 'relative';
+      el.innerHTML = `<div style="position:relative;width:40px;height:40px;background:#f97316;border-radius:14px;border:3px solid white;box-shadow:0 2px 16px rgba(249,115,22,0.5);display:flex;align-items:center;justify-content:center;font-size:20px;${isTarget ? 'animation:bounce 1s infinite;' : ''}">🏪${badge}</div>`;
+      const popupReady = tag
+        ? `<br/><span style="font-size:11px;color:${tag.ready ? '#16a34a' : '#ea580c'};font-weight:700;">${escapeHtml(tag.ready ? 'Έτοιμη για παραλαβή' : `Έτοιμη σε ${tag.text}`)}</span>`
+        : '';
       storeMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
         .setLngLat([storeLng, storeLat])
-        .setPopup(new mapboxgl.Popup({ offset: 24 }).setHTML(`<strong style="font-size:13px;">${escapeHtml(storeName || 'Κατάστημα')}</strong>`))
+        .setPopup(new mapboxgl.Popup({ offset: 28 }).setHTML(
+          `<strong style="font-size:13px;">${escapeHtml(storeName || 'Κατάστημα')}</strong>${popupReady}`,
+        ))
         .addTo(map);
     }
-  }, [storeLat, storeLng, storeName, navigatingTo]);
+  }, [storeLat, storeLng, storeName, navigatingTo, storeOrderStatus, storePredictedReadyAt, storeEstimatedPrepMin, readyTick]);
 
   // Customer marker
   useEffect(() => {
