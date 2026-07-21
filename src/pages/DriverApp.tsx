@@ -426,6 +426,9 @@ export default function DriverApp() {
               storeLat={storeInfo?.latitude}
               storeLng={storeInfo?.longitude}
               storeName={storeInfo?.name}
+              storeOrderStatus={activeDelivery?.status ?? null}
+              storePredictedReadyAt={(activeDelivery as any)?.predicted_ready_at ?? null}
+              storeEstimatedPrepMin={(activeDelivery as any)?.estimated_prep_time ?? null}
               customerLat={activeDelivery?.delivery_latitude ?? deliveryCoords?.lat ?? null}
               customerLng={activeDelivery?.delivery_longitude ?? deliveryCoords?.lng ?? null}
               customerName={customerInfo?.name}
@@ -697,6 +700,8 @@ export default function DriverApp() {
                                   totalDistance: Number(offer.distance_km ?? 0),
                                   estimatedTime: offer.estimated_prep_time ?? 20,
                                   itemCount: offer.order_items?.length ?? 0,
+                                  predictedReadyAt: (offer as any).predicted_ready_at ?? null,
+                                  orderStatus: offer.status ?? null,
                                 }}
                                 onAccept={acceptOrder}
                                 onDecline={handleDecline}
@@ -785,6 +790,8 @@ export default function DriverApp() {
                                 totalDistance: Number((offer as any).distance_km ?? 0),
                                 estimatedTime: offer.estimated_prep_time ?? 20,
                                 itemCount: offer.order_items?.length ?? 0,
+                                predictedReadyAt: (offer as any).predicted_ready_at ?? null,
+                                orderStatus: offer.status ?? null,
                               }}
                               onAccept={acceptOrder}
                               onDecline={handleDecline}

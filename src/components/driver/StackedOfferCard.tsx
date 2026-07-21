@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
-import { Layers, Timer, MapPin, Store, Banknote, CreditCard, Plus, X, Check, EyeOff } from 'lucide-react';
+import { Layers, Timer, MapPin, Store, Banknote, CreditCard, Plus, X, Check, EyeOff, Clock } from 'lucide-react';
 import { shortenAddress } from '@/lib/address-utils';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
+import { readyEtaLabel } from '@/lib/driver-ready-eta';
 
 interface StackedOffer {
   id: string;
@@ -17,6 +18,8 @@ interface StackedOffer {
   itemCount: number;
   paymentMethod?: string | null;
   cashToCollect?: number | null;
+  predictedReadyAt?: string | null;
+  orderStatus?: string | null;
 }
 
 interface Props {
@@ -58,6 +61,7 @@ export function StackedOfferCard({
   const isCard = ['card', 'wallet', 'paid'].includes(offer.paymentMethod ?? '');
   const payout = ((offer.basePay ?? 0) + (offer.tipAmount ?? 0) + (offer.poolBonus ?? 0)) || offer.estimatedPayout;
   const ordinal = index === 2 ? '2η' : index === 3 ? '3η' : `${index}η`;
+  const readyLabel = readyEtaLabel(offer.predictedReadyAt, offer.orderStatus, offer.estimatedTime);
 
   const handleRemove = () => {
     stopOfferAlert();
@@ -112,7 +116,12 @@ export function StackedOfferCard({
           </div>
           <div className="flex flex-col items-end gap-1 text-[11px] text-[hsl(var(--driver-text-muted))]">
             <span className="tabular-nums">+{offer.totalDistance || '—'} χλμ</span>
-            <span className="tabular-nums">~{offer.estimatedTime} λεπ</span>
+            <span className={`inline-flex items-center gap-1 font-heading font-semibold tabular-nums ${
+              offer.orderStatus === 'ready' ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-warm))]'
+            }`}>
+              <Clock className="h-3 w-3" />
+              {readyLabel || `Prep ~${offer.estimatedTime}′`}
+            </span>
             <span>{offer.itemCount} τεμ.</span>
           </div>
         </div>

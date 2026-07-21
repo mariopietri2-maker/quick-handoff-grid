@@ -4,6 +4,7 @@ import { shortenAddress } from '@/lib/address-utils';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
 import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
 import { formatDriverDistance } from '@/lib/driver-nav';
+import { minutesUntilReady, readyEtaLabel } from '@/lib/driver-ready-eta';
 
 interface OrderOffer {
   id: string;
@@ -22,6 +23,9 @@ interface OrderOffer {
   paymentMethod?: string | null;
   cashToCollect?: number | null;
   customerNotes?: string | null;
+  /** Absolute predicted ready timestamp from orders.predicted_ready_at */
+  predictedReadyAt?: string | null;
+  orderStatus?: string | null;
 }
 
 
@@ -49,6 +53,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
     ? Math.max(1, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)) || timeoutSec
     : timeoutSec;
   const [secondsLeft, setSecondsLeft] = useState(() => computeSecondsLeft(expiresAt, timeoutSec));
+  const [readyMins, setReadyMins] = useState(() => minutesUntilReady(offer.predictedReadyAt));
   const distanceLabel = offer.totalDistance
     ? formatDriverDistance(offer.totalDistance * 1000, prefs.distanceUnit)
     : '—';
@@ -76,8 +81,21 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
     return () => clearTimeout(timer);
   }, [secondsLeft, offer.id, onDecline, expiresAt]);
 
+  useEffect(() => {
+    if (!offer.predictedReadyAt) {
+      setReadyMins(null);
+      return;
+    }
+    const tick = () => setReadyMins(minutesUntilReady(offer.predictedReadyAt));
+    tick();
+    const id = window.setInterval(tick, 15_000);
+    return () => window.clearInterval(id);
+  }, [offer.predictedReadyAt]);
+
   const progress = Math.max(0, Math.min(100, (secondsLeft / totalWindow) * 100));
   const isUrgent = secondsLeft <= 15;
+  const readyLabel = readyEtaLabel(offer.predictedReadyAt, offer.orderStatus, offer.estimatedTime);
+  const storeReady = offer.orderStatus === 'ready' || (readyMins != null && readyMins <= 0);
 
   const isCash = offer.paymentMethod === 'cash';
   const isCard = offer.paymentMethod === 'card' || offer.paymentMethod === 'wallet' || offer.paymentMethod === 'paid';
@@ -144,6 +162,14 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
               <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παραλαβή</p>
               <p className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))] truncate leading-tight">{offer.storeName}</p>
               <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(offer.storeAddress)}</p>
+              {readyLabel && (
+                <p className={`mt-1.5 inline-flex items-center gap-1 text-[11.5px] font-heading font-bold ${
+                  storeReady ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-warm))]'
+                }`}>
+                  <Clock className="h-3 w-3" />
+                  {readyLabel}
+                </p>
+              )}
             </div>
             <div>
               <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παράδοση</p>
@@ -157,8 +183,13 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
           <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-[hsl(var(--driver-surface-muted))] text-[11.5px] font-medium text-[hsl(var(--driver-text))]">
             <Navigation className="h-3 w-3 text-[hsl(var(--driver-info))]" />{distanceLabel}
           </span>
-          <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-[hsl(var(--driver-surface-muted))] text-[11.5px] font-medium text-[hsl(var(--driver-text))]">
-            <Clock className="h-3 w-3 text-[hsl(var(--driver-info))]" />~{offer.estimatedTime} λεπ
+          <span className={`inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full text-[11.5px] font-heading font-semibold ${
+            storeReady
+              ? 'bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))]'
+              : 'bg-[hsl(var(--driver-warm))]/12 text-[hsl(var(--driver-warm))]'
+          }`}>
+            <Clock className="h-3 w-3" />
+            {readyLabel || `Prep ~${offer.estimatedTime}′`}
           </span>
           <span className="inline-flex items-center gap-1.5 px-2.5 h-7 rounded-full bg-[hsl(var(--driver-surface-muted))] text-[11.5px] font-medium text-[hsl(var(--driver-text))]">
             <Package className="h-3 w-3 text-[hsl(var(--driver-info))]" />{offer.itemCount} τεμ.
