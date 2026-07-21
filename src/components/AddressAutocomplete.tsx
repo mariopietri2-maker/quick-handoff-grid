@@ -424,7 +424,7 @@ export function AddressAutocomplete({
         aria-modal="true"
         aria-label="Επιλογή διεύθυνσης στον χάρτη"
       >
-        <div className="flex items-center gap-3 border-b border-border px-4 py-3 safe-area-pt">
+        <div className="flex items-center gap-3 border-b border-border px-4 py-3 safe-area-top">
           <button
             type="button"
             onClick={closeMap}
@@ -503,7 +503,7 @@ export function AddressAutocomplete({
         </div>
 
         {mapPin && query && (
-          <div className="border-t border-border px-4 py-3 safe-area-pb">
+          <div className="border-t border-border px-4 py-3 safe-area-bottom">
             <p className="text-xs text-muted-foreground mb-0.5">Επιλεγμένη διεύθυνση</p>
             <p className="text-sm font-medium text-foreground line-clamp-2">{query}</p>
           </div>
