@@ -1,14 +1,9 @@
-import { useEffect, useState } from 'react';
 import { Navigate, useLocation } from 'react-router-dom';
-import { Capacitor } from '@capacitor/core';
-import { App as CapApp } from '@capacitor/app';
 import {
-  envMobileFlavor,
-  flavorFromAppId,
   isCustomerPath,
   isDriverPath,
   mobileHomePath,
-  type MobileAppFlavor,
+  useMobileFlavor,
 } from '@/lib/mobileApp';
 
 function BootSpinner() {
@@ -27,42 +22,9 @@ function BootSpinner() {
  */
 export function MobileAppGate({ children }: { children: React.ReactNode }) {
   const location = useLocation();
-  const [flavor, setFlavor] = useState<MobileAppFlavor>(envMobileFlavor());
-  const [flavorReady, setFlavorReady] = useState(
-    () => envMobileFlavor() !== 'shared' || !Capacitor.isNativePlatform(),
-  );
+  const { flavor, ready } = useMobileFlavor();
 
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const fromEnv = envMobileFlavor();
-      if (fromEnv !== 'shared') {
-        if (!cancelled) {
-          setFlavor(fromEnv);
-          setFlavorReady(true);
-        }
-        return;
-      }
-      if (!Capacitor.isNativePlatform()) {
-        if (!cancelled) setFlavorReady(true);
-        return;
-      }
-      try {
-        const info = await CapApp.getInfo();
-        if (!cancelled) {
-          setFlavor(flavorFromAppId(info.id));
-          setFlavorReady(true);
-        }
-      } catch {
-        if (!cancelled) setFlavorReady(true);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  if (!flavorReady) {
+  if (!ready) {
     return <BootSpinner />;
   }
 

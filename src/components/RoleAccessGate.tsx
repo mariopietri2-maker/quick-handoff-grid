@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { Car, LogOut, Loader2 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { toast } from 'sonner';
-import { envMobileFlavor } from '@/lib/mobileApp';
+import { useMobileFlavor } from '@/lib/mobileApp';
+import { syncRoleForMobileShell } from '@/lib/syncAppRole';
 
 /**
  * Shown when a signed-in user hits a role-gated route they can't access.
@@ -19,21 +19,21 @@ export default function RoleAccessGate({
   const { profile, signOut, refreshProfile } = useAuth();
   const [busy, setBusy] = useState(false);
   const [autoTried, setAutoTried] = useState(false);
-  const flavor = envMobileFlavor();
+  const { flavor } = useMobileFlavor();
   const role = profile?.role ?? 'customer';
 
-  const canRequestDriver =
+  const canSyncDriver =
     required === 'driver' &&
     role === 'customer' &&
     (flavor === 'driver' || flavor === 'shared');
 
-  const requestDriver = async (silent = false) => {
+  const syncDriver = async (silent = false) => {
     setBusy(true);
     try {
-      const { error } = await (supabase as any).rpc('request_driver_access');
-      if (error) throw error;
+      const res = await syncRoleForMobileShell('driver');
+      if (!res.ok) throw new Error(res.error || 'Αποτυχία');
       await refreshProfile();
-      if (!silent) toast.success('Αίτημα οδηγού καταχωρήθηκε. Αναμονή έγκρισης.');
+      if (!silent) toast.success('Ρόλος οδηγού ορίστηκε. Αναμονή έγκρισης.');
     } catch (e: any) {
       if (!silent) toast.error(e?.message || 'Αποτυχία αιτήματος');
     } finally {
@@ -43,11 +43,11 @@ export default function RoleAccessGate({
 
   // Driver APK: auto-claim pending driver role so first install doesn't stick on this gate.
   useEffect(() => {
-    if (!canRequestDriver || autoTried) return;
+    if (!canSyncDriver || autoTried) return;
     setAutoTried(true);
-    void requestDriver(true);
+    void syncDriver(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [canRequestDriver, autoTried]);
+  }, [canSyncDriver, autoTried]);
 
   const title =
     required === 'driver'
@@ -76,8 +76,8 @@ export default function RoleAccessGate({
         <h1 className="font-heading text-2xl font-bold text-[hsl(220,14%,96%)]">{title}</h1>
         <p className="text-[hsl(220,10%,60%)] text-sm leading-relaxed">{body}</p>
         <div className="flex flex-col gap-2 pt-2">
-          {canRequestDriver && !busy && (
-            <Button onClick={() => requestDriver(false)} disabled={busy} className="w-full gap-2">
+          {canSyncDriver && !busy && (
+            <Button onClick={() => syncDriver(false)} disabled={busy} className="w-full gap-2">
               Αίτημα πρόσβασης οδηγού
             </Button>
           )}
