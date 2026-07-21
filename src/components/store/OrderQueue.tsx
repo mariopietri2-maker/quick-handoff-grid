@@ -94,8 +94,8 @@ function getNextAction(status: string) {
 }
 
 /**
- * Dense 3-column kitchen board — compact tickets so ~50 orders can
- * stay visible (columns scroll independently; 2-up on wide screens).
+ * Dense 3-column kitchen board — readable tickets that still fit
+ * a busy queue (columns scroll independently; 2-up only on 2xl).
  */
 export function OrderQueue({
   orders,
@@ -221,46 +221,46 @@ export function OrderQueue({
           open && 'col-span-full',
         )}
       >
-        {/* Ultra-compact ticket row */}
-        <div className="flex items-center gap-1 pl-1.5 pr-1 py-1 min-h-[44px]">
+        {/* Compact ticket row — sized for quick tap without feeling tiny */}
+        <div className="flex items-center gap-1.5 pl-2 pr-1.5 py-1.5 min-h-[52px]">
           <button
             type="button"
             onClick={() => toggleExpand(order.id)}
-            className="flex-1 min-w-0 text-left flex items-center gap-1.5 py-0.5"
+            className="flex-1 min-w-0 text-left flex items-center gap-2 py-0.5"
             aria-expanded={open}
           >
-            <span className="font-mono font-extrabold text-[13px] tabular-nums text-foreground shrink-0 leading-none">
+            <span className="font-mono font-extrabold text-[15px] tabular-nums text-foreground shrink-0 leading-none">
               {formatOrderNumber(order)}
             </span>
             {order.source && order.source !== 'in_app' && (
-              <span className="text-[9px] font-heading font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
+              <span className="text-[10px] font-heading font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
                 {order.source}
               </span>
             )}
             <span
               className={cn(
-                'text-[10px] font-heading font-semibold tabular-nums shrink-0',
+                'text-[12px] font-heading font-semibold tabular-nums shrink-0',
                 urgent ? 'text-destructive' : 'text-muted-foreground',
               )}
             >
               {age}
             </span>
-            <span className="text-[10px] text-muted-foreground truncate hidden min-[380px]:inline">
+            <span className="text-[12px] text-muted-foreground truncate hidden min-[380px]:inline">
               {nItems}×
               {items[0] ? ` ${items[0].name}` : ''}
               {order.notes ? ' ·📝' : ''}
             </span>
             {order.driver_id && (
-              <Car className="h-3 w-3 text-info shrink-0" aria-label="Οδηγός" />
+              <Car className="h-3.5 w-3.5 text-info shrink-0" aria-label="Οδηγός" />
             )}
             {open ? (
-              <ChevronDown className="h-3.5 w-3.5 text-muted-foreground shrink-0 ml-auto" />
+              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-auto" />
             ) : (
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground/70 shrink-0 ml-auto" />
+              <ChevronRight className="h-4 w-4 text-muted-foreground/70 shrink-0 ml-auto" />
             )}
           </button>
 
-          <span className="text-[11px] font-heading font-bold tabular-nums text-foreground shrink-0 pr-0.5">
+          <span className="text-[13px] font-heading font-bold tabular-nums text-foreground shrink-0 pr-0.5">
             €{Number(order.total_amount).toFixed(0)}
           </span>
 
@@ -269,7 +269,7 @@ export function OrderQueue({
               size="sm"
               disabled={busy}
               className={cn(
-                'h-8 px-2.5 text-[11px] font-heading font-bold shrink-0',
+                'h-9 px-3 text-[12px] font-heading font-bold shrink-0',
                 order.status === 'placed'
                   ? 'gradient-primary text-primary-foreground'
                   : 'gradient-success text-success-foreground',
@@ -280,7 +280,7 @@ export function OrderQueue({
             </Button>
           )}
           {order.status === 'ready' && !order.driver_id && (
-            <span className="text-[9px] font-heading font-semibold text-success px-1 shrink-0">
+            <span className="text-[10px] font-heading font-semibold text-success px-1 shrink-0">
               ⌛
             </span>
           )}
@@ -507,7 +507,7 @@ export function OrderQueue({
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-1.5 scrollbar-thin min-h-[10rem] md:min-h-0">
+            <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 scrollbar-thin min-h-[10rem] md:min-h-0">
               {col.items.length === 0 ? (
                 <div className="rounded-lg border border-dashed border-border/60 bg-card/30 py-10 text-center">
                   <Package className="h-5 w-5 text-muted-foreground/60 mx-auto mb-1" />
@@ -516,9 +516,9 @@ export function OrderQueue({
               ) : (
                 <div
                   className={cn(
-                    'grid gap-1.5 content-start',
-                    // 2-up tickets when column is wide enough → ~50 visible across 3 cols
-                    'grid-cols-1 xl:grid-cols-2',
+                    'grid gap-2 content-start',
+                    // Prefer wider tickets; 2-up only on very wide columns
+                    'grid-cols-1 2xl:grid-cols-2',
                   )}
                 >
                   {col.items.map((order) => renderCard(order))}
