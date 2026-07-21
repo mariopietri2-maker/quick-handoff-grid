@@ -203,8 +203,8 @@ export default function OrderTrackingPage() {
           driverId={order.driver_id}
           storeLat={storeLat}
           storeLng={storeLng}
-          deliveryLat={order.delivery_latitude}
-          deliveryLng={order.delivery_longitude}
+          deliveryLat={order.delivery_latitude != null ? Number(order.delivery_latitude) : null}
+          deliveryLng={order.delivery_longitude != null ? Number(order.delivery_longitude) : null}
           status={status}
         />
       ) : (

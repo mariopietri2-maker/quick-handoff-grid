@@ -264,20 +264,30 @@
       0 8px 24px -8px hsl(220 18% 14% / 0.10);
   }
 
-  /* Driver map: keep the GL canvas filling the shell even after Mapbox
-     forces `.mapboxgl-map { position: relative }` on its container. */
-  [data-driver-map-shell] {
+  /* Mapbox fill shells: Mapbox forces `.mapboxgl-map { position: relative }`
+     on its container, which collapses absolute/fixed inset-0 children to a
+     blank band. Keep the GL canvas filling the shell. */
+  [data-driver-map-shell],
+  [data-tracking-map-shell] {
     position: absolute;
     inset: 0;
     width: 100%;
     height: 100%;
     overflow: hidden;
+  }
+  [data-driver-map-shell] {
     background: hsl(var(--driver-bg));
+  }
+  [data-tracking-map-shell] {
+    background: hsl(var(--muted));
   }
   [data-driver-map-shell] .driver-map-root,
   [data-driver-map-shell] .mapboxgl-map,
   [data-driver-map-shell] .mapboxgl-canvas-container,
-  [data-driver-map-shell] .mapboxgl-canvas {
+  [data-driver-map-shell] .mapboxgl-canvas,
+  [data-tracking-map-shell] .mapboxgl-map,
+  [data-tracking-map-shell] .mapboxgl-canvas-container,
+  [data-tracking-map-shell] .mapboxgl-canvas {
     width: 100% !important;
     height: 100% !important;
   }
