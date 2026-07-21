@@ -168,6 +168,54 @@ async function sendFcm(opts: {
   data: Record<string, string>;
   channelId: string;
 }): Promise<boolean> {
+  // Prefer HTTP v1 (service account). Legacy FCM_SERVER_KEY is often disabled on new Firebase projects.
+  const saRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
+  if (saRaw) {
+    let sa: { client_email: string; private_key: string; project_id?: string };
+    try {
+      sa = JSON.parse(saRaw);
+    } catch {
+      console.warn("Invalid FIREBASE_SERVICE_ACCOUNT_JSON");
+      return false;
+    }
+    const projectId = Deno.env.get("FIREBASE_PROJECT_ID") || sa.project_id;
+    if (!projectId) return false;
+
+    const accessToken = await getGoogleAccessToken(sa);
+    if (!accessToken) return false;
+
+    const res = await fetch(
+      `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
+      {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          message: {
+            token: opts.token,
+            notification: { title: opts.title, body: opts.body },
+            data: opts.data,
+            android: {
+              priority: "HIGH",
+              notification: {
+                channel_id: opts.channelId,
+                sound: "default",
+                notification_priority: "PRIORITY_MAX",
+              },
+            },
+          },
+        }),
+      },
+    );
+    if (!res.ok) {
+      console.warn("FCM v1 send failed", res.status, await res.text());
+      return false;
+    }
+    return true;
+  }
+
   const legacyKey = Deno.env.get("FCM_SERVER_KEY");
   if (legacyKey) {
     const res = await fetch("https://fcm.googleapis.com/fcm/send", {
@@ -201,52 +249,7 @@ async function sendFcm(opts: {
     return true;
   }
 
-  const saRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
-  if (!saRaw) return false;
-
-  let sa: { client_email: string; private_key: string; project_id?: string };
-  try {
-    sa = JSON.parse(saRaw);
-  } catch {
-    console.warn("Invalid FIREBASE_SERVICE_ACCOUNT_JSON");
-    return false;
-  }
-  const projectId = Deno.env.get("FIREBASE_PROJECT_ID") || sa.project_id;
-  if (!projectId) return false;
-
-  const accessToken = await getGoogleAccessToken(sa);
-  if (!accessToken) return false;
-
-  const res = await fetch(
-    `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
-    {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        message: {
-          token: opts.token,
-          notification: { title: opts.title, body: opts.body },
-          data: opts.data,
-          android: {
-            priority: "HIGH",
-            notification: {
-              channel_id: opts.channelId,
-              sound: "default",
-              notification_priority: "PRIORITY_MAX",
-            },
-          },
-        },
-      }),
-    },
-  );
-  if (!res.ok) {
-    console.warn("FCM v1 send failed", res.status, await res.text());
-    return false;
-  }
-  return true;
+  return false;
 }
 
 async function getGoogleAccessToken(sa: {
