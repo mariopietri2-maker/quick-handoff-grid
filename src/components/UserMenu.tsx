@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Settings, Wallet,
   Users, FileText, Coffee, Pause, PackageX,
-  Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Store, Headphones,
+  Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Store, Headphones, MapPin,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
@@ -22,9 +22,9 @@ import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
 
 export function UserMenu() {
-  const { user, profile, signOut, isAdmin } = useAuth();
+  const { user, profile, signOut, isAdmin, isM } = useAuth();
   const navigate = useNavigate();
-  const isDriver = profile?.role === 'driver';
+  const isDriver = profile?.role === 'driver' || profile?.role === 'm' || isM;
   const isStore = profile?.role === 'store'; 
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [breakOpen, setBreakOpen] = useState(false);
@@ -152,7 +152,7 @@ export function UserMenu() {
                 )}
                 {isDriver && (
                   <span className="inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-accent))]/15 px-2 py-0.5 text-[9.5px] font-heading font-bold text-[hsl(var(--driver-accent))] uppercase tracking-wider">
-                    Driver
+                    {isM || profile?.role === 'm' ? 'Driver · M' : 'Driver'}
                   </span>
                 )}
                 {isStore && (
@@ -217,6 +217,12 @@ export function UserMenu() {
                 <UserCircle className="mr-2 h-4 w-4 shrink-0" />
                 Προφίλ οδηγού
               </DropdownMenuItem>
+              {(isM || profile?.role === 'm') && (
+                <DropdownMenuItem className={itemClassName} onSelect={() => go('/m')}>
+                  <MapPin className="mr-2 h-4 w-4 shrink-0 text-primary" />
+                  Live χάρτης οδηγών
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 className={itemClassName}
                 onSelect={(e) => {

@@ -29,7 +29,7 @@ export function mobileHomePath(flavor: MobileAppFlavor): string {
 }
 
 export function mobileAuthAllowedRoles(flavor: MobileAppFlavor): string[] | null {
-  if (flavor === 'driver') return ['driver'];
+  if (flavor === 'driver') return ['driver', 'm'];
   if (flavor === 'customer') return ['customer'];
   return null;
 }
@@ -49,6 +49,7 @@ export function isCustomerPath(path: string): boolean {
 export function isDriverPath(path: string): boolean {
   return (
     path.startsWith('/driver') ||
+    path.startsWith('/m') ||
     path.startsWith('/auth') ||
     path.startsWith('/legal')
   );
