@@ -11,6 +11,7 @@ import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 import { CustomerSupportButton } from '@/components/customer/CustomerSupportButton';
 import { SEO } from '@/components/SEO';
 import { formatOrderNumber } from '@/lib/order-number';
+import { useDriverProximityAlert } from '@/hooks/useCustomerOrderNotifications';
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -53,6 +54,16 @@ export default function OrderTrackingPage() {
   const [now, setNow] = useState(Date.now());
   const [showThankYou, setShowThankYou] = useState(false);
   const [thankYouCountdown, setThankYouCountdown] = useState(6);
+  const [liveDriverPos, setLiveDriverPos] = useState<{ lat: number; lng: number } | null>(null);
+
+  useDriverProximityAlert({
+    orderId: order?.id,
+    status: order?.status,
+    driverLat: liveDriverPos?.lat,
+    driverLng: liveDriverPos?.lng,
+    deliveryLat: order?.delivery_latitude != null ? Number(order.delivery_latitude) : null,
+    deliveryLng: order?.delivery_longitude != null ? Number(order.delivery_longitude) : null,
+  });
 
   useEffect(() => {
     const t = setInterval(() => setNow(Date.now()), 1000);
@@ -206,6 +217,7 @@ export default function OrderTrackingPage() {
           deliveryLat={order.delivery_latitude != null ? Number(order.delivery_latitude) : null}
           deliveryLng={order.delivery_longitude != null ? Number(order.delivery_longitude) : null}
           status={status}
+          onDriverPos={setLiveDriverPos}
         />
       ) : (
         <div className="absolute inset-0 bg-gradient-to-b from-primary/5 to-background flex items-center justify-center">

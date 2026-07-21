@@ -93,14 +93,14 @@ const customerStatusLabels: Record<string, { title: string; body: string }> = {
   accepted:  { title: '✅ Παραγγελία αποδεκτή', body: 'Το κατάστημα έλαβε την παραγγελία σου.' },
   preparing: { title: '👨‍🍳 Ετοιμάζεται',         body: 'Η παραγγελία σου ετοιμάζεται.' },
   ready:     { title: '📦 Έτοιμη για παραλαβή',  body: 'Έτοιμη — αναμένει τον οδηγό.' },
-  picked_up: { title: '🛵 Σε μεταφορά',           body: 'Ο οδηγός είναι καθ’ οδόν!' },
-  arrived:   { title: '📍 Ο οδηγός έφτασε',        body: 'Ο οδηγός είναι κοντά σου.' },
+  picked_up: { title: '🛵 Ο οδηγός έρχεται!',     body: 'Ο οδηγός παρέλαβε την παραγγελία και είναι καθ’ οδόν προς εσένα.' },
+  arrived:   { title: '🏪 Οδηγός στο κατάστημα',  body: 'Ο οδηγός έφτασε στο κατάστημα για παραλαβή.' },
   delivered: { title: '🎉 Παραδόθηκε',             body: 'Καλή σου όρεξη! Άφησε μια κριτική 💛' },
   cancelled: { title: '❌ Ακυρώθηκε',              body: 'Η παραγγελία σου ακυρώθηκε.' },
 };
 
 /**
- * Show a browser notification for a customer order status update.
+ * Show a browser/OS notification for a customer order status update.
  * Returns true if a notification was shown.
  */
 export function showOrderStatusNotification(orderId: string, status: string): boolean {
@@ -109,7 +109,20 @@ export function showOrderStatusNotification(orderId: string, status: string): bo
   void showOsNotification({
     title: cfg.title,
     body: `${cfg.body} (Παραγγελία #${orderId.slice(0, 6)})`,
-    tag: `customer-order-${orderId}`,
+    tag: `customer-order-${orderId}-${status}`,
+    vibrate: status === 'picked_up' || status === 'delivered',
+    channelId: 'customer-orders',
   });
   return true;
+}
+
+/** One-shot “driver is nearby” alert (proximity / ETA). */
+export function showDriverArrivingNotification(orderId: string) {
+  void showOsNotification({
+    title: '📍 Ο οδηγός φτάνει!',
+    body: `Ο οδηγός είναι κοντά σου. (Παραγγελία #${orderId.slice(0, 6)})`,
+    tag: `customer-arriving-${orderId}`,
+    vibrate: true,
+    channelId: 'customer-orders',
+  });
 }

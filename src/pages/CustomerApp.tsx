@@ -11,7 +11,6 @@ import { FavoriteButton } from '@/components/customer/FavoriteButton';
 import { ActiveOrderTracker } from '@/components/customer/ActiveOrderTracker';
 import AppSplash from '@/components/customer/AppSplash';
 import OrderAgainRow from '@/components/customer/OrderAgainRow';
-import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
 import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -93,7 +92,6 @@ export default function CustomerApp() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { itemCount } = useCart();
-  useCustomerOrderNotifications();
 
   // Delivery address (persisted locally; falls back to city label)
   const [addressOpen, setAddressOpen] = useState(false);

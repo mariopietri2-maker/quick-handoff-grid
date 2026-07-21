@@ -40,6 +40,9 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
     },
     Geolocation: {},
+    PushNotifications: {
+      presentationOptions: ['badge', 'sound', 'alert'],
+    },
   },
 };
 
