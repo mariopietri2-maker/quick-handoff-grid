@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { envMobileFlavor } from '@/lib/mobileApp';
+import { useMobileFlavor } from '@/lib/mobileApp';
 import RoleAccessGate from '@/components/RoleAccessGate';
 
 interface ProtectedRouteProps {
@@ -10,9 +10,9 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
   const { user, loading, profile, isAdmin, isSupport, isStore, isM } = useAuth();
-  const flavor = envMobileFlavor();
+  const { flavor, ready: flavorReady } = useMobileFlavor();
 
-  if (loading || (user && !profile)) {
+  if (!flavorReady || loading || (user && !profile)) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
