@@ -333,6 +333,17 @@ Deno.serve(async (req) => {
       });
     }
 
+    // Drain push outbox (driver offers + customer status) so locked phones
+    // still get FCM alerts when credentials + device tokens are present.
+    void fetch(`${supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ limit: 80 }),
+    }).catch(() => {});
+
     const payload = {
       ok: true,
       mode: "auto",

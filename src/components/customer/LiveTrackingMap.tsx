@@ -13,6 +13,8 @@ interface Props {
   deliveryLat?: number | null;
   deliveryLng?: number | null;
   status: string;
+  /** Optional live driver GPS for parent (proximity alerts, etc.). */
+  onDriverPos?: (pos: { lat: number; lng: number } | null) => void;
 }
 
 function bearing(a: [number, number], b: [number, number]) {
@@ -41,6 +43,7 @@ export default function LiveTrackingMap({
   deliveryLat: deliveryLatProp,
   deliveryLng: deliveryLngProp,
   status,
+  onDriverPos,
 }: Props) {
   const storeLat = asCoord(storeLatProp);
   const storeLng = asCoord(storeLngProp);
@@ -60,6 +63,8 @@ export default function LiveTrackingMap({
   const [mapReady, setMapReady] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapRetry, setMapRetry] = useState(0);
+  const onDriverPosRef = useRef(onDriverPos);
+  useEffect(() => { onDriverPosRef.current = onDriverPos; }, [onDriverPos]);
 
   // Stable refs for init-time center (avoid remounting when coords arrive).
   const coordsRef = useRef({ storeLat, storeLng, deliveryLat, deliveryLng, driverPos });
@@ -71,12 +76,16 @@ export default function LiveTrackingMap({
   useEffect(() => {
     if (!driverId) {
       setDriverPos(null);
+      onDriverPosRef.current?.(null);
       return;
     }
     let cancelled = false;
 
     const apply = (lat: number, lng: number) => {
-      if (!cancelled) setDriverPos([lng, lat]);
+      if (!cancelled) {
+        setDriverPos([lng, lat]);
+        onDriverPosRef.current?.({ lat, lng });
+      }
     };
 
     const fetchLoc = () => {

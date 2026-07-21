@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { playOrderSound, showOrderNotification } from '@/lib/notifications';
 import { playOfferAlert } from '@/lib/driver-sound-prefs';
+import { isAppActive, notifyDriverOfferLocal } from '@/lib/push-register';
 
 import type { Database } from '@/integrations/supabase/types';
 
@@ -385,16 +386,17 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
 
   // Persistent alert: keep ringing every ~4s while there are unaccepted
-  // offers. Triggered only when the set of offer IDs changes — not on
-  // every offers array reference (prevents overlapping plays on refetch).
-  // NOTE: We rely on `playOfferAlert` only for sound — no extra OS-level
-  // notification sound here, to avoid the "double sound" issue.
+  // offers AND the app is in the foreground. Background/locked phones rely
+  // on OS LocalNotification (below) + remote FCM via send-push.
   const ringableKey = offers.map(o => o.id).sort().join(',');
   useEffect(() => {
     if (activeDelivery) return;
     if (!ringableKey) return;
+    if (!isAppActive()) return;
     playOfferAlert();
-    const id = setInterval(() => playOfferAlert(), 4000);
+    const id = setInterval(() => {
+      if (isAppActive()) playOfferAlert();
+    }, 4000);
     return () => clearInterval(id);
   }, [ringableKey, activeDelivery]);
 
@@ -437,10 +439,13 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           table: 'pending_offers',
           filter: `driver_id=eq.${user.id}`,
         },
-        () => {
-          // Just refetch — the ringableKey effect handles sound/vibration.
-          // Removing the duplicate OS notification here fixes the
-          // "double sound" the driver was hearing.
+        (payload) => {
+          const row = payload.new as { order_id?: string; id?: string } | null;
+          // App closed / screen off: OS banner (LocalNotification). Foreground
+          // uses playOfferAlert only — avoids the double-sound bug.
+          if (!isAppActive()) {
+            void notifyDriverOfferLocal({ orderId: row?.order_id });
+          }
           fetchOrders();
         }
       )
