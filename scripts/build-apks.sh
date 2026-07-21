@@ -4,9 +4,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# yyMMddHH — bump so devices treat this as a newer install than prior debug APKs.
-# Kept under Android's 32-bit versionCode max (~2.1e9).
-VERSION_CODE="${APK_VERSION_CODE:-$(date -u +%y%m%d%H)}"
+# MMDDHHMM — unique per minute, always fits in Android's 32-bit versionCode.
+# (yyMMddHHmm overflows Integer.MAX_VALUE.)
+VERSION_CODE="${APK_VERSION_CODE:-$(date -u +%m%d%H%M)}"
 VERSION_NAME="${APK_VERSION_NAME:-1.0.${VERSION_CODE}}"
 
 bump_version() {
@@ -24,7 +24,15 @@ text = open(path).read()
 text2 = re.sub(r"versionCode\s+\d+", f"versionCode {code}", text, count=1)
 text2 = re.sub(r'versionName\s+"[^"]*"', f'versionName "{name}"', text2, count=1)
 if text2 == text:
-    raise SystemExit(f"failed to bump versions in {path}")
+    # Already at this version (rebuild same minute) — bump +1 so install still updates
+    try:
+        code_i = int(code) + 1
+        name2 = re.sub(r"\d+$", str(code_i), name)
+        text2 = re.sub(r"versionCode\s+\d+", f"versionCode {code_i}", text, count=1)
+        text2 = re.sub(r'versionName\s+"[^"]*"', f'versionName "{name2}"', text2, count=1)
+        code, name = str(code_i), name2
+    except Exception as e:
+        raise SystemExit(f"failed to bump versions in {path}: {e}")
 open(path, "w").write(text2)
 print(f"versionCode={code} versionName={name} -> {path}")
 PY
