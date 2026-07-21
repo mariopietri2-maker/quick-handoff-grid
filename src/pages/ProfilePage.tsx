@@ -11,7 +11,7 @@ import {
   ArrowLeft, User, Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
   FileText, RefreshCw, Ticket, Gift, MapPin, Heart, Receipt, ChevronRight,
-  Settings as SettingsIcon, Wallet, Radio,
+  Settings as SettingsIcon, Wallet,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
@@ -26,7 +26,6 @@ const roleConfig: Record<string, { label: string; icon: any; path: string }> = {
   admin:    { label: 'Admin',     icon: Shield,      path: '/admin'   },
   support:  { label: 'Support',   icon: Headphones,  path: '/support' },
   driver:   { label: 'Οδηγός',    icon: Car,         path: '/driver'  },
-  m:        { label: 'M (Lead)',  icon: Radio,        path: '/m'      },
   store:    { label: 'Κατάστημα', icon: Store,       path: '/store'   },
   customer: { label: 'Πελάτης',   icon: ShoppingBag, path: '/order'   },
 };
@@ -47,12 +46,8 @@ export default function ProfilePage() {
       navigate('/store/profile', { replace: true });
       return;
     }
-    // Drivers use driver profile. M leads land on /m monitor (not customer profile).
-    if (profile?.role === 'm' || isM) {
-      navigate('/m', { replace: true });
-      return;
-    }
-    if (profile?.role === 'driver' && !isAdmin) {
+    // Drivers + Role M use the driver profile (M is a driver with a live map).
+    if ((profile?.role === 'driver' || profile?.role === 'm' || isM) && !isAdmin) {
       navigate('/driver/profile', { replace: true });
       return;
     }
@@ -81,17 +76,19 @@ export default function ProfilePage() {
     navigate('/auth');
   };
 
-  // Roles
+  // Roles — customer profile never surfaces Role M (admin assigns M in Users).
   const availableRoles: string[] = [];
   if (isAdmin) availableRoles.push('admin');
   if (isSupport || isAdmin) availableRoles.push('support');
   if (isAdmin) {
-    availableRoles.push('driver', 'm', 'store', 'customer');
-  } else if (profile?.role) {
+    availableRoles.push('driver', 'store', 'customer');
+  } else if (profile?.role && profile.role !== 'm') {
     if (!availableRoles.includes(profile.role)) availableRoles.push(profile.role);
     if (profile.role !== 'customer') availableRoles.push('customer');
   }
-  const activeRole = isAdmin ? 'admin' : (profile?.role ?? 'customer');
+  const activeRole = isAdmin
+    ? 'admin'
+    : (profile?.role === 'm' ? 'driver' : (profile?.role ?? 'customer'));
 
   if (!user) return null;
 

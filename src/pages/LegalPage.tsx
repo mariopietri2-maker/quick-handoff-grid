@@ -132,6 +132,7 @@ export default function LegalPage() {
     customer: { path: "/order", el: "Παραγγελία", en: "Order" },
     store:    { path: "/store",  el: "Κατάστημα", en: "Store" },
     driver:   { path: "/driver", el: "Οδηγός",    en: "Driver" },
+    m:        { path: "/driver", el: "Οδηγός",    en: "Driver" },
     admin:    { path: "/admin",  el: "Διαχείριση", en: "Admin" },
     support:  { path: "/support", el: "Υποστήριξη", en: "Support" },
   };
