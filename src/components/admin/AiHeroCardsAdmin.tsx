@@ -210,7 +210,7 @@ export default function AiHeroCardsAdmin() {
   const [subtitle, setSubtitle] = useState('');
   const [ctaLabel, setCtaLabel] = useState('Δες περισσότερα');
   const [ctaLink, setCtaLink] = useState('/order');
-  const [badge, setBadge] = useState('AI Pick');
+  const [badge, setBadge] = useState('Για σένα');
   const [placement, setPlacement] = useState<HeroPlacement>('hero');
   const [motion, setMotion] = useState<HeroMotion>('kenburns');
   const [style, setStyle] = useState('editorial');

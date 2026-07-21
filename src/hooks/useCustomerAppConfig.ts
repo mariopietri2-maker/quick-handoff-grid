@@ -19,7 +19,7 @@ export type HeroCard = {
   placement?: HeroPlacement;
   /** Entrance / ambient motion preset. Default: kenburns */
   motion?: HeroMotion;
-  /** Badge label above the title (default "AI Pick"). */
+  /** Badge label above the title (default "Για σένα"). */
   badge?: string;
   /** Soft accent wash color as HSL without wrapper, e.g. "4 90% 47%". */
   accent_hsl?: string;

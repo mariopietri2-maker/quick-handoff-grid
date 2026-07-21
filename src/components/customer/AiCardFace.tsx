@@ -130,7 +130,7 @@ export function AiCardFace({
         >
           <div className={cn('ai-in-1 inline-flex items-center gap-1.5 self-start ai-badge-pulse bg-white/95 backdrop-blur-md text-[hsl(0,0%,9%)] font-black uppercase tracking-[0.14em] rounded-full shadow', compact ? 'text-[9px] px-2 py-0.5 mb-1.5' : 'text-[10px] px-2.5 py-1 mb-2')}>
             <Sparkles className={compact ? 'h-2.5 w-2.5' : 'h-3 w-3'} strokeWidth={2.6} />
-            {card.badge || 'AI Pick'}
+            {card.badge || 'Για σένα'}
           </div>
           <h3
             className={cn(
