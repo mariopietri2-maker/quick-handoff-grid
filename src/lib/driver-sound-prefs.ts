@@ -1,13 +1,13 @@
-import popAsset from '@/assets/sounds/pop.mp3.asset.json';
-import honkAsset from '@/assets/sounds/honk.mp3.asset.json';
-import partyAsset from '@/assets/sounds/party.mp3.asset.json';
-import screechAsset from '@/assets/sounds/screech.mp3.asset.json';
-import suspenseAsset from '@/assets/sounds/suspense.mp3.asset.json';
-import mysteryAsset from '@/assets/sounds/mystery.mp3.asset.json';
-import whistleAsset from '@/assets/sounds/whistle.mp3.asset.json';
-import clownAsset from '@/assets/sounds/clown.mp3.asset.json';
-import nokiaAsset from '@/assets/sounds/nokia.mp3.asset.json';
-import slipAsset from '@/assets/sounds/slip.mp3.asset.json';
+import popUrl from '@/assets/sounds/pop.mp3';
+import honkUrl from '@/assets/sounds/honk.mp3';
+import partyUrl from '@/assets/sounds/party.mp3';
+import screechUrl from '@/assets/sounds/screech.mp3';
+import suspenseUrl from '@/assets/sounds/suspense.mp3';
+import mysteryUrl from '@/assets/sounds/mystery.mp3';
+import whistleUrl from '@/assets/sounds/whistle.mp3';
+import clownUrl from '@/assets/sounds/clown.mp3';
+import nokiaUrl from '@/assets/sounds/nokia.mp3';
+import slipUrl from '@/assets/sounds/slip.mp3';
 
 export type SoundPattern =
   | 'pop'
@@ -50,17 +50,18 @@ const PATTERN_MIGRATIONS: Record<string, SoundPattern> = {
 
 const VALID: SoundPattern[] = ['pop','honk','party','screech','suspense','mystery','whistle','clown','nokia','slip'];
 
+/** Bundled MP3 URLs (Vite hashes them into dist) — never use Lovable `/__l5e/` paths on Railway/APK. */
 const SOUND_URLS: Record<SoundPattern, string> = {
-  pop: popAsset.url,
-  honk: honkAsset.url,
-  party: partyAsset.url,
-  screech: screechAsset.url,
-  suspense: suspenseAsset.url,
-  mystery: mysteryAsset.url,
-  whistle: whistleAsset.url,
-  clown: clownAsset.url,
-  nokia: nokiaAsset.url,
-  slip: slipAsset.url,
+  pop: popUrl,
+  honk: honkUrl,
+  party: partyUrl,
+  screech: screechUrl,
+  suspense: suspenseUrl,
+  mystery: mysteryUrl,
+  whistle: whistleUrl,
+  clown: clownUrl,
+  nokia: nokiaUrl,
+  slip: slipUrl,
 };
 
 export function loadDriverSoundPrefs(): DriverSoundPrefs {
@@ -144,7 +145,13 @@ export function playPattern(pattern: SoundPattern, volume: number) {
     el.pause();
     el.currentTime = 0;
     el.volume = Math.max(0, Math.min(1, volume));
-    void el.play().catch(() => {});
+    void el.play().catch(() => {
+      // Autoplay blocked — retry once after a short unlock attempt.
+      try {
+        primeDriverAudio();
+        void el.play().catch(() => {});
+      } catch {}
+    });
     return (el.duration && isFinite(el.duration)) ? el.duration * 1000 : 1200;
   } catch (e) {
     console.warn('sound play failed', e);

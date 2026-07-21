@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { playOrderSound, showOrderNotification } from '@/lib/notifications';
-import { playOfferAlert } from '@/lib/driver-sound-prefs';
+import { playOfferAlert, stopOfferAlert } from '@/lib/driver-sound-prefs';
 import { isAppActive, notifyDriverOfferLocal } from '@/lib/push-register';
 
 import type { Database } from '@/integrations/supabase/types';
@@ -385,13 +385,14 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   }, [fetchOrders]);
 
 
-  // Persistent alert: keep ringing every ~4s while there are unaccepted
-  // offers AND the app is in the foreground. Background/locked phones rely
-  // on OS LocalNotification (below) + remote FCM via send-push.
+  // Persistent alert: ring while unaccepted offers are on screen (foreground).
+  // Background/locked phones rely on LocalNotification + remote FCM.
   const ringableKey = offers.map(o => o.id).sort().join(',');
   useEffect(() => {
-    if (activeDelivery) return;
-    if (!ringableKey) return;
+    if (activeDelivery || !ringableKey) {
+      stopOfferAlert();
+      return;
+    }
     if (!isAppActive()) return;
     playOfferAlert();
     const id = setInterval(() => {
