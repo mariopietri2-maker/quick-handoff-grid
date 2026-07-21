@@ -32,7 +32,6 @@ interface AddressAutocompleteProps {
 }
 
 const DEFAULT_CENTER: [number, number] = IOANNINA_MAP_CENTER;
-const MARKER_COLOR = '#2563eb';
 const ZONE_TOAST = OUT_OF_ZONE_MESSAGE;
 
 export function AddressAutocomplete({
@@ -55,16 +54,19 @@ export function AddressAutocomplete({
   const [gpsLoading, setGpsLoading] = useState(false);
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapRetry, setMapRetry] = useState(0);
+  const [mapMoving, setMapMoving] = useState(false);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>();
+  const reverseDebounceRef = useRef<ReturnType<typeof setTimeout>>();
   const containerRef = useRef<HTMLDivElement>(null);
 
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const markerRef = useRef<mapboxgl.Marker | null>(null);
   const mapPinRef = useRef(mapPin);
   const onChangeRef = useRef(onChange);
   const tokenRef = useRef(token);
   const centerRef = useRef<[number, number]>(initialCenter ?? DEFAULT_CENTER);
+  /** Skip the next moveend reverse-geocode (programmatic flyTo / initial settle). */
+  const skipNextMoveEndRef = useRef(false);
 
   useEffect(() => { setQuery(value); }, [value]);
   useEffect(() => { mapPinRef.current = mapPin; }, [mapPin]);
@@ -203,7 +205,7 @@ export function AddressAutocomplete({
   const reverseGeocode = useCallback(async (lat: number, lon: number) => {
     if (!isWithinIoanninaServiceArea(lat, lon)) {
       toast.error(ZONE_TOAST);
-      return;
+      return false;
     }
     setReverseLoading(true);
     try {
@@ -222,29 +224,42 @@ export function AddressAutocomplete({
         onChangeRef.current(fallback, lat, lon);
       }
       hasCoordsRef.current = true;
+      return true;
     } catch {
       const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
       setQuery(fallback);
       onChangeRef.current(fallback, lat, lon);
       hasCoordsRef.current = true;
+      return true;
     } finally {
       setReverseLoading(false);
     }
   }, []);
 
-  const handleMapClick = useCallback((lat: number, lon: number) => {
+  const applyCenterAsPin = useCallback((lat: number, lon: number, geocode: boolean) => {
     if (!isWithinIoanninaServiceArea(lat, lon)) {
       toast.error(ZONE_TOAST);
       return;
     }
     setMapPin({ lat, lon });
-    reverseGeocode(lat, lon);
+    if (!geocode) return;
+    if (reverseDebounceRef.current) clearTimeout(reverseDebounceRef.current);
+    reverseDebounceRef.current = setTimeout(() => {
+      void reverseGeocode(lat, lon);
+    }, 280);
   }, [reverseGeocode]);
 
   const confirmMapPin = () => {
     setShowMap(false);
     setNoResults(false);
   };
+
+  const flyMapTo = useCallback((lat: number, lon: number, zoom = 17) => {
+    const map = mapRef.current;
+    if (!map) return;
+    skipNextMoveEndRef.current = true;
+    map.flyTo({ center: [lon, lat], zoom, essential: true, duration: 650 });
+  }, []);
 
   const locateGPS = () => {
     if (!navigator.geolocation) {
@@ -263,7 +278,10 @@ export function AddressAutocomplete({
         }
         setMapPin({ lat, lon });
         setShowMap(true);
-        reverseGeocode(lat, lon);
+        if (mapRef.current) {
+          flyMapTo(lat, lon);
+        }
+        void reverseGeocode(lat, lon);
         setGpsLoading(false);
       },
       (err) => {
@@ -280,8 +298,8 @@ export function AddressAutocomplete({
     );
   };
 
-  // Inline map — same Mapbox path as the working driver map. Parent Sheet
-  // must drop CSS transform while open (see CustomerApp + index.css).
+  // Center-pin picker: fixed pin overlay, user pans the map underneath.
+  // Avoids click-offset / easeTo jank from the old click-to-drop marker.
   useEffect(() => {
     if (!showMap || !token) return;
 
@@ -302,7 +320,6 @@ export function AddressAutocomplete({
         try { mapRef.current.remove(); } catch { /* noop */ }
         mapRef.current = null;
       }
-      markerRef.current = null;
     };
 
     const tryInit = (): boolean => {
@@ -325,9 +342,11 @@ export function AddressAutocomplete({
           container: el,
           style: 'mapbox://styles/mapbox/streets-v12',
           center,
-          zoom: pin ? 16 : 14,
+          zoom: pin ? 17 : 15,
           attributionControl: false,
           failIfMajorPerformanceCaveat: false,
+          dragRotate: false,
+          pitchWithRotate: false,
         });
       } catch (err: any) {
         setMapError(err?.message || 'Ο χάρτης δεν φόρτωσε');
@@ -335,12 +354,9 @@ export function AddressAutocomplete({
       }
 
       map.addControl(new mapboxgl.NavigationControl({ showCompass: false }), 'top-right');
-      map.on('click', (e) => {
-        handleMapClick(e.lngLat.lat, e.lngLat.lng);
-      });
+
       map.on('error', (e) => {
         const msg = e?.error?.message || 'Ο χάρτης δεν φόρτωσε';
-        // Ignore benign tile abort noise; keep real style/token failures.
         if (/abort|cancel/i.test(msg)) return;
         setMapError(msg);
       });
@@ -352,6 +368,38 @@ export function AddressAutocomplete({
         setMapError(null);
         resize();
         requestAnimationFrame(resize);
+        // Seed pin from initial center without waiting for a user pan.
+        const c = map.getCenter();
+        applyCenterAsPin(c.lat, c.lng, !pin);
+        if (pin) {
+          // Already have coords — still refresh the label once.
+          void reverseGeocode(pin.lat, pin.lon);
+        }
+      });
+
+      map.on('movestart', () => setMapMoving(true));
+      map.on('moveend', () => {
+        setMapMoving(false);
+        if (skipNextMoveEndRef.current) {
+          skipNextMoveEndRef.current = false;
+          const c = map.getCenter();
+          setMapPin({ lat: c.lat, lon: c.lng });
+          return;
+        }
+        const c = map.getCenter();
+        applyCenterAsPin(c.lat, c.lng, true);
+      });
+
+      // Tap recenters under the fixed pin — exact click → center, no marker offset.
+      map.on('click', (e) => {
+        const { lat, lng } = e.lngLat;
+        if (!isWithinIoanninaServiceArea(lat, lng)) {
+          toast.error(ZONE_TOAST);
+          return;
+        }
+        skipNextMoveEndRef.current = true;
+        map.easeTo({ center: [lng, lat], duration: 220 });
+        applyCenterAsPin(lat, lng, true);
       });
 
       window.addEventListener('resize', resize);
@@ -360,7 +408,7 @@ export function AddressAutocomplete({
         ro = new ResizeObserver(() => resize());
         ro.observe(shell);
       }
-      [50, 150, 300, 500, 800, 1200].forEach((ms) => {
+      [50, 150, 300, 500, 800].forEach((ms) => {
         timers.push(window.setTimeout(resize, ms));
       });
 
@@ -371,12 +419,6 @@ export function AddressAutocomplete({
       };
 
       mapRef.current = map;
-
-      if (pin) {
-        markerRef.current = new mapboxgl.Marker({ color: MARKER_COLOR })
-          .setLngLat([pin.lon, pin.lat])
-          .addTo(map);
-      }
       return true;
     };
 
@@ -394,26 +436,13 @@ export function AddressAutocomplete({
     timers.push(window.setTimeout(schedule, 100));
     timers.push(window.setTimeout(schedule, 300));
     timers.push(window.setTimeout(schedule, 600));
-    timers.push(window.setTimeout(schedule, 1000));
 
     return () => {
       cancelled = true;
+      if (reverseDebounceRef.current) clearTimeout(reverseDebounceRef.current);
       destroy();
     };
-  }, [showMap, token, handleMapClick, mapRetry]);
-
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !mapPin) return;
-    if (markerRef.current) {
-      markerRef.current.setLngLat([mapPin.lon, mapPin.lat]);
-    } else {
-      markerRef.current = new mapboxgl.Marker({ color: MARKER_COLOR })
-        .setLngLat([mapPin.lon, mapPin.lat])
-        .addTo(map);
-    }
-    map.easeTo({ center: [mapPin.lon, mapPin.lat], zoom: Math.max(map.getZoom(), 16), duration: 800 });
-  }, [mapPin]);
+  }, [showMap, token, mapRetry, applyCenterAsPin, reverseGeocode]);
 
   const openMapPicker = (e?: React.MouseEvent) => {
     e?.preventDefault();
@@ -501,12 +530,10 @@ export function AddressAutocomplete({
       {showMap && (
         <div className="rounded-xl overflow-hidden border border-border bg-card">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
-            <p className="text-xs text-muted-foreground flex-1 min-w-0 truncate">
-              {mapPin
-                ? 'Πατήστε ξανά για αλλαγή τοποθεσίας'
-                : 'Πατήστε στον χάρτη (Ιωάννινα & γύρω περιοχή)'}
+            <p className="text-xs text-muted-foreground flex-1 min-w-0">
+              Μετακινήστε τον χάρτη ή πατήστε το σημείο — η καρφίτσα μένει στο κέντρο
             </p>
-            <Button size="sm" type="button" disabled={!mapPin} onClick={confirmMapPin} className="gap-1.5 h-8 shrink-0">
+            <Button size="sm" type="button" disabled={!mapPin || reverseLoading || mapMoving} onClick={confirmMapPin} className="gap-1.5 h-8 shrink-0">
               <MapPin className="h-3.5 w-3.5" />
               Επιβεβαίωση
             </Button>
@@ -515,13 +542,36 @@ export function AddressAutocomplete({
             </Button>
           </div>
 
-          {/* Half of previous h-64 (~16rem) → h-32 (8rem), with a slightly taller min for usability */}
-          <div className="relative h-40 min-h-[10rem] w-full bg-muted">
+          <div className="relative h-[min(52vh,22rem)] min-h-[16rem] w-full bg-muted">
             <div
               ref={mapContainer}
               className="absolute inset-0"
               style={{ width: '100%', height: '100%' }}
             />
+
+            {/* Fixed center pin — tip anchored on the exact map center. */}
+            {(token && !mapError) && (
+              <div
+                className="pointer-events-none absolute left-1/2 top-1/2 z-[5] -translate-x-1/2"
+                aria-hidden
+              >
+                <div
+                  className={`flex flex-col items-center transition-transform duration-150 ease-out origin-bottom ${
+                    mapMoving ? '-translate-y-[calc(100%+10px)] scale-110' : '-translate-y-full'
+                  }`}
+                >
+                  <div className="h-10 w-10 rounded-full border-[3px] border-white shadow-[0_4px_14px_rgba(37,99,235,0.45)] bg-[#2563eb] flex items-center justify-center">
+                    <MapPin className="h-5 w-5 text-white" strokeWidth={2.5} />
+                  </div>
+                  <div className="h-2.5 w-0.5 rounded-full bg-[#2563eb]" />
+                </div>
+                <div
+                  className={`absolute left-1/2 top-0 h-1.5 w-3 -translate-x-1/2 rounded-full bg-black/30 transition-opacity ${
+                    mapMoving ? 'opacity-30' : 'opacity-70'
+                  }`}
+                />
+              </div>
+            )}
 
             {(tokenLoading || !token) && (
               <div className="absolute inset-0 z-10 flex flex-col items-center justify-center gap-2 px-4 text-center bg-muted">
@@ -571,8 +621,9 @@ export function AddressAutocomplete({
             </button>
 
             {reverseLoading && (
-              <div className="absolute top-2 right-2 z-10 bg-card/90 rounded-full p-1.5 shadow">
-                <Loader2 className="h-4 w-4 animate-spin text-primary" />
+              <div className="absolute top-2 left-2 z-10 bg-card/90 rounded-full px-2.5 py-1.5 shadow flex items-center gap-1.5">
+                <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                <span className="text-[11px] text-muted-foreground">Διεύθυνση…</span>
               </div>
             )}
           </div>
