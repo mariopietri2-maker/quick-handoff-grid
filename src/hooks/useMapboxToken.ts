@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
-const ENV_TOKEN = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+const ENV_TOKEN_RAW = import.meta.env.VITE_MAPBOX_TOKEN as string | undefined;
+const ENV_TOKEN = ENV_TOKEN_RAW?.replace(/^["']|["']$/g, '').trim() || undefined;
 
 const LS_KEY = 'mapbox_token_v1';
 const LS_TS_KEY = 'mapbox_token_ts_v1';
