@@ -4,18 +4,18 @@
  */
 
 const CATEGORY_GROUPS: string[][] = [
-  ['καφέδες', 'καφές', 'καφέ', 'cafe', 'café', 'coffee', 'espresso', 'cappuccino', 'καφετέρια', 'cafeteria'],
-  ['πίτσες', 'πίτσα', 'pizza', 'pizzeria', 'πιτσαρία'],
-  ['σουβλάκια', 'σουβλάκι', 'souvlaki', 'gyros', 'γύρος', 'γύροι'],
-  ['γλυκά', 'γλυκό', 'desserts', 'dessert', 'cake', 'πάστα', 'γλυκίσματα'],
-  ['burgers', 'burger', 'μπέργκερ', 'hamburger'],
-  ['ζυμαρικά', 'pasta', 'noodles', 'μακαρόνια'],
-  ['σαλάτες', 'σαλάτα', 'salads', 'salad'],
-  ['ποτά', 'drinks', 'beverages', 'αναψυκτικά'],
-  ['ασιατικά', 'asia', 'asian', 'wok', 'chinese', 'sushi', 'κινέζικο'],
-  ['ψητά', 'ψητοπωλείο', 'grill', 'bbq', 'κρέας', 'ψητό'],
-  ['κρέπες', 'κρέπα', 'crepes', 'crepe'],
-  ['κυρίως', 'mains', 'main', 'δημοφιλή', 'popular'],
+  ['καφέδες', 'καφες', 'καφε', 'cafe', 'café', 'coffee', 'espresso', 'cappuccino', 'καφετερια', 'cafeteria'],
+  ['πίτσες', 'πιτσες', 'πιτσα', 'pizza', 'pizzeria', 'πιτσαρια'],
+  ['σουβλάκια', 'σουβλακια', 'σουβλακι', 'souvlaki', 'gyros', 'γυρος', 'γυροι'],
+  ['γλυκά', 'γλυκα', 'γλυκο', 'desserts', 'dessert', 'cake', 'παστα', 'γλυκισματα'],
+  ['burgers', 'burger', 'μπεργκερ', 'hamburger'],
+  ['ζυμαρικά', 'ζυμαρικα', 'pasta', 'noodles', 'μακαρονια'],
+  ['σαλάτες', 'σαλατες', 'σαλατα', 'salads', 'salad'],
+  ['ποτά', 'ποτα', 'drinks', 'beverages', 'αναψυκτικα'],
+  ['ασιατικά', 'ασιατικα', 'asia', 'asian', 'wok', 'chinese', 'sushi', 'κινεζικο'],
+  ['ψητά', 'ψητα', 'ψητοπωλειο', 'grill', 'bbq', 'κρεας', 'ψητο'],
+  ['κρέπες', 'κρεπες', 'κρεπα', 'crepes', 'crepe'],
+  // Do NOT put "δημοφιλή" here — it would match every store for every tile.
 ];
 
 function normalize(value: string): string {

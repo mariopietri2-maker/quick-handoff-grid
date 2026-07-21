@@ -21,6 +21,18 @@ export class RouteErrorBoundary extends Component<{ children: ReactNode }, State
     console.error('Route crashed:', error, info);
     if (isStaleChunkError(error)) {
       reloadForStaleChunk(error);
+      return;
+    }
+    // One-shot recovery for known realtime subscribe races after deploys.
+    const msg = error?.message ?? '';
+    if (msg.includes("cannot add 'postgres_changes'") || msg.includes('after \'subscribe()\'')) {
+      try {
+        const key = 'fd_realtime_recover';
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1');
+          window.location.reload();
+        }
+      } catch { /* ignore */ }
     }
   }
 

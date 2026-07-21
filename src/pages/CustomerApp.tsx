@@ -190,8 +190,10 @@ export default function CustomerApp() {
       if (pending) return;
       pending = setTimeout(() => { pending = null; load(); }, 800);
     };
+    // Unique channel name avoids Strict Mode remount racing removeChannel +
+    // re-subscribe on the same topic ("cannot add postgres_changes after subscribe").
     const channel = supabase
-      .channel('customer-stores-feed')
+      .channel(`customer-stores-feed-${Math.random().toString(36).slice(2, 9)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, scheduleReload)
       .subscribe();
 
