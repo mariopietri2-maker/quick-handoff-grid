@@ -22,7 +22,7 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   accepted: { label: 'Αποδεκτή', color: 'bg-info/10 text-info border-info/30' },
   preparing: { label: 'Ετοιμάζεται', color: 'bg-warning/10 text-warning border-warning/30' },
   ready: { label: 'Έτοιμη', color: 'bg-success/10 text-success border-success/30' },
-  picked_up: { label: 'Σε Μεταφορά', color: 'bg-primary/10 text-primary border-primary/30' },
+  picked_up: { label: 'Σε Μεταφορά', color: 'bg-[hsl(var(--c-accent-soft))] text-[hsl(var(--c-accent-dark))] border-[hsl(var(--c-accent))]/30' },
   delivered: { label: 'Παραδόθηκε', color: 'bg-success/10 text-success border-success/30' },
   cancelled: { label: 'Ακυρωμένη', color: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
@@ -86,7 +86,7 @@ export default function MyOrdersPage() {
   };
 
   return (
-    <div className="min-h-full bg-white pb-4">
+    <div className="customer-shell min-h-full bg-white pb-4">
       <SEO
         title="Οι παραγγελίες μου — Fresh Delivery"
         description="Δείτε το ιστορικό παραγγελιών σας, παρακολουθήστε ενεργές αποστολές και επαναλάβετε αγαπημένες παραγγελίες."
@@ -108,7 +108,7 @@ export default function MyOrdersPage() {
         <CustomerReferralCard />
         {loading ? (
           <div className="text-center py-16">
-            <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <div className="h-8 w-8 border-4 border-[hsl(var(--c-accent))] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
           </div>
         ) : !user ? (
           <div className="text-center py-16 space-y-3">
@@ -136,7 +136,7 @@ export default function MyOrdersPage() {
               return (
                 <Card
                   key={order.id}
-                  className={`shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow ${isActive ? 'border-primary/20' : ''}`}
+                  className={`shadow-[var(--shadow-sm)] hover:shadow-[var(--shadow-md)] transition-shadow ${isActive ? 'border-[hsl(var(--c-accent))]/25' : ''}`}
                 >
                   <CardContent className="p-4">
                     <div onClick={() => navigate(`/order-tracking/${order.id}`)} className="cursor-pointer">
@@ -154,7 +154,7 @@ export default function MyOrdersPage() {
                         <p className="text-xs text-muted-foreground mt-1 truncate">{order.delivery_address}</p>
                       )}
                       {isActive && (
-                        <p className="text-xs text-primary font-heading mt-2">Πατήστε για παρακολούθηση →</p>
+                        <p className="text-xs c-accent font-heading mt-2">Πατήστε για παρακολούθηση →</p>
                       )}
                     </div>
                     {isDelivered && (

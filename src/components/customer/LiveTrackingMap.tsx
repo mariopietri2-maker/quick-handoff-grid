@@ -367,7 +367,7 @@ export default function LiveTrackingMap({
       <div ref={container} className="h-full w-full" />
       {tokenLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted/90">
-          <Loader2 className="h-7 w-7 animate-spin text-primary" />
+          <Loader2 className="h-7 w-7 animate-spin c-accent" />
         </div>
       )}
       {!tokenLoading && !token && (
@@ -380,7 +380,7 @@ export default function LiveTrackingMap({
           <p>Ο χάρτης δεν φόρτωσε</p>
           <button
             type="button"
-            className="text-primary font-semibold underline underline-offset-2"
+            className="c-accent font-semibold underline underline-offset-2"
             onClick={() => {
               setMapError(null);
               setMapRetry((n) => n + 1);
