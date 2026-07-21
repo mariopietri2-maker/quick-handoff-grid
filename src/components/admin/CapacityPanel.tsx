@@ -1,5 +1,5 @@
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useMemo, useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
   AlertTriangle,
@@ -23,6 +23,8 @@ import { DEFAULT_GUARDRAILS, loadGuardrails } from '@/lib/cost-guardrails';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Switch } from '@/components/ui/switch';
+import { toast } from 'sonner';
 import { startOfDay, subHours } from 'date-fns';
 
 type StatusFunnel = Record<string, number>;
@@ -84,6 +86,8 @@ function CapRow({ label, value, sub }: { label: string; value: string; sub?: str
 }
 
 export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: string) => void }) {
+  const qc = useQueryClient();
+  const [surgeBusy, setSurgeBusy] = useState(false);
   const { data, isLoading, dataUpdatedAt, refetch, isFetching } = useQuery({
     queryKey: ['admin-capacity'],
     refetchInterval: 15_000,
@@ -170,6 +174,21 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
       return DEFAULT_GUARDRAILS;
     }
   }, [dataUpdatedAt]);
+
+  const toggleSurge = async (next: boolean) => {
+    setSurgeBusy(true);
+    const { error } = await supabase
+      .from('platform_settings')
+      .update({ surge_enabled: next } as never)
+      .eq('id', 1);
+    setSurgeBusy(false);
+    if (error) {
+      toast.error(error.message);
+      return;
+    }
+    toast.success(next ? 'Surge ενεργό' : 'Surge κλειστό');
+    qc.invalidateQueries({ queryKey: ['admin-capacity'] });
+  };
 
   const model = useMemo(() => {
     if (!data) return null;
@@ -478,7 +497,19 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
             value={`${model.waveSize} × ${model.maxWaves}`}
             sub={`Timeout ${s?.dist_offer_timeout_seconds ?? '—'}s · radius ${s?.dist_search_radius_km ?? '—'} km`}
           />
-          <CapRow label="Surge" value={s?.surge_enabled ? 'ON' : 'OFF'} />
+          <div className="flex items-start justify-between gap-3 py-2 border-b border-border/60">
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-foreground">Surge</p>
+              <p className="text-[11px] text-muted-foreground mt-0.5">
+                Peak / demand multipliers · off by default
+              </p>
+            </div>
+            <Switch
+              checked={!!s?.surge_enabled}
+              disabled={surgeBusy}
+              onCheckedChange={(v) => void toggleSurge(v)}
+            />
+          </div>
           <CapRow
             label="Maintenance"
             value={s?.maintenance_mode ? 'ΝΑΙ' : 'Όχι'}
