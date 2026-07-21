@@ -88,6 +88,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'buffer',
     tabs: [
       { id: 'buffer', label: 'Buffer' },
+      { id: 'platform_cost', label: 'Κόστος πλατφόρμας' },
       { id: 'surge', label: 'Surge' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
