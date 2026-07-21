@@ -1,11 +1,12 @@
+import { SITE_ORIGIN } from '@/lib/site';
+
 /** Public GitHub Release assets for Android debug APKs. */
 export const APK_RELEASE_TAG = 'mobile-apks-v1';
 
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
 
-/** Production site — used for printable / static QR PNGs. */
-export const SITE_ORIGIN = 'https://quick-handoff-grid.vercel.app';
+export { SITE_ORIGIN };
 
 export const APK_DOWNLOADS = {
   customer: {

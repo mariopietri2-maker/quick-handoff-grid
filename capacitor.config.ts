@@ -8,12 +8,13 @@ const config: CapacitorConfig = {
   appName: 'Fresh Delivery',
   webDir: 'dist',
   server: {
-    url: 'https://quick-handoff-grid.vercel.app',
+    url: 'https://quick-handoff-grid-production.up.railway.app',
     cleartext: isDev,
     androidScheme: 'https',
     allowNavigation: [
       'https://ojkesspghyqmjmupybva.supabase.co/*',
       'https://*.supabase.co/*',
+      'https://quick-handoff-grid-production.up.railway.app/*',
       'https://quick-handoff-grid.vercel.app/*',
       'https://api.mapbox.com/*',
     ],
