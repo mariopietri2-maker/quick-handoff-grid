@@ -82,9 +82,9 @@ export default function PricingSettings() {
             bike_multiplier: Number(d.bike_multiplier ?? 1),
             motorcycle_multiplier: Number(d.motorcycle_multiplier ?? 1),
             car_multiplier: Number(d.car_multiplier ?? 1),
-            default_commission_pct: Math.max(15, Number(d.default_commission_pct ?? 15)),
-            admin_share_pct: Math.max(5, Number(d.admin_share_pct ?? 5)),
-            driver_pool_pct_of_subtotal: Math.max(10, Number(d.driver_pool_pct_of_subtotal ?? 10)),
+            default_commission_pct: Number(d.default_commission_pct ?? 15),
+            admin_share_pct: Number(d.admin_share_pct ?? 5),
+            driver_pool_pct_of_subtotal: Number(d.driver_pool_pct_of_subtotal ?? 10),
             pool_healthy_threshold: Number(d.pool_healthy_threshold ?? 500),
             low_pool_threshold: Number(d.low_pool_threshold ?? 50),
             pool_critical_threshold: Number(d.pool_critical_threshold ?? 20),
@@ -101,14 +101,89 @@ export default function PricingSettings() {
       .then(({ data }: any) => { if (data) setPoolBalance(Number(data.platform_pool ?? 0)); });
   }, []);
 
+  const storeKeepsPct = Math.max(0, Math.min(100, 100 - Number(pricing.default_commission_pct || 0)));
+  const splitSum = Number(
+    (storeKeepsPct + Number(pricing.driver_pool_pct_of_subtotal || 0) + Number(pricing.admin_share_pct || 0)).toFixed(2),
+  );
+  const splitOk = Math.abs(splitSum - 100) < 0.05;
+
+  const setStoreKeeps = (v: number) => {
+    const store = Math.max(0, Math.min(100, Number(v) || 0));
+    const rem = Number((100 - store).toFixed(2));
+    setPricing(p => {
+      const admin = Math.max(0, Number(p.admin_share_pct || 0));
+      const pool = Math.max(0, Number(p.driver_pool_pct_of_subtotal || 0));
+      const totalAD = admin + pool;
+      let nextAdmin = 0;
+      let nextPool = 0;
+      if (rem <= 0) {
+        nextAdmin = 0;
+        nextPool = 0;
+      } else if (totalAD <= 0) {
+        nextAdmin = rem;
+        nextPool = 0;
+      } else {
+        nextAdmin = Number(((rem * admin) / totalAD).toFixed(2));
+        nextPool = Number((rem - nextAdmin).toFixed(2));
+      }
+      return {
+        ...p,
+        default_commission_pct: rem,
+        admin_share_pct: nextAdmin,
+        driver_pool_pct_of_subtotal: nextPool,
+      };
+    });
+  };
+
+  const setDriverPool = (v: number) => {
+    const pool = Math.max(0, Math.min(100, Number(v) || 0));
+    setPricing(p => {
+      const admin = Math.max(0, Math.min(100 - pool, Number(p.admin_share_pct || 0)));
+      const commission = Number((admin + pool).toFixed(2));
+      return {
+        ...p,
+        driver_pool_pct_of_subtotal: pool,
+        admin_share_pct: admin,
+        default_commission_pct: commission,
+      };
+    });
+  };
+
+  const setAdminBag = (v: number) => {
+    const admin = Math.max(0, Math.min(100, Number(v) || 0));
+    setPricing(p => {
+      const pool = Math.max(0, Math.min(100 - admin, Number(p.driver_pool_pct_of_subtotal || 0)));
+      const commission = Number((admin + pool).toFixed(2));
+      return {
+        ...p,
+        admin_share_pct: admin,
+        driver_pool_pct_of_subtotal: pool,
+        default_commission_pct: commission,
+      };
+    });
+  };
+
   const handleSave = async () => {
+    if (!splitOk) {
+      toast.error(`Τα ποσοστά πρέπει να αθροίζουν 100% (τώρα ${splitSum}%)`);
+      return;
+    }
     setSaving(true);
+    const payload = {
+      ...pricing,
+      default_commission_pct: Number(
+        (Number(pricing.admin_share_pct || 0) + Number(pricing.driver_pool_pct_of_subtotal || 0)).toFixed(2),
+      ),
+    };
     const { error } = await supabase
       .from('platform_settings')
-      .upsert({ id: 1, ...pricing } as any, { onConflict: 'id' });
+      .upsert({ id: 1, ...payload } as any, { onConflict: 'id' });
     setSaving(false);
     if (error) toast.error('Αποτυχία αποθήκευσης');
-    else toast.success('Οι τιμές ενημερώθηκαν');
+    else {
+      setPricing(payload);
+      toast.success('Οι τιμές ενημερώθηκαν');
+    }
   };
 
   const toggleDay = (n: number) => {
@@ -248,25 +323,57 @@ export default function PricingSettings() {
           </Card>
 
           <Card>
-            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><Percent className="h-4 w-4 text-primary" />Προμήθεια Πλατφόρμας (κλειδωμένο 85/10/5)</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle className="font-heading text-base flex items-center gap-2">
+                <Percent className="h-4 w-4 text-primary" />
+                Κατανομή παραγγελίας (food subtotal)
+              </CardTitle>
+            </CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-sm text-muted-foreground">
+                Ορίστε πόσο % του φαγητού κρατάει το κατάστημα, πόσο πάει στο driver pool και πόσο στο admin.
+                Τα τρία ποσοστά πρέπει να αθροίζουν <b>100%</b>.
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <Field label="Συνολική Προμήθεια %" value={pricing.default_commission_pct} onChange={v => setPricing(p => ({ ...p, default_commission_pct: Math.max(15, v) }))} hint="Min 15% — override ανά store" icon={Percent} />
-                <Field label="Admin bag %" value={pricing.admin_share_pct} onChange={v => setPricing(p => ({ ...p, admin_share_pct: Math.max(5, v) }))} hint="Min 5% του food subtotal" icon={Shield} />
-                <Field label="Driver pool %" value={pricing.driver_pool_pct_of_subtotal} onChange={v => setPricing(p => ({ ...p, driver_pool_pct_of_subtotal: Math.max(10, v) }))} hint="Min 10% — top-ups οδηγών" />
+                <Field
+                  label="Κατάστημα κρατάει %"
+                  value={Number(storeKeepsPct.toFixed(2))}
+                  onChange={setStoreKeeps}
+                  hint="Πόσο μένει στο κατάστημα"
+                  step="0.01"
+                  icon={Percent}
+                />
+                <Field
+                  label="Driver pool %"
+                  value={pricing.driver_pool_pct_of_subtotal}
+                  onChange={setDriverPool}
+                  hint="Για πληρωμές / bonus οδηγών"
+                  step="0.01"
+                />
+                <Field
+                  label="Admin bag %"
+                  value={pricing.admin_share_pct}
+                  onChange={setAdminBag}
+                  hint="Κέρδος πλατφόρμας"
+                  step="0.01"
+                  icon={Shield}
+                />
               </div>
 
-              <div className="rounded-lg border border-primary/20 bg-primary/5 p-3 text-sm space-y-1">
-                <p className="text-xs text-muted-foreground mb-1">Διαχωρισμός σε παραγγελία €100 food subtotal</p>
-                <p>🏪 Store κρατάει: <span className="font-bold">€{(100 - pricing.default_commission_pct).toFixed(2)}</span> ({(100 - pricing.default_commission_pct).toFixed(0)}%)</p>
-                <p>🚴 Driver pool: <span className="font-bold text-emerald-700">€{pricing.driver_pool_pct_of_subtotal.toFixed(2)}</span> ({pricing.driver_pool_pct_of_subtotal}%)</p>
-                <p>🛡️ Admin bag: <span className="font-bold text-amber-600">€{pricing.admin_share_pct.toFixed(2)}</span> ({pricing.admin_share_pct}%)</p>
-                {pricing.default_commission_pct > pricing.admin_share_pct + pricing.driver_pool_pct_of_subtotal && (
-                  <p>💼 Extra (platform pool): <span className="font-bold">€{(pricing.default_commission_pct - pricing.admin_share_pct - pricing.driver_pool_pct_of_subtotal).toFixed(2)}</span></p>
-                )}
+              <div className={`rounded-lg border p-3 text-sm space-y-1 ${splitOk ? 'border-primary/20 bg-primary/5' : 'border-destructive/40 bg-destructive/5'}`}>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="text-xs text-muted-foreground">Διαχωρισμός σε παραγγελία €100 food</p>
+                  <p className={`text-xs font-semibold tabular-nums ${splitOk ? 'text-emerald-700' : 'text-destructive'}`}>
+                    Σύνολο {splitSum.toFixed(2)}%{splitOk ? ' ✓' : ' — πρέπει 100%'}
+                  </p>
+                </div>
+                <p>Κατάστημα: <span className="font-bold">€{storeKeepsPct.toFixed(2)}</span> ({storeKeepsPct.toFixed(2)}%)</p>
+                <p>Driver pool: <span className="font-bold text-emerald-700">€{Number(pricing.driver_pool_pct_of_subtotal).toFixed(2)}</span> ({Number(pricing.driver_pool_pct_of_subtotal).toFixed(2)}%)</p>
+                <p>Admin: <span className="font-bold text-amber-600">€{Number(pricing.admin_share_pct).toFixed(2)}</span> ({Number(pricing.admin_share_pct).toFixed(2)}%)</p>
                 <p className="text-[11px] text-muted-foreground pt-1 border-t border-border/50 mt-2">
-                  Ισχύει για όλες τις παραγγελίες (internal + external). Floor: 5% admin + 10% driver pool σε κάθε παραγγελία.
-                  Stores μπορούν να κάνουν toggle "Δωρεάν Παράδοση" — τότε χρεώνονται το delivery fee από το wallet τους.
+                  Ισχύει για όλες τις παραγγελίες (in-app + custom). Η προμήθεια καταστήματος είναι{' '}
+                  <b>{Number(pricing.default_commission_pct).toFixed(2)}%</b> (= 100 − κατάστημα).
+                  Override ανά κατάστημα παραμένει διαθέσιμο στην καρτέλα «Καταστήματα».
                 </p>
               </div>
             </CardContent>

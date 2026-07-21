@@ -15,8 +15,7 @@ import { toast } from 'sonner';
 import PendingPayoutsPanel from './PendingPayoutsPanel';
 
 /**
- * Money Engine — read-only control room for the locked 85/10/5 split.
- * No store surcharge. Basket grows only from the standard 10% on each order.
+ * Money Engine — control room for the configurable store / driver / admin food split.
  */
 
 export default function MoneyEnginePanel() {
@@ -64,6 +63,11 @@ export default function MoneyEnginePanel() {
   const s = settings.data!;
   const basket = Number(treasury.data?.platform_pool ?? 0);
   const target = Number(s.pool_healthy_threshold ?? 500);
+  const adminPct = Number(s.admin_share_pct ?? 5);
+  const poolPct = Number(s.driver_pool_pct_of_subtotal ?? 10);
+  const storeKeepsPct = Number(
+    (100 - Number(s.default_commission_pct ?? adminPct + poolPct)).toFixed(2),
+  );
 
   const status = basket < s.pool_critical_threshold
     ? { tone: 'destructive' as const, label: 'Κρίσιμο', icon: AlertTriangle }
@@ -83,7 +87,9 @@ export default function MoneyEnginePanel() {
           Money Engine
         </h2>
         <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-          Σταθερή κατανομή <strong>85% / 10% / 5%</strong> σε κάθε παραγγελία. Καμία έξτρα χρέωση στα καταστήματα — το Driver Basket μεγαλώνει μόνο από το σταθερό 10%.
+          Κατανομή food subtotal: <strong>{storeKeepsPct}%</strong> κατάστημα ·{' '}
+          <strong>{poolPct}%</strong> driver pool · <strong>{adminPct}%</strong> admin.
+          Αλλάζει από Admin → Τιμολόγηση.
         </p>
       </div>
 
@@ -149,19 +155,19 @@ export default function MoneyEnginePanel() {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-3">
-          <PreviewRow icon={Building2} label="Κατάστημα κρατά (85%)" amount={85} tone="text-foreground" />
-          <PreviewRow icon={Bike} label="Driver Basket (10%)" amount={10} tone="text-info" />
-          <PreviewRow icon={TrendingUp} label="Admin (5%)" amount={5} tone="text-success" />
+          <PreviewRow icon={Building2} label={`Κατάστημα κρατά (${storeKeepsPct}%)`} amount={storeKeepsPct} tone="text-foreground" />
+          <PreviewRow icon={Bike} label={`Driver Basket (${poolPct}%)`} amount={poolPct} tone="text-info" />
+          <PreviewRow icon={TrendingUp} label={`Admin (${adminPct}%)`} amount={adminPct} tone="text-success" />
 
           <Separator />
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">Συνολική προμήθεια καταστήματος</span>
-            <span className="font-bold tabular-nums text-primary">15.00%</span>
+            <span className="font-bold tabular-nums text-primary">{Number(s.default_commission_pct ?? adminPct + poolPct).toFixed(2)}%</span>
           </div>
 
           <div className="rounded-lg bg-muted/40 border border-border p-3 mt-2">
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              <strong className="text-foreground">Πώς δουλεύει:</strong> Σε κάθε ολοκληρωμένη παραγγελία, η πλατφόρμα κρατά <strong>{s.admin_share_pct}%</strong> για admin και <strong>{s.driver_pool_pct_of_subtotal}%</strong> για το Driver Basket. Το κατάστημα κρατά το υπόλοιπο. Floors κλειδωμένα server-side.
+              <strong className="text-foreground">Πώς δουλεύει:</strong> Σε κάθε ολοκληρωμένη παραγγελία, η πλατφόρμα κρατά <strong>{adminPct}%</strong> για admin και <strong>{poolPct}%</strong> για το Driver Basket. Το κατάστημα κρατά <strong>{storeKeepsPct}%</strong>.
             </p>
           </div>
         </CardContent>
