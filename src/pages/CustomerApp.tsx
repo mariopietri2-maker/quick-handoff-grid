@@ -378,7 +378,7 @@ export default function CustomerApp() {
         {/* ── AI-generated hero carousel ────────────────── */}
         {!isSearching && cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
 
-        {/* ── Promo carousel ─────────────────────────────── */}
+        {/* ── Promo carousel (single promo slot; not a second AI ad) ── */}
         {!isSearching && cfg.sections.show_promos && <PromoBannerCarousel />}
 
         {/* ── 1+1 Offers row (efood-inspired) ────────────── */}
@@ -416,8 +416,9 @@ export default function CustomerApp() {
           />
         )}
 
-        {/* ── AI spotlight (mid-feed) ─────────────────────── */}
-        {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_spotlight !== false && (
+        {/* Spotlight is the same large AI-ad format as the hero — skip when heroes exist. */}
+        {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_spotlight !== false &&
+          !(cfg.hero_cards ?? []).some((c) => c.enabled && (c.placement ?? 'hero') === 'hero') && (
           <AiSpotlightCard />
         )}
 
