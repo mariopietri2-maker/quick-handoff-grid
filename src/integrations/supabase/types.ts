@@ -2160,6 +2160,9 @@ export type Database = {
           surge_time_peak_multiplier: number
           target_hourly_eur: number
           updated_at: string
+          wait_bonus_cap: number
+          wait_bonus_grace_minutes: number
+          wait_bonus_rate_per_min: number
         }
         Insert: {
           accept_offer_requires_ready?: boolean
@@ -2237,6 +2240,9 @@ export type Database = {
           surge_time_peak_multiplier?: number
           target_hourly_eur?: number
           updated_at?: string
+          wait_bonus_cap?: number
+          wait_bonus_grace_minutes?: number
+          wait_bonus_rate_per_min?: number
         }
         Update: {
           accept_offer_requires_ready?: boolean
@@ -2314,6 +2320,9 @@ export type Database = {
           surge_time_peak_multiplier?: number
           target_hourly_eur?: number
           updated_at?: string
+          wait_bonus_cap?: number
+          wait_bonus_grace_minutes?: number
+          wait_bonus_rate_per_min?: number
         }
         Relationships: []
       }
@@ -3843,6 +3852,9 @@ export type Database = {
           platform_service_fee: number
           show_stores_on_driver_map: boolean
           stacking_enabled: boolean
+          wait_bonus_cap: number
+          wait_bonus_grace_minutes: number
+          wait_bonus_rate_per_min: number
         }[]
       }
       get_public_reviews: {

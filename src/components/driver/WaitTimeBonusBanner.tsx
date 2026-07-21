@@ -1,10 +1,7 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Timer, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-
-const BONUS_PER_MINUTE = 0.10;
-const BONUS_THRESHOLD_MINUTES = 10;
 
 interface WaitTimeBonusBannerProps {
   orderId: string;
@@ -16,6 +13,20 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
   const [arrivedAt, setArrivedAt] = useState<Date | null>(null);
   const [waitMinutes, setWaitMinutes] = useState(0);
   const [bonusRecordId, setBonusRecordId] = useState<string | null>(null);
+  const [ratePerMin, setRatePerMin] = useState(0.10);
+  const [graceMinutes, setGraceMinutes] = useState(10);
+  const [capAmount, setCapAmount] = useState(10);
+
+  useEffect(() => {
+    (supabase as any).rpc('get_platform_settings_public')
+      .then(({ data }: any) => {
+        const row = Array.isArray(data) ? data[0] : data;
+        if (!row) return;
+        if (row.wait_bonus_rate_per_min != null) setRatePerMin(Number(row.wait_bonus_rate_per_min));
+        if (row.wait_bonus_grace_minutes != null) setGraceMinutes(Number(row.wait_bonus_grace_minutes));
+        if (row.wait_bonus_cap != null) setCapAmount(Number(row.wait_bonus_cap));
+      });
+  }, []);
 
   useEffect(() => {
     if (!user || status !== 'arrived') return;
@@ -57,8 +68,10 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
   useEffect(() => {
     if (status !== 'picked_up' || !bonusRecordId || !user) return;
     const updateBonus = async () => {
-      const bonusMins = Math.max(0, waitMinutes - BONUS_THRESHOLD_MINUTES);
-      const bonusAmount = bonusMins * BONUS_PER_MINUTE;
+      const bonusMins = Math.max(0, waitMinutes - graceMinutes);
+      const raw = bonusMins * ratePerMin;
+      const bonusAmount = Math.min(capAmount, raw);
+      // Server trigger recomputes from timestamps + platform_settings
       await supabase.from('wait_time_bonuses').update({
         picked_up_at: new Date().toISOString(),
         wait_minutes: waitMinutes,
@@ -67,13 +80,14 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
       }).eq('id', bonusRecordId);
     };
     updateBonus();
-  }, [status, bonusRecordId, waitMinutes, user]);
+  }, [status, bonusRecordId, waitMinutes, user, ratePerMin, graceMinutes, capAmount]);
 
   if (status !== 'arrived' || !arrivedAt) return null;
+  if (ratePerMin <= 0) return null;
 
-  const bonusMinutes = Math.max(0, waitMinutes - BONUS_THRESHOLD_MINUTES);
-  const bonusAmount = bonusMinutes * BONUS_PER_MINUTE;
-  const isEarning = waitMinutes >= BONUS_THRESHOLD_MINUTES;
+  const bonusMinutes = Math.max(0, waitMinutes - graceMinutes);
+  const bonusAmount = Math.min(capAmount, bonusMinutes * ratePerMin);
+  const isEarning = waitMinutes >= graceMinutes;
 
   return (
     <div className={`rounded-xl p-3 flex items-center gap-3 driver-glass ${
@@ -91,11 +105,12 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
         {isEarning ? (
           <p className="text-xs text-orange-400 font-medium flex items-center gap-1">
             <Coins className="h-3 w-3" />
-            Μπόνους: +{bonusAmount.toFixed(2)}€ (+€0.10/λεπ)
+            Μπόνους: +{bonusAmount.toFixed(2)}€ (+€{ratePerMin.toFixed(2)}/λεπ
+            {bonusAmount >= capAmount && capAmount > 0 ? ', max' : ''})
           </p>
         ) : (
           <p className="text-xs text-[hsl(var(--driver-text-muted))]">
-            Μπόνους μετά τα {BONUS_THRESHOLD_MINUTES} λεπτά
+            Μπόνους μετά τα {graceMinutes} λεπτά (€{ratePerMin.toFixed(2)}/λεπ)
           </p>
         )}
       </div>
