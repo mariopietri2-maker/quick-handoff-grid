@@ -59,6 +59,24 @@ export default function MissionControl() {
     else toast.success(`Ακυρώθηκαν ${(data as any)?.cancelled ?? 0} παραγγελίες`);
   };
 
+  const [cancelAllBusy, setCancelAllBusy] = useState(false);
+  const cancelAllOpen = async () => {
+    const typed = window.prompt(
+      'Θα ακυρωθούν ΟΛΕΣ οι ανοιχτές παραγγελίες (pending → picked_up).\nΠληκτρολόγησε CANCEL για επιβεβαίωση:',
+    );
+    if (typed !== 'CANCEL') {
+      if (typed != null) toast.error('Ακυρώθηκε — γράψε CANCEL για επιβεβαίωση');
+      return;
+    }
+    setCancelAllBusy(true);
+    const { data, error } = await (supabase as any).rpc('admin_cancel_all_open_orders', {
+      p_reason: 'Mission Control: cancel all open orders',
+    });
+    setCancelAllBusy(false);
+    if (error) toast.error(error.message);
+    else toast.success(`Ακυρώθηκαν ${(data as any)?.cancelled ?? 0} παραγγελίες`);
+  };
+
   // ----- wallet adjustment -----
   const [walletKind, setWalletKind] = useState<'driver' | 'customer'>('driver');
   const [walletUser, setWalletUser] = useState('');
@@ -158,6 +176,25 @@ export default function MissionControl() {
             <CardContent>
               <Button variant="destructive" onClick={cancelStuck}>
                 <ZapOff className="h-4 w-4 mr-1" /> Ακύρωσε pending/placed &gt; 2h
+              </Button>
+            </CardContent>
+          </Card>
+
+          <Card className="border-destructive/40 bg-destructive/5">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base flex items-center gap-2">
+                <ShieldAlert className="h-4 w-4 text-destructive" />
+                Ακύρωση όλων των παραγγελιών
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-2">
+              <p className="text-[11px] text-muted-foreground">
+                Ακυρώνει κάθε ανοιχτή παραγγελία (pending, placed, accepted, preparing, ready, arrived, picked_up).
+                Δεν αγγίζει delivered. Διαγράφει και τα pending offers.
+              </p>
+              <Button variant="destructive" onClick={cancelAllOpen} disabled={cancelAllBusy}>
+                <ZapOff className="h-4 w-4 mr-1" />
+                {cancelAllBusy ? 'Ακύρωση…' : 'Ακύρωσε όλες τις ανοιχτές'}
               </Button>
             </CardContent>
           </Card>

@@ -228,6 +228,26 @@ export default function DeliveryControlCenter() {
       'Παραγγελία ακυρώθηκε');
   };
 
+  const cancelAllOpen = async () => {
+    if (!isAdmin) return toast.error('Μόνο admin');
+    const typed = window.prompt(
+      'Θα ακυρωθούν ΟΛΕΣ οι ανοιχτές παραγγελίες.\nΠληκτρολόγησε CANCEL για επιβεβαίωση:',
+    );
+    if (typed !== 'CANCEL') {
+      if (typed != null) toast.error('Ακυρώθηκε — γράψε CANCEL για επιβεβαίωση');
+      return;
+    }
+    setBusy(true);
+    const { data, error } = await (supabase as any).rpc('admin_cancel_all_open_orders', {
+      p_reason: 'Delivery Control Center: cancel all open orders',
+    });
+    setBusy(false);
+    if (error) return toast.error(error.message);
+    toast.success(`Ακυρώθηκαν ${(data as any)?.cancelled ?? 0} παραγγελίες`);
+    qc.invalidateQueries({ queryKey: ['dcc-live-orders'] });
+    qc.invalidateQueries({ queryKey: ['dcc-offers'] });
+  };
+
   const toggleDispatch = async () => {
     if (!isAdmin) return toast.error('Μόνο admin');
     setBusy(true);
@@ -323,6 +343,15 @@ export default function DeliveryControlCenter() {
           </Select>
           <Button size="sm" variant="outline" onClick={runDispatchNow} disabled={busy}>
             <Zap className="h-3.5 w-3.5 mr-1.5" /> Τρέξε dispatch τώρα
+          </Button>
+          <Button
+            size="sm"
+            variant="destructive"
+            onClick={cancelAllOpen}
+            disabled={!isAdmin || busy}
+            title="Ακύρωση όλων των ανοιχτών παραγγελιών"
+          >
+            <AlertTriangle className="h-3.5 w-3.5 mr-1.5" /> Ακύρωσε όλες
           </Button>
         </div>
       </div>
