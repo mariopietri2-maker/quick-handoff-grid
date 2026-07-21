@@ -33,7 +33,7 @@ so a stale host env cannot point Railway at a different database.
 - **Payments:** Stripe (set **live** keys in Vercel + Supabase secrets for production)
 - **Mobile:** Capacitor 8 (customer + driver debug APKs)
 - **Tests:** Vitest (unit), Playwright (e2e)
-- **Host:** Vercel + Railway (`vercel.json` / `railway.toml` SPA)
+- **Host:** Vercel + Railway (`vercel.json` SPA; Railway Nixpacks)
 
 Package manager: **npm** (`package-lock.json`). Node **20+** (22 recommended).
 
