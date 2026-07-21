@@ -39,6 +39,7 @@ import { geocodeAddress, warmMapboxToken } from '@/lib/geocode';
 import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { DriverPrefsApplier } from '@/components/driver/DriverPrefsApplier';
 import { getDriverPayoutBreakdown } from '@/lib/driver-payout';
+import { primeDriverAudio } from '@/lib/driver-sound-prefs';
 
 
 type DriverTab = 'home' | 'money' | 'inbox' | 'referral';
@@ -81,6 +82,8 @@ export default function DriverApp() {
   });
   useEffect(() => {
     try { localStorage.setItem('driver_is_online_v1', isOnline ? '1' : '0'); } catch {}
+    // Going online is a user gesture path — unlock WebView audio for offer alerts.
+    if (isOnline) primeDriverAudio();
   }, [isOnline]);
 
   // Mirror online toggle to driver_state.shift_started_at so admin/dispatch
@@ -412,10 +415,11 @@ export default function DriverApp() {
       return { top: 140, bottom: 220, left: 48, right: 72 };
     }
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
+    // Keep offer sheets compact so the map stays mostly visible (Uber-like).
     const bottom = showCompactOnlineDock
       ? Math.max(120, Math.round(vh * 0.16) + 28)
       : hasIncomingOffers
-        ? Math.max(380, Math.round(vh * 0.72) + 24)
+        ? Math.max(220, Math.min(300, Math.round(vh * 0.34) + 16))
         : activeDelivery
           ? Math.max(320, Math.round(vh * 0.58) + 24)
           : Math.max(260, Math.round(vh * 0.48) + 24);
@@ -461,7 +465,7 @@ export default function DriverApp() {
               nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
               followMode={isNavActive}
               overlayPadding={mapOverlayPadding}
-              interactionLocked={hasIncomingOffers}
+              interactionLocked={false}
             />
           </Suspense>
 
@@ -600,12 +604,25 @@ export default function DriverApp() {
             </div>
             )}
 
+            {/* During offers, keep a light recenter control so the map stays usable above the card */}
+            {hasIncomingOffers && (
+            <div className="flex justify-end gap-2 px-3 pb-2 pointer-events-auto">
+              <button
+                onClick={() => mapRef.current?.recenter()}
+                className="h-9 w-9 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-md active:scale-90"
+                aria-label="Επανακέντρωμα"
+              >
+                <Crosshair className="h-4.5 w-4.5 text-[hsl(var(--driver-text))]" />
+              </button>
+            </div>
+            )}
+
             <div
               className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[28px] shadow-[0_-12px_32px_-12px_hsl(220,18%,14%,0.18)] transition-[max-height] duration-300 ease-out ${
                 showCompactOnlineDock
                   ? 'overflow-hidden'
                   : hasIncomingOffers
-                    ? 'max-h-[78vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                    ? 'max-h-[46vh] overflow-y-auto overscroll-contain scrollbar-thin'
                     : activeDelivery
                       ? 'max-h-[62vh] overflow-y-auto overscroll-contain scrollbar-thin'
                       : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
@@ -692,7 +709,10 @@ export default function DriverApp() {
                     </div>
                     <SlideToggle
                       isOn={isOnline}
-                      onToggle={setIsOnline}
+                      onToggle={(next) => {
+                        if (next) primeDriverAudio();
+                        setIsOnline(next);
+                      }}
                       onLabel="Είσαι Online"
                       offLabel="Σύρε για να συνδεθείς"
                       disabled={driverActive !== true}
@@ -797,28 +817,27 @@ export default function DriverApp() {
                       </div>
                     )}
 
-                    {/* Offer mode — Uber-style: only the offer, no online toggle */}
+                    {/* Offer mode — compact bottom card; map stays mostly visible */}
                     {hasIncomingOffers && isOnline && !onBreak && !cashCapped && !loading && (
-                      <div className="space-y-3 animate-slide-up pb-1">
-                        <div className="flex items-center justify-between px-0.5">
-                          <p className="text-[11px] font-heading font-semibold uppercase tracking-wide text-[hsl(var(--driver-text-muted))]">
-                            Νέα προσφορά
+                      <div className="space-y-2 pb-1">
+                        {offers.length > 1 && (
+                          <p className="px-0.5 text-[11px] font-heading font-semibold tabular-nums text-[hsl(var(--driver-text-muted))]">
+                            {offers.length} διαθέσιμες προσφορές
                           </p>
-                          <span className="tabular-nums text-[11px] font-heading font-bold text-primary">
-                            {offers.length > 1 ? `${offers.length} διαθέσιμες` : 'Αποδοχή ή απόρριψη'}
-                          </span>
-                        </div>
-                        {offers.map((offer, i) => (
-                          <div key={offer.id} className="animate-pop" style={{ animationDelay: `${i * 80}ms`, animationFillMode: 'both' }}>
+                        )}
+                        {offers.map((offer) => {
+                          const breakdown = getDriverPayoutBreakdown(offer as any);
+                          return (
                             <OrderOfferCard
+                              key={offer.id}
                               offer={{
                                 id: offer.id,
                                 storeName: offer.store_name || 'Κατάστημα',
                                 storeAddress: offer.store_address || 'Διεύθυνση καταστήματος',
                                 deliveryAddress: offer.delivery_address || 'Πελάτης',
-                                estimatedPayout: getDriverPayoutBreakdown(offer as any).total,
-                                basePay: getDriverPayoutBreakdown(offer as any).basePay,
-                                tipAmount: getDriverPayoutBreakdown(offer as any).tipAmount,
+                                estimatedPayout: breakdown.total,
+                                basePay: breakdown.basePay,
+                                tipAmount: breakdown.tipAmount,
                                 poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
                                 paymentMethod: (offer as any).payment_method ?? null,
                                 cashToCollect: (offer as any).payment_method === 'cash'
@@ -844,8 +863,8 @@ export default function DriverApp() {
                               expiresAt={offerExpiresAt[offer.id] ?? null}
                               timeoutSec={offerTimeoutSec}
                             />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                     )}
 
@@ -883,7 +902,10 @@ export default function DriverApp() {
                         <div className="px-3 pb-3 pt-1">
                           <SlideToggle
                             isOn={isOnline}
-                            onToggle={setIsOnline}
+                            onToggle={(next) => {
+                              if (next) primeDriverAudio();
+                              setIsOnline(next);
+                            }}
                             onLabel="Είσαι Online"
                             offLabel="Σύρε για να συνδεθείς"
                             disabled={driverActive !== true}
