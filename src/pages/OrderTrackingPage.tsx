@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Phone, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, Car, MapPin, Star, Copy } from 'lucide-react';
+import { ArrowLeft, Phone, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, MapPin, Star, Copy } from 'lucide-react';
 import { toast } from 'sonner';
 import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
@@ -23,7 +23,7 @@ const STATUS_STEPS = [
   { key: 'accepted', label: 'Αποδεκτή', icon: CheckCircle2 },
   { key: 'preparing', label: 'Ετοιμάζεται', icon: Utensils },
   { key: 'ready', label: 'Έτοιμη', icon: Package },
-  { key: 'picked_up', label: 'Στο δρόμο', icon: Car },
+  { key: 'picked_up', label: 'Στο δρόμο', icon: MapPin },
   { key: 'delivered', label: 'Παραδόθηκε', icon: MapPin },
 ] as const;
 
@@ -32,8 +32,8 @@ const STATUS_HEADLINE: Record<string, { emoji: string; title: string; sub: strin
   accepted:   { emoji: '👨‍🍳', title: 'Το κατάστημα την αποδέχτηκε', sub: 'Ξεκινάει η ετοιμασία' },
   preparing:  { emoji: '🔥', title: 'Ετοιμάζεται φρέσκο', sub: 'Σύντομα θα είναι έτοιμη' },
   ready:      { emoji: '✅', title: 'Έτοιμη για παραλαβή', sub: 'Ψάχνουμε οδηγό' },
-  arrived:    { emoji: '🏪', title: 'Ο οδηγός στο κατάστημα', sub: 'Παραλαμβάνει την παραγγελία' },
-  picked_up:  { emoji: '🛵', title: 'Ο οδηγός έρχεται!', sub: 'Παρακολούθησε ζωντανά την πορεία' },
+  arrived:    { emoji: '🛵', title: 'Ο οδηγός παρέλαβε από το κατάστημα', sub: 'Ζωντανή παρακολούθηση στον χάρτη' },
+  picked_up:  { emoji: '🛵', title: 'Ο οδηγός έρχεται!', sub: 'Ακολούθησε το μικρό scooter ζωντανά' },
   delivered:  { emoji: '🎉', title: 'Παραδόθηκε', sub: 'Καλή όρεξη!' },
   cancelled:  { emoji: '❌', title: 'Ακυρώθηκε', sub: 'Η παραγγελία ακυρώθηκε' },
 };
@@ -44,8 +44,6 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [storeName, setStoreName] = useState('');
-  const [storeLat, setStoreLat] = useState<number | null>(null);
-  const [storeLng, setStoreLng] = useState<number | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [driverPhone, setDriverPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -80,24 +78,20 @@ export default function OrderTrackingPage() {
         setOrder(oRes.data);
         const { data: s } = await (supabase as any)
           .from('stores_public')
-          .select('name, latitude, longitude')
+          .select('name')
           .eq('id', oRes.data.store_id)
           .maybeSingle();
         if (s) {
           setStoreName(s.name);
-          setStoreLat(s.latitude != null ? Number(s.latitude) : null);
-          setStoreLng(s.longitude != null ? Number(s.longitude) : null);
         } else {
           // Fallback if stores_public view is missing / restricted
           const { data: s2 } = await supabase
             .from('stores')
-            .select('name, latitude, longitude')
+            .select('name')
             .eq('id', oRes.data.store_id)
             .maybeSingle();
           if (s2) {
             setStoreName(s2.name);
-            setStoreLat(s2.latitude != null ? Number(s2.latitude) : null);
-            setStoreLng(s2.longitude != null ? Number(s2.longitude) : null);
           }
         }
         if (oRes.data.driver_id) {
@@ -212,8 +206,6 @@ export default function OrderTrackingPage() {
       {showMap ? (
         <LiveTrackingMap
           driverId={order.driver_id}
-          storeLat={storeLat}
-          storeLng={storeLng}
           deliveryLat={order.delivery_latitude != null ? Number(order.delivery_latitude) : null}
           deliveryLng={order.delivery_longitude != null ? Number(order.delivery_longitude) : null}
           status={status}

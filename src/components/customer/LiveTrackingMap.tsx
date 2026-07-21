@@ -8,6 +8,7 @@ import { Loader2 } from 'lucide-react';
 
 interface Props {
   driverId?: string | null;
+  /** Kept for API compatibility — store path/marker are hidden from customers. */
   storeLat?: number | null;
   storeLng?: number | null;
   deliveryLat?: number | null;
@@ -33,27 +34,51 @@ function asCoord(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** After pickup, route focus is driver → customer. `arrived` = at store. */
-const EN_ROUTE_TO_CUSTOMER = new Set(['picked_up']);
+/** Live tracking starts once a driver has the order. */
+const LIVE_STATUSES = new Set(['arrived', 'picked_up']);
+
+function makeTinyScooterEl(): { wrap: HTMLDivElement; icon: HTMLDivElement } {
+  const wrap = document.createElement('div');
+  wrap.style.cssText =
+    'position:relative;width:28px;height:28px;display:flex;align-items:center;justify-content:center;pointer-events:none;';
+
+  const pulse = document.createElement('div');
+  pulse.style.cssText =
+    'position:absolute;inset:-4px;border-radius:50%;background:rgba(6,167,103,.28);animation:scooterPulse 1.8s ease-out infinite;';
+
+  const icon = document.createElement('div');
+  icon.style.cssText =
+    'position:relative;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.28),0 0 0 2px #06a767;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:transform .7s ease-out;';
+  icon.textContent = '🛵';
+  icon.setAttribute('aria-label', 'Οδηγός');
+
+  wrap.appendChild(pulse);
+  wrap.appendChild(icon);
+
+  if (!document.getElementById('scooter-pulse-kf')) {
+    const st = document.createElement('style');
+    st.id = 'scooter-pulse-kf';
+    st.textContent =
+      '@keyframes scooterPulse{0%{transform:scale(.75);opacity:.85}100%{transform:scale(1.9);opacity:0}}';
+    document.head.appendChild(st);
+  }
+
+  return { wrap, icon };
+}
 
 export default function LiveTrackingMap({
   driverId,
-  storeLat: storeLatProp,
-  storeLng: storeLngProp,
   deliveryLat: deliveryLatProp,
   deliveryLng: deliveryLngProp,
   status,
   onDriverPos,
 }: Props) {
-  const storeLat = asCoord(storeLatProp);
-  const storeLng = asCoord(storeLngProp);
   const deliveryLat = asCoord(deliveryLatProp);
   const deliveryLng = asCoord(deliveryLngProp);
 
   const shellRef = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const storeMarker = useRef<mapboxgl.Marker | null>(null);
   const homeMarker = useRef<mapboxgl.Marker | null>(null);
   const driverMarker = useRef<mapboxgl.Marker | null>(null);
   const driverIcon = useRef<HTMLDivElement | null>(null);
@@ -64,15 +89,18 @@ export default function LiveTrackingMap({
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapRetry, setMapRetry] = useState(0);
   const onDriverPosRef = useRef(onDriverPos);
-  useEffect(() => { onDriverPosRef.current = onDriverPos; }, [onDriverPos]);
-
-  // Stable refs for init-time center (avoid remounting when coords arrive).
-  const coordsRef = useRef({ storeLat, storeLng, deliveryLat, deliveryLng, driverPos });
   useEffect(() => {
-    coordsRef.current = { storeLat, storeLng, deliveryLat, deliveryLng, driverPos };
-  }, [storeLat, storeLng, deliveryLat, deliveryLng, driverPos]);
+    onDriverPosRef.current = onDriverPos;
+  }, [onDriverPos]);
 
-  // ── driver location subscription ──────────────────
+  const coordsRef = useRef({ deliveryLat, deliveryLng, driverPos });
+  useEffect(() => {
+    coordsRef.current = { deliveryLat, deliveryLng, driverPos };
+  }, [deliveryLat, deliveryLng, driverPos]);
+
+  const showLiveDriver = Boolean(driverId);
+
+  // ── driver location subscription (once assigned to the order) ──
   useEffect(() => {
     if (!driverId) {
       setDriverPos(null);
@@ -117,7 +145,7 @@ export default function LiveTrackingMap({
       )
       .subscribe();
 
-    const poll = window.setInterval(fetchLoc, 5000);
+    const poll = window.setInterval(fetchLoc, 4000);
 
     return () => {
       cancelled = true;
@@ -126,7 +154,7 @@ export default function LiveTrackingMap({
     };
   }, [driverId]);
 
-  // ── init map once per token (shell CSS keeps canvas filled) ──
+  // ── init map ──
   useEffect(() => {
     if (!token || !container.current || mapRef.current) return;
 
@@ -138,7 +166,6 @@ export default function LiveTrackingMap({
       const c = coordsRef.current;
       if (c.driverPos) return c.driverPos;
       if (c.deliveryLat != null && c.deliveryLng != null) return [c.deliveryLng, c.deliveryLat];
-      if (c.storeLat != null && c.storeLng != null) return [c.storeLng, c.storeLat];
       return IOANNINA_MAP_CENTER;
     };
 
@@ -146,7 +173,6 @@ export default function LiveTrackingMap({
       if (cancelled || mapRef.current || !container.current) return false;
       const el = container.current;
       const shell = shellRef.current ?? el;
-      // Prefer shell size — Mapbox may have already stripped absolute from el.
       const w = Math.max(el.clientWidth, shell.clientWidth);
       const h = Math.max(el.clientHeight, shell.clientHeight);
       if (w < 2 || h < 2) return false;
@@ -160,7 +186,7 @@ export default function LiveTrackingMap({
           container: el,
           style: 'mapbox://styles/mapbox/streets-v12',
           center: resolveCenter(),
-          zoom: 13.5,
+          zoom: 14,
           attributionControl: false,
           pitch: 0,
           failIfMajorPerformanceCaveat: false,
@@ -173,7 +199,11 @@ export default function LiveTrackingMap({
       mapRef.current = map;
 
       const resize = () => {
-        try { map.resize(); } catch { /* noop */ }
+        try {
+          map.resize();
+        } catch {
+          /* noop */
+        }
       };
 
       map.on('error', (e) => {
@@ -185,26 +215,7 @@ export default function LiveTrackingMap({
       map.on('load', () => {
         resize();
         requestAnimationFrame(resize);
-        if (!map.getSource('route')) {
-          map.addSource('route', {
-            type: 'geojson',
-            data: { type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: [] } },
-          });
-          map.addLayer({
-            id: 'route-shadow',
-            type: 'line',
-            source: 'route',
-            layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#000', 'line-opacity': 0.08, 'line-width': 9 },
-          });
-          map.addLayer({
-            id: 'route-line',
-            type: 'line',
-            source: 'route',
-            layout: { 'line-cap': 'round', 'line-join': 'round' },
-            paint: { 'line-color': '#2563eb', 'line-width': 5 },
-          });
-        }
+        // No customer-facing route polyline (hide path to / from store).
         setMapReady(true);
       });
 
@@ -234,183 +245,125 @@ export default function LiveTrackingMap({
     return () => {
       cancelled = true;
       timers.forEach((id) => window.clearTimeout(id));
-      if (ro) try { ro.disconnect(); } catch { /* noop */ }
-      storeMarker.current?.remove();
+      if (ro)
+        try {
+          ro.disconnect();
+        } catch {
+          /* noop */
+        }
       homeMarker.current?.remove();
       driverMarker.current?.remove();
-      storeMarker.current = null;
       homeMarker.current = null;
       driverMarker.current = null;
+      driverIcon.current = null;
+      lastPos.current = null;
       if (mapRef.current) {
-        try { mapRef.current.remove(); } catch { /* noop */ }
+        try {
+          mapRef.current.remove();
+        } catch {
+          /* noop */
+        }
         mapRef.current = null;
       }
       setMapReady(false);
     };
   }, [token, mapRetry]);
 
-  // ── store / home markers (update without remounting map) ──
+  // ── delivery pin only (never show store / path to store) ──
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-
-    if (storeLat != null && storeLng != null) {
-      if (storeMarker.current) {
-        storeMarker.current.setLngLat([storeLng, storeLat]);
-      } else {
-        const elStore = document.createElement('div');
-        elStore.innerHTML = `<div style="width:38px;height:38px;border-radius:50%;background:#2563eb;border:3px solid white;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center;font-size:18px">🏪</div>`;
-        storeMarker.current = new mapboxgl.Marker({ element: elStore, anchor: 'center' })
-          .setLngLat([storeLng, storeLat])
-          .addTo(map);
-      }
-    }
 
     if (deliveryLat != null && deliveryLng != null) {
       if (homeMarker.current) {
         homeMarker.current.setLngLat([deliveryLng, deliveryLat]);
       } else {
         const elHome = document.createElement('div');
-        elHome.innerHTML = `<div style="width:38px;height:38px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#f97316;border:3px solid white;box-shadow:0 4px 16px rgba(0,0,0,.25);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:16px">🏠</span></div>`;
+        elHome.innerHTML = `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#0f172a;border:2px solid white;box-shadow:0 2px 10px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:12px">🏠</span></div>`;
         homeMarker.current = new mapboxgl.Marker({ element: elHome, anchor: 'bottom' })
           .setLngLat([deliveryLng, deliveryLat])
           .addTo(map);
       }
     }
-  }, [mapReady, storeLat, storeLng, deliveryLat, deliveryLng]);
+  }, [mapReady, deliveryLat, deliveryLng]);
 
-  // ── route store → customer ────────────────────────
-  useEffect(() => {
-    const map = mapRef.current;
-    if (!map || !token || !mapReady) return;
-    if (storeLat == null || storeLng == null || deliveryLat == null || deliveryLng == null) return;
-
-    const a: [number, number] = [storeLng, storeLat];
-    const b: [number, number] = [deliveryLng, deliveryLat];
-
-    const url = `https://api.mapbox.com/directions/v5/mapbox/cycling/${a[0]},${a[1]};${b[0]},${b[1]}?geometries=geojson&overview=full&access_token=${token}`;
-    let cancelled = false;
-    fetch(url)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        const coords = d?.routes?.[0]?.geometry?.coordinates;
-        if (!coords?.length) {
-          // Fallback: still fit store + home so the map isn't empty/zoomed out.
-          const bounds = new mapboxgl.LngLatBounds();
-          bounds.extend(a);
-          bounds.extend(b);
-          if (driverPos) bounds.extend(driverPos);
-          map.fitBounds(bounds, {
-            padding: { top: 80, bottom: 320, left: 48, right: 48 },
-            duration: 600,
-            maxZoom: 15,
-          });
-          return;
-        }
-        const apply = () => {
-          const src = map.getSource('route') as mapboxgl.GeoJSONSource | undefined;
-          if (!src) return;
-          src.setData({ type: 'Feature', properties: {}, geometry: { type: 'LineString', coordinates: coords } });
-          const bounds = new mapboxgl.LngLatBounds();
-          coords.forEach((c: number[]) => bounds.extend(c as [number, number]));
-          if (driverPos) bounds.extend(driverPos);
-          map.fitBounds(bounds, {
-            padding: { top: 80, bottom: 320, left: 48, right: 48 },
-            duration: 800,
-            maxZoom: 16,
-          });
-        };
-        if (map.isStyleLoaded()) apply();
-        else map.once('load', apply);
-      })
-      .catch(() => {});
-    return () => { cancelled = true; };
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- driverPos handled by separate pan effect
-  }, [token, mapReady, storeLat, storeLng, deliveryLat, deliveryLng, status]);
-
-  // Fit when only one side of the trip is known (no full route yet).
+  // ── camera: home alone, or home + tiny scooter ──
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    if (storeLat != null && storeLng != null && deliveryLat != null && deliveryLng != null) return;
 
     const bounds = new mapboxgl.LngLatBounds();
     let n = 0;
-    if (storeLat != null && storeLng != null) { bounds.extend([storeLng, storeLat]); n++; }
-    if (deliveryLat != null && deliveryLng != null) { bounds.extend([deliveryLng, deliveryLat]); n++; }
-    if (driverPos) { bounds.extend(driverPos); n++; }
+    if (deliveryLat != null && deliveryLng != null) {
+      bounds.extend([deliveryLng, deliveryLat]);
+      n++;
+    }
+    if (showLiveDriver && driverPos) {
+      bounds.extend(driverPos);
+      n++;
+    }
     if (n === 0) return;
+
     if (n === 1) {
       map.easeTo({ center: bounds.getCenter(), zoom: 14.5, duration: 500 });
     } else {
       map.fitBounds(bounds, {
-        padding: { top: 80, bottom: 320, left: 48, right: 48 },
-        duration: 600,
-        maxZoom: 15,
+        padding: { top: 90, bottom: 340, left: 56, right: 56 },
+        duration: 700,
+        maxZoom: 15.5,
       });
     }
-  }, [mapReady, storeLat, storeLng, deliveryLat, deliveryLng, driverPos]);
+  }, [mapReady, deliveryLat, deliveryLng, driverPos, showLiveDriver, status]);
 
-  // Re-fit when the driver appears, without re-hitting Directions.
+  // Keep scooter in view while en route
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !driverPos) return;
+    if (!map || !mapReady || !driverPos || !showLiveDriver) return;
+    if (!LIVE_STATUSES.has(status) && status !== 'ready') return;
     try {
-      const bounds = map.getBounds();
-      if (bounds && !bounds.contains(driverPos)) {
-        map.panTo(driverPos, { duration: 600 });
-      }
-    } catch { /* map may be mid-style */ }
-  }, [driverPos, mapReady]);
+      const cam = map.getCenter();
+      const dist = Math.hypot(cam.lng - driverPos[0], cam.lat - driverPos[1]);
+      if (dist > 0.01) map.easeTo({ center: driverPos, duration: 900 });
+    } catch {
+      /* mid-style */
+    }
+  }, [driverPos, mapReady, showLiveDriver, status]);
 
-  // ── animate driver marker ─────────────────────────
+  // ── tiny scooter marker ──
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !driverPos || !mapReady) return;
+    if (!map || !mapReady) return;
+
+    if (!showLiveDriver || !driverPos) {
+      driverMarker.current?.remove();
+      driverMarker.current = null;
+      driverIcon.current = null;
+      lastPos.current = null;
+      return;
+    }
 
     if (!driverMarker.current) {
-      const wrap = document.createElement('div');
-      wrap.style.cssText = 'position:relative;width:52px;height:52px;display:flex;align-items:center;justify-content:center;';
-      const pulse = document.createElement('div');
-      pulse.style.cssText =
-        'position:absolute;inset:0;border-radius:50%;background:rgba(37,99,235,.35);animation:driverPulse 1.6s ease-out infinite;';
-      const inner = document.createElement('div');
-      inner.style.cssText =
-        'position:relative;width:46px;height:46px;border-radius:50%;background:white;box-shadow:0 6px 20px rgba(0,0,0,.35),0 0 0 4px #2563eb;display:flex;align-items:center;justify-content:center;font-size:24px;transition:transform .8s ease-out;';
-      inner.textContent = '🛵';
-      wrap.appendChild(pulse);
-      wrap.appendChild(inner);
-      driverIcon.current = inner;
+      const { wrap, icon } = makeTinyScooterEl();
+      driverIcon.current = icon;
       driverMarker.current = new mapboxgl.Marker({ element: wrap, anchor: 'center' })
         .setLngLat(driverPos)
         .addTo(map);
-      if (!document.getElementById('driver-pulse-kf')) {
-        const st = document.createElement('style');
-        st.id = 'driver-pulse-kf';
-        st.textContent = '@keyframes driverPulse{0%{transform:scale(.6);opacity:.9}100%{transform:scale(2.2);opacity:0}}';
-        document.head.appendChild(st);
-      }
     }
 
     const prev = lastPos.current;
     driverMarker.current.setLngLat(driverPos);
     if (prev && driverIcon.current) {
-      const b = bearing(prev, driverPos);
-      driverIcon.current.style.transform = `rotate(${b - 90}deg)`;
+      const moved = Math.hypot(prev[0] - driverPos[0], prev[1] - driverPos[1]);
+      if (moved > 0.00001) {
+        const b = bearing(prev, driverPos);
+        driverIcon.current.style.transform = `rotate(${b - 90}deg)`;
+      }
     }
     lastPos.current = driverPos;
-
-    if (EN_ROUTE_TO_CUSTOMER.has(status)) {
-      const cam = map.getCenter();
-      const dist = Math.hypot(cam.lng - driverPos[0], cam.lat - driverPos[1]);
-      if (dist > 0.008) map.easeTo({ center: driverPos, duration: 1000 });
-    }
-  }, [driverPos, mapReady, status]);
+  }, [driverPos, mapReady, showLiveDriver]);
 
   return (
     <div ref={shellRef} className="absolute inset-0" data-tracking-map-shell="">
-      {/* Do not put absolute on the Mapbox container — Mapbox overwrites it to relative. */}
       <div ref={container} className="h-full w-full" />
       {tokenLoading && (
         <div className="absolute inset-0 z-10 flex items-center justify-center bg-muted/90">
@@ -437,14 +390,22 @@ export default function LiveTrackingMap({
           </button>
         </div>
       )}
-      {token && mapReady && driverId && !driverPos && (
-        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-card/95 border border-border shadow px-3 py-1.5 text-[11px] font-heading font-semibold text-muted-foreground">
-          Αναμονή τοποθεσίας οδηγού…
-        </div>
-      )}
       {token && mapReady && !driverId && (
         <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-card/95 border border-border shadow px-3 py-1.5 text-[11px] font-heading font-semibold text-muted-foreground">
           Αναζητούμε οδηγό…
+        </div>
+      )}
+      {token && mapReady && driverId && !driverPos && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-card/95 border border-border shadow px-3 py-1.5 text-[11px] font-heading font-semibold text-muted-foreground">
+          Ζωντανή παρακολούθηση — αναμονή θέσης…
+        </div>
+      )}
+      {token && mapReady && driverId && driverPos && (
+        <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-card/95 border border-border shadow px-3 py-1.5 text-[11px] font-heading font-semibold text-foreground flex items-center gap-1.5">
+          <span className="text-sm leading-none" aria-hidden>
+            🛵
+          </span>
+          Ζωντανή παρακολούθηση
         </div>
       )}
     </div>
