@@ -103,14 +103,16 @@ function mergeConfig(cfg: any): CustomerAppConfig {
   };
 }
 
+const CONFIG_CHANNEL = 'customer-app-config-shared';
+
 // Shared singleton so CustomerLayout + home + carousels share one fetch/channel.
-// Important: only ONE realtime channel may call .subscribe(); mounting the hook
-// in several components must not re-attach postgres_changes after subscribe().
+// Never tear the channel down: removeChannel + remount (React Strict Mode) returns
+// the still-subscribed channel from supabase.getChannels(), and a second .on() throws
+// "cannot add postgres_changes callbacks … after subscribe()".
 let cachedConfig: CustomerAppConfig = DEFAULT_CONFIG;
 let cacheLoaded = false;
 let inflight: Promise<void> | null = null;
 let realtimeStarted = false;
-let sharedChannel: ReturnType<typeof supabase.channel> | null = null;
 const listeners = new Set<(c: CustomerAppConfig) => void>();
 
 function emit(cfg: CustomerAppConfig) {
@@ -119,31 +121,39 @@ function emit(cfg: CustomerAppConfig) {
 }
 
 async function loadShared() {
-  const { data } = await (supabase as any)
-    .from('customer_app_config')
-    .select('published_config')
-    .maybeSingle();
-  const cfg = data?.published_config;
-  emit(cfg && Object.keys(cfg).length ? mergeConfig(cfg) : DEFAULT_CONFIG);
-  cacheLoaded = true;
+  try {
+    const { data } = await (supabase as any)
+      .from('customer_app_config')
+      .select('published_config')
+      .maybeSingle();
+    const cfg = data?.published_config;
+    emit(cfg && Object.keys(cfg).length ? mergeConfig(cfg) : DEFAULT_CONFIG);
+  } catch {
+    emit(DEFAULT_CONFIG);
+  } finally {
+    cacheLoaded = true;
+  }
 }
 
 function ensureRealtime() {
   if (realtimeStarted) return;
   realtimeStarted = true;
-  sharedChannel = supabase
-    .channel('customer-app-config-shared')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, () => {
-      void loadShared();
-    })
-    .subscribe();
-}
 
-function releaseRealtimeIfIdle() {
-  if (listeners.size > 0 || !sharedChannel) return;
-  supabase.removeChannel(sharedChannel);
-  sharedChannel = null;
-  realtimeStarted = false;
+  try {
+    const topic = `realtime:${CONFIG_CHANNEL}`;
+    const existing = supabase.getChannels().find((ch) => ch.topic === topic);
+    if (existing) return;
+
+    supabase
+      .channel(CONFIG_CHANNEL)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, () => {
+        void loadShared();
+      })
+      .subscribe();
+  } catch (err) {
+    // Config still loads via REST; never crash /order for a realtime race.
+    console.warn('[customer-app-config] realtime subscribe skipped', err);
+  }
 }
 
 /** Reads the PUBLISHED customer app config + subscribes to live updates. */
@@ -165,7 +175,7 @@ export function useCustomerAppConfig(): CustomerAppConfig {
 
     return () => {
       listeners.delete(setConfig);
-      releaseRealtimeIfIdle();
+      // Keep the shared channel for the session — do not removeChannel here.
     };
   }, []);
 
