@@ -94,6 +94,7 @@ export default function CustomerApp() {
 
   // Delivery address (persisted locally; falls back to city label)
   const [addressOpen, setAddressOpen] = useState(false);
+  const [addressMapOpen, setAddressMapOpen] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState<string>(() => {
     try { return localStorage.getItem('customer_delivery_address') || ''; } catch { return ''; }
   });
@@ -666,14 +667,25 @@ export default function CustomerApp() {
         )}
       </main>
 
-      <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
-        <SheetContent side="bottom" className="rounded-t-2xl max-h-[90dvh] overflow-y-auto">
+      <Sheet open={addressOpen} onOpenChange={(open) => {
+        setAddressOpen(open);
+        if (!open) setAddressMapOpen(false);
+      }}>
+        <SheetContent
+          side="bottom"
+          className={
+            addressMapOpen
+              ? 'rounded-t-2xl max-h-[90dvh] overflow-y-auto !transform-none data-[state=open]:!animate-none data-[state=closed]:!animate-none'
+              : 'rounded-t-2xl max-h-[90dvh] overflow-y-auto'
+          }
+        >
           <SheetHeader>
             <SheetTitle>Διεύθυνση παράδοσης</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-3">
             <AddressAutocomplete
               value={pendingAddress}
+              onMapOpenChange={setAddressMapOpen}
               onChange={(addr, lat, lon) => {
                 setPendingAddress(addr);
                 if (lat != null && lon != null) setPendingCoords({ lat, lon });
