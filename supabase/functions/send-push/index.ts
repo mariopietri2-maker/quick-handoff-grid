@@ -33,14 +33,22 @@ Deno.serve(async (req) => {
 
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const auth = req.headers.get("Authorization") ?? "";
-  const isService = auth === `Bearer ${serviceKey}`;
+  const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
+  // Exact key match OR JWT with role=service_role (handles key rotation / whitespace).
+  let isService = Boolean(serviceKey) && bearer === serviceKey;
+  if (!isService && bearer.split(".").length === 3) {
+    try {
+      const payload = JSON.parse(atob(bearer.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/")));
+      isService = payload?.role === "service_role";
+    } catch { /* ignore */ }
+  }
   if (!hasCronSecret(req) && !isService) {
     return json({ error: "unauthorized" }, 401);
   }
 
   const admin = createClient(
     Deno.env.get("SUPABASE_URL")!,
-    serviceKey,
+    serviceKey || Deno.env.get("SUPABASE_ANON_KEY")!,
   );
 
   const body = await req.json().catch(() => ({}));
