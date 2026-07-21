@@ -3,8 +3,11 @@ import { HelmetProvider } from "react-helmet-async";
 import App from "./App.tsx";
 import "./index.css";
 import { initNativeStatusBar } from "./lib/native-status-bar";
+import { initPwaInstallCapture, registerStorePwa } from "@/lib/pwa";
 
 void initNativeStatusBar();
+initPwaInstallCapture();
+void registerStorePwa();
 // Mapbox token is fetched on demand by useMapboxToken — do not warm it on boot
 // so customer home stays free of the 1.7MB mapbox-gl chunk.
 
