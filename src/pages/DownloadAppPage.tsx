@@ -5,6 +5,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
 import {
+  APK_BUILD_VERSION,
   APK_DOWNLOADS,
   apkLandingUrl,
   startApkDownload,
@@ -136,6 +137,7 @@ export default function DownloadAppPage() {
           <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-md mx-auto leading-relaxed">
             Διάλεξε πελάτη ή οδηγό. Η λήψη ξεκινά μόνο όταν πατήσεις το κουμπί — όχι αυτόματα.
           </p>
+          <p className="mt-2 text-xs text-muted-foreground/80 font-mono">v{APK_BUILD_VERSION}</p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
