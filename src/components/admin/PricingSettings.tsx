@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent, Activity, AlertTriangle } from 'lucide-react';
+import { DollarSign, Save, Loader2, MapPin, Shield, Flame, Bike, Car, Percent, Activity, AlertTriangle, Timer } from 'lucide-react';
 import StorePricingOverrides from './StorePricingOverrides';
 import CommissionTiersPanel from './CommissionTiersPanel';
 
@@ -37,6 +37,9 @@ interface PricingRow {
   subsidize_min_pay: boolean;
   pool_alert_enabled: boolean;
   pause_bonus_when_critical: boolean;
+  wait_bonus_rate_per_min: number;
+  wait_bonus_grace_minutes: number;
+  wait_bonus_cap: number;
 }
 
 const DAYS = [
@@ -58,6 +61,7 @@ export default function PricingSettings() {
     pool_healthy_threshold: 500, low_pool_threshold: 50, pool_critical_threshold: 20,
     pool_low_multiplier: 0.85, pool_critical_multiplier: 0.6,
     subsidize_min_pay: false, pool_alert_enabled: true, pause_bonus_when_critical: false,
+    wait_bonus_rate_per_min: 0.10, wait_bonus_grace_minutes: 10, wait_bonus_cap: 10,
   });
   const [poolBalance, setPoolBalance] = useState<number>(0);
 
@@ -93,6 +97,9 @@ export default function PricingSettings() {
             subsidize_min_pay: !!d.subsidize_min_pay,
             pool_alert_enabled: d.pool_alert_enabled !== false,
             pause_bonus_when_critical: !!d.pause_bonus_when_critical,
+            wait_bonus_rate_per_min: Number(d.wait_bonus_rate_per_min ?? 0.10),
+            wait_bonus_grace_minutes: Number(d.wait_bonus_grace_minutes ?? 10),
+            wait_bonus_cap: Number(d.wait_bonus_cap ?? 10),
           });
         }
         setLoading(false);
@@ -245,6 +252,66 @@ export default function PricingSettings() {
                 <Field label="Μέγιστη Αμοιβή (€)" value={pricing.max_pay} onChange={v => setPricing(p => ({ ...p, max_pay: v }))} hint="Cap ανά παράδοση" />
               </div>
               <Preview label={`Delivery fee — ${previewKm} χλμ`} amount={driverDeliveryPay} note={`€${pricing.first_km_price.toFixed(2)} + ${extraKm} × €${pricing.per_km_rate.toFixed(2)}`} />
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="font-heading text-base flex items-center gap-2">
+                <Timer className="h-4 w-4 text-primary" />
+                Μπόνους καθυστέρησης (αναμονή στο κατάστημα)
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <p className="text-xs text-muted-foreground leading-relaxed">
+                Όταν ο οδηγός φτάσει στο κατάστημα (<b>arrived</b>) και περιμένει πριν το pickup,
+                μετά το όριο χάριτος πληρώνεται επιπλέον € ανά λεπτό (έως το cap). Το ποσό μπαίνει στο wallet στην παράδοση.
+              </p>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <Field
+                  label="€ / λεπτό αναμονής"
+                  value={pricing.wait_bonus_rate_per_min}
+                  onChange={v => setPricing(p => ({ ...p, wait_bonus_rate_per_min: v }))}
+                  hint="Επιπλέον αμοιβή μετά το grace"
+                  step="0.01"
+                  icon={Timer}
+                />
+                <Field
+                  label="Λεπτά χάριτος"
+                  value={pricing.wait_bonus_grace_minutes}
+                  onChange={v => setPricing(p => ({ ...p, wait_bonus_grace_minutes: Math.round(v) }))}
+                  hint="Χωρίς μπόνους μέχρι αυτά τα λεπτά"
+                  step="1"
+                />
+                <Field
+                  label="Μέγιστο μπόνους (€)"
+                  value={pricing.wait_bonus_cap}
+                  onChange={v => setPricing(p => ({ ...p, wait_bonus_cap: v }))}
+                  hint="Cap ανά παραγγελία"
+                  step="0.5"
+                  icon={Shield}
+                />
+              </div>
+              <div className="rounded-lg border border-orange-500/20 bg-orange-500/5 p-3 text-sm space-y-1">
+                <p className="text-xs text-muted-foreground">Παράδειγμα — αναμονή 18 λεπτά</p>
+                <p>
+                  Χρεώσιμα λεπτά: max(0, 18 − {pricing.wait_bonus_grace_minutes}) ={' '}
+                  <b>{Math.max(0, 18 - pricing.wait_bonus_grace_minutes)}</b>
+                  {' '}× €{Number(pricing.wait_bonus_rate_per_min).toFixed(2)} ={' '}
+                  <b className="text-primary">
+                    €{Math.min(
+                      pricing.wait_bonus_cap,
+                      Math.max(0, 18 - pricing.wait_bonus_grace_minutes) * pricing.wait_bonus_rate_per_min,
+                    ).toFixed(2)}
+                  </b>
+                  {Math.max(0, 18 - pricing.wait_bonus_grace_minutes) * pricing.wait_bonus_rate_per_min > pricing.wait_bonus_cap && (
+                    <span className="text-[11px] text-muted-foreground"> (capped)</span>
+                  )}
+                </p>
+                <p className="text-[11px] text-muted-foreground">
+                  Βάλε €0 / λεπτό για να απενεργοποιήσεις το μπόνους.
+                </p>
+              </div>
             </CardContent>
           </Card>
 
