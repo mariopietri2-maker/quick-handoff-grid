@@ -4,7 +4,7 @@ Real-time food delivery marketplace for **Ιωάννινα** — customers, mult
 
 **Live (Railway — primary while Vercel is rate-limited):** https://quick-handoff-grid-production.up.railway.app  
 **Vercel (may lag during build limits):** https://quick-handoff-grid.vercel.app  
-**Android APKs:** https://quick-handoff-grid-production.up.railway.app/download
+**Store PWA:** open `/store` in Chrome/Safari → Install / Add to Home Screen
 
 Vercel and Railway both serve the same SPA against the **same** Supabase project
 (`ojkesspghyqmjmupybva`). Production builds force those keys from `.env.production`
@@ -17,11 +17,10 @@ so a stale host env cannot point Railway at a different database.
 | App | Route | Who |
 |---|---|---|
 | Customer | `/order` | Browse, checkout, live tracking |
-| Store portal | `/store` | Multi-store owner hub (map + per-store ops) |
+| Store portal | `/store` | Multi-store owner hub (**installable PWA**) |
 | Driver | `/driver` | Offers, navigation, handoff |
 | Admin | `/admin` | Dispatch, finance, users, settings |
 | Support | `/support` | Tickets |
-| Download | `/download` | Android APK landing (QR → page, not auto-download) |
 
 ---
 
@@ -31,7 +30,7 @@ so a stale host env cannot point Railway at a different database.
 - **Backend:** Supabase (Postgres, Auth, Realtime, Edge Functions, RLS)
 - **Maps:** Mapbox
 - **Payments:** Stripe (set **live** keys in Vercel + Supabase secrets for production)
-- **Mobile:** Capacitor 8 (customer + driver debug APKs)
+- **Mobile:** Capacitor 8 (customer + driver native shells for Play/App Store); **store is a web PWA**
 - **Tests:** Vitest (unit), Playwright (e2e)
 - **Host:** Vercel + Railway (`vercel.json` SPA; Railway Nixpacks)
 
@@ -46,8 +45,9 @@ src/                     React SPA (pages, components, hooks)
 supabase/migrations/     Canonical DB schema & RPCs
 supabase/functions/      Edge functions (dispatch, checkout, webhooks, …)
 e2e/                     Playwright flows
-scripts/build-apks.sh    Rebuild customer/driver debug APKs
-public/apk-qr/           Printable QR PNGs → /download landing
+scripts/build-apks.sh    Rebuild customer/driver debug APKs (dev / Play pipeline)
+public/manifest-store.json  Store PWA manifest
+public/sw.js             Service worker (web PWA installability)
 android/                 Capacitor Android shell
 ```
 
@@ -108,16 +108,18 @@ Stores need lat/lng to appear on driver/admin maps (Ioannina center ≈ `39.6650
 
 ---
 
-## Mobile APKs
+## Mobile (customer / driver)
+
+Customer and driver use Capacitor native shells for Play / App Store. They are **not** marketed as sideload APKs on the public site.
 
 ```bash
-./scripts/build-apks.sh          # debug APKs (sideload / /download)
+./scripts/build-apks.sh          # debug APKs (dev sideload only)
 ./scripts/setup-play-signing.sh  # once: create Play upload keystores
 ./scripts/build-store-aabs.sh    # signed .aab for Google Play
 ./scripts/sync-ios-apps.sh       # scaffold ios-customer + ios-driver (archive on a Mac)
 ```
 
-Debug APKs are published on GitHub release `mobile-apks-v1`. The `/download` page never auto-starts an APK download — users tap **Download** or scan a QR that opens the landing page.
+**Store owners:** use the **PWA** at `/store` (Install / Add to Home Screen). Old `/download` URLs redirect there.
 
 **Play Store / App Store:** see [`docs/STORE_PUBLISHING.md`](docs/STORE_PUBLISHING.md).  
 Release Android builds: do **not** set `CAPACITOR_DEV=1`. Store AABs omit WebView debugging.

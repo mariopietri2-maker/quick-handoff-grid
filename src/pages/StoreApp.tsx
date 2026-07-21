@@ -27,6 +27,7 @@ import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission } from '@/lib/notifications';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
+import { StorePwaInstallBanner } from '@/components/store/StorePwaInstallBanner';
 
 type ViewMode = 'portal' | 'manage' | 'create';
 
@@ -176,6 +177,9 @@ export default function StoreApp() {
           view === 'manage' && activeTab === 'orders' ? 'max-w-[1680px]' : 'max-w-3xl p-4'
         }`}
       >
+        <div className="mb-3">
+          <StorePwaInstallBanner />
+        </div>
         {storeLoading ? (
           <div className="text-center py-16">
             <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
