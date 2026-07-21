@@ -34,8 +34,7 @@ export const NAV_SECTIONS = [
     accentBg: 'bg-info/10',
     defaultTab: 'overview',
     tabs: [
-      { id: 'overview', label: 'Επισκόπηση' },
-      { id: 'capacity', label: 'Χωρητικότητα' },
+      { id: 'overview', label: 'Live Ops' },
       { id: 'analytics', label: 'Αναλυτικά' },
     ],
   },
@@ -47,10 +46,11 @@ export const NAV_SECTIONS = [
     accentBg: 'bg-primary/10',
     defaultTab: 'delivery_control',
     tabs: [
-      { id: 'delivery_control', label: 'Dispatch' },
-      { id: 'orders', label: 'Pipeline' },
+      { id: 'delivery_control', label: '🎛️ Delivery Control' },
+      { id: 'orders', label: 'Pipeline (Kanban)' },
       { id: 'orders_table', label: 'Πίνακας' },
       { id: 'external_orders', label: 'eFood / Wolt' },
+      { id: 'dispatch_debug', label: '🔧 Dispatch debug' },
     ],
   },
   {
@@ -75,7 +75,8 @@ export const NAV_SECTIONS = [
     defaultTab: 'drivers',
     tabs: [
       { id: 'drivers', label: 'Οδηγοί' },
-      { id: 'drivers_live_map', label: 'Live χάρτης' },
+      { id: 'drivers_live_map', label: '📍 Live χάρτης' },
+      { id: 'driver_map_editor', label: 'Χάρτης οδηγών' },
       { id: 'service_zones', label: 'Ζώνες παράδοσης' },
     ],
   },
@@ -88,12 +89,12 @@ export const NAV_SECTIONS = [
     defaultTab: 'buffer',
     tabs: [
       { id: 'buffer', label: 'Buffer' },
-      { id: 'platform_cost', label: 'Κόστος πλατφόρμας' },
       { id: 'surge', label: 'Surge' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
       { id: 'pricing', label: 'Τιμολόγηση' },
       { id: 'store_billing', label: 'Χρέωση' },
+      { id: 'tickets', label: 'Support', badgeKey: 'pendingTickets' as const },
     ],
   },
   {
@@ -107,19 +108,19 @@ export const NAV_SECTIONS = [
       { id: 'users', label: 'Χρήστες' },
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
-      { id: 'tickets', label: 'Support tickets', badgeKey: 'pendingTickets' as const },
-      { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
-      { id: 'customer_app_config', label: 'Customer app' },
-      { id: 'ai_hero_cards', label: 'AI Hero Cards' },
-      { id: 'aade_compliance', label: 'ΑΑΔΕ / myDATA' },
+      { id: 'customer_app_config', label: '🎨 Customer app' },
+      { id: 'ai_hero_cards', label: '✨ AI Cards & Motion' },
+      { id: 'aade_compliance', label: '🇬🇷 ΑΑΔΕ / myDATA' },
       { id: 'feature_flags', label: 'Feature flags' },
-      { id: 'overrides', label: 'Surge zones' },
-      { id: 'mission_control', label: 'Mission Control' },
-      { id: 'system_doctor', label: 'System Doctor' },
-      { id: 'cloud_usage', label: 'Cloud usage' },
+      { id: 'overrides', label: 'Operational overrides' },
+      { id: 'mission_control', label: '🛡️ Mission Control' },
+      { id: 'system_doctor', label: '🩺 System Doctor' },
+      { id: 'system_health', label: 'Κατάσταση συστήματος' },
+      { id: 'cloud_usage', label: '☁️ Lovable Cloud usage' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
+      { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
       { id: 'audit', label: 'Audit log' },
-      { id: 'remote_actions', label: 'Μηνύματα & Remote' },
+      { id: 'remote_actions', label: 'Remote actions' },
       { id: 'system_reset', label: '⚠ System reset' },
     ],
   },
@@ -127,14 +128,6 @@ export const NAV_SECTIONS = [
 
 /** Map any sub-tab id back to its parent section id (for highlighting). */
 export function findParentSection(tabId: string): string {
-  const aliases: Record<string, string> = {
-    dispatch_debug: 'orders',
-    system_health: 'settings',
-    driver_map_editor: 'drivers',
-    live_ops: 'dashboard',
-    overview_legacy: 'dashboard',
-  };
-  if (aliases[tabId]) return aliases[tabId];
   for (const sec of NAV_SECTIONS) {
     if (sec.tabs.some(t => t.id === tabId)) return sec.id;
   }
@@ -179,7 +172,7 @@ function SidebarBody({
         <nav className="px-2 space-y-1">
           {NAV_SECTIONS.map((sec) => {
             const isActive = activeParent === sec.id;
-            const showBadge = sec.id === 'settings' && pendingTickets > 0;
+            const showBadge = sec.id === 'money' && pendingTickets > 0;
             return (
               <button
                 key={sec.id}

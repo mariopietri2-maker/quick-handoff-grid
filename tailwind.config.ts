@@ -134,6 +134,31 @@ export default {
           "0%, 100%": { transform: "translateY(0)" },
           "50%": { transform: "translateY(-6px)" },
         },
+        "kenburns": {
+          "0%": { transform: "scale(1) translate(0, 0)" },
+          "100%": { transform: "scale(1.12) translate(-1.5%, -1%)" },
+        },
+        "ai-text-in": {
+          "0%": { opacity: "0", transform: "translateY(14px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "ai-fade-swap": {
+          "0%": { opacity: "0" },
+          "100%": { opacity: "1" },
+        },
+        "ai-slide-swap": {
+          "0%": { opacity: "0", transform: "translateX(28px)" },
+          "100%": { opacity: "1", transform: "translateX(0)" },
+        },
+        "ai-shimmer-sweep": {
+          "0%": { transform: "translateX(-120%) skewX(-12deg)" },
+          "100%": { transform: "translateX(220%) skewX(-12deg)" },
+        },
+        "ai-pulse-ring": {
+          "0%": { transform: "scale(0.92)", opacity: "0.55" },
+          "70%": { transform: "scale(1.35)", opacity: "0" },
+          "100%": { transform: "scale(1.35)", opacity: "0" },
+        },
         "marquee-right": {
           "0%": { transform: "translateX(-50%)" },
           "100%": { transform: "translateX(0)" },
@@ -157,6 +182,12 @@ export default {
         "glow-pulse": "glow-pulse 2s ease-in-out infinite",
         "shimmer": "shimmer 2s infinite linear",
         "float": "float 3s ease-in-out infinite",
+        "kenburns": "kenburns 12s ease-out forwards",
+        "ai-text-in": "ai-text-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "ai-fade-swap": "ai-fade-swap 0.5s ease-out both",
+        "ai-slide-swap": "ai-slide-swap 0.55s cubic-bezier(0.16, 1, 0.3, 1) both",
+        "ai-shimmer-sweep": "ai-shimmer-sweep 2.8s ease-in-out infinite",
+        "ai-pulse-ring": "ai-pulse-ring 2.2s ease-out infinite",
         "marquee-right": "marquee-right 30s linear infinite",
         "marquee": "marquee 30s linear infinite",
         "enter": "fade-in 0.3s ease-out, scale-in 0.2s ease-out",

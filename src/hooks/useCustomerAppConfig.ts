@@ -1,15 +1,33 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 
+export type HeroMotion = 'kenburns' | 'fade' | 'slide' | 'parallax' | 'none';
+export type HeroPlacement = 'hero' | 'spotlight' | 'strip';
+
 export type HeroCard = {
   id: string;
   title: string;
   subtitle?: string;
   cta_label?: string;
   cta_link?: string;
-  image_data_url: string; // base64 data URL
+  /** Legacy base64 data URL (still supported). Prefer image_url. */
+  image_data_url?: string;
+  /** Preferred: public storage URL from app-branding bucket. */
+  image_url?: string | null;
   enabled: boolean;
+  /** Where the card renders on the customer home. Default: hero */
+  placement?: HeroPlacement;
+  /** Entrance / ambient motion preset. Default: kenburns */
+  motion?: HeroMotion;
+  /** Badge label above the title (default "AI Pick"). */
+  badge?: string;
+  /** Soft accent wash color as HSL without wrapper, e.g. "4 90% 47%". */
+  accent_hsl?: string;
 };
+
+export function heroCardImage(card: Pick<HeroCard, 'image_url' | 'image_data_url'>): string | null {
+  return card.image_url || card.image_data_url || null;
+}
 
 export type CustomerAppConfig = {
   branding: {
@@ -36,6 +54,8 @@ export type CustomerAppConfig = {
     show_promoted: boolean;
     show_nearby: boolean;
     show_hero_carousel: boolean;
+    show_ai_spotlight: boolean;
+    show_ai_strip: boolean;
     show_pro_delivery: boolean;
     show_order_again: boolean;
   };
@@ -66,6 +86,8 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     show_promoted: true,
     show_nearby: true,
     show_hero_carousel: true,
+    show_ai_spotlight: true,
+    show_ai_strip: true,
     show_pro_delivery: false,
     show_order_again: false,
   },
@@ -77,49 +99,57 @@ function mergeConfig(cfg: any): CustomerAppConfig {
     ...cfg,
     branding: { ...DEFAULT_CONFIG.branding, ...(cfg?.branding ?? {}) },
     sections: { ...DEFAULT_CONFIG.sections, ...(cfg?.sections ?? {}) },
+    hero_cards: Array.isArray(cfg?.hero_cards) ? cfg.hero_cards : [],
   };
 }
 
-// ── Shared singleton so CustomerLayout + home + carousels share one fetch/channel ──
+// Shared singleton so CustomerLayout + home + carousels share one fetch/channel
 let cachedConfig: CustomerAppConfig = DEFAULT_CONFIG;
-let bootstrapped = false;
+let cacheLoaded = false;
 let inflight: Promise<void> | null = null;
 const listeners = new Set<(c: CustomerAppConfig) => void>();
 
-async function loadPublishedConfig() {
+function emit(cfg: CustomerAppConfig) {
+  cachedConfig = cfg;
+  listeners.forEach((fn) => fn(cfg));
+}
+
+async function loadShared() {
   const { data } = await (supabase as any)
     .from('customer_app_config')
     .select('published_config')
     .maybeSingle();
   const cfg = data?.published_config;
-  if (cfg && Object.keys(cfg).length) {
-    cachedConfig = mergeConfig(cfg);
-    listeners.forEach((fn) => fn(cachedConfig));
-  }
+  emit(cfg && Object.keys(cfg).length ? mergeConfig(cfg) : DEFAULT_CONFIG);
+  cacheLoaded = true;
 }
 
-function ensureConfigSubscription() {
-  if (bootstrapped) return;
-  bootstrapped = true;
-  inflight = loadPublishedConfig().finally(() => { inflight = null; });
-  supabase
-    .channel('customer-app-config-shared')
-    .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, () => {
-      void loadPublishedConfig();
-    })
-    .subscribe();
-}
-
-/** Reads the PUBLISHED customer app config + subscribes to live updates (shared). */
+/** Reads the PUBLISHED customer app config + subscribes to live updates. */
 export function useCustomerAppConfig(): CustomerAppConfig {
   const [config, setConfig] = useState<CustomerAppConfig>(cachedConfig);
 
   useEffect(() => {
-    ensureConfigSubscription();
-    setConfig(cachedConfig);
     listeners.add(setConfig);
-    if (inflight) void inflight.then(() => setConfig(cachedConfig));
-    return () => { listeners.delete(setConfig); };
+    if (!cacheLoaded) {
+      if (!inflight) {
+        inflight = loadShared().finally(() => { inflight = null; });
+      }
+      void inflight;
+    } else {
+      setConfig(cachedConfig);
+    }
+
+    const channel = supabase
+      .channel('customer-app-config-shared')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'customer_app_config' }, () => {
+        void loadShared();
+      })
+      .subscribe();
+
+    return () => {
+      listeners.delete(setConfig);
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   return config;
