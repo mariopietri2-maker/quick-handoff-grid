@@ -27,6 +27,7 @@ import ProBanner from '@/components/customer/ProBanner';
 import HomeGreeting from '@/components/customer/HomeGreeting';
 import LuckyHungryCard from '@/components/customer/LuckyHungryCard';
 import { OnePlusOneHero } from '@/components/customer/OnePlusOneHero';
+import { storeMatchesCategory } from '@/lib/category-match';
 
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
@@ -238,11 +239,11 @@ export default function CustomerApp() {
   const filtered = useMemo(() => stores.filter(s => {
     const q = debouncedSearch.toLowerCase();
     const matchesSearch = !q || s.name.toLowerCase().includes(q) ||
-      s.address.toLowerCase().includes(q);
+      (s.address ?? '').toLowerCase().includes(q);
     if (!matchesSearch) return false;
     if (selectedCategory !== 'all') {
       const cats = storeCategories[s.id] ?? [];
-      if (!cats.some(c => c.includes(selectedCategory))) return false;
+      if (!storeMatchesCategory(selectedCategory, cats, s.name, s.address)) return false;
     }
     if (filterFree && !(s as any).covers_delivery_fee) return false;
     if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
