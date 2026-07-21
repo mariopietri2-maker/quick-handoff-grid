@@ -1,10 +1,15 @@
 import { useState, useEffect } from 'react';
-import { Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard, MessageSquare } from 'lucide-react';
-import { shortenAddress } from '@/lib/address-utils';
+import { Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard, MessageSquare, ListOrdered } from 'lucide-react';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
 import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
 import { formatDriverDistance } from '@/lib/driver-nav';
 import { minutesUntilReady, readyEtaLabel } from '@/lib/driver-ready-eta';
+
+export interface OfferLineItem {
+  name: string;
+  quantity: number;
+  unitPrice?: number | null;
+}
 
 interface OrderOffer {
   id: string;
@@ -15,6 +20,9 @@ interface OrderOffer {
   totalDistance: number;
   estimatedTime: number;
   itemCount: number;
+  items?: OfferLineItem[];
+  orderNumber?: string | number | null;
+  orderTotal?: number | null;
   perKmRate?: number;
   basePay?: number;
   deliveryFee?: number;
@@ -99,17 +107,27 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
 
   const isCash = offer.paymentMethod === 'cash';
   const isCard = offer.paymentMethod === 'card' || offer.paymentMethod === 'wallet' || offer.paymentMethod === 'paid';
+  const items = offer.items ?? [];
+  const payout =
+    ((offer.basePay ?? 0) + (offer.tipAmount ?? 0) + (offer.poolBonus ?? 0)) || offer.estimatedPayout;
 
   return (
-    <div className="driver-card overflow-hidden">
+    <div className="driver-card overflow-hidden select-none touch-pan-y">
       {/* Header — payout primary, timer secondary */}
       <div className="px-5 pt-4 pb-3 flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="text-[10.5px] font-heading font-semibold uppercase tracking-[0.08em] text-[hsl(var(--driver-text-muted))]">
-            Εκτιμώμενη αμοιβή
-          </p>
+          <div className="flex items-center gap-2 flex-wrap">
+            <p className="text-[10.5px] font-heading font-semibold uppercase tracking-[0.08em] text-[hsl(var(--driver-text-muted))]">
+              Εκτιμώμενη αμοιβή
+            </p>
+            {offer.orderNumber != null && (
+              <span className="text-[10.5px] font-heading font-bold tabular-nums text-[hsl(var(--driver-info))]">
+                #{offer.orderNumber}
+              </span>
+            )}
+          </div>
           <p className="font-heading font-extrabold text-[34px] leading-none tabular-nums tracking-tight text-[hsl(var(--driver-text))] mt-1">
-            {((offer.basePay ?? 0) + (offer.tipAmount ?? 0) + (offer.poolBonus ?? 0) || offer.estimatedPayout).toFixed(2)}
+            {payout.toFixed(2)}
             <span className="text-[20px] font-bold text-[hsl(var(--driver-text-muted))] ml-0.5">€</span>
           </p>
           {/* Payment method badge */}
@@ -124,8 +142,13 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
               }
             </div>
           )}
+          {offer.orderTotal != null && offer.orderTotal > 0 && (
+            <p className="mt-1.5 text-[11.5px] text-[hsl(var(--driver-text-muted))]">
+              Σύνολο παραγγελίας <span className="font-semibold tabular-nums text-[hsl(var(--driver-text))]">{offer.orderTotal.toFixed(2)}€</span>
+            </p>
+          )}
         </div>
-        <div className={`flex items-center gap-1.5 rounded-full px-3 h-8 border ${
+        <div className={`flex items-center gap-1.5 rounded-full px-3 h-8 border shrink-0 ${
           isUrgent
             ? 'bg-destructive/10 border-destructive/25 text-destructive'
             : 'bg-[hsl(var(--driver-surface-muted))] border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
@@ -145,7 +168,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
         />
       </div>
 
-      {/* Route */}
+      {/* Route — full addresses, no truncate */}
       <div className="px-5 pt-4 pb-4">
         <div className="flex items-stretch gap-3">
           <div className="flex flex-col items-center pt-1.5">
@@ -160,8 +183,8 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
           <div className="flex-1 min-w-0 space-y-3">
             <div>
               <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παραλαβή</p>
-              <p className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))] truncate leading-tight">{offer.storeName}</p>
-              <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] truncate mt-0.5">{shortenAddress(offer.storeAddress)}</p>
+              <p className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))] leading-snug break-words">{offer.storeName}</p>
+              <p className="text-[12.5px] text-[hsl(var(--driver-text-muted))] mt-0.5 leading-snug break-words">{offer.storeAddress}</p>
               {readyLabel && (
                 <p className={`mt-1.5 inline-flex items-center gap-1 text-[11.5px] font-heading font-bold ${
                   storeReady ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-warm))]'
@@ -173,7 +196,7 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
             </div>
             <div>
               <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))]">Παράδοση</p>
-              <p className="text-[12.5px] text-[hsl(var(--driver-text))] truncate mt-0.5">{shortenAddress(offer.deliveryAddress)}</p>
+              <p className="text-[13px] text-[hsl(var(--driver-text))] mt-0.5 leading-snug break-words font-medium">{offer.deliveryAddress}</p>
             </div>
           </div>
         </div>
@@ -195,6 +218,30 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
             <Package className="h-3 w-3 text-[hsl(var(--driver-info))]" />{offer.itemCount} τεμ.
           </span>
         </div>
+
+        {/* Line items — full detail */}
+        {items.length > 0 && (
+          <div className="mt-3 pt-3 border-t border-[hsl(var(--driver-border))]">
+            <p className="text-[10.5px] uppercase tracking-wider font-heading font-semibold text-[hsl(var(--driver-text-muted))] flex items-center gap-1.5 mb-2">
+              <ListOrdered className="h-3 w-3" /> Προϊόντα
+            </p>
+            <ul className="space-y-1.5">
+              {items.map((it, idx) => (
+                <li key={`${it.name}-${idx}`} className="flex items-start justify-between gap-3 text-[12.5px]">
+                  <span className="text-[hsl(var(--driver-text))] leading-snug break-words min-w-0">
+                    <span className="font-heading font-bold tabular-nums text-[hsl(var(--driver-accent))]">{it.quantity}×</span>{' '}
+                    {it.name}
+                  </span>
+                  {it.unitPrice != null && (
+                    <span className="tabular-nums text-[hsl(var(--driver-text-muted))] shrink-0">
+                      {(it.unitPrice * it.quantity).toFixed(2)}€
+                    </span>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* Payout breakdown */}
         {(offer.basePay !== undefined || offer.poolBonus) && (
@@ -223,15 +270,17 @@ export function OrderOfferCard({ offer, onAccept, onDecline, expiresAt, timeoutS
           </div>
         )}
 
-        {/* Actions */}
+        {/* Actions — sticky feel at bottom of card */}
         <div className="flex gap-2.5 mt-5">
           <button
+            type="button"
             onClick={() => { stopOfferAlert(); onDecline(offer.id); }}
             className="flex-1 h-12 rounded-full text-[14px] font-heading font-bold border border-[hsl(var(--driver-border-strong))] bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] hover:bg-[hsl(var(--driver-surface-muted))] transition-all active:scale-[0.97]"
           >
             Απόρριψη
           </button>
           <button
+            type="button"
             onClick={() => { stopOfferAlert(); onAccept(offer.id); }}
             className="flex-[1.5] h-12 rounded-full text-[14px] font-heading font-bold bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-105 transition-all active:scale-[0.97]"
           >

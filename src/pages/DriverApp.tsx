@@ -404,9 +404,11 @@ export default function DriverApp() {
     const vh = typeof window !== 'undefined' ? window.innerHeight : 800;
     const bottom = showCompactOnlineDock
       ? Math.max(120, Math.round(vh * 0.16) + 28)
-      : hasIncomingOffers || activeDelivery
-        ? Math.max(320, Math.round(vh * 0.58) + 24)
-        : Math.max(260, Math.round(vh * 0.48) + 24);
+      : hasIncomingOffers
+        ? Math.max(380, Math.round(vh * 0.72) + 24)
+        : activeDelivery
+          ? Math.max(320, Math.round(vh * 0.58) + 24)
+          : Math.max(260, Math.round(vh * 0.48) + 24);
     return { top: 96, bottom, left: 40, right: 40 };
   })();
 
@@ -439,6 +441,7 @@ export default function DriverApp() {
               nearbyStores={activeDelivery || !driverPrefs.showStorePinsOnMap ? [] : nearbyStores}
               followMode={isNavActive}
               overlayPadding={mapOverlayPadding}
+              interactionLocked={hasIncomingOffers}
             />
           </Suspense>
 
@@ -554,6 +557,7 @@ export default function DriverApp() {
 
           {/* Bottom dock — solid sheet (no clipped glass lip over the map) */}
           <div className={`fixed bottom-0 left-0 right-0 z-20 pointer-events-none ${isNavActive ? 'hidden' : ''}`}>
+            {!hasIncomingOffers && (
             <div className="flex justify-end gap-2 px-3 pb-2 pointer-events-auto">
               <button
                 onClick={() => {
@@ -574,27 +578,38 @@ export default function DriverApp() {
                 <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
               </button>
             </div>
+            )}
 
             <div
               className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[28px] shadow-[0_-12px_32px_-12px_hsl(220,18%,14%,0.18)] transition-[max-height] duration-300 ease-out ${
                 showCompactOnlineDock
                   ? 'overflow-hidden'
-                  : hasIncomingOffers || activeDelivery
-                    ? 'max-h-[62vh] overflow-y-auto overscroll-contain scrollbar-thin'
-                    : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                  : hasIncomingOffers
+                    ? 'max-h-[78vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                    : activeDelivery
+                      ? 'max-h-[62vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                      : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
               }`}
             >
-              {/* Drag handle — locked during offers so the job card stays focused */}
+              {/* Drag handle — locked during offers so the job card stays fixed */}
               <div
                 className={`w-full flex items-center justify-center pt-2.5 pb-2 group select-none ${
                   hasIncomingOffers
-                    ? 'cursor-default'
+                    ? 'cursor-default pointer-events-none opacity-40'
                     : 'cursor-grab active:cursor-grabbing touch-none'
                 }`}
                 role="button"
-                tabIndex={0}
-                aria-label={sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'}
-                title={hasIncomingOffers ? 'Νέα προσφορά' : sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'}
+                tabIndex={hasIncomingOffers ? -1 : 0}
+                aria-label={
+                  hasIncomingOffers
+                    ? 'Προσφορά κλειδωμένη'
+                    : sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'
+                }
+                title={
+                  hasIncomingOffers
+                    ? 'Η προσφορά δεν μετακινείται — αποδοχή ή απόρριψη'
+                    : sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'
+                }
                 onClick={() => {
                   if (hasIncomingOffers) return;
                   if (!sheetDragMoved.current) setSheetCollapsed(v => !v);
@@ -628,7 +643,11 @@ export default function DriverApp() {
                 onPointerUp={() => { sheetDragStartY.current = null; }}
                 onPointerCancel={() => { sheetDragStartY.current = null; }}
               >
-                <span className="h-1.5 w-12 rounded-full bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70 transition-colors" />
+                <span className={`h-1.5 w-12 rounded-full transition-colors ${
+                  hasIncomingOffers
+                    ? 'bg-[hsl(var(--driver-text-muted))]/25'
+                    : 'bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70'
+                }`} />
               </div>
 
               <div
@@ -790,6 +809,13 @@ export default function DriverApp() {
                                 totalDistance: Number((offer as any).distance_km ?? 0),
                                 estimatedTime: offer.estimated_prep_time ?? 20,
                                 itemCount: offer.order_items?.length ?? 0,
+                                items: (offer.order_items ?? []).map((it: any) => ({
+                                  name: it.name || 'Προϊόν',
+                                  quantity: Number(it.quantity ?? 1),
+                                  unitPrice: it.unit_price != null ? Number(it.unit_price) : null,
+                                })),
+                                orderNumber: (offer as any).store_order_number ?? offer.id.slice(0, 8),
+                                orderTotal: Number((offer as any).total_amount ?? 0) || null,
                                 predictedReadyAt: (offer as any).predicted_ready_at ?? null,
                                 orderStatus: offer.status ?? null,
                               }}
