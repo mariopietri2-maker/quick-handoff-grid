@@ -97,7 +97,7 @@ export default function MyOrdersPage() {
         className="c-header border-b px-4 py-4 sticky top-0 z-40"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
-        <h1 className="font-heading font-extrabold text-[22px] text-[hsl(0,0%,9%)] tracking-tight">
+        <h1 className="font-heading font-extrabold text-[22px] c-ink tracking-tight">
           Παραγγελίες
         </h1>
       </header>

@@ -153,14 +153,14 @@ export default function RestaurantPage() {
   if (loading) {
     return (
       <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page">
-        <div className="h-56 bg-[hsl(0,0%,94%)] animate-pulse" />
+        <div className="h-56 bg-[hsl(var(--c-surface-muted))] animate-pulse" />
         <div className="max-w-2xl mx-auto px-4 pt-5 space-y-4">
-          <div className="h-7 bg-[hsl(0,0%,94%)] rounded-lg w-2/3 animate-pulse" />
-          <div className="h-4 bg-[hsl(0,0%,94%)] rounded w-1/2 animate-pulse" />
-          <div className="h-4 bg-[hsl(0,0%,94%)] rounded w-1/3 animate-pulse" />
+          <div className="h-7 bg-[hsl(var(--c-surface-muted))] rounded-lg w-2/3 animate-pulse" />
+          <div className="h-4 bg-[hsl(var(--c-surface-muted))] rounded w-1/2 animate-pulse" />
+          <div className="h-4 bg-[hsl(var(--c-surface-muted))] rounded w-1/3 animate-pulse" />
           <div className="mt-8 space-y-3">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-28 bg-[hsl(0,0%,96%)] rounded-2xl animate-pulse" />
+              <div key={i} className="h-28 bg-[hsl(var(--c-surface-muted))] rounded-2xl animate-pulse" />
             ))}
           </div>
         </div>
@@ -208,7 +208,7 @@ export default function RestaurantPage() {
 
       {/* Sticky header */}
       <div
-        className={`fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-[hsl(0,0%,90%)] transition-all duration-200 ${
+        className={`fixed top-0 left-0 right-0 z-50 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur-md border-b border-[hsl(var(--c-border))] transition-all duration-200 ${
           showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
@@ -217,18 +217,18 @@ export default function RestaurantPage() {
             type="button"
             onClick={() => navigate('/order')}
             aria-label="Επιστροφή στη λίστα εστιατορίων"
-            className="h-9 w-9 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
+            className="h-9 w-9 rounded-full bg-[hsl(var(--c-surface-muted))] flex items-center justify-center flex-shrink-0 active:scale-95 transition-transform"
           >
-            <ArrowLeft className="h-4 w-4 text-[hsl(0,0%,9%)]" />
+            <ArrowLeft className="h-4 w-4 c-ink" />
           </button>
-          <span className="font-heading font-extrabold text-[hsl(0,0%,9%)] text-sm truncate tracking-tight">
+          <span className="font-heading font-extrabold c-ink text-sm truncate tracking-tight">
             {store.name}
           </span>
           {cartForThisStore && (
             <button
               type="button"
               onClick={() => navigate('/checkout')}
-              className="ml-auto rounded-full px-3 py-1.5 text-xs font-extrabold flex items-center gap-1.5 bg-[hsl(0,0%,9%)] text-white active:scale-95 transition-transform"
+              className="ml-auto rounded-full px-3 py-1.5 text-xs font-extrabold flex items-center gap-1.5 bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] active:scale-95 transition-transform"
             >
               <ShoppingBag className="h-3.5 w-3.5" />
               {itemCount}
@@ -239,7 +239,7 @@ export default function RestaurantPage() {
 
       {/* Hero */}
       <header ref={heroRef} className="relative">
-        <div className="h-52 sm:h-60 bg-[hsl(0,0%,94%)] overflow-hidden">
+        <div className="h-52 sm:h-60 bg-[hsl(var(--c-surface-muted))] overflow-hidden">
           {store.image_url ? (
             <img
               src={store.image_url}
@@ -252,15 +252,15 @@ export default function RestaurantPage() {
               <span className="text-xs font-bold uppercase tracking-widest text-white/40">Μενού</span>
             </div>
           )}
-          <div className="absolute inset-0 bg-gradient-to-t from-white via-white/10 to-black/25" />
+          <div className="absolute inset-0 bg-gradient-to-t from-[hsl(var(--c-bg))] via-[hsl(var(--c-bg)/0.12)] to-black/25" />
         </div>
         <button
           type="button"
           onClick={() => navigate('/order')}
           aria-label="Επιστροφή στη λίστα εστιατορίων"
-          className="absolute top-4 left-4 h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md active:scale-95 transition-transform"
+          className="absolute top-4 left-4 h-10 w-10 rounded-full bg-[hsl(var(--c-surface)/0.92)] backdrop-blur-sm flex items-center justify-center shadow-md active:scale-95 transition-transform"
         >
-          <ArrowLeft className="h-5 w-5 text-[hsl(0,0%,9%)]" />
+          <ArrowLeft className="h-5 w-5 c-ink" />
         </button>
         <div className="absolute top-4 right-4 flex items-center gap-2">
           <FavoriteButton storeId={store.id} size="md" />
@@ -281,23 +281,23 @@ export default function RestaurantPage() {
               }
             }}
             aria-label={`Κοινοποίηση εστιατορίου ${store.name}`}
-            className="h-10 w-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center shadow-md active:scale-95 transition-transform"
+            className="h-10 w-10 rounded-full bg-[hsl(var(--c-surface)/0.92)] backdrop-blur-sm flex items-center justify-center shadow-md active:scale-95 transition-transform"
           >
-            <Share2 className="h-5 w-5 text-[hsl(0,0%,9%)]" />
+            <Share2 className="h-5 w-5 c-ink" />
           </button>
         </div>
       </header>
 
       {/* Store identity */}
       <main className="max-w-2xl mx-auto px-4 -mt-3 relative z-10">
-        <div className="rounded-2xl bg-white border border-[hsl(0,0%,90%)] shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.18)] px-4 py-4">
-          <h1 className="font-heading font-black text-[26px] leading-tight tracking-tight text-[hsl(0,0%,9%)]">
+        <div className="rounded-2xl bg-[hsl(var(--c-elevated))] border border-[hsl(var(--c-border))] shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.18)] px-4 py-4">
+          <h1 className="font-heading font-black text-[26px] leading-tight tracking-tight c-ink">
             {store.name}
           </h1>
-          <div className="flex items-center gap-x-3 gap-y-1.5 mt-2.5 flex-wrap text-[13px] font-semibold text-[hsl(0,0%,28%)]">
+          <div className="flex items-center gap-x-3 gap-y-1.5 mt-2.5 flex-wrap text-[13px] font-semibold c-muted">
             <RatingBadge storeId={store.id} />
             <span className="inline-flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5 text-[hsl(0,0%,45%)]" />
+              <Clock className="h-3.5 w-3.5 c-soft" />
               {etaLow}–{etaHigh} λεπ
             </span>
             <span>0,99€ παράδοση</span>
@@ -309,7 +309,7 @@ export default function RestaurantPage() {
             </p>
           )}
           {store.busy_mode && (
-            <div className="mt-3 bg-amber-50 border border-amber-200/80 rounded-xl px-3 py-2 text-xs text-amber-800 font-semibold flex items-center gap-1.5">
+            <div className="mt-3 bg-amber-50 dark:bg-amber-950/40 border border-amber-200/80 dark:border-amber-800/60 rounded-xl px-3 py-2 text-xs text-amber-800 dark:text-amber-200 font-semibold flex items-center gap-1.5">
               <Clock className="h-3.5 w-3.5" />
               Πολυάσχολο — αυξημένοι χρόνοι παράδοσης
             </div>
@@ -321,21 +321,21 @@ export default function RestaurantPage() {
       <div className="max-w-2xl mx-auto px-4 mt-4">
         <label className="relative block">
           <span className="sr-only">Αναζήτηση στο μενού</span>
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(0,0%,45%)] pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 c-soft pointer-events-none" />
           <input
             value={menuQuery}
             onChange={(e) => setMenuQuery(e.target.value)}
             placeholder="Αναζήτηση"
-            className="w-full h-11 pl-10 pr-10 rounded-xl bg-[hsl(0,0%,96%)] border border-transparent text-[hsl(0,0%,9%)] text-sm font-medium placeholder:text-[hsl(0,0%,50%)] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--c-accent)/0.35)] focus:bg-white focus:border-[hsl(0,0%,88%)] transition-colors"
+            className="w-full h-11 pl-10 pr-10 rounded-xl bg-[hsl(var(--c-surface-muted))] border border-transparent c-ink text-sm font-medium placeholder:text-[hsl(var(--c-text-soft))] focus:outline-none focus:ring-2 focus:ring-[hsl(var(--c-accent)/0.35)] focus:bg-[hsl(var(--c-surface))] focus:border-[hsl(var(--c-border))] transition-colors"
           />
           {menuQuery && (
             <button
               type="button"
               aria-label="Καθαρισμός αναζήτησης"
               onClick={() => setMenuQuery('')}
-              className="absolute right-2.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-[hsl(0,0%,90%)] flex items-center justify-center"
+              className="absolute right-2.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-[hsl(var(--c-border))] flex items-center justify-center"
             >
-              <X className="h-3.5 w-3.5 text-[hsl(0,0%,30%)]" />
+              <X className="h-3.5 w-3.5 c-muted" />
             </button>
           )}
         </label>
@@ -344,7 +344,7 @@ export default function RestaurantPage() {
       {/* Category tabs */}
       {!normalizedQuery && visibleCategories.length > 1 && (
         <div
-          className={`sticky z-40 bg-white/95 backdrop-blur-md border-b border-[hsl(0,0%,90%)] mt-3 transition-[top] duration-200 ${
+          className={`sticky z-40 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
             showStickyHeader ? 'top-[52px]' : 'top-0'
           }`}
         >
@@ -358,7 +358,7 @@ export default function RestaurantPage() {
                   className={`px-4 py-3 text-[13px] font-bold whitespace-nowrap border-b-2 transition-colors flex-shrink-0 ${
                     activeCategory === cat
                       ? 'border-[hsl(var(--c-accent))] text-[hsl(var(--c-accent))]'
-                      : 'border-transparent text-[hsl(0,0%,45%)] hover:text-[hsl(0,0%,9%)]'
+                      : 'border-transparent c-soft hover:text-[hsl(var(--c-text))]'
                   }`}
                 >
                   {cat}
@@ -373,7 +373,7 @@ export default function RestaurantPage() {
       <div className="max-w-2xl mx-auto px-4 pt-5 space-y-7">
         {filteredItems.length === 0 ? (
           <div className="text-center py-16">
-            <p className="font-heading font-extrabold text-[hsl(0,0%,9%)]">
+            <p className="font-heading font-extrabold c-ink">
               {normalizedQuery ? 'Κανένα αποτέλεσμα' : 'Δεν υπάρχουν διαθέσιμα προϊόντα'}
             </p>
             <p className="text-sm c-muted mt-1">
@@ -390,10 +390,10 @@ export default function RestaurantPage() {
               }}
               className="scroll-mt-[110px]"
             >
-              <h2 className="font-heading font-black text-[18px] text-[hsl(0,0%,9%)] tracking-tight mb-1">
+              <h2 className="font-heading font-black text-[18px] c-ink tracking-tight mb-1">
                 {category}
               </h2>
-              <div className="divide-y divide-[hsl(0,0%,92%)]">
+              <div className="divide-y divide-[hsl(var(--c-border))]">
                 {filteredItems
                   .filter((i) => (i.category ?? 'Άλλο') === category)
                   .map((item) => {
@@ -415,7 +415,7 @@ export default function RestaurantPage() {
 
         {!normalizedQuery && (
           <div className="pt-2 pb-6">
-            <h2 className="font-heading font-black text-[18px] text-[hsl(0,0%,9%)] tracking-tight mb-3">
+            <h2 className="font-heading font-black text-[18px] c-ink tracking-tight mb-3">
               Κριτικές
             </h2>
             <ReviewList storeId={store.id} />
@@ -433,10 +433,10 @@ export default function RestaurantPage() {
             <button
               type="button"
               onClick={() => navigate('/checkout')}
-              className="pointer-events-auto w-full h-14 rounded-2xl bg-[hsl(0,0%,9%)] text-white shadow-[0_10px_28px_-8px_hsl(0_0%_0%/0.45)] flex items-center justify-between px-4 active:scale-[0.985] transition-transform"
+              className="pointer-events-auto w-full h-14 rounded-2xl bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] shadow-[0_10px_28px_-8px_hsl(0_0%_0%/0.45)] flex items-center justify-between px-4 active:scale-[0.985] transition-transform"
             >
               <div className="flex items-center gap-3">
-                <span className="h-8 min-w-8 px-2 rounded-lg bg-white text-[hsl(0,0%,9%)] font-black text-sm flex items-center justify-center tabular-nums">
+                <span className="h-8 min-w-8 px-2 rounded-lg bg-[hsl(var(--c-bg))] c-ink font-black text-sm flex items-center justify-center tabular-nums">
                   {itemCount}
                 </span>
                 <span className="font-heading font-extrabold text-[15px] tracking-tight">Καλάθι</span>
@@ -471,11 +471,11 @@ function MenuItemRow({
       className={`flex gap-3.5 py-4 ${inCart ? 'bg-[hsl(var(--c-accent-soft))] -mx-2 px-2 rounded-xl' : ''}`}
     >
       <div className="flex-1 min-w-0 flex flex-col">
-        <h3 className="font-heading font-extrabold text-[15px] text-[hsl(0,0%,9%)] leading-snug tracking-tight">
+        <h3 className="font-heading font-extrabold text-[15px] c-ink leading-snug tracking-tight">
           {item.name}
         </h3>
         {item.description && (
-          <p className="text-[12px] text-[hsl(0,0%,40%)] mt-1 line-clamp-2 leading-relaxed">
+          <p className="text-[12px] c-muted mt-1 line-clamp-2 leading-relaxed">
             {item.description}
           </p>
         )}
@@ -488,7 +488,7 @@ function MenuItemRow({
           calories={(item as any).calories}
         />
         <div className="mt-auto pt-2.5 flex items-center gap-2 flex-wrap">
-          <span className="text-[14px] font-extrabold text-[hsl(0,0%,9%)] tabular-nums">
+          <span className="text-[14px] font-extrabold c-ink tabular-nums">
             {Number(item.price).toFixed(2)}€
           </span>
           {!hasImage && (
@@ -506,7 +506,7 @@ function MenuItemRow({
           <img
             src={item.image_url!}
             alt={`Φωτογραφία ${item.name}`}
-            className="h-[104px] w-[104px] rounded-2xl object-cover bg-[hsl(0,0%,94%)]"
+            className="h-[104px] w-[104px] rounded-2xl object-cover bg-[hsl(var(--c-surface-muted))]"
             loading="lazy"
           />
           <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-max max-w-[112px]">
@@ -535,7 +535,7 @@ function AddButton({
         type="button"
         onClick={onClick}
         aria-label="Προσθήκη στο καλάθι"
-        className="h-9 min-w-9 px-3 rounded-full bg-[hsl(0,0%,9%)] text-white text-[12px] font-extrabold shadow-[0_6px_16px_-6px_hsl(0_0%_0%/0.45)] flex items-center justify-center gap-1 active:scale-95 transition-transform"
+        className="h-9 min-w-9 px-3 rounded-full bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] text-[12px] font-extrabold shadow-[0_6px_16px_-6px_hsl(0_0%_0%/0.45)] flex items-center justify-center gap-1 active:scale-95 transition-transform"
       >
         <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
         Προσθήκη
@@ -547,7 +547,7 @@ function AddButton({
     <button
       type="button"
       onClick={onClick}
-      className="h-9 px-3.5 rounded-full bg-[hsl(0,0%,9%)] text-white text-[12px] font-extrabold flex items-center gap-1 active:scale-95 transition-transform shadow-sm"
+      className="h-9 px-3.5 rounded-full bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] text-[12px] font-extrabold flex items-center gap-1 active:scale-95 transition-transform shadow-sm"
     >
       <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />
       Προσθήκη
@@ -570,8 +570,8 @@ function QuantityStepper({
     <div
       className={`flex items-center overflow-hidden shadow-[0_6px_16px_-6px_hsl(0_0%_0%/0.4)] ${
         onImage
-          ? 'bg-[hsl(0,0%,9%)] text-white rounded-full'
-          : 'bg-white border border-[hsl(0,0%,88%)] rounded-full'
+          ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] rounded-full'
+          : 'bg-[hsl(var(--c-surface))] border border-[hsl(var(--c-border))] rounded-full'
       }`}
     >
       <button
@@ -579,14 +579,14 @@ function QuantityStepper({
         onClick={onMinus}
         aria-label="Μείωση ποσότητας"
         className={`h-9 w-9 flex items-center justify-center active:opacity-70 transition-opacity ${
-          onImage ? 'text-white' : 'text-[hsl(0,0%,9%)]'
+          onImage ? '' : 'c-ink'
         }`}
       >
         <Minus className="h-3.5 w-3.5" strokeWidth={2.5} />
       </button>
       <span
         className={`text-[13px] font-black w-6 text-center tabular-nums ${
-          onImage ? 'text-white' : 'text-[hsl(0,0%,9%)]'
+          onImage ? '' : 'c-ink'
         }`}
         aria-live="polite"
       >
@@ -597,7 +597,7 @@ function QuantityStepper({
         onClick={onPlus}
         aria-label="Αύξηση ποσότητας"
         className={`h-9 w-9 flex items-center justify-center active:opacity-70 transition-opacity ${
-          onImage ? 'text-white' : 'c-accent'
+          onImage ? '' : 'c-accent'
         }`}
       >
         <Plus className="h-3.5 w-3.5" strokeWidth={2.5} />

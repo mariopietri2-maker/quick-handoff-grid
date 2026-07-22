@@ -37,7 +37,7 @@ export function ReviewList({ storeId }: ReviewListProps) {
   if (loading) return null;
   if (reviews.length === 0) {
     return (
-      <p className="text-sm text-[hsl(0,0%,45%)] text-center py-4">Δεν υπάρχουν κριτικές ακόμα</p>
+      <p className="text-sm c-soft text-center py-4">Δεν υπάρχουν κριτικές ακόμα</p>
     );
   }
 
@@ -101,8 +101,8 @@ export function RatingBadge({ storeId }: { storeId: string }) {
   return (
     <span className="inline-flex items-center gap-1 text-[13px]">
       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-      <span className="font-heading font-extrabold text-[hsl(0,0%,9%)]">{avg.toFixed(1)}</span>
-      <span className="font-semibold text-[hsl(0,0%,45%)]">({count})</span>
+      <span className="font-heading font-extrabold c-ink">{avg.toFixed(1)}</span>
+      <span className="font-semibold c-soft">({count})</span>
     </span>
   );
 }
