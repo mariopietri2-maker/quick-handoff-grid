@@ -1,6 +1,6 @@
 import { Suspense } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -37,6 +37,7 @@ const OrderTrackingPage = lazyWithRetry(() => import("./pages/OrderTrackingPage.
 const MyOrdersPage = lazyWithRetry(() => import("./pages/MyOrdersPage.tsx"));
 const NotFound = lazyWithRetry(() => import("./pages/NotFound.tsx"));
 const LegalPage = lazyWithRetry(() => import("./pages/LegalPage.tsx"));
+const DownloadAppPage = lazyWithRetry(() => import("./pages/DownloadAppPage.tsx"));
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -136,8 +137,7 @@ const App = () => (
                       </ProtectedRoute>
                     } />
                     <Route path="/legal/:doc" element={<LegalPage />} />
-                    {/* Old Android APK landing — store is a PWA now */}
-                    <Route path="/download" element={<Navigate to="/store" replace />} />
+                    <Route path="/download" element={<DownloadAppPage />} />
                     <Route path="*" element={<NotFound />} />
                   </Routes>
                   </MobileAppGate>
