@@ -12,8 +12,9 @@ import { SEO } from '@/components/SEO';
 import AdminDriversMap from '@/components/admin/AdminDriversMap';
 import { formatDistanceToNow } from 'date-fns';
 import { el } from 'date-fns/locale';
+import { DRIVER_PRESENCE_ONLINE_MS } from '@/lib/driver-presence';
 
-const ONLINE_MS = 5 * 60 * 1000;
+const ONLINE_MS = DRIVER_PRESENCE_ONLINE_MS;
 
 interface DriverRow {
   user_id: string;

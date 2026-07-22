@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Bike, Search, Wallet, Coins, Target, Clock, Activity, MapPin } from 'lucide-react';
 import AdminDriversMap from './AdminDriversMap';
 import { formatDistanceToNow } from 'date-fns';
+import { isDriverPresenceOnline } from '@/lib/driver-presence';
 
 interface DriverRow {
   user_id: string;
@@ -109,14 +110,14 @@ export default function AdminLiveDriversMap() {
       ? rows.filter(r => (r.full_name ?? '').toLowerCase().includes(q) || (r.driver_code ?? '').toLowerCase().includes(q))
       : rows;
     return [...list].sort((a, b) => {
-      const aOnline = a.last_location_at && Date.now() - new Date(a.last_location_at).getTime() < 5 * 60 * 1000;
-      const bOnline = b.last_location_at && Date.now() - new Date(b.last_location_at).getTime() < 5 * 60 * 1000;
+      const aOnline = !!a.shift_started_at && isDriverPresenceOnline(a.last_location_at);
+      const bOnline = !!b.shift_started_at && isDriverPresenceOnline(b.last_location_at);
       if (aOnline !== bOnline) return aOnline ? -1 : 1;
       return b.todays_earnings - a.todays_earnings;
     });
   }, [rows, query]);
 
-  const onlineCount = rows.filter(r => r.last_location_at && Date.now() - new Date(r.last_location_at).getTime() < 5 * 60 * 1000).length;
+  const onlineCount = rows.filter(r => !!r.shift_started_at && isDriverPresenceOnline(r.last_location_at)).length;
   const busyCount = rows.filter(r => r.active_order_status).length;
   const totalEarnings = rows.reduce((s, r) => s + r.todays_earnings, 0);
   const totalDeliveries = rows.reduce((s, r) => s + r.todays_deliveries, 0);
@@ -164,7 +165,7 @@ export default function AdminLiveDriversMap() {
                 {loading && <div className="p-4 text-sm text-muted-foreground">Φόρτωση…</div>}
                 {!loading && filtered.length === 0 && <div className="p-4 text-sm text-muted-foreground">Κανένας οδηγός</div>}
                 {filtered.map(d => {
-                  const online = d.last_location_at && Date.now() - new Date(d.last_location_at).getTime() < 5 * 60 * 1000;
+                  const online = !!d.shift_started_at && isDriverPresenceOnline(d.last_location_at);
                   const goalPct = d.daily_goal > 0 ? Math.min(100, (d.todays_earnings / d.daily_goal) * 100) : 0;
                   return (
                     <div key={d.user_id} className="p-3 hover:bg-muted/40">
