@@ -59,7 +59,7 @@ export default function CustomerBottomNav() {
   return (
     <nav
       className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[hsl(0,0%,90%)]"
-      style={{ paddingBottom: 'env(safe-area-inset-bottom)' }}
+      style={{ paddingBottom: 'var(--app-safe-bottom)' }}
       aria-label="Κύρια πλοήγηση"
     >
       <div className="max-w-2xl mx-auto grid grid-cols-4 h-[58px]">

@@ -31,7 +31,9 @@ export default function CustomerLayout() {
     }
   }, [location.pathname, location.hash]);
 
-  const padBottom = itemCount > 0 ? 'pb-36' : 'pb-24';
+  const padBottom = itemCount > 0
+    ? 'pb-[calc(9rem+var(--app-safe-bottom))]'
+    : 'pb-[calc(6rem+var(--app-safe-bottom))]';
 
   return (
     <div

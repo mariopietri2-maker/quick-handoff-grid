@@ -290,7 +290,26 @@
   }
 
   .safe-area-bottom {
-    padding-bottom: env(safe-area-inset-bottom, 0px);
+    padding-bottom: var(--app-safe-bottom, env(safe-area-inset-bottom, 0px));
+  }
+
+  /*
+   * Customer bottom chrome (tabs / cart / checkout CTA).
+   * Android Capacitor WebViews frequently report safe-area-inset-bottom as 0
+   * even when the system nav bar / gesture bar covers the lower edge.
+   */
+  :root {
+    --app-safe-bottom: env(safe-area-inset-bottom, 0px);
+    --customer-tab-h: 58px;
+  }
+
+  html.is-native.is-android {
+    /* ~48dp classic 3-button nav; still ok as a floor for gesture phones */
+    --app-safe-bottom: max(48px, env(safe-area-inset-bottom, 0px));
+  }
+
+  html.is-native.is-ios {
+    --app-safe-bottom: env(safe-area-inset-bottom, 0px);
   }
 
   .scrollbar-thin {
