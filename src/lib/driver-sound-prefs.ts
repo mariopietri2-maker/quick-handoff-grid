@@ -9,7 +9,7 @@ import clownUrl from '@/assets/sounds/clown.mp3';
 import nokiaUrl from '@/assets/sounds/nokia.mp3';
 import slipUrl from '@/assets/sounds/slip.mp3';
 
-export type SoundPattern =
+export type ConcreteSoundPattern =
   | 'pop'
   | 'honk'
   | 'party'
@@ -21,6 +21,8 @@ export type SoundPattern =
   | 'nokia'
   | 'slip';
 
+export type SoundPattern = ConcreteSoundPattern | 'random';
+
 export interface DriverSoundPrefs {
   enabled: boolean;
   volume: number;        // 0..1
@@ -29,12 +31,13 @@ export interface DriverSoundPrefs {
   vibrate: boolean;
 }
 
-const KEY = 'qg.driver.sound.prefs.v2';
+const KEY = 'qg.driver.sound.prefs.v3';
+const LEGACY_KEYS = ['qg.driver.sound.prefs.v2', 'qg.driver.sound.prefs.v1'];
 
 const DEFAULTS: DriverSoundPrefs = {
   enabled: true,
   volume: 0.85,
-  pattern: 'pop',
+  pattern: 'random',
   repeatCount: 2,
   vibrate: true,
 };
@@ -48,10 +51,13 @@ const PATTERN_MIGRATIONS: Record<string, SoundPattern> = {
   siren: 'honk', chime: 'party', urgent: 'honk',
 };
 
-const VALID: SoundPattern[] = ['pop','honk','party','screech','suspense','mystery','whistle','clown','nokia','slip'];
+const CONCRETE: ConcreteSoundPattern[] = [
+  'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
+];
+const VALID: SoundPattern[] = ['random', ...CONCRETE];
 
 /** Bundled MP3 URLs (Vite hashes them into dist) — never use Lovable `/__l5e/` paths on Railway/APK. */
-const SOUND_URLS: Record<SoundPattern, string> = {
+const SOUND_URLS: Record<ConcreteSoundPattern, string> = {
   pop: popUrl,
   honk: honkUrl,
   party: partyUrl,
@@ -64,24 +70,44 @@ const SOUND_URLS: Record<SoundPattern, string> = {
   slip: slipUrl,
 };
 
+let _lastRandom: ConcreteSoundPattern | null = null;
+
+/** Pick a concrete effect; avoid repeating the previous random pick when possible. */
+export function pickRandomPattern(): ConcreteSoundPattern {
+  if (CONCRETE.length <= 1) return CONCRETE[0]!;
+  let next = CONCRETE[Math.floor(Math.random() * CONCRETE.length)]!;
+  if (next === _lastRandom) {
+    next = CONCRETE[Math.floor(Math.random() * CONCRETE.length)]!;
+  }
+  _lastRandom = next;
+  return next;
+}
+
+export function resolvePattern(pattern: SoundPattern): ConcreteSoundPattern {
+  return pattern === 'random' ? pickRandomPattern() : pattern;
+}
+
 export function loadDriverSoundPrefs(): DriverSoundPrefs {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
-      // try legacy key migration
-      const legacy = localStorage.getItem('qg.driver.sound.prefs.v1');
-      if (legacy) {
+      for (const legacyKey of LEGACY_KEYS) {
+        const legacy = localStorage.getItem(legacyKey);
+        if (!legacy) continue;
         const parsedLegacy = { ...DEFAULTS, ...JSON.parse(legacy) } as DriverSoundPrefs;
+        // New default: random SFX on every notification (keep volume / vibrate / repeats).
+        parsedLegacy.pattern = 'random';
         if (!VALID.includes(parsedLegacy.pattern)) {
-          parsedLegacy.pattern = PATTERN_MIGRATIONS[parsedLegacy.pattern as string] ?? 'pop';
+          parsedLegacy.pattern = 'random';
         }
+        try { localStorage.setItem(KEY, JSON.stringify(parsedLegacy)); } catch {}
         return parsedLegacy;
       }
       return DEFAULTS;
     }
     const parsed = { ...DEFAULTS, ...JSON.parse(raw) } as DriverSoundPrefs;
     if (!VALID.includes(parsed.pattern)) {
-      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'pop';
+      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'random';
     }
     return parsed;
   } catch {
@@ -95,8 +121,8 @@ export function saveDriverSoundPrefs(prefs: DriverSoundPrefs) {
 }
 
 // Audio element cache — one per pattern, reused so we don't refetch each play.
-const audioCache: Partial<Record<SoundPattern, HTMLAudioElement>> = {};
-function getAudio(pattern: SoundPattern): HTMLAudioElement {
+const audioCache: Partial<Record<ConcreteSoundPattern, HTMLAudioElement>> = {};
+function getAudio(pattern: ConcreteSoundPattern): HTMLAudioElement {
   let el = audioCache[pattern];
   if (!el) {
     el = new Audio(SOUND_URLS[pattern]);
@@ -110,7 +136,7 @@ export function primeDriverAudio() {
   if (typeof window === 'undefined') return;
   // Touch each audio element so the browser whitelists playback within this gesture.
   try {
-    VALID.forEach((p) => {
+    CONCRETE.forEach((p) => {
       const el = getAudio(p);
       el.muted = true;
       const pr = el.play();
@@ -141,7 +167,8 @@ installAudioUnlockListeners();
 
 export function playPattern(pattern: SoundPattern, volume: number) {
   try {
-    const el = getAudio(pattern);
+    const resolved = resolvePattern(pattern);
+    const el = getAudio(resolved);
     el.pause();
     el.currentTime = 0;
     el.volume = Math.max(0, Math.min(1, volume));
@@ -173,10 +200,23 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
   if (p.vibrate && 'vibrate' in navigator) {
     try { navigator.vibrate([120, 80, 120]); } catch {}
   }
-  playPattern(p.pattern, p.volume);
+  // Resolve once so random stays the same sound across repeats in this alert.
+  const concrete = resolvePattern(p.pattern);
+  playPattern(concrete, p.volume);
   for (let i = 1; i < reps; i++) {
-    const t = window.setTimeout(() => playPattern(p.pattern, p.volume), i * 1400);
+    const t = window.setTimeout(() => playPattern(concrete, p.volume), i * 1400);
     _pendingTimers.push(t);
+  }
+}
+
+/** Soft one-shot for inbox / status notifications (respects prefs; random by default). */
+export function playNotificationSound(prefs?: DriverSoundPrefs) {
+  const p = prefs ?? loadDriverSoundPrefs();
+  if (!p.enabled) return;
+  const volume = Math.max(0.2, Math.min(1, p.volume * 0.9));
+  playPattern(resolvePattern(p.pattern), volume);
+  if (p.vibrate && 'vibrate' in navigator) {
+    try { navigator.vibrate([40, 40, 40]); } catch {}
   }
 }
 
