@@ -4,7 +4,7 @@ import { SITE_ORIGIN } from '@/lib/site';
 export const APK_RELEASE_TAG = 'mobile-apks-v1';
 
 /** Bumped when `npm run mobile:apk` publishes a new build to the release. */
-export const APK_BUILD_VERSION = '1.0.7221236';
+export const APK_BUILD_VERSION = '1.0.7221252';
 
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
