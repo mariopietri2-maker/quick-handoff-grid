@@ -66,6 +66,18 @@ Deno.serve(async (req) => {
   const startedAt = new Date();
   const source = isInternalCron ? "cron" : "manual";
 
+  /** Always drain push outbox — customer/driver alerts must not wait for a dispatch hit. */
+  const drainPush = (limit = 40) => {
+    void fetch(`${supabaseUrl}/functions/v1/send-push`, {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${serviceKey}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({ limit, source: "auto-dispatch" }),
+    }).catch(() => {});
+  };
+
   // We only persist a dispatch_runs row when the run actually did something
   // (dispatched, expired, errored, or was a manual/admin call). This keeps
   // the table from filling up with thousands of empty cron no-ops.
@@ -102,6 +114,7 @@ Deno.serve(async (req) => {
     // Admin kill-switch: cron-driven calls early-exit when disabled.
     // Manual "Force dispatch" from the admin panel always runs (carries Authorization header).
     if (isInternalCron && settings && (settings as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled === false) {
+      drainPush();
       const payload = { ok: true, dispatched: 0, skipped: "auto_dispatch_disabled" };
       await logFinish(payload, true);
       return new Response(JSON.stringify(payload), {
@@ -138,6 +151,7 @@ Deno.serve(async (req) => {
 
     // 3) In manual mode we still expire offers above but stop here
     if (s.assignment_mode !== "auto") {
+      drainPush();
       const payload = { ok: true, mode: "manual", expired: expired?.length ?? 0 };
       await logFinish(payload, true);
       return json(payload);
@@ -157,6 +171,7 @@ Deno.serve(async (req) => {
 
     const orders = (candidates ?? []) as OrderRow[];
     if (orders.length === 0) {
+      drainPush();
       const payload = { ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0 };
       await logFinish(payload, true);
       return json(payload);
@@ -333,16 +348,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Drain push outbox (driver offers + customer status) so locked phones
-    // still get FCM alerts when credentials + device tokens are present.
-    void fetch(`${supabaseUrl}/functions/v1/send-push`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${serviceKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({ limit: 80 }),
-    }).catch(() => {});
+    // Smaller batches more often — avoids dumping 80 stacked alerts at once.
+    drainPush(40);
 
     const payload = {
       ok: true,
@@ -354,6 +361,7 @@ Deno.serve(async (req) => {
     await logFinish(payload, true);
     return json(payload);
   } catch (err) {
+    drainPush(20);
     const msg = err instanceof Error ? err.message : String(err);
     const payload = { ok: false, error: msg };
     await logFinish(payload, false, msg);

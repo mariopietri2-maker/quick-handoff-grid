@@ -21,18 +21,9 @@ export function useDriverNotifications() {
     void initNotificationChannels();
     void ensureNotificationPermission();
 
-    // Catch-up toast for unread (do NOT mark read — inbox owns that)
-    (async () => {
-      const { data } = await (supabase as any)
-        .from('driver_notifications')
-        .select('id, title, body, severity')
-        .eq('driver_id', user.id)
-        .is('read_at', null)
-        .order('created_at', { ascending: false })
-        .limit(3);
-
-      (data ?? []).forEach((n: any) => showNotification(n));
-    })();
+    // Do NOT replay unread inbox rows as OS notifications on mount —
+    // that felt like a random burst every time the driver opened the app.
+    // Live INSERTs below still toast + notify.
 
     const channel = supabase
       .channel(`driver-notifications-${user.id}`)
@@ -56,7 +47,7 @@ export function useDriverNotifications() {
   }, [user]);
 }
 
-function showNotification(n: { title: string; body: string; severity: string }) {
+function showNotification(n: { id?: string; title: string; body: string; severity: string }) {
   const opts = { description: n.body, duration: 10_000 };
   switch (n.severity) {
     case 'urgent':
@@ -71,7 +62,7 @@ function showNotification(n: { title: string; body: string; severity: string }) 
   void showOsNotification({
     title: n.title,
     body: n.body,
-    tag: 'driver-notif',
+    tag: `driver-notif:${n.id ?? n.title}`,
     vibrate: n.severity === 'urgent' || n.severity === 'warning',
   });
 }
