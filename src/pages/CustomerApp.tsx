@@ -751,7 +751,7 @@ export default function CustomerApp() {
                     setPendingCoords(null);
                     saveAddress('', null);
                   }}
-                  className="text-sm font-semibold text-[hsl(0,0%,40%)] px-3 py-2"
+                  className="text-sm font-semibold c-muted px-3 py-2"
                 >
                   Καθαρισμός
                 </button>

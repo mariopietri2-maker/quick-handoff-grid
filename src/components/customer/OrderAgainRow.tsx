@@ -50,7 +50,7 @@ export function OrderAgainRow() {
     <section className="pt-4">
       <div className="px-5 flex items-center gap-2 mb-2">
         <Repeat2 className="h-3.5 w-3.5 c-accent" strokeWidth={2.6} />
-        <h2 className="font-heading font-black text-[15px] text-[hsl(0,0%,9%)] leading-none tracking-tight">
+        <h2 className="font-heading font-black text-[15px] c-ink leading-none tracking-tight">
           Παράγγειλε ξανά
         </h2>
       </div>
@@ -69,7 +69,7 @@ export function OrderAgainRow() {
                   <div className="h-full w-full flex items-center justify-center text-2xl emoji">🍽️</div>
                 )}
               </div>
-              <p className="mt-1 text-[10px] font-extrabold text-[hsl(0,0%,9%)] truncate">{s.name}</p>
+              <p className="mt-1 text-[10px] font-extrabold c-ink truncate">{s.name}</p>
             </button>
           ))}
         </div>
