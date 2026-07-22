@@ -405,6 +405,8 @@ export default function DriverApp() {
   // - offer / delivery / break / cash-cap → job UI only (no online toggle)
   const hasIncomingOffers = !activeDelivery && offers.length > 0;
   const showJobSheet = !!activeDelivery || hasIncomingOffers || onBreak || cashCapped;
+  /** Uber-style: job sheets are fixed docks — only the idle GO bar can collapse. */
+  const sheetLocked = showJobSheet;
   const showCompactOnlineDock =
     sheetCollapsed &&
     !showJobSheet;
@@ -554,7 +556,7 @@ export default function DriverApp() {
 
           {/* Bottom sheet for in-app turn-by-turn — outside the scrollable column so it's always pinned */}
           {isNavActive && (
-            <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-auto animate-slide-up safe-area-bottom">
+            <div className="fixed bottom-0 left-0 right-0 z-30 pointer-events-auto safe-area-bottom">
               <NavBottomCard
                 title={navigatingTo === 'store'
                   ? (storeInfo?.name || 'Κατάστημα')
@@ -618,46 +620,46 @@ export default function DriverApp() {
             )}
 
             <div
-              className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[28px] shadow-[0_-12px_32px_-12px_hsl(220,18%,14%,0.18)] transition-[max-height] duration-300 ease-out ${
+              className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[22px] shadow-[0_-8px_28px_-10px_hsl(220,18%,14%,0.16)] flex flex-col ${
                 showCompactOnlineDock
                   ? 'overflow-hidden'
-                  : hasIncomingOffers
-                    ? 'max-h-[46vh] overflow-y-auto overscroll-contain scrollbar-thin'
-                    : activeDelivery
-                      ? 'max-h-[62vh] overflow-y-auto overscroll-contain scrollbar-thin'
-                      : 'max-h-[48vh] overflow-y-auto overscroll-contain scrollbar-thin'
+                  : sheetLocked
+                    ? hasIncomingOffers
+                      ? 'max-h-[min(420px,48vh)] overflow-hidden'
+                      : 'max-h-[min(560px,62vh)] overflow-hidden'
+                    : 'max-h-[48vh] overflow-hidden'
               }`}
             >
-              {/* Drag handle — locked during offers so the job card stays fixed */}
+              {/* Handle — decorative when locked (Uber job card); drag only for idle GO bar */}
               <div
-                className={`w-full flex items-center justify-center pt-2.5 pb-2 group select-none ${
-                  hasIncomingOffers
-                    ? 'cursor-default pointer-events-none opacity-40'
-                    : 'cursor-grab active:cursor-grabbing touch-none'
+                className={`w-full flex items-center justify-center pt-2 pb-1.5 select-none shrink-0 ${
+                  sheetLocked
+                    ? 'cursor-default pointer-events-none'
+                    : 'cursor-grab active:cursor-grabbing touch-none group'
                 }`}
                 role="button"
-                tabIndex={hasIncomingOffers ? -1 : 0}
+                tabIndex={sheetLocked ? -1 : 0}
                 aria-label={
-                  hasIncomingOffers
-                    ? 'Προσφορά κλειδωμένη'
+                  sheetLocked
+                    ? 'Κάρτα εργασίας'
                     : sheetCollapsed ? 'Άνοιγμα πίνακα' : 'Σύμπτυξη πίνακα'
                 }
                 title={
-                  hasIncomingOffers
-                    ? 'Η προσφορά δεν μετακινείται — αποδοχή ή απόρριψη'
+                  sheetLocked
+                    ? undefined
                     : sheetCollapsed ? 'Άνοιγμα — σύρε πάνω' : 'Σύμπτυξη — σύρε κάτω'
                 }
                 onClick={() => {
-                  if (hasIncomingOffers) return;
+                  if (sheetLocked) return;
                   if (!sheetDragMoved.current) setSheetCollapsed(v => !v);
                 }}
                 onTouchStart={(e) => {
-                  if (hasIncomingOffers) return;
+                  if (sheetLocked) return;
                   sheetDragStartY.current = e.touches[0].clientY;
                   sheetDragMoved.current = false;
                 }}
                 onTouchMove={(e) => {
-                  if (hasIncomingOffers || sheetDragStartY.current == null) return;
+                  if (sheetLocked || sheetDragStartY.current == null) return;
                   const dy = e.touches[0].clientY - sheetDragStartY.current;
                   if (Math.abs(dy) > 8) sheetDragMoved.current = true;
                   if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
@@ -665,13 +667,13 @@ export default function DriverApp() {
                 }}
                 onTouchEnd={() => { sheetDragStartY.current = null; }}
                 onPointerDown={(e) => {
-                  if (hasIncomingOffers) return;
+                  if (sheetLocked) return;
                   (e.currentTarget as HTMLDivElement).setPointerCapture(e.pointerId);
                   sheetDragStartY.current = e.clientY;
                   sheetDragMoved.current = false;
                 }}
                 onPointerMove={(e) => {
-                  if (hasIncomingOffers || sheetDragStartY.current == null) return;
+                  if (sheetLocked || sheetDragStartY.current == null) return;
                   const dy = e.clientY - sheetDragStartY.current;
                   if (Math.abs(dy) > 8) sheetDragMoved.current = true;
                   if (dy < -24 && sheetCollapsed) { setSheetCollapsed(false); sheetDragStartY.current = null; }
@@ -680,23 +682,30 @@ export default function DriverApp() {
                 onPointerUp={() => { sheetDragStartY.current = null; }}
                 onPointerCancel={() => { sheetDragStartY.current = null; }}
               >
-                <span className={`h-1.5 w-12 rounded-full transition-colors ${
-                  hasIncomingOffers
-                    ? 'bg-[hsl(var(--driver-text-muted))]/25'
-                    : 'bg-[hsl(var(--driver-text-muted))]/40 group-active:bg-[hsl(var(--driver-text-muted))]/70'
+                <span className={`h-1 w-10 rounded-full ${
+                  sheetLocked
+                    ? 'bg-[hsl(var(--driver-text-muted))]/20'
+                    : 'bg-[hsl(var(--driver-text-muted))]/45 group-active:bg-[hsl(var(--driver-text-muted))]/70'
                 }`} />
               </div>
 
               <div
-                className="px-3 space-y-2.5"
+                className={`px-3 flex-1 min-h-0 ${
+                  sheetLocked
+                    ? 'overflow-y-auto overscroll-contain scrollbar-thin'
+                    : showCompactOnlineDock
+                      ? ''
+                      : 'overflow-y-auto overscroll-contain scrollbar-thin'
+                }`}
                 style={{ paddingBottom: 'max(0.75rem, env(safe-area-inset-bottom, 0px))' }}
               >
+                <div className="space-y-2.5">
                 {showCompactOnlineDock ? (
-                  <div className="pb-1 space-y-2.5 animate-fade-in">
+                  <div className="pb-1 space-y-2.5">
                     <div className="flex items-center justify-center gap-2 px-1">
                       {isOnline ? (
                         <>
-                          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
+                          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))]" />
                           <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text-muted))]">
                             {loading ? 'Αναζήτηση…' : 'Αναμονή παραγγελιών'}
                           </p>
@@ -738,7 +747,7 @@ export default function DriverApp() {
                       <>
                         <StackedOrderBanner orderId={activeDelivery.id} />
                         {stackedOffers.length > 0 && (
-                          <div className="space-y-2.5 animate-slide-up">
+                          <div className="space-y-2.5">
                             {stackedOffers.map((offer, idx) => (
                               <StackedOfferCard
                                 key={offer.id}
@@ -756,8 +765,8 @@ export default function DriverApp() {
                                   cashToCollect: (offer as any).payment_method === 'cash'
                                     ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
                                     : null,
-                                  totalDistance: Number(offer.distance_km ?? 0),
-                                  estimatedTime: offer.estimated_prep_time ?? 20,
+                                  totalDistance: Number((offer as any).distance_km ?? 0),
+                                  estimatedTime: offer.estimated_prep_time ?? 15,
                                   itemCount: offer.order_items?.length ?? 0,
                                   predictedReadyAt: (offer as any).predicted_ready_at ?? null,
                                   orderStatus: offer.status ?? null,
@@ -769,12 +778,6 @@ export default function DriverApp() {
                                 timeoutSec={offerTimeoutSec}
                               />
                             ))}
-                          </div>
-                        )}
-                        {locError && (
-                          <div className="flex items-center gap-2 px-3 py-2.5 rounded-xl bg-destructive/10 border border-destructive/20 driver-glass">
-                            <Navigation className="h-3.5 w-3.5 text-destructive" />
-                            <span className="text-xs font-heading text-destructive">GPS: {locError}</span>
                           </div>
                         )}
                         <ActiveDelivery
@@ -808,7 +811,7 @@ export default function DriverApp() {
                     )}
 
                     {!activeDelivery && isOnline && !onBreak && cashCapped && (
-                      <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-4 animate-pop">
+                      <div className="rounded-2xl border-2 border-destructive bg-destructive/10 p-4">
                         <p className="font-heading font-bold text-sm text-destructive mb-1">🚫 Όριο μετρητών συμπληρώθηκε</p>
                         <p className="text-xs text-foreground/80 leading-relaxed">
                           Έχεις €{Number(driverState?.shift_cash_balance ?? 0).toFixed(2)} σε μετρητά (όριο €{maxCashCap}).
@@ -817,7 +820,7 @@ export default function DriverApp() {
                       </div>
                     )}
 
-                    {/* Offer mode — compact bottom card; map stays mostly visible */}
+                    {/* Offer mode — fixed dock; map stays visible above */}
                     {hasIncomingOffers && isOnline && !onBreak && !cashCapped && !loading && (
                       <div className="space-y-2 pb-1">
                         {offers.length > 1 && (
@@ -870,30 +873,25 @@ export default function DriverApp() {
 
                     {/* Online toggle — only when idle (no offer / trip). Uber GO bar pattern. */}
                     {!showJobSheet && (
-                      <div className="rounded-2xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))]/60 overflow-hidden transition-all duration-500 ease-out animate-scale-in">
+                      <div className="rounded-2xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))]/60 overflow-hidden">
                         {isOnline && !loading && (
-                          <div className="p-4 text-center animate-fade-in">
+                          <div className="p-4 text-center">
                             <div className="relative h-10 w-10 mx-auto mb-2">
-                              <div className="absolute inset-0 rounded-xl bg-primary/15 animate-ping opacity-30" />
                               <div className="relative h-10 w-10 rounded-xl bg-[hsl(var(--driver-surface))] flex items-center justify-center border border-primary/20">
-                                <Zap className="h-5 w-5 text-primary" />
+                                <Radio className="h-5 w-5 text-primary" />
                               </div>
                             </div>
-                            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Αναμονή Παραγγελιών</p>
-                            <div className="mt-2 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[hsl(var(--driver-accent))]/10 border border-[hsl(var(--driver-accent))]/15">
-                              <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] animate-pulse" />
-                              <span className="text-[10px] font-heading font-medium text-[hsl(var(--driver-accent))]">Ζωντανή Αναζήτηση</span>
-                            </div>
+                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Αναμονή παραγγελιών</p>
+                            <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Είσαι online — νέα προσφορά θα εμφανιστεί εδώ</p>
                           </div>
                         )}
                         {isOnline && loading && (
-                          <div className="p-4 text-center animate-fade-in">
-                            <div className="h-8 w-8 border-3 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-                            <p className="text-[hsl(var(--driver-text-muted))] font-heading text-xs">Αναζήτηση...</p>
+                          <div className="p-4 text-center">
+                            <p className="text-sm text-muted-foreground font-heading">Σύνδεση…</p>
                           </div>
                         )}
                         {!isOnline && (
-                          <div className="p-4 text-center animate-fade-in">
+                          <div className="p-4 text-center">
                             <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-2" />
                             <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
                             <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Σύρετε για να συνδεθείτε</p>
@@ -915,6 +913,7 @@ export default function DriverApp() {
                     )}
                   </>
                 )}
+                </div>
               </div>
             </div>
           </div>

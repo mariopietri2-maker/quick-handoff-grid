@@ -71,7 +71,7 @@ function StackedOfferCardInner({
   const readyLabel = readyEtaLabel(offer.predictedReadyAt, offer.orderStatus, offer.estimatedTime);
 
   return (
-    <div className="overflow-hidden rounded-2xl border border-[hsl(var(--driver-accent))]/35 bg-[hsl(var(--driver-surface))]">
+    <div className="overflow-hidden rounded-xl border border-[hsl(var(--driver-accent))]/30 bg-[hsl(var(--driver-surface-muted))]/40">
       <div className="flex items-center gap-2 border-b border-[hsl(var(--driver-border))] px-3 py-2">
         <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-md gradient-primary">
           <Layers className="h-3 w-3 text-primary-foreground" strokeWidth={2.5} />

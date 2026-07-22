@@ -111,12 +111,12 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
     : statusSteps.findIndex(s => s.key === delivery.status);
 
   return (
-    <div className="space-y-3">
-      {/* Unified delivery card */}
-      <div className="driver-card overflow-hidden">
+    <div className="flex flex-col gap-3">
+      {/* Trip content — flat in sheet (no nested floating card) */}
+      <div className="overflow-hidden rounded-xl border border-[hsl(var(--driver-border))]/70 bg-[hsl(var(--driver-surface-muted))]/35">
         {/* Predicted ready banner — only before store flips to ready */}
         {!isReady && delivery.predictedReadyAt && (
-          <div className="px-5 py-3 flex items-center gap-3 bg-[hsl(var(--driver-accent))]/6 border-b border-[hsl(var(--driver-border))]">
+          <div className="px-4 py-3 flex items-center gap-3 border-b border-[hsl(var(--driver-border))]">
             <div className="h-9 w-9 rounded-full bg-[hsl(var(--driver-accent))]/12 flex items-center justify-center shrink-0">
               <Clock className="h-4 w-4 text-[hsl(var(--driver-accent))]" />
             </div>
@@ -125,14 +125,14 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
                 {etaMin === 0 ? 'Έτοιμη όπου να ναι' : `Έτοιμη σε ~${etaMin} λεπτά`}
               </p>
               <p className="text-[11px] text-[hsl(var(--driver-text-muted))] leading-tight mt-0.5">
-                Πρόβλεψη ML — η παραλαβή ξεκλειδώνει μόλις το κατάστημα την ετοιμάσει
+                Η παραλαβή ξεκλειδώνει μόλις το κατάστημα την ετοιμάσει
               </p>
             </div>
           </div>
         )}
 
         {/* Status stepper */}
-        <div className="px-5 pt-5 pb-4 border-b border-[hsl(var(--driver-border))]">
+        <div className="px-4 pt-4 pb-3 border-b border-[hsl(var(--driver-border))]">
           <div className="flex items-center justify-between mb-3.5">
             {statusSteps.map((step, i) => {
               const Icon = step.icon;
@@ -273,25 +273,30 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
       {/* Wait time bonus */}
       <WaitTimeBonusBanner orderId={delivery.id} status={delivery.status} />
 
-      {/* Main CTA */}
+      {/* Sticky main CTA — Uber trip sheet pattern */}
       {nextAction && (
-        <button
-          onClick={() => {
-            if (nextAction.locked) return;
-            if (nextAction.next === 'delivered') setConfirmDeliver(true);
-            else onStatusUpdate(nextAction.next);
-          }}
-          disabled={nextAction.locked}
-          className={`w-full h-14 rounded-full text-[15px] font-heading font-bold transition-all flex items-center justify-center gap-2 ${
-            nextAction.locked
-              ? 'bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))] cursor-not-allowed'
-              : 'bg-[hsl(var(--driver-accent))] text-white driver-glow-green hover:brightness-105 active:scale-[0.97]'
-          }`}
+        <div
+          className="sticky bottom-0 z-10 -mx-3 border-t border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface))] px-3 pt-2.5"
+          style={{ paddingBottom: 'max(0.25rem, env(safe-area-inset-bottom, 0px))' }}
         >
-          {nextAction.locked ? <Lock className="h-5 w-5" /> : null}
-          {nextAction.label}
-          {!nextAction.locked && <ChevronRight className="h-5 w-5" />}
-        </button>
+          <button
+            onClick={() => {
+              if (nextAction.locked) return;
+              if (nextAction.next === 'delivered') setConfirmDeliver(true);
+              else onStatusUpdate(nextAction.next);
+            }}
+            disabled={nextAction.locked}
+            className={`w-full h-12 rounded-full text-[15px] font-heading font-bold transition-all flex items-center justify-center gap-2 ${
+              nextAction.locked
+                ? 'bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text-muted))] border border-[hsl(var(--driver-border))] cursor-not-allowed'
+                : 'bg-[hsl(var(--driver-accent))] text-white active:scale-[0.98]'
+            }`}
+          >
+            {nextAction.locked ? <Lock className="h-5 w-5" /> : null}
+            {nextAction.label}
+            {!nextAction.locked && <ChevronRight className="h-5 w-5" />}
+          </button>
+        </div>
       )}
 
       <Dialog open={confirmDeliver} onOpenChange={setConfirmDeliver}>
