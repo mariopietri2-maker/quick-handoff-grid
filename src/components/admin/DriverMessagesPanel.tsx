@@ -106,7 +106,8 @@ export default function DriverMessagesPanel() {
           <Mail className="h-5 w-5 text-primary" /> Μηνύματα οδηγών
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Τα μηνύματα εμφανίζονται στην οθόνη <strong>Μηνύματα → Εισερχόμενα</strong> της εφαρμογής οδηγού.
+          Τα μηνύματα εμφανίζονται στην οθόνη <strong>Μηνύματα → Εισερχόμενα</strong> και ο οδηγός
+          παίρνει ήσυχη ειδοποίηση τύπου email (όχι συναγερμό προσφοράς).
         </p>
       </div>
 

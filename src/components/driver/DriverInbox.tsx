@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { el } from 'date-fns/locale';
-import { Bell, Mail, MailOpen, LifeBuoy, Loader2 } from 'lucide-react';
+import { Mail, MailOpen, LifeBuoy, Loader2 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -139,10 +139,10 @@ export default function DriverInbox() {
         </p>
         {notifs.length === 0 ? (
           <div className="driver-card p-6 text-center">
-            <Bell className="h-8 w-8 mx-auto text-[hsl(var(--driver-text-muted))] mb-2 opacity-60" />
+            <Mail className="h-8 w-8 mx-auto text-[hsl(var(--driver-text-muted))] mb-2 opacity-60" />
             <p className="text-sm font-medium text-[hsl(var(--driver-text))]">Κανένα μήνυμα ακόμα</p>
             <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">
-              Όταν admin ή support σου στείλουν μήνυμα, θα εμφανιστεί εδώ.
+              Όταν admin ή support σου στείλουν μήνυμα, θα λάβεις ειδοποίηση σαν email και θα εμφανιστεί εδώ.
             </p>
           </div>
         ) : (
