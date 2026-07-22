@@ -121,6 +121,18 @@ export function useAdminData() {
     },
   });
 
+  const driverLocations = useQuery({
+    queryKey: ['admin-driver-locations'],
+    refetchInterval: poll,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('driver_locations')
+        .select('driver_id, updated_at');
+      if (error) throw error;
+      return (data ?? []) as { driver_id: string; updated_at: string }[];
+    },
+  });
+
   const driverWallets = useQuery({
     queryKey: ['admin-driver-wallets'],
     refetchInterval: poll,
@@ -145,5 +157,5 @@ export function useAdminData() {
     },
   });
 
-  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets, storeWallets };
+  return { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverLocations, driverWallets, storeWallets };
 }
