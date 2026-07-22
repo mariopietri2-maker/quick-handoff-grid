@@ -91,13 +91,16 @@ export function loadDriverSoundPrefs(): DriverSoundPrefs {
   try {
     const raw = localStorage.getItem(KEY);
     if (!raw) {
-      // try legacy key migration
-      const legacy = localStorage.getItem('qg.driver.sound.prefs.v1');
-      if (legacy) {
+      for (const legacyKey of LEGACY_KEYS) {
+        const legacy = localStorage.getItem(legacyKey);
+        if (!legacy) continue;
         const parsedLegacy = { ...DEFAULTS, ...JSON.parse(legacy) } as DriverSoundPrefs;
+        // New default: random SFX on every notification (keep volume / vibrate / repeats).
+        parsedLegacy.pattern = 'random';
         if (!VALID.includes(parsedLegacy.pattern)) {
-          parsedLegacy.pattern = PATTERN_MIGRATIONS[parsedLegacy.pattern as string] ?? 'random';
+          parsedLegacy.pattern = 'random';
         }
+        try { localStorage.setItem(KEY, JSON.stringify(parsedLegacy)); } catch {}
         return parsedLegacy;
       }
       return DEFAULTS;
