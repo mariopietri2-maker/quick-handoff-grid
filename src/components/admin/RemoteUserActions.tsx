@@ -133,7 +133,8 @@ export default function RemoteUserActions() {
           <UserCog className="h-5 w-5" /> Remote User Actions
         </h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Στείλε μήνυμα στα Εισερχόμενα οδηγού, password reset, ή ban.
+          Μήνυμα στα Εισερχόμενα οδηγού (κουμπί ✉️), password reset, ή ban.
+          Για γρήγορα μηνύματα οδηγών χρησιμοποίησε και <strong>Οδηγοί → Μηνύματα</strong>.
         </p>
       </div>
 

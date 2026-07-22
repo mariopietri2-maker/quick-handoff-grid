@@ -130,7 +130,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
       sender_id: (await supabase.auth.getUser()).data.user?.id ?? null,
     });
     if (error) { toast.error(error.message); setLoading(false); return; }
-    toast.success('Push εστάλη στον οδηγό');
+    toast.success('Στάλθηκε στα Εισερχόμενα του οδηγού');
     close();
   };
 
@@ -223,7 +223,7 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
           {isDriverTicket && (
             <>
               <ToolBtn icon={MapPin} label="Θέση οδηγού" onClick={() => setOpen('location')} />
-              <ToolBtn icon={BellRing} label="Push μήνυμα" onClick={() => setOpen('broadcast')} />
+              <ToolBtn icon={BellRing} label="Μήνυμα inbox" onClick={() => setOpen('broadcast')} />
               <ToolBtn icon={Ban} label="Αναστολή" tone="warn" onClick={() => setOpen('suspend')} />
               <ToolBtn
                 icon={RotateCcw}
@@ -328,8 +328,10 @@ export function SupportActionToolbox({ ticket, driver, onDriverChanged }: Props)
         <Dialog open={open === 'broadcast'} onOpenChange={(o) => !o && close()}>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle className="flex items-center gap-2"><BellRing className="h-5 w-5" /> Στείλε push στον οδηγό</DialogTitle>
-              <DialogDescription>Εμφανίζεται ως toast στην εφαρμογή του οδηγού.</DialogDescription>
+              <DialogTitle className="flex items-center gap-2"><BellRing className="h-5 w-5" /> Στείλε μήνυμα στον οδηγό</DialogTitle>
+              <DialogDescription>
+                Εμφανίζεται στα <strong>Μηνύματα → Εισερχόμενα</strong> του οδηγού (και ως ειδοποίηση).
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-3">
               <div>

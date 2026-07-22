@@ -15,12 +15,13 @@ import { SupportAIPanel } from '@/components/support/SupportAIPanel';
 
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
+import DriverMessagesPanel from '@/components/admin/DriverMessagesPanel';
 import { DriverProfilePanel } from '@/components/support/DriverProfilePanel';
 import { CustomerProfilePanel } from '@/components/support/CustomerProfilePanel';
 import { SlaSettingsPanel } from '@/components/support/SlaSettingsPanel';
 import { TeamChat } from '@/components/support/TeamChat';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
-import { Users } from 'lucide-react';
+import { Users, Mail } from 'lucide-react';
 import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
@@ -85,7 +86,7 @@ export default function SupportApp() {
   const [activeTicket, setActiveTicket] = useState<any | null>(null);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
-  const [view, setView] = useState<'tickets' | 'team' | 'dcc'>('tickets');
+  const [view, setView] = useState<'tickets' | 'team' | 'dcc' | 'messages'>('tickets');
   const chatRef = useRef<TicketChatHandle>(null);
 
   const { data: tickets } = useQuery({
@@ -356,6 +357,14 @@ export default function SupportApp() {
             <MessageSquare className="h-3.5 w-3.5" /> Tickets
           </button>
           <button
+            onClick={() => setView('messages')}
+            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'messages' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            }`}
+          >
+            <Mail className="h-3.5 w-3.5" /> Μηνύματα
+          </button>
+          <button
             onClick={() => setView('team')}
             className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
               view === 'team' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
@@ -386,6 +395,11 @@ export default function SupportApp() {
         <div className="p-4 max-w-7xl mx-auto space-y-4">
           <AnnouncementsBanner audience="support" />
           <TeamChat />
+        </div>
+      ) : view === 'messages' ? (
+        <div className="p-4 max-w-3xl mx-auto space-y-4">
+          <AnnouncementsBanner audience="support" />
+          <DriverMessagesPanel />
         </div>
       ) : view === 'dcc' ? (
         <div className="p-4 max-w-7xl mx-auto space-y-4">
