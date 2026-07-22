@@ -34,24 +34,42 @@ function playTones(frequencies: number[], type: OscillatorType = 'sine', duratio
 }
 
 /**
- * Play a notification chime (classic order bell — ascending C major chord).
+ * Play a notification chime — random short melody for new store orders.
  */
 export function playOrderSound() {
-  playTones([523.25, 659.25, 783.99]);
+  const patterns: number[][] = [
+    [523.25, 659.25, 783.99],       // C major
+    [392.0, 523.25, 659.25],        // G → C → E
+    [587.33, 739.99, 880.0],        // D major-ish
+    [440.0, 554.37, 659.25],        // A → C# → E
+    [349.23, 440.0, 523.25],        // F → A → C
+    [659.25, 783.99, 987.77],       // E → G → B
+  ];
+  const freqs = patterns[Math.floor(Math.random() * patterns.length)]!;
+  playTones(freqs);
 }
 
 /**
- * Play a driver delivery alert — two quick low tones.
+ * Play a driver delivery alert — two quick low tones (randomized pair).
  */
 export function playDeliverySound() {
-  playTones([440, 554.37], 'triangle', 0.18, 0.1, 0.35);
+  const pairs: [number, number][] = [
+    [440, 554.37],
+    [392, 523.25],
+    [349.23, 440],
+    [493.88, 587.33],
+  ];
+  const [a, b] = pairs[Math.floor(Math.random() * pairs.length)]!;
+  playTones([a, b], 'triangle', 0.18, 0.1, 0.35);
 }
 
 /**
- * Play a soft status-update chime — single short tone for customers.
+ * Play a soft status-update chime — random short tone for customers.
  */
 export function playStatusUpdateSound() {
-  playTones([880], 'sine', 0.18, 0, 0.18);
+  const tones = [784, 880, 698.46, 987.77, 659.25];
+  const freq = tones[Math.floor(Math.random() * tones.length)]!;
+  playTones([freq], 'sine', 0.18, 0, 0.18);
 }
 
 /**

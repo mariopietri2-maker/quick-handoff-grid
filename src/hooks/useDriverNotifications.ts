@@ -9,6 +9,7 @@ import {
   showOsNotification,
 } from '@/lib/push-notifications';
 import { isAppActive } from '@/lib/push-register';
+import { playNotificationSound } from '@/lib/driver-sound-prefs';
 
 /**
  * Subscribes the logged-in driver to admin/support inbox messages.
@@ -64,7 +65,7 @@ function showInboxMail(
   const subject = n.title?.trim() || 'Νέο μήνυμα';
   const preview = (n.body || '').trim().slice(0, 120);
 
-  // Soft in-app banner — email style, not offer alarm. Whole toast opens inbox.
+  // Soft in-app banner — email style, not offer alarm.
   toast(`✉️ ${subject}`, {
     description: preview || 'Πάτα για να ανοίξεις το μήνυμα.',
     duration: n.severity === 'urgent' ? 10_000 : 7_000,
@@ -74,9 +75,9 @@ function showInboxMail(
     },
   });
 
-  // Foreground only: when backgrounded/killed, FCM (driver-inbox channel) covers it.
-  // Avoid stacking local + FCM when the app is already in the background.
+  // Random (or preferred) one-shot SFX while the app is active.
   if (isAppActive()) {
+    playNotificationSound();
     void showOsNotification({
       title: 'Νέο μήνυμα',
       body: subject + (preview ? ` — ${preview}` : ''),
