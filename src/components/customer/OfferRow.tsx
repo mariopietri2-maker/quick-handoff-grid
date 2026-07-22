@@ -46,7 +46,7 @@ export function OfferRow({
         <div className="flex-1 min-w-0">
           <div className="flex items-center gap-2">
             {eyebrow}
-            <h2 className="font-heading font-black text-[20px] text-[hsl(0,0%,9%)] leading-tight tracking-tight truncate">
+            <h2 className="font-heading font-black text-[20px] c-ink leading-tight tracking-tight truncate">
               {title}
             </h2>
           </div>
