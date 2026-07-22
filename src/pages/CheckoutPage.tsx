@@ -300,7 +300,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
         <SEO
           title="Καλάθι αγορών — Fresh Delivery"
           description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο Fresh Delivery."
@@ -326,7 +326,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
+    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
       <SEO
         title="Ολοκλήρωση παραγγελίας — Fresh Delivery"
         description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."

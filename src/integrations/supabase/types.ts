@@ -2762,12 +2762,14 @@ export type Database = {
           busy_mode: boolean | null
           commission_pct: number | null
           covers_delivery_fee: boolean
+          cover_image_url: string | null
           created_at: string
           doy: string | null
           ext_billing_mode: string
           ext_commission_pct: number
           ext_flat_fee: number
           ext_margin_pct: number
+          highlight_color: string | null
           holiday_dates: string[] | null
           id: string
           image_url: string | null
@@ -2781,6 +2783,7 @@ export type Database = {
           owner_id: string
           phone: string | null
           prep_buffer_minutes: number | null
+          promo_badge: string | null
           promotion_amount_paid: number
           promotion_approved_by: string | null
           promotion_ends_at: string | null
@@ -2789,6 +2792,7 @@ export type Database = {
           promotion_status: string
           suspended_at: string | null
           suspension_reason: string | null
+          tagline: string | null
           updated_at: string
         }
         Insert: {
@@ -2797,12 +2801,14 @@ export type Database = {
           busy_mode?: boolean | null
           commission_pct?: number | null
           covers_delivery_fee?: boolean
+          cover_image_url?: string | null
           created_at?: string
           doy?: string | null
           ext_billing_mode?: string
           ext_commission_pct?: number
           ext_flat_fee?: number
           ext_margin_pct?: number
+          highlight_color?: string | null
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -2816,6 +2822,7 @@ export type Database = {
           owner_id: string
           phone?: string | null
           prep_buffer_minutes?: number | null
+          promo_badge?: string | null
           promotion_amount_paid?: number
           promotion_approved_by?: string | null
           promotion_ends_at?: string | null
@@ -2824,6 +2831,7 @@ export type Database = {
           promotion_status?: string
           suspended_at?: string | null
           suspension_reason?: string | null
+          tagline?: string | null
           updated_at?: string
         }
         Update: {
@@ -2832,12 +2840,14 @@ export type Database = {
           busy_mode?: boolean | null
           commission_pct?: number | null
           covers_delivery_fee?: boolean
+          cover_image_url?: string | null
           created_at?: string
           doy?: string | null
           ext_billing_mode?: string
           ext_commission_pct?: number
           ext_flat_fee?: number
           ext_margin_pct?: number
+          highlight_color?: string | null
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -2851,6 +2861,7 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           prep_buffer_minutes?: number | null
+          promo_badge?: string | null
           promotion_amount_paid?: number
           promotion_approved_by?: string | null
           promotion_ends_at?: string | null
@@ -2859,6 +2870,7 @@ export type Database = {
           promotion_status?: string
           suspended_at?: string | null
           suspension_reason?: string | null
+          tagline?: string | null
           updated_at?: string
         }
         Relationships: []

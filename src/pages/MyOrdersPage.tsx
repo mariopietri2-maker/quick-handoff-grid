@@ -86,7 +86,7 @@ export default function MyOrdersPage() {
   };
 
   return (
-    <div className="customer-shell min-h-full bg-white pb-4">
+    <div className="customer-shell min-h-full c-page pb-4">
       <SEO
         title="Οι παραγγελίες μου — Fresh Delivery"
         description="Δείτε το ιστορικό παραγγελιών σας, παρακολουθήστε ενεργές αποστολές και επαναλάβετε αγαπημένες παραγγελίες."
@@ -94,7 +94,7 @@ export default function MyOrdersPage() {
         noindex
       />
       <header
-        className="bg-white border-b border-[hsl(0,0%,92%)] px-4 py-4 sticky top-0 z-40"
+        className="c-header border-b px-4 py-4 sticky top-0 z-40"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         <h1 className="font-heading font-extrabold text-[22px] text-[hsl(0,0%,9%)] tracking-tight">

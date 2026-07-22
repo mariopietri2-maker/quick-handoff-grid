@@ -46,8 +46,8 @@ export default function CustomerBottomNav() {
 
   const itemClass = (id: TabId) =>
     cn(
-      'c-nav-item flex flex-col items-center justify-center gap-0.5 text-[hsl(0,0%,42%)] active:scale-95 transition-transform',
-      active === id && 'c-nav-item-active text-[hsl(0,0%,9%)]',
+      'c-nav-item flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform',
+      active === id && 'c-nav-item-active',
     );
 
   const labelClass = (id: TabId) =>
@@ -58,7 +58,7 @@ export default function CustomerBottomNav() {
 
   return (
     <nav
-      className="fixed bottom-0 left-0 right-0 z-50 bg-white border-t border-[hsl(0,0%,90%)]"
+      className="fixed bottom-0 left-0 right-0 z-50 c-nav-bar border-t"
       style={{ paddingBottom: 'var(--app-safe-bottom)' }}
       aria-label="Κύρια πλοήγηση"
     >

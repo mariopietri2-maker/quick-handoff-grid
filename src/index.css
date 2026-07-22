@@ -349,30 +349,58 @@
     --c-border: 0 0% 90%;
     --c-text: 0 0% 9%;
     --c-text-muted: 0 0% 38%;
+    --c-text-soft: 0 0% 42%;
     --c-accent: 152 100% 39%;         /* Uber Eats green */
     --c-accent-soft: 152 100% 39% / 0.12;
     --c-accent-dark: 152 100% 28%;
     --c-radius: 12px;
+    --c-elevated: 0 0% 100%;
     background: hsl(var(--c-bg));
     color: hsl(var(--c-text));
+    color-scheme: light;
   }
-  /* Make status-bar safe area match the white header instead of showing body grey */
+  html.dark .customer-shell {
+    --c-bg: 0 0% 7%;
+    --c-surface: 0 0% 10%;
+    --c-surface-muted: 0 0% 14%;
+    --c-border: 0 0% 18%;
+    --c-text: 0 0% 96%;
+    --c-text-muted: 0 0% 62%;
+    --c-text-soft: 0 0% 58%;
+    --c-accent-soft: 152 100% 45% / 0.18;
+    --c-elevated: 0 0% 12%;
+    color-scheme: dark;
+  }
+  /* Make status-bar safe area match the header instead of showing body grey */
   html:has(.customer-shell),
   body:has(.customer-shell) {
     background-color: #fff;
   }
+  html.dark:has(.customer-shell),
+  html.dark body:has(.customer-shell) {
+    background-color: #121212;
+  }
   .customer-shell .c-accent { color: hsl(var(--c-accent)); }
   .customer-shell .c-bg-accent { background: hsl(var(--c-accent)); color: #fff; }
   .customer-shell .c-bg-accent-soft { background: hsl(var(--c-accent-soft)); color: hsl(var(--c-accent-dark)); }
+  html.dark .customer-shell .c-bg-accent-soft { color: hsl(var(--c-accent)); }
   .customer-shell .c-card {
     background: hsl(var(--c-surface));
     border: 1px solid hsl(var(--c-border));
     border-radius: var(--c-radius);
   }
   .customer-shell .c-muted { color: hsl(var(--c-text-muted)); }
+  .customer-shell .c-ink { color: hsl(var(--c-text)); }
+  .customer-shell .c-soft { color: hsl(var(--c-text-soft)); }
   .customer-shell .c-chip {
     background: hsl(var(--c-surface-muted));
     border-radius: 999px;
+  }
+  .customer-shell .c-page { background: hsl(var(--c-bg)); }
+  .customer-shell .c-header {
+    background: hsl(var(--c-surface) / 0.92);
+    border-color: hsl(var(--c-border));
+    backdrop-filter: blur(12px);
   }
   .customer-shell .c-gradient-hero {
     background: linear-gradient(120deg, hsl(152 100% 32%), hsl(152 80% 42%) 55%, hsl(168 70% 48%));
@@ -380,9 +408,31 @@
   .customer-shell .c-gradient-dark {
     background: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 18%));
   }
+  .customer-shell .c-ambient {
+    pointer-events: none;
+    position: absolute;
+    inset: 0 0 auto 0;
+    height: 280px;
+    background:
+      radial-gradient(70% 80% at 12% 0%, hsl(var(--c-accent) / 0.18), transparent 60%),
+      radial-gradient(55% 70% at 88% 8%, hsl(168 70% 48% / 0.12), transparent 55%);
+    opacity: 0.9;
+    animation: customer-ambient-drift 14s ease-in-out infinite alternate;
+  }
+  @keyframes customer-ambient-drift {
+    from { transform: translate3d(0, 0, 0) scale(1); }
+    to { transform: translate3d(0, 10px, 0) scale(1.04); }
+  }
   .customer-shell h1, .customer-shell h2, .customer-shell h3 {
     letter-spacing: -0.02em;
   }
+  .customer-shell .c-nav-bar {
+    background: hsl(var(--c-surface) / 0.96);
+    border-color: hsl(var(--c-border));
+    backdrop-filter: blur(14px);
+  }
+  .customer-shell .c-nav-item { color: hsl(var(--c-text-soft)); }
+  .customer-shell .c-nav-item-active { color: hsl(var(--c-text)); }
 
   /* AI marketing cards — professional motion shells */
   .customer-shell .ai-card-shell {

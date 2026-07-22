@@ -43,6 +43,7 @@ const StorePromotionsManager = lazy(() => import('@/components/admin/StorePromot
 const SystemResetPanel       = lazy(() => import('@/components/admin/SystemResetPanel'));
 const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerAppCustomization'));
 const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'));
+const AdminStoreAppearance = lazy(() => import('@/components/admin/AdminStoreAppearance'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
@@ -453,6 +454,8 @@ export default function AdminApp() {
         return <StoreBillingSettings />;
       case 'promotions':
         return <StorePromotionsManager />;
+      case 'store_appearance':
+        return <AdminStoreAppearance />;
       case 'system_reset':
         return <SystemResetPanel />;
       case 'customer_app_config':
