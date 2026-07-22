@@ -47,6 +47,66 @@ export function wasLocalNotifyShown(key: string): boolean {
   return Date.now() - t < LOCAL_DEDUP_MS;
 }
 
+/** Resolve a deep-link path from FCM or local notification payloads. */
+export function resolveNotificationPath(notification: {
+  data?: Record<string, unknown> | null;
+  extra?: Record<string, unknown> | null;
+} | null | undefined): string | null {
+  if (!notification) return null;
+  const data = (notification.data ?? {}) as Record<string, unknown>;
+  const extra = (notification.extra ?? {}) as Record<string, unknown>;
+  const pick = (...vals: unknown[]) => {
+    for (const v of vals) {
+      if (typeof v === 'string' && v.startsWith('/')) return v;
+    }
+    return null;
+  };
+
+  const direct = pick(
+    data.path,
+    extra.path,
+    data['gcm.notification.path'],
+  );
+  if (direct) {
+    const msgId = data.notification_id ?? extra.notification_id;
+    if (
+      typeof msgId === 'string' &&
+      msgId &&
+      direct.startsWith('/driver') &&
+      !direct.includes('msg=')
+    ) {
+      const sep = direct.includes('?') ? '&' : '?';
+      return `${direct}${sep}msg=${encodeURIComponent(msgId)}`;
+    }
+    return direct;
+  }
+
+  const type = String(data.type ?? extra.type ?? '');
+  const channel = String(data.channel ?? extra.channel ?? '');
+  const msgId = data.notification_id ?? extra.notification_id;
+  if (type === 'inbox' || channel === 'driver-inbox') {
+    if (typeof msgId === 'string' && msgId) {
+      return `/driver?tab=inbox&msg=${encodeURIComponent(msgId)}`;
+    }
+    return '/driver?tab=inbox';
+  }
+  return null;
+}
+
+export function openPushPath(path: string) {
+  if (!path.startsWith('/')) return;
+  try {
+    // Full assign so cold-start / Capacitor WebView reliably lands on the tab
+    // even when React Router hasn't finished hydrating.
+    window.location.assign(path);
+  } catch {
+    try {
+      window.history.pushState({}, '', path);
+      window.dispatchEvent(new PopStateEvent('popstate'));
+    } catch { /* noop */ }
+  }
+}
+
 async function upsertToken(userId: string, token: string, app: MobileAppFlavor) {
   // Only persist for dedicated shells — shared/web browser skips remote push tokens.
   if (app !== 'customer' && app !== 'driver') return;
@@ -108,13 +168,18 @@ export async function startPushRegistration(userId: string | null | undefined) {
     });
 
     PushNotifications.addListener('pushNotificationActionPerformed', (action) => {
-      const data = (action.notification?.data ?? {}) as Record<string, string>;
-      const path = data.path;
-      if (path && typeof path === 'string' && path.startsWith('/')) {
-        try {
-          window.location.assign(path);
-        } catch { /* noop */ }
-      }
+      const path = resolveNotificationPath(action.notification as any);
+      if (path) openPushPath(path);
+    });
+
+    // Foreground inbox/offer banners are LocalNotifications — must handle taps too.
+    LocalNotifications.addListener('localNotificationActionPerformed', (action) => {
+      const n = action.notification as { extra?: Record<string, unknown>; data?: Record<string, unknown> };
+      const path = resolveNotificationPath({
+        data: n?.data,
+        extra: n?.extra,
+      });
+      if (path) openPushPath(path);
     });
   }
 

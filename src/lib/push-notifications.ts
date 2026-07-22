@@ -44,6 +44,9 @@ export async function showOsNotification(opts: {
   tag?: string;
   vibrate?: boolean;
   channelId?: string;
+  /** Deep-link path opened when the local notification is tapped (native). */
+  path?: string;
+  extra?: Record<string, unknown>;
 }) {
   if (!permissionGranted) {
     await ensureNotificationPermission();
@@ -52,6 +55,10 @@ export async function showOsNotification(opts: {
   try {
     if (isNative) {
       const key = opts.tag || `${opts.title}:${opts.body}`;
+      const extra = {
+        ...(opts.extra ?? {}),
+        ...(opts.path ? { path: opts.path } : {}),
+      };
       await LocalNotifications.schedule({
         notifications: [
           {
@@ -61,6 +68,7 @@ export async function showOsNotification(opts: {
             schedule: { at: new Date(Date.now() + 50) },
             smallIcon: 'ic_stat_icon_config_sample',
             channelId: opts.channelId ?? 'driver-offers',
+            ...(Object.keys(extra).length ? { extra } : {}),
           },
         ],
       });
@@ -71,6 +79,7 @@ export async function showOsNotification(opts: {
       const init: NotificationOptions = {
         body: opts.body,
         tag: opts.tag,
+        data: opts.path ? { path: opts.path, ...(opts.extra ?? {}) } : opts.extra,
         // @ts-expect-error vibrate not in TS lib for all browsers
         vibrate: opts.vibrate ? [200, 100, 200] : undefined,
         icon: '/favicon.svg',
