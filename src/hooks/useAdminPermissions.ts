@@ -90,6 +90,7 @@ export const ADMIN_SECTION_CAPABILITY: Record<string, AdminCapability> = {
   support_roles: 'users',
   admin_perms: 'users',
   remote_actions: 'users',
+  driver_messages: 'users',
   financials: 'finances',
   store_payables: 'finances',
   driver_payables: 'finances',

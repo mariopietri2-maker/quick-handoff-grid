@@ -33,6 +33,7 @@ const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditT
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
 const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
 const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserActions'));
+const DriverMessagesPanel    = lazy(() => import('@/components/admin/DriverMessagesPanel'));
 const AdminPermissionsManager= lazy(() => import('@/components/admin/AdminPermissionsManager'));
 const CannedRepliesManager   = lazy(() => import('@/components/admin/CannedRepliesManager'));
 const ExternalOrderIngest    = lazy(() => import('@/components/admin/ExternalOrderIngest'));
@@ -437,6 +438,8 @@ export default function AdminApp() {
         return <FeatureFlagsManager />;
       case 'overrides':
         return <OperationalOverrides />;
+      case 'driver_messages':
+        return <DriverMessagesPanel />;
       case 'remote_actions':
         return <RemoteUserActions />;
       case 'admin_perms':
