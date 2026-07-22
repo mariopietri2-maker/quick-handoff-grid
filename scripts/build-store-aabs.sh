@@ -162,7 +162,6 @@ write_release_cap_config() {
       "https://ojkesspghyqmjmupybva.supabase.co/*",
       "https://*.supabase.co/*",
       "https://quick-handoff-grid-production.up.railway.app/*",
-      "https://quick-handoff-grid.vercel.app/*",
       "https://api.mapbox.com/*"
     ]
   },
