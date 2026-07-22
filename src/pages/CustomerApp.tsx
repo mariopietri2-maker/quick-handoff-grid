@@ -28,10 +28,17 @@ import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
+import { AiSpotlightCard, AiCardStrip } from '@/components/customer/AiSpotlightCard';
 import { storeMatchesCategory } from '@/lib/category-match';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
 
-type StoreRow = Database['public']['Tables']['stores']['Row'];
+type StoreRow = Database['public']['Tables']['stores']['Row'] & {
+  cover_image_url?: string | null;
+  tagline?: string | null;
+  promo_badge?: string | null;
+  highlight_color?: string | null;
+  covers_delivery_fee?: boolean;
+};
 
 export default function CustomerApp() {
   const t = useT();
@@ -288,21 +295,50 @@ export default function CustomerApp() {
   );
 
   return (
-    <div className="bg-white min-h-full">
+    <div className="c-page min-h-full relative">
       <AppSplash />
       <SEO
-        title="Παραγγείλτε φαγητό online — Fresh Delivery"
+        title={`Παραγγείλτε φαγητό online — ${cfg.branding.app_name}`}
         description="Ανακαλύψτε εστιατόρια κοντά σας, παραγγείλτε φαγητό online και παρακολουθήστε την παράδοση σε πραγματικό χρόνο."
         path="/order"
       />
       <h1 className="sr-only">Παραγγείλτε φαγητό online από εστιατόρια κοντά σας</h1>
 
-      {/* Uber-style sticky header: address + search */}
       <header
-        className="sticky top-0 z-40 bg-white border-b border-[hsl(0,0%,92%)]"
+        className="sticky top-0 z-40 c-header border-b"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
+          {cfg.branding.show_header_brand && (
+            <div className="flex items-center gap-2.5 mb-2.5 animate-fade-in">
+              <div
+                className="h-8 w-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]"
+                style={{
+                  background: cfg.branding.logo_url
+                    ? 'hsl(var(--c-surface-muted))'
+                    : 'linear-gradient(135deg, hsl(var(--c-accent)), hsl(var(--c-accent-dark)))',
+                }}
+              >
+                {cfg.branding.logo_url ? (
+                  <img src={cfg.branding.logo_url} alt="" className="h-full w-full object-contain p-1" />
+                ) : (
+                  <span className="font-heading font-black text-white text-sm leading-none">
+                    {(cfg.branding.app_name.trim().charAt(0) || 'F').toUpperCase()}
+                  </span>
+                )}
+              </div>
+              <div className="min-w-0">
+                <div className="font-heading font-black text-[15px] c-ink tracking-tight leading-none truncate">
+                  {cfg.branding.app_name}
+                </div>
+                {cfg.branding.tagline && (
+                  <div className="text-[10px] c-soft font-bold uppercase tracking-[0.14em] mt-1 truncate">
+                    {cfg.branding.tagline}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
           <div className="flex items-center justify-between gap-3 mb-3">
             <button
               type="button"
@@ -313,10 +349,10 @@ export default function CustomerApp() {
               className="flex items-center gap-1.5 min-w-0 active:opacity-70 transition-opacity"
             >
               <div className="text-left min-w-0">
-                <div className="text-[11px] font-semibold text-[hsl(0,0%,42%)] leading-none mb-1">
+                <div className="text-[11px] font-semibold c-soft leading-none mb-1">
                   {t('customer.deliver_now')}
                 </div>
-                <div className="flex items-center gap-0.5 text-[17px] font-extrabold text-[hsl(0,0%,9%)] truncate tracking-tight">
+                <div className="flex items-center gap-0.5 text-[17px] font-extrabold c-ink truncate tracking-tight">
                   <span className="truncate">{displayAddress}</span>
                   <ChevronDown className="h-4 w-4 shrink-0" strokeWidth={2.5} />
                 </div>
@@ -327,7 +363,7 @@ export default function CustomerApp() {
               {!user ? (
                 <Link
                   to="/auth"
-                  className="text-[13px] font-extrabold text-[hsl(0,0%,9%)] px-3 py-2 rounded-full bg-[hsl(0,0%,96%)]"
+                  className="text-[13px] font-extrabold c-ink px-3 py-2 rounded-full c-chip"
                 >
                   {t('customer.login')}
                 </Link>
@@ -335,9 +371,9 @@ export default function CustomerApp() {
                 <Link
                   to="/profile"
                   aria-label="Άνοιγμα προφίλ χρήστη"
-                  className="h-9 w-9 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center"
+                  className="h-9 w-9 rounded-full c-chip flex items-center justify-center"
                 >
-                  <User className="h-[18px] w-[18px] text-[hsl(0,0%,9%)]" strokeWidth={2.2} />
+                  <User className="h-[18px] w-[18px] c-ink" strokeWidth={2.2} />
                 </Link>
               )}
             </div>
@@ -345,7 +381,7 @@ export default function CustomerApp() {
 
           <div className="relative">
             <Search
-              className="absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] text-[hsl(0,0%,40%)]"
+              className="absolute left-3.5 top-1/2 -translate-y-1/2 h-[18px] w-[18px] c-soft"
               strokeWidth={2.4}
             />
             <Input
@@ -358,16 +394,16 @@ export default function CustomerApp() {
                   window.history.replaceState(null, '', '/order#browse');
                 }
               }}
-              className="pl-11 h-11 bg-[hsl(0,0%,96%)] border-0 rounded-full text-[15px] font-medium placeholder:text-[hsl(0,0%,48%)] focus-visible:ring-2 focus-visible:ring-[hsl(0,0%,9%)]/15 focus-visible:bg-white focus-visible:ring-offset-0"
+              className="pl-11 h-11 bg-[hsl(var(--c-surface-muted))] border-0 rounded-full text-[15px] font-medium placeholder:text-[hsl(var(--c-text-soft))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--c-text)/0.15)] focus-visible:bg-[hsl(var(--c-surface))] focus-visible:ring-offset-0"
             />
             {search && (
               <button
                 type="button"
                 onClick={clearSearch}
-                className="absolute right-2.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-[hsl(0,0%,88%)] flex items-center justify-center"
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 h-7 w-7 rounded-full bg-[hsl(var(--c-border))] flex items-center justify-center"
                 aria-label="Clear search"
               >
-                <svg className="h-3.5 w-3.5 text-[hsl(0,0%,30%)]" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
+                <svg className="h-3.5 w-3.5 c-ink" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round">
                   <path d="M18 6 6 18M6 6l12 12" />
                 </svg>
               </button>
@@ -381,6 +417,7 @@ export default function CustomerApp() {
         {cfg.sections.show_order_again && <OrderAgainRow />}
 
         {/* Circular category rail (Uber Eats style) */}
+        {cfg.sections.show_categories !== false && (
         <section id="browse-categories" className="pt-4 scroll-mt-36">
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-1">
             {categoryOptions.map((cat) => {
@@ -395,15 +432,15 @@ export default function CustomerApp() {
                   <span
                     className={`h-14 w-14 rounded-full flex items-center justify-center text-2xl emoji transition-colors ${
                       active
-                        ? 'bg-[hsl(0,0%,9%)] text-white ring-2 ring-[hsl(0,0%,9%)] ring-offset-2'
-                        : 'bg-[hsl(0,0%,96%)]'
+                        ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] ring-2 ring-[hsl(var(--c-text))] ring-offset-2 ring-offset-[hsl(var(--c-bg))]'
+                        : 'bg-[hsl(var(--c-surface-muted))]'
                     }`}
                   >
                     {cat.emoji}
                   </span>
                   <span
                     className={`text-[11px] text-center leading-tight line-clamp-2 ${
-                      active ? 'font-extrabold text-[hsl(0,0%,9%)]' : 'font-semibold text-[hsl(0,0%,35%)]'
+                      active ? 'font-extrabold c-ink' : 'font-semibold c-soft'
                     }`}
                   >
                     {cat.label}
@@ -413,6 +450,7 @@ export default function CustomerApp() {
             })}
           </div>
         </section>
+        )}
 
         {/* One promo / hero — lean, not stacked ads */}
         {!isSearching && selectedCategory === 'all' && cfg.sections.show_hero_carousel !== false && (
@@ -424,6 +462,9 @@ export default function CustomerApp() {
           !(cfg.hero_cards ?? []).some((c) => c.enabled && (c.placement ?? 'hero') === 'hero') && (
             <PromoBannerCarousel />
           )}
+        {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_spotlight && (
+          <AiSpotlightCard />
+        )}
 
         {/* Featured stores */}
         {cfg.sections.show_promoted &&
@@ -432,45 +473,59 @@ export default function CustomerApp() {
           promotedStores.length > 0 && (
             <section className="pt-5">
               <div className="px-4 mb-3">
-                <h2 className="font-heading font-extrabold text-[20px] text-[hsl(0,0%,9%)] tracking-tight">
+                <h2 className="font-heading font-extrabold text-[20px] c-ink tracking-tight">
                   {t('customer.popular')}
                 </h2>
               </div>
               <div className="overflow-x-auto no-scrollbar">
                 <div className="flex gap-3 px-4 pb-1 w-max">
-                  {promotedStores.map((store) => (
+                  {promotedStores.map((store) => {
+                    const cover = store.cover_image_url || store.image_url;
+                    return (
                     <button
                       key={store.id}
                       type="button"
                       onClick={() => navigate(`/restaurant/${store.id}`)}
                       className="w-[200px] shrink-0 text-left"
                     >
-                      <div className="relative h-[120px] rounded-xl overflow-hidden mb-2 bg-[hsl(0,0%,96%)]">
-                        {store.image_url ? (
+                      <div className="relative h-[120px] rounded-xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))]">
+                        {cover ? (
                           <img
-                            src={store.image_url}
+                            src={cover}
                             alt={`Φωτογραφία εστιατορίου ${store.name}`}
                             className="w-full h-full object-cover"
                             loading="lazy"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Utensils className="h-8 w-8 text-[hsl(0,0%,70%)]" />
+                            <Utensils className="h-8 w-8 text-[hsl(var(--c-text-muted))]" />
                           </div>
                         )}
+                        {cfg.sections.show_store_badges && store.promo_badge && (
+                          <span className="absolute bottom-2 left-2 text-[10px] font-extrabold uppercase tracking-wide text-white bg-[hsl(var(--c-accent))] px-2 py-0.5 rounded-md shadow">
+                            {store.promo_badge}
+                          </span>
+                        )}
                       </div>
-                      <div className="text-[14px] font-extrabold text-[hsl(0,0%,9%)] truncate">
+                      <div className="text-[14px] font-extrabold c-ink truncate">
                         {store.name}
                       </div>
-                      <p className="text-[12px] text-[hsl(0,0%,40%)] mt-0.5 truncate">
-                        {ratings[store.id]?.count > 0 && (
-                          <>★ {ratings[store.id].avg.toFixed(1)} · </>
+                      <p className="text-[12px] c-soft mt-0.5 truncate">
+                        {store.tagline ? (
+                          <>{store.tagline}</>
+                        ) : (
+                          <>
+                            {ratings[store.id]?.count > 0 && (
+                              <>★ {ratings[store.id].avg.toFixed(1)} · </>
+                            )}
+                            {20 + (store.prep_buffer_minutes ?? 0)}–
+                            {35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}
+                          </>
                         )}
-                        {20 + (store.prep_buffer_minutes ?? 0)}–
-                        {35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}
                       </p>
                     </button>
-                  ))}
+                    );
+                  })}
                 </div>
               </div>
             </section>
@@ -486,18 +541,22 @@ export default function CustomerApp() {
           />
         )}
 
+        {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_strip && (
+          <AiCardStrip />
+        )}
+
         {/* Main feed */}
         {cfg.sections.show_nearby && (
           <section id="nearby-stores" className="pt-6 px-4 scroll-mt-28 pb-4">
             <div className="flex items-end justify-between mb-3">
-              <h2 className="font-heading font-extrabold text-[20px] text-[hsl(0,0%,9%)] tracking-tight">
+              <h2 className="font-heading font-extrabold text-[20px] c-ink tracking-tight">
                 {isSearching
                   ? `${t('customer.results_for')} "${debouncedSearch}"`
                   : selectedCategory !== 'all'
                     ? selectedCategory
                     : t('customer.nearby')}
               </h2>
-              <span className="text-[12px] text-[hsl(0,0%,42%)] font-semibold tabular-nums">
+              <span className="text-[12px] c-soft font-semibold tabular-nums">
                 {filtered.length}
               </span>
             </div>
@@ -529,8 +588,8 @@ export default function CustomerApp() {
                   onClick={f.toggle}
                   className={`shrink-0 h-9 px-3.5 rounded-full text-[13px] font-bold border transition-colors active:scale-95 ${
                     f.on
-                      ? 'bg-[hsl(0,0%,9%)] text-white border-[hsl(0,0%,9%)]'
-                      : 'bg-white text-[hsl(0,0%,9%)] border-[hsl(0,0%,86%)]'
+                      ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] border-[hsl(var(--c-text))]'
+                      : 'bg-[hsl(var(--c-surface))] c-ink border-[hsl(var(--c-border))]'
                   }`}
                 >
                   {f.label}
@@ -544,7 +603,7 @@ export default function CustomerApp() {
                     setFilterTopRated(false);
                     setFilterFast(false);
                   }}
-                  className="shrink-0 h-9 px-3 text-[13px] font-semibold text-[hsl(0,0%,40%)]"
+                  className="shrink-0 h-9 px-3 text-[13px] font-semibold c-soft"
                 >
                   {t('customer.clear_filters')}
                 </button>
@@ -555,19 +614,19 @@ export default function CustomerApp() {
               <div className="space-y-5">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="aspect-[16/10] bg-[hsl(0,0%,94%)] rounded-xl mb-2.5" />
-                    <div className="h-4 bg-[hsl(0,0%,94%)] rounded w-2/3 mb-1.5" />
-                    <div className="h-3 bg-[hsl(0,0%,94%)] rounded w-1/2" />
+                    <div className="aspect-[16/10] bg-[hsl(var(--c-surface-muted))] rounded-xl mb-2.5" />
+                    <div className="h-4 bg-[hsl(var(--c-surface-muted))] rounded w-2/3 mb-1.5" />
+                    <div className="h-3 bg-[hsl(var(--c-surface-muted))] rounded w-1/2" />
                   </div>
                 ))}
               </div>
             ) : filtered.length === 0 ? (
               <div className="text-center py-16">
-                <div className="h-14 w-14 rounded-full bg-[hsl(0,0%,96%)] flex items-center justify-center mx-auto mb-3">
-                  <MapPin className="h-6 w-6 text-[hsl(0,0%,55%)]" />
+                <div className="h-14 w-14 rounded-full bg-[hsl(var(--c-surface-muted))] flex items-center justify-center mx-auto mb-3">
+                  <MapPin className="h-6 w-6 c-soft" />
                 </div>
-                <p className="font-heading font-extrabold text-[hsl(0,0%,9%)]">{t('customer.no_results')}</p>
-                <p className="text-sm text-[hsl(0,0%,42%)] mt-1">
+                <p className="font-heading font-extrabold c-ink">{t('customer.no_results')}</p>
+                <p className="text-sm c-soft mt-1">
                   {isSearching ? t('customer.try_search') : t('customer.check_back')}
                 </p>
               </div>
@@ -576,8 +635,10 @@ export default function CustomerApp() {
                 {filtered.map((store) => {
                   const etaLow = 20 + (store.prep_buffer_minutes ?? 0);
                   const etaHigh = 35 + (store.prep_buffer_minutes ?? 0);
-                  const fee = (store as any).covers_delivery_fee ? 0 : 0.99;
+                  const fee = store.covers_delivery_fee ? 0 : 0.99;
                   const rating = ratings[store.id];
+                  const cover = store.cover_image_url || store.image_url;
+                  const highlight = store.highlight_color?.trim();
 
                   return (
                     <button
@@ -586,40 +647,63 @@ export default function CustomerApp() {
                       onClick={() => navigate(`/restaurant/${store.id}`)}
                       className="w-full text-left group"
                     >
-                      <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-2.5 bg-[hsl(0,0%,96%)]">
-                        {store.image_url ? (
+                      <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-2.5 bg-[hsl(var(--c-surface-muted))]">
+                        {cover ? (
                           <img
-                            src={store.image_url}
+                            src={cover}
                             alt={`Φωτογραφία εστιατορίου ${store.name}`}
-                            className="w-full h-full object-cover"
+                            className="w-full h-full object-cover transition-transform duration-500 group-active:scale-[1.02]"
                             loading="lazy"
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Utensils className="h-10 w-10 text-[hsl(0,0%,72%)]" />
+                            <Utensils className="h-10 w-10 text-[hsl(var(--c-text-muted))]" />
                           </div>
+                        )}
+                        {highlight && (
+                          <div
+                            className="absolute inset-x-0 bottom-0 h-1.5"
+                            style={{ background: `hsl(${highlight})` }}
+                          />
                         )}
                         <div className="absolute top-2.5 left-2.5">
                           <FavoriteButton storeId={store.id} size="sm" />
                         </div>
                         {store.busy_mode && (
-                          <div className="absolute top-2.5 right-2.5 bg-[hsl(0,0%,9%)]/90 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide">
+                          <div className="absolute top-2.5 right-2.5 bg-[hsl(var(--c-text)/0.9)] text-[hsl(var(--c-bg))] rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide">
                             {t('customer.busy')}
+                          </div>
+                        )}
+                        {cfg.sections.show_store_badges && (
+                          <div className="absolute bottom-2.5 left-2.5 flex flex-wrap gap-1.5 max-w-[85%]">
+                            {store.promo_badge && (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-white bg-[hsl(var(--c-accent))] px-2 py-0.5 rounded-md shadow">
+                                {store.promo_badge}
+                              </span>
+                            )}
+                            {fee === 0 && (
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-[hsl(var(--c-accent-dark))] bg-white/95 px-2 py-0.5 rounded-md shadow">
+                                0€ {t('customer.delivery')}
+                              </span>
+                            )}
                           </div>
                         )}
                       </div>
 
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-heading font-extrabold text-[16px] text-[hsl(0,0%,9%)] truncate leading-tight">
+                          <h3 className="font-heading font-extrabold text-[16px] c-ink truncate leading-tight">
                             {store.name}
                           </h3>
-                          <p className="text-[13px] text-[hsl(0,0%,38%)] mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          {store.tagline && (
+                            <p className="text-[12px] c-soft mt-0.5 truncate">{store.tagline}</p>
+                          )}
+                          <p className="text-[13px] c-soft mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
                             {rating?.count > 0 ? (
-                              <span className="inline-flex items-center gap-0.5 font-semibold text-[hsl(0,0%,20%)]">
-                                <Star className="h-3 w-3 fill-[hsl(0,0%,9%)] text-[hsl(0,0%,9%)]" />
+                              <span className="inline-flex items-center gap-0.5 font-semibold c-ink">
+                                <Star className="h-3 w-3 fill-[hsl(var(--c-text))] text-[hsl(var(--c-text))]" />
                                 {rating.avg.toFixed(1)}
-                                <span className="font-medium text-[hsl(0,0%,45%)]">({rating.count})</span>
+                                <span className="font-medium c-soft">({rating.count})</span>
                               </span>
                             ) : (
                               <span className="font-semibold text-[hsl(var(--c-accent))]">Νέο</span>

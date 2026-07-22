@@ -95,7 +95,7 @@ export default function ProfilePage() {
   const initials = (fullName || user.email || '?').charAt(0).toUpperCase();
 
   return (
-    <div className="customer-shell min-h-full bg-white pb-4">
+    <div className="customer-shell min-h-full c-page pb-4">
       <SEO
         title="Το προφίλ μου — Fresh Delivery"
         description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh Delivery."
@@ -105,11 +105,11 @@ export default function ProfilePage() {
 
       {/* Sticky header */}
       <header
-        className="sticky top-0 z-20 border-b border-[hsl(0,0%,92%)] bg-white"
+        className="sticky top-0 z-20 border-b c-header"
         style={{ paddingTop: 'max(0.75rem, env(safe-area-inset-top))' }}
       >
         <div className="max-w-2xl mx-auto flex items-center justify-between px-4 py-4">
-          <h1 className="font-heading font-extrabold text-[22px] text-[hsl(0,0%,9%)] tracking-tight">
+          <h1 className="font-heading font-extrabold text-[22px] c-ink tracking-tight">
             Λογαριασμός
           </h1>
           <Sheet open={editOpen} onOpenChange={setEditOpen}>

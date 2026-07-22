@@ -30,7 +30,15 @@ export default function CustomerAppCustomization() {
       .select('draft_config, published_config, published_at, updated_at')
       .maybeSingle();
     if (data) {
-      const merged = { ...DEFAULT_CONFIG, ...(data.draft_config ?? {}) };
+      const merged = {
+        ...DEFAULT_CONFIG,
+        ...(data.draft_config ?? {}),
+        branding: { ...DEFAULT_CONFIG.branding, ...(data.draft_config?.branding ?? {}) },
+        sections: { ...DEFAULT_CONFIG.sections, ...(data.draft_config?.sections ?? {}) },
+        promos: Array.isArray(data.draft_config?.promos) ? data.draft_config.promos : DEFAULT_CONFIG.promos,
+        tiles: Array.isArray(data.draft_config?.tiles) ? data.draft_config.tiles : DEFAULT_CONFIG.tiles,
+        hero_cards: Array.isArray(data.draft_config?.hero_cards) ? data.draft_config.hero_cards : [],
+      };
       setRow(data);
       setDraft(merged);
     }
@@ -65,7 +73,17 @@ export default function CustomerAppCustomization() {
   };
 
   const revert = () => {
-    if (row) setDraft({ ...DEFAULT_CONFIG, ...(row.published_config ?? {}) });
+    if (!row) return;
+    const pub = row.published_config ?? {};
+    setDraft({
+      ...DEFAULT_CONFIG,
+      ...pub,
+      branding: { ...DEFAULT_CONFIG.branding, ...(pub as any).branding },
+      sections: { ...DEFAULT_CONFIG.sections, ...(pub as any).sections },
+      promos: Array.isArray((pub as any).promos) ? (pub as any).promos : DEFAULT_CONFIG.promos,
+      tiles: Array.isArray((pub as any).tiles) ? (pub as any).tiles : DEFAULT_CONFIG.tiles,
+      hero_cards: Array.isArray((pub as any).hero_cards) ? (pub as any).hero_cards : [],
+    });
     toast.info('Επαναφορά στο δημοσιευμένο');
   };
 
@@ -119,6 +137,24 @@ export default function CustomerAppCustomization() {
                 <Input
                   value={draft.branding.city_label}
                   onChange={e => setDraft({ ...draft, branding: { ...draft.branding, city_label: e.target.value } })}
+                />
+              </div>
+              <div>
+                <Label>Tagline / slogan</Label>
+                <Input
+                  value={draft.branding.tagline}
+                  onChange={e => setDraft({ ...draft, branding: { ...draft.branding, tagline: e.target.value } })}
+                  placeholder="Fast · Fresh · Local"
+                />
+              </div>
+              <div className="flex items-center justify-between border rounded-lg p-3 bg-card">
+                <div>
+                  <div className="text-sm font-medium">Brand mark στην αρχική</div>
+                  <p className="text-xs text-muted-foreground">Logo + όνομα πάνω από τη διεύθυνση</p>
+                </div>
+                <Switch
+                  checked={draft.branding.show_header_brand}
+                  onCheckedChange={v => setDraft({ ...draft, branding: { ...draft.branding, show_header_brand: v } })}
                 />
               </div>
               <div>
@@ -232,7 +268,7 @@ export default function CustomerAppCustomization() {
             <CardHeader>
               <CardTitle className="text-base flex items-center justify-between">
                 Promo banners
-                <Button size="sm" variant="outline" onClick={() => setDraft({ ...draft, promos: [...draft.promos, { tag: 'NEW', title: 'Τίτλος', subtitle: 'Υπότιτλος', code: 'CODE', gradient: 'hero', enabled: true }] })}>
+                <Button size="sm" variant="outline" onClick={() => setDraft({ ...draft, promos: [...draft.promos, { tag: 'NEW', title: 'Τίτλος', subtitle: 'Υπότιτλος', code: 'CODE', gradient: 'hero', enabled: true, image_url: null }] })}>
                   <Plus className="h-4 w-4 mr-1" /> Προσθήκη
                 </Button>
               </CardTitle>
@@ -264,6 +300,12 @@ export default function CustomerAppCustomization() {
                     <Input placeholder="Κωδικός κουπονιού" value={p.code} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, code: e.target.value }; setDraft({ ...draft, promos }); }} />
                     <Input className="col-span-2" placeholder="Τίτλος" value={p.title} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, title: e.target.value }; setDraft({ ...draft, promos }); }} />
                     <Input className="col-span-2" placeholder="Υπότιτλος" value={p.subtitle} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, subtitle: e.target.value }; setDraft({ ...draft, promos }); }} />
+                    <Input className="col-span-2" placeholder="Εικόνα URL (προαιρετικό)" value={p.image_url ?? ''} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, image_url: e.target.value || null }; setDraft({ ...draft, promos }); }} />
+                    {p.image_url && (
+                      <div className="col-span-2 h-24 rounded-lg overflow-hidden border bg-muted/30">
+                        <img src={p.image_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -286,6 +328,8 @@ export default function CustomerAppCustomization() {
                 ['show_ai_strip', 'AI strip (οριζόντιες κάρτες)'],
                 ['show_order_again', 'Λωρίδα «Παράγγειλε ξανά»'],
                 ['show_pro_delivery', 'Pro delivery banner'],
+                ['show_ambient_glow', 'Ambient glow (ζωντανή ατμόσφαιρα)'],
+                ['show_store_badges', 'Badges καταστημάτων (promo / δωρεάν delivery)'],
               ] as const).map(([key, label]) => (
                 <div key={key} className="flex items-center justify-between border rounded-lg p-3 bg-card">
                   <span className="text-sm font-medium">{label}</span>

@@ -119,8 +119,20 @@ export function useStore() {
     updates: Partial<
       Pick<
         StoreRow,
-        'is_active' | 'busy_mode' | 'prep_buffer_minutes' | 'name' | 'address' | 'phone' | 'image_url'
-      >
+        | 'is_active'
+        | 'busy_mode'
+        | 'prep_buffer_minutes'
+        | 'name'
+        | 'address'
+        | 'phone'
+        | 'image_url'
+      > & {
+        cover_image_url?: string | null;
+        tagline?: string | null;
+        promo_badge?: string | null;
+        highlight_color?: string | null;
+        covers_delivery_fee?: boolean;
+      }
     >,
     targetId?: string,
   ) => {

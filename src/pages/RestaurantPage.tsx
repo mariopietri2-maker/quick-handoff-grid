@@ -152,7 +152,7 @@ export default function RestaurantPage() {
 
   if (loading) {
     return (
-      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white">
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page">
         <div className="h-56 bg-[hsl(0,0%,94%)] animate-pulse" />
         <div className="max-w-2xl mx-auto px-4 pt-5 space-y-4">
           <div className="h-7 bg-[hsl(0,0%,94%)] rounded-lg w-2/3 animate-pulse" />
@@ -170,7 +170,7 @@ export default function RestaurantPage() {
 
   if (!store) {
     return (
-      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white flex flex-col items-center justify-center gap-3 px-6">
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page flex flex-col items-center justify-center gap-3 px-6">
         <p className="c-muted font-heading font-semibold">Το εστιατόριο δεν βρέθηκε</p>
         <button
           type="button"
@@ -185,7 +185,7 @@ export default function RestaurantPage() {
 
   return (
     <div
-      className={`customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white ${
+      className={`customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page ${
         cartForThisStore ? 'pb-[calc(7rem+var(--app-safe-bottom))]' : 'pb-8'
       }`}
       style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}

@@ -17,7 +17,7 @@ export default function PromoBannerCarousel() {
           title: p.title,
           subtitle: p.subtitle,
           code: p.code,
-          image: HERO_IMAGES[i % HERO_IMAGES.length],
+          image: (p.image_url && p.image_url.trim()) || HERO_IMAGES[i % HERO_IMAGES.length],
         })),
     [cfg.promos],
   );
