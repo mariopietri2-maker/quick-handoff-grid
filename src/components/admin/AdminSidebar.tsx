@@ -62,6 +62,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'stores',
     tabs: [
       { id: 'stores', label: 'Καταστήματα' },
+      { id: 'store_appearance', label: '🎨 Εμφάνιση' },
       { id: 'promotions', label: 'Προωθήσεις' },
       { id: 'reviews', label: 'Κριτικές' },
     ],

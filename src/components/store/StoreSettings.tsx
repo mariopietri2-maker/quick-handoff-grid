@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Clock, Zap, Truck, MapPin, Save, Image as ImageIcon, Phone, Store as StoreIcon, Loader2 } from 'lucide-react';
+import { AlertTriangle, Clock, Zap, Truck, MapPin, Save, Image as ImageIcon, Phone, Store as StoreIcon, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -13,10 +13,30 @@ interface StoreSettingsProps {
   storeId: string;
 }
 
+type AppearanceDraft = {
+  name: string;
+  address: string;
+  phone: string;
+  image_url: string;
+  cover_image_url: string;
+  tagline: string;
+  promo_badge: string;
+  highlight_color: string;
+};
+
 export function StoreSettings({ storeId }: StoreSettingsProps) {
   const { stores, updateStore, selectStore } = useStore();
   const store = stores.find((s) => s.id === storeId) ?? null;
-  const [draft, setDraft] = useState({ name: '', address: '', phone: '', image_url: '' });
+  const [draft, setDraft] = useState<AppearanceDraft>({
+    name: '',
+    address: '',
+    phone: '',
+    image_url: '',
+    cover_image_url: '',
+    tagline: '',
+    promo_badge: '',
+    highlight_color: '',
+  });
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -30,15 +50,33 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
         address: store.address ?? '',
         phone: store.phone ?? '',
         image_url: store.image_url ?? '',
+        cover_image_url: (store as any).cover_image_url ?? '',
+        tagline: (store as any).tagline ?? '',
+        promo_badge: (store as any).promo_badge ?? '',
+        highlight_color: (store as any).highlight_color ?? '',
       });
     }
-  }, [store?.id, store?.name, store?.address, store?.phone, store?.image_url]);
+  }, [
+    store?.id,
+    store?.name,
+    store?.address,
+    store?.phone,
+    store?.image_url,
+    (store as any)?.cover_image_url,
+    (store as any)?.tagline,
+    (store as any)?.promo_badge,
+    (store as any)?.highlight_color,
+  ]);
 
   const dirty = !!store && (
     draft.name !== (store.name ?? '') ||
     draft.address !== (store.address ?? '') ||
     draft.phone !== (store.phone ?? '') ||
-    draft.image_url !== (store.image_url ?? '')
+    draft.image_url !== (store.image_url ?? '') ||
+    draft.cover_image_url !== ((store as any).cover_image_url ?? '') ||
+    draft.tagline !== ((store as any).tagline ?? '') ||
+    draft.promo_badge !== ((store as any).promo_badge ?? '') ||
+    draft.highlight_color !== ((store as any).highlight_color ?? '')
   );
 
   const handleSave = async () => {
@@ -49,55 +87,93 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
       address: draft.address.trim(),
       phone: draft.phone.trim() || null,
       image_url: draft.image_url.trim() || null,
+      cover_image_url: draft.cover_image_url.trim() || null,
+      tagline: draft.tagline.trim() || null,
+      promo_badge: draft.promo_badge.trim() || null,
+      highlight_color: draft.highlight_color.trim() || null,
     } as any, storeId);
     setSaving(false);
   };
 
   if (!store) {
     return (
-      <div className="text-center py-16">
-        <p className="text-muted-foreground font-heading">Φόρτωση ρυθμίσεων...</p>
-      </div>
+      <Card>
+        <CardContent className="p-6 text-sm text-muted-foreground">Φόρτωση καταστήματος…</CardContent>
+      </Card>
     );
   }
+
+  const preview = draft.cover_image_url || draft.image_url;
 
   return (
     <div className="space-y-4">
       <Card className="shadow-[var(--shadow-md)]">
-        <CardContent className="p-4">
+        <CardContent className="p-4 space-y-4">
+          <div className="flex items-center justify-between">
+            <h3 className="font-heading font-semibold text-foreground">Κατάσταση</h3>
+          </div>
+
           <div className="flex items-center justify-between">
             <div>
-              <h3 className="font-heading font-semibold text-foreground">Κατάστημα Ενεργό</h3>
-              <p className="text-sm text-muted-foreground">Αποδοχή νέων παραγγελιών</p>
+              <p className="text-sm font-medium">Ανοιχτό για παραγγελίες</p>
+              <p className="text-xs text-muted-foreground">Απενεργοποίησε για να μην δέχεσαι νέες</p>
             </div>
             <Switch
-              checked={store.is_active ?? true}
+              checked={!!store.is_active}
               onCheckedChange={(checked) => updateStore({ is_active: checked }, storeId)}
             />
           </div>
-        </CardContent>
-      </Card>
 
-      <Card className={`shadow-[var(--shadow-md)] ${store.busy_mode ? 'border-warning/40' : ''}`}>
-        <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2">
-              <Zap className={`h-5 w-5 ${store.busy_mode ? 'text-warning' : 'text-muted-foreground'}`} />
+              <Zap className="h-4 w-4 text-warning" />
               <div>
-                <h3 className="font-heading font-semibold text-foreground">Λειτουργία Πολυκοσμίας</h3>
-                <p className="text-sm text-muted-foreground">Αυξάνει τα τέλη παράδοσης & επιβραδύνει παραγγελίες</p>
+                <p className="text-sm font-medium">Busy mode</p>
+                <p className="text-xs text-muted-foreground">Εμφανίζει «Πολυάσχολο» στους πελάτες</p>
               </div>
             </div>
             <Switch
-              checked={store.busy_mode ?? false}
+              checked={!!store.busy_mode}
               onCheckedChange={(checked) => updateStore({ busy_mode: checked }, storeId)}
             />
           </div>
-          {store.busy_mode && (
-            <div className="bg-warning/10 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-warning flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-warning">
-                Τα τέλη παράδοσης αυξάνονται κατά 25% και η ακτίνα παράδοσης μειώνεται για τη διαχείριση του όγκου παραγγελιών.
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <Clock className="h-4 w-4 text-muted-foreground" />
+                <p className="text-sm font-medium">Επιπλέον χρόνος προετοιμασίας</p>
+              </div>
+              <Badge variant="outline">{store.prep_buffer_minutes ?? 0}΄</Badge>
+            </div>
+            <Slider
+              value={[store.prep_buffer_minutes ?? 0]}
+              min={0}
+              max={45}
+              step={5}
+              onValueChange={([val]) => updateStore({ prep_buffer_minutes: val }, storeId)}
+            />
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Truck className="h-4 w-4 text-primary" />
+              <div>
+                <p className="text-sm font-medium">Καλύπτω delivery fee</p>
+                <p className="text-xs text-muted-foreground">0€ μεταφορικά για τον πελάτη</p>
+              </div>
+            </div>
+            <Switch
+              checked={!!(store as any).covers_delivery_fee}
+              onCheckedChange={(checked) => updateStore({ covers_delivery_fee: checked } as any, storeId)}
+            />
+          </div>
+
+          {!!(store as any).covers_delivery_fee && (
+            <div className="flex gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
+              <AlertTriangle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
+              <p className="text-sm text-foreground/80">
+                Το delivery fee θα χρεωθεί από το πορτοφόλι σου σε κάθε ολοκληρωμένη παραγγελία.
               </p>
             </div>
           )}
@@ -106,53 +182,79 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
 
       <Card className="shadow-[var(--shadow-md)]">
         <CardContent className="p-4 space-y-4">
-          <div className="flex items-center gap-2">
-            <Clock className="h-5 w-5 text-muted-foreground" />
-            <div>
-              <h3 className="font-heading font-semibold text-foreground">Χρόνος Ετοιμασίας</h3>
-              <p className="text-sm text-muted-foreground">Προσθήκη επιπλέον χρόνου σε όλους τους εκτιμώμενους χρόνους</p>
-            </div>
-          </div>
-          <div className="space-y-2">
-            <Slider
-              value={[store.prep_buffer_minutes ?? 0]}
-              onValueChange={([val]) => updateStore({ prep_buffer_minutes: val }, storeId)}
-              max={30}
-              step={5}
-            />
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Επιπλέον χρόνος:</span>
-              <Badge variant="outline" className="font-heading">
-                +{store.prep_buffer_minutes ?? 0} λεπτά
-              </Badge>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <Card className="shadow-[var(--shadow-md)]">
-        <CardContent className="p-4 space-y-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Truck className={`h-5 w-5 ${(store as any).covers_delivery_fee ? 'text-primary' : 'text-muted-foreground'}`} />
-              <div>
-                <h3 className="font-heading font-semibold text-foreground">Δωρεάν Παράδοση (Πληρώνω εγώ)</h3>
-                <p className="text-sm text-muted-foreground">Ο πελάτης βλέπει €0 delivery, εσύ καλύπτεις το κόστος του οδηγού.</p>
+            <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+              <Sparkles className="h-4 w-4 text-primary" /> Εμφάνιση στο app
+            </h3>
+            {dirty && <Badge variant="outline" className="text-warning border-warning/40">Μη αποθηκευμένα</Badge>}
+          </div>
+
+          <div className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="store-tagline" className="text-xs text-muted-foreground">Tagline</Label>
+              <Input
+                id="store-tagline"
+                value={draft.tagline}
+                onChange={(e) => setDraft((p) => ({ ...p, tagline: e.target.value }))}
+                maxLength={80}
+                placeholder="π.χ. Φρέσκο, ζεστό, τοπικό"
+              />
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="store-badge" className="text-xs text-muted-foreground">Promo badge</Label>
+                <Input
+                  id="store-badge"
+                  value={draft.promo_badge}
+                  onChange={(e) => setDraft((p) => ({ ...p, promo_badge: e.target.value }))}
+                  maxLength={24}
+                  placeholder="-20% · Νέο"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="store-highlight" className="text-xs text-muted-foreground">Highlight (HSL)</Label>
+                <div className="flex gap-2 items-center">
+                  <Input
+                    id="store-highlight"
+                    value={draft.highlight_color}
+                    onChange={(e) => setDraft((p) => ({ ...p, highlight_color: e.target.value }))}
+                    placeholder="152 100% 39%"
+                  />
+                  <div
+                    className="h-9 w-9 rounded-md border shrink-0"
+                    style={{ background: draft.highlight_color ? `hsl(${draft.highlight_color})` : 'transparent' }}
+                  />
+                </div>
               </div>
             </div>
-            <Switch
-              checked={(store as any).covers_delivery_fee ?? false}
-              onCheckedChange={(checked) => updateStore({ covers_delivery_fee: checked } as any, storeId)}
-            />
-          </div>
-          {(store as any).covers_delivery_fee && (
-            <div className="bg-primary/10 rounded-lg p-3 flex items-start gap-2">
-              <AlertTriangle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-foreground/80">
-                Το delivery fee θα χρεωθεί από το πορτοφόλι σου σε κάθε ολοκληρωμένη παραγγελία.
-              </p>
+            <div className="space-y-1.5">
+              <Label htmlFor="store-cover" className="text-xs flex items-center gap-1.5 text-muted-foreground">
+                <ImageIcon className="h-3.5 w-3.5" /> Cover εικόνα (URL)
+              </Label>
+              <Input
+                id="store-cover"
+                value={draft.cover_image_url}
+                onChange={(e) => setDraft((p) => ({ ...p, cover_image_url: e.target.value }))}
+                maxLength={500}
+                placeholder="Προαιρετικό — αλλιώς χρησιμοποιείται η κύρια εικόνα"
+              />
             </div>
-          )}
+            {preview && (
+              <div className="relative rounded-lg overflow-hidden border border-border h-28 bg-muted/30">
+                <img
+                  src={preview}
+                  alt="Προεπισκόπηση"
+                  className="w-full h-full object-cover"
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
+                />
+                {draft.promo_badge && (
+                  <span className="absolute bottom-2 left-2 text-[10px] font-extrabold uppercase tracking-wide text-white bg-emerald-600 px-2 py-0.5 rounded-md">
+                    {draft.promo_badge}
+                  </span>
+                )}
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
 
@@ -171,7 +273,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
               <Input
                 id="store-name"
                 value={draft.name}
-                onChange={(e) => setDraft(p => ({ ...p, name: e.target.value }))}
+                onChange={(e) => setDraft((p) => ({ ...p, name: e.target.value }))}
                 maxLength={120}
                 placeholder="π.χ. Pizza Express"
               />
@@ -184,7 +286,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
               <Input
                 id="store-address"
                 value={draft.address}
-                onChange={(e) => setDraft(p => ({ ...p, address: e.target.value }))}
+                onChange={(e) => setDraft((p) => ({ ...p, address: e.target.value }))}
                 maxLength={200}
                 placeholder="Οδός 123, Πόλη"
               />
@@ -201,7 +303,7 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
                 <Input
                   id="store-phone"
                   value={draft.phone}
-                  onChange={(e) => setDraft(p => ({ ...p, phone: e.target.value }))}
+                  onChange={(e) => setDraft((p) => ({ ...p, phone: e.target.value }))}
                   maxLength={32}
                   inputMode="tel"
                   placeholder="+30 210 1234567"
@@ -214,23 +316,12 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
                 <Input
                   id="store-image"
                   value={draft.image_url}
-                  onChange={(e) => setDraft(p => ({ ...p, image_url: e.target.value }))}
+                  onChange={(e) => setDraft((p) => ({ ...p, image_url: e.target.value }))}
                   maxLength={500}
                   placeholder="https://..."
                 />
               </div>
             </div>
-
-            {draft.image_url && (
-              <div className="rounded-lg overflow-hidden border border-border h-28 bg-muted/30">
-                <img
-                  src={draft.image_url}
-                  alt="Προεπισκόπηση"
-                  className="w-full h-full object-cover"
-                  onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
-                />
-              </div>
-            )}
 
             <Button
               onClick={handleSave}
