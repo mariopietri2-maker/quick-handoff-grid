@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
@@ -7,13 +8,16 @@ import {
   initNotificationChannels,
   showOsNotification,
 } from '@/lib/push-notifications';
+import { isAppActive } from '@/lib/push-register';
 
 /**
- * Subscribes the logged-in driver to admin/support notifications.
- * Shows toast + OS notification, but leaves rows unread so they appear in Inbox.
+ * Subscribes the logged-in driver to admin/support inbox messages.
+ * Feels like email: soft toast + quiet OS channel, opens Μηνύματα on tap.
+ * Leaves rows unread so they stay in the inbox list.
  */
 export function useDriverNotifications() {
   const { user } = useAuth();
+  const navigate = useNavigate();
 
   useEffect(() => {
     if (!user) return;
@@ -23,7 +27,6 @@ export function useDriverNotifications() {
 
     // Do NOT replay unread inbox rows as OS notifications on mount —
     // that felt like a random burst every time the driver opened the app.
-    // Live INSERTs below still toast + notify.
 
     const channel = supabase
       .channel(`driver-notifications-${user.id}`)
@@ -36,7 +39,7 @@ export function useDriverNotifications() {
           filter: `driver_id=eq.${user.id}`,
         },
         (payload) => {
-          showNotification(payload.new as any);
+          showInboxMail(payload.new as any, navigate);
         },
       )
       .subscribe();
@@ -44,25 +47,36 @@ export function useDriverNotifications() {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user]);
+  }, [user, navigate]);
 }
 
-function showNotification(n: { id?: string; title: string; body: string; severity: string }) {
-  const opts = { description: n.body, duration: 10_000 };
-  switch (n.severity) {
-    case 'urgent':
-      toast.error(`🚨 ${n.title}`, { ...opts, duration: 20_000 });
-      break;
-    case 'warning':
-      toast.warning(`⚠️ ${n.title}`, opts);
-      break;
-    default:
-      toast.info(`✉️ ${n.title}`, opts);
-  }
-  void showOsNotification({
-    title: n.title,
-    body: n.body,
-    tag: `driver-notif:${n.id ?? n.title}`,
-    vibrate: n.severity === 'urgent' || n.severity === 'warning',
+function showInboxMail(
+  n: { id?: string; title: string; body: string; severity: string },
+  navigate: (path: string) => void,
+) {
+  const openInbox = () => navigate('/driver?tab=inbox');
+  const subject = n.title?.trim() || 'Νέο μήνυμα';
+  const preview = (n.body || '').trim().slice(0, 120);
+
+  // Soft in-app banner — email style, not offer alarm.
+  toast(`✉️ ${subject}`, {
+    description: preview || 'Άνοιξε τα Εισερχόμενα για να το διαβάσεις.',
+    duration: n.severity === 'urgent' ? 8_000 : 5_000,
+    action: {
+      label: 'Άνοιγμα',
+      onClick: openInbox,
+    },
   });
+
+  // Foreground only: when backgrounded/killed, FCM (driver-inbox channel) covers it.
+  // Avoid stacking local + FCM when the app is already in the background.
+  if (isAppActive()) {
+    void showOsNotification({
+      title: 'Νέο μήνυμα',
+      body: subject + (preview ? ` — ${preview}` : ''),
+      tag: `driver-inbox:${n.id ?? subject}`,
+      vibrate: false,
+      channelId: 'driver-inbox',
+    });
+  }
 }

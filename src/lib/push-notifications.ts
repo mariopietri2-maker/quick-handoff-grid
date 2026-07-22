@@ -86,7 +86,7 @@ export async function showOsNotification(opts: {
   }
 }
 
-/** Android notification channels (high importance for offers + order updates). */
+/** Android notification channels (high for offers; quiet for inbox mail). */
 export async function initNotificationChannels() {
   if (!isNative) return;
   try {
@@ -102,6 +102,21 @@ export async function initNotificationChannels() {
     });
   } catch (e) {
     console.warn('createChannel driver-offers error', e);
+  }
+  try {
+    // DEFAULT importance — feels like email, not a delivery offer alarm.
+    await LocalNotifications.createChannel({
+      id: 'driver-inbox',
+      name: 'Μηνύματα',
+      description: 'Μηνύματα από admin & support (όπως email)',
+      importance: 3,
+      visibility: 1,
+      vibration: false,
+      lights: false,
+      sound: 'default',
+    });
+  } catch (e) {
+    console.warn('createChannel driver-inbox error', e);
   }
   try {
     await LocalNotifications.createChannel({
