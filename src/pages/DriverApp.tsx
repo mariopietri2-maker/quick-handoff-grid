@@ -74,9 +74,8 @@ export default function DriverApp() {
       });
   }, []);
   const cashCapped = Number(driverState?.shift_cash_balance ?? 0) >= maxCashCap;
-  // Drivers stay online persistently — once they go online they remain online
-  // across reloads, backgrounding, and tab close. Only an explicit toggle
-  // (or admin suspension) takes them offline.
+  // Online preference persists locally, but server presence clears when the
+  // app backgrounds/closes — admin must not show ghost "online" drivers.
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     try { return localStorage.getItem('driver_is_online_v1') === '1'; } catch { return false; }
   });
@@ -90,10 +89,70 @@ export default function DriverApp() {
   // treat the driver as on-shift (does not reset cash balance).
   useEffect(() => {
     if (!user || !driverState) return;
-    if (isOnline && !driverState.shift_started_at) {
-      void updateDriverState({ shift_started_at: new Date().toISOString() });
+    if (isOnline) {
+      if (!driverState.shift_started_at) {
+        void updateDriverState({ shift_started_at: new Date().toISOString() });
+      }
+    } else if (driverState.shift_started_at) {
+      void updateDriverState({ shift_started_at: null, on_break: false, break_until: null });
     }
   }, [isOnline, user, driverState?.shift_started_at]);
+
+  // App close / background → clear server presence (offline). Resume restores
+  // if the local toggle is still on.
+  useEffect(() => {
+    if (!user) return;
+
+    const clearServerPresence = () => {
+      void (supabase as any)
+        .from('driver_state')
+        .update({
+          shift_started_at: null,
+          on_break: false,
+          break_until: null,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('driver_id', user.id);
+      void supabase.from('driver_locations').delete().eq('driver_id', user.id);
+    };
+
+    const restoreIfWantedOnline = () => {
+      let want = false;
+      try { want = localStorage.getItem('driver_is_online_v1') === '1'; } catch {}
+      if (!want) return;
+      setIsOnline(true);
+      void (supabase as any)
+        .from('driver_state')
+        .update({
+          shift_started_at: new Date().toISOString(),
+          updated_at: new Date().toISOString(),
+        })
+        .eq('driver_id', user.id);
+    };
+
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') clearServerPresence();
+      else restoreIfWantedOnline();
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', clearServerPresence);
+
+    let removeApp: (() => void) | undefined;
+    void import('@capacitor/app').then(({ App }) => {
+      App.addListener('appStateChange', ({ isActive }) => {
+        if (!isActive) clearServerPresence();
+        else restoreIfWantedOnline();
+      }).then((h) => {
+        removeApp = () => { void h.remove(); };
+      }).catch(() => {});
+    }).catch(() => {});
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('pagehide', clearServerPresence);
+      removeApp?.();
+    };
+  }, [user]);
   const [driverActive, setDriverActive] = useState<boolean | null>(null);
   const [searchParams, setSearchParams] = useSearchParams();
   

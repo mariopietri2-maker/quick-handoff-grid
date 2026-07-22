@@ -35,6 +35,12 @@ export function useDriverLocation(isActive: boolean) {
 
   const sendLocation = useCallback(async (pos: NormalizedPos) => {
     if (!user) return;
+    // Hidden / backgrounded app must not keep refreshing the heartbeat —
+    // otherwise admin still sees the driver as online with the app closed.
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      lastPosRef.current = pos;
+      return;
+    }
     // If we're offline, just keep the latest pos in lastPosRef and bail —
     // the 'online' listener (and the next interval tick) will flush it.
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
@@ -61,10 +67,7 @@ export function useDriverLocation(isActive: boolean) {
     }
   }, [user]);
 
-  // Hard-offline: clear our location row so the dispatcher immediately
-  // stops considering us online. ONLY used when the driver explicitly
-  // toggles offline — not on tab close / background, so a driver who
-  // momentarily loses signal or backgrounds the app stays online.
+  // Hard-offline: clear location so admin/dispatch stop seeing us as online.
   const goHardOffline = useCallback(async () => {
     if (!user) return;
     try {
@@ -226,20 +229,29 @@ export function useDriverLocation(isActive: boolean) {
     // so the dispatcher sees us as online again without waiting for the
     // next 5s tick.
     const handleOnline = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
       if (lastPosRef.current) void sendLocation(lastPosRef.current);
     };
     window.addEventListener('online', handleOnline);
 
-    // NOTE: We intentionally do NOT clear the driver's location row on
-    // pagehide / beforeunload. If the driver closes or backgrounds the
-    // app while online, they stay online — the row TTL / heartbeat
-    // freshness check on the dispatcher side handles true disconnects.
+    // Presence: when the WebView backgrounds, stop the heartbeat so stale
+    // GPS cannot keep the driver "online". DriverApp also clears shift state.
+    const onVis = () => {
+      if (document.visibilityState === 'hidden') {
+        void goHardOffline();
+      } else if (lastPosRef.current) {
+        void sendLocation(lastPosRef.current);
+      }
+    };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('pagehide', () => { void goHardOffline(); });
 
     return () => {
       cancelled = true;
       cleanupRef.current?.();
       cleanupRef.current = null;
       window.removeEventListener('online', handleOnline);
+      document.removeEventListener('visibilitychange', onVis);
     };
   }, [isActive, user, sendLocation, goHardOffline]);
 

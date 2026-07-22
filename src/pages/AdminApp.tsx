@@ -14,6 +14,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
+import { isDriverPresenceOnline } from '@/lib/driver-presence';
 import { lazyWithRetry as lazy } from '@/lib/lazyWithRetry';
 // Eagerly load only the default landing tab — everything else is lazy.
 import OpsHome from '@/components/admin/OpsHome';
@@ -103,7 +104,7 @@ const roleLabels: Record<string, string> = {
 export default function AdminApp() {
   const { signOut } = useAuth();
   const perms = useAdminPermissions();
-  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverWallets, storeWallets } = useAdminData();
+  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverLocations, driverWallets, storeWallets } = useAdminData();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeSection, setActiveSectionState] = useState(() => {
@@ -396,7 +397,7 @@ export default function AdminApp() {
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
-        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
+        return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverLocations={driverLocations.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
@@ -545,7 +546,11 @@ export default function AdminApp() {
             const revenueToday = todays.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
             const revenueYesterday = yesterdays.reduce((s: number, o: any) => s + Number(o.total_amount || 0), 0);
             const adminToday = todays.reduce((s: number, o: any) => s + Number(o.platform_profit || 0), 0);
-            const activeDrivers = (driverStates.data ?? []).filter((d: any) => !!d.shift_started_at && !d.on_break).length;
+            const locMap = new Map((driverLocations.data ?? []).map((l: any) => [l.driver_id, l.updated_at]));
+            const activeDrivers = (driverStates.data ?? []).filter((d: any) => {
+              if (d.on_break) return false;
+              return isDriverPresenceOnline(locMap.get(d.driver_id)) && !!d.shift_started_at;
+            }).length;
             const live = todays.filter((o: any) => !['delivered', 'cancelled'].includes(o.status)).length;
             const orderDelta = todays.length > 0 && yesterdays.length > 0 ? ((todays.length - yesterdays.length) / yesterdays.length) * 100 : null;
             const revDelta = revenueToday > 0 && revenueYesterday > 0 ? ((revenueToday - revenueYesterday) / revenueYesterday) * 100 : null;
@@ -835,7 +840,7 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
   );
 }
 
-function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus, onSuspend, onAdjustWallet, onClearCashDebt, onMessage }: any) {
+function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, driverLocations, driverWallets, orders, filter, setFilter, onToggle, onResetCash, onResetWallet, onForceEndShift, onGrantBonus, onSuspend, onAdjustWallet, onClearCashDebt, onMessage }: any) {
   const todayStart = new Date(); todayStart.setHours(0, 0, 0, 0);
   const ordersByDriver = new Map<string, { today: number; active: number }>();
   for (const o of (orders ?? []) as any[]) {
@@ -845,8 +850,15 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
     if (['accepted', 'preparing', 'ready', 'arrived', 'picked_up'].includes(o.status)) slot.active += 1;
     ordersByDriver.set(o.driver_id, slot);
   }
-  const onlineCount = (driverStates ?? []).filter((s: any) => !!s.shift_started_at && !s.on_break).length;
-  const breakCount = (driverStates ?? []).filter((s: any) => !!s.shift_started_at && s.on_break).length;
+  const locById = new Map((driverLocations ?? []).map((l: any) => [l.driver_id, l.updated_at as string]));
+  const onlineCount = (driverStates ?? []).filter((s: any) => {
+    if (s.on_break) return false;
+    return !!s.shift_started_at && isDriverPresenceOnline(locById.get(s.driver_id));
+  }).length;
+  const breakCount = (driverStates ?? []).filter((s: any) => {
+    if (!s.on_break || !s.shift_started_at) return false;
+    return isDriverPresenceOnline(locById.get(s.driver_id));
+  }).length;
 
   return (
     <div className="space-y-3">
@@ -887,8 +899,9 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                 const walletPending = Number(dw?.pending_balance ?? 0);
                 const walletTotal = walletAvail + walletPending;
                 const onShift = !!ds?.shift_started_at;
+                const presenceOnline = isDriverPresenceOnline(locById.get(driver.user_id));
                 const onBreak = !!ds?.on_break;
-                const status = onShift ? (onBreak ? 'break' : 'online') : 'offline';
+                const status = onShift && presenceOnline ? (onBreak ? 'break' : 'online') : 'offline';
                 const statusBadge =
                   status === 'online' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-success"><span className="h-1.5 w-1.5 rounded-full bg-success animate-pulse" /> Online</span>
                   : status === 'break' ? <span className="inline-flex items-center gap-1 text-[11px] font-medium text-warning"><span className="h-1.5 w-1.5 rounded-full bg-warning" /> Διάλειμμα</span>
