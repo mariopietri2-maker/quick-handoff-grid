@@ -75,6 +75,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'drivers',
     tabs: [
       { id: 'drivers', label: 'Οδηγοί' },
+      { id: 'driver_messages', label: '✉️ Μηνύματα' },
       { id: 'drivers_live_map', label: '📍 Live χάρτης' },
       { id: 'driver_map_editor', label: 'Χάρτης οδηγών' },
       { id: 'service_zones', label: 'Ζώνες παράδοσης' },
@@ -120,7 +121,7 @@ export const NAV_SECTIONS = [
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
       { id: 'audit', label: 'Audit log' },
-      { id: 'remote_actions', label: 'Remote actions' },
+      { id: 'remote_actions', label: 'Remote actions (χρήστες)' },
       { id: 'system_reset', label: '⚠ System reset' },
     ],
   },
