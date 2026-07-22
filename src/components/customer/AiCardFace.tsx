@@ -7,7 +7,6 @@ import { cn } from '@/lib/utils';
 const ALLOWED_HOSTS = [
   'freshdelivery.app',
   'quick-handoff-grid-production.up.railway.app',
-  'quick-handoff-grid.vercel.app',
 ];
 
 export function useHeroCardNavigate() {

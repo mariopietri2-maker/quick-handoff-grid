@@ -1,9 +1,8 @@
-/** Canonical public site while Vercel builds are rate-limited. */
+/** Canonical public production origin (Railway only). */
 export const SITE_ORIGIN = 'https://quick-handoff-grid-production.up.railway.app';
 
-/** Legacy / fallback hosts still allowed for Capacitor navigation & deep links. */
+/** Extra hosts still allowed for Capacitor navigation & deep links. */
 export const SITE_FALLBACK_ORIGINS = [
-  'https://quick-handoff-grid.vercel.app',
   'https://freshdelivery.app',
 ] as const;
 

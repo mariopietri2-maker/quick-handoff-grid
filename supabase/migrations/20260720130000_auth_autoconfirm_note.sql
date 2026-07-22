@@ -2,7 +2,7 @@
   Auth project settings (applied via Management API for fresh-delivery):
   - mailer_autoconfirm = true  (no SMTP → confirmation emails never arrive;
     unconfirmed users get "Invalid login credentials" on password login)
-  - site_url = https://quick-handoff-grid.vercel.app
+  - site_url = https://quick-handoff-grid-production.up.railway.app
   - uri_allow_list includes production + localhost Vite ports
 
   Re-apply if the project is recreated:

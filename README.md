@@ -2,13 +2,11 @@
 
 Real-time food delivery marketplace for **Ιωάννινα** — customers, multi-store restaurant owners, drivers, admin ops, and support.
 
-**Live (Railway — primary while Vercel is rate-limited):** https://quick-handoff-grid-production.up.railway.app  
-**Vercel (may lag during build limits):** https://quick-handoff-grid.vercel.app  
+**Live (Railway):** https://quick-handoff-grid-production.up.railway.app  
 **Store PWA:** open `/store` in Chrome/Safari → Install / Add to Home Screen
 
-Vercel and Railway both serve the same SPA against the **same** Supabase project
-(`ojkesspghyqmjmupybva`). Production builds force those keys from `.env.production`
-so a stale host env cannot point Railway at a different database.
+Production is hosted **only on Railway**. Builds bake Supabase keys from `.env.production`
+(`ojkesspghyqmjmupybva`) so a stale host env cannot point at a different database.
 
 ---
 
@@ -29,10 +27,10 @@ so a stale host env cannot point Railway at a different database.
 - **Frontend:** React 18, Vite 5, TypeScript, Tailwind, shadcn/ui
 - **Backend:** Supabase (Postgres, Auth, Realtime, Edge Functions, RLS)
 - **Maps:** Mapbox
-- **Payments:** Stripe (set **live** keys in Vercel + Supabase secrets for production)
+- **Payments:** Stripe (set **live** keys in Railway + Supabase secrets for production)
 - **Mobile:** Capacitor 8 (customer + driver native shells for Play/App Store); **store is a web PWA**
 - **Tests:** Vitest (unit), Playwright (e2e)
-- **Host:** Vercel + Railway (`vercel.json` SPA; Railway Nixpacks)
+- **Host:** Railway (Nixpacks SPA)
 
 Package manager: **npm** (`package-lock.json`). Node **20+** (22 recommended).
 
@@ -66,8 +64,8 @@ cp .env.example .env.local   # optional overrides
 ```
 
 Vite **bakes** `VITE_*` into the client bundle at build time. This repo keeps
-`.env.production` with public anon/publishable keys so Vercel deploys work
-without dashboard env. Override with live Stripe `pk_live_…` on Vercel when ready.
+`.env.production` with public anon/publishable keys so Railway deploys work
+without dashboard env. Override with live Stripe `pk_live_…` on Railway when ready.
 
 | Variable | Notes |
 |---|---|
@@ -76,12 +74,11 @@ without dashboard env. Override with live Stripe `pk_live_…` on Vercel when re
 | `VITE_MAPBOX_TOKEN` | Optional client fallback; prefer edge `get-mapbox-token` |
 
 ### Supabase Auth
-- Site URL: `https://quick-handoff-grid-production.up.railway.app` (primary)
-- Redirects: Railway + Vercel + `http://localhost:5173`
+- Site URL: `https://quick-handoff-grid-production.up.railway.app`
+- Redirects: Railway + `http://localhost:5173` (+ custom domain when ready)
 - Disable email confirm until SMTP is configured (otherwise signup looks broken)
 
-Vercel and Railway must use the **same** Supabase project (`ojkesspghyqmjmupybva`).
-`npm run build` forces those keys from `.env.production` so stale Railway dashboard
+`npm run build` forces Supabase keys from `.env.production` so stale Railway dashboard
 `VITE_SUPABASE_*` values cannot point at another database.
 
 ### Push (FCM)
@@ -131,7 +128,7 @@ App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver`
 
 **Launch:** publish Uber green branding (done in DB), hide test stores, set Stripe **live** `pk_live_…` + edge secrets before public launch.
 
-Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with live keys on Vercel and matching live secrets + webhook endpoint on Supabase. In-app refunds credit the **customer wallet** (see `/legal/refunds`); original-card Stripe refunds are manual/support only today.
+Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with live keys on Railway and matching live secrets + webhook endpoint on Supabase. In-app refunds credit the **customer wallet** (see `/legal/refunds`); original-card Stripe refunds are manual/support only today.
 
 ---
 
@@ -148,13 +145,4 @@ npm run test:e2e
 
 ## Contributing
 
-1. Branch from `main`
-2. Prefer `npm` (do not commit `bun.lock`)
-3. Keep secrets out of git — use `.env.example` + host dashboards
-4. Open a PR
-
-**Issues:** https://github.com/mariopietri2-maker/quick-handoff-grid/issues
-
----
-
-Private project. All rights reserved.
+Open a PR against `main`. Railway auto-deploys from `main`.
