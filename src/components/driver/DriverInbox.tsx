@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { formatDistanceToNow } from 'date-fns';
 import { el } from 'date-fns/locale';
-import { Mail, MailOpen, LifeBuoy, Loader2 } from 'lucide-react';
+import { Mail, MailOpen, LifeBuoy, Loader2, ChevronDown, ChevronUp } from 'lucide-react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Button } from '@/components/ui/button';
@@ -31,10 +32,13 @@ type TicketRow = {
  */
 export default function DriverInbox() {
   const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const focusMsg = searchParams.get('msg');
   const [loading, setLoading] = useState(true);
   const [notifs, setNotifs] = useState<Notif[]>([]);
   const [tickets, setTickets] = useState<TicketRow[]>([]);
-  const [expanded, setExpanded] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(focusMsg);
+  const openedDeepLink = useRef<string | null>(null);
 
   const load = useCallback(async () => {
     if (!user) return;
@@ -72,7 +76,7 @@ export default function DriverInbox() {
     return () => { supabase.removeChannel(ch); };
   }, [user, load]);
 
-  const markRead = async (id: string) => {
+  const markRead = useCallback(async (id: string) => {
     const now = new Date().toISOString();
     setNotifs((prev) => prev.map((n) => (n.id === id ? { ...n, read_at: n.read_at ?? now } : n)));
     await (supabase as any)
@@ -80,7 +84,21 @@ export default function DriverInbox() {
       .update({ read_at: now })
       .eq('id', id)
       .is('read_at', null);
-  };
+  }, []);
+
+  // Deep-link from push / toast: open and mark the target message once.
+  useEffect(() => {
+    if (!focusMsg || loading) return;
+    if (openedDeepLink.current === focusMsg) return;
+    const target = notifs.find((n) => n.id === focusMsg);
+    if (!target) return;
+    openedDeepLink.current = focusMsg;
+    setExpanded(focusMsg);
+    if (!target.read_at) void markRead(focusMsg);
+    const next = new URLSearchParams(searchParams);
+    next.delete('msg');
+    setSearchParams(next, { replace: true });
+  }, [focusMsg, loading, notifs, markRead, searchParams, setSearchParams]);
 
   const markAllRead = async () => {
     if (!user) return;
@@ -132,7 +150,6 @@ export default function DriverInbox() {
         </div>
       </div>
 
-      {/* Messages */}
       <section className="space-y-2">
         <p className="text-[11px] font-heading font-bold uppercase tracking-wider text-[hsl(var(--driver-text-muted))] px-0.5">
           Εισερχόμενα
@@ -159,7 +176,7 @@ export default function DriverInbox() {
                 }}
                 className={`w-full text-left driver-card p-3.5 transition-colors ${
                   isUnread ? 'ring-1 ring-[hsl(var(--driver-accent))]/25 bg-[hsl(var(--driver-accent))]/[0.04]' : ''
-                }`}
+                } ${open ? 'ring-1 ring-[hsl(var(--driver-accent))]/40' : ''}`}
               >
                 <div className="flex items-start gap-2.5">
                   <div className={`mt-0.5 h-8 w-8 rounded-full flex items-center justify-center shrink-0 ${
@@ -177,12 +194,16 @@ export default function DriverInbox() {
                       <Badge variant="outline" className={`text-[9.5px] h-5 ${severityBadge(n.severity)}`}>
                         {n.severity === 'urgent' ? 'Επείγον' : n.severity === 'warning' ? 'Προσοχή' : 'Info'}
                       </Badge>
+                      <span className="ml-auto text-[hsl(var(--driver-text-muted))]">
+                        {open ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                      </span>
                     </div>
-                    <p className={`text-[12.5px] mt-0.5 text-[hsl(var(--driver-text-muted))] ${open ? '' : 'line-clamp-2'}`}>
+                    <p className={`text-[13px] mt-1.5 whitespace-pre-wrap text-[hsl(var(--driver-text))] ${open ? '' : 'line-clamp-2 text-[hsl(var(--driver-text-muted))] text-[12.5px]'}`}>
                       {n.body}
                     </p>
                     <p className="text-[10.5px] text-[hsl(var(--driver-text-muted))] mt-1.5 tabular-nums">
                       {formatDistanceToNow(new Date(n.created_at), { addSuffix: true, locale: el })}
+                      {open ? ' · πάτα για κλείσιμο' : ' · πάτα για άνοιγμα'}
                     </p>
                   </div>
                 </div>
@@ -192,7 +213,6 @@ export default function DriverInbox() {
         )}
       </section>
 
-      {/* Tickets */}
       <section className="space-y-2">
         <p className="text-[11px] font-heading font-bold uppercase tracking-wider text-[hsl(var(--driver-text-muted))] px-0.5 flex items-center gap-1.5">
           <LifeBuoy className="h-3.5 w-3.5" /> Αιτήματα υποστήριξης

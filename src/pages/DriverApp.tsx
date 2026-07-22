@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck, Mail } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { startPushRegistration } from '@/lib/push-register';
@@ -564,6 +564,15 @@ export default function DriverApp() {
                   <span className="font-heading font-extrabold text-[hsl(var(--driver-text))] text-[12.5px] tracking-tight truncate">Fresh Delivery</span>
                 </div>
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setActiveTab('inbox')}
+                    className="h-9 w-9 rounded-full border border-border bg-card/95 backdrop-blur-md shadow-lg hover:bg-card transition-colors flex items-center justify-center text-foreground"
+                    aria-label="Μηνύματα"
+                    title="Μηνύματα"
+                  >
+                    <Mail className="h-4 w-4" />
+                  </button>
                   <DriverSupportButton orderId={activeDelivery?.id} />
                 </div>
               </div>

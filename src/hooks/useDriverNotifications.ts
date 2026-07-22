@@ -50,18 +50,24 @@ export function useDriverNotifications() {
   }, [user, navigate]);
 }
 
+function inboxPath(notificationId?: string | null) {
+  if (notificationId) return `/driver?tab=inbox&msg=${encodeURIComponent(notificationId)}`;
+  return '/driver?tab=inbox';
+}
+
 function showInboxMail(
   n: { id?: string; title: string; body: string; severity: string },
   navigate: (path: string) => void,
 ) {
-  const openInbox = () => navigate('/driver?tab=inbox');
+  const path = inboxPath(n.id);
+  const openInbox = () => navigate(path);
   const subject = n.title?.trim() || 'Νέο μήνυμα';
   const preview = (n.body || '').trim().slice(0, 120);
 
-  // Soft in-app banner — email style, not offer alarm.
+  // Soft in-app banner — email style, not offer alarm. Whole toast opens inbox.
   toast(`✉️ ${subject}`, {
-    description: preview || 'Άνοιξε τα Εισερχόμενα για να το διαβάσεις.',
-    duration: n.severity === 'urgent' ? 8_000 : 5_000,
+    description: preview || 'Πάτα για να ανοίξεις το μήνυμα.',
+    duration: n.severity === 'urgent' ? 10_000 : 7_000,
     action: {
       label: 'Άνοιγμα',
       onClick: openInbox,
@@ -77,6 +83,12 @@ function showInboxMail(
       tag: `driver-inbox:${n.id ?? subject}`,
       vibrate: false,
       channelId: 'driver-inbox',
+      path,
+      extra: {
+        type: 'inbox',
+        channel: 'driver-inbox',
+        notification_id: n.id,
+      },
     });
   }
 }
