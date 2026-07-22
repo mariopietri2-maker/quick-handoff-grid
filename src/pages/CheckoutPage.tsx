@@ -326,7 +326,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white pb-32" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
+    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
       <SEO
         title="Ολοκλήρωση παραγγελίας — Fresh Delivery"
         description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."
@@ -607,8 +607,11 @@ export default function CheckoutPage() {
         </Card>
       </main>
 
-      {/* Place Order Button */}
-      <div className="fixed bottom-0 left-0 right-0 p-4 bg-background/80 backdrop-blur border-t border-border z-50">
+      {/* Place Order Button — clear of Android system nav / home gesture */}
+      <div
+        className="fixed bottom-0 left-0 right-0 px-4 pt-4 bg-background/80 backdrop-blur border-t border-border z-50"
+        style={{ paddingBottom: 'max(1rem, var(--app-safe-bottom))' }}
+      >
         <div className="max-w-lg mx-auto">
           <Button
             onClick={handlePlaceOrder}
