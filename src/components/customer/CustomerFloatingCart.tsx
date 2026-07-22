@@ -26,7 +26,7 @@ export default function CustomerFloatingCart() {
   return (
     <div
       className="fixed left-0 right-0 z-[55] pointer-events-none"
-      style={{ bottom: 'calc(58px + env(safe-area-inset-bottom))' }}
+      style={{ bottom: 'calc(var(--customer-tab-h, 58px) + var(--app-safe-bottom))' }}
     >
       <div className="max-w-2xl mx-auto px-3 pb-2">
         <button
