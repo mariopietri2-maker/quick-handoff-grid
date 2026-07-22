@@ -37,7 +37,7 @@ export function AiCardStrip() {
     <section className="pt-6 animate-fade-in">
       <div className="px-5 flex items-end justify-between mb-3">
         <div>
-          <h2 className="font-heading font-black text-[18px] text-[hsl(0,0%,9%)] tracking-tight leading-none">
+          <h2 className="font-heading font-black text-[18px] c-ink tracking-tight leading-none">
             {t('customer.recommended')}
           </h2>
           <p className="text-[10px] c-muted mt-1.5 font-black uppercase tracking-[0.14em]">

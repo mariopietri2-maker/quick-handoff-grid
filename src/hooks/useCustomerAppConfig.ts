@@ -36,6 +36,10 @@ export type CustomerAppConfig = {
     accent_hsl: string;
     accent_dark_hsl: string;
     logo_url: string | null;
+    /** Short line under brand on splash / header. */
+    tagline: string;
+    /** Show logo/wordmark chip in the home header. */
+    show_header_brand: boolean;
   };
   tiles: { label: string; emoji: string; category: string }[];
   promos: {
@@ -45,6 +49,8 @@ export type CustomerAppConfig = {
     code: string;
     gradient: 'hero' | 'dark';
     enabled: boolean;
+    /** Optional custom cover; falls back to stock promo art. */
+    image_url?: string | null;
   }[];
   hero_cards: HeroCard[];
   sections: {
@@ -58,6 +64,10 @@ export type CustomerAppConfig = {
     show_ai_strip: boolean;
     show_pro_delivery: boolean;
     show_order_again: boolean;
+    /** Soft accent wash behind home header / feed. */
+    show_ambient_glow: boolean;
+    /** Store promo_badge / free-delivery ribbons on cards. */
+    show_store_badges: boolean;
   };
 };
 
@@ -68,6 +78,8 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     accent_hsl: '152 100% 39%',
     accent_dark_hsl: '152 100% 28%',
     logo_url: null,
+    tagline: 'Fast · Fresh · Local',
+    show_header_brand: true,
   },
   tiles: [
     { label: 'Φαγητό', emoji: '🍔', category: 'all' },
@@ -76,7 +88,7 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     { label: 'Γλυκά', emoji: '🍰', category: 'Γλυκά' },
   ],
   promos: [
-    { tag: 'NEW', title: 'Δωρεάν παράδοση', subtitle: 'στην πρώτη σου παραγγελία', code: 'WELCOME', gradient: 'hero', enabled: true },
+    { tag: 'NEW', title: 'Δωρεάν παράδοση', subtitle: 'στην πρώτη σου παραγγελία', code: 'WELCOME', gradient: 'hero', enabled: true, image_url: null },
   ],
   hero_cards: [],
   sections: {
@@ -90,6 +102,8 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     show_ai_strip: true,
     show_pro_delivery: false,
     show_order_again: false,
+    show_ambient_glow: true,
+    show_store_badges: true,
   },
 };
 
@@ -99,6 +113,10 @@ function mergeConfig(cfg: any): CustomerAppConfig {
     ...cfg,
     branding: { ...DEFAULT_CONFIG.branding, ...(cfg?.branding ?? {}) },
     sections: { ...DEFAULT_CONFIG.sections, ...(cfg?.sections ?? {}) },
+    promos: Array.isArray(cfg?.promos)
+      ? cfg.promos.map((p: any) => ({ image_url: null, ...p }))
+      : DEFAULT_CONFIG.promos,
+    tiles: Array.isArray(cfg?.tiles) ? cfg.tiles : DEFAULT_CONFIG.tiles,
     hero_cards: Array.isArray(cfg?.hero_cards) ? cfg.hero_cards : [],
   };
 }
