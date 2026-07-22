@@ -103,12 +103,15 @@ Deno.serve(async (req) => {
       // One device token is enough — avoid multi-token amplify (same user, many installs).
       const primary = list[0]!;
       const extras = list.slice(1);
+      const channelId = resolveChannelId(row.app, row.data);
+      const quiet = channelId === "driver-inbox";
       const ok = await sendFcm({
         token: primary.token,
         title: row.title,
         body: row.body,
         data: flattenData(row.data),
-        channelId: row.app === "customer" ? "customer-orders" : "driver-offers",
+        channelId,
+        quiet,
       });
       if (ok) {
         anyOk = true;
@@ -122,7 +125,8 @@ Deno.serve(async (req) => {
             title: row.title,
             body: row.body,
             data: flattenData(row.data),
-            channelId: row.app === "customer" ? "customer-orders" : "driver-offers",
+            channelId,
+            quiet,
           });
           if (ok2) {
             anyOk = true;
@@ -167,12 +171,25 @@ function flattenData(data: Record<string, unknown> | null): Record<string, strin
   return out;
 }
 
+/** Inbox mail uses a quiet channel; offers/orders stay high-priority. */
+function resolveChannelId(
+  app: string,
+  data: Record<string, unknown> | null,
+): string {
+  const type = typeof data?.type === "string" ? data.type : "";
+  const channel = typeof data?.channel === "string" ? data.channel : "";
+  if (channel === "driver-inbox" || type === "inbox") return "driver-inbox";
+  if (app === "customer") return "customer-orders";
+  return "driver-offers";
+}
+
 async function sendFcm(opts: {
   token: string;
   title: string;
   body: string;
   data: Record<string, string>;
   channelId: string;
+  quiet?: boolean;
 }): Promise<boolean> {
   // Prefer HTTP v1 (service account). Legacy FCM_SERVER_KEY is often disabled on new Firebase projects.
   const saRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
@@ -204,11 +221,13 @@ async function sendFcm(opts: {
             notification: { title: opts.title, body: opts.body },
             data: opts.data,
             android: {
-              priority: "HIGH",
+              priority: opts.quiet ? "NORMAL" : "HIGH",
               notification: {
                 channel_id: opts.channelId,
                 sound: "default",
-                notification_priority: "PRIORITY_MAX",
+                notification_priority: opts.quiet
+                  ? "PRIORITY_DEFAULT"
+                  : "PRIORITY_MAX",
               },
             },
           },
@@ -232,7 +251,7 @@ async function sendFcm(opts: {
       },
       body: JSON.stringify({
         to: opts.token,
-        priority: "high",
+        priority: opts.quiet ? "normal" : "high",
         notification: {
           title: opts.title,
           body: opts.body,
@@ -241,7 +260,7 @@ async function sendFcm(opts: {
         },
         data: opts.data,
         android: {
-          priority: "high",
+          priority: opts.quiet ? "normal" : "high",
           notification: { channel_id: opts.channelId, sound: "default" },
         },
       }),
