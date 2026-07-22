@@ -34,6 +34,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 ];
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
+  { value: 'random', label: 'Τυχαίο', emoji: '🎲' },
   { value: 'pop', label: 'Pop', emoji: '🎉' },
   { value: 'honk', label: 'Honk', emoji: '📯' },
   { value: 'party', label: 'Party', emoji: '🥳' },
@@ -61,7 +62,7 @@ const DEFAULT_APP: DriverAppPrefs = {
 const DEFAULT_SOUND: DriverSoundPrefs = {
   enabled: true,
   volume: 0.85,
-  pattern: 'pop',
+  pattern: 'random',
   repeatCount: 2,
   vibrate: true,
 };
@@ -301,8 +302,8 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
             <>
               <Row
                 icon={sound.enabled ? Volume2 : VolumeX}
-                label="Ήχος νέων προσφορών"
-                desc="Παίζει όταν έρχεται παραγγελία"
+                label="Ήχος ειδοποιήσεων"
+                desc="Προσφορές & μηνύματα — τυχαίο effect by default"
               >
                 <Switch checked={sound.enabled} onCheckedChange={(v) => updateSound({ enabled: v })} />
               </Row>
@@ -357,6 +358,7 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
                           const next = { ...sound, pattern: opt.value };
                           setSound(next);
                           saveDriverSoundPrefs(next);
+                          // Preview: resolve random to a concrete sample each tap.
                           playPattern(next.pattern, next.volume);
                         }}
                         className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all min-h-[64px] ${
