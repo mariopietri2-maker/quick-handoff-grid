@@ -54,12 +54,11 @@ Deno.serve(async (req) => {
   const body = await req.json().catch(() => ({}));
   const limit = Math.min(Number(body.limit ?? 40), 100);
 
-  const { data: pending, error } = await admin
-    .from("push_outbox")
-    .select("id, user_id, app, title, body, data")
-    .is("sent_at", null)
-    .order("created_at", { ascending: true })
-    .limit(limit);
+  // Claim rows first (FOR UPDATE SKIP LOCKED) so overlapping drains cannot
+  // double-send the same outbox events.
+  const { data: pending, error } = await admin.rpc("claim_push_outbox", {
+    p_limit: limit,
+  });
 
   if (error) return json({ error: error.message }, 500);
   const rows = (pending ?? []) as OutboxRow[];
@@ -85,10 +84,7 @@ Deno.serve(async (req) => {
       if (!fcmReady) {
         await admin
           .from("push_outbox")
-          .update({
-            sent_at: new Date().toISOString(),
-            error: "fcm_not_configured",
-          })
+          .update({ error: "fcm_not_configured" })
           .eq("id", row.id);
         skipped++;
         continue;
@@ -97,39 +93,49 @@ Deno.serve(async (req) => {
       if (list.length === 0) {
         await admin
           .from("push_outbox")
-          .update({
-            sent_at: new Date().toISOString(),
-            error: "no_tokens",
-          })
+          .update({ error: "no_tokens" })
           .eq("id", row.id);
         skipped++;
         continue;
       }
 
       let anyOk = false;
-      for (const t of list) {
-        const ok = await sendFcm({
-          token: t.token,
-          title: row.title,
-          body: row.body,
-          data: flattenData(row.data),
-          channelId: row.app === "customer" ? "customer-orders" : "driver-offers",
-        });
-        if (ok) {
-          anyOk = true;
-          sent++;
-        } else {
-          // Drop dead tokens
-          await admin.from("push_tokens").delete().eq("token", t.token);
+      // One device token is enough — avoid multi-token amplify (same user, many installs).
+      const primary = list[0]!;
+      const extras = list.slice(1);
+      const ok = await sendFcm({
+        token: primary.token,
+        title: row.title,
+        body: row.body,
+        data: flattenData(row.data),
+        channelId: row.app === "customer" ? "customer-orders" : "driver-offers",
+      });
+      if (ok) {
+        anyOk = true;
+        sent++;
+      } else {
+        await admin.from("push_tokens").delete().eq("token", primary.token);
+        // Try at most one fallback token if the primary is dead.
+        if (extras[0]) {
+          const ok2 = await sendFcm({
+            token: extras[0].token,
+            title: row.title,
+            body: row.body,
+            data: flattenData(row.data),
+            channelId: row.app === "customer" ? "customer-orders" : "driver-offers",
+          });
+          if (ok2) {
+            anyOk = true;
+            sent++;
+          } else {
+            await admin.from("push_tokens").delete().eq("token", extras[0].token);
+          }
         }
       }
 
       await admin
         .from("push_outbox")
-        .update({
-          sent_at: new Date().toISOString(),
-          error: anyOk ? null : "send_failed",
-        })
+        .update({ error: anyOk ? null : "send_failed" })
         .eq("id", row.id);
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);

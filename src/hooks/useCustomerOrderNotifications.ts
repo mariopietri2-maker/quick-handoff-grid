@@ -13,11 +13,7 @@ import { initNotificationChannels } from '@/lib/push-notifications';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 const statusToastLabels: Record<string, string> = {
-  accepted: 'Η παραγγελία σου έγινε δεκτή ✅',
-  preparing: 'Ετοιμάζεται 👨‍🍳',
-  ready: 'Έτοιμη — αναμένει οδηγό 📦',
   picked_up: 'Ο οδηγός έρχεται προς εσένα 🛵',
-  arrived: 'Ο οδηγός έφτασε στο κατάστημα 🏪',
   delivered: 'Παραδόθηκε 🎉',
   cancelled: 'Η παραγγελία ακυρώθηκε ❌',
 };
@@ -60,7 +56,11 @@ export function useCustomerOrderNotifications() {
           if (label) {
             toast(label, { duration: 5000 });
             playStatusUpdateSound();
-            showOrderStatusNotification(next.id, next.status);
+            // In-app only when foreground — FCM covers background/killed.
+            // Avoid stacking OS locals on top of FCM for the same status.
+            if (typeof document !== 'undefined' && document.visibilityState === 'visible') {
+              showOrderStatusNotification(next.id, next.status);
+            }
           }
         },
       )
