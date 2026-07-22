@@ -15,6 +15,11 @@ export async function initNativeStatusBar() {
     // Ignore native status bar setup failures.
   }
 
-  // Mark document as native so CSS can drop web-only chrome
-  document.documentElement.classList.add('is-native');
+  // Mark document as native so CSS can drop web-only chrome and apply
+  // Android nav-bar safe-area floors (WebView often reports inset 0).
+  const root = document.documentElement;
+  root.classList.add('is-native');
+  const platform = Capacitor.getPlatform();
+  if (platform === 'android') root.classList.add('is-android');
+  if (platform === 'ios') root.classList.add('is-ios');
 }

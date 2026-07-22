@@ -186,7 +186,7 @@ export default function RestaurantPage() {
   return (
     <div
       className={`customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-white ${
-        cartForThisStore ? 'pb-28' : 'pb-8'
+        cartForThisStore ? 'pb-[calc(7rem+var(--app-safe-bottom))]' : 'pb-8'
       }`}
       style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
@@ -423,10 +423,13 @@ export default function RestaurantPage() {
         )}
       </div>
 
-      {/* Sticky cart bar — competitor-style full-bleed CTA */}
+      {/* Sticky cart bar — clear of Android system nav */}
       {cartForThisStore && (
         <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
-          <div className="max-w-2xl mx-auto px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-2">
+          <div
+            className="max-w-2xl mx-auto px-3 pt-2"
+            style={{ paddingBottom: 'max(0.75rem, var(--app-safe-bottom))' }}
+          >
             <button
               type="button"
               onClick={() => navigate('/checkout')}
