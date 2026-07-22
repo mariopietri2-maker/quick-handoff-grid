@@ -6,6 +6,16 @@ const isNative = Capacitor.isNativePlatform();
 let permissionRequested = false;
 let permissionGranted = false;
 
+/** Stable positive int id so Android replaces duplicates instead of stacking. */
+export function stableNotificationId(key: string): number {
+  let h = 2166136261;
+  for (let i = 0; i < key.length; i++) {
+    h ^= key.charCodeAt(i);
+    h = Math.imul(h, 16777619);
+  }
+  return (Math.abs(h) % 2_000_000_000) + 1;
+}
+
 export async function ensureNotificationPermission(): Promise<boolean> {
   if (permissionRequested) return permissionGranted;
   permissionRequested = true;
@@ -41,10 +51,11 @@ export async function showOsNotification(opts: {
   }
   try {
     if (isNative) {
+      const key = opts.tag || `${opts.title}:${opts.body}`;
       await LocalNotifications.schedule({
         notifications: [
           {
-            id: Math.floor(Math.random() * 2_147_483_647),
+            id: stableNotificationId(key),
             title: opts.title,
             body: opts.body,
             schedule: { at: new Date(Date.now() + 50) },
