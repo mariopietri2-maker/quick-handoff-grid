@@ -2,7 +2,7 @@
 /**
  * Read-only / light stress probe for Fresh Delivery.
  * Measures latency & error rates under concurrent load against:
- *   - Vercel SPA
+ *   - Railway SPA
  *   - get-mapbox-token edge function
  *   - PostgREST public settings RPC
  *   - stores catalog select
@@ -14,7 +14,7 @@
 import { createClient } from '@supabase/supabase-js';
 import fs from 'fs';
 
-const APP = process.env.APP_URL || 'https://quick-handoff-grid.vercel.app';
+const APP = process.env.APP_URL || 'https://quick-handoff-grid-production.up.railway.app';
 const URL = process.env.VITE_SUPABASE_URL || 'https://ojkesspghyqmjmupybva.supabase.co';
 const ANON =
   process.env.VITE_SUPABASE_ANON_KEY ||
