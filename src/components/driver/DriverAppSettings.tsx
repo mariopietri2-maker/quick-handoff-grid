@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   Settings, Moon, Sun, Monitor, Languages, Navigation as NavIcon,
   Eye, EyeOff, Clock, MapPin, Volume2, VolumeX, Bell, BellOff,
-  Smartphone, Play, Ruler, Check, RotateCcw,
+  Smartphone, Play, Ruler, Check, RotateCcw, Music2,
 } from 'lucide-react';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { Switch } from '@/components/ui/switch';
@@ -11,8 +11,12 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { loadDriverAppPrefs, saveDriverAppPrefs, type DriverAppPrefs } from '@/lib/driver-app-prefs';
 import {
-  loadDriverSoundPrefs, saveDriverSoundPrefs, playPattern, playOfferAlert,
-  type DriverSoundPrefs, type SoundPattern,
+  loadDriverSoundPrefs,
+  saveDriverSoundPrefs,
+  playOfferAlert,
+  primeDriverAudio,
+  OFFER_SOUND_LABEL,
+  type DriverSoundPrefs,
 } from '@/lib/driver-sound-prefs';
 import { requestNotificationPermission } from '@/lib/notifications';
 import { useTheme } from '@/hooks/useTheme';
@@ -33,28 +37,12 @@ const TABS: { id: SettingsTab; label: string }[] = [
   { id: 'device', label: 'Συσκευή' },
 ];
 
-const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
-  { value: 'fresh_delivery', label: 'Fresh Delivery', emoji: '🟢' },
-  { value: 'random', label: 'Τυχαίο', emoji: '🎲' },
-  { value: 'pop', label: 'Pop', emoji: '🎉' },
-  { value: 'honk', label: 'Honk', emoji: '📯' },
-  { value: 'party', label: 'Party', emoji: '🥳' },
-  { value: 'whistle', label: 'Whistle', emoji: '😮‍💨' },
-  { value: 'clown', label: 'Clown', emoji: '🤡' },
-  { value: 'suspense', label: 'Suspense', emoji: '🎬' },
-  { value: 'mystery', label: 'Mystery', emoji: '🔮' },
-  { value: 'screech', label: 'Screech', emoji: '🎻' },
-  { value: 'nokia', label: 'Nokia', emoji: '📱' },
-  { value: 'slip', label: 'Slip', emoji: '🍌' },
-];
-
 const DEFAULT_APP: DriverAppPrefs = {
   theme: 'dark',
   language: 'el',
   distanceUnit: 'km',
   navApp: 'google',
   keepScreenOn: false,
-  autoAcceptHighValue: false,
   hideEarningsOnHome: false,
   showStorePinsOnMap: true,
   inactivityMinutes: 30,
@@ -62,9 +50,8 @@ const DEFAULT_APP: DriverAppPrefs = {
 
 const DEFAULT_SOUND: DriverSoundPrefs = {
   enabled: true,
-  volume: 0.9,
-  pattern: 'fresh_delivery',
-  repeatCount: 2,
+  volume: 1,
+  repeatCount: 4,
   vibrate: true,
 };
 
@@ -110,6 +97,12 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
     setSound(DEFAULT_SOUND);
     saveDriverSoundPrefs(DEFAULT_SOUND);
     toast.success('Επαναφορά προεπιλογών');
+  };
+
+  const testOfferSound = () => {
+    primeDriverAudio();
+    playOfferAlert(sound);
+    toast.success('Παίζει ήχος προσφοράς');
   };
 
   const Segment = <T extends string>({
@@ -178,7 +171,6 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
         side="bottom"
         className="driver-shell bg-[hsl(var(--driver-bg))] border-t border-[hsl(var(--driver-border))] rounded-t-3xl max-h-[92vh] overflow-hidden flex flex-col p-0 text-[hsl(var(--driver-text))]"
       >
-        {/* Drag handle + header */}
         <div className="px-4 pt-3 pb-2 border-b border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface))]/90 backdrop-blur sticky top-0 z-10">
           <div className="mx-auto mb-3 h-1 w-10 rounded-full bg-[hsl(var(--driver-text-muted))]/35" />
           <SheetHeader className="text-left space-y-0">
@@ -202,7 +194,6 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
             </div>
           </SheetHeader>
 
-          {/* Section tabs */}
           <div className="mt-3 flex gap-1 overflow-x-auto scrollbar-thin pb-0.5">
             {TABS.map((t) => {
               const active = tab === t.id;
@@ -301,10 +292,24 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
 
           {tab === 'sound' && (
             <>
+              <div className="rounded-2xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface))] p-3.5 flex items-start gap-3">
+                <div className="h-10 w-10 rounded-xl driver-gradient-earn text-white flex items-center justify-center shrink-0">
+                  <Music2 className="h-5 w-5" />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-heading font-bold text-[hsl(var(--driver-text))]">
+                    Ήχος προσφοράς · {OFFER_SOUND_LABEL}
+                  </p>
+                  <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 leading-snug">
+                    Ένα chime για όλες τις προσφορές — ανοιχτή εφαρμογή, κλειδωμένη οθόνη και ειδοποιήσεις συστήματος.
+                  </p>
+                </div>
+              </div>
+
               <Row
                 icon={sound.enabled ? Volume2 : VolumeX}
                 label="Ήχος ειδοποιήσεων"
-                desc="Προσφορές & μηνύματα — τυχαίο effect by default"
+                desc="Προσφορές & μηνύματα"
               >
                 <Switch checked={sound.enabled} onCheckedChange={(v) => updateSound({ enabled: v })} />
               </Row>
@@ -341,38 +346,9 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
                     max={5}
                     step={1}
                   />
-                </div>
-              </div>
-
-              <div className={!sound.enabled ? 'opacity-45 pointer-events-none' : ''}>
-                <p className="text-[10px] font-heading uppercase tracking-[0.14em] text-[hsl(var(--driver-text-muted))] mb-2 px-0.5">
-                  Ήχος ειδοποίησης
-                </p>
-                <div className="grid grid-cols-5 gap-2">
-                  {PATTERN_OPTIONS.map((opt) => {
-                    const active = sound.pattern === opt.value;
-                    return (
-                      <button
-                        type="button"
-                        key={opt.value}
-                        onClick={() => {
-                          const next = { ...sound, pattern: opt.value };
-                          setSound(next);
-                          saveDriverSoundPrefs(next);
-                          // Preview: resolve random to a concrete sample each tap.
-                          playPattern(next.pattern, next.volume);
-                        }}
-                        className={`flex flex-col items-center justify-center gap-1 p-2 rounded-xl border-2 transition-all min-h-[64px] ${
-                          active
-                            ? 'border-[hsl(var(--driver-accent))] bg-[hsl(var(--driver-accent))]/10 shadow-sm'
-                            : 'border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface))]'
-                        }`}
-                      >
-                        <span className="text-base leading-none">{opt.emoji}</span>
-                        <span className="font-heading text-[9px] font-bold text-[hsl(var(--driver-text))]">{opt.label}</span>
-                      </button>
-                    );
-                  })}
+                  <p className="text-[10px] text-[hsl(var(--driver-text-muted))] mt-1.5">
+                    Πόσες φορές παίζει το chime σε κάθε κύκλο ειδοποίησης
+                  </p>
                 </div>
               </div>
 
@@ -399,11 +375,11 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
                 {notif === 'denied' && (
                   <div className="flex items-start gap-2 rounded-xl border border-amber-500/25 bg-amber-500/10 px-3 py-2.5 text-[11px] text-amber-800">
                     <BellOff className="h-4 w-4 shrink-0 mt-0.5" />
-                    Οι ειδοποιήσεις είναι απενεργοποιημένες στις ρυθμίσεις του browser/συσκευής.
+                    Οι ειδοποιήσεις είναι απενεργοποιημένες στις ρυθμίσεις του browser/συσκευής — χωρίς αυτές ο ήχος με κλειδωμένη οθόνη μπορεί να χαθεί.
                   </div>
                 )}
                 <Button
-                  onClick={() => playOfferAlert(sound)}
+                  onClick={testOfferSound}
                   disabled={!sound.enabled}
                   className="h-11 font-heading font-bold driver-gradient-earn text-white border-0"
                 >
@@ -416,13 +392,13 @@ export function DriverAppSettings({ open, onOpenChange }: Props) {
 
           {tab === 'device' && (
             <>
-              <Row icon={Sun} label="Οθόνη πάντα ενεργή" desc="Wake lock όσο είσαι online">
+              <Row icon={Sun} label="Οθόνη πάντα ενεργή" desc="Wake lock όσο είσαι σε υπηρεσία">
                 <Switch
                   checked={prefs.keepScreenOn}
                   onCheckedChange={(v) => update({ keepScreenOn: v })}
                 />
               </Row>
-              <Row icon={Clock} label="Auto-offline" desc="Αυτόματο offline μετά από αδράνεια">
+              <Row icon={Clock} label="Auto-offline" desc="Αυτόματο εκτός υπηρεσίας μετά από αδράνεια">
                 <Segment
                   value={String(prefs.inactivityMinutes)}
                   onChange={(value) => update({ inactivityMinutes: Number(value) })}

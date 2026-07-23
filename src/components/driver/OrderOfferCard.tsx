@@ -4,7 +4,7 @@ import {
   MessageSquare, ChevronDown, ChevronUp, Check, X,
 } from 'lucide-react';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
-import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
+import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { formatDriverDistance } from '@/lib/driver-nav';
 import { minutesUntilReady, readyEtaLabel } from '@/lib/driver-ready-eta';
 import { shortenAddress } from '@/lib/address-utils';
@@ -64,7 +64,7 @@ function OrderOfferCardInner({
   expiresAt,
   timeoutSec = 60,
 }: OrderOfferCardProps) {
-  const prefs = useMemo(() => loadDriverAppPrefs(), []);
+  const prefs = useDriverAppPrefs();
   const totalWindow = useMemo(() => {
     if (!expiresAt) return timeoutSec;
     return Math.max(1, Math.ceil((new Date(expiresAt).getTime() - Date.now()) / 1000)) || timeoutSec;

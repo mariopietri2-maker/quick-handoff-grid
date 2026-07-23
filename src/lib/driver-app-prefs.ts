@@ -11,7 +11,6 @@ export interface DriverAppPrefs {
   distanceUnit: DistanceUnit;
   navApp: NavApp;
   keepScreenOn: boolean;
-  autoAcceptHighValue: boolean;
   hideEarningsOnHome: boolean;
   showStorePinsOnMap: boolean;
   inactivityMinutes: number; // 0 = never
@@ -25,7 +24,6 @@ const DEFAULTS: DriverAppPrefs = {
   distanceUnit: 'km',
   navApp: 'google',
   keepScreenOn: false,
-  autoAcceptHighValue: false,
   hideEarningsOnHome: false,
   showStorePinsOnMap: true,
   inactivityMinutes: 30,
