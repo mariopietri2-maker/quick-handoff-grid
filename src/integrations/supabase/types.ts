@@ -2100,6 +2100,7 @@ export type Database = {
           buffer_auto_fill_pct: number
           buffer_floor: number
           car_multiplier: number
+          card_payments_enabled: boolean
           customer_base_fee: number
           customer_per_km_fee: number
           default_commission_pct: number
@@ -2149,6 +2150,7 @@ export type Database = {
           sla_warn_seconds: number
           stack_max_detour_minutes: number
           stacking_enabled: boolean
+          stripe_publishable_key: string | null
           subsidize_min_pay: boolean
           surge_default_multiplier: number
           surge_enabled: boolean
@@ -2180,6 +2182,7 @@ export type Database = {
           buffer_auto_fill_pct?: number
           buffer_floor?: number
           car_multiplier?: number
+          card_payments_enabled?: boolean
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
@@ -2229,6 +2232,7 @@ export type Database = {
           sla_warn_seconds?: number
           stack_max_detour_minutes?: number
           stacking_enabled?: boolean
+          stripe_publishable_key?: string | null
           subsidize_min_pay?: boolean
           surge_default_multiplier?: number
           surge_enabled?: boolean
@@ -2260,6 +2264,7 @@ export type Database = {
           buffer_auto_fill_pct?: number
           buffer_floor?: number
           car_multiplier?: number
+          card_payments_enabled?: boolean
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
@@ -2309,6 +2314,7 @@ export type Database = {
           sla_warn_seconds?: number
           stack_max_detour_minutes?: number
           stacking_enabled?: boolean
+          stripe_publishable_key?: string | null
           subsidize_min_pay?: boolean
           surge_default_multiplier?: number
           surge_enabled?: boolean

@@ -99,10 +99,12 @@ export const ADMIN_SECTION_CAPABILITY: Record<string, AdminCapability> = {
   ledger: 'finances',
   surge: 'finances',
   pricing: 'settings',
+  stripe_payments: 'finances',
   feature_flags: 'settings',
   platform_settings: 'settings',
   system_reset: 'settings',
   operational_overrides: 'settings',
   customer_app: 'settings',
+  customer_app_config: 'settings',
   audit: 'audit',
 };

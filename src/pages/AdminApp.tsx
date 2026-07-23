@@ -32,6 +32,7 @@ const AdminLiveDriversMap    = lazy(() => import('@/components/admin/AdminLiveDr
 const ServiceZonesEditor     = lazy(() => import('@/components/admin/ServiceZonesEditor'));
 const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
+const StripePaymentsSettings = lazy(() => import('@/components/admin/StripePaymentsSettings'));
 const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
 const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserActions'));
 const DriverMessagesPanel    = lazy(() => import('@/components/admin/DriverMessagesPanel'));
@@ -420,6 +421,8 @@ export default function AdminApp() {
         return <SurgeMap />;
       case 'pricing':
         return <PricingSettings />;
+      case 'stripe_payments':
+        return <StripePaymentsSettings />;
       case 'support_roles':
         return <SupportRoleManager />;
       case 'tickets':
