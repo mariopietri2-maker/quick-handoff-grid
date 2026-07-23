@@ -5,7 +5,7 @@ import { shortenAddress } from '@/lib/address-utils';
 import {
   Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription,
 } from '@/components/ui/dialog';
-import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
+import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { openExternalNav } from '@/lib/driver-nav';
 
 interface DeliveryItem { name: string; quantity: number; }
@@ -59,7 +59,7 @@ export function ActiveDelivery({ delivery, onStatusUpdate, onFocusDestination }:
   const isCash = (delivery.paymentMethod ?? '').toLowerCase() === 'cash';
   const cashDue = Number(delivery.cashToCollect ?? 0);
   const [cashConfirmed, setCashConfirmed] = useState(false);
-  const prefs = loadDriverAppPrefs();
+  const prefs = useDriverAppPrefs();
   const navTarget = isGoingToStore
     ? { lat: delivery.storeLat, lng: delivery.storeLng, label: delivery.storeName }
     : isGoingToCustomer

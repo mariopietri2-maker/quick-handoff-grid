@@ -19,14 +19,49 @@ const isNative = Capacitor.isNativePlatform();
 
 let startedForUser: string | null = null;
 let listenersAttached = false;
-/** True when the Capacitor app is in the background (screen off / another app). */
-let appIsActive = true;
+/** True when the Capacitor app is in the foreground (screen on + visible). */
+let appIsActive =
+  typeof document === 'undefined' ? true : document.visibilityState !== 'hidden';
 
 /** Recent local offer keys — avoid Realtime local + FCM double banners. */
 const recentLocalKeys = new Map<string, number>();
-const LOCAL_DEDUP_MS = 45_000;
+const LOCAL_DEDUP_MS = 8_000;
+
+function emitAppActiveChanged() {
+  try {
+    window.dispatchEvent(
+      new CustomEvent('driver-app-active-changed', { detail: appIsActive }),
+    );
+  } catch {
+    /* ignore */
+  }
+}
+
+function setAppActive(next: boolean) {
+  if (appIsActive === next) return;
+  appIsActive = next;
+  emitAppActiveChanged();
+}
+
+/** Sync visibility — covers lock-screen cases where Cap App state is late/wrong. */
+function installVisibilitySync() {
+  if (typeof document === 'undefined') return;
+  const sync = () => setAppActive(document.visibilityState === 'visible');
+  document.addEventListener('visibilitychange', sync);
+  window.addEventListener('pageshow', sync);
+  window.addEventListener('focus', () => setAppActive(true));
+  window.addEventListener('blur', () => {
+    // blur alone is not enough (system sheets) — prefer visibility when hidden
+    if (document.visibilityState === 'hidden') setAppActive(false);
+  });
+  sync();
+}
+installVisibilitySync();
 
 export function isAppActive(): boolean {
+  if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    return false;
+  }
   return appIsActive;
 }
 
@@ -143,7 +178,7 @@ export async function startPushRegistration(userId: string | null | undefined) {
     listenersAttached = true;
 
     App.addListener('appStateChange', ({ isActive }) => {
-      appIsActive = isActive;
+      setAppActive(!!isActive);
     }).catch(() => {});
 
     PushNotifications.addListener('registration', (t) => {
@@ -203,26 +238,38 @@ export async function stopPushRegistration() {
  * Used when Realtime delivers an offer while the app is backgrounded
  * (screen off / another app) — complements remote FCM for killed apps.
  * Uses a stable id so FCM/local duplicates replace instead of stacking.
+ *
+ * Pass `retrigger: true` to cancel+reschedule the same id so Android
+ * plays the channel sound again (Uber-style ring while offer is pending).
  */
 export async function notifyDriverOfferLocal(opts?: {
   title?: string;
   body?: string;
   orderId?: string;
+  retrigger?: boolean;
 }) {
   const key = `offer:${opts?.orderId ?? 'unknown'}`;
-  if (wasLocalNotifyShown(key)) return;
+  if (!opts?.retrigger && wasLocalNotifyShown(key)) return;
   markLocalNotifyShown(key);
 
   await ensureNotificationPermission();
   try {
     if (isNative) {
+      const id = stableNotificationId(key);
+      if (opts?.retrigger) {
+        try {
+          await LocalNotifications.cancel({ notifications: [{ id }] });
+        } catch {
+          /* ignore */
+        }
+      }
       await LocalNotifications.schedule({
         notifications: [
           {
-            id: stableNotificationId(key),
+            id,
             title: opts?.title ?? 'Νέα παράδοση!',
             body: opts?.body ?? 'Έχεις νέα προσφορά — άνοιξε την εφαρμογή.',
-            schedule: { at: new Date(Date.now() + 50) },
+            schedule: { at: new Date(Date.now() + 80) },
             channelId: 'driver-offers-v3',
             extra: { path: '/driver', orderId: opts?.orderId },
           },
