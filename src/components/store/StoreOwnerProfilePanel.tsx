@@ -152,7 +152,7 @@ export function StoreOwnerProfilePanel({ onOpenSettings }: StoreOwnerProfilePane
     setResettingPw(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(user.email, {
-        redirectTo: `${window.location.origin}/auth`,
+        redirectTo: `${window.location.origin}/auth?reset=1`,
       });
       if (error) throw error;
       toast.success('Στάλθηκε email για αλλαγή κωδικού');

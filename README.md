@@ -76,8 +76,9 @@ without dashboard env. Override with live Stripe `pk_live_…` on Railway when r
 
 ### Supabase Auth
 - Site URL: `https://quick-handoff-grid-production.up.railway.app`
-- Redirects: Railway + `http://localhost:5173` (+ custom domain when ready)
-- Disable email confirm until SMTP is configured (otherwise signup looks broken)
+- Redirects: Railway `/**` + `http://localhost:5173/**` (+ Capacitor localhost)
+- Password reset: `/auth` → «Ξέχασα τον κωδικό» → email link → `/auth?reset=1` set new password
+- `mailer_autoconfirm` is on (signup without email confirm). For reliable reset emails in production, configure custom SMTP in Supabase Auth settings.
 
 `npm run build` forces Supabase keys from `.env.production` so stale Railway dashboard
 `VITE_SUPABASE_*` values cannot point at another database.
