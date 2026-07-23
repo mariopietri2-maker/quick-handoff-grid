@@ -64,11 +64,10 @@ export default function StorePayablesPanel() {
         const missingWalletCredit = (deliveredByStore.get(s.id) ?? []).reduce((sum, order) => {
           const settledAt = new Date(order.commission_settled_at ?? order.updated_at ?? order.created_at).getTime();
           if (walletTouchedAt && settledAt <= walletTouchedAt) return sum;
-          if (order.source && order.source !== 'in_app') return sum - Number(order.store_charge ?? 0);
-          const foodSubtotal = Math.max(
-            Number(order.total_amount ?? 0) - Number(order.delivery_fee ?? 0) - Number(order.tip_amount ?? 0),
-            0,
-          );
+          // Custom and in-app both settle store_charge the same way.
+          const charged = Number(order.store_charge ?? 0);
+          if (charged > 0) return sum + charged;
+          const foodSubtotal = Math.max(Number(order.total_amount ?? 0), 0);
           return sum + Math.round(foodSubtotal * (100 - commissionPct)) / 100;
         }, 0);
         return {

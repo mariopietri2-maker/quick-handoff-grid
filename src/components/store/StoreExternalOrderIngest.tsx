@@ -14,9 +14,9 @@ import {
   MapPin, Navigation, Building2, Wallet, Lock,
 } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
-import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { cn } from '@/lib/utils';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
+import { haversineKm } from '@/lib/geocode';
 
 type Source = 'manual' | 'efood' | 'wolt' | 'box' | 'other';
 type PaymentMethod = 'cash' | 'card';
@@ -68,11 +68,9 @@ interface Props {
  * Fees/payouts use the same formulas as place_order.
  */
 export default function StoreExternalOrderIngest({ storeId }: Props) {
-  const { token: mapboxToken } = useMapboxToken();
   const [store, setStore] = useState<StoreInfo | null>(null);
   const [form, setForm] = useState<FormState>(blankForm);
   const [km, setKm] = useState<number | null>(null);
-  const [routing, setRouting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [pasteText, setPasteText] = useState('');
   const [parsing, setParsing] = useState(false);
@@ -112,26 +110,18 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     return () => { cancelled = true; };
   }, []);
 
-  // Mapbox Directions: real driving km from store → dropoff.
+  // Same straight-line km as place_order / create_external_order (haversine).
   useEffect(() => {
-    if (!mapboxToken || !store?.latitude || !store?.longitude || !form.delivery_lat || !form.delivery_lng) {
+    if (!store?.latitude || !store?.longitude || form.delivery_lat == null || form.delivery_lng == null) {
       setKm(null);
       return;
     }
-    let cancelled = false;
-    setRouting(true);
-    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${store.longitude},${store.latitude};${form.delivery_lng},${form.delivery_lat}?access_token=${mapboxToken}&overview=false`;
-    fetch(url)
-      .then((r) => r.json())
-      .then((d) => {
-        if (cancelled) return;
-        const meters = d?.routes?.[0]?.distance;
-        if (typeof meters === 'number') setKm(Math.round((meters / 1000) * 10) / 10);
-      })
-      .catch(() => {})
-      .finally(() => { if (!cancelled) setRouting(false); });
-    return () => { cancelled = true; };
-  }, [store, form.delivery_lat, form.delivery_lng, mapboxToken]);
+    const d = haversineKm(
+      { latitude: store.latitude, longitude: store.longitude },
+      { latitude: form.delivery_lat, longitude: form.delivery_lng },
+    );
+    setKm(Math.round(d * 100) / 100);
+  }, [store, form.delivery_lat, form.delivery_lng]);
 
   const totalAmount = Number(form.total_amount) || 0;
   const distanceKm = km ?? 0;
@@ -267,8 +257,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
       <div>
         <h2 className="font-heading font-bold text-xl text-foreground">Νέα Custom Order</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Ίδια ροή με in-app: μπαίνει στην κουζίνα → Έτοιμη → προσφορά σε οδηγούς μέσω auto-dispatch.
-          Έξοδα παράδοσης & αμοιβή οδηγού υπολογίζονται όπως στις κανονικές παραγγελίες.
+          Ίδια ροή με in-app παραγγελία: κουζίνα → Έτοιμη → auto-dispatch σε οδηγούς.
+          Απόσταση, έξοδα παράδοσης και αμοιβή οδηγού υπολογίζονται όπως στο place_order.
         </p>
       </div>
 
@@ -461,7 +451,6 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                   Απόσταση
                 </span>
                 <span className="flex items-center gap-1.5 font-heading font-bold tabular-nums">
-                  {routing ? <Loader2 className="h-3 w-3 animate-spin text-primary" /> : null}
                   {km ?? '—'} km
                 </span>
               </div>
