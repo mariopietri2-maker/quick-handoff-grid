@@ -13,7 +13,7 @@ import { toast } from 'sonner';
 import { SavedAddresses } from '@/components/SavedAddresses';
 import ScheduledDeliveryPicker from '@/components/customer/ScheduledDeliveryPicker';
 import { PaymentTestModeBanner } from '@/components/PaymentTestModeBanner';
-import { isPaymentsConfigured } from '@/lib/stripe';
+import { isPaymentsConfigured, setPaymentsPublishableKey } from '@/lib/stripe';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { SEO } from '@/components/SEO';
 import { customerAccentStyle } from '@/lib/customer-theme';
@@ -46,12 +46,21 @@ export default function CheckoutPage() {
   const [deliveryFee, setDeliveryFee] = useState(0.99);
   const [storeCenter, setStoreCenter] = useState<[number, number] | null>(null);
 
+  const [cardPaymentsAllowed, setCardPaymentsAllowed] = useState(true);
+
   useEffect(() => {
     (supabase as any).rpc('get_platform_settings_public')
       .then(({ data }: any) => {
         const row = Array.isArray(data) ? data[0] : data;
-        if (row && row.platform_service_fee != null) {
+        if (!row) return;
+        if (row.platform_service_fee != null) {
           setDeliveryFee(Number(row.platform_service_fee));
+        }
+        if (typeof row.card_payments_enabled === 'boolean') {
+          setCardPaymentsAllowed(row.card_payments_enabled);
+        }
+        if (row.stripe_publishable_key) {
+          setPaymentsPublishableKey(row.stripe_publishable_key);
         }
       });
   }, []);
@@ -113,9 +122,17 @@ export default function CheckoutPage() {
   const [promoCode, setPromoCode] = useState('');
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
-  const cardEnabled = isPaymentsConfigured();
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>(cardEnabled ? 'card' : 'cash');
+  const cardEnabled = cardPaymentsAllowed && isPaymentsConfigured();
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('cash');
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (cardEnabled) {
+      setPaymentMethod((prev) => (prev === 'cash' ? 'card' : prev));
+    } else {
+      setPaymentMethod('cash');
+    }
+  }, [cardEnabled]);
 
   // Tip defaults to 0 — customers opt in explicitly.
   const [tipOption, setTipOption] = useState<number | 'custom'>(0);
@@ -491,21 +508,21 @@ export default function CheckoutPage() {
                 disabled={!cardEnabled}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'card'
-                    ? 'border-[hsl(0,0%,9%)] bg-[hsl(0,0%,96%)] text-foreground shadow-primary'
-                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                    ? 'border-foreground bg-foreground text-background shadow-sm'
+                    : 'border-border bg-card text-muted-foreground hover:border-foreground/40 hover:text-foreground'
                 } ${!cardEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <CreditCard className="h-5 w-5" />
                 <span>Κάρτα</span>
-                {!cardEnabled && <span className="text-[10px] italic">Σύντομα διαθέσιμη</span>}
+                {!cardEnabled && <span className="text-[10px] italic opacity-80">Σύντομα διαθέσιμη</span>}
               </button>
               <button
                 type="button"
                 onClick={() => setPaymentMethod('cash')}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'cash'
-                    ? 'border-[hsl(0,0%,9%)] bg-[hsl(0,0%,96%)] text-foreground shadow-primary'
-                    : 'border-border bg-card text-muted-foreground hover:border-primary/40'
+                    ? 'border-foreground bg-foreground text-background shadow-sm'
+                    : 'border-border bg-card text-muted-foreground hover:border-foreground/40 hover:text-foreground'
                 }`}
               >
                 <Banknote className="h-5 w-5" />
