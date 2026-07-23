@@ -16,14 +16,14 @@ interface SlideToggleProps {
 
 const THUMB_SIZE = 52;
 const TRACK_PADDING = 4;
-const ON_THRESHOLD = 0.5;   // easy to go online
-const OFF_THRESHOLD = 0.92; // hard to go offline
+const ON_THRESHOLD = 0.5;   // easy to go on duty
+const OFF_THRESHOLD = 0.92; // hard to go off duty
 
 export function SlideToggle({
   isOn,
   onToggle,
-  onLabel = 'Είσαι Online',
-  offLabel = 'Σύρε για να συνδεθείς',
+  onLabel = 'Σε υπηρεσία',
+  offLabel = 'Σύρε για υπηρεσία',
   disabled = false,
 }: SlideToggleProps) {
   const trackRef = useRef<HTMLDivElement>(null);
@@ -109,12 +109,12 @@ export function SlideToggle({
 
   // Tip label changes during drag in either direction
   const label = (() => {
-    if (!isOn) return progress > 0.5 ? 'Άσε για να συνδεθείς' : offLabel;
+    if (!isOn) return progress > 0.5 ? 'Άσε για υπηρεσία' : offLabel;
     if (isDragging) {
       const off = 1 - progress;
       if (off > OFF_THRESHOLD) return 'Άσε για επιβεβαίωση';
-      if (off > 0.4) return `Σύρε ως το τέλος για offline`;
-      return 'Σύρε αριστερά για offline';
+      if (off > 0.4) return 'Σύρε ως το τέλος για εκτός υπηρεσίας';
+      return 'Σύρε αριστερά για εκτός υπηρεσίας';
     }
     return onLabel;
   })();
@@ -221,19 +221,19 @@ export function SlideToggle({
           <AlertDialogHeader>
             <AlertDialogTitle className="flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-amber-500" />
-              Να μπεις offline;
+              Να βγεις εκτός υπηρεσίας;
             </AlertDialogTitle>
             <AlertDialogDescription>
-              Δεν θα λαμβάνεις άλλες παραγγελίες μέχρι να επιστρέψεις online.
+              Δεν θα λαμβάνεις νέες παραγγελίες μέχρι να ξαναμπείς σε υπηρεσία.
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel>Άκυρο, μένω online</AlertDialogCancel>
+            <AlertDialogCancel>Άκυρο, μένω σε υπηρεσία</AlertDialogCancel>
             <AlertDialogAction
               onClick={() => onToggle(false)}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
-              Ναι, βγες offline
+              Ναι, εκτός υπηρεσίας
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
