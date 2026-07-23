@@ -37,15 +37,30 @@ describe('driver notification sounds', () => {
     stopOfferAlert();
   });
 
-  it('defaults to Uber Eats–style offer chime', () => {
+  it('defaults to Fresh Delivery offer chime', () => {
     const prefs = loadDriverSoundPrefs();
     expect(prefs.enabled).toBe(true);
-    expect(prefs.pattern).toBe('uber_eats');
+    expect(prefs.pattern).toBe('fresh_delivery');
+  });
+
+  it('migrates legacy uber_eats / uber patterns to fresh_delivery', () => {
+    localStorage.setItem(
+      'qg.driver.sound.prefs.v4',
+      JSON.stringify({
+        enabled: true,
+        volume: 0.9,
+        pattern: 'uber_eats',
+        repeatCount: 2,
+        vibrate: true,
+      }),
+    );
+    const prefs = loadDriverSoundPrefs();
+    expect(prefs.pattern).toBe('fresh_delivery');
   });
 
   it('resolvePattern(random) returns a concrete bundled effect', () => {
     const concrete = [
-      'uber_eats', 'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
+      'fresh_delivery', 'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
     ];
     for (let i = 0; i < 20; i++) {
       const p = resolvePattern('random');
@@ -63,7 +78,7 @@ describe('driver notification sounds', () => {
     saveDriverSoundPrefs({
       enabled: true,
       volume: 0.8,
-      pattern: 'uber_eats',
+      pattern: 'fresh_delivery',
       repeatCount: 1,
       vibrate: false,
     });
@@ -86,7 +101,7 @@ describe('driver notification sounds', () => {
     expect(MockAudio.plays.length).toBe(before);
   });
 
-  it('playOfferAlert with uber_eats resolves once and plays', () => {
+  it('playOfferAlert with fresh_delivery resolves once and plays', () => {
     // Use a fresh pattern so the module audio cache does not hide constructor calls.
     playOfferAlert({
       enabled: true,

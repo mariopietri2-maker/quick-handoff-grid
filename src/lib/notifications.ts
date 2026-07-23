@@ -1,7 +1,9 @@
 // Notification utilities used across the apps (store, driver, customer).
 import { showOsNotification, ensureNotificationPermission } from './push-notifications';
+import customerNotifyUrl from '@/assets/sounds/customer_notify.mp3';
 
 let audioContext: AudioContext | null = null;
+let customerNotifyAudio: HTMLAudioElement | null = null;
 
 function getAudioContext(): AudioContext {
   if (!audioContext) {
@@ -64,12 +66,29 @@ export function playDeliverySound() {
 }
 
 /**
- * Play a soft status-update chime — random short tone for customers.
+ * Play a soft status-update chime for customers (bundled Mixkit-style notify MP3).
  */
 export function playStatusUpdateSound() {
-  const tones = [784, 880, 698.46, 987.77, 659.25];
-  const freq = tones[Math.floor(Math.random() * tones.length)]!;
-  playTones([freq], 'sine', 0.18, 0, 0.18);
+  try {
+    if (typeof Audio !== 'undefined') {
+      if (!customerNotifyAudio) {
+        customerNotifyAudio = new Audio(customerNotifyUrl);
+        customerNotifyAudio.preload = 'auto';
+      }
+      const el = customerNotifyAudio;
+      el.pause();
+      el.currentTime = 0;
+      el.volume = 0.75;
+      void el.play().catch(() => {
+        // Fallback to soft WebAudio tone if autoplay is blocked mid-session.
+        playTones([880, 1174.66], 'sine', 0.14, 0.06, 0.18);
+      });
+      return;
+    }
+  } catch (e) {
+    console.warn('Could not play customer notify sound:', e);
+  }
+  playTones([880, 1174.66], 'sine', 0.14, 0.06, 0.18);
 }
 
 /**
@@ -129,7 +148,7 @@ export function showOrderStatusNotification(orderId: string, status: string): bo
     body: `${cfg.body} (Παραγγελία #${orderId.slice(0, 6)})`,
     tag: `customer-order-${orderId}-${status}`,
     vibrate: status === 'picked_up' || status === 'delivered',
-    channelId: 'customer-orders',
+    channelId: 'customer-orders-v2',
   });
   return true;
 }
@@ -141,6 +160,6 @@ export function showDriverArrivingNotification(orderId: string) {
     body: `Ο οδηγός είναι κοντά σου. (Παραγγελία #${orderId.slice(0, 6)})`,
     tag: `customer-arriving-${orderId}`,
     vibrate: true,
-    channelId: 'customer-orders',
+    channelId: 'customer-orders-v2',
   });
 }
