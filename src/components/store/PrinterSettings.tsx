@@ -31,18 +31,21 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
     printOrderTicket(
       {
         id: 'test-0001-test',
+        store_order_number: 42,
         created_at: new Date().toISOString(),
         total_amount: 12.5,
         delivery_fee: 2.0,
         tip_amount: 1.0,
+        payment_method: 'cash',
         notes: 'Δοκιμαστική εκτύπωση',
         delivery_address: 'Δοκιμή 123, Ιωάννινα',
         order_items: [
-          { name: 'Δοκιμαστικό Προϊόν', quantity: 1, unit_price: 9.5 },
+          { name: 'Δοκιμαστικό Προϊόν', quantity: 2, unit_price: 4.75 },
         ],
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       storeName,
+      { driverCode: 'DRV 7', customerName: 'Πελάτης δοκιμής', customerPhone: '69xxxxxxx' },
     );
     toast.success('Εστάλη δοκιμαστική εκτύπωση');
   };

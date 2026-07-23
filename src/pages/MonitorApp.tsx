@@ -13,6 +13,7 @@ import AdminDriversMap from '@/components/admin/AdminDriversMap';
 import { formatDistanceToNow } from 'date-fns';
 import { el } from 'date-fns/locale';
 import { DRIVER_PRESENCE_ONLINE_MS } from '@/lib/driver-presence';
+import { formatDriverCode } from '@/lib/driver-code';
 
 const ONLINE_MS = DRIVER_PRESENCE_ONLINE_MS;
 
@@ -259,7 +260,7 @@ export default function MonitorApp() {
                               </span>
                               {d.driver_code && (
                                 <span className="text-[10px] font-mono text-muted-foreground shrink-0">
-                                  {d.driver_code}
+                                  {formatDriverCode(d.driver_code)}
                                 </span>
                               )}
                             </div>
