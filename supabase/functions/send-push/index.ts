@@ -180,7 +180,7 @@ function resolveChannelId(
   const channel = typeof data?.channel === "string" ? data.channel : "";
   if (channel === "driver-inbox" || type === "inbox") return "driver-inbox";
   if (app === "customer") return "customer-orders";
-  return "driver-offers";
+  return "driver-offers-v2";
 }
 
 async function sendFcm(opts: {
@@ -207,6 +207,7 @@ async function sendFcm(opts: {
     const accessToken = await getGoogleAccessToken(sa);
     if (!accessToken) return false;
 
+    const offerSound = opts.channelId === "driver-offers-v2" ? "uber_eats" : "default";
     const res = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
       {
@@ -224,7 +225,7 @@ async function sendFcm(opts: {
               priority: opts.quiet ? "NORMAL" : "HIGH",
               notification: {
                 channel_id: opts.channelId,
-                sound: "default",
+                sound: offerSound,
                 notification_priority: opts.quiet
                   ? "PRIORITY_DEFAULT"
                   : "PRIORITY_MAX",
@@ -243,6 +244,7 @@ async function sendFcm(opts: {
 
   const legacyKey = Deno.env.get("FCM_SERVER_KEY");
   if (legacyKey) {
+    const offerSound = opts.channelId === "driver-offers-v2" ? "uber_eats" : "default";
     const res = await fetch("https://fcm.googleapis.com/fcm/send", {
       method: "POST",
       headers: {
@@ -255,13 +257,13 @@ async function sendFcm(opts: {
         notification: {
           title: opts.title,
           body: opts.body,
-          sound: "default",
+          sound: offerSound,
           android_channel_id: opts.channelId,
         },
         data: opts.data,
         android: {
           priority: opts.quiet ? "normal" : "high",
-          notification: { channel_id: opts.channelId, sound: "default" },
+          notification: { channel_id: opts.channelId, sound: offerSound },
         },
       }),
     });

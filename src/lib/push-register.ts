@@ -223,7 +223,7 @@ export async function notifyDriverOfferLocal(opts?: {
             title: opts?.title ?? 'Νέα παράδοση!',
             body: opts?.body ?? 'Έχεις νέα προσφορά — άνοιξε την εφαρμογή.',
             schedule: { at: new Date(Date.now() + 50) },
-            channelId: 'driver-offers',
+            channelId: 'driver-offers-v2',
             extra: { path: '/driver', orderId: opts?.orderId },
           },
         ],

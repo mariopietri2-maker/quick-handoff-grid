@@ -8,8 +8,10 @@ import whistleUrl from '@/assets/sounds/whistle.mp3';
 import clownUrl from '@/assets/sounds/clown.mp3';
 import nokiaUrl from '@/assets/sounds/nokia.mp3';
 import slipUrl from '@/assets/sounds/slip.mp3';
+import uberEatsUrl from '@/assets/sounds/uber_eats.mp3';
 
 export type ConcreteSoundPattern =
+  | 'uber_eats'
   | 'pop'
   | 'honk'
   | 'party'
@@ -31,13 +33,13 @@ export interface DriverSoundPrefs {
   vibrate: boolean;
 }
 
-const KEY = 'qg.driver.sound.prefs.v3';
-const LEGACY_KEYS = ['qg.driver.sound.prefs.v2', 'qg.driver.sound.prefs.v1'];
+const KEY = 'qg.driver.sound.prefs.v4';
+const LEGACY_KEYS = ['qg.driver.sound.prefs.v3', 'qg.driver.sound.prefs.v2', 'qg.driver.sound.prefs.v1'];
 
 const DEFAULTS: DriverSoundPrefs = {
   enabled: true,
-  volume: 0.85,
-  pattern: 'random',
+  volume: 0.9,
+  pattern: 'uber_eats',
   repeatCount: 2,
   vibrate: true,
 };
@@ -46,18 +48,19 @@ const PATTERN_MIGRATIONS: Record<string, SoundPattern> = {
   fresh: 'pop', bell: 'party', pulse: 'pop', cash: 'party', zen: 'mystery',
   alert: 'honk', doordash: 'pop', doordash_real: 'pop', doordash_style: 'pop',
   ios_tritone: 'mystery', pristine: 'party', crystal: 'party', tesla: 'pop',
-  fanfare: 'party', wolt: 'pop', uber: 'pop', glovo: 'pop',
+  fanfare: 'party', wolt: 'pop', uber: 'uber_eats', glovo: 'pop',
   kaching: 'party', arcade: 'pop', marimba: 'mystery', classic_phone: 'nokia',
   siren: 'honk', chime: 'party', urgent: 'honk',
 };
 
 const CONCRETE: ConcreteSoundPattern[] = [
-  'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
+  'uber_eats', 'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
 ];
 const VALID: SoundPattern[] = ['random', ...CONCRETE];
 
 /** Bundled MP3 URLs (Vite hashes them into dist) — never use absolute IDE-dev paths on Railway/APK. */
 const SOUND_URLS: Record<ConcreteSoundPattern, string> = {
+  uber_eats: uberEatsUrl,
   pop: popUrl,
   honk: honkUrl,
   party: partyUrl,
@@ -95,10 +98,12 @@ export function loadDriverSoundPrefs(): DriverSoundPrefs {
         const legacy = localStorage.getItem(legacyKey);
         if (!legacy) continue;
         const parsedLegacy = { ...DEFAULTS, ...JSON.parse(legacy) } as DriverSoundPrefs;
-        // New default: random SFX on every notification (keep volume / vibrate / repeats).
-        parsedLegacy.pattern = 'random';
+        // New default for offer alerts: Uber Eats–style chime.
+        if (legacyKey !== KEY) {
+          parsedLegacy.pattern = 'uber_eats';
+        }
         if (!VALID.includes(parsedLegacy.pattern)) {
-          parsedLegacy.pattern = 'random';
+          parsedLegacy.pattern = PATTERN_MIGRATIONS[parsedLegacy.pattern as string] ?? 'uber_eats';
         }
         try { localStorage.setItem(KEY, JSON.stringify(parsedLegacy)); } catch {}
         return parsedLegacy;
@@ -107,7 +112,7 @@ export function loadDriverSoundPrefs(): DriverSoundPrefs {
     }
     const parsed = { ...DEFAULTS, ...JSON.parse(raw) } as DriverSoundPrefs;
     if (!VALID.includes(parsed.pattern)) {
-      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'random';
+      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'uber_eats';
     }
     return parsed;
   } catch {
@@ -209,7 +214,7 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
   }
 }
 
-/** Soft one-shot for inbox / status notifications (respects prefs; random by default). */
+/** Soft one-shot for inbox / status notifications (respects prefs; uses selected pattern). */
 export function playNotificationSound(prefs?: DriverSoundPrefs) {
   const p = prefs ?? loadDriverSoundPrefs();
   if (!p.enabled) return;
