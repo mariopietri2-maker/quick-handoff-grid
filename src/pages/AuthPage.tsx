@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
 import { mobileHomePath, useMobileFlavor, type MobileAppFlavor } from '@/lib/mobileApp';
 
-type AuthMode = 'login' | 'signup' | 'forgot' | 'reset';
+type AuthMode = 'login' | 'signup' | 'forgot' | 'otp' | 'reset';
 
 function roleHome(opts: {
   isAdmin: boolean;
@@ -36,11 +36,21 @@ function authRedirectUrl() {
   return `${origin}/auth?reset=1`;
 }
 
+function clearResetQuery() {
+  try {
+    const url = new URL(window.location.href);
+    url.searchParams.delete('reset');
+    url.searchParams.delete('type');
+    window.history.replaceState({}, '', url.pathname + (url.search || ''));
+  } catch { /* noop */ }
+}
+
 export default function AuthPage() {
   const [mode, setMode] = useState<AuthMode>('login');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [otp, setOtp] = useState('');
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const { signIn, signUp, user, profile, isAdmin, isSupport, loading } = useAuth();
@@ -51,6 +61,7 @@ export default function AuthPage() {
   const shellHome = mobileHomePath(flavor);
   const isLogin = mode === 'login';
   const isSignup = mode === 'signup';
+  const isAuthBypass = mode === 'reset' || mode === 'forgot' || mode === 'otp';
 
   const nextPath = (() => {
     try {
@@ -60,15 +71,16 @@ export default function AuthPage() {
     return isDriverShell ? '/driver' : '/order';
   })();
 
-  // Recovery link lands on /auth?reset=1 (and/or hash type=recovery).
+  // Recovery link → session reset. Push / deep link ?reset=1 → OTP form.
   useEffect(() => {
     try {
       const params = new URLSearchParams(window.location.search);
-      if (params.get('reset') === '1' || params.get('type') === 'recovery') {
+      const wantsReset = params.get('reset') === '1' || params.get('type') === 'recovery';
+      const hashRecovery = window.location.hash.includes('type=recovery');
+      if (hashRecovery || params.get('type') === 'recovery') {
         setMode('reset');
-      }
-      if (window.location.hash.includes('type=recovery')) {
-        setMode('reset');
+      } else if (wantsReset) {
+        setMode('otp');
       }
     } catch { /* noop */ }
 
@@ -82,7 +94,7 @@ export default function AuthPage() {
 
   // Don't paint the login form while session/profile/flavor resolve or while redirecting.
   // Keep showing the form during password recovery even if a session exists.
-  if (!flavorReady || (loading && mode !== 'reset') || (user && !profile && mode !== 'reset')) {
+  if (!flavorReady || (loading && !isAuthBypass) || (user && !profile && !isAuthBypass)) {
     return (
       <div className="min-h-[100dvh] bg-[hsl(220,20%,7%)] flex items-center justify-center">
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
@@ -90,7 +102,7 @@ export default function AuthPage() {
     );
   }
 
-  if (user && profile && mode !== 'reset' && mode !== 'forgot') {
+  if (user && profile && !isAuthBypass) {
     return (
       <Navigate
         to={roleHome({ isAdmin, isSupport, role: profile.role, nextPath, flavor })}
@@ -108,14 +120,80 @@ export default function AuthPage() {
     }
     setSubmitting(true);
     try {
-      const { error } = await supabase.auth.resetPasswordForEmail(emailNorm, {
-        redirectTo: authRedirectUrl(),
+      const { data, error } = await supabase.functions.invoke('request-password-reset', {
+        body: { email: emailNorm, redirectTo: authRedirectUrl() },
       });
       if (error) {
-        toast.error(error.message);
+        toast.error(error.message || 'Αποτυχία αποστολής. Δοκιμάστε ξανά.');
         return;
       }
-      toast.success('Αν υπάρχει λογαριασμός με αυτό το email, στάλθηκε σύνδεσμος επαναφοράς.');
+      if (data?.error && data.error !== 'ok') {
+        toast.error(data.message || data.error);
+        return;
+      }
+      toast.success(
+        data?.throttled
+          ? (data.message || 'Πολλά αιτήματα. Δοκιμάστε ξανά σε λίγα λεπτά.')
+          : 'Αν υπάρχει λογαριασμός, στάλθηκε κωδικός (ειδοποίηση εφαρμογής και/ή email).',
+      );
+      if (!data?.throttled) {
+        setOtp('');
+        setPassword('');
+        setConfirmPassword('');
+        setMode('otp');
+      }
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleOtpReset = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const emailNorm = email.trim().toLowerCase();
+    const code = otp.replace(/\s+/g, '');
+    if (!emailNorm) {
+      toast.error('Συμπληρώστε το email σας');
+      return;
+    }
+    if (!/^\d{6}$/.test(code)) {
+      toast.error('Εισάγετε τον 6ψήφιο κωδικό');
+      return;
+    }
+    if (password.length < 6) {
+      toast.error('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
+      return;
+    }
+    if (password !== confirmPassword) {
+      toast.error('Οι κωδικοί δεν ταιριάζουν');
+      return;
+    }
+    setSubmitting(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('confirm-password-reset', {
+        body: { email: emailNorm, otp: code, password },
+      });
+      if (error) {
+        toast.error(error.message || 'Αποτυχία επαναφοράς.');
+        return;
+      }
+      if (data?.error || !data?.ok) {
+        toast.error(data?.message || data?.error || 'Λάθος ή ληγμένος κωδικός.');
+        return;
+      }
+      toast.success('Ο κωδικός άλλαξε. Συνδεθείτε.');
+      const { error: signErr } = await signIn(emailNorm, password);
+      if (signErr) {
+        setMode('login');
+        setPassword('');
+        setConfirmPassword('');
+        setOtp('');
+        clearResetQuery();
+        return;
+      }
+      setOtp('');
+      setPassword('');
+      setConfirmPassword('');
+      clearResetQuery();
       setMode('login');
     } finally {
       setSubmitting(false);
@@ -143,13 +221,7 @@ export default function AuthPage() {
       setMode('login');
       setPassword('');
       setConfirmPassword('');
-      // Clean query flag so refresh doesn't stick on reset UI.
-      try {
-        const url = new URL(window.location.href);
-        url.searchParams.delete('reset');
-        url.searchParams.delete('type');
-        window.history.replaceState({}, '', url.pathname + (url.search || ''));
-      } catch { /* noop */ }
+      clearResetQuery();
     } finally {
       setSubmitting(false);
     }
@@ -217,24 +289,28 @@ export default function AuthPage() {
   const title =
     mode === 'forgot'
       ? 'Επαναφορά κωδικού'
-      : mode === 'reset'
-        ? 'Νέος κωδικός'
-        : isLogin
-          ? 'Σύνδεση'
-          : 'Εγγραφή';
+      : mode === 'otp'
+        ? 'Εισαγωγή κωδικού'
+        : mode === 'reset'
+          ? 'Νέος κωδικός'
+          : isLogin
+            ? 'Σύνδεση'
+            : 'Εγγραφή';
 
   const subtitle =
     mode === 'forgot'
-      ? 'Θα σας στείλουμε σύνδεσμο στο email σας'
-      : mode === 'reset'
-        ? 'Ορίστε νέο κωδικό για τον λογαριασμό σας'
-        : isLogin
-          ? 'Μπείτε με email και κωδικό'
-          : isDriverShell
-            ? 'Δημιουργήστε λογαριασμό οδηγού (αυτόματος ρόλος · χρειάζεται έγκριση)'
-            : isCustomerShell
-              ? 'Δημιουργήστε λογαριασμό πελάτη (αυτόματος ρόλος)'
-              : 'Δημιουργήστε λογαριασμό πελάτη';
+      ? 'Θα λάβετε κωδικό στην εφαρμογή (και email αν είναι διαθέσιμο)'
+      : mode === 'otp'
+        ? 'Βάλτε τον 6ψήφιο κωδικό και ορίστε νέο password'
+        : mode === 'reset'
+          ? 'Ορίστε νέο κωδικό για τον λογαριασμό σας'
+          : isLogin
+            ? 'Μπείτε με email και κωδικό'
+            : isDriverShell
+              ? 'Δημιουργήστε λογαριασμό οδηγού (αυτόματος ρόλος · χρειάζεται έγκριση)'
+              : isCustomerShell
+                ? 'Δημιουργήστε λογαριασμό πελάτη (αυτόματος ρόλος)'
+                : 'Δημιουργήστε λογαριασμό πελάτη';
 
   return (
     <div className="min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain customer-scroll bg-[hsl(220,20%,7%)] flex flex-col">
@@ -326,7 +402,7 @@ export default function AuthPage() {
                       Αποστολή...
                     </>
                   ) : (
-                    'Στείλε σύνδεσμο'
+                    'Στείλε κωδικό'
                   )}
                 </Button>
                 <button
@@ -335,6 +411,100 @@ export default function AuthPage() {
                   className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
                 >
                   Πίσω στη σύνδεση
+                </button>
+              </form>
+            ) : mode === 'otp' ? (
+              <form onSubmit={handleOtpReset} className="space-y-4" autoComplete="on">
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="font-heading text-[hsl(220,14%,96%)]">Email</Label>
+                  <div className="relative">
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Input
+                      id="email"
+                      name="email"
+                      type="email"
+                      autoComplete="email"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      required
+                      maxLength={255}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="otp" className="font-heading text-[hsl(220,14%,96%)]">Κωδικός (6 ψηφία)</Label>
+                  <Input
+                    id="otp"
+                    name="otp"
+                    type="text"
+                    inputMode="numeric"
+                    autoComplete="one-time-code"
+                    placeholder="123456"
+                    value={otp}
+                    onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                    className="bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40 tracking-[0.3em] text-center text-lg"
+                    required
+                    maxLength={6}
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="font-heading text-[hsl(220,14%,96%)]">Νέος κωδικός</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Τουλάχιστον 6 χαρακτήρες"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword" className="font-heading text-[hsl(220,14%,96%)]">Επιβεβαίωση</Label>
+                  <div className="relative">
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Input
+                      id="confirmPassword"
+                      name="confirmPassword"
+                      type="password"
+                      autoComplete="new-password"
+                      placeholder="Επαναλάβετε τον κωδικό"
+                      value={confirmPassword}
+                      onChange={(e) => setConfirmPassword(e.target.value)}
+                      className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      required
+                      minLength={6}
+                    />
+                  </div>
+                </div>
+                <Button
+                  type="submit"
+                  className="w-full h-12 font-heading text-lg bg-[hsl(0,0%,9%)] text-white press-scale"
+                  disabled={submitting}
+                >
+                  {submitting ? (
+                    <>
+                      <Loader2 className="mr-2 h-5 w-5 animate-spin" />
+                      Αποθήκευση...
+                    </>
+                  ) : (
+                    'Αλλαγή κωδικού'
+                  )}
+                </Button>
+                <button
+                  type="button"
+                  onClick={() => setMode('forgot')}
+                  className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
+                >
+                  Ξανά αποστολή κωδικού
                 </button>
               </form>
             ) : mode === 'reset' ? (
