@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
 
     const params = new URLSearchParams({
       key,
-      client_key: "lovable_chat",
+      client_key: "fresh_delivery_chat",
       q: String(q || "trending"),
       limit: String(Math.min(Number(limit) || 24, 50)),
       media_filter: "tinygif,gif",

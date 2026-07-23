@@ -1,6 +1,7 @@
-// Generates a hero-card image via Lovable AI Gateway and returns base64.
+// Generates a hero-card image via AI gateway and returns base64.
 // Body: { prompt, title?, style?, placement?, source_image_url? }
 // Returns: { b64_json: string }
+import { getAiGatewayApiKey, AI_GATEWAY_BASE } from "../_shared/ai-gateway.ts";
 import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
@@ -27,8 +28,8 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response("ok", { headers: corsHeaders });
 
   try {
-    const key = Deno.env.get("LOVABLE_API_KEY");
-    if (!key) return json({ error: "Missing LOVABLE_API_KEY" }, 500);
+    const key = getAiGatewayApiKey();
+    if (!key) return json({ error: "Missing AI_GATEWAY_API_KEY" }, 500);
 
     const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
     const ANON = Deno.env.get("SUPABASE_ANON_KEY")!;
@@ -68,7 +69,7 @@ Deno.serve(async (req) => {
       "Photorealistic, appetite-appealing, no embedded text, no watermarks, no UI chrome, no logos.",
     ].filter(Boolean).join(" ");
 
-    const upstream = await fetch("https://ai.gateway.lovable.dev/v1/images/generations", {
+    const upstream = await fetch(`${AI_GATEWAY_BASE}/v1/images/generations`, {
       method: "POST",
       headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
       body: JSON.stringify({
