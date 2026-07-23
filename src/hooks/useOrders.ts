@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { playOrderSound, showOrderNotification } from '@/lib/notifications';
 import { playOfferAlert, stopOfferAlert } from '@/lib/driver-sound-prefs';
-import { isAppActive, notifyDriverOfferLocal } from '@/lib/push-register';
+import { isAppActive } from '@/lib/push-register';
 
 import type { Database } from '@/integrations/supabase/types';
 
@@ -441,12 +441,10 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           filter: `driver_id=eq.${user.id}`,
         },
         (payload) => {
-          const row = payload.new as { order_id?: string; id?: string } | null;
-          // App closed / screen off: OS banner (LocalNotification). Foreground
-          // uses playOfferAlert only — avoids the double-sound bug.
-          if (!isAppActive()) {
-            void notifyDriverOfferLocal({ orderId: row?.order_id });
-          }
+          // Background/killed: FCM outbox is the single source of truth (one offer
+          // at a time). Foreground uses playOfferAlert via fetchOrders — avoid
+          // stacking LocalNotification on top of FCM for the same offer.
+          void payload;
           fetchOrders();
         }
       )

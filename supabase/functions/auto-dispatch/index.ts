@@ -67,7 +67,7 @@ Deno.serve(async (req) => {
   const source = isInternalCron ? "cron" : "manual";
 
   /** Always drain push outbox — customer/driver alerts must not wait for a dispatch hit. */
-  const drainPush = (limit = 40) => {
+  const drainPush = (limit = 12) => {
     void fetch(`${supabaseUrl}/functions/v1/send-push`, {
       method: "POST",
       headers: {
@@ -348,8 +348,8 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Smaller batches more often — avoids dumping 80 stacked alerts at once.
-    drainPush(40);
+    // Smaller batches more often — claim_push_outbox paces one per user.
+    drainPush(12);
 
     const payload = {
       ok: true,
@@ -361,7 +361,7 @@ Deno.serve(async (req) => {
     await logFinish(payload, true);
     return json(payload);
   } catch (err) {
-    drainPush(20);
+    drainPush(12);
     const msg = err instanceof Error ? err.message : String(err);
     const payload = { ok: false, error: msg };
     await logFinish(payload, false, msg);

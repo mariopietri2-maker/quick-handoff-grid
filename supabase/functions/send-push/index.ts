@@ -52,10 +52,11 @@ Deno.serve(async (req) => {
   );
 
   const body = await req.json().catch(() => ({}));
-  const limit = Math.min(Number(body.limit ?? 40), 100);
+  // Small batches: claim_push_outbox also enforces one row per user (FIFO).
+  const limit = Math.min(Number(body.limit ?? 12), 40);
 
   // Claim rows first (FOR UPDATE SKIP LOCKED) so overlapping drains cannot
-  // double-send the same outbox events.
+  // double-send the same outbox events. sent_at is set only after FCM success.
   const { data: pending, error } = await admin.rpc("claim_push_outbox", {
     p_limit: limit,
   });
@@ -76,35 +77,39 @@ Deno.serve(async (req) => {
     try {
       const { data: tokens } = await admin
         .from("push_tokens")
-        .select("token, platform, app")
+        .select("token, platform, app, updated_at")
         .eq("user_id", row.user_id)
-        .eq("app", row.app);
+        .eq("app", row.app)
+        .order("updated_at", { ascending: false });
 
       const list = (tokens ?? []) as TokenRow[];
       if (!fcmReady) {
+        // Leave unsent so a later drain retries once FCM is configured.
         await admin
           .from("push_outbox")
-          .update({ error: "fcm_not_configured" })
+          .update({ error: "fcm_not_configured", claimed_at: new Date().toISOString() })
           .eq("id", row.id);
         skipped++;
         continue;
       }
 
       if (list.length === 0) {
+        // Retry later — token may register a few seconds after signup/login.
         await admin
           .from("push_outbox")
-          .update({ error: "no_tokens" })
+          .update({ error: "no_tokens", claimed_at: new Date().toISOString() })
           .eq("id", row.id);
         skipped++;
         continue;
       }
 
       let anyOk = false;
-      // One device token is enough — avoid multi-token amplify (same user, many installs).
+      // Freshest token first — avoid stale installs winning.
       const primary = list[0]!;
       const extras = list.slice(1);
       const channelId = resolveChannelId(row.app, row.data);
       const quiet = channelId === "driver-inbox";
+      const collapseKey = resolveCollapseKey(row);
       const ok = await sendFcm({
         token: primary.token,
         title: row.title,
@@ -112,13 +117,13 @@ Deno.serve(async (req) => {
         data: flattenData(row.data),
         channelId,
         quiet,
+        collapseKey,
       });
       if (ok) {
         anyOk = true;
         sent++;
       } else {
         await admin.from("push_tokens").delete().eq("token", primary.token);
-        // Try at most one fallback token if the primary is dead.
         if (extras[0]) {
           const ok2 = await sendFcm({
             token: extras[0].token,
@@ -127,6 +132,7 @@ Deno.serve(async (req) => {
             data: flattenData(row.data),
             channelId,
             quiet,
+            collapseKey,
           });
           if (ok2) {
             anyOk = true;
@@ -137,16 +143,29 @@ Deno.serve(async (req) => {
         }
       }
 
-      await admin
-        .from("push_outbox")
-        .update({ error: anyOk ? null : "send_failed" })
-        .eq("id", row.id);
+      if (anyOk) {
+        await admin
+          .from("push_outbox")
+          .update({ sent_at: new Date().toISOString(), error: null })
+          .eq("id", row.id);
+      } else {
+        await admin
+          .from("push_outbox")
+          .update({
+            error: "send_failed",
+            claimed_at: new Date().toISOString(),
+          })
+          .eq("id", row.id);
+      }
     } catch (e) {
       const msg = e instanceof Error ? e.message : String(e);
       errors.push(msg);
       await admin
         .from("push_outbox")
-        .update({ error: msg.slice(0, 500) })
+        .update({
+          error: msg.slice(0, 500),
+          claimed_at: new Date().toISOString(),
+        })
         .eq("id", row.id);
     }
   }
@@ -183,6 +202,19 @@ function resolveChannelId(
   return "driver-offers-v3";
 }
 
+function resolveCollapseKey(row: OutboxRow): string {
+  const data = row.data ?? {};
+  if (typeof data.collapse_key === "string" && data.collapse_key) {
+    return data.collapse_key;
+  }
+  const type = typeof data.type === "string" ? data.type : "";
+  const orderId = typeof data.order_id === "string" ? data.order_id : "";
+  if (type === "order_status" && orderId) return `order:${orderId}`;
+  if (type === "offer") return `driver-offer:${row.user_id}`;
+  if (type === "inbox") return `inbox:${row.user_id}`;
+  return `${row.app}:${row.user_id}`;
+}
+
 function resolveAndroidSound(channelId: string): string {
   if (channelId === "driver-offers-v3" || channelId === "driver-offers-v2") {
     return "fresh_delivery";
@@ -198,6 +230,7 @@ async function sendFcm(opts: {
   data: Record<string, string>;
   channelId: string;
   quiet?: boolean;
+  collapseKey?: string;
 }): Promise<boolean> {
   // Prefer HTTP v1 (service account). Legacy FCM_SERVER_KEY is often disabled on new Firebase projects.
   const saRaw = Deno.env.get("FIREBASE_SERVICE_ACCOUNT_JSON");
@@ -216,6 +249,7 @@ async function sendFcm(opts: {
     if (!accessToken) return false;
 
     const offerSound = resolveAndroidSound(opts.channelId);
+    const collapse = opts.collapseKey || undefined;
     const res = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
       {
@@ -231,9 +265,11 @@ async function sendFcm(opts: {
             data: opts.data,
             android: {
               priority: opts.quiet ? "NORMAL" : "HIGH",
+              collapse_key: collapse,
               notification: {
                 channel_id: opts.channelId,
                 sound: offerSound,
+                tag: collapse,
                 notification_priority: opts.quiet
                   ? "PRIORITY_DEFAULT"
                   : "PRIORITY_MAX",
@@ -253,6 +289,7 @@ async function sendFcm(opts: {
   const legacyKey = Deno.env.get("FCM_SERVER_KEY");
   if (legacyKey) {
     const offerSound = resolveAndroidSound(opts.channelId);
+    const collapse = opts.collapseKey || undefined;
     const res = await fetch("https://fcm.googleapis.com/fcm/send", {
       method: "POST",
       headers: {
@@ -262,16 +299,23 @@ async function sendFcm(opts: {
       body: JSON.stringify({
         to: opts.token,
         priority: opts.quiet ? "normal" : "high",
+        collapse_key: collapse,
         notification: {
           title: opts.title,
           body: opts.body,
           sound: offerSound,
           android_channel_id: opts.channelId,
+          tag: collapse,
         },
         data: opts.data,
         android: {
           priority: opts.quiet ? "normal" : "high",
-          notification: { channel_id: opts.channelId, sound: offerSound },
+          collapse_key: collapse,
+          notification: {
+            channel_id: opts.channelId,
+            sound: offerSound,
+            tag: collapse,
+          },
         },
       }),
     });
