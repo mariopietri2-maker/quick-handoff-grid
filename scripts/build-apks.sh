@@ -47,7 +47,11 @@ write_cap_config() {
   local geo_plugin=''
   if [ "$flavor" = "driver" ]; then
     geo_plugin=',
-    "Geolocation": {}'
+    "Geolocation": {},
+    "BackgroundGeolocation": {
+      "notificationTitle": "Fresh Driver — τοποθεσία",
+      "notificationText": "Είσαι online — GPS για κοντινές παραγγελίες"
+    }'
   fi
 
   cat > "$assets/capacitor.config.json" <<EOF
@@ -101,6 +105,41 @@ sync_flavor() {
   cp -a dist/. "$public/"
 
   write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
+
+  # Keep Capacitor native plugins in sync (android-* dirs are gitignored).
+  if [ "$flavor" = "driver" ] || [ "$flavor" = "customer" ]; then
+    echo "==> cap sync android ($flavor)"
+    local backup="$ROOT/capacitor.config.ts.apkbak"
+    cp -f "$ROOT/capacitor.config.ts" "$backup"
+    cp -f "$ROOT/capacitor.${flavor}.config.ts" "$ROOT/capacitor.config.ts"
+    npx cap sync android || true
+    mv -f "$backup" "$ROOT/capacitor.config.ts"
+    # Re-apply our assets config + offer sound after sync overwrites public/
+    write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
+    if [ "$flavor" = "driver" ]; then
+      mkdir -p "$app_dir/app/src/main/res/raw"
+      cp -f "$ROOT/src/assets/sounds/uber_eats.mp3" "$app_dir/app/src/main/res/raw/uber_eats.mp3"
+      # Ensure BG location + FG service permissions survive fresh capacitor scaffolds.
+      python3 - "$app_dir/app/src/main/AndroidManifest.xml" <<'PY'
+from pathlib import Path
+import sys
+path = Path(sys.argv[1])
+text = path.read_text()
+perms = [
+  'android.permission.ACCESS_BACKGROUND_LOCATION',
+  'android.permission.FOREGROUND_SERVICE_LOCATION',
+  'android.permission.WAKE_LOCK',
+]
+for p in perms:
+    tag = f'<uses-permission android:name="{p}" />'
+    if tag not in text:
+        text = text.replace('</manifest>', f'    {tag}\n</manifest>')
+path.write_text(text)
+print(f'patched permissions -> {path}')
+PY
+    fi
+  fi
+
   bump_version "$app_dir"
 
   echo "==> gradle assembleDebug ($flavor)"

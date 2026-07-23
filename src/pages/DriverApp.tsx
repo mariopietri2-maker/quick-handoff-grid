@@ -98,23 +98,11 @@ export default function DriverApp() {
     }
   }, [isOnline, user, driverState?.shift_started_at]);
 
-  // App close / background → clear server presence (offline). Resume restores
-  // if the local toggle is still on.
+  // Keep local online preference across backgrounding. Native background
+  // geolocation continues GPS while online; only explicit offline / logout
+  // clears server presence. Web (no BG geo) still clears on hide via useDriverLocation.
   useEffect(() => {
     if (!user) return;
-
-    const clearServerPresence = () => {
-      void (supabase as any)
-        .from('driver_state')
-        .update({
-          shift_started_at: null,
-          on_break: false,
-          break_until: null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('driver_id', user.id);
-      void supabase.from('driver_locations').delete().eq('driver_id', user.id);
-    };
 
     const restoreIfWantedOnline = () => {
       let want = false;
@@ -131,17 +119,14 @@ export default function DriverApp() {
     };
 
     const onVis = () => {
-      if (document.visibilityState === 'hidden') clearServerPresence();
-      else restoreIfWantedOnline();
+      if (document.visibilityState !== 'hidden') restoreIfWantedOnline();
     };
     document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('pagehide', clearServerPresence);
 
     let removeApp: (() => void) | undefined;
     void import('@capacitor/app').then(({ App }) => {
       App.addListener('appStateChange', ({ isActive }) => {
-        if (!isActive) clearServerPresence();
-        else restoreIfWantedOnline();
+        if (isActive) restoreIfWantedOnline();
       }).then((h) => {
         removeApp = () => { void h.remove(); };
       }).catch(() => {});
@@ -149,7 +134,6 @@ export default function DriverApp() {
 
     return () => {
       document.removeEventListener('visibilitychange', onVis);
-      window.removeEventListener('pagehide', clearServerPresence);
       removeApp?.();
     };
   }, [user]);
