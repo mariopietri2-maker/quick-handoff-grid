@@ -60,7 +60,7 @@ export default function StorePayablesPanel() {
       return (stores ?? []).map((s: any) => {
         const w: any = wmap.get(s.id);
         const walletTouchedAt = w?.updated_at ? new Date(w.updated_at).getTime() : 0;
-        const commissionPct = Math.max(Number(s.commission_pct ?? 15), 15);
+        const commissionPct = Math.max(0, Math.min(100, Number(s.commission_pct ?? 15)));
         const missingWalletCredit = (deliveredByStore.get(s.id) ?? []).reduce((sum, order) => {
           const settledAt = new Date(order.commission_settled_at ?? order.updated_at ?? order.created_at).getTime();
           if (walletTouchedAt && settledAt <= walletTouchedAt) return sum;

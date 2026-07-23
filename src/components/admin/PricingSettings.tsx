@@ -185,6 +185,15 @@ export default function PricingSettings() {
     const { error } = await supabase
       .from('platform_settings')
       .upsert({ id: 1, ...payload } as any, { onConflict: 'id' });
+    if (!error) {
+      // Keep catch-all tier row aligned so it never shadows a stale 15%
+      await (supabase as any)
+        .from('commission_tiers')
+        .update({ commission_pct: payload.default_commission_pct })
+        .eq('is_active', true)
+        .lte('min_amount', 0)
+        .is('max_amount', null);
+    }
     setSaving(false);
     if (error) toast.error('Αποτυχία αποθήκευσης');
     else {
