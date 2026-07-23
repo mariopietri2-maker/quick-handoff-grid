@@ -10,11 +10,12 @@ export interface NearbyStore {
   pendingOrders: number;
 }
 
-const ACTIVE_STATUSES = ['placed', 'accepted', 'preparing', 'ready'] as const;
+const COUNT_POLL_MS = 12_000;
 
 /**
- * Loads active stores + their pending order counts.
- * Returns empty array when feature is disabled by admin.
+ * Loads active stores + their pending kitchen-order counts for driver map pins.
+ * Counts come from a SECURITY DEFINER RPC so RLS does not undercount orders
+ * assigned to other drivers.
  */
 export function useNearbyStoresForDriver() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -52,7 +53,7 @@ export function useNearbyStoresForDriver() {
     let mounted = true;
     let validStoreIds: string[] = [];
     let validStores: NearbyStore[] = [];
-    let countsRefresh: ReturnType<typeof setTimeout> | null = null;
+    let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
     const IOANNINA_LAT = 39.6650;
     const IOANNINA_LNG = 20.8537;
@@ -61,62 +62,100 @@ export function useNearbyStoresForDriver() {
       const toRad = (d: number) => (d * Math.PI) / 180;
       const dLat = toRad(lat - IOANNINA_LAT);
       const dLng = toRad(lng - IOANNINA_LNG);
-      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(IOANNINA_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng/2)**2;
-      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(IOANNINA_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
+      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
     };
 
     const applyCounts = (counts: Record<string, number>) => {
       if (!mounted) return;
-      setStores(validStores.map(s => ({ ...s, pendingOrders: counts[s.id] ?? 0 })));
+      setStores(validStores.map((s) => ({ ...s, pendingOrders: counts[s.id] ?? 0 })));
     };
 
     const refreshCounts = async () => {
       if (!mounted || validStoreIds.length === 0) return;
-      const { data: orderRows } = await supabase
-        .from('orders')
-        .select('store_id')
-        .in('status', [...ACTIVE_STATUSES])
-        .in('store_id', validStoreIds);
+      const { data, error } = await (supabase as any).rpc('get_store_active_order_counts', {
+        p_store_ids: validStoreIds,
+      });
+      if (error) {
+        // Fallback: visible rows only (may undercount) — better than blank badges.
+        console.warn('get_store_active_order_counts failed', error.message);
+        const { data: orderRows } = await supabase
+          .from('orders')
+          .select('store_id')
+          .in('status', ['placed', 'accepted', 'preparing', 'ready'])
+          .in('store_id', validStoreIds);
+        const counts: Record<string, number> = {};
+        (orderRows ?? []).forEach((o) => {
+          counts[o.store_id] = (counts[o.store_id] ?? 0) + 1;
+        });
+        applyCounts(counts);
+        return;
+      }
       const counts: Record<string, number> = {};
-      (orderRows ?? []).forEach(o => { counts[o.store_id] = (counts[o.store_id] ?? 0) + 1; });
+      (Array.isArray(data) ? data : []).forEach((row: { store_id?: string; active_count?: number | string }) => {
+        if (!row?.store_id) return;
+        counts[row.store_id] = Number(row.active_count) || 0;
+      });
       applyCounts(counts);
     };
 
     const scheduleRefresh = () => {
-      if (countsRefresh) return;
-      countsRefresh = setTimeout(() => { countsRefresh = null; refreshCounts(); }, 1500);
+      if (debounceTimer) return;
+      debounceTimer = setTimeout(() => {
+        debounceTimer = null;
+        void refreshCounts();
+      }, 800);
     };
 
-    // Load stores once (rarely change), then counts
     (async () => {
-      const { data: storeRows } = await supabase
-        .from('stores')
-        .select('id, name, latitude, longitude, image_url')
-        .eq('is_active', true);
+      // stores_public is readable by drivers; raw `stores` SELECT was revoked for most roles.
+      const { data: storeRows } = await (supabase as any)
+        .from('stores_public')
+        .select('id, name, latitude, longitude, image_url');
       if (!storeRows || !mounted) return;
-      validStores = storeRows
-        .filter(s => s.latitude != null && s.longitude != null &&
-          distKm(s.latitude as number, s.longitude as number) <= MAX_KM)
-        .map(s => ({
+      validStores = (storeRows as Array<{
+        id: string;
+        name: string;
+        latitude: number | null;
+        longitude: number | null;
+        image_url: string | null;
+      }>)
+        .filter(
+          (s) =>
+            s.latitude != null &&
+            s.longitude != null &&
+            distKm(Number(s.latitude), Number(s.longitude)) <= MAX_KM,
+        )
+        .map((s) => ({
           id: s.id,
           name: s.name,
-          latitude: s.latitude as number,
-          longitude: s.longitude as number,
+          latitude: Number(s.latitude),
+          longitude: Number(s.longitude),
           image_url: s.image_url ?? null,
           pendingOrders: 0,
         }));
-      validStoreIds = validStores.map(s => s.id);
+      validStoreIds = validStores.map((s) => s.id);
       setStores(validStores);
-      refreshCounts();
+      await refreshCounts();
     })();
 
-    // Counts refresh on a timer only — avoid unfiltered orders realtime fanout.
-    const interval = setInterval(refreshCounts, 60_000);
+    // Debounced realtime trigger + short poll — no full order payload fanout needed.
+    const ch = supabase
+      .channel('driver-store-order-counts')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders' },
+        () => scheduleRefresh(),
+      )
+      .subscribe();
+
+    const interval = setInterval(() => { void refreshCounts(); }, COUNT_POLL_MS);
 
     return () => {
       mounted = false;
       clearInterval(interval);
-      if (countsRefresh) clearTimeout(countsRefresh);
+      if (debounceTimer) clearTimeout(debounceTimer);
+      supabase.removeChannel(ch);
     };
   }, [enabled]);
 
