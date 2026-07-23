@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 import { el } from 'date-fns/locale';
+import { DRIVER_PRESENCE_ONLINE_MS } from '@/lib/driver-presence';
 
 interface DriverLocation {
   driver_id: string;
