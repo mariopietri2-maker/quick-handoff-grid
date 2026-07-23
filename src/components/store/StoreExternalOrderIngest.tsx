@@ -239,7 +239,12 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     } as any);
     setSubmitting(false);
     if (error) {
-      toast.error(error.message);
+      const msg = String(error.message || '');
+      if (/store_charge|platform_profit|not-null|null value/i.test(msg)) {
+        toast.error('Αποτυχία δημιουργίας παραγγελίας — δοκίμασε ξανά σε λίγο.');
+      } else {
+        toast.error(msg || 'Αποτυχία δημιουργίας παραγγελίας');
+      }
     } else {
       toast.success('Η παραγγελία δημιουργήθηκε — εμφανίζεται στην κουζίνα ✓');
       setForm(blankForm);
