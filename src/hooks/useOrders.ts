@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { playOrderSound, showOrderNotification } from '@/lib/notifications';
 import { playOfferAlert, stopOfferAlert } from '@/lib/driver-sound-prefs';
-import { isAppActive } from '@/lib/push-register';
+import { isAppActive, notifyDriverOfferLocal } from '@/lib/push-register';
 
 import type { Database } from '@/integrations/supabase/types';
 
@@ -385,21 +385,41 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   }, [fetchOrders]);
 
 
-  // Persistent alert: ring while unaccepted offers are on screen (foreground).
-  // Background/locked phones rely on LocalNotification + remote FCM.
-  const ringableKey = offers.map(o => o.id).sort().join(',');
+  // Persistent alert: ring while unaccepted offers exist.
+  // Foreground → HTML5 Uber-style chime. Locked/background → local OS
+  // notification (channel sound) re-triggered until accepted — FCM covers killed.
+  const ringableKey = offers.map((o) => o.id).sort().join(',');
+  const ringOrderId = offers[0]?.id ?? null;
   useEffect(() => {
-    if (activeDelivery || !ringableKey) {
+    if (activeDelivery || !ringableKey || !ringOrderId) {
       stopOfferAlert();
       return;
     }
-    if (!isAppActive()) return;
-    playOfferAlert();
-    const id = setInterval(() => {
-      if (isAppActive()) playOfferAlert();
-    }, 4000);
-    return () => clearInterval(id);
-  }, [ringableKey, activeDelivery]);
+
+    const tick = () => {
+      if (isAppActive()) {
+        playOfferAlert();
+      } else {
+        void notifyDriverOfferLocal({
+          orderId: ringOrderId,
+          retrigger: true,
+          title: 'Νέα παράδοση!',
+          body: 'Έχεις νέα προσφορά — άνοιξε την εφαρμογή.',
+        });
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 4500);
+    const onActive = () => {
+      if (isAppActive() && !activeDelivery) playOfferAlert();
+    };
+    window.addEventListener('driver-app-active-changed', onActive);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('driver-app-active-changed', onActive);
+    };
+  }, [ringableKey, ringOrderId, activeDelivery]);
 
   // Real-time: listen for new available orders + new pending offers.
   // We debounce refetches so a burst of order updates doesn't cause a
@@ -441,10 +461,20 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           filter: `driver_id=eq.${user.id}`,
         },
         (payload) => {
-          // Background/killed: FCM outbox is the single source of truth (one offer
-          // at a time). Foreground uses playOfferAlert via fetchOrders — avoid
-          // stacking LocalNotification on top of FCM for the same offer.
-          void payload;
+          // Immediate feedback before fetch completes:
+          // - foreground: in-app chime
+          // - locked/background: local OS notification (FCM still covers killed apps)
+          const row = payload.new as { order_id?: string } | null;
+          const orderId = row?.order_id;
+          if (isAppActive()) {
+            playOfferAlert();
+          } else if (orderId) {
+            void notifyDriverOfferLocal({
+              orderId,
+              title: 'Νέα παράδοση!',
+              body: 'Έχεις νέα προσφορά — άνοιξε την εφαρμογή.',
+            });
+          }
           fetchOrders();
         }
       )

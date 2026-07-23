@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   loadDriverSoundPrefs,
-  pickRandomPattern,
   playNotificationSound,
   playOfferAlert,
-  resolvePattern,
+  playOfferChime,
   saveDriverSoundPrefs,
   stopOfferAlert,
+  resetDriverAudioForTests,
+  OFFER_SOUND_ID,
 } from '@/lib/driver-sound-prefs';
 
 class MockAudio {
@@ -15,7 +16,7 @@ class MockAudio {
   volume = 1;
   muted = false;
   currentTime = 0;
-  duration = 1.2;
+  duration = 0.6;
   paused = true;
   play = vi.fn(async () => {
     this.paused = false;
@@ -35,50 +36,48 @@ describe('driver notification sounds', () => {
     vi.stubGlobal('Audio', MockAudio as unknown as typeof Audio);
     localStorage.clear();
     stopOfferAlert();
+    resetDriverAudioForTests();
   });
 
-  it('defaults to Fresh Delivery offer chime', () => {
+  it('defaults to enabled Uber-style offer chime prefs', () => {
     const prefs = loadDriverSoundPrefs();
     expect(prefs.enabled).toBe(true);
-    expect(prefs.pattern).toBe('fresh_delivery');
+    expect(prefs.volume).toBe(1);
+    expect(prefs.repeatCount).toBe(4);
+    expect(prefs.vibrate).toBe(true);
+    expect(OFFER_SOUND_ID).toBe('fresh_delivery');
   });
 
-  it('migrates legacy uber_eats / uber patterns to fresh_delivery', () => {
+  it('migrates legacy multi-pattern prefs to single-sound prefs', () => {
     localStorage.setItem(
-      'qg.driver.sound.prefs.v4',
+      'qg.driver.sound.prefs.v5',
       JSON.stringify({
         enabled: true,
-        volume: 0.9,
-        pattern: 'uber_eats',
-        repeatCount: 2,
-        vibrate: true,
+        volume: 0.8,
+        pattern: 'nokia',
+        repeatCount: 3,
+        vibrate: false,
       }),
     );
     const prefs = loadDriverSoundPrefs();
-    expect(prefs.pattern).toBe('fresh_delivery');
+    expect(prefs.enabled).toBe(true);
+    expect(prefs.volume).toBe(0.8);
+    expect(prefs.repeatCount).toBe(3);
+    expect(prefs.vibrate).toBe(false);
+    expect((prefs as { pattern?: string }).pattern).toBeUndefined();
   });
 
-  it('resolvePattern(random) returns a concrete bundled effect', () => {
-    const concrete = [
-      'fresh_delivery', 'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
-    ];
-    for (let i = 0; i < 20; i++) {
-      const p = resolvePattern('random');
-      expect(concrete).toContain(p);
-    }
-  });
-
-  it('pickRandomPattern avoids immediate repeats when possible', () => {
-    const picks = Array.from({ length: 12 }, () => pickRandomPattern());
-    expect(picks.every((p) => typeof p === 'string')).toBe(true);
-    expect(new Set(picks).size).toBeGreaterThan(1);
+  it('playOfferChime plays the single bundled clip', () => {
+    expect(playOfferChime(0.9)).toBe(true);
+    expect(MockAudio.plays.length).toBe(1);
+    expect(MockAudio.plays[0]!.play).toHaveBeenCalled();
+    expect(MockAudio.plays[0]!.volume).toBe(0.9);
   });
 
   it('playNotificationSound plays one audio clip when enabled', () => {
     saveDriverSoundPrefs({
       enabled: true,
       volume: 0.8,
-      pattern: 'fresh_delivery',
       repeatCount: 1,
       vibrate: false,
     });
@@ -94,19 +93,16 @@ describe('driver notification sounds', () => {
     playNotificationSound({
       enabled: false,
       volume: 0.8,
-      pattern: 'random',
       repeatCount: 1,
       vibrate: false,
     });
     expect(MockAudio.plays.length).toBe(before);
   });
 
-  it('playOfferAlert with fresh_delivery resolves once and plays', () => {
-    // Use a fresh pattern so the module audio cache does not hide constructor calls.
+  it('playOfferAlert plays the offer chime when enabled', () => {
     playOfferAlert({
       enabled: true,
       volume: 0.7,
-      pattern: 'honk',
       repeatCount: 1,
       vibrate: false,
     });

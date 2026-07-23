@@ -1,5 +1,5 @@
 import { ExternalLink, Phone, X } from 'lucide-react';
-import { loadDriverAppPrefs } from '@/lib/driver-app-prefs';
+import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { formatDriverDistance, openExternalNav } from '@/lib/driver-nav';
 
 interface NavBottomCardProps {
@@ -26,7 +26,7 @@ function formatDuration(seconds: number) {
 export function NavBottomCard({
   title, subtitle, durationSec, distanceMeters, phone, destLat, destLng, onExit,
 }: NavBottomCardProps) {
-  const prefs = loadDriverAppPrefs();
+  const prefs = useDriverAppPrefs();
   const canExternal = destLat != null && destLng != null
     && Number.isFinite(destLat) && Number.isFinite(destLng);
 

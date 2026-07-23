@@ -99,12 +99,11 @@ export async function showOsNotification(opts: {
 export async function initNotificationChannels() {
   if (!isNative) return;
   try {
-    // New channel id so Android picks up the Fresh Delivery custom sound
-    // (channel sound is immutable after first create).
+    // Channel sound is immutable after first create — keep id stable.
     await LocalNotifications.createChannel({
       id: 'driver-offers-v3',
       name: 'Νέες παραγγελίες',
-      description: 'Ειδοποιήσεις για νέες παραγγελίες προς ανάθεση',
+      description: 'Ήχος προσφοράς Uber Eats (fresh_delivery)',
       importance: 5,
       visibility: 1,
       vibration: true,

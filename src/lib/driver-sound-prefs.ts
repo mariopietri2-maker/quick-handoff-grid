@@ -1,40 +1,23 @@
-import popUrl from '@/assets/sounds/pop.mp3';
-import honkUrl from '@/assets/sounds/honk.mp3';
-import partyUrl from '@/assets/sounds/party.mp3';
-import screechUrl from '@/assets/sounds/screech.mp3';
-import suspenseUrl from '@/assets/sounds/suspense.mp3';
-import mysteryUrl from '@/assets/sounds/mystery.mp3';
-import whistleUrl from '@/assets/sounds/whistle.mp3';
-import clownUrl from '@/assets/sounds/clown.mp3';
-import nokiaUrl from '@/assets/sounds/nokia.mp3';
-import slipUrl from '@/assets/sounds/slip.mp3';
-import freshDeliveryUrl from '@/assets/sounds/fresh_delivery.mp3';
+import offerChimeUrl from '@/assets/sounds/fresh_delivery.mp3';
 
-export type ConcreteSoundPattern =
-  | 'fresh_delivery'
-  | 'pop'
-  | 'honk'
-  | 'party'
-  | 'screech'
-  | 'suspense'
-  | 'mystery'
-  | 'whistle'
-  | 'clown'
-  | 'nokia'
-  | 'slip';
-
-export type SoundPattern = ConcreteSoundPattern | 'random';
+/**
+ * Single Uber Eats–style offer chime for the driver app.
+ * Same asset is used in-app (HTMLAudio) and on Android FCM / notification
+ * channels as `res/raw/fresh_delivery.mp3`.
+ */
+export const OFFER_SOUND_ID = 'fresh_delivery' as const;
+export const OFFER_SOUND_LABEL = 'Uber Eats';
 
 export interface DriverSoundPrefs {
   enabled: boolean;
-  volume: number;        // 0..1
-  pattern: SoundPattern;
-  repeatCount: number;   // 1..5
+  volume: number; // 0..1
+  repeatCount: number; // 1..5 — how many times to play the chime per alert burst
   vibrate: boolean;
 }
 
-const KEY = 'qg.driver.sound.prefs.v5';
+const KEY = 'qg.driver.sound.prefs.v6';
 const LEGACY_KEYS = [
+  'qg.driver.sound.prefs.v5',
   'qg.driver.sound.prefs.v4',
   'qg.driver.sound.prefs.v3',
   'qg.driver.sound.prefs.v2',
@@ -43,56 +26,20 @@ const LEGACY_KEYS = [
 
 const DEFAULTS: DriverSoundPrefs = {
   enabled: true,
-  volume: 0.9,
-  pattern: 'fresh_delivery',
-  repeatCount: 2,
+  volume: 1,
+  repeatCount: 4,
   vibrate: true,
 };
 
-const PATTERN_MIGRATIONS: Record<string, SoundPattern> = {
-  fresh: 'pop', bell: 'party', pulse: 'pop', cash: 'party', zen: 'mystery',
-  alert: 'honk', doordash: 'pop', doordash_real: 'pop', doordash_style: 'pop',
-  ios_tritone: 'mystery', pristine: 'party', crystal: 'party', tesla: 'pop',
-  fanfare: 'party', wolt: 'pop', uber: 'fresh_delivery', uber_eats: 'fresh_delivery',
-  glovo: 'pop', kaching: 'party', arcade: 'pop', marimba: 'mystery',
-  classic_phone: 'nokia', siren: 'honk', chime: 'party', urgent: 'honk',
-};
-
-const CONCRETE: ConcreteSoundPattern[] = [
-  'fresh_delivery', 'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
-];
-const VALID: SoundPattern[] = ['random', ...CONCRETE];
-
-/** Bundled MP3 URLs (Vite hashes them into dist) — never use absolute IDE-dev paths on Railway/APK. */
-const SOUND_URLS: Record<ConcreteSoundPattern, string> = {
-  fresh_delivery: freshDeliveryUrl,
-  pop: popUrl,
-  honk: honkUrl,
-  party: partyUrl,
-  screech: screechUrl,
-  suspense: suspenseUrl,
-  mystery: mysteryUrl,
-  whistle: whistleUrl,
-  clown: clownUrl,
-  nokia: nokiaUrl,
-  slip: slipUrl,
-};
-
-let _lastRandom: ConcreteSoundPattern | null = null;
-
-/** Pick a concrete effect; avoid repeating the previous random pick when possible. */
-export function pickRandomPattern(): ConcreteSoundPattern {
-  if (CONCRETE.length <= 1) return CONCRETE[0]!;
-  let next = CONCRETE[Math.floor(Math.random() * CONCRETE.length)]!;
-  if (next === _lastRandom) {
-    next = CONCRETE[Math.floor(Math.random() * CONCRETE.length)]!;
-  }
-  _lastRandom = next;
-  return next;
-}
-
-export function resolvePattern(pattern: SoundPattern): ConcreteSoundPattern {
-  return pattern === 'random' ? pickRandomPattern() : pattern;
+function clampPrefs(raw: Partial<DriverSoundPrefs> | null | undefined): DriverSoundPrefs {
+  const volume = Number(raw?.volume ?? DEFAULTS.volume);
+  const repeatCount = Number(raw?.repeatCount ?? DEFAULTS.repeatCount);
+  return {
+    enabled: raw?.enabled !== false,
+    volume: Math.max(0, Math.min(1, Number.isFinite(volume) ? volume : DEFAULTS.volume)),
+    repeatCount: Math.max(1, Math.min(5, Number.isFinite(repeatCount) ? Math.round(repeatCount) : DEFAULTS.repeatCount)),
+    vibrate: raw?.vibrate !== false,
+  };
 }
 
 export function loadDriverSoundPrefs(): DriverSoundPrefs {
@@ -102,57 +49,71 @@ export function loadDriverSoundPrefs(): DriverSoundPrefs {
       for (const legacyKey of LEGACY_KEYS) {
         const legacy = localStorage.getItem(legacyKey);
         if (!legacy) continue;
-        const parsedLegacy = { ...DEFAULTS, ...JSON.parse(legacy) } as DriverSoundPrefs;
-        if (!VALID.includes(parsedLegacy.pattern)) {
-          parsedLegacy.pattern = PATTERN_MIGRATIONS[parsedLegacy.pattern as string] ?? 'fresh_delivery';
+        const parsed = clampPrefs(JSON.parse(legacy));
+        try {
+          localStorage.setItem(KEY, JSON.stringify(parsed));
+        } catch {
+          /* ignore quota */
         }
-        try { localStorage.setItem(KEY, JSON.stringify(parsedLegacy)); } catch {}
-        return parsedLegacy;
+        return parsed;
       }
-      return DEFAULTS;
+      return { ...DEFAULTS };
     }
-    const parsed = { ...DEFAULTS, ...JSON.parse(raw) } as DriverSoundPrefs;
-    if (!VALID.includes(parsed.pattern)) {
-      parsed.pattern = PATTERN_MIGRATIONS[parsed.pattern as string] ?? 'fresh_delivery';
-    }
-    return parsed;
+    return clampPrefs(JSON.parse(raw));
   } catch {
-    return DEFAULTS;
+    return { ...DEFAULTS };
   }
 }
 
 export function saveDriverSoundPrefs(prefs: DriverSoundPrefs) {
-  localStorage.setItem(KEY, JSON.stringify(prefs));
-  window.dispatchEvent(new CustomEvent('driver-sound-prefs-changed', { detail: prefs }));
+  const next = clampPrefs(prefs);
+  localStorage.setItem(KEY, JSON.stringify(next));
+  window.dispatchEvent(new CustomEvent('driver-sound-prefs-changed', { detail: next }));
 }
 
-// Audio element cache — one per pattern, reused so we don't refetch each play.
-const audioCache: Partial<Record<ConcreteSoundPattern, HTMLAudioElement>> = {};
-function getAudio(pattern: ConcreteSoundPattern): HTMLAudioElement {
-  let el = audioCache[pattern];
-  if (!el) {
-    el = new Audio(SOUND_URLS[pattern]);
-    el.preload = 'auto';
-    audioCache[pattern] = el;
+let audioEl: HTMLAudioElement | null = null;
+
+/** Test helper — drop the cached Audio element between cases. */
+export function resetDriverAudioForTests() {
+  try {
+    audioEl?.pause();
+  } catch {
+    /* ignore */
   }
-  return el;
+  audioEl = null;
 }
 
+function getAudio(): HTMLAudioElement {
+  if (!audioEl) {
+    audioEl = new Audio(offerChimeUrl);
+    audioEl.preload = 'auto';
+  }
+  return audioEl;
+}
+
+/** Unlock WebView autoplay after a user gesture (go online / first tap). */
 export function primeDriverAudio() {
   if (typeof window === 'undefined') return;
-  // Touch each audio element so the browser whitelists playback within this gesture.
   try {
-    CONCRETE.forEach((p) => {
-      const el = getAudio(p);
-      el.muted = true;
-      const pr = el.play();
-      if (pr && typeof pr.then === 'function') {
-        pr.then(() => { el.pause(); el.currentTime = 0; el.muted = false; }).catch(() => { el.muted = false; });
-      } else {
-        el.pause(); el.currentTime = 0; el.muted = false;
-      }
-    });
-  } catch {}
+    const el = getAudio();
+    el.muted = true;
+    const pr = el.play();
+    if (pr && typeof pr.then === 'function') {
+      pr.then(() => {
+        el.pause();
+        el.currentTime = 0;
+        el.muted = false;
+      }).catch(() => {
+        el.muted = false;
+      });
+    } else {
+      el.pause();
+      el.currentTime = 0;
+      el.muted = false;
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 let unlockListenersInstalled = false;
@@ -171,25 +132,35 @@ function installAudioUnlockListeners() {
 }
 installAudioUnlockListeners();
 
-export function playPattern(pattern: SoundPattern, volume: number) {
+/** Play the single offer chime once. Returns false if playback failed. */
+export function playOfferChime(volume: number): boolean {
   try {
-    const resolved = resolvePattern(pattern);
-    const el = getAudio(resolved);
+    const el = getAudio();
     el.pause();
     el.currentTime = 0;
     el.volume = Math.max(0, Math.min(1, volume));
-    void el.play().catch(() => {
-      // Autoplay blocked — retry once after a short unlock attempt.
-      try {
-        primeDriverAudio();
-        void el.play().catch(() => {});
-      } catch {}
-    });
-    return (el.duration && isFinite(el.duration)) ? el.duration * 1000 : 1200;
+    const pr = el.play();
+    if (pr && typeof pr.then === 'function') {
+      pr.catch(() => {
+        try {
+          primeDriverAudio();
+          void el.play().catch(() => {});
+        } catch {
+          /* ignore */
+        }
+      });
+    }
+    return true;
   } catch (e) {
-    console.warn('sound play failed', e);
-    return 0;
+    console.warn('offer chime play failed', e);
+    return false;
   }
+}
+
+/** @deprecated alias — single chime only */
+export function playPattern(_pattern: string | undefined, volume: number) {
+  playOfferChime(volume);
+  return 700;
 }
 
 let _alertLockUntil = 0;
@@ -201,42 +172,67 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
   const now = Date.now();
   if (now < _alertLockUntil) return;
   const reps = Math.max(1, p.repeatCount);
-  _alertLockUntil = now + reps * 1400 + 400;
-  while (_pendingTimers.length) { try { clearTimeout(_pendingTimers.pop()!); } catch {} }
-  if (p.vibrate && 'vibrate' in navigator) {
-    try { navigator.vibrate([120, 80, 120]); } catch {}
+  // Short chime (~0.6s) — space repeats so the burst stays audible.
+  const gapMs = 900;
+  _alertLockUntil = now + reps * gapMs + 400;
+  while (_pendingTimers.length) {
+    try {
+      clearTimeout(_pendingTimers.pop()!);
+    } catch {
+      /* ignore */
+    }
   }
-  // Resolve once so random stays the same sound across repeats in this alert.
-  const concrete = resolvePattern(p.pattern);
-  playPattern(concrete, p.volume);
+  if (p.vibrate && 'vibrate' in navigator) {
+    try {
+      navigator.vibrate([160, 80, 160, 80, 160]);
+    } catch {
+      /* ignore */
+    }
+  }
+  playOfferChime(p.volume);
   for (let i = 1; i < reps; i++) {
-    const t = window.setTimeout(() => playPattern(concrete, p.volume), i * 1400);
+    const t = window.setTimeout(() => playOfferChime(p.volume), i * gapMs);
     _pendingTimers.push(t);
   }
 }
 
-/** Soft one-shot for inbox / status notifications (respects prefs; uses selected pattern). */
+/** Soft one-shot for inbox / status notifications. */
 export function playNotificationSound(prefs?: DriverSoundPrefs) {
   const p = prefs ?? loadDriverSoundPrefs();
   if (!p.enabled) return;
-  const volume = Math.max(0.2, Math.min(1, p.volume * 0.9));
-  playPattern(resolvePattern(p.pattern), volume);
+  const volume = Math.max(0.2, Math.min(1, p.volume * 0.85));
+  playOfferChime(volume);
   if (p.vibrate && 'vibrate' in navigator) {
-    try { navigator.vibrate([40, 40, 40]); } catch {}
+    try {
+      navigator.vibrate([40, 40, 40]);
+    } catch {
+      /* ignore */
+    }
   }
 }
 
 export function stopOfferAlert() {
-  while (_pendingTimers.length) { try { clearTimeout(_pendingTimers.pop()!); } catch {} }
+  while (_pendingTimers.length) {
+    try {
+      clearTimeout(_pendingTimers.pop()!);
+    } catch {
+      /* ignore */
+    }
+  }
   _alertLockUntil = 0;
-  // Pause any currently playing audio elements
   try {
-    Object.values(audioCache).forEach((el) => {
-      if (!el) return;
-      try { el.pause(); el.currentTime = 0; } catch {}
-    });
-  } catch {}
+    if (audioEl) {
+      audioEl.pause();
+      audioEl.currentTime = 0;
+    }
+  } catch {
+    /* ignore */
+  }
   if ('vibrate' in navigator) {
-    try { navigator.vibrate(0); } catch {}
+    try {
+      navigator.vibrate(0);
+    } catch {
+      /* ignore */
+    }
   }
 }
