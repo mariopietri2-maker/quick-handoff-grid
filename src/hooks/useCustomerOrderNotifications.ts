@@ -13,6 +13,10 @@ import { initNotificationChannels } from '@/lib/push-notifications';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 const statusToastLabels: Record<string, string> = {
+  accepted: 'Το κατάστημα αποδέχτηκε την παραγγελία ✅',
+  preparing: 'Η παραγγελία ετοιμάζεται 👨‍🍳',
+  ready: 'Έτοιμη — αναμένει οδηγό 📦',
+  arrived: 'Ο οδηγός έφτασε στο κατάστημα 🏪',
   picked_up: 'Ο οδηγός έρχεται προς εσένα 🛵',
   delivered: 'Παραδόθηκε 🎉',
   cancelled: 'Η παραγγελία ακυρώθηκε ❌',
