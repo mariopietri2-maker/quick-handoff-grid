@@ -112,6 +112,13 @@ const Index = () => {
             </Button>
             <Button
               size="sm" variant="ghost"
+              className="inline-flex font-heading font-semibold"
+              onClick={() => navigate('/presentation')}
+            >
+              Παρουσίαση
+            </Button>
+            <Button
+              size="sm" variant="ghost"
               className="hidden sm:inline-flex font-heading font-semibold"
               onClick={() => navigate('/auth')}
             >
