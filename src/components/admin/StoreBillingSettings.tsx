@@ -39,15 +39,30 @@ export default function StoreBillingSettings() {
 
   const save = async (r: Row) => {
     setSavingId(r.id);
+    const patch: Record<string, unknown> = {
+      ext_billing_mode: r.ext_billing_mode,
+      ext_commission_pct: r.ext_commission_pct,
+      ext_flat_fee: r.ext_flat_fee,
+      ext_margin_pct: r.ext_margin_pct,
+    };
+    // When using fixed % for external/custom, keep in-app commission in sync
+    // so store Custom Order preview + settlement show the same rate.
+    if (r.ext_billing_mode === 'commission') {
+      patch.commission_pct = r.ext_commission_pct;
+    }
     const { error } = await supabase
       .from('stores')
-      .update({
-        ext_billing_mode: r.ext_billing_mode,
-        ext_commission_pct: r.ext_commission_pct,
-        ext_flat_fee: r.ext_flat_fee,
-        ext_margin_pct: r.ext_margin_pct,
-      } as any)
+      .update(patch as any)
       .eq('id', r.id);
+    if (!error && r.ext_billing_mode === 'commission') {
+      await supabase.from('store_pricing_overrides' as any).upsert(
+        {
+          store_id: r.id,
+          commission_pct: r.ext_commission_pct,
+        } as any,
+        { onConflict: 'store_id' },
+      );
+    }
     setSavingId(null);
     if (error) toast.error(error.message);
     else toast.success(`${r.name} ενημερώθηκε`);
@@ -62,7 +77,9 @@ export default function StoreBillingSettings() {
       <div>
         <h2 className="font-heading font-bold text-xl">Χρέωση Καταστημάτων (Εξωτερικές Παραγγελίες)</h2>
         <p className="text-sm text-muted-foreground mt-1">
-          Πώς πληρώνει κάθε κατάστημα την πλατφόρμα όταν χειρίζεσαι παραγγελίες από eFood / Wolt / Box.
+          Πώς πληρώνει κάθε κατάστημα την πλατφόρμα στο admin External Order ingest (eFood / Wolt / Box).
+          Οι <b>Custom Orders του καταστήματος</b> και οι in-app παραγγελίες χρησιμοποιούν την προμήθεια από
+          Pricing → overrides καταστήματος (όχι αυτά τα ext πεδία).
         </p>
         <div className="mt-3 rounded-lg border border-primary/30 bg-primary/5 p-3 text-xs text-foreground/80 leading-relaxed">
           <span className="font-heading font-bold text-primary">📊 Tiered (default)</span> — οι external χρεώνονται με τα ίδια commission tiers όπως οι internal παραγγελίες (πχ 15%). Η προμήθεια πάει στο ενοποιημένο Driver Pool που πληρώνει και τους οδηγούς. Μία τσάντα — απλό, σταθερό, χωρίς buffer.

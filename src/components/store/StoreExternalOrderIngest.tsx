@@ -78,7 +78,8 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
 
   const [customerFee, setCustomerFee] = useState({ base: 1.5, perKm: 0.5 });
   const [driverPay, setDriverPay] = useState(0);
-  const [storeCommPct, setStoreCommPct] = useState(15);
+  /** Platform take % (commission). Store keeps = 100 − this. */
+  const [commissionPct, setCommissionPct] = useState(15);
 
   useEffect(() => {
     supabase
@@ -105,7 +106,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
         perKm: Number(ps.customer_per_km_fee ?? 0.5),
       });
       const d = Number(ps.default_commission_pct);
-      if (d > 0) setStoreCommPct(d);
+      if (d > 0) setCommissionPct(d);
     })();
     return () => { cancelled = true; };
   }, []);
@@ -144,9 +145,29 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     return () => { cancelled = true; };
   }, [storeId, distanceKm]);
 
+  // Same commission resolution as settlement (store → override → tiers → platform default)
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const { data, error } = await (supabase as any).rpc('resolve_commission_pct', {
+        p_store_id: storeId,
+        p_food_total: Math.max(totalAmount, 0),
+      });
+      if (cancelled || error || data == null) return;
+      const pct = Number(data);
+      if (Number.isFinite(pct)) setCommissionPct(Math.max(0, Math.min(100, pct)));
+    })();
+    return () => { cancelled = true; };
+  }, [storeId, totalAmount]);
+
+  const storeKeepsPct = useMemo(
+    () => Math.max(0, Math.min(100, 100 - commissionPct)),
+    [commissionPct],
+  );
+
   const storeKeeps = useMemo(
-    () => +(totalAmount * (100 - storeCommPct) / 100).toFixed(2),
-    [totalAmount, storeCommPct],
+    () => +(totalAmount * storeKeepsPct / 100).toFixed(2),
+    [totalAmount, storeKeepsPct],
   );
 
   const update = <K extends keyof FormState>(k: K, v: FormState[K]) =>
@@ -461,12 +482,15 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
               <div className="space-y-2">
                 <div className="rounded-lg border border-border/60 bg-background px-3 py-3 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Wallet className="h-3.5 w-3.5" /> Κρατάς (~{storeCommPct}%)
+                    <Wallet className="h-3.5 w-3.5" /> Κρατάς (~{storeKeepsPct.toFixed(0)}%)
                   </span>
                   <span className="font-heading font-bold text-xl tabular-nums text-success">
                     €{storeKeeps.toFixed(2)}
                   </span>
                 </div>
+                <p className="text-[10px] text-muted-foreground px-0.5">
+                  Προμήθεια πλατφόρμας {commissionPct.toFixed(1)}% · ίδια με in-app για αυτό το κατάστημα
+                </p>
 
                 <div className="rounded-lg border border-border/60 bg-background px-3 py-2.5 flex items-center justify-between">
                   <span className="text-xs text-muted-foreground flex items-center gap-1.5">
