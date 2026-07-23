@@ -611,14 +611,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
           ${badge}
         </div>`;
 
+      const popupContent = `<strong style="font-size:13px;">${safeName}</strong><br/><span style="font-size:11px;color:#6b7280;">${s.pendingOrders} ενεργ${s.pendingOrders === 1 ? 'ή' : 'ές'} παραγγελί${s.pendingOrders === 1 ? 'α' : 'ες'}</span>`;
       const existing = nearbyMarkersRef.current.get(s.id);
       if (existing) {
         existing.getElement().innerHTML = html;
         existing.setLngLat([s.longitude, s.latitude]);
+        existing.setPopup(new mapboxgl.Popup({ offset: 8 }).setHTML(popupContent));
       } else {
         const el = document.createElement('div');
         el.innerHTML = html;
-        const popupContent = `<strong style="font-size:13px;">${safeName}</strong><br/><span style="font-size:11px;color:#6b7280;">${s.pendingOrders} ενεργ${s.pendingOrders === 1 ? 'ή' : 'ές'} παραγγελί${s.pendingOrders === 1 ? 'α' : 'ες'}</span>`;
         const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
           .setLngLat([s.longitude, s.latitude])
           .setPopup(new mapboxgl.Popup({ offset: 8 }).setHTML(popupContent))
