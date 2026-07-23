@@ -7,7 +7,7 @@ Fresh ships **two** apps:
 | Fresh Customer | `com.freshdelivery.customer` |
 | Fresh Driver | `com.freshdelivery.driver` |
 
-Debug APKs (`./scripts/build-apks.sh`) are for sideload testing only — **Play Store rejects unsigned/debug APKs**. Use **signed `.aab`** (Android App Bundle) for Play.
+Debug APKs (`./scripts/build-apks.sh`) are for sideload / beta testing only — **Play Store rejects unsigned/debug APKs**. Use **signed `.aab`** (Android App Bundle) for Play.
 
 ---
 
@@ -32,15 +32,17 @@ This writes (gitignored):
 
 **Back these up offline.** If you lose the upload key and are not enrolled in Play App Signing recovery, you cannot update the app.
 
-4. Build signed bundles:
+4. Build signed bundles (includes BG location, FCM sounds, Firebase when present):
 
 ```bash
-./scripts/build-store-aabs.sh
+APK_VERSION_CODE=7231500 APK_VERSION_NAME=1.0.7231500 ./scripts/build-store-aabs.sh
 # → store-bundles/fresh-customer-release.aab
 # → store-bundles/fresh-driver-release.aab
 ```
 
-5. Play Console → each app → **Production** (or Internal testing) → **Create release** → upload the `.aab`.
+`versionCode` must increase for every Play upload.
+
+5. Play Console → each app → **Internal testing** (recommended first) or **Production** → **Create release** → upload the `.aab`.
 6. On first upload, enable **Play App Signing** (Google keeps the app signing key; you keep the upload key).
 
 ### Checklist before review
@@ -48,8 +50,16 @@ This writes (gitignored):
 - [ ] Store listing (GR/EN), screenshots, feature graphic, privacy policy URL
 - [ ] Content rating questionnaire
 - [ ] Target API / Data safety form
-- [ ] Driver app: declare location permission use
+- [ ] Customer + Driver: declare location (incl. background) use
+- [ ] Stripe **live** keys on Railway + Supabase edge secrets
 - [ ] Turn off debug WebView (`build-store-aabs.sh` already omits `webContentsDebuggingEnabled`)
+
+### What ships in the AAB (parity with debug APKs)
+
+- Capgo background geolocation (customer: active order; driver: online)
+- Custom notification sounds (`customer_notify` / `fresh_delivery`)
+- PushNotifications + Firebase `google-services.json` when present under `mobile-signing/firebase/`
+- No WebView debugging
 
 ---
 
@@ -76,14 +86,13 @@ chmod +x scripts/sync-ios-apps.sh
 Then on a Mac:
 
 ```bash
-# after copying the repo (or running sync on the Mac)
 open ios-customer/App/App.xcworkspace   # or .xcodeproj
 # Signing & Capabilities → select Team
 # Product → Archive → Distribute App → App Store Connect
 # repeat for ios-driver
 ```
 
-Driver app: enable **Location** usage (Info.plist strings are added by the sync script). Background location may need the “Always” capability + App Store justification.
+Driver / customer: enable **Location** usage (Info.plist strings are added by the sync script). Background location needs “Always” + App Store justification.
 
 ### TestFlight
 
@@ -100,4 +109,5 @@ Archive → upload → App Store Connect → TestFlight → internal/external te
 | Sign iOS IPA | Requires macOS + Xcode + your Apple certs |
 | Guarantee review approval | Store policies / screenshots / legal |
 
-Debug sideload APKs remain at GitHub release `mobile-apks-v1` for testers.
+Beta sideload APKs remain at GitHub release `mobile-apks-v1` and `/download` for testers.
+Play upload bundles are published to GitHub release `play-store-aabs-v1` when built.

@@ -126,7 +126,7 @@ App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver`
 
 ## Payments note
 
-**Launch:** publish Uber green branding (done in DB), hide test stores, set Stripe **live** `pk_live_…` + edge secrets before public launch.
+**Launch checklist:** Uber green branding is live; test stores are hidden via migration. Before public launch set Stripe **live** `pk_live_…` in Railway (override `.env.production` test key) + matching live edge secrets + webhook endpoint on Supabase.
 
 Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with live keys on Railway and matching live secrets + webhook endpoint on Supabase. In-app refunds credit the **customer wallet** (see `/legal/refunds`); original-card Stripe refunds are manual/support only today.
 

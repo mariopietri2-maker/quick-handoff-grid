@@ -4,3 +4,8 @@
 key.properties
 *.pem
 passwords.txt
+
+# Firebase / FCM secrets (also covered by root .gitignore)
+firebase/google-services*.json
+firebase/firebase-service-account.json
+firebase/fcm-server-key.txt
