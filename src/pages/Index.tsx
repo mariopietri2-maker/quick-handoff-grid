@@ -314,6 +314,8 @@ const Index = () => {
             <a href="/legal/privacy" className="text-muted-foreground hover:text-primary transition-smooth">Απόρρητο</a>
             <span className="text-border">·</span>
             <a href="/legal/refunds" className="text-muted-foreground hover:text-primary transition-smooth">Επιστροφές</a>
+            <span className="text-border">·</span>
+            <a href="/presentation" className="text-muted-foreground hover:text-primary transition-smooth">Παρουσίαση</a>
           </nav>
           <p className="text-xs text-muted-foreground">© 2026 Fresh Delivery. Με ❤️ για την Ελλάδα.</p>
         </div>

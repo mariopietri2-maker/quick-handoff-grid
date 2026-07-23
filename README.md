@@ -3,6 +3,7 @@
 Real-time food delivery marketplace for **Ιωάννινα** — customers, multi-store restaurant owners, drivers, admin ops, and support.
 
 **Live (Railway):** https://quick-handoff-grid-production.up.railway.app  
+**Product deck:** https://quick-handoff-grid-production.up.railway.app/presentation  
 **Store PWA:** open `/store` in Chrome/Safari → Install / Add to Home Screen
 
 Production is hosted **only on Railway**. Builds bake Supabase keys from `.env.production`
