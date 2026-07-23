@@ -146,7 +146,8 @@ export function showOrderStatusNotification(orderId: string, status: string): bo
   void showOsNotification({
     title: cfg.title,
     body: `${cfg.body} (Παραγγελία #${orderId.slice(0, 6)})`,
-    tag: `customer-order-${orderId}-${status}`,
+    // One tag per order so newer status replaces older in the shade (chronology).
+    tag: `customer-order-${orderId}`,
     vibrate: status === 'picked_up' || status === 'delivered',
     channelId: 'customer-orders-v2',
   });
