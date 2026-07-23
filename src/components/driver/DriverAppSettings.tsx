@@ -34,7 +34,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 ];
 
 const PATTERN_OPTIONS: { value: SoundPattern; label: string; emoji: string }[] = [
-  { value: 'uber_eats', label: 'Uber Eats', emoji: '🟢' },
+  { value: 'fresh_delivery', label: 'Fresh Delivery', emoji: '🟢' },
   { value: 'random', label: 'Τυχαίο', emoji: '🎲' },
   { value: 'pop', label: 'Pop', emoji: '🎉' },
   { value: 'honk', label: 'Honk', emoji: '📯' },
@@ -63,7 +63,7 @@ const DEFAULT_APP: DriverAppPrefs = {
 const DEFAULT_SOUND: DriverSoundPrefs = {
   enabled: true,
   volume: 0.9,
-  pattern: 'uber_eats',
+  pattern: 'fresh_delivery',
   repeatCount: 2,
   vibrate: true,
 };

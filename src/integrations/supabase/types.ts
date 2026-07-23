@@ -973,6 +973,36 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_locations: {
+        Row: {
+          customer_id: string
+          heading: number | null
+          id: string
+          latitude: number
+          longitude: number
+          speed: number | null
+          updated_at: string
+        }
+        Insert: {
+          customer_id: string
+          heading?: number | null
+          id?: string
+          latitude: number
+          longitude: number
+          speed?: number | null
+          updated_at?: string
+        }
+        Update: {
+          customer_id?: string
+          heading?: number | null
+          id?: string
+          latitude?: number
+          longitude?: number
+          speed?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       driver_notifications: {
         Row: {
           body: string

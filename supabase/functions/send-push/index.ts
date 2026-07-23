@@ -179,8 +179,16 @@ function resolveChannelId(
   const type = typeof data?.type === "string" ? data.type : "";
   const channel = typeof data?.channel === "string" ? data.channel : "";
   if (channel === "driver-inbox" || type === "inbox") return "driver-inbox";
-  if (app === "customer") return "customer-orders";
-  return "driver-offers-v2";
+  if (app === "customer") return "customer-orders-v2";
+  return "driver-offers-v3";
+}
+
+function resolveAndroidSound(channelId: string): string {
+  if (channelId === "driver-offers-v3" || channelId === "driver-offers-v2") {
+    return "fresh_delivery";
+  }
+  if (channelId === "customer-orders-v2") return "customer_notify";
+  return "default";
 }
 
 async function sendFcm(opts: {
@@ -207,7 +215,7 @@ async function sendFcm(opts: {
     const accessToken = await getGoogleAccessToken(sa);
     if (!accessToken) return false;
 
-    const offerSound = opts.channelId === "driver-offers-v2" ? "uber_eats" : "default";
+    const offerSound = resolveAndroidSound(opts.channelId);
     const res = await fetch(
       `https://fcm.googleapis.com/v1/projects/${projectId}/messages:send`,
       {
@@ -244,7 +252,7 @@ async function sendFcm(opts: {
 
   const legacyKey = Deno.env.get("FCM_SERVER_KEY");
   if (legacyKey) {
-    const offerSound = opts.channelId === "driver-offers-v2" ? "uber_eats" : "default";
+    const offerSound = resolveAndroidSound(opts.channelId);
     const res = await fetch("https://fcm.googleapis.com/fcm/send", {
       method: "POST",
       headers: {

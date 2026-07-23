@@ -67,7 +67,7 @@ export async function showOsNotification(opts: {
             body: opts.body,
             schedule: { at: new Date(Date.now() + 50) },
             smallIcon: 'ic_stat_icon_config_sample',
-            channelId: opts.channelId ?? 'driver-offers-v2',
+            channelId: opts.channelId ?? 'driver-offers-v3',
             ...(Object.keys(extra).length ? { extra } : {}),
           },
         ],
@@ -99,23 +99,37 @@ export async function showOsNotification(opts: {
 export async function initNotificationChannels() {
   if (!isNative) return;
   try {
-    // New channel id so Android picks up the Uber Eats–style custom sound
+    // New channel id so Android picks up the Fresh Delivery custom sound
     // (channel sound is immutable after first create).
     await LocalNotifications.createChannel({
-      id: 'driver-offers-v2',
+      id: 'driver-offers-v3',
       name: 'Νέες παραγγελίες',
       description: 'Ειδοποιήσεις για νέες παραγγελίες προς ανάθεση',
       importance: 5,
       visibility: 1,
       vibration: true,
       lights: true,
-      sound: 'uber_eats',
+      sound: 'fresh_delivery',
+    });
+  } catch (e) {
+    console.warn('createChannel driver-offers-v3 error', e);
+  }
+  try {
+    // Keep legacy channels for older clients still targeting them.
+    await LocalNotifications.createChannel({
+      id: 'driver-offers-v2',
+      name: 'Νέες παραγγελίες (παλιό v2)',
+      description: 'Παλιό κανάλι προσφορών',
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+      sound: 'fresh_delivery',
     });
   } catch (e) {
     console.warn('createChannel driver-offers-v2 error', e);
   }
   try {
-    // Keep legacy channel for older clients still targeting it.
     await LocalNotifications.createChannel({
       id: 'driver-offers',
       name: 'Νέες παραγγελίες (παλιό)',
@@ -145,10 +159,25 @@ export async function initNotificationChannels() {
     console.warn('createChannel driver-inbox error', e);
   }
   try {
+    // Soft Mixkit-style notify sound for customer order updates.
     await LocalNotifications.createChannel({
-      id: 'customer-orders',
+      id: 'customer-orders-v2',
       name: 'Παραγγελίες',
       description: 'Ενημερώσεις κατάστασης παραγγελίας και άφιξη οδηγού',
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+      sound: 'customer_notify',
+    });
+  } catch (e) {
+    console.warn('createChannel customer-orders-v2 error', e);
+  }
+  try {
+    await LocalNotifications.createChannel({
+      id: 'customer-orders',
+      name: 'Παραγγελίες (παλιό)',
+      description: 'Παλιό κανάλι ενημερώσεων παραγγελίας',
       importance: 5,
       visibility: 1,
       vibration: true,

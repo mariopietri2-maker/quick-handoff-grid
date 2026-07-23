@@ -52,6 +52,13 @@ write_cap_config() {
       "notificationTitle": "Fresh Driver — τοποθεσία",
       "notificationText": "Είσαι online — GPS για κοντινές παραγγελίες"
     }'
+  elif [ "$flavor" = "customer" ]; then
+    geo_plugin=',
+    "Geolocation": {},
+    "BackgroundGeolocation": {
+      "notificationTitle": "Fresh Customer — τοποθεσία",
+      "notificationText": "Ζωντανή παρακολούθηση παραγγελίας"
+    }'
   fi
 
   cat > "$assets/capacitor.config.json" <<EOF
@@ -114,11 +121,16 @@ sync_flavor() {
     cp -f "$ROOT/capacitor.${flavor}.config.ts" "$ROOT/capacitor.config.ts"
     npx cap sync android || true
     mv -f "$backup" "$ROOT/capacitor.config.ts"
-    # Re-apply our assets config + offer sound after sync overwrites public/
+    # Re-apply our assets config + custom sounds after sync overwrites public/
     write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
+    mkdir -p "$app_dir/app/src/main/res/raw"
     if [ "$flavor" = "driver" ]; then
-      mkdir -p "$app_dir/app/src/main/res/raw"
-      cp -f "$ROOT/src/assets/sounds/uber_eats.mp3" "$app_dir/app/src/main/res/raw/uber_eats.mp3"
+      cp -f "$ROOT/src/assets/sounds/fresh_delivery.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3"
+    fi
+    if [ "$flavor" = "customer" ]; then
+      cp -f "$ROOT/src/assets/sounds/customer_notify.mp3" "$app_dir/app/src/main/res/raw/customer_notify.mp3"
+    fi
+    if [ "$flavor" = "driver" ] || [ "$flavor" = "customer" ]; then
       # Ensure BG location + FG service permissions survive fresh capacitor scaffolds.
       python3 - "$app_dir/app/src/main/AndroidManifest.xml" <<'PY'
 from pathlib import Path
