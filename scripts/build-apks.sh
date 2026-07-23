@@ -141,6 +141,8 @@ perms = [
   'android.permission.ACCESS_BACKGROUND_LOCATION',
   'android.permission.FOREGROUND_SERVICE_LOCATION',
   'android.permission.WAKE_LOCK',
+  'android.permission.VIBRATE',
+  'android.permission.POST_NOTIFICATIONS',
 ]
 for p in perms:
     tag = f'<uses-permission android:name="{p}" />'

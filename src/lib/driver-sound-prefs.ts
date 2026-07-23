@@ -166,6 +166,21 @@ export function playPattern(_pattern: string | undefined, volume: number) {
 let _alertLockUntil = 0;
 const _pendingTimers: number[] = [];
 
+/** Uber-style buzz — on by default with offer sound. */
+function vibrateOfferPulse(kind: 'offer' | 'soft' = 'offer') {
+  if (!('vibrate' in navigator)) return;
+  try {
+    if (kind === 'soft') {
+      navigator.vibrate([50, 40, 50]);
+    } else {
+      // Distinct pulse that lands with each chime (~0.6s)
+      navigator.vibrate([180, 70, 180, 70, 220]);
+    }
+  } catch {
+    /* ignore */
+  }
+}
+
 export function playOfferAlert(prefs?: DriverSoundPrefs) {
   const p = prefs ?? loadDriverSoundPrefs();
   if (!p.enabled) return;
@@ -182,16 +197,13 @@ export function playOfferAlert(prefs?: DriverSoundPrefs) {
       /* ignore */
     }
   }
-  if (p.vibrate && 'vibrate' in navigator) {
-    try {
-      navigator.vibrate([160, 80, 160, 80, 160]);
-    } catch {
-      /* ignore */
-    }
-  }
-  playOfferChime(p.volume);
+  const fire = () => {
+    playOfferChime(p.volume);
+    if (p.vibrate) vibrateOfferPulse('offer');
+  };
+  fire();
   for (let i = 1; i < reps; i++) {
-    const t = window.setTimeout(() => playOfferChime(p.volume), i * gapMs);
+    const t = window.setTimeout(fire, i * gapMs);
     _pendingTimers.push(t);
   }
 }
@@ -202,13 +214,7 @@ export function playNotificationSound(prefs?: DriverSoundPrefs) {
   if (!p.enabled) return;
   const volume = Math.max(0.2, Math.min(1, p.volume * 0.85));
   playOfferChime(volume);
-  if (p.vibrate && 'vibrate' in navigator) {
-    try {
-      navigator.vibrate([40, 40, 40]);
-    } catch {
-      /* ignore */
-    }
-  }
+  if (p.vibrate) vibrateOfferPulse('soft');
 }
 
 export function stopOfferAlert() {
