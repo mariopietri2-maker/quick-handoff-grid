@@ -11,7 +11,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import {
   Loader2, Sparkles, ScanLine, FileText, Send,
-  MapPin, Navigation, Building2, Wallet, Lock,
+  MapPin, Navigation, Wallet, Lock,
 } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { cn } from '@/lib/utils';
@@ -76,8 +76,6 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const [parsing, setParsing] = useState(false);
   const [scanText, setScanText] = useState('');
 
-  const [customerFee, setCustomerFee] = useState({ base: 1.5, perKm: 0.5 });
-  const [driverPay, setDriverPay] = useState(0);
   /** Platform take % (commission). Store keeps = 100 − this. */
   const [commissionPct, setCommissionPct] = useState(15);
 
@@ -97,14 +95,10 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     (async () => {
       const { data: ps } = await supabase
         .from('platform_settings')
-        .select('customer_base_fee, customer_per_km_fee, default_commission_pct' as any)
+        .select('default_commission_pct' as any)
         .eq('id', 1)
         .maybeSingle() as any;
       if (cancelled || !ps) return;
-      setCustomerFee({
-        base: Number(ps.customer_base_fee ?? 1.5),
-        perKm: Number(ps.customer_per_km_fee ?? 0.5),
-      });
       const d = Number(ps.default_commission_pct);
       if (d > 0) setCommissionPct(d);
     })();
@@ -125,25 +119,6 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   }, [store, form.delivery_lat, form.delivery_lng]);
 
   const totalAmount = Number(form.total_amount) || 0;
-  const distanceKm = km ?? 0;
-
-  const deliveryFee = useMemo(
-    () => +Math.max(0, customerFee.base + customerFee.perKm * distanceKm).toFixed(2),
-    [customerFee, distanceKm],
-  );
-
-  // Same driver quote as in-app
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const { data } = await supabase.rpc('quote_driver_payout', {
-        p_store_id: storeId,
-        p_distance_km: distanceKm,
-      });
-      if (!cancelled && data != null) setDriverPay(Number(data));
-    })();
-    return () => { cancelled = true; };
-  }, [storeId, distanceKm]);
 
   // Same commission resolution as settlement (store → override → tiers → platform default)
   useEffect(() => {
@@ -491,24 +466,6 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
                 <p className="text-[10px] text-muted-foreground px-0.5">
                   Προμήθεια πλατφόρμας {commissionPct.toFixed(1)}% · ίδια με in-app για αυτό το κατάστημα
                 </p>
-
-                <div className="rounded-lg border border-border/60 bg-background px-3 py-2.5 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Building2 className="h-3.5 w-3.5" /> Έξοδα παράδοσης
-                  </span>
-                  <span className="font-heading font-bold text-sm tabular-nums">
-                    €{deliveryFee.toFixed(2)}
-                  </span>
-                </div>
-
-                <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2.5 flex items-center justify-between">
-                  <span className="text-xs text-muted-foreground flex items-center gap-1.5">
-                    <Navigation className="h-3.5 w-3.5 text-primary" /> Αμοιβή οδηγού
-                  </span>
-                  <span className="font-heading font-bold text-sm tabular-nums text-primary">
-                    €{driverPay.toFixed(2)}
-                  </span>
-                </div>
               </div>
 
               <p className="text-[10px] text-muted-foreground leading-snug flex items-center gap-1 pt-1 border-t">
