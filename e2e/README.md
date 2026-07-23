@@ -10,7 +10,7 @@ against a running preview, including **cancel** and **accept-conflict** scenario
    bunx playwright install chromium
    ```
 
-2. Seed four test accounts in Lovable Cloud and note their credentials:
+2. Seed four test accounts in Supabase and note their credentials:
    - 1 customer
    - 1 store owner who owns at least one published store with one available menu item
    - 2 active drivers (`driver_profiles.is_active = true`)
