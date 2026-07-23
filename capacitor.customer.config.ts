@@ -41,6 +41,11 @@ const config: CapacitorConfig = {
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },
+    Geolocation: {},
+    BackgroundGeolocation: {
+      notificationTitle: 'Fresh Customer — τοποθεσία',
+      notificationText: 'Ζωντανή παρακολούθηση παραγγελίας',
+    },
   },
 };
 

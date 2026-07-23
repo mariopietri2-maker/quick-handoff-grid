@@ -2,6 +2,7 @@ import { useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useCustomerOrderNotifications } from '@/hooks/useCustomerOrderNotifications';
+import { useCustomerHasActiveOrder, useCustomerLocation } from '@/hooks/useCustomerLocation';
 import { startPushRegistration } from '@/lib/push-register';
 import { isCustomerPath, isDriverPath } from '@/lib/mobileApp';
 
@@ -32,5 +33,7 @@ export function PushBootstrap() {
 
 function CustomerNotifyMount() {
   useCustomerOrderNotifications();
+  const hasActiveOrder = useCustomerHasActiveOrder();
+  useCustomerLocation(hasActiveOrder);
   return null;
 }
