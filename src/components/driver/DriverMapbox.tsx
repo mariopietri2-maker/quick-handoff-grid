@@ -107,7 +107,9 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const nearbyMarkersRef = useRef<Map<string, mapboxgl.Marker>>(new Map());
   const { token, loading } = useMapboxToken();
   const [pos, setPos] = useState<{ lat: number; lng: number; heading: number | null } | null>(null);
+  const [mapReady, setMapReady] = useState(false);
   const lastPosRef = useRef<{ lat: number; lng: number } | null>(null);
+  const posRef = useRef<{ lat: number; lng: number; heading: number | null } | null>(null);
   const smoothedHeadingRef = useRef<number | null>(null);
   const watchRef = useRef<number | null>(null);
   const routeFetchRef = useRef<AbortController | null>(null);
@@ -178,9 +180,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
           if (movedM > 3) heading = bearingBetween(lastPosRef.current, next);
         }
         lastPosRef.current = next;
-        setPos({ ...next, heading });
+        const nextPos = { ...next, heading };
+        posRef.current = nextPos;
+        setPos(nextPos);
       },
-      () => setPos({ lat: 39.6650, lng: 20.8537, heading: null }),
+      () => {
+        const fallback = { lat: 39.6650, lng: 20.8537, heading: null };
+        posRef.current = fallback;
+        setPos(fallback);
+      },
       { enableHighAccuracy: true, maximumAge: 1000, timeout: 20000 }
     );
     return () => { if (watchRef.current !== null) navigator.geolocation.clearWatch(watchRef.current); };
@@ -190,8 +198,14 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   useEffect(() => {
     if (!useExternalGps || !externalPos) return;
     lastPosRef.current = { lat: externalPos.lat, lng: externalPos.lng };
+    posRef.current = externalPos;
     setPos(externalPos);
   }, [useExternalGps, externalPos?.lat, externalPos?.lng, externalPos?.heading]);
+
+  // Keep a ref of the latest pos so the map-load race can still draw the pin.
+  useEffect(() => {
+    posRef.current = pos;
+  }, [pos]);
 
   // Forward live driver position to parent only when map owns the watch.
   useEffect(() => {
@@ -333,6 +347,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       requestAnimationFrame(() => {
         try { map.resize(); } catch { /* noop */ }
       });
+      setMapReady(true);
       // 3D buildings are expensive on mobile; only add them when the driver
       // enters turn-by-turn navigation (followMode). See effect below.
     });
@@ -366,6 +381,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       bootTimers.forEach((id) => window.clearTimeout(id));
       map.remove();
       mapRef.current = null;
+      setMapReady(false);
+      driverMarkerRef.current = null;
     };
   }, [token]);
 
@@ -373,15 +390,16 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   // Update driver marker (arrow that rotates with heading when in followMode)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !pos) return;
+    const current = pos ?? posRef.current;
+    if (!map || !mapReady || !current) return;
 
-    const heading = pos.heading ?? 0;
+    const heading = current.heading ?? 0;
     // Marker visual rotation: in followMode the map rotates so arrow stays "up";
     // otherwise rotate marker to show direction of travel.
     const markerRotation = followMode ? 0 : heading;
 
     if (driverMarkerRef.current) {
-      driverMarkerRef.current.setLngLat([pos.lng, pos.lat]);
+      driverMarkerRef.current.setLngLat([current.lng, current.lat]);
       const inner = driverMarkerRef.current.getElement().querySelector<HTMLDivElement>('[data-driver-arrow]');
       if (inner) inner.style.transform = `rotate(${markerRotation}deg)`;
     } else {
@@ -397,10 +415,10 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
           </div>
         </div>`;
       driverMarkerRef.current = new mapboxgl.Marker({ element: el, anchor: 'center' })
-        .setLngLat([pos.lng, pos.lat])
+        .setLngLat([current.lng, current.lat])
         .addTo(map);
     }
-  }, [pos, followMode]);
+  }, [pos, followMode, mapReady]);
 
   // Follow-camera: smoothly track driver with heading-up bearing + 3D pitch
   useEffect(() => {
