@@ -125,7 +125,7 @@ export default function CloudUsagePanel() {
         <div>
           <h2 className="text-2xl font-heading font-bold flex items-center gap-2">
             <Cloud className="h-6 w-6 text-primary" />
-            Lovable Cloud — Χρήση & Έλεγχος
+            Cloud usage — Χρήση & Έλεγχος
           </h2>
           <p className="text-sm text-muted-foreground mt-1">
             Παρακολούθηση χρήσης backend, AI και storage. Καθαρισμός & ρυθμίσεις διατήρησης.
@@ -172,7 +172,7 @@ export default function CloudUsagePanel() {
           <div className="grid gap-3 sm:grid-cols-2">
             <KillSwitch
               icon={<Sparkles className="h-4 w-4" />}
-              label="Lovable AI"
+              label="AI gateway"
               hint={`Σήμερα: ${aiUsedToday} / ${guardrails.aiDailyCallCap} κλήσεις`}
               checked={eff.aiEnabled}
               disabled={guardrails.panicMode}
@@ -321,9 +321,13 @@ export default function CloudUsagePanel() {
               </p>
             </div>
           </div>
-          <Button asChild variant="default" size="sm">
-            <a href="#" onClick={(e) => { e.preventDefault(); (window as any).dispatchEvent(new CustomEvent('lovable:open-backend')); }}>
-              Άνοιγμα Backend <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
+          <Button asChild variant="outline" size="sm">
+            <a
+              href="https://supabase.com/dashboard/project/ojkesspghyqmjmupybva"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Supabase Dashboard <ExternalLink className="h-3.5 w-3.5 ml-1.5" />
             </a>
           </Button>
         </CardContent>
@@ -434,7 +438,7 @@ export default function CloudUsagePanel() {
           <div className="space-y-2">
             <Label className="font-semibold">Μηνιαίο όριο AI (€)</Label>
             <p className="text-xs text-muted-foreground">
-              Soft limit για το Lovable AI gateway. Πάνω από αυτό, στείλε alert.
+              Soft limit για το AI gateway. Πάνω από αυτό, στείλε alert.
             </p>
             <div className="flex gap-2 max-w-xs">
               <Input

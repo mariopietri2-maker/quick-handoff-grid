@@ -56,7 +56,7 @@ const CONCRETE: ConcreteSoundPattern[] = [
 ];
 const VALID: SoundPattern[] = ['random', ...CONCRETE];
 
-/** Bundled MP3 URLs (Vite hashes them into dist) — never use Lovable `/__l5e/` paths on Railway/APK. */
+/** Bundled MP3 URLs (Vite hashes them into dist) — never use absolute IDE-dev paths on Railway/APK. */
 const SOUND_URLS: Record<ConcreteSoundPattern, string> = {
   pop: popUrl,
   honk: honkUrl,

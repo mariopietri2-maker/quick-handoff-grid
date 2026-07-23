@@ -45,6 +45,7 @@ const SystemResetPanel       = lazy(() => import('@/components/admin/SystemReset
 const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerAppCustomization'));
 const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'));
 const AdminStoreAppearance = lazy(() => import('@/components/admin/AdminStoreAppearance'));
+const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
@@ -459,6 +460,8 @@ export default function AdminApp() {
         return <StorePromotionsManager />;
       case 'store_appearance':
         return <AdminStoreAppearance />;
+      case 'store_photos':
+        return <AdminStorePhotos />;
       case 'system_reset':
         return <SystemResetPanel />;
       case 'customer_app_config':
@@ -637,7 +640,7 @@ export default function AdminApp() {
                       <span className="text-[11.5px] text-muted-foreground">Δεν βρέθηκαν ρυθμίσεις.</span>
                       {/database|migration|schema|approve/i.test(settingsSearch) && (
                         <span className="text-[11px] text-muted-foreground/80">
-                          Για Database migrations & Approve schema changes, χρησιμοποίησε Lovable project settings.
+                          Για Database migrations χρησιμοποίησε το Supabase Dashboard → SQL / Migrations.
                         </span>
                       )}
                     </div>

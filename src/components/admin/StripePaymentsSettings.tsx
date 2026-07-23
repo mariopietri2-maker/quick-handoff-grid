@@ -237,7 +237,6 @@ export default function StripePaymentsSettings() {
             <li><code className="text-xs">STRIPE_LIVE_API_KEY</code> — sk_live_…</li>
             <li><code className="text-xs">PAYMENTS_SANDBOX_WEBHOOK_SECRET</code> — whsec_…</li>
             <li><code className="text-xs">PAYMENTS_LIVE_WEBHOOK_SECRET</code> — whsec_…</li>
-            <li><code className="text-xs">LOVABLE_API_KEY</code> — gateway key</li>
           </ul>
 
           <div className="space-y-2 pt-1">

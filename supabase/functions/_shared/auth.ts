@@ -1,5 +1,5 @@
 // Shared auth helpers for edge functions.
-// Most Lovable-managed functions deploy with verify_jwt = false, so we validate
+// Most edge functions deploy with verify_jwt = false, so we validate
 // the caller's JWT explicitly here.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";

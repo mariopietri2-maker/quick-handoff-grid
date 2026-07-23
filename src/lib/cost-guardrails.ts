@@ -1,5 +1,5 @@
 // Cost guardrails — client-side kill switches, hard caps and a
-// self-throttling daily budget meter so Lovable Cloud / AI / Storage
+// self-throttling daily budget meter so AI / Storage / realtime
 // can never quietly blow up the bill.
 //
 // All state is in localStorage and broadcast via a custom event so any
@@ -21,7 +21,7 @@ export type CostGuardrails = {
   /** When true, hitting 100 % of the budget flips panicMode automatically. */
   autoPanicOnBudget: boolean;
 
-  // ----- Lovable AI -----
+  // ----- AI gateway -----
   aiEnabled: boolean;
   aiDailyCallCap: number;
   aiPreferCheapModel: boolean;
