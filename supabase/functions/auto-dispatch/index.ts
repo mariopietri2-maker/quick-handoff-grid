@@ -384,8 +384,8 @@ function json(body: unknown, status = 200) {
   });
 }
 
-/** Must match nearby_active_drivers / admin presence (DRIVER_PRESENCE_ONLINE_MS). */
-const GPS_FRESH_MS = 3 * 60 * 1000;
+/** Match nearby_active_drivers GPS window (tolerant of brief BG pause). */
+const GPS_FRESH_MS = 10 * 60 * 1000;
 
 async function loadAvailableOnlineDrivers(
   admin: ReturnType<typeof createClient>,

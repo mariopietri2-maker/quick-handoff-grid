@@ -1,6 +1,6 @@
 /*
   Align auto-dispatch eligibility with driver "online" + capacity rules:
-  - Keep presence gate: on-shift + GPS fresher than 3 minutes
+  - Presence gate: on-shift + GPS fresher than 10 minutes
   - Exclude cash-capped drivers (UI already hid their offers; SQL did not,
     so they could hold a pending offer they never see and block new waves)
 */
@@ -24,7 +24,7 @@ DECLARE
   s RECORD;
   max_stack INT;
   near_km NUMERIC := 0.6;
-  gps_fresh INTERVAL := INTERVAL '3 minutes';
+  gps_fresh INTERVAL := INTERVAL '10 minutes';
   cash_cap NUMERIC;
   target_h NUMERIC;
   w_dist NUMERIC;
