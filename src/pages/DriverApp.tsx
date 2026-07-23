@@ -35,6 +35,7 @@ import { NavBottomCard } from '@/components/driver/NavBottomCard';
 import { SlideToggle } from '@/components/driver/SlideToggle';
 
 import { useNearbyStoresForDriver } from '@/hooks/useNearbyStoresForDriver';
+import { useEarnings } from '@/hooks/useEarnings';
 import { geocodeAddress, warmMapboxToken } from '@/lib/geocode';
 import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { DriverPrefsApplier } from '@/components/driver/DriverPrefsApplier';
@@ -62,6 +63,7 @@ export default function DriverApp() {
   };
   const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, offerExpiresAt, offerTimeoutSec } = useDriverOrders({ adminOverride: isAdmin });
   const { state: driverState, update: updateDriverState } = useDriverState();
+  const { today: todayEarnings } = useEarnings();
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
   useEffect(() => { warmMapboxToken(); }, []);
@@ -541,12 +543,43 @@ export default function DriverApp() {
                     </button>
                   )}
                 </div>
-                <div className="bg-[hsl(var(--driver-surface))]/95 backdrop-blur-xl rounded-full pl-1 pr-3.5 py-1 flex items-center gap-2 min-w-0 shadow-[0_4px_16px_-4px_hsl(220,18%,14%,0.12)] border border-[hsl(var(--driver-border))]">
-                  <div className="h-7 w-7 rounded-full driver-gradient-earn flex items-center justify-center shrink-0">
-                    <Zap className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
-                  </div>
-                  <span className="font-heading font-extrabold text-[hsl(var(--driver-text))] text-[12.5px] tracking-tight truncate">Fresh Delivery</span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (showJobSheet) return;
+                    setSheetCollapsed(false);
+                  }}
+                  className={`pointer-events-auto rounded-full pl-2.5 pr-3.5 py-1.5 flex items-center gap-2 min-w-0 max-w-[58%] shadow-[0_4px_16px_-4px_hsl(220,18%,14%,0.14)] border backdrop-blur-xl transition-colors ${
+                    onBreak
+                      ? 'bg-amber-500/95 border-amber-400/40 text-white'
+                      : isOnline
+                        ? 'bg-[hsl(var(--driver-accent))]/95 border-[hsl(var(--driver-accent))]/50 text-white'
+                        : 'bg-[hsl(var(--driver-surface))]/95 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
+                  }`}
+                  aria-label={onBreak ? 'Σε διάλειμμα' : isOnline ? 'Σε υπηρεσία' : 'Εκτός υπηρεσίας'}
+                >
+                  <span
+                    className={`h-2 w-2 rounded-full shrink-0 ${
+                      onBreak
+                        ? 'bg-white/90'
+                        : isOnline
+                          ? 'bg-white animate-pulse'
+                          : 'bg-[hsl(var(--driver-text-muted))]'
+                    }`}
+                  />
+                  <span className="font-heading font-extrabold text-[12.5px] tracking-tight truncate">
+                    {onBreak
+                      ? 'Διάλειμμα'
+                      : isOnline
+                        ? (activeDelivery ? 'Σε παράδοση' : loading ? 'Σε υπηρεσία…' : 'Σε υπηρεσία')
+                        : 'Εκτός υπηρεσίας'}
+                  </span>
+                  {isOnline && !onBreak && todayEarnings.total > 0 && (
+                    <span className="font-heading font-bold text-[11px] tabular-nums opacity-90 shrink-0">
+                      {todayEarnings.total.toFixed(0)}€
+                    </span>
+                  )}
+                </button>
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
                   <DriverSupportButton orderId={activeDelivery?.id} />
                 </div>
@@ -745,17 +778,25 @@ export default function DriverApp() {
                 <div className="space-y-2.5">
                 {showCompactOnlineDock ? (
                   <div className="pb-1 space-y-2.5">
-                    <div className="flex items-center justify-center gap-2 px-1">
-                      {isOnline ? (
-                        <>
-                          <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))]" />
+                    <div className="flex items-center justify-between gap-2 px-1">
+                      <div className="flex items-center gap-2 min-w-0">
+                        {isOnline ? (
+                          <>
+                            <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] shrink-0" />
+                            <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text-muted))] truncate">
+                              {loading ? 'Αναζήτηση παραγγελιών…' : 'Σε υπηρεσία — αναμονή'}
+                            </p>
+                          </>
+                        ) : (
                           <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text-muted))]">
-                            {loading ? 'Αναζήτηση…' : 'Αναμονή παραγγελιών'}
+                            Εκτός υπηρεσίας — σύρε για να μπεις
                           </p>
-                        </>
-                      ) : (
-                        <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text-muted))]">
-                          Εκτός σύνδεσης — σύρε για online
+                        )}
+                      </div>
+                      {isOnline && (
+                        <p className="text-[12px] font-heading font-bold tabular-nums text-[hsl(var(--driver-text))] shrink-0">
+                          {todayEarnings.total.toFixed(2)}€
+                          <span className="text-[10px] font-semibold text-[hsl(var(--driver-text-muted))] ml-1">σήμερα</span>
                         </p>
                       )}
                     </div>
@@ -765,8 +806,8 @@ export default function DriverApp() {
                         if (next) primeDriverAudio();
                         setIsOnline(next);
                       }}
-                      onLabel="Είσαι Online"
-                      offLabel="Σύρε για να συνδεθείς"
+                      onLabel="Σε υπηρεσία"
+                      offLabel="Σύρε για υπηρεσία"
                       disabled={driverActive !== true}
                     />
                   </div>
@@ -914,7 +955,7 @@ export default function DriverApp() {
                       </div>
                     )}
 
-                    {/* Online toggle — only when idle (no offer / trip). Uber GO bar pattern. */}
+                    {/* On-duty toggle — only when idle (no offer / trip). Wolt-style duty bar. */}
                     {!showJobSheet && (
                       <div className="rounded-2xl border border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))]/60 overflow-hidden">
                         {isOnline && !loading && (
@@ -924,20 +965,23 @@ export default function DriverApp() {
                                 <Radio className="h-5 w-5 text-primary" />
                               </div>
                             </div>
-                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Αναμονή παραγγελιών</p>
-                            <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Είσαι online — νέα προσφορά θα εμφανιστεί εδώ</p>
+                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Σε υπηρεσία</p>
+                            <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">
+                              Αναμονή παραγγελιών
+                              {todayEarnings.total > 0 ? ` · ${todayEarnings.total.toFixed(2)}€ σήμερα` : ''}
+                            </p>
                           </div>
                         )}
                         {isOnline && loading && (
                           <div className="p-4 text-center">
-                            <p className="text-sm text-muted-foreground font-heading">Σύνδεση…</p>
+                            <p className="text-sm text-muted-foreground font-heading">Σύνδεση υπηρεσίας…</p>
                           </div>
                         )}
                         {!isOnline && (
                           <div className="p-4 text-center">
                             <Radio className="h-7 w-7 text-[hsl(var(--driver-text-muted))] mx-auto mb-2" />
-                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός Σύνδεσης</p>
-                            <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Σύρετε για να συνδεθείτε</p>
+                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Εκτός υπηρεσίας</p>
+                            <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">Σύρε για να μπεις σε υπηρεσία και να λαμβάνεις παραγγελίες</p>
                           </div>
                         )}
                         <div className="px-3 pb-3 pt-1">
@@ -947,8 +991,8 @@ export default function DriverApp() {
                               if (next) primeDriverAudio();
                               setIsOnline(next);
                             }}
-                            onLabel="Είσαι Online"
-                            offLabel="Σύρε για να συνδεθείς"
+                            onLabel="Σε υπηρεσία"
+                            offLabel="Σύρε για υπηρεσία"
                             disabled={driverActive !== true}
                           />
                         </div>
