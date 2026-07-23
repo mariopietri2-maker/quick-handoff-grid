@@ -4,13 +4,15 @@ import { useAuth } from '@/hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
 
-// Dynamic push cadence: stationary drivers push rarely (saves battery + network);
-// moving drivers push often (dispatcher needs accuracy). Tuned per GPS speed.
+// Dynamic push cadence: moving drivers push often; stationary still heartbeat
+// so admin presence (< 3 min) does not flip them Offline while waiting.
 const TICK_MS = 2_000;             // scheduler tick (cheap)
 const MIN_INTERVAL_STATIONARY = 20_000;
 const MIN_INTERVAL_SLOW = 10_000;
 const MIN_INTERVAL_FAST = 5_000;
 const MIN_MOVE_M = 12;             // don't re-send if position barely changed
+/** Always refresh updated_at at least this often (well under 3-min presence window). */
+const HEARTBEAT_MAX_AGE_MS = 60_000;
 
 
 interface NormalizedPos {
@@ -31,6 +33,36 @@ async function loadBgGeo(): Promise<BgGeoModule['BackgroundGeolocation'] | null>
     return mod.BackgroundGeolocation;
   } catch (e) {
     console.warn('background-geolocation unavailable', e);
+    return null;
+  }
+}
+
+async function readOnce(): Promise<NormalizedPos | null> {
+  try {
+    if (isNative) {
+      const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 });
+      return {
+        latitude: p.coords.latitude,
+        longitude: p.coords.longitude,
+        speed: p.coords.speed ?? null,
+        heading: p.coords.heading ?? null,
+      };
+    }
+    if (!('geolocation' in navigator)) return null;
+    return await new Promise((resolve) => {
+      navigator.geolocation.getCurrentPosition(
+        (p) =>
+          resolve({
+            latitude: p.coords.latitude,
+            longitude: p.coords.longitude,
+            speed: p.coords.speed ?? null,
+            heading: p.coords.heading ?? null,
+          }),
+        () => resolve(null),
+        { enableHighAccuracy: true, maximumAge: 5000, timeout: 8000 },
+      );
+    });
+  } catch {
     return null;
   }
 }
@@ -125,9 +157,10 @@ export function useDriverLocation(isActive: boolean) {
 
         const maybeSend = (pos: NormalizedPos, force = false) => {
           const now = Date.now();
+          const staleHeartbeat = lastSentAt > 0 && now - lastSentAt >= HEARTBEAT_MAX_AGE_MS;
           const minInterval = intervalForSpeed(pos.speed);
           const moved = lastSentPos ? distanceM(lastSentPos, pos) : Infinity;
-          if (!force) {
+          if (!force && !staleHeartbeat) {
             if (now - lastSentAt < minInterval) return;
             if (moved < MIN_MOVE_M && lastSentPos) return;
           }
@@ -144,6 +177,30 @@ export function useDriverLocation(isActive: boolean) {
             setPosition({ lat: pos.latitude, lng: pos.longitude, heading: pos.heading });
           }
           maybeSend(pos);
+        };
+
+        // Immediate publish so going Online doesn't wait for a watch callback.
+        const first = await readOnce();
+        if (cancelled) return;
+        if (first) {
+          lastPosRef.current = first;
+          setPosition({ lat: first.latitude, lng: first.longitude, heading: first.heading });
+          maybeSend(first, true);
+        }
+
+        const startHeartbeatTick = () => {
+          if (intervalRef.current !== null) return;
+          intervalRef.current = window.setInterval(async () => {
+            let pos = lastPosRef.current;
+            if (!pos) {
+              pos = await readOnce();
+              if (pos) lastPosRef.current = pos;
+            }
+            if (!pos) return;
+            // Force when heartbeat is due so parked drivers stay Online on admin.
+            const due = lastSentAt > 0 && Date.now() - lastSentAt >= HEARTBEAT_MAX_AGE_MS;
+            maybeSend(pos, due || !lastSentPos);
+          }, TICK_MS);
         };
 
         // Prefer Capgo background geolocation on native (FG service + BG updates).
@@ -182,9 +239,16 @@ export function useDriverLocation(isActive: boolean) {
             }
             bgRunningRef.current = true;
             setTracking(true);
+            // Capgo only fires after movement (~15m). Keep a time-based heartbeat
+            // so waiting drivers don't look Offline after 3 minutes.
+            startHeartbeatTick();
 
             cleanupRef.current = () => {
               bgRunningRef.current = false;
+              if (intervalRef.current !== null) {
+                window.clearInterval(intervalRef.current);
+                intervalRef.current = null;
+              }
               void BgGeo.stop().catch(() => {});
             };
             return;
@@ -243,30 +307,7 @@ export function useDriverLocation(isActive: boolean) {
         }
 
         setTracking(true);
-
-        intervalRef.current = window.setInterval(async () => {
-          let pos = lastPosRef.current;
-          if (!pos) {
-            try {
-              if (isNative) {
-                const p = await Geolocation.getCurrentPosition({ enableHighAccuracy: true, timeout: 8000 });
-                pos = {
-                  latitude: p.coords.latitude,
-                  longitude: p.coords.longitude,
-                  speed: p.coords.speed ?? null,
-                  heading: p.coords.heading ?? null,
-                };
-                lastPosRef.current = pos;
-              } else {
-                return;
-              }
-            } catch {
-              return;
-            }
-          }
-          if (!pos) return;
-          maybeSend(pos);
-        }, TICK_MS);
+        startHeartbeatTick();
 
         cleanupRef.current = () => {
           if (watchIdRef.current !== null) {
