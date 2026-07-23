@@ -8,7 +8,6 @@ import { Loader2 } from 'lucide-react';
 
 interface Props {
   driverId?: string | null;
-  /** Kept for API compatibility — store path/marker are hidden from customers. */
   storeLat?: number | null;
   storeLng?: number | null;
   deliveryLat?: number | null;
@@ -34,8 +33,8 @@ function asCoord(v: number | string | null | undefined): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
-/** Live tracking starts once a driver has the order. */
-const LIVE_STATUSES = new Set(['arrived', 'picked_up']);
+/** Follow camera once the driver is heading to the customer. */
+const FOLLOW_STATUSES = new Set(['arrived', 'picked_up', 'ready']);
 
 function makeTinyScooterEl(): { wrap: HTMLDivElement; icon: HTMLDivElement } {
   const wrap = document.createElement('div');
@@ -68,17 +67,22 @@ function makeTinyScooterEl(): { wrap: HTMLDivElement; icon: HTMLDivElement } {
 
 export default function LiveTrackingMap({
   driverId,
+  storeLat: storeLatProp,
+  storeLng: storeLngProp,
   deliveryLat: deliveryLatProp,
   deliveryLng: deliveryLngProp,
   status,
   onDriverPos,
 }: Props) {
+  const storeLat = asCoord(storeLatProp);
+  const storeLng = asCoord(storeLngProp);
   const deliveryLat = asCoord(deliveryLatProp);
   const deliveryLng = asCoord(deliveryLngProp);
 
   const shellRef = useRef<HTMLDivElement>(null);
   const container = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
+  const storeMarker = useRef<mapboxgl.Marker | null>(null);
   const homeMarker = useRef<mapboxgl.Marker | null>(null);
   const driverMarker = useRef<mapboxgl.Marker | null>(null);
   const driverIcon = useRef<HTMLDivElement | null>(null);
@@ -93,10 +97,10 @@ export default function LiveTrackingMap({
     onDriverPosRef.current = onDriverPos;
   }, [onDriverPos]);
 
-  const coordsRef = useRef({ deliveryLat, deliveryLng, driverPos });
+  const coordsRef = useRef({ storeLat, storeLng, deliveryLat, deliveryLng, driverPos });
   useEffect(() => {
-    coordsRef.current = { deliveryLat, deliveryLng, driverPos };
-  }, [deliveryLat, deliveryLng, driverPos]);
+    coordsRef.current = { storeLat, storeLng, deliveryLat, deliveryLng, driverPos };
+  }, [storeLat, storeLng, deliveryLat, deliveryLng, driverPos]);
 
   const showLiveDriver = Boolean(driverId);
 
@@ -137,6 +141,8 @@ export default function LiveTrackingMap({
         'postgres_changes',
         { event: '*', schema: 'public', table: 'driver_locations', filter: `driver_id=eq.${driverId}` },
         (p) => {
+          // Keep last-known pin on DELETE — heartbeat may briefly clear/recreate.
+          if (p.eventType === 'DELETE') return;
           const r = p.new as any;
           if (r?.latitude != null && r?.longitude != null) {
             apply(Number(r.latitude), Number(r.longitude));
@@ -145,7 +151,7 @@ export default function LiveTrackingMap({
       )
       .subscribe();
 
-    const poll = window.setInterval(fetchLoc, 4000);
+    const poll = window.setInterval(fetchLoc, 2500);
 
     return () => {
       cancelled = true;
@@ -166,6 +172,7 @@ export default function LiveTrackingMap({
       const c = coordsRef.current;
       if (c.driverPos) return c.driverPos;
       if (c.deliveryLat != null && c.deliveryLng != null) return [c.deliveryLng, c.deliveryLat];
+      if (c.storeLat != null && c.storeLng != null) return [c.storeLng, c.storeLat];
       return IOANNINA_MAP_CENTER;
     };
 
@@ -215,7 +222,6 @@ export default function LiveTrackingMap({
       map.on('load', () => {
         resize();
         requestAnimationFrame(resize);
-        // No customer-facing route polyline (hide path to / from store).
         setMapReady(true);
       });
 
@@ -251,8 +257,10 @@ export default function LiveTrackingMap({
         } catch {
           /* noop */
         }
+      storeMarker.current?.remove();
       homeMarker.current?.remove();
       driverMarker.current?.remove();
+      storeMarker.current = null;
       homeMarker.current = null;
       driverMarker.current = null;
       driverIcon.current = null;
@@ -269,10 +277,22 @@ export default function LiveTrackingMap({
     };
   }, [token, mapRetry]);
 
-  // ── delivery pin only (never show store / path to store) ──
+  // ── store + delivery pins (always when coords exist) ──
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
+
+    if (storeLat != null && storeLng != null) {
+      if (storeMarker.current) {
+        storeMarker.current.setLngLat([storeLng, storeLat]);
+      } else {
+        const elStore = document.createElement('div');
+        elStore.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:#2563eb;border:2px solid white;box-shadow:0 2px 10px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:15px">🏪</div>`;
+        storeMarker.current = new mapboxgl.Marker({ element: elStore, anchor: 'center' })
+          .setLngLat([storeLng, storeLat])
+          .addTo(map);
+      }
+    }
 
     if (deliveryLat != null && deliveryLng != null) {
       if (homeMarker.current) {
@@ -285,15 +305,19 @@ export default function LiveTrackingMap({
           .addTo(map);
       }
     }
-  }, [mapReady, deliveryLat, deliveryLng]);
+  }, [mapReady, storeLat, storeLng, deliveryLat, deliveryLng]);
 
-  // ── camera: home alone, or home + tiny scooter ──
+  // ── camera: store + home (+ scooter when assigned) ──
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
 
     const bounds = new mapboxgl.LngLatBounds();
     let n = 0;
+    if (storeLat != null && storeLng != null) {
+      bounds.extend([storeLng, storeLat]);
+      n++;
+    }
     if (deliveryLat != null && deliveryLng != null) {
       bounds.extend([deliveryLng, deliveryLat]);
       n++;
@@ -313,13 +337,13 @@ export default function LiveTrackingMap({
         maxZoom: 15.5,
       });
     }
-  }, [mapReady, deliveryLat, deliveryLng, driverPos, showLiveDriver, status]);
+  }, [mapReady, storeLat, storeLng, deliveryLat, deliveryLng, driverPos, showLiveDriver, status]);
 
   // Keep scooter in view while en route
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !driverPos || !showLiveDriver) return;
-    if (!LIVE_STATUSES.has(status) && status !== 'ready') return;
+    if (!FOLLOW_STATUSES.has(status)) return;
     try {
       const cam = map.getCenter();
       const dist = Math.hypot(cam.lng - driverPos[0], cam.lat - driverPos[1]);
@@ -329,7 +353,7 @@ export default function LiveTrackingMap({
     }
   }, [driverPos, mapReady, showLiveDriver, status]);
 
-  // ── tiny scooter marker ──
+  // ── tiny scooter marker (always after accept when GPS known) ──
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;

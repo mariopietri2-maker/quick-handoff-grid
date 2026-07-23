@@ -45,6 +45,8 @@ export default function OrderTrackingPage() {
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [storeName, setStoreName] = useState('');
+  const [storeLat, setStoreLat] = useState<number | null>(null);
+  const [storeLng, setStoreLng] = useState<number | null>(null);
   const [driverName, setDriverName] = useState<string | null>(null);
   const [driverPhone, setDriverPhone] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -79,20 +81,24 @@ export default function OrderTrackingPage() {
         setOrder(oRes.data);
         const { data: s } = await (supabase as any)
           .from('stores_public')
-          .select('name')
+          .select('name, latitude, longitude')
           .eq('id', oRes.data.store_id)
           .maybeSingle();
         if (s) {
           setStoreName(s.name);
+          setStoreLat(s.latitude != null ? Number(s.latitude) : null);
+          setStoreLng(s.longitude != null ? Number(s.longitude) : null);
         } else {
           // Fallback if stores_public view is missing / restricted
           const { data: s2 } = await supabase
             .from('stores')
-            .select('name')
+            .select('name, latitude, longitude')
             .eq('id', oRes.data.store_id)
             .maybeSingle();
           if (s2) {
             setStoreName(s2.name);
+            setStoreLat(s2.latitude != null ? Number(s2.latitude) : null);
+            setStoreLng(s2.longitude != null ? Number(s2.longitude) : null);
           }
         }
         if (oRes.data.driver_id) {
@@ -207,6 +213,8 @@ export default function OrderTrackingPage() {
       {showMap ? (
         <LiveTrackingMap
           driverId={order.driver_id}
+          storeLat={storeLat}
+          storeLng={storeLng}
           deliveryLat={order.delivery_latitude != null ? Number(order.delivery_latitude) : null}
           deliveryLng={order.delivery_longitude != null ? Number(order.delivery_longitude) : null}
           status={status}
