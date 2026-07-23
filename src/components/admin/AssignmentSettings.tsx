@@ -113,7 +113,8 @@ export default function AssignmentSettings() {
           <p className="text-xs text-muted-foreground">
             Auto-dispatch τρέχει συνέχεια: βρίσκει τον πλησιέστερο διαθέσιμο οδηγό και
             προτιμά όσους είναι κάτω από τον στόχο €/ώρα ώστε να είναι δίκαιο για όλους.
-            GPS έως 24 ώρες (τελευταία γνωστή θέση) — το κύμα ξαναρχίζει όταν τελειώσουν όλα.
+            Μόνο οδηγοί on-shift με GPS &lt; 3 λεπτά (ίδιο παράθυρο με admin Online) —
+            το κύμα ξαναρχίζει όταν τελειώσουν όλα.
           </p>
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="space-y-1.5">
