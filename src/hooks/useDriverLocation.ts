@@ -337,11 +337,12 @@ export function useDriverLocation(isActive: boolean) {
     };
     window.addEventListener('online', handleOnline);
 
-    // With background geolocation running, keep presence while hidden.
-    // Without it (web), clear location heartbeat when the tab hides.
+    // Web: clear heartbeat when the tab hides (no FG service).
+    // Native APK: never wipe GPS on background — Capgo/JS may pause, but
+    // deleting the row makes dispatch treat an Online driver as invisible.
     const onVis = () => {
       if (document.visibilityState === 'hidden') {
-        if (!bgRunningRef.current) void goHardOffline();
+        if (!isNative && !bgRunningRef.current) void goHardOffline();
       } else if (lastPosRef.current) {
         void sendLocation(lastPosRef.current, { allowBackground: true });
       }

@@ -107,22 +107,12 @@ Deno.serve(async (req) => {
     // 1) Load settings
     const { data: settings } = await admin
       .from("platform_settings")
-      .select("assignment_mode, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, auto_dispatch_enabled, dist_search_radius_km")
+      .select("assignment_mode, dist_offer_timeout_seconds, dist_wave_size, dist_max_waves, auto_dispatch_enabled, dist_search_radius_km, max_cash_cap")
       .eq("id", 1)
       .single();
 
-    // Admin kill-switch: cron-driven calls early-exit when disabled.
-    // Manual "Force dispatch" from the admin panel always runs (carries Authorization header).
-    if (isInternalCron && settings && (settings as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled === false) {
-      drainPush();
-      const payload = { ok: true, dispatched: 0, skipped: "auto_dispatch_disabled" };
-      await logFinish(payload, true);
-      return new Response(JSON.stringify(payload), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
     const searchRadiusKm = Number((settings as { dist_search_radius_km?: number } | null)?.dist_search_radius_km ?? 15) || 15;
+    const maxCashCap = Number((settings as { max_cash_cap?: number } | null)?.max_cash_cap ?? 200) || 200;
     const s: Settings = {
       assignment_mode: settings?.assignment_mode ?? "auto",
       dist_offer_timeout_seconds: settings?.dist_offer_timeout_seconds ?? 60,
@@ -130,7 +120,9 @@ Deno.serve(async (req) => {
       dist_max_waves: settings?.dist_max_waves ?? 3,
     };
 
-    // 2) Expire stale pending offers
+    // 2) Expire stale pending offers — always, even when the kill-switch is
+    // off, so a disabled period does not leave forever-pending offers that
+    // block waves after re-enable.
     const { data: expired } = await admin
       .from("pending_offers")
       .update({ status: "expired", responded_at: new Date().toISOString() })
@@ -147,6 +139,21 @@ Deno.serve(async (req) => {
           action: "expired",
         })),
       );
+    }
+
+    // Admin kill-switch: cron-driven calls early-exit when disabled (after expire).
+    if (isInternalCron && settings && (settings as { auto_dispatch_enabled?: boolean }).auto_dispatch_enabled === false) {
+      drainPush();
+      const payload = {
+        ok: true,
+        dispatched: 0,
+        expired: expired?.length ?? 0,
+        skipped: "auto_dispatch_disabled",
+      };
+      await logFinish(payload, true);
+      return new Response(JSON.stringify(payload), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
     }
 
     // 3) In manual mode we still expire offers above but stop here
@@ -302,6 +309,7 @@ Deno.serve(async (req) => {
             excludeList,
             s.dist_wave_size,
             searchRadiusKm,
+            maxCashCap,
           );
         }
         return list;
@@ -376,6 +384,9 @@ function json(body: unknown, status = 200) {
   });
 }
 
+/** Match nearby_active_drivers GPS window (tolerant of brief BG pause). */
+const GPS_FRESH_MS = 10 * 60 * 1000;
+
 async function loadAvailableOnlineDrivers(
   admin: ReturnType<typeof createClient>,
   anchorLat: number,
@@ -383,9 +394,10 @@ async function loadAvailableOnlineDrivers(
   exclude: string[],
   limit: number,
   radiusKm = 15,
+  maxCashCap = 200,
 ): Promise<CandidateDriver[]> {
   // Nested PostgREST embeds fail here (no FK from driver_profiles → locations).
-  // Query tables separately and join in memory — closest last-known GPS wins.
+  // Query tables separately and join in memory — same gates as nearby_active_drivers.
   const { data: profiles, error: profErr } = await admin
     .from("driver_profiles")
     .select("user_id")
@@ -395,14 +407,18 @@ async function loadAvailableOnlineDrivers(
   if (profErr || !profiles?.length) return [];
 
   const ids = profiles.map((p: { user_id: string }) => p.user_id);
+  const freshSince = new Date(Date.now() - GPS_FRESH_MS).toISOString();
   const [{ data: locations }, { data: states }, { data: busyDrivers }, { data: liveOffers }] =
     await Promise.all([
       admin
         .from("driver_locations")
         .select("driver_id, latitude, longitude, updated_at")
         .in("driver_id", ids)
-        .gt("updated_at", new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString()),
-      admin.from("driver_state").select("driver_id, on_break").in("driver_id", ids),
+        .gt("updated_at", freshSince),
+      admin
+        .from("driver_state")
+        .select("driver_id, on_break, shift_started_at, shift_cash_balance")
+        .in("driver_id", ids),
       admin
         .from("orders")
         .select("driver_id")
@@ -418,8 +434,19 @@ async function loadAvailableOnlineDrivers(
     if (lat == null || lng == null) continue;
     locByDriver.set(loc.driver_id, { lat, lng, at: new Date(loc.updated_at).getTime() });
   }
-  const onBreak = new Set(
-    (states ?? []).filter((s: { on_break?: boolean }) => !!s.on_break).map((s: { driver_id: string }) => s.driver_id),
+  const eligibleState = new Set(
+    (states ?? [])
+      .filter(
+        (s: {
+          on_break?: boolean;
+          shift_started_at?: string | null;
+          shift_cash_balance?: number | null;
+        }) =>
+          !!s.shift_started_at &&
+          !s.on_break &&
+          Number(s.shift_cash_balance ?? 0) < maxCashCap,
+      )
+      .map((s: { driver_id: string }) => s.driver_id),
   );
   const busyDriverSet = new Set((busyDrivers ?? []).map((o: { driver_id: string }) => o.driver_id));
   const pendingOfferDrivers = new Set((liveOffers ?? []).map((o: { driver_id: string }) => o.driver_id));
@@ -428,7 +455,7 @@ async function loadAvailableOnlineDrivers(
     .filter(
       (id: string) =>
         !exclude.includes(id) &&
-        !onBreak.has(id) &&
+        eligibleState.has(id) &&
         !busyDriverSet.has(id) &&
         !pendingOfferDrivers.has(id) &&
         locByDriver.has(id),

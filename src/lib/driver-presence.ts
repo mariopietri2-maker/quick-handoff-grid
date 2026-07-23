@@ -1,5 +1,5 @@
-/** Fresh GPS heartbeat = driver is truly present (app open / foreground). */
-export const DRIVER_PRESENCE_ONLINE_MS = 3 * 60 * 1000;
+/** Fresh GPS heartbeat = driver is present for admin Online + dispatch. */
+export const DRIVER_PRESENCE_ONLINE_MS = 10 * 60 * 1000;
 
 export function isDriverPresenceOnline(
   lastLocationAt: string | null | undefined,
