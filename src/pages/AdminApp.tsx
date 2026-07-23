@@ -15,6 +15,7 @@ import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
 import { isDriverPresenceOnline } from '@/lib/driver-presence';
+import { formatDriverCode } from '@/lib/driver-code';
 import { lazyWithRetry as lazy } from '@/lib/lazyWithRetry';
 // Eagerly load only the default landing tab — everything else is lazy.
 import OpsHome from '@/components/admin/OpsHome';
@@ -920,7 +921,7 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
                 const name = driver.full_name || 'οδηγό';
                 return (
                   <tr key={driver.id} className={isSuspended ? 'opacity-60' : ''}>
-                    <td><span className="font-mono text-[11px] text-muted-foreground">{dp?.driver_code || '—'}</span></td>
+                    <td><span className="font-mono text-[11px] text-muted-foreground">{formatDriverCode(dp?.driver_code)}</span></td>
                     <td>
                       <div className="flex items-center gap-1.5">
                         <span className="font-medium leading-tight">{driver.full_name || '—'}</span>
