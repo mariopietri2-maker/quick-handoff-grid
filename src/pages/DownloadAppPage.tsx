@@ -99,8 +99,8 @@ export default function DownloadAppPage() {
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
       <SEO
-        title="Εφαρμογές Android — Fresh Delivery"
-        description="Σκάναρε το QR ή πάτα λήψη για την εφαρμογή πελάτη ή οδηγού."
+        title="Beta Android APK — Fresh Delivery"
+        description="Δοκιμαστικά APK πελάτη και οδηγού μέχρι το Google Play."
         path="/download"
       />
 
@@ -129,13 +129,13 @@ export default function DownloadAppPage() {
       <main className="relative z-10 max-w-4xl mx-auto px-4 pt-12 pb-20">
         <div className="text-center mb-10">
           <p className="text-xs font-heading font-bold uppercase tracking-[0.14em] text-primary mb-3">
-            Android
+            Beta · Android
           </p>
           <h1 className="font-heading font-extrabold text-3xl sm:text-4xl tracking-tight">
-            Εφαρμογές Fresh Delivery
+            Δοκιμαστικά APK
           </h1>
           <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-md mx-auto leading-relaxed">
-            Διάλεξε πελάτη ή οδηγό. Η λήψη ξεκινά μόνο όταν πατήσεις το κουμπί — όχι αυτόματα.
+            Για εσωτερική δοκιμή μέχρι το Google Play. Η λήψη ξεκινά μόνο όταν πατήσεις το κουμπί.
           </p>
           <p className="mt-2 text-xs text-muted-foreground/80 font-mono">v{APK_BUILD_VERSION}</p>
         </div>
@@ -148,10 +148,11 @@ export default function DownloadAppPage() {
         <div className="mt-8 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 flex gap-3 text-left max-w-2xl mx-auto">
           <ShieldAlert className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
           <div className="text-xs sm:text-sm text-muted-foreground leading-relaxed">
-            <p className="font-heading font-semibold text-foreground mb-1">Εγκατάσταση</p>
+            <p className="font-heading font-semibold text-foreground mb-1">Εγκατάσταση (sideload)</p>
             <p>
               Ενεργοποίησε «Άγνωστες πηγές» αν το ζητήσει το τηλέφωνο.
               Απεγκατάστησε παλιό debug APK του ίδιου τύπου πριν εγκαταστήσεις νέο.
+              Για Play Store χρησιμοποίησε τα υπογεγραμμένα <span className="font-mono">.aab</span> από την ομάδα.
             </p>
           </div>
         </div>
