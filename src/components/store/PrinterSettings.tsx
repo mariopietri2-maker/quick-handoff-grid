@@ -45,7 +45,7 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       storeName,
-      { driverCode: 'DRV 7', customerName: 'Πελάτης δοκιμής', customerPhone: '69xxxxxxx' },
+      { driverCode: 'DRV 7', customerName: 'Πελάτης δοκιμής' },
     );
     toast.success('Εστάλη δοκιμαστική εκτύπωση');
   };

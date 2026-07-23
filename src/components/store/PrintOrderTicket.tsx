@@ -12,8 +12,8 @@ const PAYMENT_LABELS: Record<string, string> = {
 };
 
 export type PrintOrderExtras = {
+  /** Customer name only — never print phone or other PII on the ticket. */
   customerName?: string | null;
-  customerPhone?: string | null;
   driverCode?: string | null;
   driverName?: string | null;
 };
@@ -240,11 +240,10 @@ export function printOrderTicket(
       }
 
       ${
-        extras.customerName || extras.customerPhone
+        extras.customerName
           ? `<div class="block">
               <strong>Πελάτης</strong>
-              ${extras.customerName ? e(String(extras.customerName)) : ''}
-              ${extras.customerPhone ? `<br/>☎ ${e(String(extras.customerPhone))}` : ''}
+              ${e(String(extras.customerName))}
             </div>`
           : ''
       }
