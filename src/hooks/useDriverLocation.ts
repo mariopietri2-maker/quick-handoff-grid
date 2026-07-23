@@ -22,6 +22,19 @@ interface NormalizedPos {
 
 const isNative = Capacitor.isNativePlatform();
 
+type BgGeoModule = typeof import('@capgo/background-geolocation');
+
+async function loadBgGeo(): Promise<BgGeoModule['BackgroundGeolocation'] | null> {
+  if (!isNative) return null;
+  try {
+    const mod = await import('@capgo/background-geolocation');
+    return mod.BackgroundGeolocation;
+  } catch (e) {
+    console.warn('background-geolocation unavailable', e);
+    return null;
+  }
+}
+
 export function useDriverLocation(isActive: boolean) {
   const { user } = useAuth();
   const [tracking, setTracking] = useState(false);
@@ -32,17 +45,21 @@ export function useDriverLocation(isActive: boolean) {
   const lastPosRef = useRef<NormalizedPos | null>(null);
   const cleanupRef = useRef<(() => void) | null>(null);
   const lastUiPushRef = useRef(0);
+  const bgRunningRef = useRef(false);
 
-  const sendLocation = useCallback(async (pos: NormalizedPos) => {
+  const sendLocation = useCallback(async (pos: NormalizedPos, opts?: { allowBackground?: boolean }) => {
     if (!user) return;
-    // Hidden / backgrounded app must not keep refreshing the heartbeat —
-    // otherwise admin still sees the driver as online with the app closed.
-    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+    // Web / non-native: skip when tab is hidden (no FG service).
+    // Native background geolocation keeps updating while online.
+    if (
+      !opts?.allowBackground &&
+      typeof document !== 'undefined' &&
+      document.visibilityState === 'hidden' &&
+      !bgRunningRef.current
+    ) {
       lastPosRef.current = pos;
       return;
     }
-    // If we're offline, just keep the latest pos in lastPosRef and bail —
-    // the 'online' listener (and the next interval tick) will flush it.
     if (typeof navigator !== 'undefined' && navigator.onLine === false) {
       lastPosRef.current = pos;
       return;
@@ -62,12 +79,10 @@ export function useDriverLocation(isActive: boolean) {
           { onConflict: 'driver_id' }
         );
     } catch {
-      // Network blip — keep last pos for next tick / online event
       lastPosRef.current = pos;
     }
   }, [user]);
 
-  // Hard-offline: clear location so admin/dispatch stop seeing us as online.
   const goHardOffline = useCallback(async () => {
     if (!user) return;
     try {
@@ -84,7 +99,7 @@ export function useDriverLocation(isActive: boolean) {
       lastPosRef.current = null;
       setPosition(null);
       setTracking(false);
-      // Driver explicitly toggled offline (isActive=false) — clear row.
+      bgRunningRef.current = false;
       void goHardOffline();
       return;
     }
@@ -92,10 +107,95 @@ export function useDriverLocation(isActive: boolean) {
     let cancelled = false;
     setError(null);
 
+    const distanceM = (a: NormalizedPos, b: NormalizedPos) => {
+      const dLat = (b.latitude - a.latitude) * 111_000;
+      const dLng = (b.longitude - a.longitude) * 111_000 * Math.cos(a.latitude * Math.PI / 180);
+      return Math.hypot(dLat, dLng);
+    };
+    const intervalForSpeed = (speedMps: number | null) => {
+      if (speedMps == null || speedMps < 0.5) return MIN_INTERVAL_STATIONARY;
+      if (speedMps < 5) return MIN_INTERVAL_SLOW;
+      return MIN_INTERVAL_FAST;
+    };
+
     const start = async () => {
       try {
+        let lastSentAt = 0;
+        let lastSentPos: NormalizedPos | null = null;
+
+        const maybeSend = (pos: NormalizedPos, force = false) => {
+          const now = Date.now();
+          const minInterval = intervalForSpeed(pos.speed);
+          const moved = lastSentPos ? distanceM(lastSentPos, pos) : Infinity;
+          if (!force) {
+            if (now - lastSentAt < minInterval) return;
+            if (moved < MIN_MOVE_M && lastSentPos) return;
+          }
+          lastSentAt = now;
+          lastSentPos = pos;
+          void sendLocation(pos, { allowBackground: bgRunningRef.current });
+        };
+
+        const applyPos = (pos: NormalizedPos) => {
+          lastPosRef.current = pos;
+          const now = Date.now();
+          if (now - lastUiPushRef.current >= 400) {
+            lastUiPushRef.current = now;
+            setPosition({ lat: pos.latitude, lng: pos.longitude, heading: pos.heading });
+          }
+          maybeSend(pos);
+        };
+
+        // Prefer Capgo background geolocation on native (FG service + BG updates).
+        const BgGeo = await loadBgGeo();
+        if (BgGeo && isNative) {
+          try {
+            await BgGeo.start(
+              {
+                backgroundMessage: 'Είσαι online — το GPS ενημερώνει τις κοντινές παραγγελίες.',
+                backgroundTitle: 'Fresh Driver — τοποθεσία',
+                requestPermissions: true,
+                stale: false,
+                distanceFilter: 15,
+              },
+              (location, err) => {
+                if (err) {
+                  if (err.code === 'NOT_AUTHORIZED') {
+                    setError('Δεν δόθηκε άδεια τοποθεσίας στο παρασκήνιο');
+                  } else {
+                    setError(err.message || 'Σφάλμα τοποθεσίας');
+                  }
+                  return;
+                }
+                if (!location) return;
+                applyPos({
+                  latitude: location.latitude,
+                  longitude: location.longitude,
+                  speed: location.speed ?? null,
+                  heading: location.bearing ?? null,
+                });
+              },
+            );
+            if (cancelled) {
+              await BgGeo.stop().catch(() => {});
+              return;
+            }
+            bgRunningRef.current = true;
+            setTracking(true);
+
+            cleanupRef.current = () => {
+              bgRunningRef.current = false;
+              void BgGeo.stop().catch(() => {});
+            };
+            return;
+          } catch (e: any) {
+            console.warn('BackgroundGeolocation.start failed, falling back', e);
+            bgRunningRef.current = false;
+          }
+        }
+
+        // Fallback: Capacitor Geolocation (foreground) or browser geolocation.
         if (isNative) {
-          // Request fine-grained permission on native
           const perm = await Geolocation.requestPermissions({ permissions: ['location'] });
           if (perm.location !== 'granted') {
             setError('Δεν δόθηκε άδεια τοποθεσίας');
@@ -109,19 +209,13 @@ export function useDriverLocation(isActive: boolean) {
                 return;
               }
               if (!pos) return;
-              const next = {
+              applyPos({
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 speed: pos.coords.speed ?? null,
                 heading: pos.coords.heading ?? null,
-              };
-              lastPosRef.current = next;
-              const now = Date.now();
-              if (now - lastUiPushRef.current >= 400) {
-                lastUiPushRef.current = now;
-                setPosition({ lat: next.latitude, lng: next.longitude, heading: next.heading });
-              }
-            }
+              });
+            },
           );
           if (cancelled) {
             await Geolocation.clearWatch({ id });
@@ -135,42 +229,21 @@ export function useDriverLocation(isActive: boolean) {
           }
           const id = navigator.geolocation.watchPosition(
             (pos) => {
-              const next = {
+              applyPos({
                 latitude: pos.coords.latitude,
                 longitude: pos.coords.longitude,
                 speed: pos.coords.speed ?? null,
                 heading: pos.coords.heading ?? null,
-              };
-              lastPosRef.current = next;
-              const now = Date.now();
-              if (now - lastUiPushRef.current >= 400) {
-                lastUiPushRef.current = now;
-                setPosition({ lat: next.latitude, lng: next.longitude, heading: next.heading });
-              }
+              });
             },
             (err) => { setError(err.message); setTracking(false); },
-            { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 }
+            { enableHighAccuracy: true, maximumAge: 2000, timeout: 10000 },
           );
           watchIdRef.current = id;
         }
 
         setTracking(true);
 
-        // Throttled push loop. Wakes every TICK_MS but only actually upserts
-        // when (a) enough time has passed for the driver's current speed and
-        // (b) the position moved more than MIN_MOVE_M from the last push.
-        let lastSentAt = 0;
-        let lastSentPos: NormalizedPos | null = null;
-        const distanceM = (a: NormalizedPos, b: NormalizedPos) => {
-          const dLat = (b.latitude - a.latitude) * 111_000;
-          const dLng = (b.longitude - a.longitude) * 111_000 * Math.cos(a.latitude * Math.PI / 180);
-          return Math.hypot(dLat, dLng);
-        };
-        const intervalForSpeed = (speedMps: number | null) => {
-          if (speedMps == null || speedMps < 0.5) return MIN_INTERVAL_STATIONARY;
-          if (speedMps < 5) return MIN_INTERVAL_SLOW; // walking / urban crawl
-          return MIN_INTERVAL_FAST;                   // driving
-        };
         intervalRef.current = window.setInterval(async () => {
           let pos = lastPosRef.current;
           if (!pos) {
@@ -185,24 +258,15 @@ export function useDriverLocation(isActive: boolean) {
                 };
                 lastPosRef.current = pos;
               } else {
-                return; // wait for watchPosition callback
+                return;
               }
             } catch {
               return;
             }
           }
           if (!pos) return;
-          const now = Date.now();
-          const minInterval = intervalForSpeed(pos.speed);
-          const moved = lastSentPos ? distanceM(lastSentPos, pos) : Infinity;
-          if (now - lastSentAt < minInterval) return;
-          // Also skip tiny moves once the interval has elapsed (stationary drift).
-          if (moved < MIN_MOVE_M && lastSentPos) return;
-          lastSentAt = now;
-          lastSentPos = pos;
-          sendLocation(pos);
+          maybeSend(pos);
         }, TICK_MS);
-
 
         cleanupRef.current = () => {
           if (watchIdRef.current !== null) {
@@ -225,31 +289,29 @@ export function useDriverLocation(isActive: boolean) {
 
     start();
 
-    // When connectivity is restored, immediately flush the latest position
-    // so the dispatcher sees us as online again without waiting for the
-    // next 5s tick.
     const handleOnline = () => {
-      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
-      if (lastPosRef.current) void sendLocation(lastPosRef.current);
+      if (lastPosRef.current) {
+        void sendLocation(lastPosRef.current, { allowBackground: bgRunningRef.current });
+      }
     };
     window.addEventListener('online', handleOnline);
 
-    // Presence: when the WebView backgrounds, stop the heartbeat so stale
-    // GPS cannot keep the driver "online". DriverApp also clears shift state.
+    // With background geolocation running, keep presence while hidden.
+    // Without it (web), clear location heartbeat when the tab hides.
     const onVis = () => {
       if (document.visibilityState === 'hidden') {
-        void goHardOffline();
+        if (!bgRunningRef.current) void goHardOffline();
       } else if (lastPosRef.current) {
-        void sendLocation(lastPosRef.current);
+        void sendLocation(lastPosRef.current, { allowBackground: true });
       }
     };
     document.addEventListener('visibilitychange', onVis);
-    window.addEventListener('pagehide', () => { void goHardOffline(); });
 
     return () => {
       cancelled = true;
       cleanupRef.current?.();
       cleanupRef.current = null;
+      bgRunningRef.current = false;
       window.removeEventListener('online', handleOnline);
       document.removeEventListener('visibilitychange', onVis);
     };

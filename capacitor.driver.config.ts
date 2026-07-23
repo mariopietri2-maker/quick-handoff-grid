@@ -40,6 +40,11 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
     },
     Geolocation: {},
+    BackgroundGeolocation: {
+      // Shown on the Android FG-service notification while the driver is online.
+      notificationTitle: 'Fresh Driver — τοποθεσία',
+      notificationText: 'Είσαι online — GPS για κοντινές παραγγελίες',
+    },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],
     },

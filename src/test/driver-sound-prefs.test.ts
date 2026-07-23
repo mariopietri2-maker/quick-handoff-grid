@@ -17,7 +17,6 @@ class MockAudio {
   currentTime = 0;
   duration = 1.2;
   paused = true;
-  preload = '';
   play = vi.fn(async () => {
     this.paused = false;
   });
@@ -38,15 +37,15 @@ describe('driver notification sounds', () => {
     stopOfferAlert();
   });
 
-  it('defaults to random pattern', () => {
+  it('defaults to Uber Eats–style offer chime', () => {
     const prefs = loadDriverSoundPrefs();
     expect(prefs.enabled).toBe(true);
-    expect(prefs.pattern).toBe('random');
+    expect(prefs.pattern).toBe('uber_eats');
   });
 
   it('resolvePattern(random) returns a concrete bundled effect', () => {
     const concrete = [
-      'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
+      'uber_eats', 'pop', 'honk', 'party', 'screech', 'suspense', 'mystery', 'whistle', 'clown', 'nokia', 'slip',
     ];
     for (let i = 0; i < 20; i++) {
       const p = resolvePattern('random');
@@ -57,7 +56,6 @@ describe('driver notification sounds', () => {
   it('pickRandomPattern avoids immediate repeats when possible', () => {
     const picks = Array.from({ length: 12 }, () => pickRandomPattern());
     expect(picks.every((p) => typeof p === 'string')).toBe(true);
-    // At least two distinct sounds across many picks
     expect(new Set(picks).size).toBeGreaterThan(1);
   });
 
@@ -65,7 +63,7 @@ describe('driver notification sounds', () => {
     saveDriverSoundPrefs({
       enabled: true,
       volume: 0.8,
-      pattern: 'pop',
+      pattern: 'uber_eats',
       repeatCount: 1,
       vibrate: false,
     });
@@ -88,11 +86,12 @@ describe('driver notification sounds', () => {
     expect(MockAudio.plays.length).toBe(before);
   });
 
-  it('playOfferAlert with random resolves once and plays', () => {
+  it('playOfferAlert with uber_eats resolves once and plays', () => {
+    // Use a fresh pattern so the module audio cache does not hide constructor calls.
     playOfferAlert({
       enabled: true,
       volume: 0.7,
-      pattern: 'random',
+      pattern: 'honk',
       repeatCount: 1,
       vibrate: false,
     });
