@@ -49,13 +49,12 @@ export default function StorePricingOverrides({ defaultCommission }: { defaultCo
     const row = overrides[storeId] ?? { store_id: storeId, base_pay: null, first_km_price: null, per_km_rate: null, min_pay: null, commission_pct: null };
     const [{ error: e1 }, { error: e2 }] = await Promise.all([
       supabase.from('store_pricing_overrides' as any).upsert(row as any, { onConflict: 'store_id' }),
-      // Keep stores.commission_pct in sync so UI + settlement resolve the same value.
-      row.commission_pct == null
-        ? Promise.resolve({ error: null } as any)
-        : supabase.from('stores').update({ commission_pct: row.commission_pct } as any).eq('id', storeId),
+      // Always sync stores.commission_pct (including clearing to null)
+      supabase.from('stores').update({ commission_pct: row.commission_pct } as any).eq('id', storeId),
     ]);
     setSavingId(null);
-    if (e1 || e2) toast.error('Αποτυχία'); else toast.success('Αποθηκεύτηκε');
+    if (e1 || e2) toast.error(e1?.message || e2?.message || 'Αποτυχία');
+    else toast.success('Αποθηκεύτηκε');
   };
 
   const clear = async (storeId: string) => {
