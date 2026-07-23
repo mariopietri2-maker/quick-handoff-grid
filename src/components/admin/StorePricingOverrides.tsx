@@ -47,16 +47,25 @@ export default function StorePricingOverrides({ defaultCommission }: { defaultCo
   const save = async (storeId: string) => {
     setSavingId(storeId);
     const row = overrides[storeId] ?? { store_id: storeId, base_pay: null, first_km_price: null, per_km_rate: null, min_pay: null, commission_pct: null };
-    const { error } = await supabase.from('store_pricing_overrides' as any).upsert(row as any, { onConflict: 'store_id' });
+    const [{ error: e1 }, { error: e2 }] = await Promise.all([
+      supabase.from('store_pricing_overrides' as any).upsert(row as any, { onConflict: 'store_id' }),
+      // Keep stores.commission_pct in sync so UI + settlement resolve the same value.
+      row.commission_pct == null
+        ? Promise.resolve({ error: null } as any)
+        : supabase.from('stores').update({ commission_pct: row.commission_pct } as any).eq('id', storeId),
+    ]);
     setSavingId(null);
-    if (error) toast.error('Αποτυχία'); else toast.success('Αποθηκεύτηκε');
+    if (e1 || e2) toast.error('Αποτυχία'); else toast.success('Αποθηκεύτηκε');
   };
 
   const clear = async (storeId: string) => {
     setSavingId(storeId);
-    const { error } = await supabase.from('store_pricing_overrides' as any).delete().eq('store_id', storeId);
+    const [{ error: e1 }, { error: e2 }] = await Promise.all([
+      supabase.from('store_pricing_overrides' as any).delete().eq('store_id', storeId),
+      supabase.from('stores').update({ commission_pct: null } as any).eq('id', storeId),
+    ]);
     setSavingId(null);
-    if (error) toast.error('Αποτυχία');
+    if (e1 || e2) toast.error('Αποτυχία');
     else {
       setOverrides(prev => { const { [storeId]: _, ...rest } = prev; return rest; });
       toast.success('Καθαρίστηκε - επιστροφή σε global τιμές');
@@ -75,7 +84,7 @@ export default function StorePricingOverrides({ defaultCommission }: { defaultCo
               <TableHead className="w-24">1ο χλμ €</TableHead>
               <TableHead className="w-24">€/km</TableHead>
               <TableHead className="w-24">Min €</TableHead>
-              <TableHead className="w-28">Προμήθεια %</TableHead>
+              <TableHead className="w-28">Προμήθεια % (πλατφόρμα)</TableHead>
               <TableHead className="w-32">Ενέργειες</TableHead>
             </TableRow>
           </TableHeader>
