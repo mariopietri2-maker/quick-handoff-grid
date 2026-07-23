@@ -45,23 +45,32 @@ export default function StoreBillingSettings() {
       ext_flat_fee: r.ext_flat_fee,
       ext_margin_pct: r.ext_margin_pct,
     };
-    // When using fixed % for external/custom, keep in-app commission in sync
-    // so store Custom Order preview + settlement show the same rate.
+    // Sync / clear in-app commission so Custom Order + settlement track this setting
     if (r.ext_billing_mode === 'commission') {
       patch.commission_pct = r.ext_commission_pct;
+    } else {
+      patch.commission_pct = null;
     }
     const { error } = await supabase
       .from('stores')
       .update(patch as any)
       .eq('id', r.id);
-    if (!error && r.ext_billing_mode === 'commission') {
-      await supabase.from('store_pricing_overrides' as any).upsert(
-        {
-          store_id: r.id,
-          commission_pct: r.ext_commission_pct,
-        } as any,
-        { onConflict: 'store_id' },
-      );
+    if (!error) {
+      if (r.ext_billing_mode === 'commission') {
+        const { error: ovErr } = await supabase.from('store_pricing_overrides' as any).upsert(
+          { store_id: r.id, commission_pct: r.ext_commission_pct } as any,
+          { onConflict: 'store_id' },
+        );
+        if (ovErr) {
+          setSavingId(null);
+          toast.error(ovErr.message);
+          return;
+        }
+      } else {
+        await supabase.from('store_pricing_overrides' as any)
+          .update({ commission_pct: null } as any)
+          .eq('store_id', r.id);
+      }
     }
     setSavingId(null);
     if (error) toast.error(error.message);
