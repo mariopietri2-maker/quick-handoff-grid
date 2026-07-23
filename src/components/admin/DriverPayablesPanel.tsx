@@ -14,6 +14,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { Wallet, Search, RotateCcw, AlertTriangle, Loader2, FileDown, Banknote, HandCoins, FileText } from 'lucide-react';
 import { escapeHtml } from '@/lib/escape-html';
+import { formatDriverCode } from '@/lib/driver-code';
 
 const VAT_RATE = 0.24;
 
@@ -132,7 +133,7 @@ export default function DriverPayablesPanel() {
       const net = gross / (1 + VAT_RATE);
       const vat = gross - net;
       return `<tr>
-        <td>${r.name.replace(/</g, '&lt;')}${r.driver_code ? ' <span style="color:#888">#'+r.driver_code+'</span>' : ''}</td>
+        <td>${r.name.replace(/</g, '&lt;')}${r.driver_code ? ' <span style="color:#888">'+formatDriverCode(r.driver_code)+'</span>' : ''}</td>
         <td class="r">€${r.available.toFixed(2)}</td>
         <td class="r">€${r.pending.toFixed(2)}</td>
         <td class="r">€${net.toFixed(2)}</td>
@@ -370,7 +371,7 @@ export default function DriverPayablesPanel() {
                         <div className="flex items-center gap-2 min-w-0">
                           <span className="truncate">{r.name}</span>
                           {r.driver_code && (
-                            <span className="text-[10px] font-mono text-muted-foreground">#{r.driver_code}</span>
+                            <span className="text-[10px] font-mono text-muted-foreground">{formatDriverCode(r.driver_code)}</span>
                           )}
                           {r.on_shift && (
                             <Badge className="text-[10px] h-4 px-1 bg-emerald-500/15 text-emerald-700 border-emerald-500/30 hover:bg-emerald-500/20">Live</Badge>

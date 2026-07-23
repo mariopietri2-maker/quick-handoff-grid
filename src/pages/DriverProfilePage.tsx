@@ -15,6 +15,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
+import { formatDriverCode } from '@/lib/driver-code';
 
 const SHIFTS = ['morning', 'afternoon', 'evening', 'night'] as const;
 const SHIFT_LABELS: Record<string, string> = {
@@ -250,7 +251,7 @@ export default function DriverProfilePage() {
               <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
               {driverProfile.driver_code && (
                 <Badge variant="outline" className="mt-1 border-primary/30 text-primary font-mono text-[10px]">
-                  {driverProfile.driver_code}
+                  {formatDriverCode(driverProfile.driver_code)}
                 </Badge>
               )}
             </div>

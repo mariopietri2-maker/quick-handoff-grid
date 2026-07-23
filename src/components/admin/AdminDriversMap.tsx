@@ -11,6 +11,7 @@ import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { MapPin, Loader2 } from 'lucide-react';
 import { geocodeAddress } from '@/lib/geocode';
+import { formatDriverCode } from '@/lib/driver-code';
 import { toast } from 'sonner';
 
 interface DriverLocation {
@@ -195,7 +196,7 @@ export default function AdminDriversMap({ readOnly = false }: AdminDriversMapPro
         const popup = new mapboxgl.Popup({ offset: 20 }).setHTML(`
           <div style="text-align:center;font-family:system-ui;padding:4px;">
             <strong>${escapeHtml(info?.name || loc.driver_id.slice(0, 8))}</strong>
-            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${escapeHtml(info.code)}</span>` : ''}
+            ${info?.code ? `<br/><span style="font-size:11px;opacity:0.7;">${escapeHtml(formatDriverCode(info.code))}</span>` : ''}
             ${loc.speed != null && loc.speed > 0 ? `<br/><span style="font-size:11px;">${(loc.speed * 3.6).toFixed(0)} km/h</span>` : ''}
           </div>
         `);

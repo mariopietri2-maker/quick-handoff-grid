@@ -13,6 +13,7 @@ import { PrintTicketButton, printOrderTicket } from './PrintOrderTicket';
 import { getPrinterPrefs } from '@/lib/printer-prefs';
 import type { OrderWithItems } from '@/hooks/useOrders';
 import { formatOrderNumber } from '@/lib/order-number';
+import { formatDriverCode } from '@/lib/driver-code';
 import { cn } from '@/lib/utils';
 
 interface OrderQueueProps {
@@ -107,6 +108,7 @@ export function OrderQueue({
   const [prepTimes, setPrepTimes] = useState<Record<string, number>>({});
   const [busyLocal, setBusyLocal] = useState<Record<string, boolean>>({});
   const [now, setNow] = useState(() => Date.now());
+  const [driverCodes, setDriverCodes] = useState<Record<string, string>>({});
   const printedRef = useRef<Set<string>>(new Set());
   const printQueueRef = useRef<OrderWithItems[]>([]);
   const printRunningRef = useRef(false);
@@ -115,6 +117,29 @@ export function OrderQueue({
     const id = window.setInterval(() => setNow(Date.now()), 30_000);
     return () => window.clearInterval(id);
   }, []);
+
+  useEffect(() => {
+    const ids = [...new Set(orders.map((o) => o.driver_id).filter(Boolean))] as string[];
+    if (ids.length === 0) return;
+    let cancelled = false;
+    void supabase
+      .from('driver_profiles')
+      .select('user_id, driver_code')
+      .in('user_id', ids)
+      .then(({ data }) => {
+        if (cancelled || !data) return;
+        setDriverCodes((prev) => {
+          const next = { ...prev };
+          for (const row of data as { user_id: string; driver_code: string | null }[]) {
+            if (row.driver_code) next[row.user_id] = row.driver_code;
+          }
+          return next;
+        });
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [orders]);
 
   const pendingSet = useMemo(() => {
     if (!pendingIds) return new Set<string>();
@@ -183,7 +208,8 @@ export function OrderQueue({
       if (!next) return;
       printRunningRef.current = true;
       try {
-        printOrderTicket(next, storeName);
+        const drv = next.driver_id ? driverCodes[next.driver_id] : null;
+        printOrderTicket(next, storeName, { driverCode: drv });
       } catch {
         /* ignore */
       }
@@ -193,7 +219,7 @@ export function OrderQueue({
       }, 700);
     };
     pump();
-  }, [orders, storeName]);
+  }, [orders, storeName, driverCodes]);
 
   const toggleExpand = (id: string) => {
     setExpanded((p) => ({ ...p, [id]: !p[id] }));
@@ -251,7 +277,10 @@ export function OrderQueue({
               {order.notes ? ' ·📝' : ''}
             </span>
             {order.driver_id && (
-              <Car className="h-3.5 w-3.5 text-info shrink-0" aria-label="Οδηγός" />
+              <span className="inline-flex items-center gap-0.5 text-[10px] font-heading font-bold text-info shrink-0">
+                <Car className="h-3.5 w-3.5" aria-hidden />
+                {formatDriverCode(driverCodes[order.driver_id], { fallback: 'DRV' })}
+              </span>
             )}
             {open ? (
               <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-auto" />
@@ -368,7 +397,13 @@ export function OrderQueue({
               )}
 
             <div className="flex items-center gap-1.5">
-              <PrintTicketButton order={order} storeName={storeName} />
+              <PrintTicketButton
+                order={order}
+                storeName={storeName}
+                extras={{
+                  driverCode: order.driver_id ? driverCodes[order.driver_id] : null,
+                }}
+              />
               {nextAction && (
                 <Button
                   className={cn(

@@ -8,6 +8,7 @@ import { Bike, Search, Wallet, Coins, Target, Clock, Activity, MapPin } from 'lu
 import AdminDriversMap from './AdminDriversMap';
 import { formatDistanceToNow } from 'date-fns';
 import { isDriverPresenceOnline } from '@/lib/driver-presence';
+import { formatDriverCode } from '@/lib/driver-code';
 
 interface DriverRow {
   user_id: string;
@@ -174,7 +175,7 @@ export default function AdminLiveDriversMap() {
                           <div className="flex items-center gap-2">
                             <span className={`h-2 w-2 rounded-full ${online ? 'bg-success animate-pulse' : 'bg-muted-foreground/40'}`} />
                             <span className="font-medium text-sm truncate">{d.full_name || d.user_id.slice(0, 8)}</span>
-                            {d.driver_code && <span className="text-[10px] text-muted-foreground">{d.driver_code}</span>}
+                            {d.driver_code && <span className="text-[10px] text-muted-foreground">{formatDriverCode(d.driver_code)}</span>}
                           </div>
                           <div className="flex flex-wrap gap-1 mt-1">
                             {!d.is_active && <Badge variant="destructive" className="text-[10px] h-4">Ανενεργός</Badge>}
