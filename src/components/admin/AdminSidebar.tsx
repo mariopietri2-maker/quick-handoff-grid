@@ -77,6 +77,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'drivers',
     tabs: [
       { id: 'drivers', label: 'Οδηγοί' },
+      { id: 'driver_approvals', label: 'Έγκριση οδηγών' },
       { id: 'driver_messages', label: '✉️ Μηνύματα' },
       { id: 'drivers_live_map', label: '📍 Live χάρτης' },
       { id: 'driver_map_editor', label: 'Χάρτης οδηγών' },
