@@ -158,6 +158,20 @@ export async function initNotificationChannels() {
     console.warn('createChannel driver-inbox error', e);
   }
   try {
+    // Quiet sticky status while the driver is online (efood-style "Διαθέσιμος").
+    await LocalNotifications.createChannel({
+      id: 'driver-online',
+      name: 'Κατάσταση σύνδεσης',
+      description: 'Ειδοποίηση όταν είσαι διαθέσιμος για παραγγελίες',
+      importance: 3,
+      visibility: 1,
+      vibration: false,
+      lights: false,
+    });
+  } catch (e) {
+    console.warn('createChannel driver-online error', e);
+  }
+  try {
     // Soft Mixkit-style notify sound for customer order updates.
     await LocalNotifications.createChannel({
       id: 'customer-orders-v2',

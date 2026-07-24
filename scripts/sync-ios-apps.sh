@@ -31,8 +31,8 @@ write_ios_cap_config() {
     geo_plugin=',
     "Geolocation": {},
     "BackgroundGeolocation": {
-      "notificationTitle": "Fresh Driver — location",
-      "notificationText": "Online for nearby orders"
+      "notificationTitle": "Διαθέσιμος",
+      "notificationText": "Είσαι συνδεδεμένος και σε θέση να δεχτείς παραγγελίες"
     }'
   fi
 
