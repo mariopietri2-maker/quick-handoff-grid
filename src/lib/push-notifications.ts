@@ -17,19 +17,31 @@ export function stableNotificationId(key: string): number {
 }
 
 export async function ensureNotificationPermission(): Promise<boolean> {
-  if (permissionRequested) return permissionGranted;
-  permissionRequested = true;
-
   try {
     if (isNative) {
-      const perm = await LocalNotifications.requestPermissions();
-      permissionGranted = perm.display === 'granted';
+      // Re-check every time — user may grant later in system settings.
+      const current = await LocalNotifications.checkPermissions();
+      if (current.display === 'granted') {
+        permissionGranted = true;
+        permissionRequested = true;
+        return true;
+      }
+      if (!permissionRequested || current.display === 'prompt') {
+        permissionRequested = true;
+        const perm = await LocalNotifications.requestPermissions();
+        permissionGranted = perm.display === 'granted';
+      } else {
+        permissionGranted = false;
+      }
     } else if ('Notification' in window) {
       if (Notification.permission === 'granted') {
         permissionGranted = true;
       } else if (Notification.permission !== 'denied') {
+        permissionRequested = true;
         const r = await Notification.requestPermission();
         permissionGranted = r === 'granted';
+      } else {
+        permissionGranted = false;
       }
     }
   } catch (e) {
@@ -158,12 +170,26 @@ export async function initNotificationChannels() {
     console.warn('createChannel driver-inbox error', e);
   }
   try {
-    // Quiet sticky status while the driver is online (efood-style "Διαθέσιμος").
+    // Sticky status while online (efood-style "Διαθέσιμος"). HIGH so it stays visible.
+    // Channel importance is immutable after first create — use a new id if changing.
     await LocalNotifications.createChannel({
-      id: 'driver-online',
+      id: 'driver-online-v2',
       name: 'Κατάσταση σύνδεσης',
       description: 'Ειδοποίηση όταν είσαι διαθέσιμος για παραγγελίες',
-      importance: 3,
+      importance: 4,
+      visibility: 1,
+      vibration: false,
+      lights: false,
+    });
+  } catch (e) {
+    console.warn('createChannel driver-online-v2 error', e);
+  }
+  try {
+    await LocalNotifications.createChannel({
+      id: 'driver-online',
+      name: 'Κατάσταση σύνδεσης (παλιό)',
+      description: 'Παλιό κανάλι κατάστασης σύνδεσης',
+      importance: 4,
       visibility: 1,
       vibration: false,
       lights: false,
