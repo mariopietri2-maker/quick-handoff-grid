@@ -217,16 +217,22 @@ export default function AdminApp() {
 
 
   const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
-    const { error } = await supabase.from('driver_profiles').update({ is_active: !currentActive } as any).eq('user_id', userId);
-    if (error) toast.error('Αποτυχία');
-    else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
+    const { error } = await (supabase.rpc as any)('admin_set_driver_active', {
+      p_user_id: userId,
+      p_active: !currentActive,
+    });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else {
+      toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε');
+      queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] });
+    }
   };
 
   const handleApproveDriver = async (userId: string, name: string) => {
-    const { error } = await supabase.from('driver_profiles').upsert(
-      { user_id: userId, is_active: true } as any,
-      { onConflict: 'user_id' },
-    );
+    const { error } = await (supabase.rpc as any)('admin_set_driver_active', {
+      p_user_id: userId,
+      p_active: true,
+    });
     if (error) toast.error(error.message || 'Αποτυχία έγκρισης');
     else {
       toast.success(`${name} εγκρίθηκε`);
@@ -235,9 +241,14 @@ export default function AdminApp() {
     }
   };
 
-  const handleRejectDriverApproval = async (_userId: string, name: string) => {
+  const handleRejectDriverApproval = async (userId: string, name: string) => {
     if (!confirm(`Απόρριψη έγκρισης για ${name}; Ο λογαριασμός θα παραμείνει ανενεργός.`)) return;
-    toast.success(`${name} παραμένει σε αναμονή (ανενεργός)`);
+    const { error } = await (supabase.rpc as any)('admin_set_driver_active', {
+      p_user_id: userId,
+      p_active: false,
+    });
+    if (error) toast.error(error.message || 'Αποτυχία');
+    else toast.success(`${name} παραμένει ανενεργός`);
   };
 
   const handleResetDriverCash = async (userId: string, driverName: string) => {
