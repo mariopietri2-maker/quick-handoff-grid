@@ -68,3 +68,33 @@ export function haversineKm(
   const h = Math.sin(dLat / 2) ** 2 + Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
   return 2 * R * Math.asin(Math.sqrt(h));
 }
+
+/**
+ * Mapbox driving (road) distance in km. Returns null if token/routing fails.
+ * Server validates against haversine via resolve_delivery_distance_km.
+ */
+export async function mapboxDrivingKm(
+  from: { latitude: number; longitude: number },
+  to: { latitude: number; longitude: number },
+  accessToken: string | null | undefined,
+): Promise<number | null> {
+  const token = accessToken?.trim();
+  if (!token) return null;
+  if (![from.latitude, from.longitude, to.latitude, to.longitude].every(Number.isFinite)) {
+    return null;
+  }
+  try {
+    const url =
+      `https://api.mapbox.com/directions/v5/mapbox/driving/` +
+      `${from.longitude},${from.latitude};${to.longitude},${to.latitude}` +
+      `?access_token=${encodeURIComponent(token)}&overview=false`;
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const json = await res.json();
+    const meters = json?.routes?.[0]?.distance;
+    if (typeof meters !== 'number' || !Number.isFinite(meters) || meters <= 0) return null;
+    return +(meters / 1000).toFixed(2);
+  } catch {
+    return null;
+  }
+}

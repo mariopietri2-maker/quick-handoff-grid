@@ -51,7 +51,7 @@ export default function PricingSettings() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [pricing, setPricing] = useState<PricingRow>({
-    base_pay: 3, first_km_price: 3, per_km_rate: 0.5, min_pay: 3, max_pay: 12,
+    base_pay: 5, first_km_price: 5, per_km_rate: 0.5, min_pay: 5, max_pay: 15,
     customer_base_fee: 1.5, customer_per_km_fee: 0.8,
     platform_service_fee: 0.99,
     peak_multiplier: 1.0, peak_start_hour: 19, peak_end_hour: 22,
@@ -252,12 +252,16 @@ export default function PricingSettings() {
 
         <TabsContent value="driver" className="space-y-4 mt-4">
           <Card>
-            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Αμοιβή Οδηγού (delivery fee)</CardTitle></CardHeader>
+            <CardHeader><CardTitle className="font-heading text-base flex items-center gap-2"><DollarSign className="h-4 w-4 text-primary" />Αμοιβή Οδηγού (χλμ δρόμου)</CardTitle></CardHeader>
             <CardContent className="space-y-4">
+              <p className="text-[12px] text-muted-foreground leading-relaxed">
+                Απόσταση πληρωμής = <b>χλμ δρόμου</b> (Mapbox). Αν λείπει route → ευθεία γραμμή.
+                Τύπος: 1ο χλμ + €/χλμ × max(χλμ−1, 0), με ισχυρό ελάχιστο. Το wait bonus προστίθεται στη παράδοση.
+              </p>
               <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-                <Field label="Τιμή 1ου χλμ (€)" value={pricing.first_km_price} onChange={v => setPricing(p => ({ ...p, first_km_price: v }))} hint="Flat για το πρώτο χλμ" />
-                <Field label="€ / χλμ μετά" value={pricing.per_km_rate} onChange={v => setPricing(p => ({ ...p, per_km_rate: v }))} hint="Για κάθε χλμ μετά το 1ο" icon={MapPin} />
-                <Field label="Ελάχιστη Αμοιβή (€)" value={pricing.min_pay} onChange={v => setPricing(p => ({ ...p, min_pay: v }))} hint="Εγγυημένο ελάχιστο" icon={Shield} />
+                <Field label="Τιμή 1ου χλμ (€)" value={pricing.first_km_price} onChange={v => setPricing(p => ({ ...p, first_km_price: v }))} hint="Flat για το πρώτο χλμ δρόμου" />
+                <Field label="€ / χλμ μετά" value={pricing.per_km_rate} onChange={v => setPricing(p => ({ ...p, per_km_rate: v }))} hint="Για κάθε χλμ δρόμου μετά το 1ο" icon={MapPin} />
+                <Field label="Ελάχιστη Αμοιβή (€)" value={pricing.min_pay} onChange={v => setPricing(p => ({ ...p, min_pay: v }))} hint="Ισχυρό ελάχιστο ανά παράδοση" icon={Shield} />
                 <Field label="Μέγιστη Αμοιβή (€)" value={pricing.max_pay} onChange={v => setPricing(p => ({ ...p, max_pay: v }))} hint="Cap ανά παράδοση" />
               </div>
               <Preview label={`Delivery fee — ${previewKm} χλμ`} amount={driverDeliveryPay} note={`€${pricing.first_km_price.toFixed(2)} + ${extraKm} × €${pricing.per_km_rate.toFixed(2)}`} />
