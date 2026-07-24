@@ -159,8 +159,71 @@
     background: hsl(220 25% 97%);
   }
 
+  /* Kill web-browser tells inside Capacitor shells */
+  html.is-native,
+  html.is-native body {
+    -webkit-tap-highlight-color: transparent;
+    -webkit-touch-callout: none;
+    touch-action: manipulation;
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+  }
+
+  html.is-native body,
+  html.is-native button,
+  html.is-native a,
+  html.is-native [role="button"] {
+    -webkit-user-select: none;
+    user-select: none;
+  }
+
+  html.is-native input,
+  html.is-native textarea,
+  html.is-native [contenteditable="true"] {
+    -webkit-user-select: text;
+    user-select: text;
+    touch-action: auto;
+  }
+
+  /* Native scrollers: momentum + no rubber-band chaining */
+  html.is-native .customer-scroll,
+  html.is-native .driver-shell,
+  html.is-native .native-scroll {
+    -webkit-overflow-scrolling: touch;
+    overscroll-behavior-y: contain;
+  }
+
+  /* Soft stack-screen enter (restaurant / checkout / tracking) */
+  @keyframes native-page-enter {
+    from {
+      opacity: 0;
+      transform: translate3d(10px, 0, 0);
+    }
+    to {
+      opacity: 1;
+      transform: translate3d(0, 0, 0);
+    }
+  }
+
+  .native-page-enter {
+    animation: native-page-enter 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    will-change: transform, opacity;
+  }
+
+  html.is-native .hover-lift:hover,
+  html.is-native .hover-scale:hover,
+  html.is-native .interactive:hover {
+    transform: none;
+  }
+
   h1, h2, h3, h4, h5, h6 {
     font-family: var(--font-heading);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .native-page-enter {
+    animation: none !important;
   }
 }
 

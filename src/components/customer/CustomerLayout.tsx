@@ -37,7 +37,7 @@ export default function CustomerLayout() {
 
   return (
     <div
-      className="customer-shell customer-scroll relative h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain"
+      className="customer-shell customer-scroll native-scroll relative h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain"
       style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
       {cfg.sections.show_ambient_glow && <div className="c-ambient" aria-hidden />}

@@ -5,6 +5,7 @@ import {
   AlertDialogContent, AlertDialogDescription, AlertDialogFooter,
   AlertDialogHeader, AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
+import { hapticImpact, hapticSuccess } from '@/lib/haptics';
 
 interface SlideToggleProps {
   isOn: boolean;
@@ -73,7 +74,7 @@ export function SlideToggle({
       if (finalX > maxX * ON_THRESHOLD) {
         setDragX(null);
         onToggle(true);
-        if ('vibrate' in navigator) try { navigator.vibrate(40); } catch {}
+        void hapticSuccess();
         return;
       }
     } else {
@@ -230,7 +231,7 @@ export function SlideToggle({
           <AlertDialogFooter>
             <AlertDialogCancel>Άκυρο, μένω σε υπηρεσία</AlertDialogCancel>
             <AlertDialogAction
-              onClick={() => onToggle(false)}
+              onClick={() => { void hapticImpact('medium'); onToggle(false); }}
               className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
             >
               Ναι, εκτός υπηρεσίας

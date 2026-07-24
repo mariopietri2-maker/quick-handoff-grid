@@ -167,7 +167,8 @@ write_release_cap_config() {
   "plugins": {
     "CapacitorHttp": { "enabled": true },
     "StatusBar": { "style": "DARK", "backgroundColor": "#0f172a", "overlaysWebView": true },
-    "SplashScreen": { "backgroundColor": "#0f172a", "launchAutoHide": true }$geo_plugin,
+    "SplashScreen": { "backgroundColor": "#0f172a", "launchAutoHide": true, "launchShowDuration": 400, "launchFadeOutDuration": 280 },
+    "Keyboard": { "resize": "body", "resizeOnFullScreen": true }$geo_plugin,
     "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
   }
 }
