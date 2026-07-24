@@ -37,6 +37,7 @@ const StripePaymentsSettings = lazy(() => import('@/components/admin/StripePayme
 const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
 const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserActions'));
 const DriverMessagesPanel    = lazy(() => import('@/components/admin/DriverMessagesPanel'));
+const DriverApprovalsPanel   = lazy(() => import('@/components/admin/DriverApprovalsPanel'));
 const AdminPermissionsManager= lazy(() => import('@/components/admin/AdminPermissionsManager'));
 const CannedRepliesManager   = lazy(() => import('@/components/admin/CannedRepliesManager'));
 const ExternalOrderIngest    = lazy(() => import('@/components/admin/ExternalOrderIngest'));
@@ -221,6 +222,24 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] }); }
   };
 
+  const handleApproveDriver = async (userId: string, name: string) => {
+    const { error } = await supabase.from('driver_profiles').upsert(
+      { user_id: userId, is_active: true } as any,
+      { onConflict: 'user_id' },
+    );
+    if (error) toast.error(error.message || 'Αποτυχία έγκρισης');
+    else {
+      toast.success(`${name} εγκρίθηκε`);
+      queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] });
+      queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+    }
+  };
+
+  const handleRejectDriverApproval = async (_userId: string, name: string) => {
+    if (!confirm(`Απόρριψη έγκρισης για ${name}; Ο λογαριασμός θα παραμείνει ανενεργός.`)) return;
+    toast.success(`${name} παραμένει σε αναμονή (ανενεργός)`);
+  };
+
   const handleResetDriverCash = async (userId: string, driverName: string) => {
     if (!confirm(`Μηδενισμός ταμείου βάρδιας για ${driverName};`)) return;
     const { error } = await (supabase.rpc as any)('admin_reset_driver_cash', { p_driver_id: userId });
@@ -402,6 +421,15 @@ export default function AdminApp() {
         return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
       case 'drivers':
         return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverLocations={driverLocations.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
+      case 'driver_approvals':
+        return (
+          <DriverApprovalsPanel
+            profiles={(profiles.data ?? []) as any}
+            driverProfiles={(driverProfiles.data ?? []) as any}
+            onApprove={handleApproveDriver}
+            onReject={handleRejectDriverApproval}
+          />
+        );
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'financials':
@@ -618,6 +646,15 @@ export default function AdminApp() {
                   )}
                   {visibleTabs.map(t => {
                     const isActive = t.id === activeSection;
+                    const pendingApprovals =
+                      t.id === 'driver_approvals'
+                        ? (profiles.data ?? [])
+                            .filter((p) => p.role === 'driver' || p.role === 'm')
+                            .filter((p) => {
+                              const dp = driverProfiles.data?.find((d) => d.user_id === p.user_id);
+                              return !dp || dp.is_active === false;
+                            }).length
+                        : 0;
                     return (
                       <button
                         key={t.id}
@@ -629,7 +666,14 @@ export default function AdminApp() {
                             : 'text-muted-foreground hover:text-foreground',
                         )}
                       >
-                        {t.label}
+                        <span className="inline-flex items-center gap-1.5">
+                          {t.label}
+                          {pendingApprovals > 0 && (
+                            <span className="inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-destructive-foreground">
+                              {pendingApprovals}
+                            </span>
+                          )}
+                        </span>
                         {isActive && (
                           <span className="absolute left-2 right-2 -bottom-px h-[2px] rounded-t bg-primary" />
                         )}
