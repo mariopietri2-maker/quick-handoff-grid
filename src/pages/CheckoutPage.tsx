@@ -20,6 +20,7 @@ import { customerAccentStyle } from '@/lib/customer-theme';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
+import { mapboxDrivingKm } from '@/lib/geocode';
 
 const AddressAutocomplete = lazy(() =>
   import('@/components/AddressAutocomplete').then((m) => ({ default: m.AddressAutocomplete })),
@@ -262,15 +263,12 @@ export default function CheckoutPage() {
             setSubmitting(false);
             return;
           }
-          // Prefer the Vite-embedded public token (edge get-mapbox-token is often JWT-blocked).
           const token = mapboxToken || (import.meta.env.VITE_MAPBOX_TOKEN as string | undefined);
-          if (token) {
-            const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${storeLng},${storeLat};${deliveryCoords.lon},${deliveryCoords.lat}?access_token=${token}&overview=false`;
-            const res = await fetch(url);
-            const json = await res.json();
-            const routeMeters = json?.routes?.[0]?.distance;
-            if (typeof routeMeters === 'number') distanceKm = +(routeMeters / 1000).toFixed(2);
-          }
+          distanceKm = await mapboxDrivingKm(
+            { latitude: storeLat, longitude: storeLng },
+            { latitude: deliveryCoords.lat, longitude: deliveryCoords.lon },
+            token,
+          );
         }
       } catch {
         // non-fatal: continue without distance
