@@ -37,6 +37,12 @@ const config: CapacitorConfig = {
     SplashScreen: {
       backgroundColor: '#0f172a',
       launchAutoHide: true,
+      launchShowDuration: 400,
+      launchFadeOutDuration: 280,
+    },
+    Keyboard: {
+      resize: 'body',
+      resizeOnFullScreen: true,
     },
     PushNotifications: {
       presentationOptions: ['badge', 'sound', 'alert'],

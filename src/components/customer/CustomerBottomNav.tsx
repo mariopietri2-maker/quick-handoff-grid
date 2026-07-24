@@ -3,6 +3,7 @@ import { Home, Search, Receipt, User } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
+import { hapticSelection } from '@/lib/haptics';
 
 type TabId = 'home' | 'browse' | 'orders' | 'account';
 
@@ -44,9 +45,11 @@ export default function CustomerBottomNav() {
     navigate(`/auth?next=${encodeURIComponent(next)}`);
   };
 
+  const tap = () => { void hapticSelection(); };
+
   const itemClass = (id: TabId) =>
     cn(
-      'c-nav-item flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform',
+      'c-nav-item flex flex-col items-center justify-center gap-0.5 active:scale-95 transition-transform press-scale',
       active === id && 'c-nav-item-active',
     );
 
@@ -67,6 +70,7 @@ export default function CustomerBottomNav() {
           type="button"
           className={itemClass('home')}
           onClick={() => {
+            tap();
             if (onHome) {
               scrollCustomerTop();
               if (location.hash) navigate('/order', { replace: true });
@@ -88,6 +92,7 @@ export default function CustomerBottomNav() {
           type="button"
           className={itemClass('browse')}
           onClick={() => {
+            tap();
             if (onHome) {
               if (location.hash !== '#browse') navigate('/order#browse', { replace: true });
               window.dispatchEvent(new CustomEvent('customer:focus-browse'));
@@ -101,24 +106,24 @@ export default function CustomerBottomNav() {
         </button>
 
         {user ? (
-          <Link to="/orders" className={itemClass('orders')}>
+          <Link to="/orders" className={itemClass('orders')} onClick={tap}>
             <Receipt className="h-[22px] w-[22px]" strokeWidth={active === 'orders' ? 2.6 : 2} />
             <span className={labelClass('orders')}>{t('customer.orders')}</span>
           </Link>
         ) : (
-          <button type="button" className={itemClass('orders')} onClick={() => goAuth('/orders')}>
+          <button type="button" className={itemClass('orders')} onClick={() => { tap(); goAuth('/orders'); }}>
             <Receipt className="h-[22px] w-[22px]" strokeWidth={2} />
             <span className={labelClass('orders')}>{t('customer.orders')}</span>
           </button>
         )}
 
         {user ? (
-          <Link to="/profile" className={itemClass('account')}>
+          <Link to="/profile" className={itemClass('account')} onClick={tap}>
             <User className="h-[22px] w-[22px]" strokeWidth={active === 'account' ? 2.6 : 2} />
             <span className={labelClass('account')}>{t('customer.tab_account')}</span>
           </Link>
         ) : (
-          <button type="button" className={itemClass('account')} onClick={() => goAuth('/profile')}>
+          <button type="button" className={itemClass('account')} onClick={() => { tap(); goAuth('/profile'); }}>
             <User className="h-[22px] w-[22px]" strokeWidth={2} />
             <span className={labelClass('account')}>{t('customer.tab_account')}</span>
           </button>

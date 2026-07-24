@@ -17,6 +17,7 @@ import RootEntry from "@/components/RootEntry";
 import { PushBootstrap } from "@/components/PushBootstrap";
 import { PwaManifestSwitcher } from "@/components/PwaManifestSwitcher";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
+import NativePageTransition from "@/components/NativePageTransition";
 
 // Lazy-load every non-landing route so the initial bundle stays small.
 // lazyWithRetry auto-reloads once if a deploy invalidated old chunk hashes.
@@ -99,9 +100,9 @@ const App = () => (
                         </ProtectedRoute>
                       } />
                     </Route>
-                    <Route path="/restaurant/:id" element={<RestaurantPage />} />
-                    <Route path="/checkout" element={<CheckoutPage />} />
-                    <Route path="/order-tracking/:id" element={<OrderTrackingPage />} />
+                    <Route path="/restaurant/:id" element={<NativePageTransition><RestaurantPage /></NativePageTransition>} />
+                    <Route path="/checkout" element={<NativePageTransition><CheckoutPage /></NativePageTransition>} />
+                    <Route path="/order-tracking/:id" element={<NativePageTransition><OrderTrackingPage /></NativePageTransition>} />
                     <Route path="/driver" element={
                       <ProtectedRoute allowedRoles={['driver', 'm']}>
                         <DriverApp />
@@ -109,7 +110,7 @@ const App = () => (
                     } />
                     <Route path="/driver/profile" element={
                       <ProtectedRoute allowedRoles={['driver', 'm']}>
-                        <DriverProfilePage />
+                        <NativePageTransition><DriverProfilePage /></NativePageTransition>
                       </ProtectedRoute>
                     } />
                     <Route path="/store" element={
