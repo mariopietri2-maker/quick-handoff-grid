@@ -249,8 +249,9 @@ export function useDriverLocation(isActive: boolean) {
             }
             bgRunningRef.current = true;
             setTracking(true);
-            // Capgo already shows the sticky FG notification — drop any fallback.
-            void clearDriverOnlineStatusNotification();
+            // Keep LocalNotifications sticky too — Capgo FG notif can be easy to miss
+            // / fail silently after ALREADY_STARTED or permission races.
+            void showDriverOnlineStatusNotification();
             // Capgo only fires after movement (~15m). Keep a time-based heartbeat
             // so waiting drivers don't look offline after 3 minutes.
             startHeartbeatTick();
@@ -266,13 +267,54 @@ export function useDriverLocation(isActive: boolean) {
             };
             return;
           } catch (e: any) {
-            console.warn('BackgroundGeolocation.start failed, falling back', e);
+            const msg = String(e?.message || e || '');
+            const code = String((e as any)?.code || '');
+            if (code === 'ALREADY_STARTED' || /already started/i.test(msg)) {
+              try {
+                await BgGeo.stop().catch(() => {});
+                await BgGeo.start(
+                  {
+                    backgroundTitle: DRIVER_ONLINE_NOTIF.title,
+                    backgroundMessage: DRIVER_ONLINE_NOTIF.body,
+                    requestPermissions: true,
+                    stale: false,
+                    distanceFilter: 15,
+                  },
+                  (location, err) => {
+                    if (err || !location) return;
+                    applyPos({
+                      latitude: location.latitude,
+                      longitude: location.longitude,
+                      speed: location.speed ?? null,
+                      heading: location.bearing ?? null,
+                    });
+                  },
+                );
+                bgRunningRef.current = true;
+                setTracking(true);
+                void showDriverOnlineStatusNotification();
+                startHeartbeatTick();
+                cleanupRef.current = () => {
+                  bgRunningRef.current = false;
+                  if (intervalRef.current !== null) {
+                    window.clearInterval(intervalRef.current);
+                    intervalRef.current = null;
+                  }
+                  void BgGeo.stop().catch(() => {});
+                  void clearDriverOnlineStatusNotification();
+                };
+                return;
+              } catch (e2) {
+                console.warn('BackgroundGeolocation restart failed', e2);
+              }
+            } else {
+              console.warn('BackgroundGeolocation.start failed, falling back', e);
+            }
             bgRunningRef.current = false;
           }
         }
 
         // Fallback: Capacitor Geolocation (foreground) or browser geolocation.
-        // Still show sticky "Διαθέσιμος" when Capgo FG service is unavailable.
         if (isNative) {
           void showDriverOnlineStatusNotification();
           const perm = await Geolocation.requestPermissions({ permissions: ['location'] });

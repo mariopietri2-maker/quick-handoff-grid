@@ -1,7 +1,7 @@
 /**
- * Persistent "online / available" status shown while the driver is on shift.
- * Primary surface: Capgo BackgroundGeolocation foreground-service notification.
- * Fallback: ongoing LocalNotification if Capgo fails to start.
+ * Sticky "Διαθέσιμος" status while the driver is on shift.
+ * Always shown via LocalNotifications on native (efood-style).
+ * Capgo FG service shows a matching notification for background GPS.
  */
 
 import { Capacitor } from '@capacitor/core';
@@ -9,23 +9,29 @@ import { LocalNotifications } from '@capacitor/local-notifications';
 import { ensureNotificationPermission, initNotificationChannels } from '@/lib/push-notifications';
 
 export const DRIVER_ONLINE_NOTIF = {
-  /** Capgo FG service + LocalNotifications fallback */
   title: 'Διαθέσιμος',
   body: 'Είσαι συνδεδεμένος και σε θέση να δεχτείς παραγγελίες',
-  channelId: 'driver-online',
-  /** Stable id — Capgo uses 28351 for its FG service; keep this distinct. */
+  channelId: 'driver-online-v2',
+  /** Stable id — Capgo FG service uses 28351; keep this distinct. */
   localId: 28352,
 } as const;
 
 const isNative = Capacitor.isNativePlatform();
 
-/** Sticky status notification when Capgo FG service is unavailable. */
+/** Sticky status notification — call whenever the driver goes online. */
 export async function showDriverOnlineStatusNotification() {
-  if (!isNative) return;
+  if (!isNative) return false;
   try {
     await initNotificationChannels();
     const ok = await ensureNotificationPermission();
-    if (!ok) return;
+    if (!ok) {
+      console.warn('Driver online notification: permission not granted');
+      return false;
+    }
+    // Cancel first so Android replaces cleanly even if already showing.
+    await LocalNotifications.cancel({
+      notifications: [{ id: DRIVER_ONLINE_NOTIF.localId }],
+    }).catch(() => {});
     await LocalNotifications.schedule({
       notifications: [
         {
@@ -35,20 +41,35 @@ export async function showDriverOnlineStatusNotification() {
           channelId: DRIVER_ONLINE_NOTIF.channelId,
           ongoing: true,
           autoCancel: false,
-          smallIcon: 'ic_stat_icon_config_sample',
+          // Must exist under res/drawable (no extension).
+          smallIcon: 'ic_stat_driver_online',
+          schedule: { at: new Date(Date.now() + 150) },
           extra: { path: '/driver', kind: 'driver-online' },
         },
       ],
     });
+    return true;
   } catch (e) {
     console.warn('showDriverOnlineStatusNotification failed', e);
+    return false;
   }
 }
 
 export async function clearDriverOnlineStatusNotification() {
   if (!isNative) return;
   try {
-    await LocalNotifications.cancel({ notifications: [{ id: DRIVER_ONLINE_NOTIF.localId }] });
+    await LocalNotifications.cancel({
+      notifications: [{ id: DRIVER_ONLINE_NOTIF.localId }],
+    });
+    await LocalNotifications.removeDeliveredNotifications({
+      notifications: [
+        {
+          id: DRIVER_ONLINE_NOTIF.localId,
+          title: DRIVER_ONLINE_NOTIF.title,
+          body: DRIVER_ONLINE_NOTIF.body,
+        },
+      ],
+    }).catch(() => {});
   } catch (e) {
     console.warn('clearDriverOnlineStatusNotification failed', e);
   }
