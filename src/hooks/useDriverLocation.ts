@@ -3,6 +3,12 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import {
+  DRIVER_ONLINE_NOTIF,
+  clearDriverOnlineStatusNotification,
+  showDriverOnlineStatusNotification,
+} from '@/lib/driver-online-notification';
+import { ensureNotificationPermission, initNotificationChannels } from '@/lib/push-notifications';
 
 // Dynamic push cadence: moving drivers push often; stationary still heartbeat
 // so admin presence (< 3 min) does not flip them Offline while waiting.
@@ -132,6 +138,7 @@ export function useDriverLocation(isActive: boolean) {
       setPosition(null);
       setTracking(false);
       bgRunningRef.current = false;
+      void clearDriverOnlineStatusNotification();
       void goHardOffline();
       return;
     }
@@ -204,13 +211,16 @@ export function useDriverLocation(isActive: boolean) {
         };
 
         // Prefer Capgo background geolocation on native (FG service + BG updates).
+        // The FG notification is the sticky "Διαθέσιμος" status (like efood Rider).
         const BgGeo = await loadBgGeo();
         if (BgGeo && isNative) {
           try {
+            await initNotificationChannels();
+            await ensureNotificationPermission();
             await BgGeo.start(
               {
-                backgroundMessage: 'Είσαι online — το GPS ενημερώνει τις κοντινές παραγγελίες.',
-                backgroundTitle: 'Fresh Driver — τοποθεσία',
+                backgroundTitle: DRIVER_ONLINE_NOTIF.title,
+                backgroundMessage: DRIVER_ONLINE_NOTIF.body,
                 requestPermissions: true,
                 stale: false,
                 distanceFilter: 15,
@@ -239,8 +249,10 @@ export function useDriverLocation(isActive: boolean) {
             }
             bgRunningRef.current = true;
             setTracking(true);
+            // Capgo already shows the sticky FG notification — drop any fallback.
+            void clearDriverOnlineStatusNotification();
             // Capgo only fires after movement (~15m). Keep a time-based heartbeat
-            // so waiting drivers don't look Offline after 3 minutes.
+            // so waiting drivers don't look offline after 3 minutes.
             startHeartbeatTick();
 
             cleanupRef.current = () => {
@@ -250,6 +262,7 @@ export function useDriverLocation(isActive: boolean) {
                 intervalRef.current = null;
               }
               void BgGeo.stop().catch(() => {});
+              void clearDriverOnlineStatusNotification();
             };
             return;
           } catch (e: any) {
@@ -259,7 +272,9 @@ export function useDriverLocation(isActive: boolean) {
         }
 
         // Fallback: Capacitor Geolocation (foreground) or browser geolocation.
+        // Still show sticky "Διαθέσιμος" when Capgo FG service is unavailable.
         if (isNative) {
+          void showDriverOnlineStatusNotification();
           const perm = await Geolocation.requestPermissions({ permissions: ['location'] });
           if (perm.location !== 'granted') {
             setError('Δεν δόθηκε άδεια τοποθεσίας');
@@ -322,6 +337,7 @@ export function useDriverLocation(isActive: boolean) {
             window.clearInterval(intervalRef.current);
             intervalRef.current = null;
           }
+          void clearDriverOnlineStatusNotification();
         };
       } catch (e: any) {
         setError(e?.message ?? 'Σφάλμα τοποθεσίας');

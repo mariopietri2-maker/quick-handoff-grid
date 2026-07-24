@@ -132,8 +132,8 @@ write_release_cap_config() {
     geo_plugin=',
     "Geolocation": {},
     "BackgroundGeolocation": {
-      "notificationTitle": "Fresh Driver — τοποθεσία",
-      "notificationText": "Είσαι online — GPS για κοντινές παραγγελίες"
+      "notificationTitle": "Διαθέσιμος",
+      "notificationText": "Είσαι συνδεδεμένος και σε θέση να δεχτείς παραγγελίες"
     }'
   elif [ "$flavor" = "customer" ]; then
     geo_plugin=',
