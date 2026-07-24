@@ -16,7 +16,8 @@ import {
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { cn } from '@/lib/utils';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
-import { haversineKm } from '@/lib/geocode';
+import { haversineKm, mapboxDrivingKm } from '@/lib/geocode';
+import { useMapboxToken } from '@/hooks/useMapboxToken';
 
 type Source = 'manual' | 'efood' | 'wolt' | 'box' | 'other';
 type PaymentMethod = 'cash' | 'card';
@@ -75,6 +76,7 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
   const [pasteText, setPasteText] = useState('');
   const [parsing, setParsing] = useState(false);
   const [scanText, setScanText] = useState('');
+  const { token: mapboxToken } = useMapboxToken();
 
   /** Platform take % (commission). Store keeps = 100 − this. */
   const [commissionPct, setCommissionPct] = useState(15);
@@ -105,18 +107,24 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     return () => { cancelled = true; };
   }, []);
 
-  // Same straight-line km as place_order / create_external_order (haversine).
+  // Prefer Mapbox road km (same as checkout); fall back to straight-line.
   useEffect(() => {
     if (!store?.latitude || !store?.longitude || form.delivery_lat == null || form.delivery_lng == null) {
       setKm(null);
       return;
     }
-    const d = haversineKm(
-      { latitude: store.latitude, longitude: store.longitude },
-      { latitude: form.delivery_lat, longitude: form.delivery_lng },
-    );
-    setKm(Math.round(d * 100) / 100);
-  }, [store, form.delivery_lat, form.delivery_lng]);
+    let cancelled = false;
+    const from = { latitude: store.latitude, longitude: store.longitude };
+    const to = { latitude: form.delivery_lat, longitude: form.delivery_lng };
+    const straight = Math.round(haversineKm(from, to) * 100) / 100;
+    setKm(straight);
+    void (async () => {
+      const road = await mapboxDrivingKm(from, to, mapboxToken);
+      if (cancelled || road == null) return;
+      setKm(road);
+    })();
+    return () => { cancelled = true; };
+  }, [store, form.delivery_lat, form.delivery_lng, mapboxToken]);
 
   const totalAmount = Number(form.total_amount) || 0;
 
