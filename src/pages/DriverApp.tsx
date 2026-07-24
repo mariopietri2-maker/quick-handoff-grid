@@ -4,6 +4,12 @@ import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, Clipboard
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { startPushRegistration } from '@/lib/push-register';
+import {
+  clearDriverOnlineStatusNotification,
+  showDriverOnlineStatusNotification,
+} from '@/lib/driver-online-notification';
+import { toast } from 'sonner';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Badge } from '@/components/ui/badge';
@@ -85,6 +91,20 @@ export default function DriverApp() {
     try { localStorage.setItem('driver_is_online_v1', isOnline ? '1' : '0'); } catch {}
     // Going online is a user gesture path — unlock WebView audio for offer alerts.
     if (isOnline) primeDriverAudio();
+  }, [isOnline]);
+
+  // Sticky "Διαθέσιμος" shade notification whenever online (native APK only).
+  useEffect(() => {
+    if (!Capacitor.isNativePlatform()) return;
+    if (isOnline) {
+      void showDriverOnlineStatusNotification().then((ok) => {
+        if (!ok) {
+          toast.message('Ενεργοποίησε τις ειδοποιήσεις για να φαίνεται «Διαθέσιμος» στο παρασκήνιο');
+        }
+      });
+    } else {
+      void clearDriverOnlineStatusNotification();
+    }
   }, [isOnline]);
 
   // Mirror online toggle to driver_state.shift_started_at so admin/dispatch
@@ -556,7 +576,7 @@ export default function DriverApp() {
                         ? 'bg-[hsl(var(--driver-accent))]/95 border-[hsl(var(--driver-accent))]/50 text-white'
                         : 'bg-[hsl(var(--driver-surface))]/95 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
                   }`}
-                  aria-label={onBreak ? 'Σε διάλειμμα' : isOnline ? 'Σε υπηρεσία' : 'Εκτός υπηρεσίας'}
+                  aria-label={onBreak ? 'Σε διάλειμμα' : isOnline ? 'Διαθέσιμος' : 'Εκτός υπηρεσίας'}
                 >
                   <span
                     className={`h-2 w-2 rounded-full shrink-0 ${
@@ -571,7 +591,7 @@ export default function DriverApp() {
                     {onBreak
                       ? 'Διάλειμμα'
                       : isOnline
-                        ? (activeDelivery ? 'Σε παράδοση' : loading ? 'Σε υπηρεσία…' : 'Σε υπηρεσία')
+                        ? (activeDelivery ? 'Σε παράδοση' : loading ? 'Διαθέσιμος…' : 'Διαθέσιμος')
                         : 'Εκτός υπηρεσίας'}
                   </span>
                   {isOnline && !onBreak && todayEarnings.total > 0 && (
@@ -784,7 +804,7 @@ export default function DriverApp() {
                           <>
                             <span className="h-1.5 w-1.5 rounded-full bg-[hsl(var(--driver-accent))] shrink-0" />
                             <p className="text-[12px] font-heading font-semibold text-[hsl(var(--driver-text-muted))] truncate">
-                              {loading ? 'Αναζήτηση παραγγελιών…' : 'Σε υπηρεσία — αναμονή'}
+                              {loading ? 'Αναζήτηση παραγγελιών…' : 'Διαθέσιμος — αναμονή'}
                             </p>
                           </>
                         ) : (
@@ -806,7 +826,7 @@ export default function DriverApp() {
                         if (next) primeDriverAudio();
                         setIsOnline(next);
                       }}
-                      onLabel="Σε υπηρεσία"
+                      onLabel="Διαθέσιμος"
                       offLabel="Σύρε για υπηρεσία"
                       disabled={driverActive !== true}
                     />
@@ -965,9 +985,9 @@ export default function DriverApp() {
                                 <Radio className="h-5 w-5 text-primary" />
                               </div>
                             </div>
-                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Σε υπηρεσία</p>
+                            <p className="font-heading font-bold text-[hsl(var(--driver-text))] text-sm">Διαθέσιμος</p>
                             <p className="text-xs text-[hsl(var(--driver-text-muted))] mt-1">
-                              Αναμονή παραγγελιών
+                              Είσαι συνδεδεμένος και σε θέση να δεχτείς παραγγελίες
                               {todayEarnings.total > 0 ? ` · ${todayEarnings.total.toFixed(2)}€ σήμερα` : ''}
                             </p>
                           </div>
@@ -991,7 +1011,7 @@ export default function DriverApp() {
                               if (next) primeDriverAudio();
                               setIsOnline(next);
                             }}
-                            onLabel="Σε υπηρεσία"
+                            onLabel="Διαθέσιμος"
                             offLabel="Σύρε για υπηρεσία"
                             disabled={driverActive !== true}
                           />
