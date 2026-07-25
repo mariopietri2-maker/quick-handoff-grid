@@ -109,7 +109,7 @@ Stores need lat/lng to appear on driver/admin maps (Ioannina center ≈ `39.6650
 
 ## Mobile (customer / driver)
 
-Customer and driver use Capacitor native shells for Play / App Store. They are **not** marketed as sideload APKs on the public site.
+Customer and driver production apps use Capacitor shells for Play / App Store. They are **not** marketed as sideload APKs on the public site.
 
 ```bash
 ./scripts/build-apks.sh          # debug APKs (dev sideload only)
@@ -118,12 +118,19 @@ Customer and driver use Capacitor native shells for Play / App Store. They are *
 ./scripts/sync-ios-apps.sh       # scaffold ios-customer + ios-driver (archive on a Mac)
 ```
 
+**True native driver (Kotlin + Jetpack Compose)** — WIP MVP in [`native-driver/`](native-driver/):
+
+```bash
+cd native-driver && ./gradlew :app:assembleDebug
+# app id: com.freshdelivery.nativedriver (side-by-side with Capacitor driver)
+```
+
 **Store owners:** use the **PWA** at `/store` (Install / Add to Home Screen). Old `/download` URLs redirect there.
 
 **Play Store / App Store:** see [`docs/STORE_PUBLISHING.md`](docs/STORE_PUBLISHING.md).  
 Release Android builds: do **not** set `CAPACITOR_DEV=1`. Store AABs omit WebView debugging.
 
-App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver`
+App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver` · native WIP `com.freshdelivery.nativedriver`
 ---
 
 ## Payments note
