@@ -386,8 +386,10 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
 
   // Persistent alert: ring while unaccepted offers exist.
-  // Foreground → HTML5 Uber-style chime. Locked/background → local OS
-  // notification (channel sound) re-triggered until accepted — FCM covers killed.
+  // Foreground → ONE in-app Fresh Delivery chime burst (this effect owns it).
+  // Locked/background → local OS notification (channel sound) until accepted;
+  // FCM covers killed apps. Do not also play from the pending_offers INSERT
+  // handler — that double-fired with this effect / iOS foreground push sound.
   const ringableKey = offers.map((o) => o.id).sort().join(',');
   const ringOrderId = offers[0]?.id ?? null;
   useEffect(() => {
@@ -412,6 +414,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     tick();
     const id = window.setInterval(tick, 4500);
     const onActive = () => {
+      // Resume ring after unlock — playOfferAlert has its own lock so this
+      // won't stack with an in-flight burst.
       if (isAppActive() && !activeDelivery) playOfferAlert();
     };
     window.addEventListener('driver-app-active-changed', onActive);
@@ -461,14 +465,12 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           filter: `driver_id=eq.${user.id}`,
         },
         (payload) => {
-          // Immediate feedback before fetch completes:
-          // - foreground: in-app chime
-          // - locked/background: local OS notification (FCM still covers killed apps)
+          // Background/locked: local OS banner ASAP (FCM still covers killed apps).
+          // Foreground sound is owned solely by the ringableKey effect after fetch —
+          // playing here too caused a double Fresh Delivery chime.
           const row = payload.new as { order_id?: string } | null;
           const orderId = row?.order_id;
-          if (isAppActive()) {
-            playOfferAlert();
-          } else if (orderId) {
+          if (!isAppActive() && orderId) {
             void notifyDriverOfferLocal({
               orderId,
               title: 'Νέα παράδοση!',
