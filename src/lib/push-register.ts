@@ -240,7 +240,7 @@ export async function stopPushRegistration() {
  * Uses a stable id so FCM/local duplicates replace instead of stacking.
  *
  * Pass `retrigger: true` to cancel+reschedule the same id so Android
- * plays the channel sound again (Uber-style ring while offer is pending).
+ * plays the channel sound again (ring while offer is pending).
  */
 export async function notifyDriverOfferLocal(opts?: {
   title?: string;

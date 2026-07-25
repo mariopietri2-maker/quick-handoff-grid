@@ -39,7 +39,7 @@ describe('driver notification sounds', () => {
     resetDriverAudioForTests();
   });
 
-  it('defaults to enabled Uber-style offer chime prefs', () => {
+  it('defaults to enabled Fresh Delivery offer chime prefs', () => {
     const prefs = loadDriverSoundPrefs();
     expect(prefs.enabled).toBe(true);
     expect(prefs.volume).toBe(1);

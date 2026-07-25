@@ -115,7 +115,7 @@ export async function initNotificationChannels() {
     await LocalNotifications.createChannel({
       id: 'driver-offers-v3',
       name: 'Νέες παραγγελίες',
-      description: 'Ήχος προσφοράς Uber Eats (fresh_delivery)',
+      description: 'Ήχος προσφοράς Fresh Delivery (fresh_delivery)',
       importance: 5,
       visibility: 1,
       vibration: true,
