@@ -15,6 +15,8 @@ import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneId
 
 @Serializable
 data class DriverLocationUpsert(
@@ -24,6 +26,15 @@ data class DriverLocationUpsert(
     val heading: Double? = null,
     val speed: Double? = null,
     val updated_at: String,
+)
+
+@Serializable
+data class PushTokenUpsert(
+    val user_id: String,
+    val token: String,
+    val platform: String = "android",
+    val app: String = "driver",
+    val updated_at: String = Instant.now().toString(),
 )
 
 class DriverRepository(
@@ -44,64 +55,95 @@ class DriverRepository(
         }
     }
 
-    suspend fun signOut() {
-        client.auth.signOut()
-    }
+    suspend fun signOut() = client.auth.signOut()
 
     suspend fun loadDriverProfile(userId: String): DriverProfileRow? =
-        client.from("driver_profiles")
-            .select(Columns.ALL) {
-                filter { eq("user_id", userId) }
-                limit(1)
-            }
-            .decodeList<DriverProfileRow>()
-            .firstOrNull()
+        client.from("driver_profiles").select(Columns.ALL) {
+            filter { eq("user_id", userId) }
+            limit(1L)
+        }.decodeList<DriverProfileRow>().firstOrNull()
 
     suspend fun loadProfile(userId: String): ProfileRow? =
-        client.from("profiles")
-            .select(Columns.ALL) {
-                filter { eq("id", userId) }
-                limit(1)
+        client.from("profiles").select(Columns.ALL) {
+            filter { eq("id", userId) }
+            limit(1L)
+        }.decodeList<ProfileRow>().firstOrNull()
+
+    suspend fun loadDriverState(userId: String): DriverStateRow {
+        val existing = client.from("driver_state").select(Columns.ALL) {
+            filter { eq("driver_id", userId) }
+            limit(1L)
+        }.decodeList<DriverStateRow>().firstOrNull()
+        if (existing != null) return existing
+        client.from("driver_state").insert(buildJsonObject { put("driver_id", userId) })
+        return DriverStateRow(driver_id = userId)
+    }
+
+    suspend fun updateDriverState(userId: String, patch: Map<String, Any?>) {
+        val obj = buildJsonObject {
+            put("updated_at", Instant.now().toString())
+            patch.forEach { (k, v) ->
+                when (v) {
+                    null -> put(k, JsonNull)
+                    is Boolean -> put(k, v)
+                    is Number -> put(k, v.toDouble())
+                    else -> put(k, v.toString())
+                }
             }
-            .decodeList<ProfileRow>()
-            .firstOrNull()
+        }
+        client.from("driver_state").update(obj) {
+            filter { eq("driver_id", userId) }
+        }
+    }
+
+    suspend fun platformSettings(): PlatformSettingsRow {
+        val raw = runCatching {
+            client.postgrest.rpc("get_platform_settings_public").decodeList<PlatformSettingsRow>()
+        }.getOrNull()
+        return raw?.firstOrNull() ?: PlatformSettingsRow()
+    }
+
+    private suspend fun itemsSummary(orderIds: List<String>): Map<String, String> {
+        if (orderIds.isEmpty()) return emptyMap()
+        val items = runCatching {
+            client.from("order_items").select(Columns.list("order_id", "name", "quantity")) {
+                filter { isIn("order_id", orderIds) }
+            }.decodeList<OrderItemRow>()
+        }.getOrDefault(emptyList())
+        return items.groupBy { it.order_id.orEmpty() }.mapValues { (_, rows) ->
+            rows.joinToString(", ") { "${it.quantity ?: 1}× ${it.name ?: "?"}" }
+        }
+    }
+
+    private suspend fun storesByIds(ids: List<String>): Map<String, StoreRow> {
+        if (ids.isEmpty()) return emptyMap()
+        return client.from("stores")
+            .select(Columns.list("id", "name", "address", "phone", "latitude", "longitude")) {
+                filter { isIn("id", ids) }
+            }.decodeList<StoreRow>().associateBy { it.id }
+    }
 
     suspend fun fetchPendingOffers(userId: String): List<OfferUi> {
         val now = Instant.now().toString()
-        val pending = client.from("pending_offers")
-            .select(Columns.ALL) {
-                filter {
-                    eq("driver_id", userId)
-                    eq("status", "pending")
-                    gt("expires_at", now)
-                }
+        val pending = client.from("pending_offers").select(Columns.ALL) {
+            filter {
+                eq("driver_id", userId)
+                eq("status", "pending")
+                gt("expires_at", now)
             }
-            .decodeList<PendingOfferRow>()
+        }.decodeList<PendingOfferRow>()
         if (pending.isEmpty()) return emptyList()
-
         val orderIds = pending.map { it.order_id }
-        val orders = client.from("orders")
-            .select(Columns.ALL) {
-                filter {
-                    isIn("id", orderIds)
-                    exact("driver_id", null)
-                    isIn("status", listOf("placed", "accepted", "preparing", "ready"))
-                }
+        val orders = client.from("orders").select(Columns.ALL) {
+            filter {
+                isIn("id", orderIds)
+                exact("driver_id", null)
+                isIn("status", listOf("placed", "accepted", "preparing", "ready"))
             }
-            .decodeList<OrderRow>()
+        }.decodeList<OrderRow>()
         val orderMap = orders.associateBy { it.id }
-        val storeIds = orders.map { it.store_id }.distinct()
-        val stores = if (storeIds.isEmpty()) {
-            emptyList()
-        } else {
-            client.from("stores")
-                .select(Columns.list("id", "name", "address", "phone", "latitude", "longitude")) {
-                    filter { isIn("id", storeIds) }
-                }
-                .decodeList<StoreRow>()
-        }
-        val storeMap = stores.associateBy { it.id }
-
+        val storeMap = storesByIds(orders.map { it.store_id }.distinct())
+        val summaries = itemsSummary(orderIds)
         return pending.mapNotNull { po ->
             val order = orderMap[po.order_id] ?: return@mapNotNull null
             val store = storeMap[order.store_id]
@@ -110,38 +152,73 @@ class DriverRepository(
                 order = order,
                 storeName = store?.name,
                 storeAddress = store?.address,
+                storePhone = store?.phone,
+                storeLat = store?.latitude,
+                storeLng = store?.longitude,
                 expiresAt = po.expires_at,
+                itemsSummary = summaries[order.id],
             )
         }.sortedBy { it.expiresAt }
     }
 
-    suspend fun fetchActiveTrip(userId: String): ActiveTripUi? {
-        val orders = client.from("orders")
-            .select(Columns.ALL) {
-                filter {
-                    eq("driver_id", userId)
-                    isIn("status", listOf("accepted", "preparing", "ready", "arrived", "picked_up"))
-                }
-                order("created_at", Order.ASCENDING)
-                limit(1)
+    suspend fun fetchStackedOffers(userId: String, activeStoreId: String, excludeOrderIds: Set<String>, limit: Int): List<OfferUi> {
+        if (limit <= 0) return emptyList()
+        // Same-store ready orders not yet assigned (manual stack path + pending).
+        val pending = fetchPendingOffers(userId)
+            .filter { it.order.store_id == activeStoreId && it.order.id !in excludeOrderIds }
+            .take(limit)
+        if (pending.isNotEmpty()) return pending
+        val orders = client.from("orders").select(Columns.ALL) {
+            filter {
+                eq("store_id", activeStoreId)
+                exact("driver_id", null)
+                eq("status", "ready")
             }
-            .decodeList<OrderRow>()
-        val order = orders.firstOrNull() ?: return null
-        val store = client.from("stores")
-            .select(Columns.list("id", "name", "address", "phone", "latitude", "longitude")) {
-                filter { eq("id", order.store_id) }
-                limit(1)
+            order("created_at", Order.ASCENDING)
+            limit(limit.toLong())
+        }.decodeList<OrderRow>().filter { it.id !in excludeOrderIds }
+        val storeMap = storesByIds(listOf(activeStoreId))
+        val summaries = itemsSummary(orders.map { it.id })
+        val store = storeMap[activeStoreId]
+        return orders.map {
+            OfferUi(
+                offerId = "",
+                order = it,
+                storeName = store?.name,
+                storeAddress = store?.address,
+                storePhone = store?.phone,
+                storeLat = store?.latitude,
+                storeLng = store?.longitude,
+                expiresAt = null,
+                itemsSummary = summaries[it.id],
+            )
+        }
+    }
+
+    suspend fun fetchActiveTrips(userId: String): List<ActiveTripUi> {
+        val orders = client.from("orders").select(Columns.ALL) {
+            filter {
+                eq("driver_id", userId)
+                isIn("status", listOf("accepted", "preparing", "ready", "arrived", "picked_up"))
             }
-            .decodeList<StoreRow>()
-            .firstOrNull()
-        return ActiveTripUi(
-            order = order,
-            storeName = store?.name,
-            storeAddress = store?.address,
-            storePhone = store?.phone,
-            storeLat = store?.latitude,
-            storeLng = store?.longitude,
-        )
+            order("created_at", Order.ASCENDING)
+            limit(3L)
+        }.decodeList<OrderRow>()
+        if (orders.isEmpty()) return emptyList()
+        val storeMap = storesByIds(orders.map { it.store_id }.distinct())
+        val summaries = itemsSummary(orders.map { it.id })
+        return orders.map { order ->
+            val store = storeMap[order.store_id]
+            ActiveTripUi(
+                order = order,
+                storeName = store?.name,
+                storeAddress = store?.address,
+                storePhone = store?.phone,
+                storeLat = store?.latitude,
+                storeLng = store?.longitude,
+                itemsSummary = summaries[order.id],
+            )
+        }
     }
 
     suspend fun acceptOffer(offerId: String) {
@@ -153,7 +230,15 @@ class DriverRepository(
         if (text.contains("\"error\"")) error(text)
     }
 
+    suspend fun claimOrder(orderId: String) {
+        client.postgrest.rpc(
+            "driver_claim_order",
+            buildJsonObject { put("p_order_id", orderId) },
+        )
+    }
+
     suspend fun declineOffer(offerId: String) {
+        if (offerId.isBlank()) return
         client.functions.invoke(
             function = "decline-offer",
             body = buildJsonObject { put("offer_id", offerId) },
@@ -187,9 +272,7 @@ class DriverRepository(
                 speed = speed,
                 updated_at = Instant.now().toString(),
             ),
-        ) {
-            onConflict = "driver_id"
-        }
+        ) { onConflict = "driver_id" }
     }
 
     suspend fun clearLocation(userId: String) {
@@ -201,15 +284,136 @@ class DriverRepository(
     suspend fun setShiftStarted(userId: String, started: Boolean) {
         val payload = buildJsonObject {
             put("driver_id", userId)
-            if (started) {
-                put("shift_started_at", Instant.now().toString())
-            } else {
+            if (started) put("shift_started_at", Instant.now().toString())
+            else {
                 put("shift_started_at", JsonNull)
                 put("on_break", false)
+                put("break_until", JsonNull)
             }
         }
-        client.from("driver_state").upsert(payload) {
-            onConflict = "driver_id"
+        client.from("driver_state").upsert(payload) { onConflict = "driver_id" }
+    }
+
+    suspend fun upsertPushToken(userId: String, token: String) {
+        client.from("push_tokens").upsert(
+            PushTokenUpsert(user_id = userId, token = token),
+        ) { onConflict = "token" }
+    }
+
+    suspend fun fetchMoney(userId: String): MoneyUi {
+        val wallet = client.from("driver_wallets")
+            .select(Columns.list("available_balance", "pending_balance", "total_withdrawn")) {
+                filter { eq("driver_id", userId) }
+                limit(1L)
+            }.decodeList<WalletRow>().firstOrNull()
+        val txs = client.from("wallet_transactions").select(Columns.ALL) {
+            filter { eq("driver_id", userId) }
+            order("created_at", Order.DESCENDING)
+            limit(30L)
+        }.decodeList<WalletTxRow>()
+        val earnings = client.from("earnings").select(Columns.ALL) {
+            filter { eq("driver_id", userId) }
+            order("created_at", Order.DESCENDING)
+            limit(60L)
+        }.decodeList<EarningRow>()
+        val zone = ZoneId.systemDefault()
+        val startToday = LocalDate.now(zone).atStartOfDay(zone).toInstant()
+        val dayOfWeek = LocalDate.now(zone).dayOfWeek.value % 7
+        val startWeek = LocalDate.now(zone).minusDays(dayOfWeek.toLong()).atStartOfDay(zone).toInstant()
+        val todayList = earnings.filter {
+            runCatching { Instant.parse(it.created_at) >= startToday }.getOrDefault(false)
+        }
+        val weekList = earnings.filter {
+            runCatching { Instant.parse(it.created_at) >= startWeek }.getOrDefault(false)
+        }
+        return MoneyUi(
+            wallet = wallet,
+            transactions = txs.filter { it.type != "earning_credit" }.take(12),
+            earnings = earnings.take(12),
+            todayTotal = todayList.sumOf { it.total ?: 0.0 },
+            weekTotal = weekList.sumOf { it.total ?: 0.0 },
+            todayTrips = todayList.size,
+        )
+    }
+
+    suspend fun requestWithdrawal(userId: String, amount: Double) {
+        client.postgrest.rpc(
+            "request_wallet_withdrawal",
+            buildJsonObject {
+                put("p_driver_id", userId)
+                put("p_amount", amount)
+            },
+        )
+    }
+
+    suspend fun fetchInbox(userId: String): Pair<List<DriverNotificationRow>, List<SupportTicketRow>> {
+        val notifs = client.from("driver_notifications").select(Columns.ALL) {
+            filter { eq("driver_id", userId) }
+            order("created_at", Order.DESCENDING)
+            limit(40L)
+        }.decodeList<DriverNotificationRow>()
+        val tickets = client.from("support_tickets").select(Columns.ALL) {
+            filter { eq("driver_id", userId) }
+            order("updated_at", Order.DESCENDING)
+            limit(15L)
+        }.decodeList<SupportTicketRow>()
+        return notifs to tickets
+    }
+
+    suspend fun markNotificationRead(id: String) {
+        client.from("driver_notifications").update(
+            buildJsonObject { put("read_at", Instant.now().toString()) },
+        ) {
+            filter {
+                eq("id", id)
+                exact("read_at", null)
+            }
+        }
+    }
+
+    suspend fun fetchOrCreateReferral(userId: String): Pair<String, List<ReferralRow>> {
+        val existing = client.from("driver_referrals").select(Columns.ALL) {
+            filter { eq("referrer_id", userId) }
+            order("created_at", Order.DESCENDING)
+        }.decodeList<ReferralRow>()
+        if (existing.isNotEmpty()) {
+            return existing.first().referral_code to existing
+        }
+        val code = "GRID-${userId.take(6).uppercase()}"
+        val created = client.from("driver_referrals").insert(
+            buildJsonObject {
+                put("referrer_id", userId)
+                put("referral_code", code)
+            },
+        ) {
+            select()
+        }.decodeList<ReferralRow>()
+        return (created.firstOrNull()?.referral_code ?: code) to created
+    }
+
+    suspend fun updateProfile(userId: String, fullName: String?, phone: String?) {
+        val obj = buildJsonObject {
+            if (fullName != null) put("full_name", fullName)
+            if (phone != null) put("phone", phone)
+        }
+        client.from("profiles").update(obj) {
+            filter { eq("id", userId) }
+        }
+    }
+
+    suspend fun updateDriverProfileExtras(
+        userId: String,
+        vehicleType: String?,
+        vehiclePlate: String?,
+        iban: String?,
+    ) {
+        val obj = buildJsonObject {
+            if (vehicleType != null) put("vehicle_type", vehicleType)
+            if (vehiclePlate != null) put("vehicle_plate", vehiclePlate)
+            if (iban != null) put("iban", iban)
+        }
+        client.from("driver_profiles").update(obj) {
+            filter { eq("user_id", userId) }
         }
     }
 }
