@@ -45,7 +45,11 @@ write_cap_config() {
   local app_name="$4"
   local assets="$app_dir/app/src/main/assets"
   local geo_plugin=''
+  # Driver: no foreground OS sound — in-app Fresh Delivery chime owns it.
+  # Customer / others: keep badge+sound+alert for order updates.
+  local push_presentation='["badge", "sound", "alert"]'
   if [ "$flavor" = "driver" ]; then
+    push_presentation='["badge", "alert"]'
     geo_plugin=',
     "Geolocation": {},
     "BackgroundGeolocation": {
@@ -86,7 +90,7 @@ write_cap_config() {
     "StatusBar": { "style": "DARK", "backgroundColor": "#0f172a", "overlaysWebView": true },
     "SplashScreen": { "backgroundColor": "#0f172a", "launchAutoHide": true, "launchShowDuration": 400, "launchFadeOutDuration": 280 },
     "Keyboard": { "resize": "body", "resizeOnFullScreen": true }$geo_plugin,
-    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+    "PushNotifications": { "presentationOptions": $push_presentation }
   }
 }
 EOF
