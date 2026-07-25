@@ -53,7 +53,9 @@ const config: CapacitorConfig = {
       notificationText: 'Είσαι συνδεδεμένος και σε θέση να δεχτείς παραγγελίες',
     },
     PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
+      // Foreground: no OS sound — Realtime already plays the in-app chime.
+      // Background/killed: APNs/FCM payload still carries sound.
+      presentationOptions: ['badge', 'alert'],
     },
   },
 };

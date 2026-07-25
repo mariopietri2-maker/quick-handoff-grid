@@ -1,12 +1,12 @@
 import offerChimeUrl from '@/assets/sounds/fresh_delivery.mp3';
 
 /**
- * Single Uber Eats–style offer chime for the driver app.
+ * Single Fresh Delivery offer chime for the driver app.
  * Same asset is used in-app (HTMLAudio) and on Android FCM / notification
  * channels as `res/raw/fresh_delivery.mp3`.
  */
 export const OFFER_SOUND_ID = 'fresh_delivery' as const;
-export const OFFER_SOUND_LABEL = 'Uber Eats';
+export const OFFER_SOUND_LABEL = 'Fresh Delivery';
 
 export interface DriverSoundPrefs {
   enabled: boolean;
@@ -166,7 +166,7 @@ export function playPattern(_pattern: string | undefined, volume: number) {
 let _alertLockUntil = 0;
 const _pendingTimers: number[] = [];
 
-/** Uber-style buzz — on by default with offer sound. */
+/** Short buzz — on by default with offer sound. */
 function vibrateOfferPulse(kind: 'offer' | 'soft' = 'offer') {
   if (!('vibrate' in navigator)) return;
   try {
