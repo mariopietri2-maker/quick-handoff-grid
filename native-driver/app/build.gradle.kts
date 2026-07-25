@@ -3,6 +3,7 @@ plugins {
     id("org.jetbrains.kotlin.android")
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
+    id("com.google.gms.google-services")
 }
 
 android {
@@ -10,14 +11,13 @@ android {
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.freshdelivery.nativedriver"
+        // Same id as Capacitor driver so FCM / Play listing can replace it.
+        applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 1
-        versionName = "0.1.0-native"
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
+        versionCode = 2
+        versionName = "2.0.0-native"
 
-        // Same production Supabase as the Capacitor driver (anon key is public).
         buildConfigField(
             "String",
             "SUPABASE_URL",
@@ -27,6 +27,11 @@ android {
             "String",
             "SUPABASE_ANON_KEY",
             "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qa2Vzc3BnaHlxbWptdXB5YnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MzgwMzMsImV4cCI6MjEwMDExNDAzM30.aynpavzUkC4ZJqKp5lBvDMtFE1xoyAABe0kXjNaDCWk\"",
+        )
+        buildConfigField(
+            "String",
+            "MAPBOX_TOKEN",
+            "\"pk.eyJ1IjoibWVtMHIxYWwiLCJhIjoiY21udGJ2N3J3MDF5dTJvcjNkbHh4MWZmNCJ9.lOSU67WPyDi8Fzjg7BQuXg\"",
         )
     }
 
@@ -44,24 +49,19 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
     buildFeatures {
         compose = true
         buildConfig = true
     }
     packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
+        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
 }
 
 dependencies {
     val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)
-    androidTestImplementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
@@ -76,7 +76,6 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    // Supabase Kotlin (auth, postgrest, functions, realtime)
     val supabase = "3.0.3"
     implementation(platform("io.github.jan-tennert.supabase:bom:$supabase"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
@@ -89,7 +88,9 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
-    implementation("androidx.datastore:datastore-preferences:1.1.1")
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
 
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
     testImplementation("junit:junit:4.13.2")
 }

@@ -1,42 +1,37 @@
 # Fresh Driver — Native Android (Kotlin + Jetpack Compose)
 
-True native driver app (no WebView / Capacitor). Same Supabase backend as the hybrid driver.
+True native driver app (no Capacitor WebView). Same Supabase backend and **same application id** as the Capacitor driver (`com.freshdelivery.driver`) so it can replace the hybrid APK / use the same FCM Firebase app.
 
-**Application id:** `com.freshdelivery.nativedriver`  
-(Installs side-by-side with the Capacitor `com.freshdelivery.driver` APK.)
+## Parity with Capacitor driver
 
-## MVP (this folder)
-
-- Email/password login via Supabase Auth + `sync_app_role('driver')`
-- Online / offline toggle with foreground location service → `driver_locations`
-- Pending offers (`pending_offers` + orders/stores)
-- Accept / decline via `accept-offer` / `decline-offer` edge functions
-- Active trip status steps via `transition_order_status`
-- Fresh Delivery offer chime (`res/raw/fresh_delivery.mp3`)
-- Notification channels matching hybrid (`driver-offers-v3`, `driver-online-v2`)
-
-## Not yet (roadmap)
-
-| Phase | Features |
-|------|----------|
-| 2 | Mapbox map, turn-by-turn / external nav, stacked orders |
-| 3 | Money tab (wallet, earnings, cash cap, withdrawals) |
-| 4 | Inbox + support tickets + FCM deep links |
-| 5 | Break mode, referrals, profile editing, wait-bonus UI |
-| 6 | iOS SwiftUI twin (shared backend) |
-
-The Capacitor driver remains production until this app reaches parity.
+| Area | Status |
+|------|--------|
+| Login + `sync_app_role` | ✅ |
+| Tabs: Home / Money / Inbox / Referral / Profile | ✅ |
+| Mapbox map (GL JS in map surface) | ✅ |
+| Online + FG location + sticky Διαθέσιμος | ✅ |
+| Offers + countdown + auto-decline | ✅ |
+| Accept / decline / claim | ✅ |
+| Active trip + cash confirm + call + Google nav | ✅ |
+| Stacked offers | ✅ |
+| Break + cash-cap gates | ✅ |
+| Money (wallet, earnings, withdraw) | ✅ |
+| Inbox + tickets | ✅ |
+| Referral code share | ✅ |
+| Profile edit | ✅ |
+| FCM → `push_tokens` | ✅ |
+| Fresh Delivery chime | ✅ |
+| Turn-by-turn in-app banner | ⏳ later |
+| Wait-bonus banner / surge / announcements | ⏳ later |
 
 ## Build
 
 ```bash
 cd native-driver
-# Ensure local.properties has sdk.dir=...
+echo "sdk.dir=\$ANDROID_HOME" > local.properties
 ./gradlew :app:assembleDebug
 ```
 
 APK: `app/build/outputs/apk/debug/app-debug.apk`
 
-## Open in Android Studio
-
-Open the `native-driver/` folder (not the repo root).
+Install **replaces** the Capacitor Fresh Driver debug build (same app id). Uninstall the old APK first if signatures differ.

@@ -118,11 +118,11 @@ Customer and driver production apps use Capacitor shells for Play / App Store. T
 ./scripts/sync-ios-apps.sh       # scaffold ios-customer + ios-driver (archive on a Mac)
 ```
 
-**True native driver (Kotlin + Jetpack Compose)** — WIP MVP in [`native-driver/`](native-driver/):
+**True native driver (Kotlin + Jetpack Compose)** — Capacitor-parity app in [`native-driver/`](native-driver/):
 
 ```bash
 cd native-driver && ./gradlew :app:assembleDebug
-# app id: com.freshdelivery.nativedriver (side-by-side with Capacitor driver)
+# app id: com.freshdelivery.driver (replaces Capacitor driver APK)
 ```
 
 **Store owners:** use the **PWA** at `/store` (Install / Add to Home Screen). Old `/download` URLs redirect there.
@@ -130,7 +130,7 @@ cd native-driver && ./gradlew :app:assembleDebug
 **Play Store / App Store:** see [`docs/STORE_PUBLISHING.md`](docs/STORE_PUBLISHING.md).  
 Release Android builds: do **not** set `CAPACITOR_DEV=1`. Store AABs omit WebView debugging.
 
-App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver` · native WIP `com.freshdelivery.nativedriver`
+App IDs: `com.freshdelivery.customer` · `com.freshdelivery.driver` (Capacitor or native Compose)
 ---
 
 ## Payments note

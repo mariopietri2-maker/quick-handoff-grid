@@ -73,9 +73,11 @@ class DriverLocationService : Service() {
             startForeground(NOTIF_ID, notification)
         }
 
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 8_000L)
-            .setMinUpdateIntervalMillis(5_000L)
-            .setMinUpdateDistanceMeters(8f)
+        // Match Capacitor cadence: frequent enough for dispatch + heartbeat while parked.
+        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 5_000L)
+            .setMinUpdateIntervalMillis(3_000L)
+            .setMinUpdateDistanceMeters(12f)
+            .setMaxUpdateDelayMillis(15_000L)
             .build()
 
         runCatching {
