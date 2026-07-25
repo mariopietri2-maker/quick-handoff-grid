@@ -1,13 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
-import { Download, Smartphone, Bike, ArrowLeft, ShieldAlert } from 'lucide-react';
+import { Download, Smartphone, Bike, ArrowLeft, ShieldAlert, Cpu } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
 import {
   APK_BUILD_VERSION,
   APK_DOWNLOADS,
+  APK_NATIVE_DRIVER_VERSION,
   apkLandingUrl,
+  parseApkFocus,
   startApkDownload,
   type ApkFlavor,
 } from '@/lib/apk-downloads';
@@ -32,6 +34,12 @@ function useQrDataUrl(text: string) {
   return src;
 }
 
+function flavorIcon(flavor: ApkFlavor) {
+  if (flavor === 'customer') return Smartphone;
+  if (flavor === 'driverNative') return Cpu;
+  return Bike;
+}
+
 function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: boolean }) {
   const apk = APK_DOWNLOADS[flavor];
   const landing = useMemo(
@@ -39,7 +47,7 @@ function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: bool
     [flavor],
   );
   const qr = useQrDataUrl(landing);
-  const Icon = flavor === 'customer' ? Smartphone : Bike;
+  const Icon = flavorIcon(flavor);
 
   return (
     <article
@@ -49,11 +57,17 @@ function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: bool
         highlighted ? 'border-primary ring-2 ring-primary/30' : 'border-border/80',
       )}
     >
-      <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4">
+      <div className="h-12 w-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center mb-4 relative">
         <Icon className="h-6 w-6" strokeWidth={2.25} />
+        {apk.badge && (
+          <span className="absolute -top-2 -right-3 rounded-full bg-primary text-primary-foreground text-[9px] font-heading font-bold px-1.5 py-0.5 uppercase tracking-wide">
+            {apk.badge}
+          </span>
+        )}
       </div>
       <h2 className="font-heading font-extrabold text-2xl tracking-tight">{apk.title}</h2>
       <p className="text-sm text-muted-foreground mt-1.5 max-w-[16rem]">{apk.subtitle}</p>
+      <p className="mt-1 text-[11px] font-mono text-muted-foreground/80">v{apk.versionLabel}</p>
 
       <div className="mt-6 rounded-2xl bg-white p-3 border border-border shadow-inner">
         {qr ? (
@@ -87,12 +101,10 @@ function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: bool
 
 export default function DownloadAppPage() {
   const [params] = useSearchParams();
-  const focus = params.get('app');
-  const highlightCustomer = focus === 'customer';
-  const highlightDriver = focus === 'driver';
+  const focus = parseApkFocus(params.get('app'));
 
   useEffect(() => {
-    if (focus !== 'customer' && focus !== 'driver') return;
+    if (!focus) return;
     document.getElementById(`app-${focus}`)?.scrollIntoView({ behavior: 'smooth', block: 'center' });
   }, [focus]);
 
@@ -100,7 +112,7 @@ export default function DownloadAppPage() {
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
       <SEO
         title="Beta Android APK — Fresh Delivery"
-        description="Δοκιμαστικά APK πελάτη και οδηγού μέχρι το Google Play."
+        description="Δοκιμαστικά APK πελάτη, οδηγού Capacitor και οδηγού Native μέχρι το Google Play."
         path="/download"
       />
 
@@ -116,7 +128,7 @@ export default function DownloadAppPage() {
       </div>
 
       <header className="relative z-10 border-b border-border/60 bg-background/70 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link to="/" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors">
             <ArrowLeft className="h-4 w-4" />
             Αρχική
@@ -126,7 +138,7 @@ export default function DownloadAppPage() {
         </div>
       </header>
 
-      <main className="relative z-10 max-w-4xl mx-auto px-4 pt-12 pb-20">
+      <main className="relative z-10 max-w-5xl mx-auto px-4 pt-12 pb-20">
         <div className="text-center mb-10">
           <p className="text-xs font-heading font-bold uppercase tracking-[0.14em] text-primary mb-3">
             Beta · Android
@@ -134,15 +146,19 @@ export default function DownloadAppPage() {
           <h1 className="font-heading font-extrabold text-3xl sm:text-4xl tracking-tight">
             Δοκιμαστικά APK
           </h1>
-          <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-md mx-auto leading-relaxed">
-            Για εσωτερική δοκιμή μέχρι το Google Play. Η λήψη ξεκινά μόνο όταν πατήσεις το κουμπί.
+          <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
+            Για εσωτερική δοκιμή μέχρι το Google Play. Περιλαμβάνει Capacitor και το νέο Native driver.
+            Η λήψη ξεκινά μόνο όταν πατήσεις το κουμπί.
           </p>
-          <p className="mt-2 text-xs text-muted-foreground/80 font-mono">v{APK_BUILD_VERSION}</p>
+          <p className="mt-2 text-xs text-muted-foreground/80 font-mono">
+            Capacitor v{APK_BUILD_VERSION} · Native driver v{APK_NATIVE_DRIVER_VERSION}
+          </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-          <ApkCard flavor="customer" highlighted={highlightCustomer} />
-          <ApkCard flavor="driver" highlighted={highlightDriver} />
+        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+          <ApkCard flavor="customer" highlighted={focus === 'customer'} />
+          <ApkCard flavor="driver" highlighted={focus === 'driver'} />
+          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
         </div>
 
         <div className="mt-8 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 flex gap-3 text-left max-w-2xl mx-auto">
@@ -151,7 +167,8 @@ export default function DownloadAppPage() {
             <p className="font-heading font-semibold text-foreground mb-1">Εγκατάσταση (sideload)</p>
             <p>
               Ενεργοποίησε «Άγνωστες πηγές» αν το ζητήσει το τηλέφωνο.
-              Απεγκατάστησε παλιό debug APK του ίδιου τύπου πριν εγκαταστήσεις νέο.
+              Το <b>Οδηγός Native</b> χρησιμοποιεί το ίδιο app id με τον Capacitor οδηγό —
+              απεγκατάστησε το παλιό πριν εγκαταστήσεις το νέο αν μπλοκάρει η ενημέρωση.
               Για Play Store χρησιμοποίησε τα υπογεγραμμένα <span className="font-mono">.aab</span> από την ομάδα.
             </p>
           </div>
