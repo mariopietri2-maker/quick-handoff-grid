@@ -318,7 +318,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.acce[...]
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
         <SEO
           title="Καλάθι αγορών — Fresh Delivery"
           description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο Fresh Delivery."
@@ -344,7 +344,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.b[...]
+    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
       <SEO
         title="Ολοκλήρωση παραγγελίας — Fresh Delivery"
         description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."
@@ -353,7 +353,7 @@ export default function CheckoutPage() {
       />
       <PaymentTestModeBanner />
       <header className="bg-card/85 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center[...]
+        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div className="min-w-0">
