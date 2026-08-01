@@ -310,6 +310,149 @@ export type Database = {
         }
         Relationships: []
       }
+      ai_pricing_adjustments: {
+        Row: {
+          created_at: string
+          field: string
+          id: string
+          new_value: number | null
+          old_value: number | null
+          reason: string | null
+          run_id: string | null
+          scope: string
+          target_id: string | null
+          target_label: string | null
+        }
+        Insert: {
+          created_at?: string
+          field: string
+          id?: string
+          new_value?: number | null
+          old_value?: number | null
+          reason?: string | null
+          run_id?: string | null
+          scope: string
+          target_id?: string | null
+          target_label?: string | null
+        }
+        Update: {
+          created_at?: string
+          field?: string
+          id?: string
+          new_value?: number | null
+          old_value?: number | null
+          reason?: string | null
+          run_id?: string | null
+          scope?: string
+          target_id?: string | null
+          target_label?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ai_pricing_adjustments_run_id_fkey"
+            columns: ["run_id"]
+            isOneToOne: false
+            referencedRelation: "ai_pricing_runs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      ai_pricing_config: {
+        Row: {
+          auto_apply: boolean
+          commission_max_pct: number
+          commission_min_pct: number
+          commission_pricing_enabled: boolean
+          created_at: string
+          delivery_fee_max_mult: number
+          delivery_fee_min_mult: number
+          driver_pay_max_mult: number
+          driver_pay_min_mult: number
+          enabled: boolean
+          id: boolean
+          last_run_at: string | null
+          menu_price_max_mult: number
+          menu_price_min_mult: number
+          menu_pricing_enabled: boolean
+          model: string
+          run_interval_minutes: number
+          updated_at: string
+        }
+        Insert: {
+          auto_apply?: boolean
+          commission_max_pct?: number
+          commission_min_pct?: number
+          commission_pricing_enabled?: boolean
+          created_at?: string
+          delivery_fee_max_mult?: number
+          delivery_fee_min_mult?: number
+          driver_pay_max_mult?: number
+          driver_pay_min_mult?: number
+          enabled?: boolean
+          id?: boolean
+          last_run_at?: string | null
+          menu_price_max_mult?: number
+          menu_price_min_mult?: number
+          menu_pricing_enabled?: boolean
+          model?: string
+          run_interval_minutes?: number
+          updated_at?: string
+        }
+        Update: {
+          auto_apply?: boolean
+          commission_max_pct?: number
+          commission_min_pct?: number
+          commission_pricing_enabled?: boolean
+          created_at?: string
+          delivery_fee_max_mult?: number
+          delivery_fee_min_mult?: number
+          driver_pay_max_mult?: number
+          driver_pay_min_mult?: number
+          enabled?: boolean
+          id?: boolean
+          last_run_at?: string | null
+          menu_price_max_mult?: number
+          menu_price_min_mult?: number
+          menu_pricing_enabled?: boolean
+          model?: string
+          run_interval_minutes?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      ai_pricing_runs: {
+        Row: {
+          applied: boolean
+          context: Json
+          created_at: string
+          decisions: Json
+          error: string | null
+          id: string
+          reasoning: string | null
+          status: string
+        }
+        Insert: {
+          applied?: boolean
+          context?: Json
+          created_at?: string
+          decisions?: Json
+          error?: string | null
+          id?: string
+          reasoning?: string | null
+          status?: string
+        }
+        Update: {
+          applied?: boolean
+          context?: Json
+          created_at?: string
+          decisions?: Json
+          error?: string | null
+          id?: string
+          reasoning?: string | null
+          status?: string
+        }
+        Relationships: []
+      }
       announcements: {
         Row: {
           created_at: string
@@ -1656,6 +1799,7 @@ export type Database = {
       menu_items: {
         Row: {
           allergens: string[] | null
+          base_price: number | null
           calories: number | null
           category: string | null
           created_at: string
@@ -1678,6 +1822,7 @@ export type Database = {
         }
         Insert: {
           allergens?: string[] | null
+          base_price?: number | null
           calories?: number | null
           category?: string | null
           created_at?: string
@@ -1700,6 +1845,7 @@ export type Database = {
         }
         Update: {
           allergens?: string[] | null
+          base_price?: number | null
           calories?: number | null
           category?: string | null
           created_at?: string
@@ -2087,6 +2233,8 @@ export type Database = {
         Row: {
           accept_offer_requires_ready: boolean
           admin_share_pct: number
+          ai_delivery_fee_multiplier: number
+          ai_driver_pay_multiplier: number
           allow_arrive_before_pickup: boolean
           allow_deliver_before_arrive: boolean
           allow_pickup_before_ready: boolean
@@ -2163,6 +2311,8 @@ export type Database = {
         Insert: {
           accept_offer_requires_ready?: boolean
           admin_share_pct?: number
+          ai_delivery_fee_multiplier?: number
+          ai_driver_pay_multiplier?: number
           allow_arrive_before_pickup?: boolean
           allow_deliver_before_arrive?: boolean
           allow_pickup_before_ready?: boolean
@@ -2239,6 +2389,8 @@ export type Database = {
         Update: {
           accept_offer_requires_ready?: boolean
           admin_share_pct?: number
+          ai_delivery_fee_multiplier?: number
+          ai_driver_pay_multiplier?: number
           allow_arrive_before_pickup?: boolean
           allow_deliver_before_arrive?: boolean
           allow_pickup_before_ready?: boolean
