@@ -27,6 +27,7 @@ const PlatformAnalytics      = lazy(() => import('@/components/admin/PlatformAna
 const AnnouncementsManager   = lazy(() => import('@/components/admin/AnnouncementsManager'));
 const SupportTicketsManager  = lazy(() => import('@/components/admin/SupportTicketsManager'));
 const PricingSettings        = lazy(() => import('@/components/admin/PricingSettings'));
+const AiDynamicPricing       = lazy(() => import('@/components/admin/AiDynamicPricing'));
 const SupportRoleManager     = lazy(() => import('@/components/admin/SupportRoleManager'));
 const DriverMapSettings      = lazy(() => import('@/components/admin/DriverMapSettings'));
 const AdminLiveDriversMap    = lazy(() => import('@/components/admin/AdminLiveDriversMap'));
@@ -462,6 +463,8 @@ export default function AdminApp() {
         return <SurgeMap />;
       case 'pricing':
         return <PricingSettings />;
+      case 'ai_pricing':
+        return <AiDynamicPricing />;
       case 'stripe_payments':
         return <StripePaymentsSettings />;
       case 'support_roles':
@@ -660,7 +663,7 @@ export default function AdminApp() {
                     const pendingApprovals =
                       t.id === 'driver_approvals'
                         ? (profiles.data ?? [])
-                            .filter((p) => p.role === 'driver' || p.role === 'm')
+                            .filter((p) => p.role === 'driver')
                             .filter((p) => {
                               const dp = driverProfiles.data?.find((d) => d.user_id === p.user_id);
                               return !dp || dp.is_active === false;
@@ -915,7 +918,7 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
     if (['accepted', 'preparing', 'ready', 'arrived', 'picked_up'].includes(o.status)) slot.active += 1;
     ordersByDriver.set(o.driver_id, slot);
   }
-  const locById = new Map((driverLocations ?? []).map((l: any) => [l.driver_id, l.updated_at as string]));
+  const locById = new Map<string, string>((driverLocations ?? []).map((l: any) => [String(l.driver_id), String(l.updated_at)] as [string, string]));
   const onlineCount = (driverStates ?? []).filter((s: any) => {
     if (s.on_break) return false;
     return !!s.shift_started_at && isDriverPresenceOnline(locById.get(s.driver_id));
