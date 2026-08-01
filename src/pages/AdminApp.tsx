@@ -27,6 +27,7 @@ const PlatformAnalytics      = lazy(() => import('@/components/admin/PlatformAna
 const AnnouncementsManager   = lazy(() => import('@/components/admin/AnnouncementsManager'));
 const SupportTicketsManager  = lazy(() => import('@/components/admin/SupportTicketsManager'));
 const PricingSettings        = lazy(() => import('@/components/admin/PricingSettings'));
+const AiDynamicPricing       = lazy(() => import('@/components/admin/AiDynamicPricing'));
 const SupportRoleManager     = lazy(() => import('@/components/admin/SupportRoleManager'));
 const DriverMapSettings      = lazy(() => import('@/components/admin/DriverMapSettings'));
 const AdminLiveDriversMap    = lazy(() => import('@/components/admin/AdminLiveDriversMap'));
@@ -462,6 +463,8 @@ export default function AdminApp() {
         return <SurgeMap />;
       case 'pricing':
         return <PricingSettings />;
+      case 'ai_pricing':
+        return <AiDynamicPricing />;
       case 'stripe_payments':
         return <StripePaymentsSettings />;
       case 'support_roles':
