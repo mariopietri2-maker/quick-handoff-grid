@@ -20,7 +20,7 @@ import { customerAccentStyle } from '@/lib/customer-theme';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
-import { mapboxDrivingKm } from '@/lib/geocode';
+import { mapboxDrivingKmWithCache } from '@/lib/addressCache';
 
 const AddressAutocomplete = lazy(() =>
   import('@/components/AddressAutocomplete').then((m) => ({ default: m.AddressAutocomplete })),
@@ -264,10 +264,13 @@ export default function CheckoutPage() {
             return;
           }
           const token = mapboxToken || (import.meta.env.VITE_MAPBOX_TOKEN as string | undefined);
-          distanceKm = await mapboxDrivingKm(
+          // Use cached address to reduce Mapbox API calls
+          distanceKm = await mapboxDrivingKmWithCache(
             { latitude: storeLat, longitude: storeLng },
+            address,
             { latitude: deliveryCoords.lat, longitude: deliveryCoords.lon },
             token,
+            supabase,
           );
         }
       } catch {
@@ -315,7 +318,7 @@ export default function CheckoutPage() {
 
   if (items.length === 0) {
     return (
-      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
+      <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.acce[...]
         <SEO
           title="Καλάθι αγορών — Fresh Delivery"
           description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο Fresh Delivery."
@@ -341,7 +344,7 @@ export default function CheckoutPage() {
   }
 
   return (
-    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
+    <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.b[...]
       <SEO
         title="Ολοκλήρωση παραγγελίας — Fresh Delivery"
         description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."
@@ -350,7 +353,7 @@ export default function CheckoutPage() {
       />
       <PaymentTestModeBanner />
       <header className="bg-card/85 backdrop-blur-xl border-b border-border px-4 py-3 flex items-center gap-3 sticky top-0 z-50">
-        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center active:scale-95 transition-transform">
+        <button onClick={() => navigate(-1)} aria-label="Επιστροφή στην προηγούμενη οθόνη" className="h-10 w-10 rounded-full bg-muted flex items-center justify-center[...]
           <ArrowLeft className="h-5 w-5 text-foreground" />
         </button>
         <div className="min-w-0">
