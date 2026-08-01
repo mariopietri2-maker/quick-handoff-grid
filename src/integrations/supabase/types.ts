@@ -973,36 +973,6 @@ export type Database = {
         }
         Relationships: []
       }
-      customer_locations: {
-        Row: {
-          customer_id: string
-          heading: number | null
-          id: string
-          latitude: number
-          longitude: number
-          speed: number | null
-          updated_at: string
-        }
-        Insert: {
-          customer_id: string
-          heading?: number | null
-          id?: string
-          latitude: number
-          longitude: number
-          speed?: number | null
-          updated_at?: string
-        }
-        Update: {
-          customer_id?: string
-          heading?: number | null
-          id?: string
-          latitude?: number
-          longitude?: number
-          speed?: number | null
-          updated_at?: string
-        }
-        Relationships: []
-      }
       driver_notifications: {
         Row: {
           body: string
@@ -2130,7 +2100,6 @@ export type Database = {
           buffer_auto_fill_pct: number
           buffer_floor: number
           car_multiplier: number
-          card_payments_enabled: boolean
           customer_base_fee: number
           customer_per_km_fee: number
           default_commission_pct: number
@@ -2180,7 +2149,6 @@ export type Database = {
           sla_warn_seconds: number
           stack_max_detour_minutes: number
           stacking_enabled: boolean
-          stripe_publishable_key: string | null
           subsidize_min_pay: boolean
           surge_default_multiplier: number
           surge_enabled: boolean
@@ -2190,11 +2158,7 @@ export type Database = {
           surge_ratio_high_threshold: number
           surge_ratio_low_threshold: number
           surge_time_peak_multiplier: number
-          target_hourly_eur: number
           updated_at: string
-          wait_bonus_cap: number
-          wait_bonus_grace_minutes: number
-          wait_bonus_rate_per_min: number
         }
         Insert: {
           accept_offer_requires_ready?: boolean
@@ -2212,7 +2176,6 @@ export type Database = {
           buffer_auto_fill_pct?: number
           buffer_floor?: number
           car_multiplier?: number
-          card_payments_enabled?: boolean
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
@@ -2262,7 +2225,6 @@ export type Database = {
           sla_warn_seconds?: number
           stack_max_detour_minutes?: number
           stacking_enabled?: boolean
-          stripe_publishable_key?: string | null
           subsidize_min_pay?: boolean
           surge_default_multiplier?: number
           surge_enabled?: boolean
@@ -2272,11 +2234,7 @@ export type Database = {
           surge_ratio_high_threshold?: number
           surge_ratio_low_threshold?: number
           surge_time_peak_multiplier?: number
-          target_hourly_eur?: number
           updated_at?: string
-          wait_bonus_cap?: number
-          wait_bonus_grace_minutes?: number
-          wait_bonus_rate_per_min?: number
         }
         Update: {
           accept_offer_requires_ready?: boolean
@@ -2294,7 +2252,6 @@ export type Database = {
           buffer_auto_fill_pct?: number
           buffer_floor?: number
           car_multiplier?: number
-          card_payments_enabled?: boolean
           customer_base_fee?: number
           customer_per_km_fee?: number
           default_commission_pct?: number
@@ -2344,7 +2301,6 @@ export type Database = {
           sla_warn_seconds?: number
           stack_max_detour_minutes?: number
           stacking_enabled?: boolean
-          stripe_publishable_key?: string | null
           subsidize_min_pay?: boolean
           surge_default_multiplier?: number
           surge_enabled?: boolean
@@ -2354,11 +2310,7 @@ export type Database = {
           surge_ratio_high_threshold?: number
           surge_ratio_low_threshold?: number
           surge_time_peak_multiplier?: number
-          target_hourly_eur?: number
           updated_at?: string
-          wait_bonus_cap?: number
-          wait_bonus_grace_minutes?: number
-          wait_bonus_rate_per_min?: number
         }
         Relationships: []
       }
@@ -2798,14 +2750,12 @@ export type Database = {
           busy_mode: boolean | null
           commission_pct: number | null
           covers_delivery_fee: boolean
-          cover_image_url: string | null
           created_at: string
           doy: string | null
           ext_billing_mode: string
           ext_commission_pct: number
           ext_flat_fee: number
           ext_margin_pct: number
-          highlight_color: string | null
           holiday_dates: string[] | null
           id: string
           image_url: string | null
@@ -2819,7 +2769,6 @@ export type Database = {
           owner_id: string
           phone: string | null
           prep_buffer_minutes: number | null
-          promo_badge: string | null
           promotion_amount_paid: number
           promotion_approved_by: string | null
           promotion_ends_at: string | null
@@ -2828,7 +2777,6 @@ export type Database = {
           promotion_status: string
           suspended_at: string | null
           suspension_reason: string | null
-          tagline: string | null
           updated_at: string
         }
         Insert: {
@@ -2837,14 +2785,12 @@ export type Database = {
           busy_mode?: boolean | null
           commission_pct?: number | null
           covers_delivery_fee?: boolean
-          cover_image_url?: string | null
           created_at?: string
           doy?: string | null
           ext_billing_mode?: string
           ext_commission_pct?: number
           ext_flat_fee?: number
           ext_margin_pct?: number
-          highlight_color?: string | null
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -2858,7 +2804,6 @@ export type Database = {
           owner_id: string
           phone?: string | null
           prep_buffer_minutes?: number | null
-          promo_badge?: string | null
           promotion_amount_paid?: number
           promotion_approved_by?: string | null
           promotion_ends_at?: string | null
@@ -2867,7 +2812,6 @@ export type Database = {
           promotion_status?: string
           suspended_at?: string | null
           suspension_reason?: string | null
-          tagline?: string | null
           updated_at?: string
         }
         Update: {
@@ -2876,14 +2820,12 @@ export type Database = {
           busy_mode?: boolean | null
           commission_pct?: number | null
           covers_delivery_fee?: boolean
-          cover_image_url?: string | null
           created_at?: string
           doy?: string | null
           ext_billing_mode?: string
           ext_commission_pct?: number
           ext_flat_fee?: number
           ext_margin_pct?: number
-          highlight_color?: string | null
           holiday_dates?: string[] | null
           id?: string
           image_url?: string | null
@@ -2897,7 +2839,6 @@ export type Database = {
           owner_id?: string
           phone?: string | null
           prep_buffer_minutes?: number | null
-          promo_badge?: string | null
           promotion_amount_paid?: number
           promotion_approved_by?: string | null
           promotion_ends_at?: string | null
@@ -2906,7 +2847,6 @@ export type Database = {
           promotion_status?: string
           suspended_at?: string | null
           suspension_reason?: string | null
-          tagline?: string | null
           updated_at?: string
         }
         Relationships: []
@@ -3900,9 +3840,6 @@ export type Database = {
           platform_service_fee: number
           show_stores_on_driver_map: boolean
           stacking_enabled: boolean
-          wait_bonus_cap: number
-          wait_bonus_grace_minutes: number
-          wait_bonus_rate_per_min: number
         }[]
       }
       get_public_reviews: {
@@ -4150,7 +4087,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "driver" | "store" | "customer" | "admin" | "support" | "m"
+      app_role: "driver" | "store" | "customer" | "admin" | "support"
       discount_type: "percentage" | "fixed"
       order_status:
         | "pending"
