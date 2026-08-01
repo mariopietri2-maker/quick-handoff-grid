@@ -97,6 +97,7 @@ export const NAV_SECTIONS = [
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
       { id: 'pricing', label: 'Τιμολόγηση' },
+      { id: 'ai_pricing', label: '✨ AI Dynamic Pricing' },
       { id: 'stripe_payments', label: '💳 Stripe' },
       { id: 'store_billing', label: 'Χρέωση' },
       { id: 'tickets', label: 'Support', badgeKey: 'pendingTickets' as const },
