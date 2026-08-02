@@ -49,6 +49,7 @@ fun DriverNavGraph(
                 onSaveProfile = viewModel::saveProfile,
                 onSignOut = viewModel::signOut,
                 onClearMessages = viewModel::clearMessages,
+                onUpdateSettings = viewModel::updateSettings,
             )
         }
     }

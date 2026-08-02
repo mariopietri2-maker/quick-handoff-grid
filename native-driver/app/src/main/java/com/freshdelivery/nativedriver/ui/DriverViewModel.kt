@@ -2,11 +2,17 @@ package com.freshdelivery.nativedriver.ui
 
 import android.app.Application
 import android.media.MediaPlayer
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
+import android.view.WindowManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshdelivery.nativedriver.R
 import com.freshdelivery.nativedriver.data.ActiveTripUi
 import com.freshdelivery.nativedriver.data.DriverNotificationRow
+import com.freshdelivery.nativedriver.data.DriverPreferences
 import com.freshdelivery.nativedriver.data.DriverProfileRow
 import com.freshdelivery.nativedriver.data.DriverRepository
 import com.freshdelivery.nativedriver.data.DriverStateRow
@@ -31,6 +37,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 
+data class DriverSettings(
+    val offerSound: Boolean = true,
+    val vibration: Boolean = true,
+    val keepScreenOn: Boolean = true,
+    val notifyOffers: Boolean = true,
+)
+
 data class DriverUiState(
     val bootstrapping: Boolean = true,
     val signedIn: Boolean = false,
@@ -39,6 +52,7 @@ data class DriverUiState(
     val driverProfile: DriverProfileRow? = null,
     val driverState: DriverStateRow? = null,
     val settings: PlatformSettingsRow = PlatformSettingsRow(),
+    val settingsLocal: DriverSettings = DriverSettings(),
     val online: Boolean = false,
     val tab: DriverTab = DriverTab.Home,
     val offers: List<OfferUi> = emptyList(),
@@ -61,7 +75,6 @@ data class DriverUiState(
     val primaryTrip: ActiveTripUi? get() = activeTrips.firstOrNull()
 }
 
-/** Soften technical network / HTTP failures into short Greek copy. */
 private fun friendlyError(t: Throwable?): String {
     val raw = t?.message ?: return "Κάτι πήγε στραβά"
     val lower = raw.lowercase()
@@ -81,7 +94,17 @@ private fun friendlyError(t: Throwable?): String {
 
 class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = DriverRepository()
-    private val _state = MutableStateFlow(DriverUiState())
+    private val prefs = DriverPreferences(app)
+    private val _state = MutableStateFlow(
+        DriverUiState(
+            settingsLocal = DriverSettings(
+                offerSound = prefs.offerSoundEnabled,
+                vibration = prefs.vibrationEnabled,
+                keepScreenOn = prefs.keepScreenOnOffers,
+                notifyOffers = prefs.notifyNewOffers,
+            ),
+        ),
+    )
     val state: StateFlow<DriverUiState> = _state.asStateFlow()
 
     private var pollJob: Job? = null
@@ -109,12 +132,25 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     }
                     is SessionStatus.NotAuthenticated -> {
                         stopPolling()
-                        _state.value = DriverUiState(bootstrapping = false, signedIn = false)
+                        _state.value = DriverUiState(
+                            bootstrapping = false,
+                            signedIn = false,
+                            settingsLocal = _state.value.settingsLocal,
+                        )
                     }
                     else -> Unit
                 }
             }
         }
+    }
+
+    fun updateSettings(s: DriverSettings) {
+        prefs.offerSoundEnabled = s.offerSound
+        prefs.vibrationEnabled = s.vibration
+        prefs.keepScreenOnOffers = s.keepScreenOn
+        prefs.notifyNewOffers = s.notifyOffers
+        _state.value = _state.value.copy(settingsLocal = s)
+        if (!s.offerSound) stopOfferSound()
     }
 
     private suspend fun onSignedIn(userId: String) {
@@ -428,7 +464,9 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
         if (key == lastOfferAlertKey) return
         lastOfferAlertKey = key
-        playOfferSound()
+        val local = _state.value.settingsLocal
+        if (local.offerSound) playOfferSound()
+        if (local.vibration) vibrateOffer()
     }
 
     private fun playOfferSound() {
@@ -437,6 +475,25 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             mediaPlayer = MediaPlayer.create(getApplication(), R.raw.fresh_delivery)?.also {
                 it.isLooping = false
                 it.start()
+            }
+        }
+    }
+
+    private fun vibrateOffer() {
+        runCatching {
+            val app = getApplication<Application>()
+            val vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = app.getSystemService(VibratorManager::class.java)
+                vm?.defaultVibrator
+            } else {
+                @Suppress("DEPRECATION")
+                app.getSystemService(Vibrator::class.java)
+            } ?: return
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                vibrator.vibrate(VibrationEffect.createWaveform(longArrayOf(0, 200, 100, 200), -1))
+            } else {
+                @Suppress("DEPRECATION")
+                vibrator.vibrate(longArrayOf(0, 200, 100, 200), -1)
             }
         }
     }
