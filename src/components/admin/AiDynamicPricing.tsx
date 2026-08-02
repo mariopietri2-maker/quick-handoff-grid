@@ -7,7 +7,7 @@ import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { Loader2, Sparkles, Play, RotateCcw, TrendingUp } from 'lucide-react';
+import { Loader2, Sparkles, Play, RotateCcw, TrendingUp, AlertTriangle } from 'lucide-react';
 
 interface Config {
   enabled: boolean;
@@ -33,6 +33,7 @@ interface RunRow {
   reasoning: string | null;
   applied: boolean;
   decisions: any;
+  error?: string | null;
   created_at: string;
 }
 
@@ -47,6 +48,30 @@ interface AdjRow {
   created_at: string;
 }
 
+const DEFAULT_CFG: Config = {
+  enabled: false,
+  auto_apply: false,
+  run_interval_minutes: 30,
+  model: 'google/gemini-2.5-flash',
+  delivery_fee_min_mult: 0.9,
+  delivery_fee_max_mult: 1.4,
+  driver_pay_min_mult: 1.0,
+  driver_pay_max_mult: 1.6,
+  commission_min_pct: 10,
+  commission_max_pct: 20,
+  menu_price_min_mult: 0.95,
+  menu_price_max_mult: 1.15,
+  menu_pricing_enabled: false,
+  commission_pricing_enabled: false,
+  last_run_at: null,
+};
+
+const MODEL_OPTIONS = [
+  'google/gemini-2.5-flash',
+  'google/gemini-2.5-flash-lite',
+  'google/gemini-3-flash-preview',
+];
+
 const num = (v: any, d = 0) => (v === null || v === undefined || v === '' ? d : Number(v));
 
 export default function AiDynamicPricing() {
@@ -55,17 +80,35 @@ export default function AiDynamicPricing() {
   const [runs, setRuns] = useState<RunRow[]>([]);
   const [adjs, setAdjs] = useState<AdjRow[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
   const [running, setRunning] = useState(false);
 
   const load = async () => {
+    setLoadError(null);
     const [c, s, r, a] = await Promise.all([
       supabase.from('ai_pricing_config' as any).select('*').eq('id', true).maybeSingle(),
       supabase.from('platform_settings').select('ai_delivery_fee_multiplier, ai_driver_pay_multiplier').eq('id', 1).maybeSingle(),
       supabase.from('ai_pricing_runs' as any).select('*').order('created_at', { ascending: false }).limit(8),
       supabase.from('ai_pricing_adjustments' as any).select('*').order('created_at', { ascending: false }).limit(20),
     ]);
-    if (c.data) setCfg(c.data as any);
+
+    if (c.error) {
+      setLoadError(c.error.message);
+      setCfg(DEFAULT_CFG);
+    } else if (c.data) {
+      setCfg({ ...DEFAULT_CFG, ...(c.data as any) });
+    } else {
+      // Seed missing singleton so the panel is usable.
+      const { error: insErr } = await supabase.from('ai_pricing_config' as any).insert({ id: true, ...DEFAULT_CFG } as any);
+      if (insErr) {
+        setLoadError(insErr.message);
+        setCfg(DEFAULT_CFG);
+      } else {
+        setCfg(DEFAULT_CFG);
+      }
+    }
+
     const sd = s.data as any;
     setLive({ fee: num(sd?.ai_delivery_fee_multiplier, 1), pay: num(sd?.ai_driver_pay_multiplier, 1) });
     setRuns((r.data ?? []) as any);
@@ -80,18 +123,33 @@ export default function AiDynamicPricing() {
   const save = async () => {
     if (!cfg) return;
     setSaving(true);
-    const { error } = await supabase.from('ai_pricing_config' as any).update(cfg as any).eq('id', true);
+    const { error } = await supabase.from('ai_pricing_config' as any).upsert({ id: true, ...cfg } as any);
     setSaving(false);
     error ? toast.error(error.message) : toast.success('Αποθηκεύτηκε');
+    if (!error) load();
   };
 
-  const run = async (dryRun: boolean) => {
+  const run = async (opts: { dryRun: boolean; forceApply?: boolean }) => {
     setRunning(true);
-    const { data, error } = await supabase.functions.invoke('ai-dynamic-pricing', { body: { dry_run: dryRun } });
+    const { data, error } = await supabase.functions.invoke('ai-dynamic-pricing', {
+      body: { dry_run: opts.dryRun, force_apply: !!opts.forceApply },
+    });
     setRunning(false);
     if (error) { toast.error(error.message); return; }
-    if ((data as any)?.error) { toast.error((data as any).error); return; }
-    toast.success(dryRun ? 'Πρόταση AI έτοιμη' : 'Εφαρμόστηκε');
+    const payload = data as any;
+    if (payload?.error) { toast.error(payload.error); return; }
+    if (payload?.skipped) {
+      toast.message(payload.reason === 'disabled' ? 'AI pricing είναι απενεργοποιημένο' : `Παραλείφθηκε: ${payload.reason}`);
+      load();
+      return;
+    }
+    if (opts.dryRun) {
+      toast.success(`Πρόταση: fee ×${num(payload.delivery_fee_multiplier, 1).toFixed(2)} · οδηγός ×${num(payload.driver_pay_multiplier, 1).toFixed(2)}`);
+    } else if (payload?.applied) {
+      toast.success(`Εφαρμόστηκε: fee ×${num(payload.delivery_fee_multiplier, 1).toFixed(2)} · οδηγός ×${num(payload.driver_pay_multiplier, 1).toFixed(2)}`);
+    } else {
+      toast.message('Έτρεξε χωρίς εφαρμογή (άνοιξε Auto-apply ή πάτα «Εφαρμογή τώρα»)');
+    }
     load();
   };
 
@@ -107,6 +165,13 @@ export default function AiDynamicPricing() {
 
   return (
     <div className="space-y-4">
+      {loadError && (
+        <div className="rounded-lg border border-destructive/30 bg-destructive/5 p-3 text-sm flex gap-2">
+          <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
+          <span>Πρόβλημα φόρτωσης config: {loadError}</span>
+        </div>
+      )}
+
       <Card>
         <CardHeader className="pb-3">
           <CardTitle className="font-heading flex items-center gap-2 text-base">
@@ -126,11 +191,11 @@ export default function AiDynamicPricing() {
           </div>
 
           <div className="flex flex-wrap gap-2">
-            <Button onClick={() => run(true)} variant="outline" disabled={running}>
+            <Button onClick={() => run({ dryRun: true })} variant="outline" disabled={running}>
               {running ? <Loader2 className="h-4 w-4 mr-1 animate-spin" /> : <TrendingUp className="h-4 w-4 mr-1" />} Πρόταση (dry-run)
             </Button>
-            <Button onClick={() => run(false)} disabled={running || !cfg.enabled}>
-              <Play className="h-4 w-4 mr-1" /> Εκτέλεση τώρα
+            <Button onClick={() => run({ dryRun: false, forceApply: true })} disabled={running || !cfg.enabled}>
+              <Play className="h-4 w-4 mr-1" /> Εφαρμογή τώρα
             </Button>
             <Button onClick={reset} variant="outline">
               <RotateCcw className="h-4 w-4 mr-1" /> Επαναφορά ×1.00
@@ -141,12 +206,33 @@ export default function AiDynamicPricing() {
               </span>
             )}
           </div>
+          {!cfg.enabled && (
+            <p className="text-xs text-muted-foreground">
+              Άνοιξε «Ενεργοποίηση AI pricing» και αποθήκευσε για να τρέχει (χειροκίνητα ή κάθε {cfg.run_interval_minutes} λεπτά).
+            </p>
+          )}
 
           <div className="grid gap-3 sm:grid-cols-2">
             <Toggle label="Ενεργοποίηση AI pricing" checked={cfg.enabled} onChange={v => patch({ enabled: v })} />
             <Toggle label="Auto-apply (χωρίς έγκριση)" checked={cfg.auto_apply} onChange={v => patch({ auto_apply: v })} />
             <Toggle label="Δυναμική προμήθεια καταστημάτων" checked={cfg.commission_pricing_enabled} onChange={v => patch({ commission_pricing_enabled: v })} />
             <Toggle label="Δυναμικές τιμές προϊόντων" checked={cfg.menu_pricing_enabled} onChange={v => patch({ menu_pricing_enabled: v })} />
+          </div>
+
+          <div className="space-y-1">
+            <Label className="text-xs text-muted-foreground">Μοντέλο AI</Label>
+            <select
+              className="flex h-9 w-full rounded-md border border-input bg-background px-3 text-sm"
+              value={cfg.model}
+              onChange={(e) => patch({ model: e.target.value })}
+            >
+              {!MODEL_OPTIONS.includes(cfg.model) && (
+                <option value={cfg.model}>{cfg.model}</option>
+              )}
+              {MODEL_OPTIONS.map((m) => (
+                <option key={m} value={m}>{m}</option>
+              ))}
+            </select>
           </div>
 
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -158,7 +244,7 @@ export default function AiDynamicPricing() {
             <Num label="Προμήθεια max %" value={cfg.commission_max_pct} onChange={v => patch({ commission_max_pct: v })} step="0.5" />
             <Num label="Τιμές προϊόντων min ×" value={cfg.menu_price_min_mult} onChange={v => patch({ menu_price_min_mult: v })} />
             <Num label="Τιμές προϊόντων max ×" value={cfg.menu_price_max_mult} onChange={v => patch({ menu_price_max_mult: v })} />
-            <Num label="Συχνότητα (λεπτά)" value={cfg.run_interval_minutes} onChange={v => patch({ run_interval_minutes: v })} step="5" />
+            <Num label="Συχνότητα (λεπτά)" value={cfg.run_interval_minutes} onChange={v => patch({ run_interval_minutes: Math.max(5, v) })} step="5" />
           </div>
 
           <Button onClick={save} disabled={saving} className="w-full sm:w-auto">
@@ -182,6 +268,7 @@ export default function AiDynamicPricing() {
                 fee ×{num(r.decisions?.delivery_fee_multiplier, 1).toFixed(2)} · οδηγός ×{num(r.decisions?.driver_pay_multiplier, 1).toFixed(2)}
               </p>
               {r.reasoning && <p className="text-xs text-muted-foreground">{r.reasoning}</p>}
+              {r.error && <p className="text-xs text-destructive">{r.error}</p>}
             </div>
           ))}
         </CardContent>
