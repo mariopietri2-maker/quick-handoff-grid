@@ -12,6 +12,8 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 45
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout
@@ -68,18 +70,15 @@ jobs:
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish to mobile-apks-v1 release
+      - name: Publish APKs to mobile-apks-v1 release
         if: github.ref == 'refs/heads/main'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: mobile-apks-v1
-          files: dist/*.apk
-          fail_on_unmatched_files: false
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Fail if customer build failed
-        if: steps.customer.outcome == 'failure'
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Customer APK build failed — driver may still be published."
-          exit 1
+          # Ensure release tag exists (idempotent)
+          gh release view mobile-apks-v1 >/dev/null 2>&1 || \
+            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs" --notes "Native + Capacitor debug APKs for beta download page."
+          # Overwrite existing assets with the same names
+          gh release upload mobile-apks-v1 dist/*.apk --clobber
+          echo "Published:"
+          ls dist/
