@@ -13,7 +13,6 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -70,7 +69,6 @@ import java.time.Instant
 private fun eur(v: Double): String = "€" + "%.2f".format(v)
 private fun km(v: Double): String = "%.1f".format(v) + " km"
 
-/** Map technical network errors to a short Greek message. */
 private fun friendlyError(raw: String?): String? {
     if (raw.isNullOrBlank()) return null
     val lower = raw.lowercase()
@@ -120,21 +118,22 @@ fun HomeScreen(
             }
         }
     }
-    val centerLat = markers.firstOrNull()?.lat ?: primary?.storeLat
-    val centerLng = markers.firstOrNull()?.lng ?: primary?.storeLng
+    val centerLat = markers.firstOrNull()?.lat ?: primary?.storeLat ?: state.geo?.lat
+    val centerLng = markers.firstOrNull()?.lng ?: primary?.storeLng ?: state.geo?.lng
     val cs = MaterialTheme.colorScheme
     val err = friendlyError(state.error)
 
-    // Full-screen map with overlays
     Box(Modifier.fillMaxSize().background(Color(0xFF0B0F14))) {
         DriverMapView(
             modifier = Modifier.fillMaxSize(),
             centerLat = centerLat,
             centerLng = centerLng,
             markers = markers,
+            userLat = state.geo?.lat,
+            userLng = state.geo?.lng,
+            userBearing = state.geo?.bearing,
         )
 
-        // Top gradient for legibility
         Box(
             Modifier
                 .fillMaxWidth()
@@ -147,7 +146,6 @@ fun HomeScreen(
                 ),
         )
 
-        // Floating glass status bar
         Row(
             Modifier
                 .align(Alignment.TopCenter)
@@ -182,6 +180,7 @@ fun HomeScreen(
                         !state.driverActive -> "Αναμονή έγκρισης"
                         state.onBreak -> "Σε διάλειμμα"
                         state.cashCapped -> "Όριο μετρητών"
+                        state.geo != null -> "GPS ενεργό"
                         else -> null
                     }
                     if (sub != null) {
@@ -227,7 +226,6 @@ fun HomeScreen(
             }
         }
 
-        // Bottom sheet: offers / trip / empty
         Column(
             Modifier
                 .align(Alignment.BottomCenter)
@@ -244,17 +242,9 @@ fun HomeScreen(
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        msg,
-                        color = cs.onErrorContainer,
-                        style = MaterialTheme.typography.bodyMedium,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Text(msg, color = cs.onErrorContainer, style = MaterialTheme.typography.bodyMedium, modifier = Modifier.weight(1f))
                     OutlinedButton(
-                        onClick = {
-                            onClearMessages()
-                            onRefresh()
-                        },
+                        onClick = { onClearMessages(); onRefresh() },
                         shape = RoundedCornerShape(14.dp),
                     ) { Text("OK") }
                 }
@@ -289,7 +279,6 @@ fun HomeScreen(
                         .verticalScroll(rememberScrollState())
                         .padding(16.dp),
                 ) {
-                    // Drag handle
                     Box(
                         Modifier
                             .align(Alignment.CenterHorizontally)
@@ -310,11 +299,7 @@ fun HomeScreen(
 
                     when {
                         state.activeTrips.isNotEmpty() -> {
-                            Text(
-                                "Ενεργή παράδοση",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                            Text("Ενεργή παράδοση", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.height(8.dp))
                             state.activeTrips.forEach { trip ->
                                 ActiveTripCard(
@@ -342,11 +327,7 @@ fun HomeScreen(
                                 Spacer(Modifier.height(10.dp))
                             }
                             if (state.stackedOffers.isNotEmpty()) {
-                                Text(
-                                    "Stack · ίδιο κατάστημα",
-                                    style = MaterialTheme.typography.titleSmall,
-                                    modifier = Modifier.padding(top = 4.dp, bottom = 6.dp),
-                                )
+                                Text("Stack · ίδιο κατάστημα", style = MaterialTheme.typography.titleSmall, modifier = Modifier.padding(top = 4.dp, bottom = 6.dp))
                                 state.stackedOffers.forEach { offer ->
                                     OfferCard(
                                         offer = offer,
@@ -359,24 +340,10 @@ fun HomeScreen(
                                 }
                             }
                         }
-                        !state.online -> {
-                            EmptySheet(
-                                title = "Εκτός σύνδεσης",
-                                body = "Άνοιξε σε Διαθέσιμος για να λαμβάνεις προσφορές.",
-                            )
-                        }
-                        state.offers.isEmpty() -> {
-                            EmptySheet(
-                                title = "Αναμονή προσφορών",
-                                body = "Θα εμφανιστούν αυτόματα όταν υπάρχει κοντινή παραγγελία.",
-                            )
-                        }
+                        !state.online -> EmptySheet("Εκτός σύνδεσης", "Άνοιξε σε Διαθέσιμος για να λαμβάνεις προσφορές.")
+                        state.offers.isEmpty() -> EmptySheet("Αναμονή προσφορών", "Θα εμφανιστούν αυτόματα όταν υπάρχει κοντινή παραγγελία.")
                         else -> {
-                            Text(
-                                "Νέα προσφορά",
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.SemiBold,
-                            )
+                            Text("Νέα προσφορά", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                             Spacer(Modifier.height(8.dp))
                             state.offers.forEach { offer ->
                                 OfferCard(
@@ -398,23 +365,10 @@ fun HomeScreen(
 
 @Composable
 private fun EmptySheet(title: String, body: String) {
-    Column(
-        Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-    ) {
-        Text(
-            title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.SemiBold,
-            textAlign = TextAlign.Center,
-        )
+    Column(Modifier.fillMaxWidth().padding(vertical = 8.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold, textAlign = TextAlign.Center)
         Spacer(Modifier.height(6.dp))
-        Text(
-            body,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
-        )
+        Text(body, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = TextAlign.Center)
     }
 }
 
@@ -435,9 +389,7 @@ private fun OfferCard(
         while (true) {
             val left = if (expiresAt != null) {
                 Duration.between(Instant.now(), expiresAt).seconds.toInt().coerceAtLeast(0)
-            } else {
-                secondsLeft
-            }
+            } else secondsLeft
             secondsLeft = left
             if (left <= 0) break
             delay(1000)
@@ -452,28 +404,16 @@ private fun OfferCard(
     val cs = MaterialTheme.colorScheme
 
     Column(Modifier.fillMaxWidth()) {
-        Row(
-            Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.Top,
-        ) {
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.Top) {
             Column(Modifier.weight(1f)) {
-                Text(
-                    offer.storeName ?: "Κατάστημα",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Text(offer.storeName ?: "Κατάστημα", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
                 if (!offer.storeAddress.isNullOrBlank()) {
                     Text(offer.storeAddress!!, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
                 }
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(eur(payout), style = MaterialTheme.typography.headlineSmall, color = FreshGreen, fontWeight = FontWeight.Bold)
-                Text(
-                    "${secondsLeft}s",
-                    style = MaterialTheme.typography.labelMedium,
-                    color = if (secondsLeft <= 10) cs.error else cs.onSurfaceVariant,
-                )
+                Text("${secondsLeft}s", style = MaterialTheme.typography.labelMedium, color = if (secondsLeft <= 10) cs.error else cs.onSurfaceVariant)
             }
         }
         if (!offer.order.delivery_address.isNullOrBlank()) {
@@ -482,19 +422,11 @@ private fun OfferCard(
         }
         Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             offer.order.distance_km?.let { Pill(km(it)) }
-            if (offer.order.payment_method?.equals("cash", ignoreCase = true) == true) {
-                Pill("Μετρητά", FreshAmber)
-            }
+            if (offer.order.payment_method?.equals("cash", ignoreCase = true) == true) Pill("Μετρητά", FreshAmber)
         }
         if (!offer.itemsSummary.isNullOrBlank()) {
-            Text(
-                offer.itemsSummary!!,
-                style = MaterialTheme.typography.bodySmall,
-                color = cs.onSurfaceVariant,
-                modifier = Modifier.padding(top = 6.dp),
-            )
+            Text(offer.itemsSummary!!, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
         }
-
         Spacer(Modifier.height(10.dp))
         LinearProgressIndicator(
             progress = { progress.coerceIn(0f, 1f) },
@@ -502,15 +434,9 @@ private fun OfferCard(
             color = if (secondsLeft <= 10) cs.error else FreshGreen,
             trackColor = cs.outline.copy(alpha = 0.3f),
         )
-
         Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(10.dp)) {
-            OutlinedButton(
-                onClick = onDecline,
-                enabled = !busy && offer.offerId.isNotBlank(),
-                modifier = Modifier.weight(1f).height(50.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) { Text("Απόρριψη") }
+            OutlinedButton(onClick = onDecline, enabled = !busy && offer.offerId.isNotBlank(), modifier = Modifier.weight(1f).height(50.dp), shape = RoundedCornerShape(16.dp)) { Text("Απόρριψη") }
             Button(
                 onClick = onAccept,
                 enabled = !busy,
@@ -531,9 +457,7 @@ private fun Pill(text: String, color: Color = MaterialTheme.colorScheme.onSurfac
         text,
         style = MaterialTheme.typography.labelMedium,
         color = color,
-        modifier = Modifier
-            .background(color.copy(alpha = 0.12f), RoundedCornerShape(20.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
+        modifier = Modifier.background(color.copy(alpha = 0.12f), RoundedCornerShape(20.dp)).padding(horizontal = 10.dp, vertical = 4.dp),
     )
 }
 
@@ -548,9 +472,7 @@ private fun ActiveTripCard(
     val status = trip.order.status
     val next = nextStatus(status)
     val nextLabel = nextActionLabel(status)
-    val payout = (trip.order.driver_payout ?: 0.0) +
-        (trip.order.tip_amount ?: 0.0) +
-        (trip.order.driver_pool_bonus ?: 0.0)
+    val payout = (trip.order.driver_payout ?: 0.0) + (trip.order.tip_amount ?: 0.0) + (trip.order.driver_pool_bonus ?: 0.0)
     val cs = MaterialTheme.colorScheme
 
     Column(Modifier.fillMaxWidth()) {
@@ -565,23 +487,17 @@ private fun ActiveTripCard(
         trip.order.delivery_address?.let {
             Text("Παράδοση: $it", style = MaterialTheme.typography.bodyMedium, modifier = Modifier.padding(top = 4.dp))
         }
-        trip.itemsSummary?.let {
-            Text(it, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
-        }
+        trip.itemsSummary?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant) }
         if (trip.order.payment_method?.equals("cash", ignoreCase = true) == true) {
             Spacer(Modifier.height(6.dp))
             Pill("Είσπραξη " + eur(trip.order.total_amount ?: 0.0), FreshAmber)
         }
-
         Spacer(Modifier.height(10.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val storeLat = trip.storeLat
             val storeLng = trip.storeLng
             if (storeLat != null && storeLng != null && status in listOf("accepted", "preparing", "ready", "arrived")) {
-                OutlinedButton(
-                    onClick = { onNavigate(storeLat, storeLng, trip.storeName ?: "Store") },
-                    shape = RoundedCornerShape(14.dp),
-                ) {
+                OutlinedButton(onClick = { onNavigate(storeLat, storeLng, trip.storeName ?: "Store") }, shape = RoundedCornerShape(14.dp)) {
                     Icon(Icons.Outlined.Navigation, null, Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Κατάστημα")
@@ -590,10 +506,7 @@ private fun ActiveTripCard(
             val dLat = trip.order.delivery_latitude
             val dLng = trip.order.delivery_longitude
             if (dLat != null && dLng != null && status in listOf("picked_up", "arrived")) {
-                OutlinedButton(
-                    onClick = { onNavigate(dLat, dLng, "Παράδοση") },
-                    shape = RoundedCornerShape(14.dp),
-                ) {
+                OutlinedButton(onClick = { onNavigate(dLat, dLng, "Παράδοση") }, shape = RoundedCornerShape(14.dp)) {
                     Icon(Icons.Outlined.Navigation, null, Modifier.size(16.dp))
                     Spacer(Modifier.width(4.dp))
                     Text("Πελάτης")
@@ -608,7 +521,6 @@ private fun ActiveTripCard(
                 }
             }
         }
-
         if (next != null && nextLabel != null) {
             Spacer(Modifier.height(12.dp))
             Button(

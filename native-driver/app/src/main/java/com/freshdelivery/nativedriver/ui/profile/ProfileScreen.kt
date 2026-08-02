@@ -4,6 +4,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.ExperimentalLayoutApi
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -17,10 +19,13 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PhonelinkRing
+import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.ScreenLockPortrait
 import androidx.compose.material.icons.outlined.VolumeUp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.FilterChip
+import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -41,16 +46,19 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.freshdelivery.nativedriver.data.OfferSoundId
 import com.freshdelivery.nativedriver.ui.DriverSettings
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 
+@OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun ProfileScreen(
     state: DriverUiState,
     onSave: (fullName: String, phone: String, vehicleType: String, plate: String, iban: String) -> Unit,
     onSignOut: () -> Unit,
     onUpdateSettings: (DriverSettings) -> Unit = {},
+    onPreviewSound: (String) -> Unit = {},
 ) {
     var fullName by remember(state.profile?.full_name) {
         mutableStateOf(state.profile?.full_name.orEmpty())
@@ -82,7 +90,6 @@ fun ProfileScreen(
         StatusBadge(active = state.driverActive)
         Spacer(Modifier.height(16.dp))
 
-        // Profile form card
         Column(
             Modifier
                 .fillMaxWidth()
@@ -93,50 +100,15 @@ fun ProfileScreen(
         ) {
             Text("Στοιχεία", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(12.dp))
-            OutlinedTextField(
-                fullName,
-                { fullName = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Ονοματεπώνυμο") },
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true,
-            )
+            OutlinedTextField(fullName, { fullName = it }, Modifier.fillMaxWidth(), label = { Text("Ονοματεπώνυμο") }, shape = RoundedCornerShape(14.dp), singleLine = true)
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                phone,
-                { phone = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Τηλέφωνο") },
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true,
-            )
+            OutlinedTextField(phone, { phone = it }, Modifier.fillMaxWidth(), label = { Text("Τηλέφωνο") }, shape = RoundedCornerShape(14.dp), singleLine = true)
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                vehicleType,
-                { vehicleType = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Όχημα (π.χ. scooter, αυτοκίνητο)") },
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true,
-            )
+            OutlinedTextField(vehicleType, { vehicleType = it }, Modifier.fillMaxWidth(), label = { Text("Όχημα (π.χ. scooter, αυτοκίνητο)") }, shape = RoundedCornerShape(14.dp), singleLine = true)
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                plate,
-                { plate = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("Πινακίδα") },
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true,
-            )
+            OutlinedTextField(plate, { plate = it }, Modifier.fillMaxWidth(), label = { Text("Πινακίδα") }, shape = RoundedCornerShape(14.dp), singleLine = true)
             Spacer(Modifier.height(10.dp))
-            OutlinedTextField(
-                iban,
-                { iban = it },
-                Modifier.fillMaxWidth(),
-                label = { Text("IBAN") },
-                shape = RoundedCornerShape(14.dp),
-                singleLine = true,
-            )
+            OutlinedTextField(iban, { iban = it }, Modifier.fillMaxWidth(), label = { Text("IBAN") }, shape = RoundedCornerShape(14.dp), singleLine = true)
             Spacer(Modifier.height(14.dp))
             Button(
                 onClick = { onSave(fullName, phone, vehicleType, plate, iban) },
@@ -144,14 +116,11 @@ fun ProfileScreen(
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = FreshGreen, contentColor = Color.Black),
-            ) {
-                Text("Αποθήκευση", fontWeight = FontWeight.Bold)
-            }
+            ) { Text("Αποθήκευση", fontWeight = FontWeight.Bold) }
         }
 
         Spacer(Modifier.height(18.dp))
 
-        // Settings
         Text("Ρυθμίσεις εφαρμογής", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         Column(
@@ -169,6 +138,40 @@ fun ProfileScreen(
                 checked = settings.offerSound,
                 onCheckedChange = { onUpdateSettings(settings.copy(offerSound = it)) },
             )
+
+            // Sound picker
+            if (settings.offerSound) {
+                Column(Modifier.padding(horizontal = 12.dp, vertical = 8.dp)) {
+                    Text("Επιλογή ήχου", style = MaterialTheme.typography.labelLarge, color = cs.onSurfaceVariant)
+                    Spacer(Modifier.height(8.dp))
+                    FlowRow(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OfferSoundId.entries.forEach { sound ->
+                            FilterChip(
+                                selected = settings.soundId == sound.id,
+                                onClick = {
+                                    onUpdateSettings(settings.copy(soundId = sound.id))
+                                    onPreviewSound(sound.id)
+                                },
+                                label = { Text(sound.labelEl) },
+                                colors = FilterChipDefaults.filterChipColors(
+                                    selectedContainerColor = FreshGreen.copy(alpha = 0.25f),
+                                    selectedLabelColor = FreshGreen,
+                                ),
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedButton(
+                        onClick = { onPreviewSound(settings.soundId) },
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Icon(Icons.Outlined.PlayArrow, null, Modifier.size(18.dp))
+                        Spacer(Modifier.size(6.dp))
+                        Text("Δοκιμή ήχου")
+                    }
+                }
+            }
+
             HorizontalDivider(color = cs.outline.copy(alpha = 0.2f))
             SettingRow(
                 icon = Icons.Outlined.PhonelinkRing,
@@ -196,16 +199,12 @@ fun ProfileScreen(
         }
 
         Spacer(Modifier.height(20.dp))
-        OutlinedButton(
-            onClick = onSignOut,
-            modifier = Modifier.fillMaxWidth().height(50.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
+        OutlinedButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth().height(50.dp), shape = RoundedCornerShape(16.dp)) {
             Text("Έξοδος")
         }
         Spacer(Modifier.height(12.dp))
         Text(
-            "Fresh Driver Native · v2.1",
+            "Fresh Driver Native · v2.2",
             color = cs.onSurfaceVariant,
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.align(Alignment.CenterHorizontally),
@@ -238,9 +237,7 @@ private fun SettingRow(
 ) {
     val cs = MaterialTheme.colorScheme
     Row(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 8.dp, vertical = 12.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         Icon(icon, contentDescription = null, tint = cs.onSurfaceVariant, modifier = Modifier.size(22.dp))
@@ -252,10 +249,7 @@ private fun SettingRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
-            colors = SwitchDefaults.colors(
-                checkedTrackColor = FreshGreen,
-                checkedThumbColor = Color.White,
-            ),
+            colors = SwitchDefaults.colors(checkedTrackColor = FreshGreen, checkedThumbColor = Color.White),
         )
     }
 }

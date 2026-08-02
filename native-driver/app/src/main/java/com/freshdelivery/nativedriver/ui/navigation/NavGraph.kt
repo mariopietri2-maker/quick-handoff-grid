@@ -50,6 +50,7 @@ fun DriverNavGraph(
                 onSignOut = viewModel::signOut,
                 onClearMessages = viewModel::clearMessages,
                 onUpdateSettings = viewModel::updateSettings,
+                onPreviewSound = viewModel::previewSound,
             )
         }
     }
