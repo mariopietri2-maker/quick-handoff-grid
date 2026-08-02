@@ -19,6 +19,7 @@ import com.freshdelivery.nativedriver.data.ReferralRow
 import com.freshdelivery.nativedriver.data.SupabaseProvider
 import com.freshdelivery.nativedriver.data.SupportTicketRow
 import com.freshdelivery.nativedriver.location.DriverLocationService
+import com.freshdelivery.nativedriver.push.DriverPushTokenHolder
 import com.google.firebase.messaging.FirebaseMessaging
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
@@ -70,6 +71,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private var lastOfferAlertKey: String? = null
 
     init {
+        DriverPushTokenHolder.listener = { token ->
+            val uid = _state.value.userId ?: return@listener
+            viewModelScope.launch { runCatching { repo.upsertPushToken(uid, token) } }
+        }
         viewModelScope.launch {
             SupabaseProvider.client.auth.sessionStatus.collect { status ->
                 when (status) {
@@ -117,7 +122,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private fun registerFcm(userId: String) {
         viewModelScope.launch {
             runCatching {
-                val token = FirebaseMessaging.getInstance().token.await()
+                val token = DriverPushTokenHolder.pendingToken
+                    ?: FirebaseMessaging.getInstance().token.await()
                 if (!token.isNullOrBlank()) repo.upsertPushToken(userId, token)
             }
         }
@@ -421,6 +427,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        DriverPushTokenHolder.listener = null
         stopPolling()
         super.onCleared()
     }
