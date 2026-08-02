@@ -298,6 +298,10 @@ export default function CheckoutPage() {
       }
       const order = { id: orderId as string };
 
+      // Remember this delivery address for next time + shared geocode cache.
+      void import('@/lib/geocode').then(({ rememberMyDeliveryAddress }) =>
+        rememberMyDeliveryAddress(address, deliveryCoords?.lat, deliveryCoords?.lon),
+      );
 
       if (paymentMethod === 'card') {
         // Show embedded Stripe checkout — customer pays, webhook completes the order.
@@ -421,6 +425,8 @@ export default function CheckoutPage() {
             </Suspense>
             <SavedAddresses
               currentAddress={address}
+              currentLat={deliveryCoords?.lat}
+              currentLon={deliveryCoords?.lon}
               onSelect={(addr, lat, lon) => {
                 setAddress(addr);
                 setDeliveryCoords(lat && lon ? { lat, lon } : null);
