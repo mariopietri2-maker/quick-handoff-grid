@@ -61,6 +61,24 @@ data class DriverUiState(
     val primaryTrip: ActiveTripUi? get() = activeTrips.firstOrNull()
 }
 
+/** Soften technical network / HTTP failures into short Greek copy. */
+private fun friendlyError(t: Throwable?): String {
+    val raw = t?.message ?: return "Κάτι πήγε στραβά"
+    val lower = raw.lowercase()
+    return when {
+        "unable to resolve host" in lower ||
+            "no address associated" in lower ||
+            "unknownhost" in lower ->
+            "Χωρίς σύνδεση στο διαδίκτυο. Έλεγξε Wi‑Fi / δεδομένα."
+        "timeout" in lower || "timed out" in lower ->
+            "Η σύνδεση άργησε. Δοκίμασε ξανά."
+        "failed to connect" in lower || "connection refused" in lower ->
+            "Δεν ήταν δυνατή η σύνδεση με τον διακομιστή."
+        raw.length > 160 -> raw.take(140) + "…"
+        else -> raw
+    }
+}
+
 class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = DriverRepository()
     private val _state = MutableStateFlow(DriverUiState())
@@ -115,6 +133,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             if (dState.shift_started_at != null) {
                 DriverLocationService.start(getApplication())
             }
+        }.onFailure { e ->
+            _state.value = _state.value.copy(error = friendlyError(e))
         }
         registerFcm(userId)
         refreshAll()
@@ -136,7 +156,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signIn(email, password) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Login failed")
+                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
                 }
                 .onSuccess { _state.value = _state.value.copy(busy = false) }
         }
@@ -179,7 +199,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             }.onFailure { e ->
                 _state.value = _state.value.copy(
                     online = !online,
-                    error = e.message ?: "Failed to update online state",
+                    error = friendlyError(e),
                 )
             }
             if (online) refreshWork()
@@ -199,7 +219,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 _state.value = _state.value.copy(driverState = repo.loadDriverState(uid))
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = friendlyError(e))
             }
         }
     }
@@ -249,10 +269,11 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     activeTrips = trips,
                     offers = offers,
                     stackedOffers = stacked,
+                    error = null,
                 )
                 maybeAlertOffers(offers + stacked)
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = friendlyError(e))
             }
         }
     }
@@ -298,7 +319,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 _state.value = _state.value.copy(busy = false, info = "Προσφορά αποδεκτή")
                 refreshWork()
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = e.message ?: "Accept failed")
+                _state.value = _state.value.copy(busy = false, error = friendlyError(e))
                 refreshWork()
             }
         }
@@ -314,7 +335,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     refreshWork()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message)
+                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
                 }
         }
     }
@@ -329,7 +350,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     if (nextStatus == "delivered") refreshMoney()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message)
+                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
                 }
         }
     }
@@ -344,7 +365,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     refreshMoney()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message)
+                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
                 }
         }
     }
@@ -370,7 +391,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     driverProfile = repo.loadDriverProfile(uid),
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = e.message)
+                _state.value = _state.value.copy(busy = false, error = friendlyError(e))
             }
         }
     }
