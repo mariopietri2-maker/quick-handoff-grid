@@ -9,6 +9,7 @@ import {
   showDriverOnlineStatusNotification,
 } from '@/lib/driver-online-notification';
 import { ensureNotificationPermission, initNotificationChannels } from '@/lib/push-notifications';
+import { effective, loadGuardrails } from '@/lib/cost-guardrails';
 
 // Dynamic push cadence: moving drivers push often; stationary still heartbeat
 // so admin presence (< 3 min) does not flip them Offline while waiting.
@@ -19,6 +20,16 @@ const MIN_INTERVAL_FAST = 5_000;
 const MIN_MOVE_M = 12;             // don't re-send if position barely changed
 /** Always refresh updated_at at least this often (well under 3-min presence window). */
 const HEARTBEAT_MAX_AGE_MS = 60_000;
+
+function guardrailMinIntervalMs(): number {
+  try {
+    const g = effective(loadGuardrails());
+    if (!g.realtimeLocationsEnabled) return Number.POSITIVE_INFINITY;
+    return Math.max(5, g.driverLocationIntervalSec) * 1000;
+  } catch {
+    return 0;
+  }
+}
 
 
 interface NormalizedPos {
@@ -152,9 +163,12 @@ export function useDriverLocation(isActive: boolean) {
       return Math.hypot(dLat, dLng);
     };
     const intervalForSpeed = (speedMps: number | null) => {
-      if (speedMps == null || speedMps < 0.5) return MIN_INTERVAL_STATIONARY;
-      if (speedMps < 5) return MIN_INTERVAL_SLOW;
-      return MIN_INTERVAL_FAST;
+      const floor = guardrailMinIntervalMs();
+      if (!Number.isFinite(floor)) return Number.POSITIVE_INFINITY;
+      let base = MIN_INTERVAL_FAST;
+      if (speedMps == null || speedMps < 0.5) base = MIN_INTERVAL_STATIONARY;
+      else if (speedMps < 5) base = MIN_INTERVAL_SLOW;
+      return Math.max(base, floor);
     };
 
     const start = async () => {

@@ -304,6 +304,10 @@ export default function SupportApp() {
           <SupportAIPanel
             ticketId={activeTicket.id}
             onUseReply={(text) => chatRef.current?.setDraft(text)}
+            onReplySent={() => {
+              // Realtime INSERT will refresh the thread; nudge status locally.
+              queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
+            }}
           />
 
           <div className="rounded-xl border bg-card overflow-hidden shadow-sm">

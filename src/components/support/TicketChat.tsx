@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Timer, AlarmClock } from 'lucide-react';
+import { Loader2, Timer, AlarmClock, Sparkles } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
 import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
@@ -16,11 +16,13 @@ interface Message {
   message: string | null;
   attachment_url?: string | null;
   attachment_type?: string | null;
+  is_ai?: boolean | null;
   created_at: string;
 }
 
 export interface TicketChatHandle {
   setDraft: (text: string) => void;
+  sendText: (text: string) => Promise<void>;
 }
 
 function formatElapsed(totalSeconds: number) {
@@ -40,15 +42,57 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
   const { user, isAdmin, profile } = useAuth();
   const [messages, setMessages] = useState<Message[]>([]);
   const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState<Date>(new Date());
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const viewerIsAgent = isAdmin || profile?.role === 'support' || profile?.role === 'admin';
 
+  const send = async (messageText: string, attachment: ComposerAttachment | null, opts?: { isAi?: boolean }) => {
+    if ((!messageText.trim() && !attachment) || !user) return;
+    const senderRole = isAdmin
+      ? 'admin'
+      : profile?.role === 'support'
+        ? 'support'
+        : profile?.role === 'store'
+          ? 'store'
+          : profile?.role === 'customer'
+            ? 'customer'
+            : 'driver';
+    const optimistic: Message = {
+      id: crypto.randomUUID(),
+      ticket_id: ticketId,
+      sender_id: user.id,
+      sender_role: senderRole,
+      message: messageText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+      is_ai: opts?.isAi ?? false,
+      created_at: new Date().toISOString(),
+    };
+    setMessages((prev) => [...prev, optimistic]);
+
+    const { error } = await supabase.from('ticket_messages').insert({
+      ticket_id: ticketId,
+      sender_id: user.id,
+      sender_role: senderRole,
+      message: messageText.trim() || null,
+      attachment_url: attachment?.url ?? null,
+      attachment_type: attachment?.type ?? null,
+      is_ai: opts?.isAi ?? false,
+    } as any);
+
+    if (error) {
+      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      toast.error('Αποτυχία αποστολής');
+    }
+  };
+
   useImperativeHandle(ref, () => ({
     setDraft: (t: string) => setText(t),
+    sendText: async (t: string) => {
+      await send(t, null);
+    },
   }));
 
   useEffect(() => {
@@ -150,44 +194,6 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
     ? 'bg-orange-500/10 text-orange-700 border-orange-500/30 dark:text-orange-400'
     : 'bg-red-500/10 text-red-700 border-red-500/30 dark:text-red-400 animate-pulse';
 
-  const send = async (messageText: string, attachment: ComposerAttachment | null) => {
-    if ((!messageText.trim() && !attachment) || !user) return;
-    const senderRole = isAdmin
-      ? 'admin'
-      : profile?.role === 'support'
-        ? 'support'
-        : profile?.role === 'store'
-          ? 'store'
-          : profile?.role === 'customer'
-            ? 'customer'
-            : 'driver';
-    const optimistic: Message = {
-      id: crypto.randomUUID(),
-      ticket_id: ticketId,
-      sender_id: user.id,
-      sender_role: senderRole,
-      message: messageText.trim() || null,
-      attachment_url: attachment?.url ?? null,
-      attachment_type: attachment?.type ?? null,
-      created_at: new Date().toISOString(),
-    };
-    setMessages((prev) => [...prev, optimistic]);
-
-    const { error } = await supabase.from('ticket_messages').insert({
-      ticket_id: ticketId,
-      sender_id: user.id,
-      sender_role: senderRole,
-      message: messageText.trim() || null,
-      attachment_url: attachment?.url ?? null,
-      attachment_type: attachment?.type ?? null,
-    } as any);
-
-    if (error) {
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
-      toast.error('Αποτυχία αποστολής');
-    }
-  };
-
   const timerLabel = waitingOn
     ? viewerIsAgent
       ? 'Αναμονή απάντησης'
@@ -195,8 +201,6 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
       ? 'Απάντηση πριν'
       : 'Αναμονή υποστήριξης'
     : 'Σε εκκρεμότητα';
-
-  // AI reply suggestion removed — drivers must receive only human-written responses.
 
   return (
     <div className="flex flex-col h-[480px] border rounded-lg bg-card">
@@ -243,16 +247,19 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
                   {m.message && (
                     <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
                   )}
-                  <p className={`text-[10px] mt-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {m.sender_role === 'driver'
-                      ? 'Οδηγός'
-                      : m.sender_role === 'store'
-                        ? 'Κατάστημα'
-                        : m.sender_role === 'customer'
-                          ? 'Πελάτης'
-                          : isAgentMsg
-                            ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη')
-                            : m.sender_role}
+                  <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
+                    {m.is_ai && <Sparkles className="h-3 w-3 shrink-0" />}
+                    {m.is_ai
+                      ? 'AI Υποστήριξη'
+                      : m.sender_role === 'driver'
+                        ? 'Οδηγός'
+                        : m.sender_role === 'store'
+                          ? 'Κατάστημα'
+                          : m.sender_role === 'customer'
+                            ? 'Πελάτης'
+                            : isAgentMsg
+                              ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη')
+                              : m.sender_role}
                     {' · '}
                     {format(new Date(m.created_at), 'HH:mm')}
                   </p>
