@@ -9,8 +9,8 @@ export const APK_BUILD_VERSION = '1.0.7232800';
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
 export const APK_NATIVE_DRIVER_VERSION = '2.0.0-native';
 
-/** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.0.0-native';
+/** Native Kotlin/Compose customer (cart + checkout + FCM). */
+export const APK_NATIVE_CUSTOMER_VERSION = '2.1.0-native';
 
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
@@ -32,7 +32,7 @@ export const APK_DOWNLOADS = {
   customerNative: {
     id: 'customerNative' as const,
     title: 'Πελάτης Native',
-    subtitle: 'Kotlin + Compose · Mapbox tracking',
+    subtitle: 'Kotlin + Compose · cart · Mapbox · FCM',
     filename: 'fresh-customer-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh-customer-native-debug.apk`,
     sizeLabel: '~18 MB',
@@ -52,7 +52,7 @@ export const APK_DOWNLOADS = {
   driverNative: {
     id: 'driverNative' as const,
     title: 'Οδηγός Native',
-    subtitle: 'Kotlin + Compose · Mapbox · ίδια ροή',
+    subtitle: 'Kotlin + Compose · Mapbox · FCM',
     filename: 'fresh-driver-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh-driver-native-debug.apk`,
     sizeLabel: '~21 MB',
