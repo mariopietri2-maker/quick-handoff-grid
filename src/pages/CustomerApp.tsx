@@ -117,8 +117,47 @@ export default function CustomerApp() {
     } catch {
       /* ignore */
     }
+    // Remember for next login + shared city cache (cuts Mapbox cost for nearby customers).
+    if (v) {
+      void import('@/lib/geocode').then(({ rememberMyDeliveryAddress }) =>
+        rememberMyDeliveryAddress(v, coords?.lat, coords?.lon),
+      );
+    }
     setAddressOpen(false);
   };
+
+  // On login: restore default saved address when this device has none yet.
+  useEffect(() => {
+    if (!user) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const local = localStorage.getItem('customer_delivery_address');
+        if (local?.trim()) return;
+        const { data } = await supabase
+          .from('saved_addresses')
+          .select('address, latitude, longitude')
+          .eq('user_id', user.id)
+          .eq('is_default', true)
+          .maybeSingle();
+        if (cancelled || !data?.address) return;
+        const coords =
+          data.latitude != null && data.longitude != null
+            ? { lat: Number(data.latitude), lon: Number(data.longitude) }
+            : null;
+        setDeliveryAddress(data.address);
+        setPendingAddress(data.address);
+        setPendingCoords(coords);
+        try {
+          localStorage.setItem('customer_delivery_address', data.address);
+          if (coords) {
+            localStorage.setItem('customer_delivery_coords', JSON.stringify(coords));
+          }
+        } catch { /* ignore */ }
+      } catch { /* ignore */ }
+    })();
+    return () => { cancelled = true; };
+  }, [user]);
 
   const displayAddress = deliveryAddress
     ? deliveryAddress.length > 28

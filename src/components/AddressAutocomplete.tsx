@@ -6,7 +6,12 @@ import { Button } from '@/components/ui/button';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
-import { geocodeAddress } from '@/lib/geocode';
+import {
+  geocodeAddress,
+  lookupGeocodeNearby,
+  rememberGeocode,
+  suggestCachedAddresses,
+} from '@/lib/geocode';
 import {
   IOANNINA_GEOCODE_BBOX,
   IOANNINA_MAP_CENTER,
@@ -98,7 +103,7 @@ export function AddressAutocomplete({
   }, []);
 
   const search = useCallback(async (q: string) => {
-    if (q.length < 3 || !token) {
+    if (q.length < 3) {
       setResults([]);
       setNoResults(false);
       return;
@@ -106,40 +111,61 @@ export function AddressAutocomplete({
     setLoading(true);
     setNoResults(false);
     try {
-      const numMatch = q.match(/\b(\d{1,4}[A-Za-zΑ-Ωα-ω]?)\b/);
-      const typedNumber = numMatch ? numMatch[1] : null;
-      const [proxLng, proxLat] = centerRef.current;
+      // 1) Shared cache first — free, reused across customers.
+      const cached = await suggestCachedAddresses(q, 8);
+      const fromCache: AddressResult[] = cached
+        .map((c) => ({
+          display_name: c.formatted,
+          lat: c.latitude,
+          lon: c.longitude,
+        }))
+        .filter((r) => isWithinIoanninaServiceArea(r.lat, r.lon));
 
-      const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${IOANNINA_GEOCODE_BBOX}&proximity=${proxLng},${proxLat}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
-      const res = await fetch(url);
-      const data = await res.json();
-      const features = (data.features ?? []) as Array<{
-        place_name: string;
-        center: [number, number];
-        address?: string;
-        place_type?: string[];
-        text?: string;
-      }>;
+      // 2) Only call Mapbox if cache is thin (keeps autocomplete cost low).
+      let mapped = fromCache;
+      if (fromCache.length < 3 && token) {
+        const numMatch = q.match(/\b(\d{1,4}[A-Za-zΑ-Ωα-ω]?)\b/);
+        const typedNumber = numMatch ? numMatch[1] : null;
+        const [proxLng, proxLat] = centerRef.current;
 
-      const withNumber = typedNumber
-        ? features.filter(f => f.address && String(f.address) === typedNumber)
-        : features;
+        const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${encodeURIComponent(q)}.json?access_token=${token}&country=gr&language=el&limit=8&bbox=${IOANNINA_GEOCODE_BBOX}&proximity=${proxLng},${proxLat}&types=address,poi,place,locality,neighborhood&autocomplete=true`;
+        const res = await fetch(url);
+        const data = await res.json();
+        const features = (data.features ?? []) as Array<{
+          place_name: string;
+          center: [number, number];
+          address?: string;
+          place_type?: string[];
+          text?: string;
+        }>;
 
-      const chosen = withNumber.length > 0 ? withNumber : features;
+        const withNumber = typedNumber
+          ? features.filter(f => f.address && String(f.address) === typedNumber)
+          : features;
 
-      const mapped: AddressResult[] = chosen
-        .map(f => {
-          let label = f.place_name;
-          if (typedNumber && !f.address && f.place_type?.includes('address') && f.text) {
-            label = label.replace(f.text, `${f.text} ${typedNumber}`);
-          }
-          return {
-            display_name: label,
-            lon: f.center[0],
-            lat: f.center[1],
-          };
-        })
-        .filter(r => isWithinIoanninaServiceArea(r.lat, r.lon));
+        const chosen = withNumber.length > 0 ? withNumber : features;
+
+        const fromMapbox: AddressResult[] = chosen
+          .map(f => {
+            let label = f.place_name;
+            if (typedNumber && !f.address && f.place_type?.includes('address') && f.text) {
+              label = label.replace(f.text, `${f.text} ${typedNumber}`);
+            }
+            return {
+              display_name: label,
+              lon: f.center[0],
+              lat: f.center[1],
+            };
+          })
+          .filter(r => isWithinIoanninaServiceArea(r.lat, r.lon));
+
+        const seen = new Set(fromCache.map((r) => r.display_name.toLowerCase()));
+        mapped = [
+          ...fromCache,
+          ...fromMapbox.filter((r) => !seen.has(r.display_name.toLowerCase())),
+        ].slice(0, 8);
+      }
+
       setResults(mapped);
       setOpen(mapped.length > 0);
       setNoResults(mapped.length === 0 && q.length >= 3);
@@ -190,6 +216,11 @@ export function AddressAutocomplete({
     setResults([]);
     setNoResults(false);
     setShowMap(false);
+    void rememberGeocode(
+      r.display_name,
+      { latitude: r.lat, longitude: r.lon, formatted: r.display_name },
+      'autocomplete',
+    );
   };
 
   const clear = () => {
@@ -209,6 +240,15 @@ export function AddressAutocomplete({
     }
     setReverseLoading(true);
     try {
+      // Nearby shared cache (~40m) — skip Mapbox when another customer already pinned here.
+      const nearby = await lookupGeocodeNearby(lat, lon, 40);
+      if (nearby?.formatted) {
+        setQuery(nearby.formatted);
+        onChangeRef.current(nearby.formatted, lat, lon);
+        hasCoordsRef.current = true;
+        return true;
+      }
+
       const t = tokenRef.current;
       if (!t) throw new Error('no token');
       const url = `https://api.mapbox.com/geocoding/v5/mapbox.places/${lon},${lat}.json?access_token=${t}&language=el&limit=1`;
@@ -218,6 +258,7 @@ export function AddressAutocomplete({
       if (name) {
         setQuery(name);
         onChangeRef.current(name, lat, lon);
+        void rememberGeocode(name, { latitude: lat, longitude: lon, formatted: name }, 'mapbox_reverse');
       } else {
         const fallback = `${lat.toFixed(5)}, ${lon.toFixed(5)}`;
         setQuery(fallback);

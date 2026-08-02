@@ -19,6 +19,8 @@ interface SavedAddress {
 interface SavedAddressesProps {
   onSelect: (address: string, lat?: number, lon?: number) => void;
   currentAddress?: string;
+  currentLat?: number | null;
+  currentLon?: number | null;
 }
 
 const labelIcons: Record<string, typeof Home> = {
@@ -28,7 +30,7 @@ const labelIcons: Record<string, typeof Home> = {
   Work: Briefcase,
 };
 
-export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps) {
+export function SavedAddresses({ onSelect, currentAddress, currentLat, currentLon }: SavedAddressesProps) {
   const { user } = useAuth();
   const [addresses, setAddresses] = useState<SavedAddress[]>([]);
   const [loading, setLoading] = useState(true);
@@ -58,19 +60,30 @@ export function SavedAddresses({ onSelect, currentAddress }: SavedAddressesProps
       return;
     }
     setSaving(true);
-    const { error } = await supabase
-      .from('saved_addresses')
-      .insert({
-        user_id: user.id,
-        label: saveLabel,
-        address: currentAddress,
-      } as any);
-    if (error) {
-      toast.error('Αποτυχία αποθήκευσης διεύθυνσης');
-    } else {
+    try {
+      const { error } = await (supabase as any).rpc('remember_my_delivery_address', {
+        p_address: currentAddress,
+        p_lat: currentLat ?? null,
+        p_lng: currentLon ?? null,
+        p_label: saveLabel,
+      });
+      if (error) {
+        // Fallback insert if RPC not deployed yet.
+        const { error: insErr } = await supabase.from('saved_addresses').insert({
+          user_id: user.id,
+          label: saveLabel,
+          address: currentAddress,
+          latitude: currentLat ?? null,
+          longitude: currentLon ?? null,
+          is_default: true,
+        } as any);
+        if (insErr) throw insErr;
+      }
       toast.success('Η διεύθυνση αποθηκεύτηκε!');
       setShowSave(false);
       fetchAddresses();
+    } catch {
+      toast.error('Αποτυχία αποθήκευσης διεύθυνσης');
     }
     setSaving(false);
   };
