@@ -1,41 +1,55 @@
 package com.freshdelivery.nativedriver.ui.navigation
 
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
-import com.freshdelivery.nativedriver.ui.home.HomeScreen
-import com.freshdelivery.nativedriver.ui.login.LoginScreen
-import com.freshdelivery.nativedriver.ui.login.LoginViewModel
-
-private object Routes {
-    const val LOGIN = "login"
-    const val HOME = "home"
-}
+import com.freshdelivery.nativedriver.ui.DriverShell
+import com.freshdelivery.nativedriver.ui.DriverViewModel
+import com.freshdelivery.nativedriver.ui.auth.LoginScreen
 
 @Composable
-fun DriverNavGraph(navController: NavHostController = rememberNavController()) {
-    val loginViewModel: LoginViewModel = viewModel()
-    val uiState by loginViewModel.uiState.collectAsStateWithLifecycle()
+fun DriverNavGraph(
+    viewModel: DriverViewModel = viewModel(),
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
 
-    LaunchedEffect(uiState.isAuthenticated) {
-        val target = if (uiState.isAuthenticated) Routes.HOME else Routes.LOGIN
-        if (navController.currentDestination?.route != target) {
-            navController.navigate(target) {
-                popUpTo(0) { inclusive = true }
+    when {
+        state.bootstrapping -> {
+            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                CircularProgressIndicator()
             }
         }
-    }
-
-    NavHost(navController = navController, startDestination = Routes.LOGIN) {
-        composable(Routes.LOGIN) { LoginScreen(viewModel = loginViewModel) }
-        composable(Routes.HOME) {
-            HomeScreen(driverEmail = uiState.email, onSignOut = loginViewModel::signOut)
+        !state.signedIn -> {
+            LoginScreen(
+                busy = state.busy,
+                error = state.error,
+                onLogin = viewModel::signIn,
+            )
+        }
+        else -> {
+            DriverShell(
+                state = state,
+                onTab = viewModel::selectTab,
+                onToggleOnline = viewModel::setOnline,
+                onToggleBreak = viewModel::toggleBreak,
+                onAccept = viewModel::acceptOffer,
+                onDecline = viewModel::declineOffer,
+                onAdvance = viewModel::advanceTrip,
+                onRefresh = viewModel::refreshAll,
+                onRefreshMoney = viewModel::refreshMoney,
+                onRefreshInbox = viewModel::refreshInbox,
+                onWithdraw = viewModel::withdraw,
+                onMarkRead = viewModel::markRead,
+                onSaveProfile = viewModel::saveProfile,
+                onSignOut = viewModel::signOut,
+                onClearMessages = viewModel::clearMessages,
+            )
         }
     }
 }
