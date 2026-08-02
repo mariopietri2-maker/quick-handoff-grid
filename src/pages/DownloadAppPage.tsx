@@ -7,6 +7,7 @@ import { SEO } from '@/components/SEO';
 import {
   APK_BUILD_VERSION,
   APK_DOWNLOADS,
+  APK_NATIVE_CUSTOMER_VERSION,
   APK_NATIVE_DRIVER_VERSION,
   apkLandingUrl,
   parseApkFocus,
@@ -35,7 +36,7 @@ function useQrDataUrl(text: string) {
 }
 
 function flavorIcon(flavor: ApkFlavor) {
-  if (flavor === 'customer') return Smartphone;
+  if (flavor === 'customer' || flavor === 'customerNative') return Smartphone;
   if (flavor === 'driverNative') return Cpu;
   return Bike;
 }
@@ -112,7 +113,7 @@ export default function DownloadAppPage() {
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
       <SEO
         title="Beta Android APK — Fresh Delivery"
-        description="Δοκιμαστικά APK πελάτη, οδηγού Capacitor και οδηγού Native μέχρι το Google Play."
+        description="Δοκιμαστικά APK πελάτη/οδηγού Capacitor και Native (Mapbox) μέχρι το Google Play."
         path="/download"
       />
 
@@ -147,16 +148,17 @@ export default function DownloadAppPage() {
             Δοκιμαστικά APK
           </h1>
           <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
-            Για εσωτερική δοκιμή μέχρι το Google Play. Περιλαμβάνει Capacitor και το νέο Native driver.
+            Capacitor και Native (Kotlin + Compose + Mapbox) για πελάτη και οδηγό.
             Η λήψη ξεκινά μόνο όταν πατήσεις το κουμπί.
           </p>
           <p className="mt-2 text-xs text-muted-foreground/80 font-mono">
-            Capacitor v{APK_BUILD_VERSION} · Native driver v{APK_NATIVE_DRIVER_VERSION}
+            Capacitor v{APK_BUILD_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Native driver v{APK_NATIVE_DRIVER_VERSION}
           </p>
         </div>
 
-        <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+        <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
           <ApkCard flavor="customer" highlighted={focus === 'customer'} />
+          <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
           <ApkCard flavor="driver" highlighted={focus === 'driver'} />
           <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
         </div>
@@ -167,7 +169,8 @@ export default function DownloadAppPage() {
             <p className="font-heading font-semibold text-foreground mb-1">Εγκατάσταση (sideload)</p>
             <p>
               Ενεργοποίησε «Άγνωστες πηγές» αν το ζητήσει το τηλέφωνο.
-              Το <b>Οδηγός Native</b> χρησιμοποιεί το ίδιο app id με τον Capacitor οδηγό —
+              Τα <b>Native</b> APK μοιράζονται app id με τα αντίστοιχα Capacitor
+              (`com.freshdelivery.customer` / `com.freshdelivery.driver`) —
               απεγκατάστησε το παλιό πριν εγκαταστήσεις το νέο αν μπλοκάρει η ενημέρωση.
               Για Play Store χρησιμοποίησε τα υπογεγραμμένα <span className="font-mono">.aab</span> από την ομάδα.
             </p>
