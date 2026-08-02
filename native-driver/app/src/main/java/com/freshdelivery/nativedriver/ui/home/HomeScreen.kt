@@ -47,6 +47,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
@@ -103,73 +104,11 @@ fun HomeScreen(
     val cs = MaterialTheme.colorScheme
 
     Column(Modifier.fillMaxSize().background(cs.background)) {
-        // Premium status header
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .background(cs.surface)
-                .padding(horizontal = 20.dp, vertical = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(10.dp)
-                        .clip(CircleShape)
-                        .background(if (state.online && !state.onBreak) FreshGreen else cs.onSurfaceVariant),
-                )
-                Spacer(Modifier.width(10.dp))
-                Column {
-                    Text(
-                        if (state.online) "Διαθέσιμος" else "Εκτός σύνδεσης",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = if (state.online) FreshGreen else cs.onSurface,
-                    )
-                    val sub = when {
-                        !state.driverActive -> "Αναμονή έγκρισης"
-                        state.onBreak -> "Σε διάλειμμα"
-                        state.cashCapped -> "Όριο μετρητών"
-                        else -> null
-                    }
-                    if (sub != null) {
-                        Text(sub, style = MaterialTheme.typography.bodySmall, color = if (state.cashCapped) cs.error else FreshAmber)
-                    }
-                }
-            }
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                if (state.online) {
-                    FilterChip(
-                        selected = state.onBreak,
-                        onClick = onToggleBreak,
-                        label = { Text(if (state.onBreak) "Τέλος" else "Διάλειμμα", style = MaterialTheme.typography.labelMedium) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = FreshAmber.copy(alpha = 0.2f),
-                            selectedLabelColor = FreshAmber,
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                    )
-                    Spacer(Modifier.width(8.dp))
-                }
-                Switch(
-                    checked = state.online,
-                    onCheckedChange = onToggleOnline,
-                    enabled = state.driverActive && !state.busy,
-                    colors = SwitchDefaults.colors(
-                        checkedTrackColor = FreshGreen,
-                        checkedThumbColor = Color.White,
-                    ),
-                )
-                IconButton(onClick = onRefresh) {
-                    Icon(Icons.Outlined.Refresh, contentDescription = "Refresh", tint = cs.onSurfaceVariant)
-                }
-            }
-        }
-
+        // ── Map-first hero (Wolt / Uber style) ──────────────────────────
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(240.dp)
+                .height(320.dp)
                 .background(Color(0xFF0B0F14)),
         ) {
             DriverMapView(
@@ -178,11 +117,105 @@ fun HomeScreen(
                 centerLng = centerLng,
                 markers = markers,
             )
-            // soft bottom fade into content
+
+            // Top gradient so floating controls stay legible
             Box(
                 Modifier
                     .fillMaxWidth()
-                    .height(48.dp)
+                    .height(88.dp)
+                    .align(Alignment.TopCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(Color(0xCC0B0F14), Color.Transparent),
+                        ),
+                    ),
+            )
+
+            // Floating glass status bar
+            Row(
+                Modifier
+                    .align(Alignment.TopCenter)
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp)
+                    .shadow(12.dp, RoundedCornerShape(28.dp))
+                    .clip(RoundedCornerShape(28.dp))
+                    .background(cs.surface.copy(alpha = 0.92f))
+                    .border(1.dp, cs.outline.copy(alpha = 0.4f), RoundedCornerShape(28.dp))
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    Box(
+                        Modifier
+                            .size(10.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (state.online && !state.onBreak) FreshGreen else cs.onSurfaceVariant,
+                            ),
+                    )
+                    Spacer(Modifier.width(10.dp))
+                    Column {
+                        Text(
+                            if (state.online) "Διαθέσιμος" else "Εκτός σύνδεσης",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.SemiBold,
+                            color = if (state.online) FreshGreen else cs.onSurface,
+                        )
+                        val sub = when {
+                            !state.driverActive -> "Αναμονή έγκρισης"
+                            state.onBreak -> "Σε διάλειμμα"
+                            state.cashCapped -> "Όριο μετρητών"
+                            else -> null
+                        }
+                        if (sub != null) {
+                            Text(
+                                sub,
+                                style = MaterialTheme.typography.labelSmall,
+                                color = if (state.cashCapped) cs.error else FreshAmber,
+                            )
+                        }
+                    }
+                }
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    if (state.online) {
+                        FilterChip(
+                            selected = state.onBreak,
+                            onClick = onToggleBreak,
+                            label = {
+                                Text(
+                                    if (state.onBreak) "Τέλος" else "Διάλειμμα",
+                                    style = MaterialTheme.typography.labelMedium,
+                                )
+                            },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = FreshAmber.copy(alpha = 0.22f),
+                                selectedLabelColor = FreshAmber,
+                            ),
+                            shape = RoundedCornerShape(20.dp),
+                        )
+                        Spacer(Modifier.width(6.dp))
+                    }
+                    Switch(
+                        checked = state.online,
+                        onCheckedChange = onToggleOnline,
+                        enabled = state.driverActive && !state.busy,
+                        colors = SwitchDefaults.colors(
+                            checkedTrackColor = FreshGreen,
+                            checkedThumbColor = Color.White,
+                        ),
+                    )
+                    IconButton(onClick = onRefresh, modifier = Modifier.size(36.dp)) {
+                        Icon(Icons.Outlined.Refresh, contentDescription = "Refresh", tint = cs.onSurfaceVariant)
+                    }
+                }
+            }
+
+            // Soft fade into content sheet
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .height(56.dp)
                     .align(Alignment.BottomCenter)
                     .background(
                         Brush.verticalGradient(
@@ -203,7 +236,7 @@ fun HomeScreen(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
-                .padding(horizontal = 16.dp, vertical = 8.dp),
+                .padding(horizontal = 16.dp, vertical = 4.dp),
         ) {
             if (state.busy) {
                 LinearProgressIndicator(
@@ -297,8 +330,12 @@ private fun EmptyState(text: String) {
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
         elevation = CardDefaults.cardElevation(0.dp),
     ) {
-        Column(Modifier.padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-            Text(text, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(Modifier.padding(28.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text(
+                text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
         }
     }
 }
@@ -373,7 +410,11 @@ private fun OfferCard(
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text(eur(payout), style = MaterialTheme.typography.headlineMedium, color = FreshGreen)
-                    Text("${secondsLeft}s", style = MaterialTheme.typography.labelMedium, color = if (secondsLeft <= 10) cs.error else cs.onSurfaceVariant)
+                    Text(
+                        "${secondsLeft}s",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = if (secondsLeft <= 10) cs.error else cs.onSurfaceVariant,
+                    )
                 }
             }
             if (!offer.order.delivery_address.isNullOrBlank()) {
@@ -381,15 +422,18 @@ private fun OfferCard(
                 Text("→ " + offer.order.delivery_address, style = MaterialTheme.typography.bodyMedium)
             }
             Row(Modifier.padding(top = 6.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                offer.order.distance_km?.let {
-                    Pill(km(it))
-                }
+                offer.order.distance_km?.let { Pill(km(it)) }
                 if (offer.order.payment_method?.equals("cash", ignoreCase = true) == true) {
                     Pill("Μετρητά", FreshAmber)
                 }
             }
             if (!offer.itemsSummary.isNullOrBlank()) {
-                Text(offer.itemsSummary!!, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant, modifier = Modifier.padding(top = 6.dp))
+                Text(
+                    offer.itemsSummary!!,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cs.onSurfaceVariant,
+                    modifier = Modifier.padding(top = 6.dp),
+                )
             }
 
             Spacer(Modifier.height(12.dp))
