@@ -1,5 +1,9 @@
 package com.freshdelivery.nativedriver.ui.map
 
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.Paint
+import android.graphics.Path
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -22,13 +26,46 @@ data class MapMarker(
     val color: String,
 )
 
-/** Ioannina city center — default when GPS / trip coords are missing. */
 private const val DEFAULT_LAT = 39.6650
 private const val DEFAULT_LNG = 20.8537
 
-/**
- * Native Mapbox Maps SDK (Compose extension) — dark style, gesture-ready.
- */
+/** Draws a navigation-arrow pin (points up = north); rotate with iconRotate = bearing. */
+private fun createDriverArrowBitmap(size: Int = 96): Bitmap {
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    val cx = size / 2f
+    val cy = size / 2f
+
+    // Soft glow disc
+    val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.argb(60, 59, 130, 246)
+        style = Paint.Style.FILL
+    }
+    c.drawCircle(cx, cy, size * 0.42f, glow)
+
+    // White outline disc
+    val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.FILL
+    }
+    c.drawCircle(cx, cy, size * 0.28f, disc)
+
+    // Blue filled arrow pointing up (north)
+    val arrow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#2563EB")
+        style = Paint.Style.FILL
+    }
+    val path = Path().apply {
+        moveTo(cx, cy - size * 0.22f) // tip
+        lineTo(cx + size * 0.14f, cy + size * 0.16f)
+        lineTo(cx, cy + size * 0.06f)
+        lineTo(cx - size * 0.14f, cy + size * 0.16f)
+        close()
+    }
+    c.drawPath(path, arrow)
+    return bmp
+}
+
 @Composable
 fun DriverMapView(
     modifier: Modifier = Modifier,
@@ -37,6 +74,7 @@ fun DriverMapView(
     markers: List<MapMarker>,
     userLat: Double? = null,
     userLng: Double? = null,
+    userBearing: Float? = null,
 ) {
     val lat = centerLat ?: userLat ?: DEFAULT_LAT
     val lng = centerLng ?: userLng ?: DEFAULT_LNG
@@ -49,24 +87,33 @@ fun DriverMapView(
         }
     }
 
-    // Re-center when trip / offer coords change
-    LaunchedEffect(lat, lng, markers.size) {
-        if (markers.size >= 2) {
-            // Keep simple center on first marker for now; fitBounds needs MapEffect
-            val first = markers.first()
-            viewportState.setCameraOptions {
-                center(Point.fromLngLat(first.lng, first.lat))
-                zoom(12.8)
+    LaunchedEffect(lat, lng, markers.size, userLat, userLng) {
+        when {
+            markers.size >= 2 -> {
+                val first = markers.first()
+                viewportState.setCameraOptions {
+                    center(Point.fromLngLat(first.lng, first.lat))
+                    zoom(12.8)
+                }
             }
-        } else {
-            viewportState.setCameraOptions {
-                center(Point.fromLngLat(lng, lat))
-                zoom(13.2)
+            userLat != null && userLng != null && markers.isEmpty() -> {
+                viewportState.setCameraOptions {
+                    center(Point.fromLngLat(userLng, userLat))
+                    zoom(15.0)
+                }
+            }
+            else -> {
+                viewportState.setCameraOptions {
+                    center(Point.fromLngLat(lng, lat))
+                    zoom(13.2)
+                }
             }
         }
     }
 
-    val annotations = remember(markers, userLat, userLng) {
+    val driverIcon = remember { createDriverArrowBitmap() }
+
+    val annotations = remember(markers, userLat, userLng, userBearing) {
         buildList {
             markers.forEach { m ->
                 add(
@@ -82,16 +129,20 @@ fun DriverMapView(
                 )
             }
             if (userLat != null && userLng != null) {
+                val rotate = (userBearing ?: 0f).toDouble()
                 add(
                     PointAnnotationOptions()
                         .withPoint(Point.fromLngLat(userLng, userLat))
-                        .withIconSize(1.0)
+                        .withIconImage(driverIcon)
+                        .withIconSize(1.35)
+                        .withIconRotate(rotate)
+                        .withIconRotationAlignment("map")
                         .withTextField("Εσύ")
-                        .withTextSize(10.0)
-                        .withTextOffset(listOf(0.0, 1.3))
-                        .withTextColor("#3B82F6")
+                        .withTextSize(11.0)
+                        .withTextOffset(listOf(0.0, 2.0))
+                        .withTextColor("#93C5FD")
                         .withTextHaloColor("#0B0F14")
-                        .withTextHaloWidth(1.0),
+                        .withTextHaloWidth(1.2),
                 )
             }
         }
