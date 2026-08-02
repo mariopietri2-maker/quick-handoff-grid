@@ -1,0 +1,77 @@
+name: Build Native APKs
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "native-driver/**"
+      - "native-customer/**"
+      - ".github/workflows/build-native-apks.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Build driver debug APK
+        working-directory: native-driver
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Prepare customer gradle wrapper
+        run: |
+          cp -R native-driver/gradle native-customer/
+          cp native-driver/gradlew native-driver/gradlew.bat native-customer/
+          chmod +x native-customer/gradlew
+
+      - name: Build customer debug APK
+        working-directory: native-customer
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Stage APKs
+        run: |
+          mkdir -p dist
+          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
+          cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh-customer-native-debug.apk
+          ls -lah dist/
+
+      - name: Upload APK artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: native-apks
+          path: dist/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish to mobile-apks-v1 release
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: mobile-apks-v1
+          files: |
+            dist/fresh-driver-native-debug.apk
+            dist/fresh-customer-native-debug.apk
+          fail_on_unmatched_files: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
