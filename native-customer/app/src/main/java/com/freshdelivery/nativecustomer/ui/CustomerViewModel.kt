@@ -67,8 +67,10 @@ class CustomerViewModel : ViewModel() {
 
     init {
         PushTokenHolder.listener = { token ->
-            val uid = _state.value.userId ?: return@listener
-            viewModelScope.launch { runCatching { repo.upsertPushToken(uid, token) } }
+            val uid = _state.value.userId
+            if (uid != null) {
+                viewModelScope.launch { runCatching { repo.upsertPushToken(uid, token) } }
+            }
         }
         viewModelScope.launch {
             SupabaseModule.client.auth.sessionStatus.collect { status ->
