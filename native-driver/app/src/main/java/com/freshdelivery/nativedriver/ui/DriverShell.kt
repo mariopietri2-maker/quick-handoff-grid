@@ -44,6 +44,7 @@ fun DriverShell(
     onSaveProfile: (String, String, String, String, String) -> Unit,
     onSignOut: () -> Unit,
     onClearMessages: () -> Unit,
+    onUpdateSettings: (DriverSettings) -> Unit = {},
 ) {
     val unread = state.notifications.count { it.read_at == null }
     val tabs = listOf(
@@ -92,18 +93,19 @@ fun DriverShell(
                 DriverTab.Money -> MoneyScreen(
                     state = state,
                     onWithdraw = onWithdraw,
-                    onRefresh = onRefresh,
+                    onRefresh = onRefreshMoney,
                 )
                 DriverTab.Inbox -> InboxScreen(
                     state = state,
                     onMarkRead = onMarkRead,
-                    onRefresh = onRefresh,
+                    onRefresh = onRefreshInbox,
                 )
                 DriverTab.Referral -> ReferralScreen(state = state)
                 DriverTab.Profile -> ProfileScreen(
                     state = state,
                     onSave = onSaveProfile,
                     onSignOut = onSignOut,
+                    onUpdateSettings = onUpdateSettings,
                 )
             }
         }
