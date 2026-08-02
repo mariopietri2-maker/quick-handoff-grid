@@ -1,12 +1,14 @@
 package com.freshdelivery.nativedriver.ui
 
 import android.app.Application
+import android.media.AudioManager
 import android.media.MediaPlayer
+import android.media.RingtoneManager
+import android.media.ToneGenerator
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
-import android.view.WindowManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshdelivery.nativedriver.R
@@ -18,13 +20,16 @@ import com.freshdelivery.nativedriver.data.DriverRepository
 import com.freshdelivery.nativedriver.data.DriverStateRow
 import com.freshdelivery.nativedriver.data.DriverTab
 import com.freshdelivery.nativedriver.data.MoneyUi
+import com.freshdelivery.nativedriver.data.OfferSoundId
 import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.data.PlatformSettingsRow
 import com.freshdelivery.nativedriver.data.ProfileRow
 import com.freshdelivery.nativedriver.data.ReferralRow
 import com.freshdelivery.nativedriver.data.SupabaseProvider
 import com.freshdelivery.nativedriver.data.SupportTicketRow
+import com.freshdelivery.nativedriver.location.DriverGeo
 import com.freshdelivery.nativedriver.location.DriverLocationService
+import com.freshdelivery.nativedriver.location.DriverLocationTracker
 import com.freshdelivery.nativedriver.push.DriverPushTokenHolder
 import com.google.firebase.messaging.FirebaseMessaging
 import io.github.jan.supabase.auth.auth
@@ -42,6 +47,7 @@ data class DriverSettings(
     val vibration: Boolean = true,
     val keepScreenOn: Boolean = true,
     val notifyOffers: Boolean = true,
+    val soundId: String = OfferSoundId.CLASSIC.id,
 )
 
 data class DriverUiState(
@@ -63,6 +69,7 @@ data class DriverUiState(
     val tickets: List<SupportTicketRow> = emptyList(),
     val referralCode: String? = null,
     val referrals: List<ReferralRow> = emptyList(),
+    val geo: DriverGeo? = null,
     val busy: Boolean = false,
     val error: String? = null,
     val info: String? = null,
@@ -95,6 +102,7 @@ private fun friendlyError(t: Throwable?): String {
 class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = DriverRepository()
     private val prefs = DriverPreferences(app)
+    private val locationTracker = DriverLocationTracker(app)
     private val _state = MutableStateFlow(
         DriverUiState(
             settingsLocal = DriverSettings(
@@ -102,6 +110,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 vibration = prefs.vibrationEnabled,
                 keepScreenOn = prefs.keepScreenOnOffers,
                 notifyOffers = prefs.notifyNewOffers,
+                soundId = prefs.offerSoundId,
             ),
         ),
     )
@@ -112,6 +121,18 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private var lastOfferAlertKey: String? = null
 
     init {
+        // Always try GPS for map pin (even offline) once signed in
+        viewModelScope.launch {
+            locationTracker.geo.collect { g ->
+                _state.value = _state.value.copy(geo = g)
+                val uid = _state.value.userId
+                if (g != null && uid != null && _state.value.online) {
+                    runCatching {
+                        repo.upsertLocation(uid, g.lat, g.lng, g.bearing?.toDouble(), null)
+                    }
+                }
+            }
+        }
         DriverPushTokenHolder.listener = { token ->
             val uid = _state.value.userId
             if (uid != null) {
@@ -128,10 +149,12 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                             signedIn = true,
                             userId = uid,
                         )
+                        locationTracker.start()
                         if (uid != null) onSignedIn(uid)
                     }
                     is SessionStatus.NotAuthenticated -> {
                         stopPolling()
+                        locationTracker.stop()
                         _state.value = DriverUiState(
                             bootstrapping = false,
                             signedIn = false,
@@ -149,8 +172,13 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         prefs.vibrationEnabled = s.vibration
         prefs.keepScreenOnOffers = s.keepScreenOn
         prefs.notifyNewOffers = s.notifyOffers
+        prefs.offerSoundId = s.soundId
         _state.value = _state.value.copy(settingsLocal = s)
         if (!s.offerSound) stopOfferSound()
+    }
+
+    fun previewSound(soundId: String) {
+        playSoundById(soundId)
     }
 
     private suspend fun onSignedIn(userId: String) {
@@ -168,6 +196,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             )
             if (dState.shift_started_at != null) {
                 DriverLocationService.start(getApplication())
+                locationTracker.start()
             }
         }.onFailure { e ->
             _state.value = _state.value.copy(error = friendlyError(e))
@@ -201,6 +230,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     fun signOut() {
         viewModelScope.launch {
             setOnline(false)
+            locationTracker.stop()
             repo.signOut()
         }
     }
@@ -226,8 +256,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(online = online, error = null)
             runCatching {
                 repo.setShiftStarted(uid, online)
-                if (online) DriverLocationService.start(getApplication())
-                else {
+                if (online) {
+                    DriverLocationService.start(getApplication())
+                    locationTracker.start()
+                } else {
                     DriverLocationService.stop(getApplication())
                     repo.clearLocation(uid)
                 }
@@ -465,16 +497,49 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         if (key == lastOfferAlertKey) return
         lastOfferAlertKey = key
         val local = _state.value.settingsLocal
-        if (local.offerSound) playOfferSound()
+        if (local.offerSound) playSoundById(local.soundId)
         if (local.vibration) vibrateOffer()
     }
 
-    private fun playOfferSound() {
+    private fun playSoundById(soundId: String) {
         stopOfferSound()
-        runCatching {
-            mediaPlayer = MediaPlayer.create(getApplication(), R.raw.fresh_delivery)?.also {
-                it.isLooping = false
-                it.start()
+        val app = getApplication<Application>()
+        when (OfferSoundId.fromId(soundId)) {
+            OfferSoundId.CLASSIC -> runCatching {
+                mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+                    it.isLooping = false
+                    it.start()
+                }
+            }
+            OfferSoundId.CHIME -> runCatching {
+                val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                mediaPlayer = MediaPlayer.create(app, uri)?.also {
+                    it.isLooping = false
+                    it.start()
+                }
+            }
+            OfferSoundId.ALERT -> runCatching {
+                val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                mediaPlayer = MediaPlayer.create(app, uri)?.also {
+                    it.isLooping = false
+                    it.start()
+                    // stop after ~1.2s so alarm isn't endless
+                    it.setOnCompletionListener { stopOfferSound() }
+                    viewModelScope.launch {
+                        delay(1200)
+                        stopOfferSound()
+                    }
+                }
+            }
+            OfferSoundId.PING -> runCatching {
+                val tg = ToneGenerator(AudioManager.STREAM_NOTIFICATION, 90)
+                tg.startTone(ToneGenerator.TONE_PROP_BEEP2, 180)
+                viewModelScope.launch {
+                    delay(220)
+                    tg.startTone(ToneGenerator.TONE_PROP_ACK, 160)
+                    delay(200)
+                    tg.release()
+                }
             }
         }
     }
@@ -508,6 +573,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         DriverPushTokenHolder.listener = null
+        locationTracker.stop()
         stopPolling()
         super.onCleared()
     }
