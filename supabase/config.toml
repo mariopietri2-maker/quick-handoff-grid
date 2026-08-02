@@ -22,6 +22,9 @@ verify_jwt = false
 [functions.support-ai]
 verify_jwt = false
 
+[functions.ai-dynamic-pricing]
+verify_jwt = false
+
 [functions.request-password-reset]
 verify_jwt = false
 
