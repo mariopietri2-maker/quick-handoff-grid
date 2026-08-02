@@ -2,15 +2,19 @@
 // Gathers live marketplace signals, asks the AI for multipliers, clamps them to
 // admin guardrails and (optionally) applies them live.
 //
-// Auth: admin JWT (manual run from admin panel) OR x-cron-key === SUPABASE_SERVICE_ROLE_KEY.
+// Auth: admin JWT (manual run) OR X-Cron-Secret / CRON_SECRET (scheduled runs).
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { getAiGatewayApiKey, AI_GATEWAY_BASE } from "../_shared/ai-gateway.ts";
+import { hasCronSecret } from "../_shared/auth.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type, x-cron-key",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-cron-secret, x-cron-key",
 };
+
+const DEFAULT_MODEL = "google/gemini-2.5-flash";
 
 const json = (body: unknown, status = 200) =>
   new Response(JSON.stringify(body), {
@@ -23,6 +27,33 @@ const clamp = (n: number, min: number, max: number) =>
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
 
+function parseAiJson(raw: string): any {
+  const text = (raw || "").trim();
+  if (!text) return {};
+  try {
+    return JSON.parse(text);
+  } catch {
+    const cleaned = text.replace(/```json\n?|```/g, "").trim();
+    const start = cleaned.indexOf("{");
+    const end = cleaned.lastIndexOf("}");
+    if (start >= 0 && end > start) {
+      try {
+        return JSON.parse(cleaned.slice(start, end + 1));
+      } catch {
+        return {};
+      }
+    }
+    return {};
+  }
+}
+
+/** Keep moves gradual: ±10% from current, then clamp to guardrails. */
+function gradualClamp(proposed: number, current: number, min: number, max: number) {
+  const lo = Math.max(min, round2(current * 0.9));
+  const hi = Math.min(max, round2(current * 1.1));
+  return round2(clamp(proposed, lo, hi));
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
@@ -32,8 +63,10 @@ Deno.serve(async (req) => {
 
   try {
     // ---------- auth ----------
-    const cronKey = req.headers.get("x-cron-key");
-    let authorized = !!cronKey && cronKey === SERVICE_KEY;
+    // Prefer shared cron secret; keep legacy x-cron-key === service role for old jobs.
+    const legacyCron = req.headers.get("x-cron-key") === SERVICE_KEY;
+    let authorized = hasCronSecret(req) || legacyCron;
+    let isCron = authorized;
 
     if (!authorized) {
       const authHeader = req.headers.get("Authorization");
@@ -47,28 +80,54 @@ Deno.serve(async (req) => {
         .from("user_roles")
         .select("role")
         .eq("user_id", userData.user.id);
-      authorized = !!roles?.some((r: any) => r.role === "admin");
+      authorized = !!roles?.some((r: { role: string }) => r.role === "admin");
       if (!authorized) return json({ error: "Forbidden" }, 403);
+      isCron = false;
     }
 
     const body = await req.json().catch(() => ({}));
     const dryRun = !!body?.dry_run;
+    // Manual "Εκτέλεση τώρα" can force-apply even when auto_apply is off.
+    const forceApply = !!body?.force_apply && !isCron;
 
     // ---------- config ----------
-    const { data: cfg } = await admin.from("ai_pricing_config").select("*").eq("id", true).maybeSingle();
+    let { data: cfg } = await admin.from("ai_pricing_config").select("*").eq("id", true).maybeSingle();
+    if (!cfg) {
+      await admin.from("ai_pricing_config").insert({ id: true });
+      const again = await admin.from("ai_pricing_config").select("*").eq("id", true).maybeSingle();
+      cfg = again.data;
+    }
     if (!cfg) return json({ error: "Config missing" }, 500);
-    if (!cfg.enabled && !dryRun) return json({ skipped: true, reason: "disabled" });
+
+    if (isCron && body?.action === "tick") {
+      // Cron tick: skip when disabled or interval not due yet.
+      if (!cfg.enabled) return json({ skipped: true, reason: "disabled" });
+      const intervalMin = Math.max(5, Number(cfg.run_interval_minutes) || 30);
+      if (cfg.last_run_at) {
+        const elapsed = Date.now() - new Date(cfg.last_run_at).getTime();
+        if (elapsed < intervalMin * 60_000 - 5_000) {
+          return json({ skipped: true, reason: "interval_not_due", next_in_sec: Math.ceil((intervalMin * 60_000 - elapsed) / 1000) });
+        }
+      }
+    }
+
+    if (!cfg.enabled && !dryRun && !forceApply) {
+      return json({ skipped: true, reason: "disabled" });
+    }
 
     // ---------- signals ----------
     const since = new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString();
     const [ordersRes, statesRes, offersRes, treasuryRes, settingsRes, storesRes] = await Promise.all([
-      admin.from("orders").select("id, status, store_id, total, created_at, delivered_at").gte("created_at", since),
+      admin.from("orders").select("id, status, store_id, total_amount, created_at, delivered_at").gte("created_at", since),
       admin.from("driver_state").select("driver_id, shift_started_at, on_break"),
       admin.from("pending_offers").select("id, status, created_at").gte("created_at", since),
       admin.from("admin_treasury").select("*").maybeSingle(),
       admin.from("platform_settings").select("first_km_price, per_km_rate, min_pay, max_pay, ai_delivery_fee_multiplier, ai_driver_pay_multiplier").eq("id", 1).maybeSingle(),
       admin.from("stores").select("id, name, is_active, commission_pct").eq("is_active", true).limit(60),
     ]);
+
+    if (ordersRes.error) console.error("orders signal error", ordersRes.error.message);
+    if (statesRes.error) console.error("driver_state signal error", statesRes.error.message);
 
     const orders = ordersRes.data ?? [];
     const states = statesRes.data ?? [];
@@ -86,6 +145,9 @@ Deno.serve(async (req) => {
     const hour = new Date().getHours();
     const ordersPerDriver = onShift > 0 ? round2(openOrders.length / onShift) : openOrders.length;
 
+    const currentFee = Number(settings.ai_delivery_fee_multiplier ?? 1) || 1;
+    const currentPay = Number(settings.ai_driver_pay_multiplier ?? 1) || 1;
+
     const context = {
       local_hour: hour,
       weekday: new Date().getDay(),
@@ -95,8 +157,8 @@ Deno.serve(async (req) => {
       open_orders_per_driver: ordersPerDriver,
       offer_accept_rate: acceptRate,
       platform_pool: Number((treasuryRes.data as any)?.platform_pool ?? 0),
-      current_delivery_fee_multiplier: Number(settings.ai_delivery_fee_multiplier ?? 1),
-      current_driver_pay_multiplier: Number(settings.ai_driver_pay_multiplier ?? 1),
+      current_delivery_fee_multiplier: currentFee,
+      current_driver_pay_multiplier: currentPay,
       base_pricing: {
         first_km_price: Number(settings.first_km_price ?? 0),
         per_km_rate: Number(settings.per_km_rate ?? 0),
@@ -109,7 +171,9 @@ Deno.serve(async (req) => {
           id: s.id,
           name: s.name,
           orders_last_2h: so.length,
-          avg_basket: so.length ? round2(so.reduce((a: number, o: any) => a + Number(o.total ?? 0), 0) / so.length) : 0,
+          avg_basket: so.length
+            ? round2(so.reduce((a: number, o: any) => a + Number(o.total_amount ?? 0), 0) / so.length)
+            : 0,
           commission_pct: s.commission_pct,
         };
       }),
@@ -117,7 +181,7 @@ Deno.serve(async (req) => {
 
     // ---------- ask the AI ----------
     const apiKey = getAiGatewayApiKey();
-    if (!apiKey) return json({ error: "AI gateway key missing" }, 500);
+    if (!apiKey) return json({ error: "AI gateway key missing (AI_GATEWAY_API_KEY)" }, 500);
 
     const guardrails = {
       delivery_fee_multiplier: [Number(cfg.delivery_fee_min_mult), Number(cfg.delivery_fee_max_mult)],
@@ -126,15 +190,18 @@ Deno.serve(async (req) => {
       menu_price_multiplier: [Number(cfg.menu_price_min_mult), Number(cfg.menu_price_max_mult)],
     };
 
-    const prompt = `You are the pricing engine of a food-delivery marketplace in Greece.
+    const model = (cfg.model && String(cfg.model).trim()) || DEFAULT_MODEL;
+
+    const prompt = `You are the pricing engine of a food-delivery marketplace in Greece (Ioannina).
 Given the live marketplace snapshot, decide pricing multipliers.
 
 Rules:
 - Raise delivery fee and driver pay when demand per available driver is high or acceptance rate is low.
 - Lower (never below the minimum) when supply is abundant and demand is weak.
 - Never exceed the guardrails; values outside them will be clamped.
-- Store commission and menu price suggestions are per-store and optional; only include stores where a change is clearly justified.
 - Keep changes gradual (max ~10% move from the current multiplier per run).
+- Store commission and menu price suggestions are per-store and optional; only include stores where a change is clearly justified.
+- reasoning must be one short paragraph in Greek.
 
 Guardrails: ${JSON.stringify(guardrails)}
 Commission pricing enabled: ${cfg.commission_pricing_enabled}
@@ -149,7 +216,7 @@ Reply with JSON only:
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
       body: JSON.stringify({
-        model: cfg.model || "google/gemini-3.6-flash",
+        model,
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       }),
@@ -160,20 +227,25 @@ Reply with JSON only:
     if (!aiRes.ok) {
       const text = await aiRes.text();
       await admin.from("ai_pricing_runs").insert({ status: "error", context, error: text.slice(0, 800) });
-      return json({ error: "AI request failed", detail: text.slice(0, 400) }, 500);
+      return json({ error: "AI request failed", detail: text.slice(0, 400), model }, 500);
     }
 
     const aiJson = await aiRes.json();
-    let decision: any = {};
-    try {
-      decision = JSON.parse(aiJson?.choices?.[0]?.message?.content ?? "{}");
-    } catch {
-      decision = {};
-    }
+    const decision = parseAiJson(aiJson?.choices?.[0]?.message?.content ?? "{}");
 
     // ---------- clamp ----------
-    const feeMult = round2(clamp(Number(decision.delivery_fee_multiplier ?? 1), guardrails.delivery_fee_multiplier[0], guardrails.delivery_fee_multiplier[1]));
-    const payMult = round2(clamp(Number(decision.driver_pay_multiplier ?? 1), guardrails.driver_pay_multiplier[0], guardrails.driver_pay_multiplier[1]));
+    const feeMult = gradualClamp(
+      Number(decision.delivery_fee_multiplier ?? currentFee),
+      currentFee,
+      guardrails.delivery_fee_multiplier[0],
+      guardrails.delivery_fee_multiplier[1],
+    );
+    const payMult = gradualClamp(
+      Number(decision.driver_pay_multiplier ?? currentPay),
+      currentPay,
+      guardrails.driver_pay_multiplier[0],
+      guardrails.driver_pay_multiplier[1],
+    );
 
     const storeDecisions = Array.isArray(decision.stores) ? decision.stores.slice(0, 60) : [];
 
@@ -182,7 +254,7 @@ Reply with JSON only:
       .insert({
         status: "ok",
         context,
-        decisions: { delivery_fee_multiplier: feeMult, driver_pay_multiplier: payMult, stores: storeDecisions },
+        decisions: { delivery_fee_multiplier: feeMult, driver_pay_multiplier: payMult, stores: storeDecisions, model },
         reasoning: typeof decision.reasoning === "string" ? decision.reasoning.slice(0, 2000) : null,
         applied: false,
       })
@@ -192,11 +264,11 @@ Reply with JSON only:
     const runId = run?.id ?? null;
     const adjustments: any[] = [];
 
-    const shouldApply = cfg.auto_apply && !dryRun && cfg.enabled;
+    const shouldApply = !dryRun && cfg.enabled && (cfg.auto_apply || forceApply);
 
     if (shouldApply) {
-      const oldFee = Number(settings.ai_delivery_fee_multiplier ?? 1);
-      const oldPay = Number(settings.ai_driver_pay_multiplier ?? 1);
+      const oldFee = currentFee;
+      const oldPay = currentPay;
       if (oldFee !== feeMult || oldPay !== payMult) {
         await admin
           .from("platform_settings")
@@ -204,10 +276,26 @@ Reply with JSON only:
           .eq("id", 1);
       }
       if (oldFee !== feeMult) {
-        adjustments.push({ run_id: runId, scope: "global", field: "ai_delivery_fee_multiplier", old_value: oldFee, new_value: feeMult, reason: decision.reasoning ?? null, target_label: "Πλατφόρμα" });
+        adjustments.push({
+          run_id: runId,
+          scope: "global",
+          field: "ai_delivery_fee_multiplier",
+          old_value: oldFee,
+          new_value: feeMult,
+          reason: decision.reasoning ?? null,
+          target_label: "Πλατφόρμα",
+        });
       }
       if (oldPay !== payMult) {
-        adjustments.push({ run_id: runId, scope: "global", field: "ai_driver_pay_multiplier", old_value: oldPay, new_value: payMult, reason: decision.reasoning ?? null, target_label: "Πλατφόρμα" });
+        adjustments.push({
+          run_id: runId,
+          scope: "global",
+          field: "ai_driver_pay_multiplier",
+          old_value: oldPay,
+          new_value: payMult,
+          reason: decision.reasoning ?? null,
+          target_label: "Πλατφόρμα",
+        });
       }
 
       for (const sd of storeDecisions) {
@@ -219,7 +307,16 @@ Reply with JSON only:
           const prev = store.commission_pct == null ? null : Number(store.commission_pct);
           if (prev !== next) {
             await admin.from("stores").update({ commission_pct: next }).eq("id", store.id);
-            adjustments.push({ run_id: runId, scope: "store", target_id: store.id, target_label: store.name, field: "commission_pct", old_value: prev, new_value: next, reason: sd.reason ?? null });
+            adjustments.push({
+              run_id: runId,
+              scope: "store",
+              target_id: store.id,
+              target_label: store.name,
+              field: "commission_pct",
+              old_value: prev,
+              new_value: next,
+              reason: sd.reason ?? null,
+            });
           }
         }
 
@@ -230,14 +327,27 @@ Reply with JSON only:
             .select("id, price, base_price")
             .eq("store_id", store.id)
             .limit(300);
+          let changed = 0;
           for (const it of items ?? []) {
             const base = Number(it.base_price ?? it.price ?? 0);
             if (!base) continue;
             const next = round2(base * mult);
             if (next === Number(it.price)) continue;
             await admin.from("menu_items").update({ base_price: base, price: next }).eq("id", it.id);
+            changed += 1;
           }
-          adjustments.push({ run_id: runId, scope: "store_menu", target_id: store.id, target_label: store.name, field: "menu_price_multiplier", old_value: 1, new_value: round2(mult), reason: sd.reason ?? null });
+          if (changed > 0) {
+            adjustments.push({
+              run_id: runId,
+              scope: "store_menu",
+              target_id: store.id,
+              target_label: store.name,
+              field: "menu_price_multiplier",
+              old_value: 1,
+              new_value: round2(mult),
+              reason: sd.reason ?? `${changed} προϊόντα`,
+            });
+          }
         }
       }
 
@@ -250,13 +360,17 @@ Reply with JSON only:
     return json({
       run_id: runId,
       applied: shouldApply,
+      skipped: false,
+      dry_run: dryRun,
       delivery_fee_multiplier: feeMult,
       driver_pay_multiplier: payMult,
       reasoning: decision.reasoning ?? null,
       adjustments: adjustments.length,
+      model,
       context,
     });
   } catch (e) {
+    console.error("ai-dynamic-pricing error", e);
     return json({ error: (e as Error).message }, 500);
   }
 });
