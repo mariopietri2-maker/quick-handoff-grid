@@ -13,13 +13,18 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
-        // TODO: upsert token into the driver's Supabase profile once push registration lands.
+        DriverPushTokenHolder.pendingToken = token
+        DriverPushTokenHolder.listener?.invoke(token)
     }
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        val title = message.notification?.title ?: "New delivery offer"
-        val body = message.notification?.body ?: message.data["body"] ?: ""
+        val title = message.notification?.title
+            ?: message.data["title"]
+            ?: "New delivery offer"
+        val body = message.notification?.body
+            ?: message.data["body"]
+            ?: ""
         showNotification(title, body)
     }
 
@@ -30,7 +35,10 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
                 channelId,
                 "Delivery offers",
                 NotificationManager.IMPORTANCE_HIGH,
-            )
+            ).apply {
+                enableVibration(true)
+                description = "Incoming delivery offers"
+            }
             manager.createNotificationChannel(channel)
         }
         val notification = NotificationCompat.Builder(this, channelId)
@@ -38,7 +46,14 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             .setContentText(body)
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
             .build()
-        getSystemService(NotificationManager::class.java).notify(System.currentTimeMillis().toInt(), notification)
+        getSystemService(NotificationManager::class.java)
+            .notify(System.currentTimeMillis().toInt(), notification)
     }
+}
+
+object DriverPushTokenHolder {
+    @Volatile var pendingToken: String? = null
+    @Volatile var listener: ((String) -> Unit)? = null
 }
