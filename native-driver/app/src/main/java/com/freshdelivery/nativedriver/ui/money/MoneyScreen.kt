@@ -13,11 +13,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
+import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Today
@@ -47,11 +47,11 @@ fun MoneyScreen(
     onRefresh: () -> Unit,
 ) {
     val money = state.money
-    val balance = money?.wallet?.available_balance ?: 0.0
+    val earningsBalance = money?.wallet?.available_balance ?: 0.0
     val pending = money?.wallet?.pending_balance ?: 0.0
-    val cash = state.cashBalance
-    val cap = state.maxCashCap
-    val cashPct = ((cash / cap.coerceAtLeast(1.0))).toFloat().coerceIn(0f, 1f)
+    val customerCash = state.cashBalance
+    val cashCap = state.maxCashCap
+    val cashPct = ((customerCash / cashCap.coerceAtLeast(1.0))).toFloat().coerceIn(0f, 1f)
     val cs = MaterialTheme.colorScheme
 
     Column(
@@ -71,9 +71,20 @@ fun MoneyScreen(
                 Icon(Icons.Outlined.Refresh, contentDescription = "Ανανέωση")
             }
         }
-        Spacer(Modifier.height(12.dp))
 
-        // Wallet hero
+        Spacer(Modifier.height(6.dp))
+        Text(
+            "Δύο ξεχωριστά ποσά: τα κέρδη σου και τα μετρητά που εισέπραξες από πελάτες.",
+            style = MaterialTheme.typography.bodySmall,
+            color = cs.onSurfaceVariant,
+        )
+
+        // ═══════════════════════════════════════════════════════════
+        // 1) DRIVER EARNINGS (wallet — yours to withdraw)
+        // ═══════════════════════════════════════════════════════════
+        Spacer(Modifier.height(16.dp))
+        SectionLabel("Κέρδη οδηγού", "Δικά σου — μπορείς να κάνεις ανάληψη")
+
         Box(
             Modifier
                 .fillMaxWidth()
@@ -94,22 +105,30 @@ fun MoneyScreen(
                         modifier = Modifier.size(22.dp),
                     )
                     Spacer(Modifier.size(8.dp))
-                    Text("Διαθέσιμο υπόλοιπο", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelLarge)
+                    Text(
+                        "Διαθέσιμο για ανάληψη",
+                        color = Color.White.copy(alpha = 0.85f),
+                        style = MaterialTheme.typography.labelLarge,
+                    )
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "€${"%.2f".format(balance)}",
+                    "€${"%.2f".format(earningsBalance)}",
                     style = MaterialTheme.typography.displaySmall,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                 )
                 if (pending > 0) {
-                    Text("+€${"%.2f".format(pending)} εκκρεμεί", color = Color.White.copy(alpha = 0.75f))
+                    Text(
+                        "+€${"%.2f".format(pending)} εκκρεμεί (δεν είναι ακόμα διαθέσιμο)",
+                        color = Color.White.copy(alpha = 0.75f),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
                 }
                 Spacer(Modifier.height(14.dp))
                 Button(
-                    onClick = { if (balance >= 10) onWithdraw(balance) },
-                    enabled = !state.busy && balance >= 10,
+                    onClick = { if (earningsBalance >= 10) onWithdraw(earningsBalance) },
+                    enabled = !state.busy && earningsBalance >= 10,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = Color.White,
                         contentColor = Color(0xFF007A3D),
@@ -120,16 +139,18 @@ fun MoneyScreen(
                 ) {
                     Text("Αίτημα ανάληψης", fontWeight = FontWeight.Bold)
                 }
-                if (balance < 10) {
+                if (earningsBalance < 10) {
                     Spacer(Modifier.height(6.dp))
-                    Text("Ελάχιστο €10 για ανάληψη", color = Color.White.copy(alpha = 0.7f), style = MaterialTheme.typography.labelSmall)
+                    Text(
+                        "Ελάχιστο €10 για ανάληψη",
+                        color = Color.White.copy(alpha = 0.7f),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
                 }
             }
         }
 
-        Spacer(Modifier.height(14.dp))
-
-        // Today / week stats
+        Spacer(Modifier.height(12.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
             StatMini(
                 icon = { Icon(Icons.Outlined.Today, null, tint = FreshGreen, modifier = Modifier.size(20.dp)) },
@@ -142,77 +163,50 @@ fun MoneyScreen(
                 icon = { Icon(Icons.Outlined.Payments, null, tint = FreshAmber, modifier = Modifier.size(20.dp)) },
                 label = "Εβδομάδα",
                 value = "€${"%.2f".format(money?.weekTotal ?: 0.0)}",
-                sub = "συνολικά",
+                sub = "συνολικά κέρδη",
                 modifier = Modifier.weight(1f),
             )
         }
 
-        Spacer(Modifier.height(14.dp))
-
-        // Cash shift
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(cs.surface)
-                .border(1.dp, cs.outline.copy(alpha = 0.35f), RoundedCornerShape(22.dp))
-                .padding(16.dp),
-        ) {
-            Text("Μετρητά βάρδιας", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-            Spacer(Modifier.height(4.dp))
-            Text(
-                "€${"%.2f".format(cash)} / €${"%.0f".format(cap)}",
-                style = MaterialTheme.typography.headlineSmall,
-                color = if (state.cashCapped) cs.error else cs.onSurface,
-            )
-            Spacer(Modifier.height(10.dp))
-            LinearProgressIndicator(
-                progress = { cashPct },
-                modifier = Modifier.fillMaxWidth().height(8.dp).clip(RoundedCornerShape(4.dp)),
-                color = if (state.cashCapped) cs.error else FreshGreen,
-                trackColor = cs.outline.copy(alpha = 0.25f),
-            )
-            if (state.cashCapped) {
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    "Έφτασες το όριο — χωρίς νέες προσφορές μέχρι παράδοση μετρητών.",
-                    color = cs.error,
-                    style = MaterialTheme.typography.bodySmall,
-                )
-            }
-        }
-
-        Spacer(Modifier.height(18.dp))
-        Text("Παραδόσεις", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(16.dp))
+        Text("Ιστορικό κερδών", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
         Spacer(Modifier.height(8.dp))
         val earnings = money?.earnings.orEmpty()
         if (earnings.isEmpty()) {
-            EmptyHint("Δεν υπάρχουν ακόμα παραδόσεις.")
+            EmptyHint("Δεν υπάρχουν ακόμα κέρδη από παραδόσεις.")
         } else {
             earnings.take(20).forEach { e ->
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 8.dp)
+                        .padding(vertical = 4.dp)
                         .clip(RoundedCornerShape(14.dp))
                         .background(cs.surface)
+                        .border(1.dp, cs.outline.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
                         .padding(horizontal = 14.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Column {
-                        Text(e.created_at?.take(16)?.replace('T', ' ') ?: e.id.take(8), style = MaterialTheme.typography.bodyMedium)
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            e.created_at?.take(16)?.replace('T', ' ') ?: e.id.take(8),
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
                         val parts = buildList {
                             e.base_pay?.takeIf { it > 0 }?.let { add("βάση €${"%.2f".format(it)}") }
                             e.tip?.takeIf { it > 0 }?.let { add("tip €${"%.2f".format(it)}") }
                             e.bonus?.takeIf { it > 0 }?.let { add("bonus €${"%.2f".format(it)}") }
                         }
                         if (parts.isNotEmpty()) {
-                            Text(parts.joinToString(" · "), style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+                            Text(
+                                parts.joinToString(" · "),
+                                style = MaterialTheme.typography.labelSmall,
+                                color = cs.onSurfaceVariant,
+                            )
                         }
                     }
                     Text(
-                        "€${"%.2f".format(e.total ?: 0.0)}",
+                        "+€${"%.2f".format(e.total ?: 0.0)}",
                         color = FreshGreen,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.titleMedium,
@@ -221,21 +215,21 @@ fun MoneyScreen(
             }
         }
 
-        Spacer(Modifier.height(18.dp))
-        Text("Κινήσεις πορτοφολιού", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(8.dp))
+        Spacer(Modifier.height(14.dp))
+        Text("Κινήσεις πορτοφολιού", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
+        Spacer(Modifier.height(6.dp))
         val txs = money?.transactions.orEmpty()
         if (txs.isEmpty()) {
-            EmptyHint("Καμία κίνηση ακόμα.")
+            EmptyHint("Καμία κίνηση πορτοφολιού.")
         } else {
-            txs.take(20).forEach { tx ->
+            txs.take(15).forEach { tx ->
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 6.dp)
-                        .clip(RoundedCornerShape(14.dp))
+                        .padding(vertical = 3.dp)
+                        .clip(RoundedCornerShape(12.dp))
                         .background(cs.surface)
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                        .padding(horizontal = 12.dp, vertical = 10.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                 ) {
                     Column(Modifier.weight(1f)) {
@@ -254,8 +248,102 @@ fun MoneyScreen(
                 }
             }
         }
-        Spacer(Modifier.height(24.dp))
+
+        // ═══════════════════════════════════════════════════════════
+        // 2) CUSTOMER CASH (held — not yours)
+        // ═══════════════════════════════════════════════════════════
+        Spacer(Modifier.height(28.dp))
+        SectionLabel("Μετρητά πελατών", "Είσπραξη — δεν είναι δικά σου κέρδη")
+
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(24.dp))
+                .background(cs.surface)
+                .border(
+                    width = 1.5.dp,
+                    color = if (state.cashCapped) cs.error.copy(alpha = 0.55f) else FreshAmber.copy(alpha = 0.45f),
+                    shape = RoundedCornerShape(24.dp),
+                )
+                .padding(18.dp),
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    Icons.Outlined.Payments,
+                    contentDescription = null,
+                    tint = if (state.cashCapped) cs.error else FreshAmber,
+                    modifier = Modifier.size(22.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    "Μετρητά στη βάρδια",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.SemiBold,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+            Text(
+                "€${"%.2f".format(customerCash)}",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = if (state.cashCapped) cs.error else cs.onSurface,
+            )
+            Text(
+                "Όριο €${"%.0f".format(cashCap)}",
+                style = MaterialTheme.typography.bodySmall,
+                color = cs.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(12.dp))
+            LinearProgressIndicator(
+                progress = { cashPct },
+                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
+                color = if (state.cashCapped) cs.error else FreshAmber,
+                trackColor = cs.outline.copy(alpha = 0.25f),
+            )
+            Spacer(Modifier.height(12.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(
+                        if (state.cashCapped) cs.error.copy(alpha = 0.12f)
+                        else FreshAmber.copy(alpha = 0.12f),
+                    )
+                    .padding(12.dp),
+                verticalAlignment = Alignment.Top,
+            ) {
+                Icon(
+                    Icons.Outlined.Info,
+                    contentDescription = null,
+                    tint = if (state.cashCapped) cs.error else FreshAmber,
+                    modifier = Modifier.size(18.dp),
+                )
+                Spacer(Modifier.size(8.dp))
+                Text(
+                    if (state.cashCapped) {
+                        "Έφτασες το όριο μετρητών. Δεν θα λαμβάνεις νέες προσφορές μέχρι να παραδώσεις τα μετρητά (store / admin)."
+                    } else {
+                        "Αυτά είναι μετρητά που πλήρωσαν οι πελάτες στις παραδόσεις cash. Δεν μπαίνουν στο πορτοφόλι κερδών — τα παραδίδεις στο κατάστημα / admin."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (state.cashCapped) cs.error else cs.onSurface,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(28.dp))
     }
+}
+
+@Composable
+private fun SectionLabel(title: String, subtitle: String) {
+    Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+    Text(
+        subtitle,
+        style = MaterialTheme.typography.bodySmall,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 10.dp, top = 2.dp),
+    )
 }
 
 @Composable
