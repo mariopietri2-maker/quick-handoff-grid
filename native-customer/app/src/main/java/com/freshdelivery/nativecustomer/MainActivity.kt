@@ -43,7 +43,10 @@ class MainActivity : ComponentActivity() {
                     val state by vm.state.collectAsStateWithLifecycle()
                     when {
                         state.bootstrapping -> {
-                            Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                            Box(
+                                modifier = Modifier.fillMaxSize(),
+                                contentAlignment = Alignment.Center,
+                            ) {
                                 CircularProgressIndicator()
                             }
                         }
