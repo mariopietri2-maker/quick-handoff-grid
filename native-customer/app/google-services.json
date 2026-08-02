@@ -1,0 +1,48 @@
+{
+  "project_info": {
+    "project_number": "953508629711",
+    "project_id": "aaaaaa-f9fe9",
+    "storage_bucket": "aaaaaa-f9fe9.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:953508629711:android:5b7ae0eeb9f77c318cbbba",
+        "android_client_info": {
+          "package_name": "com.freshdelivery.customer"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGdTFichTH8fc1YbUYlzKwZw-qYA305aU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:953508629711:android:18969fcc23be362a8cbbba",
+        "android_client_info": {
+          "package_name": "com.freshdelivery.driver"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDGdTFichTH8fc1YbUYlzKwZw-qYA305aU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
