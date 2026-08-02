@@ -32,6 +32,8 @@ data class MapMarker(
 private const val DEFAULT_LAT = 39.6650
 private const val DEFAULT_LNG = 20.8537
 
+private fun fmt5(v: Double): String = String.format("%.5f", v)
+
 /**
  * Reliable map surface using Mapbox Static Images API.
  * No WebView — tiles always load via Coil HTTP image request.
@@ -48,7 +50,6 @@ fun DriverMapView(
     val lat = centerLat ?: userLat ?: DEFAULT_LAT
     val lng = centerLng ?: userLng ?: DEFAULT_LNG
     val density = LocalDensity.current
-    // Request a high-res static image (~2x for sharp phones)
     val widthPx = with(density) { 720.dp.roundToPx().coerceIn(400, 1280) }
     val heightPx = with(density) { 640.dp.roundToPx().coerceIn(300, 1280) }
 
@@ -89,13 +90,8 @@ fun DriverMapView(
 }
 
 /**
- * Build a Mapbox Static Images URL.
- * Docs: https://docs.mapbox.com/api/maps/static-images/
- *
- * Overlay pins:
- *  - pin-s+00C853(lng,lat) for store / offer
- *  - pin-s+3B82F6(lng,lat) for delivery
- *  - pin-s+FFB020 for secondary offers
+ * Mapbox Static Images URL with optional pin overlays.
+ * https://docs.mapbox.com/api/maps/static-images/
  */
 private fun buildStaticMapUrl(
     token: String,
@@ -110,19 +106,18 @@ private fun buildStaticMapUrl(
     val overlays = mutableListOf<String>()
     markers.forEach { m ->
         val hex = m.color.removePrefix("#").uppercase().take(6)
-        overlays += "pin-s+${hex}(${\"%.5f\".format(m.lng)},${\"%.5f\".format(m.lat)})"
+        overlays += "pin-s+$hex(${fmt5(m.lng)},${fmt5(m.lat)})"
     }
     if (userLat != null && userLng != null) {
-        overlays += "pin-s+3B82F6(${\"%.5f\".format(userLng)},${\"%.5f\".format(userLat)})"
+        overlays += "pin-s+3B82F6(${fmt5(userLng)},${fmt5(userLat)})"
     }
 
     val overlayPath = if (overlays.isEmpty()) "" else overlays.joinToString(",") + "/"
 
-    // Auto-fit when multiple markers; otherwise fixed zoom on center
     val position = if (markers.size + (if (userLat != null) 1 else 0) >= 2) {
         "auto"
     } else {
-        "${\"%.5f\".format(lng)},${\"%.5f\".format(lat)},13.2,0"
+        "${fmt5(lng)},${fmt5(lat)},13.2,0"
     }
 
     return Uri.parse(
