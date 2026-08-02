@@ -3,15 +3,15 @@ package com.freshdelivery.nativedriver.location
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.Service
+import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.os.IBinder
 import androidx.core.app.NotificationCompat
+import androidx.core.content.ContextCompat
 
 /**
- * Foreground service placeholder for continuous driver location tracking.
- * FusedLocationProviderClient + Supabase Realtime broadcast wiring lands
- * with the navigation/handoff feature slice.
+ * Foreground service for continuous driver location tracking while on shift.
  */
 class DriverLocationService : Service() {
 
@@ -51,5 +51,14 @@ class DriverLocationService : Service() {
 
     companion object {
         private const val NOTIFICATION_ID = 1001
+
+        fun start(context: Context) {
+            val intent = Intent(context, DriverLocationService::class.java)
+            ContextCompat.startForegroundService(context, intent)
+        }
+
+        fun stop(context: Context) {
+            context.stopService(Intent(context, DriverLocationService::class.java))
+        }
     }
 }
