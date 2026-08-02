@@ -16,6 +16,25 @@ data class StoreRow(
 )
 
 @Serializable
+data class MenuItemRow(
+    val id: String,
+    val store_id: String,
+    val name: String,
+    val price: Double,
+    val description: String? = null,
+    val category: String? = null,
+    val is_available: Boolean? = true,
+    val image_url: String? = null,
+)
+
+data class CartLine(
+    val menuItemId: String,
+    val name: String,
+    val price: Double,
+    val quantity: Int,
+)
+
+@Serializable
 data class OrderRow(
     val id: String,
     val store_id: String,
@@ -42,6 +61,21 @@ data class ProfileRow(
     val id: String,
     val full_name: String? = null,
     val phone: String? = null,
+)
+
+@Serializable
+data class PushTokenUpsert(
+    val user_id: String,
+    val token: String,
+    val platform: String = "android",
+    val app: String = "customer",
+)
+
+@Serializable
+data class PlatformFees(
+    val platform_service_fee: Double? = 0.99,
+    val customer_base_fee: Double? = null,
+    val customer_per_km_fee: Double? = null,
 )
 
 data class OrderUi(
