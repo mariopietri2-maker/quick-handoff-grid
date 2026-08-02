@@ -466,9 +466,11 @@ export default function CloudUsagePanel() {
         <CardContent className="text-sm space-y-2 text-muted-foreground">
           <p>• Καθάρισε <strong>driver_locations</strong> κάθε εβδομάδα — μεγαλώνει γρήγορα.</p>
           <p>• Χρησιμοποίησε <strong>image compression</strong> πριν το upload σε storage buckets.</p>
-          <p>• Αν το app είναι αργό, αναβάθμισε το <strong>instance size</strong> αντί να προσθέτεις indexes παντού.</p>
           <p>• Realtime subscriptions χρεώνονται ανά μήνυμα — απενεργοποίησε όσα δεν χρησιμοποιούνται.</p>
-          <p>• Το AI gateway είναι δωρεάν μέχρι $1/μήνα — μετά usage-based. Cache responses όπου γίνεται.</p>
+          <p>• Crons: push drain κάθε 15s, email queue κάθε 30s — λιγότερες edge invocations.</p>
+          <p>• Mapbox: address geocode cache + directions κάθε 20s στο driver map.</p>
+          <p>• AI Support: φθηνό flash-lite model· άνοιξε Auto-reply μόνο αν χρειάζεται (Feature flags).</p>
+          <p>• Δες <strong>Κόστος πλατφόρμας</strong> για εκτίμηση Railway / Supabase / Mapbox / Stripe.</p>
         </CardContent>
       </Card>
     </div>

@@ -765,7 +765,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   // Periodic refresh while navigating (every 8s) instead of on every GPS update
   useEffect(() => {
     if (!navigatingTo) return;
-    const id = setInterval(() => fetchRouteRef.current(), 8000);
+    // 20s keeps traffic ETA fresh without burning Mapbox Directions quota.
+    const id = setInterval(() => fetchRouteRef.current(), 20_000);
     return () => clearInterval(id);
   }, [navigatingTo]);
 
