@@ -1,8 +1,3 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">Fresh Driver</string>
-    <string name="online_notification_title">Διαθέσιμος</string>
-    <string name="online_notification_text">Είσαι συνδεδεμένος και σε θέση να δεχτείς παραγγελίες</string>
-    <string name="offer_channel_name">Νέες παραγγελίες</string>
-    <string name="online_channel_name">Κατάσταση σύνδεσης</string>
+    <string name="app_name">Fresh Delivery Driver</string>
 </resources>
