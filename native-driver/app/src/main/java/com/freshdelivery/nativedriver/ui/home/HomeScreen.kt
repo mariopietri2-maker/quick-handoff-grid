@@ -56,6 +56,9 @@ import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.Instant
 
+private fun eur(v: Double): String = "€" + "%.2f".format(v)
+private fun km(v: Double): String = "%.1f".format(v) + " km"
+
 @Composable
 fun HomeScreen(
     state: DriverUiState,
@@ -92,7 +95,6 @@ fun HomeScreen(
     val centerLng = markers.firstOrNull()?.lng ?: primary?.storeLng
 
     Column(Modifier.fillMaxSize()) {
-        // Top bar: online + break + refresh
         Row(
             Modifier
                 .fillMaxWidth()
@@ -136,7 +138,6 @@ fun HomeScreen(
             }
         }
 
-        // Map
         Box(
             Modifier
                 .fillMaxWidth()
@@ -151,7 +152,6 @@ fun HomeScreen(
             )
         }
 
-        // Messages
         state.error?.let { msg ->
             Row(
                 Modifier
@@ -190,7 +190,6 @@ fun HomeScreen(
                 Spacer(Modifier.height(8.dp))
             }
 
-            // Active trips
             if (state.activeTrips.isNotEmpty()) {
                 Text("Ενεργή παράδοση", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(8.dp))
@@ -204,11 +203,16 @@ fun HomeScreen(
                                 context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
                             }
                         },
-                        onNavigate = { lat, lng, label ->
+                        onNavigate = { lat, lng, _ ->
                             val uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d")
                             val intent = Intent(Intent.ACTION_VIEW, uri).setPackage("com.google.android.apps.maps")
                             runCatching { context.startActivity(intent) }.onFailure {
-                                context.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng")))
+                                context.startActivity(
+                                    Intent(
+                                        Intent.ACTION_VIEW,
+                                        Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng"),
+                                    ),
+                                )
                             }
                         },
                     )
@@ -216,7 +220,6 @@ fun HomeScreen(
                 }
             }
 
-            // Stacked offers while on trip
             if (state.stackedOffers.isNotEmpty()) {
                 Text("Επιπλέον παραγγελίες (ίδιο κατάστημα)", style = MaterialTheme.typography.titleMedium)
                 Spacer(Modifier.height(6.dp))
@@ -232,7 +235,6 @@ fun HomeScreen(
                 }
             }
 
-            // Pending offers when idle
             if (state.activeTrips.isEmpty()) {
                 if (!state.online) {
                     Card(
@@ -326,23 +328,23 @@ private fun OfferCard(
                     fontWeight = FontWeight.Bold,
                 )
                 Text(
-                    "€${\"%.2f\".format(payout)}",
+                    eur(payout),
                     style = MaterialTheme.typography.titleLarge,
                     color = Color(0xFF159A6A),
                     fontWeight = FontWeight.Bold,
                 )
             }
             if (!offer.storeAddress.isNullOrBlank()) {
-                Text(offer.storeAddress, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(offer.storeAddress!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (!offer.order.delivery_address.isNullOrBlank()) {
-                Text("→ ${offer.order.delivery_address}", style = MaterialTheme.typography.bodyMedium)
+                Text("→ " + offer.order.delivery_address, style = MaterialTheme.typography.bodyMedium)
             }
             offer.order.distance_km?.let {
-                Text("${\"%.1f\".format(it)} km", style = MaterialTheme.typography.bodySmall)
+                Text(km(it), style = MaterialTheme.typography.bodySmall)
             }
             if (!offer.itemsSummary.isNullOrBlank()) {
-                Text(offer.itemsSummary, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(offer.itemsSummary!!, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             if (offer.order.payment_method?.equals("cash", ignoreCase = true) == true) {
                 Text("Μετρητά", color = Color(0xFFF59E0B), style = MaterialTheme.typography.labelLarge)
@@ -357,7 +359,7 @@ private fun OfferCard(
                     .clip(RoundedCornerShape(3.dp)),
                 color = if (secondsLeft <= 10) MaterialTheme.colorScheme.error else Color(0xFF159A6A),
             )
-            Text("${secondsLeft}s", style = MaterialTheme.typography.labelSmall)
+            Text(secondsLeft.toString() + "s", style = MaterialTheme.typography.labelSmall)
 
             Spacer(Modifier.height(10.dp))
             Row(
@@ -413,14 +415,14 @@ private fun ActiveTripCard(
                     Text(trip.storeName ?: "Κατάστημα", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
                     Text(statusLabel(status), color = Color(0xFF159A6A), style = MaterialTheme.typography.labelLarge)
                 }
-                Text("€${\"%.2f\".format(payout)}", style = MaterialTheme.typography.titleLarge, color = Color(0xFF159A6A), fontWeight = FontWeight.Bold)
+                Text(eur(payout), style = MaterialTheme.typography.titleLarge, color = Color(0xFF159A6A), fontWeight = FontWeight.Bold)
             }
             trip.storeAddress?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
-            trip.order.delivery_address?.let { Text("Παράδοση: $it", style = MaterialTheme.typography.bodyMedium) }
+            trip.order.delivery_address?.let { Text("Παράδοση: " + it, style = MaterialTheme.typography.bodyMedium) }
             trip.itemsSummary?.let { Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant) }
             if (trip.order.payment_method?.equals("cash", ignoreCase = true) == true) {
                 Text(
-                    "Είσπραξη μετρητών €${\"%.2f\".format(trip.order.total_amount ?: 0.0)}",
+                    "Είσπραξη μετρητών " + eur(trip.order.total_amount ?: 0.0),
                     color = Color(0xFFF59E0B),
                     fontWeight = FontWeight.SemiBold,
                 )
