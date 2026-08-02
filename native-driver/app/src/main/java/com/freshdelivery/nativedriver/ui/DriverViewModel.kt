@@ -121,7 +121,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private var lastOfferAlertKey: String? = null
 
     init {
-        // Always try GPS for map pin (even offline) once signed in
         viewModelScope.launch {
             locationTracker.geo.collect { g ->
                 _state.value = _state.value.copy(geo = g)
@@ -187,15 +186,16 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             val driver = repo.loadDriverProfile(userId)
             val dState = repo.loadDriverState(userId)
             val settings = repo.platformSettings()
+            val online = dState.shift_started_at != null
             _state.value = _state.value.copy(
                 profile = profile,
                 driverProfile = driver,
                 driverState = dState,
                 settings = settings,
-                online = dState.shift_started_at != null,
+                online = online,
             )
-            if (dState.shift_started_at != null) {
-                DriverLocationService.start(getApplication())
+            if (online) {
+                DriverLocationService.start(getApplication(), onBreak = dState.on_break == true)
                 locationTracker.start()
             }
         }.onFailure { e ->
@@ -257,7 +257,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 repo.setShiftStarted(uid, online)
                 if (online) {
-                    DriverLocationService.start(getApplication())
+                    DriverLocationService.start(getApplication(), onBreak = false)
                     locationTracker.start()
                 } else {
                     DriverLocationService.stop(getApplication())
@@ -276,16 +276,20 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun toggleBreak() {
         val uid = _state.value.userId ?: return
-        val onBreak = _state.value.onBreak
+        val currentlyOnBreak = _state.value.onBreak
         viewModelScope.launch {
             runCatching {
-                if (onBreak) {
+                if (currentlyOnBreak) {
                     repo.updateDriverState(uid, mapOf("on_break" to false, "break_until" to null))
                 } else {
                     val until = java.time.Instant.now().plusSeconds(15 * 60).toString()
                     repo.updateDriverState(uid, mapOf("on_break" to true, "break_until" to until))
                 }
-                _state.value = _state.value.copy(driverState = repo.loadDriverState(uid))
+                val dState = repo.loadDriverState(uid)
+                _state.value = _state.value.copy(driverState = dState)
+                if (_state.value.online) {
+                    DriverLocationService.updateBreak(getApplication(), onBreak = dState.on_break == true)
+                }
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = friendlyError(e))
             }
@@ -523,7 +527,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 mediaPlayer = MediaPlayer.create(app, uri)?.also {
                     it.isLooping = false
                     it.start()
-                    // stop after ~1.2s so alarm isn't endless
                     it.setOnCompletionListener { stopOfferSound() }
                     viewModelScope.launch {
                         delay(1200)
