@@ -92,5 +92,8 @@ dependencies {
     implementation("com.google.firebase:firebase-messaging")
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
+
+    // Map tiles via Mapbox Static Images
+    implementation("io.coil-kt:coil-compose:2.7.0")
     testImplementation("junit:junit:4.13.2")
 }
