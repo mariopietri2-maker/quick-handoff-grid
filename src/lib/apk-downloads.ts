@@ -9,6 +9,9 @@ export const APK_BUILD_VERSION = '1.0.7232800';
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
 export const APK_NATIVE_DRIVER_VERSION = '2.0.0-native';
 
+/** Native Kotlin/Compose customer. */
+export const APK_NATIVE_CUSTOMER_VERSION = '2.0.0-native';
+
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
 
@@ -18,13 +21,23 @@ export const APK_DOWNLOADS = {
   customer: {
     id: 'customer' as const,
     title: 'Πελάτης',
-    subtitle: 'Παραγγελίες & παρακολούθηση',
+    subtitle: 'Capacitor · παραγγελίες & παρακολούθηση',
     filename: 'fresh-customer-debug.apk',
     /** Direct file URL — never put this in an <a href> on page load (Android auto-downloads). */
     fileUrl: `${RELEASE_BASE}/fresh-customer-debug.apk`,
     sizeLabel: '~8.5 MB',
     versionLabel: APK_BUILD_VERSION,
     badge: null as string | null,
+  },
+  customerNative: {
+    id: 'customerNative' as const,
+    title: 'Πελάτης Native',
+    subtitle: 'Kotlin + Compose · Mapbox tracking',
+    filename: 'fresh-customer-native-debug.apk',
+    fileUrl: `${RELEASE_BASE}/fresh-customer-native-debug.apk`,
+    sizeLabel: '~18 MB',
+    versionLabel: APK_NATIVE_CUSTOMER_VERSION,
+    badge: 'Native',
   },
   driver: {
     id: 'driver' as const,
@@ -39,7 +52,7 @@ export const APK_DOWNLOADS = {
   driverNative: {
     id: 'driverNative' as const,
     title: 'Οδηγός Native',
-    subtitle: 'Kotlin + Compose · ίδια ροή με Capacitor',
+    subtitle: 'Kotlin + Compose · Mapbox · ίδια ροή',
     filename: 'fresh-driver-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh-driver-native-debug.apk`,
     sizeLabel: '~21 MB',
@@ -72,7 +85,10 @@ export function startApkDownload(flavor: ApkFlavor) {
 /** Parse `?app=` query — accepts legacy aliases. */
 export function parseApkFocus(raw: string | null): ApkFlavor | null {
   if (!raw) return null;
-  if (raw === 'customer' || raw === 'driver' || raw === 'driverNative') return raw;
+  if (raw === 'customer' || raw === 'customerNative' || raw === 'driver' || raw === 'driverNative') {
+    return raw;
+  }
   if (raw === 'driver-native' || raw === 'native' || raw === 'native-driver') return 'driverNative';
+  if (raw === 'customer-native' || raw === 'native-customer') return 'customerNative';
   return null;
 }
