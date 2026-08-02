@@ -32,8 +32,27 @@ jobs:
         run: |
           sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
+      - name: Mapbox downloads token
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          # Secret token (sk.*) with DOWNLOADS:READ scope — required to resolve Mapbox Maven artifacts.
+          # Create at https://account.mapbox.com/access-tokens/ and add as repo secret MAPBOX_DOWNLOADS_TOKEN.
+          TOKEN="${MAPBOX_DOWNLOADS_TOKEN:-}"
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::MAPBOX_DOWNLOADS_TOKEN secret not set — Mapbox SDK resolve may fail"
+          fi
+          mkdir -p ~/.gradle
+          {
+            echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN"
+            echo "systemProp.mapboxDownloadsToken=$TOKEN"
+          } >> ~/.gradle/gradle.properties
+          echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
       - name: Build driver debug APK
         working-directory: native-driver
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
@@ -75,10 +94,8 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          # Ensure release tag exists (idempotent)
           gh release view mobile-apks-v1 >/dev/null 2>&1 || \
             gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs" --notes "Native + Capacitor debug APKs for beta download page."
-          # Overwrite existing assets with the same names
           gh release upload mobile-apks-v1 dist/*.apk --clobber
           echo "Published:"
           ls dist/

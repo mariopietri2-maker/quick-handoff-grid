@@ -15,8 +15,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 2
-        versionName = "2.0.0-native"
+        versionCode = 3
+        versionName = "2.1.0-native"
 
         buildConfigField(
             "String",
@@ -93,7 +93,12 @@ dependencies {
 
     implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    // Map tiles via Mapbox Static Images
+    // Native Mapbox Maps SDK + Jetpack Compose extension
+    implementation("com.mapbox.maps:android:11.9.0")
+    implementation("com.mapbox.extension:maps-compose:11.9.0")
+
+    // Fallback image loader (icons / remote assets)
     implementation("io.coil-kt:coil-compose:2.7.0")
+
     testImplementation("junit:junit:4.13.2")
 }

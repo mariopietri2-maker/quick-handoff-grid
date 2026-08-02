@@ -1,18 +1,42 @@
 package com.freshdelivery.nativedriver.ui.auth
 
+import android.content.Intent
+import android.net.Uri
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Lock
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -20,9 +44,21 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.freshdelivery.nativedriver.R
+import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 
 @Composable
 fun LoginScreen(
@@ -32,57 +68,199 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var showPassword by remember { mutableStateOf(false) }
+    val focus = LocalFocusManager.current
+    val context = LocalContext.current
+    val cs = MaterialTheme.colorScheme
 
-    Column(
-        modifier = Modifier
+    Box(
+        Modifier
             .fillMaxSize()
-            .padding(24.dp),
-        verticalArrangement = Arrangement.Center,
-        horizontalAlignment = Alignment.CenterHorizontally,
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color(0xFF0B0F14), Color(0xFF141A22), Color(0xFF0B0F14)),
+                ),
+            ),
     ) {
-        Text(
-            text = "Fresh Driver",
-            style = MaterialTheme.typography.headlineLarge,
-            color = MaterialTheme.colorScheme.primary,
-        )
-        Text(
-            text = "Native Android · Kotlin",
-            style = MaterialTheme.typography.bodyLarge,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(28.dp))
-        OutlinedTextField(
-            value = email,
-            onValueChange = { email = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Email") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
-        )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = password,
-            onValueChange = { password = it },
-            modifier = Modifier.fillMaxWidth(),
-            label = { Text("Password") },
-            singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-        )
-        if (!error.isNullOrBlank()) {
-            Spacer(Modifier.height(12.dp))
-            Text(error, color = MaterialTheme.colorScheme.error)
-        }
-        Spacer(Modifier.height(20.dp))
-        Button(
-            onClick = { onLogin(email, password) },
-            enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+        Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(52.dp),
+                .fillMaxSize()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 28.dp, vertical = 32.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center,
         ) {
-            if (busy) CircularProgressIndicator(color = MaterialTheme.colorScheme.onPrimary)
-            else Text("Σύνδεση")
+            // Brand logo
+            Box(
+                Modifier
+                    .size(88.dp)
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(FreshGreen.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Image(
+                    painter = painterResource(R.drawable.ic_logo_fresh),
+                    contentDescription = "Fresh Delivery",
+                    modifier = Modifier.size(64.dp),
+                )
+            }
+
+            Spacer(Modifier.height(18.dp))
+            Text(
+                text = "Fresh Driver",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+            )
+            Text(
+                text = "Ιωάννινα · Live deliveries",
+                style = MaterialTheme.typography.bodyMedium,
+                color = cs.onSurfaceVariant,
+            )
+
+            Spacer(Modifier.height(36.dp))
+
+            OutlinedTextField(
+                value = email,
+                onValueChange = { email = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Email") },
+                leadingIcon = { Icon(Icons.Outlined.Email, contentDescription = null) },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Email,
+                    imeAction = ImeAction.Next,
+                ),
+                colors = fieldColors(),
+            )
+
+            Spacer(Modifier.height(14.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                modifier = Modifier.fillMaxWidth(),
+                label = { Text("Κωδικός") },
+                leadingIcon = { Icon(Icons.Outlined.Lock, contentDescription = null) },
+                trailingIcon = {
+                    IconButton(onClick = { showPassword = !showPassword }) {
+                        Icon(
+                            if (showPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                            contentDescription = if (showPassword) "Hide" else "Show",
+                        )
+                    }
+                },
+                singleLine = true,
+                shape = RoundedCornerShape(16.dp),
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(
+                    keyboardType = KeyboardType.Password,
+                    imeAction = ImeAction.Done,
+                ),
+                keyboardActions = KeyboardActions(
+                    onDone = {
+                        focus.clearFocus()
+                        if (email.isNotBlank() && password.isNotBlank() && !busy) {
+                            onLogin(email.trim(), password)
+                        }
+                    },
+                ),
+                colors = fieldColors(),
+            )
+
+            // Forgot password
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+                TextButton(
+                    onClick = {
+                        val uri = Uri.parse(
+                            "https://quick-handoff-grid-production.up.railway.app/driver?reset=1",
+                        )
+                        context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                    },
+                ) {
+                    Text("Ξέχασες τον κωδικό;", color = FreshGreen, style = MaterialTheme.typography.labelLarge)
+                }
+            }
+
+            if (!error.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    error,
+                    color = cs.error,
+                    style = MaterialTheme.typography.bodyMedium,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.fillMaxWidth(),
+                )
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Button(
+                onClick = { onLogin(email.trim(), password) },
+                enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(56.dp),
+                shape = RoundedCornerShape(16.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = FreshGreen,
+                    contentColor = Color.Black,
+                ),
+            ) {
+                if (busy) {
+                    CircularProgressIndicator(
+                        Modifier.size(22.dp),
+                        color = Color.Black,
+                        strokeWidth = 2.dp,
+                    )
+                } else {
+                    Text("Σύνδεση", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
+
+            OutlinedButton(
+                onClick = {
+                    val uri = Uri.parse("mailto:support@freshdelivery.gr?subject=Driver%20account")
+                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp),
+                shape = RoundedCornerShape(16.dp),
+            ) {
+                Text("Αίτηση λογαριασμού οδηγού")
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            TextButton(
+                onClick = {
+                    context.startActivity(
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://quick-handoff-grid-production.up.railway.app/support")),
+                    )
+                },
+            ) {
+                Text("Βοήθεια / Support", color = cs.onSurfaceVariant)
+            }
+
+            Spacer(Modifier.height(24.dp))
+            Text(
+                "Με την είσοδο αποδέχεσαι τους όρους χρήσης",
+                style = MaterialTheme.typography.labelSmall,
+                color = cs.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
+
+@Composable
+private fun fieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedBorderColor = FreshGreen,
+    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+    focusedLabelColor = FreshGreen,
+    cursorColor = FreshGreen,
+)
