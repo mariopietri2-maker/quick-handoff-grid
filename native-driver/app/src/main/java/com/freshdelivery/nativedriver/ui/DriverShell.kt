@@ -45,6 +45,7 @@ fun DriverShell(
     onSignOut: () -> Unit,
     onClearMessages: () -> Unit,
     onUpdateSettings: (DriverSettings) -> Unit = {},
+    onPreviewSound: (String) -> Unit = {},
 ) {
     val unread = state.notifications.count { it.read_at == null }
     val tabs = listOf(
@@ -106,6 +107,7 @@ fun DriverShell(
                     onSave = onSaveProfile,
                     onSignOut = onSignOut,
                     onUpdateSettings = onUpdateSettings,
+                    onPreviewSound = onPreviewSound,
                 )
             }
         }
