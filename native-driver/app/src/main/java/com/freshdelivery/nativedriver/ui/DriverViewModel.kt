@@ -72,8 +72,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     init {
         DriverPushTokenHolder.listener = { token ->
-            val uid = _state.value.userId ?: return@listener
-            viewModelScope.launch { runCatching { repo.upsertPushToken(uid, token) } }
+            val uid = _state.value.userId
+            if (uid != null) {
+                viewModelScope.launch { runCatching { repo.upsertPushToken(uid, token) } }
+            }
         }
         viewModelScope.launch {
             SupabaseProvider.client.auth.sessionStatus.collect { status ->
