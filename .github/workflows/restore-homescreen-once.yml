@@ -1,0 +1,41 @@
+name: Restore HomeScreen Once
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/restore-homescreen-once.yml'
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore HomeScreen.kt from 15fe3d1
+        run: |
+          git show 15fe3d15f8a05879bab1bdad44402083b6d7758b:native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt > native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt')
+          t = p.read_text()
+          # Drop unused TurnByTurnBanner (missing imports caused build failure)
+          idx = t.find('@Composable\nprivate fun TurnByTurnBanner')
+          if idx < 0:
+              idx = t.find('private fun TurnByTurnBanner')
+          if idx > 0:
+              t = t[:idx].rstrip() + '\n'
+              p.write_text(t)
+              print('removed TurnByTurnBanner, new size', len(t))
+          else:
+              print('banner not found, size', len(t))
+          assert 'package com.freshdelivery' in t
+          assert 'PLACEHOLDER' not in t
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
+          git diff --cached --stat
+          git commit -m "fix(native): restore HomeScreen.kt (remove PLACEHOLDER + unused banner)" || echo no-change
+          git push
