@@ -18,14 +18,24 @@ jobs:
           python3 << 'PY'
           import gzip, base64
           from pathlib import Path
-          mapping = {
-            "CustomerShell.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt",
-            "CustomerViewModel.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt",
-            "CustomerRepository.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt",
-          }
           base = Path(".github/parity-payloads/next-wave")
-          for name, dest in mapping.items():
-              b64 = (base / name).read_text().strip()
+
+          def load_b64(stem):
+              single = base / f"{stem}.kt.gz.b64"
+              if single.exists() and single.stat().st_size > 100:
+                  return single.read_text().strip()
+              parts = sorted(base.glob(f"{stem}.part*.b64"), key=lambda p: int(p.stem.split("part")[-1]))
+              if not parts:
+                  raise SystemExit(f"missing payload {stem}")
+              return "".join(p.read_text().strip() for p in parts)
+
+          mapping = {
+            "CustomerShell": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt",
+            "CustomerViewModel": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt",
+            "CustomerRepository": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt",
+          }
+          for stem, dest in mapping.items():
+              b64 = load_b64(stem)
               raw = gzip.decompress(base64.b64decode(b64))
               p = Path(dest)
               p.parent.mkdir(parents=True, exist_ok=True)
