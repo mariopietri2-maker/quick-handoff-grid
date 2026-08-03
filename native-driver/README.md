@@ -21,15 +21,15 @@ True native driver app (no Capacitor WebView). Same Supabase backend and **same 
 | Profile edit | ✅ |
 | FCM → `push_tokens` | ✅ |
 | Fresh Delivery chime | ✅ |
-| In-app nav guidance banner (distance + heading to next stop) | ✅ |
-| Unread ops announcements strip on Home | ✅ |
-| Wait-bonus / surge live multipliers | ⏳ server-side; UI shows pool bonus on offers |
+| In-app nav guidance banner (distance / bearing / ETA) | ✅ |
+| Unread announcements strip on Home | ✅ |
+| Wait-bonus / surge banners | ⏳ later |
 
 ## Build
 
 ```bash
 cd native-driver
-echo "sdk.dir=\$ANDROID_HOME" > local.properties
+echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew :app:assembleDebug
 ```
 
