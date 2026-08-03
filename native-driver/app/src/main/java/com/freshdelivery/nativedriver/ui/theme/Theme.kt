@@ -1,6 +1,5 @@
 package com.freshdelivery.nativedriver.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
@@ -10,21 +9,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
+/** Uber Driver–style: black surfaces, white text, green primary. Name: Fresh Delivery. */
 private val DarkColors = darkColorScheme(
     primary = FreshGreen,
     onPrimary = Color.Black,
     primaryContainer = FreshGreenSoft,
     onPrimaryContainer = FreshGreen,
-    secondary = FreshBlue,
-    onSecondary = Color.White,
+    secondary = Color.White,
+    onSecondary = Color.Black,
     tertiary = FreshAmber,
     background = FreshCharcoal,
-    onBackground = Color(0xFFF1F5F9),
+    onBackground = Color.White,
     surface = FreshSurfaceDark,
-    onSurface = Color(0xFFF1F5F9),
+    onSurface = Color.White,
     surfaceVariant = FreshCardDark,
     onSurfaceVariant = FreshMuted,
-    outline = Color(0xFF2A3544),
+    outline = Color(0xFF333333),
     error = FreshError,
     onError = Color.White,
     errorContainer = Color(0xFF3D1520),
@@ -32,38 +32,38 @@ private val DarkColors = darkColorScheme(
 )
 
 private val LightColors = lightColorScheme(
-    primary = FreshGreenDark,
+    primary = FreshGreen,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD4F5E4),
+    primaryContainer = Color(0xFFD4F7E5),
     onPrimaryContainer = FreshGreenDark,
-    secondary = FreshBlue,
-    background = FreshSurface,
-    onBackground = Color(0xFF0B0F14),
-    surface = FreshCardLight,
-    onSurface = Color(0xFF0B0F14),
-    surfaceVariant = Color(0xFFEEF1F5),
-    onSurfaceVariant = Color(0xFF5A6472),
-    outline = Color(0xFFE2E8F0),
+    secondary = Color(0xFF141414),
+    background = Color.White,
+    onBackground = Color(0xFF141414),
+    surface = Color.White,
+    onSurface = Color(0xFF141414),
+    surfaceVariant = Color(0xFFF6F6F6),
+    onSurfaceVariant = Color(0xFF6B6B6B),
+    outline = Color(0xFFE8E8E8),
     error = FreshError,
 )
 
-private val FreshShapes = Shapes(
-    extraSmall = RoundedCornerShape(10.dp),
-    small = RoundedCornerShape(14.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp),
+private val UberShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp),
 )
 
 @Composable
 fun FreshDriverTheme(
-    darkTheme: Boolean = true, // driver app is dark-first (shift / night use)
+    darkTheme: Boolean = true, // driver app is dark-first (shift / night)
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
         colorScheme = if (darkTheme) DarkColors else LightColors,
         typography = FreshTypography,
-        shapes = FreshShapes,
+        shapes = UberShapes,
         content = content,
     )
 }
