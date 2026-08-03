@@ -117,6 +117,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<DriverUiState> = _state.asStateFlow()
 
     private var pollJob: Job? = null
+    /** Keeps driver_locations.updated_at fresh while online (admin Online + dispatch). */
+    private var heartbeatJob: Job? = null
     private var mediaPlayer: MediaPlayer? = null
     private var lastOfferAlertKey: String? = null
 
@@ -197,6 +199,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             if (online) {
                 DriverLocationService.start(getApplication(), onBreak = dState.on_break == true)
                 locationTracker.start()
+                pushPresence(userId)
+                startPresenceHeartbeat()
             }
         }.onFailure { e ->
             _state.value = _state.value.copy(error = friendlyError(e))
@@ -259,12 +263,17 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 if (online) {
                     DriverLocationService.start(getApplication(), onBreak = false)
                     locationTracker.start()
+                    // Immediate GPS so admin Online flips without waiting for movement
+                    pushPresence(uid)
+                    startPresenceHeartbeat()
                 } else {
+                    stopPresenceHeartbeat()
                     DriverLocationService.stop(getApplication())
                     repo.clearLocation(uid)
                 }
                 _state.value = _state.value.copy(driverState = repo.loadDriverState(uid))
             }.onFailure { e ->
+                if (!online) stopPresenceHeartbeat()
                 _state.value = _state.value.copy(
                     online = !online,
                     error = friendlyError(e),
@@ -472,6 +481,37 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(error = null, info = null)
     }
 
+    /**
+     * Admin Online requires driver_locations.updated_at within 10 minutes.
+     * Fused location only updates on movement (≥3 m), so parked drivers need
+     * a timed heartbeat that re-upserts the last known coordinates.
+     */
+    private fun startPresenceHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = viewModelScope.launch {
+            while (true) {
+                delay(45_000)
+                val uid = _state.value.userId ?: continue
+                if (!_state.value.online) continue
+                pushPresence(uid)
+            }
+        }
+    }
+
+    private fun stopPresenceHeartbeat() {
+        heartbeatJob?.cancel()
+        heartbeatJob = null
+    }
+
+    private suspend fun pushPresence(userId: String) {
+        val g = _state.value.geo
+        if (g != null) {
+            runCatching {
+                repo.upsertLocation(userId, g.lat, g.lng, g.bearing?.toDouble(), null)
+            }
+        }
+    }
+
     private fun startPolling() {
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
@@ -488,6 +528,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private fun stopPolling() {
         pollJob?.cancel()
         pollJob = null
+        stopPresenceHeartbeat()
         stopOfferSound()
     }
 
