@@ -2,6 +2,7 @@ package com.freshdelivery.nativecustomer.ui
 
 import android.annotation.SuppressLint
 import android.app.Application
+import android.content.Context
 import android.location.Geocoder
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
@@ -35,6 +36,12 @@ import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
 
+data class AddressSuggestion(
+    val label: String,
+    val lat: Double,
+    val lng: Double,
+)
+
 data class CustomerUiState(
     val bootstrapping: Boolean = true,
     val signedIn: Boolean = false,
@@ -63,6 +70,9 @@ data class CustomerUiState(
     val savingProfile: Boolean = false,
     val searchQuery: String = "",
     val signupMode: Boolean = false,
+    val addressSuggestions: List<AddressSuggestion> = emptyList(),
+    val feeBase: Double = 0.99,
+    val feePerKm: Double = 0.0,
     val error: String? = null,
     val info: String? = null,
 ) {
@@ -126,10 +136,22 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         runCatching {
             val profile = repo.loadProfile(userId)
             val fees = repo.platformFees()
+            val base = fees.customer_base_fee ?: fees.platform_service_fee ?: 0.99
+            val perKm = fees.customer_per_km_fee ?: 0.0
+            val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+            val savedAddr = prefs.getString("last_delivery_address", "") ?: ""
+            val savedLat = prefs.getString("last_delivery_lat", null)?.toDoubleOrNull()
+            val savedLng = prefs.getString("last_delivery_lng", null)?.toDoubleOrNull()
             _state.value = _state.value.copy(
                 profile = profile,
-                deliveryFee = fees.platform_service_fee ?: 0.99,
+                feeBase = base,
+                feePerKm = perKm,
+                deliveryFee = base,
+                deliveryAddress = if (savedAddr.isNotBlank()) savedAddr else _state.value.deliveryAddress,
+                deliveryLat = savedLat ?: _state.value.deliveryLat,
+                deliveryLng = savedLng ?: _state.value.deliveryLng,
             )
+            recomputeDeliveryFee()
         }
         registerFcm(userId)
         refreshAll()
@@ -137,7 +159,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         startPolling()
     }
 
-    /** Live order updates; polling stays as a low-frequency safety net. */
     private fun startRealtime(userId: String) {
         ordersRealtimeJob?.cancel()
         ordersRealtimeJob = viewModelScope.launch {
@@ -183,7 +204,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(signupMode = on, error = null, info = null)
     }
 
-    /** Native signup — always a customer account, matching the web app. */
     fun signUp(email: String, password: String, fullName: String, phone: String) {
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
@@ -241,7 +261,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(searchQuery = q)
     }
 
-    /** Fills the delivery address from GPS, reverse-geocoded to a street line. */
     @SuppressLint("MissingPermission")
     fun useCurrentLocation() {
         viewModelScope.launch {
@@ -257,31 +276,84 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     deliveryLat = loc.latitude,
                     deliveryLng = loc.longitude,
                     deliveryAddress = label ?: _state.value.deliveryAddress,
+                    addressSuggestions = emptyList(),
                     info = "Η τοποθεσία ενημερώθηκε",
                 )
+                recomputeDeliveryFee()
+                persistLastAddress()
             }.onFailure { e ->
                 _state.value = _state.value.copy(locating = false, error = e.message ?: "Αποτυχία τοποθεσίας")
             }
         }
     }
 
-    /** Turns the typed address into coordinates so dispatch/pricing work. */
     fun geocodeAddress(address: String) {
         if (address.isBlank()) return
         viewModelScope.launch {
-            _state.value = _state.value.copy(locating = true, error = null)
-            val hit = runCatching { forwardGeocode(address) }.getOrNull()
-            _state.value = if (hit == null) {
-                _state.value.copy(locating = false, error = "Δεν βρέθηκε η διεύθυνση")
-            } else {
-                _state.value.copy(
-                    locating = false,
-                    deliveryLat = hit.first,
-                    deliveryLng = hit.second,
-                    info = "Η διεύθυνση εντοπίστηκε στον χάρτη",
-                )
+            _state.value = _state.value.copy(locating = true, error = null, addressSuggestions = emptyList())
+            val hits = runCatching { forwardGeocodeMany(address) }.getOrNull().orEmpty()
+            when {
+                hits.isEmpty() -> {
+                    _state.value = _state.value.copy(locating = false, error = "Δεν βρέθηκε η διεύθυνση")
+                }
+                hits.size == 1 -> {
+                    val h = hits.first()
+                    _state.value = _state.value.copy(
+                        locating = false,
+                        deliveryAddress = h.label,
+                        deliveryLat = h.lat,
+                        deliveryLng = h.lng,
+                        addressSuggestions = emptyList(),
+                        info = "Η διεύθυνση εντοπίστηκε στον χάρτη",
+                    )
+                    recomputeDeliveryFee()
+                    persistLastAddress()
+                }
+                else -> {
+                    _state.value = _state.value.copy(
+                        locating = false,
+                        addressSuggestions = hits,
+                        info = "Επίλεξε διεύθυνση από τις προτάσεις",
+                    )
+                }
             }
         }
+    }
+
+    fun pickAddressSuggestion(s: AddressSuggestion) {
+        _state.value = _state.value.copy(
+            deliveryAddress = s.label,
+            deliveryLat = s.lat,
+            deliveryLng = s.lng,
+            addressSuggestions = emptyList(),
+            info = "Η διεύθυνση επιλέχθηκε",
+        )
+        recomputeDeliveryFee()
+        persistLastAddress()
+    }
+
+    private fun recomputeDeliveryFee() {
+        val s = _state.value
+        val store = s.stores.find { it.id == s.cartStoreId } ?: s.selectedStore
+        val dLat = s.deliveryLat
+        val dLng = s.deliveryLng
+        val fee = if (store?.latitude != null && store.longitude != null && dLat != null && dLng != null) {
+            val km = haversineKm(store.latitude, store.longitude, dLat, dLng)
+            (s.feeBase + s.feePerKm * km).coerceAtLeast(s.feeBase)
+        } else {
+            s.feeBase
+        }
+        _state.value = s.copy(deliveryFee = fee)
+    }
+
+    private fun persistLastAddress() {
+        val s = _state.value
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        prefs.edit()
+            .putString("last_delivery_address", s.deliveryAddress)
+            .putString("last_delivery_lat", s.deliveryLat?.toString())
+            .putString("last_delivery_lng", s.deliveryLng?.toString())
+            .apply()
     }
 
     private suspend fun reverseGeocode(lat: Double, lng: Double): String? = withContext(Dispatchers.IO) {
@@ -294,14 +366,18 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrNull()
     }
 
-    private suspend fun forwardGeocode(address: String): Pair<Double, Double>? = withContext(Dispatchers.IO) {
+    private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
         runCatching {
             @Suppress("DEPRECATION")
             Geocoder(getApplication(), Locale.getDefault())
-                .getFromLocationName(address, 1)
-                ?.firstOrNull()
-                ?.let { it.latitude to it.longitude }
-        }.getOrNull()
+                .getFromLocationName(address, 5)
+                ?.mapNotNull { a ->
+                    val line = a.getAddressLine(0) ?: return@mapNotNull null
+                    AddressSuggestion(line, a.latitude, a.longitude)
+                }
+                ?.distinctBy { it.label }
+                .orEmpty()
+        }.getOrElse { emptyList() }
     }
 
     fun signOut() {
@@ -405,6 +481,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = s.copy(error = "Βάλε διεύθυνση παράδοσης")
             return
         }
+        if (s.deliveryLat == null || s.deliveryLng == null) {
+            _state.value = s.copy(error = "Πάτα «Εύρεση στον χάρτη» ή «Η τοποθεσία μου» για ακριβείς συντεταγμένες")
+            return
+        }
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching {
@@ -428,6 +508,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     distanceKm = distanceKm,
                 )
             }.onSuccess {
+                persistLastAddress()
                 _state.value = _state.value.copy(
                     busy = false,
                     cart = emptyList(),
@@ -436,6 +517,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     showCart = false,
                     tipAmount = 0.0,
                     notes = "",
+                    addressSuggestions = emptyList(),
                     info = "Η παραγγελία καταχωρήθηκε!",
                     tab = CustomerTab.Orders,
                 )
@@ -493,7 +575,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Realtime carries the updates; this is only a slow safety net. */
     private fun startPolling() {
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
