@@ -36,7 +36,6 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
@@ -62,8 +61,6 @@ import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.map.DriverMapView
 import com.freshdelivery.nativedriver.ui.map.MapMarker
-import com.freshdelivery.nativedriver.ui.theme.FreshAmber
-import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.Instant
@@ -147,7 +144,6 @@ fun HomeScreen(
             userBearing = state.geo?.bearing,
         )
 
-        // ── Top chrome (like screenshot — no refresh) ──────────────────
         Row(
             Modifier
                 .align(Alignment.TopCenter)
@@ -156,7 +152,6 @@ fun HomeScreen(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            // Profile circle
             Box(
                 Modifier
                     .size(42.dp)
@@ -173,7 +168,6 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                // Ops / break badge
                 if (state.online) {
                     Row(
                         Modifier
@@ -193,7 +187,6 @@ fun HomeScreen(
                     }
                 }
 
-                // Brand pill
                 Row(
                     Modifier
                         .shadow(6.dp, RoundedCornerShape(24.dp))
@@ -212,16 +205,10 @@ fun HomeScreen(
                         Text("⚡", fontSize = 12.sp)
                     }
                     Spacer(Modifier.width(8.dp))
-                    Text(
-                        "Fresh Delivery",
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 14.sp,
-                        color = TextDark,
-                    )
+                    Text("Fresh Delivery", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextDark)
                 }
             }
 
-            // Support
             Box(
                 Modifier
                     .size(42.dp)
@@ -234,7 +221,6 @@ fun HomeScreen(
             }
         }
 
-        // ── Bottom / center offer card ─────────────────────────────────
         Column(
             Modifier
                 .align(Alignment.BottomCenter)
@@ -263,10 +249,7 @@ fun HomeScreen(
                     Button(
                         onClick = { onToggleOnline(true) },
                         enabled = state.driverActive && !state.busy,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .shadow(12.dp, RoundedCornerShape(28.dp)),
+                        modifier = Modifier.fillMaxWidth().height(56.dp).shadow(12.dp, RoundedCornerShape(28.dp)),
                         shape = RoundedCornerShape(28.dp),
                         colors = ButtonDefaults.buttonColors(
                             containerColor = GreenBtn,
@@ -287,10 +270,7 @@ fun HomeScreen(
                         elevation = CardDefaults.cardElevation(0.dp),
                     ) {
                         Column(
-                            Modifier
-                                .fillMaxWidth()
-                                .verticalScroll(rememberScrollState())
-                                .padding(18.dp),
+                            Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(18.dp),
                         ) {
                             Handle()
                             state.activeTrips.forEach { trip ->
@@ -370,16 +350,11 @@ fun HomeScreen(
 private fun Handle() {
     Box(Modifier.fillMaxWidth().padding(bottom = 10.dp), contentAlignment = Alignment.Center) {
         Box(
-            Modifier
-                .width(40.dp)
-                .height(4.dp)
-                .clip(RoundedCornerShape(2.dp))
-                .background(Color(0xFFD1D5DB)),
+            Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFFD1D5DB)),
         )
     }
 }
 
-/** Screenshot-matching offer card */
 @Composable
 private fun OfferSheet(
     offer: OfferUi,
@@ -411,9 +386,7 @@ private fun OfferSheet(
     val progress = if (timeoutSec > 0) secondsLeft.toFloat() / timeoutSec else 0f
     val isCash = offer.order.payment_method?.equals("cash", ignoreCase = true) == true
     val cashAmount = offer.order.total_amount ?: 0.0
-    val orderCode = offer.order.order_number
-        ?: offer.order.short_code
-        ?: offer.order.id.takeLast(4)
+    val orderCode = offer.order.store_order_number?.toString() ?: offer.order.id.takeLast(4)
     val itemCount = offer.itemsSummary
         ?.split(",", "·", "+")
         ?.map { it.trim() }
@@ -429,7 +402,6 @@ private fun OfferSheet(
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
             Handle()
 
-            // Header: ΝΕΑ ΠΡΟΣΦΟΡΑ · #xxx    |   3.00€
             Row(
                 Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -453,17 +425,11 @@ private fun OfferSheet(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Text(
-                    eur(payout),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 28.sp,
-                    color = GreenBtn,
-                )
+                Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 28.sp, color = GreenBtn)
             }
 
             Spacer(Modifier.height(10.dp))
 
-            // Chips row
             Row(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
                 verticalAlignment = Alignment.CenterVertically,
@@ -495,7 +461,6 @@ private fun OfferSheet(
 
             Spacer(Modifier.height(14.dp))
 
-            // Store row
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(Icons.Outlined.Storefront, null, tint = Color(0xFFE65100), modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
@@ -515,7 +480,6 @@ private fun OfferSheet(
                 )
             }
 
-            // Delivery row
             if (!offer.order.delivery_address.isNullOrBlank()) {
                 Spacer(Modifier.height(8.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -534,7 +498,6 @@ private fun OfferSheet(
 
             Spacer(Modifier.height(16.dp))
 
-            // X + Accept bar
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
@@ -555,21 +518,14 @@ private fun OfferSheet(
                     enabled = !busy,
                     modifier = Modifier.weight(1f).height(52.dp),
                     shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = GreenBtn,
-                        contentColor = Color.White,
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenBtn, contentColor = Color.White),
                 ) {
                     if (busy) {
                         CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
                         Icon(Icons.Filled.Check, null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
-                        Text(
-                            "Αποδοχή · ${eur(payout)}",
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                        )
+                        Text("Αποδοχή · ${eur(payout)}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
                     }
                 }
             }
@@ -584,9 +540,7 @@ private fun Chip(text: String, bg: Color, fg: Color) {
         fontSize = 12.sp,
         fontWeight = FontWeight.SemiBold,
         color = fg,
-        modifier = Modifier
-            .background(bg, RoundedCornerShape(20.dp))
-            .padding(horizontal = 10.dp, vertical = 5.dp),
+        modifier = Modifier.background(bg, RoundedCornerShape(20.dp)).padding(horizontal = 10.dp, vertical = 5.dp),
     )
 }
 
