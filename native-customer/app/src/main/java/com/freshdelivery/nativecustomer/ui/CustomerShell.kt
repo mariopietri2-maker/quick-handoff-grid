@@ -1,5 +1,6 @@
 package com.freshdelivery.nativecustomer.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -11,9 +12,11 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
@@ -21,9 +24,12 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ShoppingCart
+import androidx.compose.material.icons.outlined.Store
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
@@ -33,26 +39,34 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import coil.compose.AsyncImage
 import com.freshdelivery.nativecustomer.data.CustomerTab
 import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.data.OrderUi
@@ -64,18 +78,46 @@ import com.freshdelivery.nativecustomer.ui.map.MapboxView
 fun LoginScreen(
     busy: Boolean,
     error: String?,
+    info: String? = null,
+    signupMode: Boolean = false,
+    onToggleSignup: (Boolean) -> Unit = {},
     onLogin: (String, String) -> Unit,
+    onSignUp: (String, String, String, String) -> Unit = { _, _, _, _ -> },
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var fullName by remember { mutableStateOf("") }
+    var phone by remember { mutableStateOf("") }
     Column(
         Modifier.fillMaxSize().padding(24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Text("Fresh Customer", style = MaterialTheme.typography.headlineLarge, color = MaterialTheme.colorScheme.primary)
-        Text("Native · Mapbox · FCM", color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            if (signupMode) "Νέος λογαριασμός πελάτη" else "Native · Mapbox · FCM",
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
         Spacer(Modifier.height(24.dp))
+        if (signupMode) {
+            OutlinedTextField(
+                value = fullName,
+                onValueChange = { fullName = it },
+                label = { Text("Ονοματεπώνυμο") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = phone,
+                onValueChange = { phone = it },
+                label = { Text("Τηλέφωνο") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier.fillMaxWidth(),
+            )
+            Spacer(Modifier.height(12.dp))
+        }
         OutlinedTextField(
             value = email,
             onValueChange = { email = it },
@@ -98,14 +140,24 @@ fun LoginScreen(
             Spacer(Modifier.height(12.dp))
             Text(error, color = MaterialTheme.colorScheme.error)
         }
+        if (!info.isNullOrBlank()) {
+            Spacer(Modifier.height(12.dp))
+            Text(info, color = MaterialTheme.colorScheme.primary)
+        }
         Spacer(Modifier.height(20.dp))
         Button(
-            onClick = { onLogin(email, password) },
-            enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+            onClick = {
+                if (signupMode) onSignUp(email, password, fullName, phone) else onLogin(email, password)
+            },
+            enabled = !busy && email.isNotBlank() && password.length >= 6 &&
+                (!signupMode || fullName.isNotBlank()),
             modifier = Modifier.fillMaxWidth().height(52.dp),
         ) {
             if (busy) CircularProgressIndicator(color = Color.White)
-            else Text("Σύνδεση")
+            else Text(if (signupMode) "Δημιουργία λογαριασμού" else "Σύνδεση")
+        }
+        TextButton(onClick = { onToggleSignup(!signupMode) }) {
+            Text(if (signupMode) "Έχω ήδη λογαριασμό · Σύνδεση" else "Νέος εδώ; Δημιουργία λογαριασμού")
         }
     }
 }
@@ -127,10 +179,31 @@ fun CustomerShell(
     onTrack: (OrderUi?) -> Unit,
     onRefresh: () -> Unit,
     onSignOut: () -> Unit,
+    onSearch: (String) -> Unit = {},
+    onUseLocation: () -> Unit = {},
+    onGeocode: (String) -> Unit = {},
+    onSaveProfile: (String, String) -> Unit = { _, _ -> },
+    onCancelOrder: (OrderUi) -> Unit = {},
+    onClearMessages: () -> Unit = {},
 ) {
+    val snackbar = remember { SnackbarHostState() }
+    LaunchedEffect(state.info, state.error) {
+        val msg = state.error ?: state.info
+        if (!msg.isNullOrBlank()) {
+            snackbar.showSnackbar(msg)
+            onClearMessages()
+        }
+    }
+
+    // Android back: cart -> store menu -> home
+    BackHandler(enabled = state.showCart || state.selectedStore != null) {
+        if (state.showCart) onToggleCart(false) else onCloseStore()
+    }
+
     if (state.showCart) {
         CartCheckoutScreen(
             state = state,
+            snackbar = snackbar,
             onBack = { onToggleCart(false) },
             onUpdateQty = onUpdateQty,
             onSetDelivery = onSetDelivery,
@@ -138,6 +211,8 @@ fun CustomerShell(
             onSetTip = onSetTip,
             onSetPayment = onSetPayment,
             onPlaceOrder = onPlaceOrder,
+            onUseLocation = onUseLocation,
+            onGeocode = onGeocode,
         )
         return
     }
@@ -159,13 +234,22 @@ fun CustomerShell(
     )
 
     Scaffold(
+        snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             NavigationBar {
                 tabs.forEach { (tab, label, icon) ->
                     NavigationBarItem(
                         selected = state.tab == tab,
                         onClick = { onTab(tab) },
-                        icon = { Icon(icon as ImageVector, contentDescription = label) },
+                        icon = {
+                            if (tab == CustomerTab.Orders && state.activeOrders.isNotEmpty()) {
+                                BadgedBox(badge = { Badge { Text("${state.activeOrders.size}") } }) {
+                                    Icon(icon as ImageVector, contentDescription = label)
+                                }
+                            } else {
+                                Icon(icon as ImageVector, contentDescription = label)
+                            }
+                        },
                         label = { Text(label) },
                     )
                 }
@@ -183,38 +267,88 @@ fun CustomerShell(
     ) { padding ->
         Box(Modifier.padding(padding)) {
             when (state.tab) {
-                CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore)
-                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh)
+                CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch)
+                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onCancelOrder)
                 CustomerTab.Track -> TrackTab(state)
-                CustomerTab.Profile -> ProfileTab(state, onSignOut)
+                CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut)
             }
         }
     }
 }
 
 @Composable
-private fun HomeTab(state: CustomerUiState, onRefresh: () -> Unit, onOpenStore: (StoreRow) -> Unit) {
+private fun StoreThumb(url: String?, size: Int = 56) {
+    Box(
+        Modifier
+            .size(size.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .background(MaterialTheme.colorScheme.surfaceVariant),
+        contentAlignment = Alignment.Center,
+    ) {
+        if (url.isNullOrBlank()) {
+            Icon(Icons.Outlined.Store, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+        } else {
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                contentScale = ContentScale.Crop,
+                modifier = Modifier.fillMaxSize(),
+            )
+        }
+    }
+}
+
+@Composable
+private fun HomeTab(
+    state: CustomerUiState,
+    onRefresh: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onSearch: (String) -> Unit,
+) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Καταστήματα", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
             OutlinedButton(onClick = onRefresh) { Text("Ανανέωση") }
         }
+        Spacer(Modifier.height(10.dp))
+        OutlinedTextField(
+            value = state.searchQuery,
+            onValueChange = onSearch,
+            singleLine = true,
+            leadingIcon = { Icon(Icons.Outlined.Search, contentDescription = null) },
+            label = { Text("Αναζήτηση καταστήματος") },
+            modifier = Modifier.fillMaxWidth(),
+        )
         Spacer(Modifier.height(12.dp))
+        if (state.visibleStores.isEmpty()) {
+            Text("Δεν βρέθηκαν καταστήματα.", style = MaterialTheme.typography.bodyMedium)
+        }
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-            items(state.stores, key = { it.id }) { store ->
+            items(state.visibleStores, key = { it.id }) { store ->
                 Card(
                     Modifier.fillMaxWidth().clickable { onOpenStore(store) },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
-                    Column(Modifier.padding(14.dp)) {
-                        Text(store.name ?: "Store", fontWeight = FontWeight.Bold)
-                        store.address?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
+                    Row(
+                        Modifier.padding(12.dp).fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        StoreThumb(store.image_url)
+                        Column(Modifier.weight(1f)) {
+                            Text(store.name ?: "Store", fontWeight = FontWeight.Bold)
+                            store.address?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
                     }
                 }
             }
+            item { Spacer(Modifier.height(72.dp)) }
         }
     }
 }
+
 
 @Composable
 private fun MenuScreen(
@@ -256,9 +390,10 @@ private fun MenuScreen(
                     Card(Modifier.fillMaxWidth()) {
                         Row(
                             Modifier.padding(12.dp).fillMaxWidth(),
-                            horizontalArrangement = Arrangement.SpaceBetween,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
+                            StoreThumb(item.image_url, size = 52)
                             Column(Modifier.weight(1f)) {
                                 Text(item.name, fontWeight = FontWeight.SemiBold)
                                 item.description?.let {
@@ -283,6 +418,7 @@ private fun MenuScreen(
 @Composable
 private fun CartCheckoutScreen(
     state: CustomerUiState,
+    snackbar: SnackbarHostState,
     onBack: () -> Unit,
     onUpdateQty: (String, Int) -> Unit,
     onSetDelivery: (String, Double?, Double?) -> Unit,
@@ -290,13 +426,14 @@ private fun CartCheckoutScreen(
     onSetTip: (Double) -> Unit,
     onSetPayment: (String) -> Unit,
     onPlaceOrder: () -> Unit,
+    onUseLocation: () -> Unit,
+    onGeocode: (String) -> Unit,
 ) {
     var address by remember(state.deliveryAddress) { mutableStateOf(state.deliveryAddress) }
-    var latText by remember { mutableStateOf(state.deliveryLat?.toString() ?: "") }
-    var lngText by remember { mutableStateOf(state.deliveryLng?.toString() ?: "") }
     var tipText by remember { mutableStateOf(state.tipAmount.toString()) }
 
     Column(Modifier.fillMaxSize()) {
+        SnackbarHost(snackbar)
         Row(Modifier.fillMaxWidth().padding(8.dp), verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
                 Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
@@ -337,34 +474,43 @@ private fun CartCheckoutScreen(
                     value = address,
                     onValueChange = {
                         address = it
-                        onSetDelivery(it, latText.toDoubleOrNull(), lngText.toDoubleOrNull())
+                        onSetDelivery(it, state.deliveryLat, state.deliveryLng)
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    label = { Text("Διεύθυνση") },
+                    singleLine = true,
+                    label = { Text("Οδός, αριθμός, πόλη") },
                 )
+                Spacer(Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    OutlinedTextField(
-                        value = latText,
-                        onValueChange = {
-                            latText = it
-                            onSetDelivery(address, it.toDoubleOrNull(), lngText.toDoubleOrNull())
-                        },
-                        label = { Text("Lat") },
+                    Button(
+                        onClick = onUseLocation,
+                        enabled = !state.locating,
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    )
-                    OutlinedTextField(
-                        value = lngText,
-                        onValueChange = {
-                            lngText = it
-                            onSetDelivery(address, latText.toDoubleOrNull(), it.toDoubleOrNull())
-                        },
-                        label = { Text("Lng") },
+                    ) {
+                        Icon(Icons.Outlined.MyLocation, contentDescription = null)
+                        Spacer(Modifier.width(6.dp))
+                        Text("Η τοποθεσία μου")
+                    }
+                    OutlinedButton(
+                        onClick = { onGeocode(address) },
+                        enabled = !state.locating && address.isNotBlank(),
                         modifier = Modifier.weight(1f),
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    )
+                    ) { Text("Εύρεση στον χάρτη") }
                 }
-                Text("Για Ioannina π.χ. 39.665 / 20.854", style = MaterialTheme.typography.bodySmall)
+                if (state.locating) {
+                    Spacer(Modifier.height(6.dp))
+                    LinearProgressIndicator(Modifier.fillMaxWidth())
+                }
+                val pinned = state.deliveryLat != null && state.deliveryLng != null
+                Text(
+                    if (pinned) {
+                        "Σημείο παράδοσης: %.5f, %.5f".format(state.deliveryLat, state.deliveryLng)
+                    } else {
+                        "Χωρίς σημείο στον χάρτη — πάτα «Η τοποθεσία μου» για ακριβή παράδοση."
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = if (pinned) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error,
+                )
             }
             item {
                 OutlinedTextField(
@@ -426,8 +572,25 @@ private fun CartCheckoutScreen(
     }
 }
 
+private fun statusLabel(status: String): String = when (status) {
+    "pending" -> "Σε αναμονή καταστήματος"
+    "accepted", "confirmed" -> "Αποδεκτή"
+    "preparing" -> "Ετοιμάζεται"
+    "ready" -> "Έτοιμη για παραλαβή"
+    "picked_up", "on_the_way", "in_transit" -> "Καθ' οδόν"
+    "delivered" -> "Παραδόθηκε"
+    "cancelled" -> "Ακυρώθηκε"
+    "rejected" -> "Απορρίφθηκε"
+    else -> status
+}
+
 @Composable
-private fun OrdersTab(state: CustomerUiState, onTrack: (OrderUi?) -> Unit, onRefresh: () -> Unit) {
+private fun OrdersTab(
+    state: CustomerUiState,
+    onTrack: (OrderUi?) -> Unit,
+    onRefresh: () -> Unit,
+    onCancelOrder: (OrderUi) -> Unit,
+) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Παραγγελίες", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -437,20 +600,36 @@ private fun OrdersTab(state: CustomerUiState, onTrack: (OrderUi?) -> Unit, onRef
         if (state.orders.isEmpty()) Text("Δεν υπάρχουν παραγγελίες ακόμα.")
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.orders, key = { it.order.id }) { item ->
+                val cancellable = item.order.status in listOf("pending", "accepted", "confirmed")
                 Card(
                     Modifier.fillMaxWidth().clickable { onTrack(item) },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
                     Column(Modifier.padding(14.dp)) {
-                        Text(item.storeName ?: "Κατάστημα", fontWeight = FontWeight.Bold)
-                        Text(item.order.status)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(item.storeName ?: "Κατάστημα", fontWeight = FontWeight.Bold)
+                            item.order.store_order_number?.let {
+                                Text("#%04d".format(it), color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        Text(statusLabel(item.order.status))
                         item.order.delivery_address?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                         item.order.total_amount?.let {
                             Text("€" + "%.2f".format(it), color = MaterialTheme.colorScheme.primary)
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { onTrack(item) }) { Text("Παρακολούθηση") }
+                            if (cancellable) {
+                                TextButton(
+                                    onClick = { onCancelOrder(item) },
+                                    enabled = !state.busy,
+                                ) { Text("Ακύρωση", color = MaterialTheme.colorScheme.error) }
+                            }
+                        }
                     }
                 }
             }
+            item { Spacer(Modifier.height(72.dp)) }
         }
     }
 }
@@ -485,10 +664,10 @@ private fun TrackTab(state: CustomerUiState) {
                 Text("Επίλεξε παραγγελία από Παραγγελίες για live tracking.")
             } else {
                 Text(order.storeName ?: "Παραγγελία", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Status: " + order.order.status, color = MaterialTheme.colorScheme.primary)
+                Text(statusLabel(order.order.status), color = MaterialTheme.colorScheme.primary)
                 order.order.delivery_address?.let { Text(it) }
                 if (state.driverLocation != null) {
-                    Text("Οδηγός στον χάρτη (Mapbox).", style = MaterialTheme.typography.bodySmall)
+                    Text("Ο οδηγός κινείται προς εσένα.", style = MaterialTheme.typography.bodySmall)
                 } else if (!order.order.driver_id.isNullOrBlank()) {
                     Text("Αναμονή θέσης οδηγού…", style = MaterialTheme.typography.bodySmall)
                 } else {
@@ -500,15 +679,50 @@ private fun TrackTab(state: CustomerUiState) {
 }
 
 @Composable
-private fun ProfileTab(state: CustomerUiState, onSignOut: () -> Unit) {
+private fun ProfileTab(
+    state: CustomerUiState,
+    onSaveProfile: (String, String) -> Unit,
+    onSignOut: () -> Unit,
+) {
+    var fullName by remember(state.profile?.full_name) {
+        mutableStateOf(state.profile?.full_name ?: "")
+    }
+    var phone by remember(state.profile?.phone) { mutableStateOf(state.profile?.phone ?: "") }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Προφίλ", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = fullName,
+            onValueChange = { fullName = it },
+            label = { Text("Ονοματεπώνυμο") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Spacer(Modifier.height(12.dp))
-        Text(state.profile?.full_name ?: "—")
-        Text(state.profile?.phone ?: "")
-        Spacer(Modifier.height(8.dp))
-        Text("Push: FCM ενεργό", style = MaterialTheme.typography.bodySmall)
+        OutlinedTextField(
+            value = phone,
+            onValueChange = { phone = it },
+            label = { Text("Τηλέφωνο") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = { onSaveProfile(fullName, phone) },
+            enabled = !state.savingProfile && fullName.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (state.savingProfile) CircularProgressIndicator(color = Color.White)
+            else Text("Αποθήκευση")
+        }
+        Spacer(Modifier.height(20.dp))
+        Text("Ειδοποιήσεις push: ενεργές", style = MaterialTheme.typography.bodySmall)
+        Text("Παραγγελίες συνολικά: ${state.orders.size}", style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onSignOut) { Text("Αποσύνδεση") }
+        OutlinedButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+            Text("Αποσύνδεση")
+        }
     }
 }

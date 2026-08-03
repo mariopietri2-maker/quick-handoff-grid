@@ -8,9 +8,12 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
-import kotlinx.serialization.json.JsonArray
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.json.JsonNull
-import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -31,6 +34,19 @@ class CustomerRepository(
         }
     }
 
+    /** Customer-only signup — mirrors the web app (role defaults to customer). */
+    suspend fun signUp(email: String, password: String, fullName: String, phone: String) {
+        client.auth.signUpWith(Email) {
+            this.email = email.trim()
+            this.password = password
+            data = buildJsonObject {
+                put("full_name", fullName.trim())
+                put("phone", phone.trim())
+                put("role", "customer")
+            }
+        }
+    }
+
     suspend fun signOut() = client.auth.signOut()
 
     suspend fun loadProfile(userId: String): ProfileRow? =
@@ -38,6 +54,17 @@ class CustomerRepository(
             filter { eq("id", userId) }
             limit(1L)
         }.decodeList<ProfileRow>().firstOrNull()
+
+    suspend fun updateProfile(userId: String, fullName: String, phone: String) {
+        client.from("profiles").update(
+            buildJsonObject {
+                put("full_name", fullName.trim())
+                put("phone", phone.trim())
+            },
+        ) {
+            filter { eq("id", userId) }
+        }
+    }
 
     suspend fun fetchStores(): List<StoreRow> =
         client.from("stores").select(
@@ -114,6 +141,14 @@ class CustomerRepository(
         return text
     }
 
+    suspend fun cancelOrder(orderId: String) {
+        client.from("orders").update(
+            buildJsonObject { put("status", "cancelled") },
+        ) {
+            filter { eq("id", orderId) }
+        }
+    }
+
     suspend fun fetchOrders(userId: String): List<OrderUi> {
         val orders = client.from("orders").select(Columns.ALL) {
             filter { eq("customer_id", userId) }
@@ -140,5 +175,32 @@ class CustomerRepository(
         client.from("push_tokens").upsert(
             PushTokenUpsert(user_id = userId, token = token, app = "customer"),
         ) { onConflict = "token" }
+    }
+
+    /**
+     * Live order changes for the signed-in customer. RLS already scopes rows to
+     * this user, so we simply re-fetch whenever anything lands on the channel.
+     */
+    suspend fun subscribeOrders(userId: String): Flow<PostgresAction> {
+        val channel = client.channel("customer-orders-$userId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "orders"
+        }
+        channel.subscribe()
+        return flow
+    }
+
+    /** Live driver position for the tracked order. */
+    suspend fun subscribeDriverLocations(driverId: String): Flow<PostgresAction> {
+        val channel = client.channel("customer-driver-$driverId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "driver_locations"
+        }
+        channel.subscribe()
+        return flow
+    }
+
+    suspend fun unsubscribeAll() {
+        runCatching { client.realtime.removeAllChannels() }
     }
 }
