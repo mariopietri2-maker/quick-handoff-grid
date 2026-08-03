@@ -85,6 +85,11 @@ class MainActivity : ComponentActivity() {
                                 onSaveProfile = vm::saveProfile,
                                 onCancelOrder = vm::cancelOrder,
                                 onClearMessages = vm::clearMessages,
+                                onToggleFavorite = vm::toggleFavorite,
+                                onSetFilterTop = vm::setFilterTopRated,
+                                onSetFilterFast = vm::setFilterFast,
+                                onSetPromo = vm::setPromoCode,
+                                onOrderAgain = vm::orderAgain,
                             )
                         }
                     }

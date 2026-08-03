@@ -15,6 +15,7 @@ data class StoreRow(
     val longitude: Double? = null,
     val is_active: Boolean? = true,
     val image_url: String? = null,
+    val prep_buffer_minutes: Int? = 0,
 )
 
 @Serializable
@@ -119,4 +120,27 @@ data class CustomerAppConfig(
 @Serializable
 data class CustomerAppConfigRow(
     val published_config: JsonElement? = null,
+)
+
+/** Next-wave: public store ratings (view or table). */
+@Serializable
+data class StoreRatingRow(
+    val store_id: String,
+    val avg_rating: Double? = 0.0,
+    val review_count: Int? = 0,
+)
+
+data class StoreRating(val avg: Double = 0.0, val count: Int = 0)
+
+@Serializable
+data class FavoriteRow(
+    val id: String = "",
+    val store_id: String? = null,
+    val menu_item_id: String? = null,
+)
+
+@Serializable
+data class CustomerWalletRow(
+    val balance: Double? = 0.0,
+    val lifetime_credit: Double? = 0.0,
 )
