@@ -76,10 +76,7 @@ class MainActivity : ComponentActivity() {
                                 onSetPayment = vm::setPaymentMethod,
                                 onPlaceOrder = vm::placeOrder,
                                 onTrack = vm::trackOrder,
-                                onRefresh = {
-                                    vm.refreshAll()
-                                    vm.refreshWalletAndRecent()
-                                },
+                                onRefresh = vm::refreshAll,
                                 onSignOut = vm::signOut,
                                 onSearch = vm::setSearchQuery,
                                 onUseLocation = vm::useCurrentLocation,
@@ -88,10 +85,6 @@ class MainActivity : ComponentActivity() {
                                 onSaveProfile = vm::saveProfile,
                                 onCancelOrder = vm::cancelOrder,
                                 onClearMessages = vm::clearMessages,
-                                onToggleFavorite = vm::toggleFavorite,
-                                onSetFilterTop = vm::setFilterTopRated,
-                                onSetFilterFast = vm::setFilterFast,
-                                onSetPromo = vm::setPromoCode,
                             )
                         }
                     }
