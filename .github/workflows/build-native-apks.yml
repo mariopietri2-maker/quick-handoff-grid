@@ -36,8 +36,6 @@ jobs:
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
         run: |
-          # Secret token (sk.*) with DOWNLOADS:READ scope — required to resolve Mapbox Maven artifacts.
-          # Create at https://account.mapbox.com/access-tokens/ and add as repo secret MAPBOX_DOWNLOADS_TOKEN.
           TOKEN="${MAPBOX_DOWNLOADS_TOKEN:-}"
           if [ -z "$TOKEN" ]; then
             echo "::warning::MAPBOX_DOWNLOADS_TOKEN secret not set — Mapbox SDK resolve may fail"
@@ -49,14 +47,14 @@ jobs:
           } >> ~/.gradle/gradle.properties
           echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Build driver debug APK
+      - name: Build driver debug APK + release AAB
         working-directory: native-driver
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace
 
       - name: Prepare customer gradle wrapper
         run: |
@@ -64,38 +62,46 @@ jobs:
           cp native-driver/gradlew native-driver/gradlew.bat native-customer/
           chmod +x native-customer/gradlew
 
-      - name: Build customer debug APK
+      - name: Build customer debug APK + release AAB
         id: customer
         continue-on-error: true
         working-directory: native-customer
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace
 
-      - name: Stage APKs
+      - name: Stage APKs and AABs
         run: |
           mkdir -p dist
           cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
+          if [ -f native-driver/app/build/outputs/bundle/release/app-release.aab ]; then
+            cp native-driver/app/build/outputs/bundle/release/app-release.aab dist/fresh-driver-native-release.aab
+          fi
           if [ -f native-customer/app/build/outputs/apk/debug/app-debug.apk ]; then
             cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh-customer-native-debug.apk
           fi
+          if [ -f native-customer/app/build/outputs/bundle/release/app-release.aab ]; then
+            cp native-customer/app/build/outputs/bundle/release/app-release.aab dist/fresh-customer-native-release.aab
+          fi
           ls -lah dist/
 
-      - name: Upload APK artifacts
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: native-apks
-          path: dist/*.apk
+          name: native-apks-aabs
+          path: |
+            dist/*.apk
+            dist/*.aab
           if-no-files-found: error
           retention-days: 14
 
-      - name: Publish APKs to mobile-apks-v1 release
+      - name: Publish APK + AAB to mobile-apks-v1 GitHub release only
         if: github.ref == 'refs/heads/main'
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view mobile-apks-v1 >/dev/null 2>&1 || \
-            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs" --notes "Native + Capacitor debug APKs for beta download page."
-          gh release upload mobile-apks-v1 dist/*.apk --clobber
-          echo "Published:"
+            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs + AABs" --notes "Native debug APKs and release AABs. GitHub release only (not website)."
+          gh release upload mobile-apks-v1 dist/* --clobber
+          echo "Published to GitHub release mobile-apks-v1:"
           ls dist/
