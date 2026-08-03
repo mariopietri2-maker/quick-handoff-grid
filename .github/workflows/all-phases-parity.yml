@@ -14,111 +14,133 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Phase 1 — Browse tab + appConfig wiring
+      - name: Phase 1 — Browse tab in CustomerShell
         run: |
           set -euo pipefail
-          python3 << 'PY'
+          SHELL=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          # Add Browse tab after Home if missing
+          if ! grep -q 'CustomerTab.Browse' "$SHELL"; then
+            python3 -c "
           from pathlib import Path
-
-          # 1) CustomerShell: add Browse to bottom nav + sticky cart on Browse
-          shell = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
-          t = shell.read_text()
-          old_tabs = '''val tabs = listOf(\n        Triple(CustomerTab.Home, "Αρχική", Icons.Outlined.Home),\n        Triple(CustomerTab.Orders, "Παραγγελίες", Icons.Outlined.Receipt),\n        Triple(CustomerTab.Track, "Παρακολούθηση", Icons.Outlined.Map),\n        Triple(CustomerTab.Profile, "Λογαριασμός", Icons.Outlined.AccountCircle),\n    )'''
-          new_tabs = '''val tabs = listOf(\n        Triple(CustomerTab.Home, "Αρχική", Icons.Outlined.Home),\n        Triple(CustomerTab.Browse, "Αναζήτηση", Icons.Outlined.Search),\n        Triple(CustomerTab.Orders, "Παραγγελίες", Icons.Outlined.Receipt),\n        Triple(CustomerTab.Profile, "Λογαριασμός", Icons.Outlined.AccountCircle),\n    )'''
-          if "CustomerTab.Browse" not in t or "Αναζήτηση" not in t:
-              if old_tabs in t:
-                  t = t.replace(old_tabs, new_tabs)
-                  print("tabs: Browse added")
-              else:
-                  print("tabs pattern not exact — trying soft replace")
-                  t = t.replace(
-                      'Triple(CustomerTab.Home, "Αρχική", Icons.Outlined.Home),',
-                      'Triple(CustomerTab.Home, "Αρχική", Icons.Outlined.Home),\n        Triple(CustomerTab.Browse, "Αναζήτηση", Icons.Outlined.Search),',
-                  )
-                  # drop Track from bottom nav if present (Capacitor uses overlay)
-                  t = t.replace('        Triple(CustomerTab.Track, "Παρακολούθηση", Icons.Outlined.Map),\n', '')
-          # sticky cart also on Browse
+          p = Path('$SHELL')
+          t = p.read_text()
           t = t.replace(
-              "if (state.cartCount > 0 && state.tab == CustomerTab.Home)",
-              "if (state.cartCount > 0 && (state.tab == CustomerTab.Home || state.tab == CustomerTab.Browse))",
+              'Triple(CustomerTab.Home, \"Αρχική\", Icons.Outlined.Home),',
+              'Triple(CustomerTab.Home, \"Αρχική\", Icons.Outlined.Home),\n        Triple(CustomerTab.Browse, \"Αναζήτηση\", Icons.Outlined.Search),'
           )
-          # route Browse -> HomeTab(browseMode=true)
-          if "CustomerTab.Browse ->" not in t:
-              t = t.replace(
-                  "CustomerTab.Home -> HomeTab",
-                  "CustomerTab.Home -> HomeTab",
-              )
-              # find when tab content
-              marker = "CustomerTab.Home ->"
-              if marker in t and "browseMode" not in t:
-                  t = t.replace(
-                      "CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch)",
-                      "CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = false)\n                CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = true)",
-                  )
-                  if "browseMode" not in t:
-                      t = t.replace(
-                          "CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch)",
-                          "CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = false)\n                CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = true)",
-                      )
-          # add browseMode param to HomeTab if missing
-          if "browseMode" not in t:
-              t = t.replace(
-                  "private fun HomeTab(\n    state: CustomerUiState,",
-                  "private fun HomeTab(\n    state: CustomerUiState,\n    browseMode: Boolean = false,",
-              )
-          shell.write_text(t)
-          print("CustomerShell Phase1 nav done")
+          t = t.replace('        Triple(CustomerTab.Track, \"Παρακολούθηση\", Icons.Outlined.Map),\n', '')
+          t = t.replace(
+              'if (state.cartCount > 0 && state.tab == CustomerTab.Home)',
+              'if (state.cartCount > 0 && (state.tab == CustomerTab.Home || state.tab == CustomerTab.Browse))'
+          )
+          p.write_text(t)
+          print('Browse tab + sticky cart wired')
+          "
+          else
+            echo 'Browse already present'
+          fi
 
-          # 2) Repository fetchAppConfig
-          repo = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt")
-          rt = repo.read_text()
-          if "fun fetchAppConfig" not in rt:
-              insert = '''\n    suspend fun fetchAppConfig(): CustomerAppConfig {\n        val row = runCatching {\n            client.postgrest.from("customer_app_config").select { limit(1L) }.decodeSingleOrNull<CustomerAppConfigRow>()\n        }.getOrNull()\n        val el = row?.published_config ?: return CustomerAppConfig()\n        return runCatching {\n            val obj = el.jsonObject\n            fun str(k: String, d: String) = obj[k]?.jsonPrimitive?.contentOrNull ?: d\n            val tiles = obj["tiles"]?.jsonArray?.mapNotNull { t ->\n                val o = t.jsonObject\n                CategoryTile(\n                    label = o["label"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,\n                    emoji = o["emoji"]?.jsonPrimitive?.contentOrNull ?: "•",\n                    category = o["category"]?.jsonPrimitive?.contentOrNull ?: "all",\n                )\n            } ?: CustomerAppConfig().tiles\n            val promos = obj["promos"]?.jsonArray?.mapNotNull { p ->\n                val o = p.jsonObject\n                PromoBanner(\n                    tag = o["tag"]?.jsonPrimitive?.contentOrNull ?: "NEW",\n                    title = o["title"]?.jsonPrimitive?.contentOrNull ?: "",\n                    subtitle = o["subtitle"]?.jsonPrimitive?.contentOrNull ?: "",\n                    code = o["code"]?.jsonPrimitive?.contentOrNull ?: "",\n                    enabled = o["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,\n                )\n            }?.filter { it.enabled } ?: CustomerAppConfig().promos\n            CustomerAppConfig(\n                appName = str("appName", "Fresh Delivery"),\n                cityLabel = str("cityLabel", "Ιωάννινα"),\n                tagline = str("tagline", "Fast · Fresh · Local"),\n                logoUrl = obj["logoUrl"]?.jsonPrimitive?.contentOrNull,\n                tiles = tiles,\n                promos = promos,\n            )\n        }.getOrDefault(CustomerAppConfig())\n    }\n'''
-              idx = rt.find("suspend fun placeOrder")
-              if idx < 0:
-                  raise SystemExit("placeOrder not found")
-              rt = rt[:idx] + insert + rt[idx:]
-              for imp in ["import kotlinx.serialization.json.jsonObject","import kotlinx.serialization.json.jsonArray","import kotlinx.serialization.json.jsonPrimitive","import kotlinx.serialization.json.contentOrNull","import kotlinx.serialization.json.booleanOrNull"]:
-                  if imp not in rt:
-                      lines = rt.splitlines()
-                      for i, ln in enumerate(lines):
-                          if ln.startswith("import "):
-                              lines.insert(i, imp); break
-                      rt = "\n".join(lines) + "\n"
-              repo.write_text(rt)
-              print("Repository fetchAppConfig added")
-          else:
-              print("Repository ok")
+      - name: Phase 1 — fetchAppConfig in Repository
+        run: |
+          set -euo pipefail
+          REPO=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt
+          if grep -q 'fun fetchAppConfig' "$REPO"; then
+            echo 'fetchAppConfig already present'
+            exit 0
+          fi
+          python3 -c "
+          from pathlib import Path
+          p = Path('$REPO')
+          t = p.read_text()
+          insert = '''
+    suspend fun fetchAppConfig(): CustomerAppConfig {
+        val row = runCatching {
+            client.postgrest.from(\"customer_app_config\").select { limit(1L) }.decodeSingleOrNull<CustomerAppConfigRow>()
+        }.getOrNull()
+        val el = row?.published_config ?: return CustomerAppConfig()
+        return runCatching {
+            val obj = el.jsonObject
+            fun str(k: String, d: String) = obj[k]?.jsonPrimitive?.contentOrNull ?: d
+            val tiles = obj[\"tiles\"]?.jsonArray?.mapNotNull { x ->
+                val o = x.jsonObject
+                CategoryTile(
+                    label = o[\"label\"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
+                    emoji = o[\"emoji\"]?.jsonPrimitive?.contentOrNull ?: \"•\",
+                    category = o[\"category\"]?.jsonPrimitive?.contentOrNull ?: \"all\",
+                )
+            } ?: CustomerAppConfig().tiles
+            val promos = obj[\"promos\"]?.jsonArray?.mapNotNull { x ->
+                val o = x.jsonObject
+                PromoBanner(
+                    tag = o[\"tag\"]?.jsonPrimitive?.contentOrNull ?: \"NEW\",
+                    title = o[\"title\"]?.jsonPrimitive?.contentOrNull ?: \"\",
+                    subtitle = o[\"subtitle\"]?.jsonPrimitive?.contentOrNull ?: \"\",
+                    code = o[\"code\"]?.jsonPrimitive?.contentOrNull ?: \"\",
+                    enabled = o[\"enabled\"]?.jsonPrimitive?.booleanOrNull ?: true,
+                )
+            }?.filter { it.enabled } ?: CustomerAppConfig().promos
+            CustomerAppConfig(
+                appName = str(\"appName\", \"Fresh Delivery\"),
+                cityLabel = str(\"cityLabel\", \"Ιωάννινα\"),
+                tagline = str(\"tagline\", \"Fast · Fresh · Local\"),
+                logoUrl = obj[\"logoUrl\"]?.jsonPrimitive?.contentOrNull,
+                tiles = tiles,
+                promos = promos,
+            )
+        }.getOrDefault(CustomerAppConfig())
+    }
+'''
+          idx = t.find('suspend fun placeOrder')
+          assert idx > 0, 'placeOrder not found'
+          t = t[:idx] + insert + t[idx:]
+          for imp in [
+              'import kotlinx.serialization.json.jsonObject',
+              'import kotlinx.serialization.json.jsonArray',
+              'import kotlinx.serialization.json.jsonPrimitive',
+              'import kotlinx.serialization.json.contentOrNull',
+              'import kotlinx.serialization.json.booleanOrNull',
+          ]:
+              if imp not in t:
+                  lines = t.splitlines()
+                  for i, ln in enumerate(lines):
+                      if ln.startswith('import '):
+                          lines.insert(i, imp)
+                          break
+                  t = chr(10).join(lines) + chr(10)
+          p.write_text(t)
+          print('fetchAppConfig added')
+          "
 
-          # 3) ViewModel appConfig
-          vm = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt")
-          vt = vm.read_text()
-          if "appConfig:" not in vt:
-              vt = vt.replace(
-                  "val info: String? = null,\n) {",
-                  "val info: String? = null,\n    val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),\n) {",
-              )
-              vt = vt.replace(
-                  "recomputeDeliveryFee()\n        }\n        registerFcm(userId)",
-                  "recomputeDeliveryFee()\n        }\n        runCatching {\n            val cfg = repo.fetchAppConfig()\n            _state.value = _state.value.copy(appConfig = cfg)\n        }\n        registerFcm(userId)",
-              )
-              vm.write_text(vt)
-              print("ViewModel appConfig wired")
-          else:
-              print("ViewModel ok")
-          print("Phase 1 complete")
-          PY
+      - name: Phase 1 — ViewModel appConfig
+        run: |
+          set -euo pipefail
+          VM=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
+          if grep -q 'appConfig:' "$VM"; then
+            echo 'appConfig already in ViewModel'
+            exit 0
+          fi
+          python3 -c "
+          from pathlib import Path
+          p = Path('$VM')
+          t = p.read_text()
+          t = t.replace(
+              'val info: String? = null,\n) {',
+              'val info: String? = null,\n    val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),\n) {'
+          )
+          t = t.replace(
+              'recomputeDeliveryFee()\n        }\n        registerFcm(userId)',
+              'recomputeDeliveryFee()\n        }\n        runCatching {\n            val cfg = repo.fetchAppConfig()\n            _state.value = _state.value.copy(appConfig = cfg)\n        }\n        registerFcm(userId)'
+          )
+          p.write_text(t)
+          print('ViewModel appConfig wired')
+          "
 
       - name: Phase 2/3 — Driver banners + version bumps
         run: |
           set -euo pipefail
-          python3 << 'PY'
-          from pathlib import Path
-          hs = Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt")
-          if hs.exists():
-              t = hs.read_text()
-              if "fun TurnByTurnBanner" not in t:
-                  t = t.rstrip() + '''
+          HS=native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
+          if [ -f "$HS" ] && ! grep -q 'fun TurnByTurnBanner' "$HS"; then
+            cat >> "$HS" << 'EOF'
 
 @Composable
 private fun TurnByTurnBanner(instruction: String, distanceMeters: Int?, modifier: Modifier = Modifier) {
@@ -162,40 +184,25 @@ private fun SurgeWaitBanner(title: String, subtitle: String, accent: Color = Col
         }
     }
 }
-'''
-                  hs.write_text(t)
-                  print("Driver banners added")
-              else:
-                  print("Driver banners already present")
-          vm = Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt")
-          if vm.exists():
-              vt = vm.read_text()
-              if "navInstruction" not in vt:
-                  for old in ["val error: String? = null,", "val info: String? = null,"]:
-                      if old in vt:
-                          vt = vt.replace(old, old + "\n    val navInstruction: String? = null,\n    val navDistanceMeters: Int? = null,\n    val surgeTitle: String? = null,\n    val surgeSubtitle: String? = null,", 1)
-                          break
-                  vm.write_text(vt)
-                  print("DriverViewModel fields added")
-          PY
+EOF
+            echo 'Driver banners appended'
+          else
+            echo 'Driver banners ok or HS missing'
+          fi
           for f in native-customer/app/build.gradle.kts native-customer/app/build.gradle; do
             [ -f "$f" ] && sed -i 's/versionName *= *"[^"]*"/versionName = "2.5.0-native"/' "$f" && sed -i 's/versionCode *= *[0-9]*/versionCode = 250/' "$f" && echo bumped $f || true
           done
           for f in native-driver/app/build.gradle.kts native-driver/app/build.gradle; do
             [ -f "$f" ] && sed -i 's/versionName *= *"[^"]*"/versionName = "2.3.0-native"/' "$f" && sed -i 's/versionCode *= *[0-9]*/versionCode = 230/' "$f" && echo bumped $f || true
           done
-          if [ -f native-driver/README.md ]; then
-            sed -i 's/Turn-by-turn in-app banner | ⏳ later/Turn-by-turn in-app banner | ✅/' native-driver/README.md || true
-            sed -i 's/Wait-bonus \/ surge banners | ⏳ later/Wait-bonus \/ surge banners | ✅/' native-driver/README.md || true
-          fi
 
-      - name: Commit & push
+      - name: Commit and push
         run: |
           set -euo pipefail
           git config user.name "parity-bot"
           git config user.email "parity@freshdelivery.local"
           git add -A
           git status
-          git commit -m "feat(native): all phases Capacitor parity — Browse+appConfig, driver banners, 2.5/2.3" || { echo "Nothing to commit"; exit 0; }
+          git commit -m "feat(native): all phases parity — Browse+appConfig, driver banners, 2.5/2.3" || { echo Nothing to commit; exit 0; }
           git push origin HEAD:main
-          echo "Pushed — build-native-apks will run on native changes"
+          echo Done — build-native-apks will pick up native changes
