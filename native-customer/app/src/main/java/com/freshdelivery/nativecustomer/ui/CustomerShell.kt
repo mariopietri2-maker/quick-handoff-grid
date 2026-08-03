@@ -572,8 +572,25 @@ private fun CartCheckoutScreen(
     }
 }
 
+private fun statusLabel(status: String): String = when (status) {
+    "pending" -> "Σε αναμονή καταστήματος"
+    "accepted", "confirmed" -> "Αποδεκτή"
+    "preparing" -> "Ετοιμάζεται"
+    "ready" -> "Έτοιμη για παραλαβή"
+    "picked_up", "on_the_way", "in_transit" -> "Καθ' οδόν"
+    "delivered" -> "Παραδόθηκε"
+    "cancelled" -> "Ακυρώθηκε"
+    "rejected" -> "Απορρίφθηκε"
+    else -> status
+}
+
 @Composable
-private fun OrdersTab(state: CustomerUiState, onTrack: (OrderUi?) -> Unit, onRefresh: () -> Unit) {
+private fun OrdersTab(
+    state: CustomerUiState,
+    onTrack: (OrderUi?) -> Unit,
+    onRefresh: () -> Unit,
+    onCancelOrder: (OrderUi) -> Unit,
+) {
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
             Text("Παραγγελίες", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
@@ -583,20 +600,36 @@ private fun OrdersTab(state: CustomerUiState, onTrack: (OrderUi?) -> Unit, onRef
         if (state.orders.isEmpty()) Text("Δεν υπάρχουν παραγγελίες ακόμα.")
         LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
             items(state.orders, key = { it.order.id }) { item ->
+                val cancellable = item.order.status in listOf("pending", "accepted", "confirmed")
                 Card(
                     Modifier.fillMaxWidth().clickable { onTrack(item) },
                     colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                 ) {
                     Column(Modifier.padding(14.dp)) {
-                        Text(item.storeName ?: "Κατάστημα", fontWeight = FontWeight.Bold)
-                        Text(item.order.status)
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(item.storeName ?: "Κατάστημα", fontWeight = FontWeight.Bold)
+                            item.order.store_order_number?.let {
+                                Text("#%04d".format(it), color = MaterialTheme.colorScheme.primary)
+                            }
+                        }
+                        Text(statusLabel(item.order.status))
                         item.order.delivery_address?.let { Text(it, style = MaterialTheme.typography.bodySmall) }
                         item.order.total_amount?.let {
                             Text("€" + "%.2f".format(it), color = MaterialTheme.colorScheme.primary)
                         }
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = { onTrack(item) }) { Text("Παρακολούθηση") }
+                            if (cancellable) {
+                                TextButton(
+                                    onClick = { onCancelOrder(item) },
+                                    enabled = !state.busy,
+                                ) { Text("Ακύρωση", color = MaterialTheme.colorScheme.error) }
+                            }
+                        }
                     }
                 }
             }
+            item { Spacer(Modifier.height(72.dp)) }
         }
     }
 }
