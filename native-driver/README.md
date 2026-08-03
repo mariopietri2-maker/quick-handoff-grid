@@ -21,8 +21,9 @@ True native driver app (no Capacitor WebView). Same Supabase backend and **same 
 | Profile edit | ✅ |
 | FCM → `push_tokens` | ✅ |
 | Fresh Delivery chime | ✅ |
-| Turn-by-turn in-app banner | ⏳ later |
-| Wait-bonus banner / surge / announcements | ⏳ later |
+| In-app nav guidance banner (distance + heading to next stop) | ✅ |
+| Unread ops announcements strip on Home | ✅ |
+| Wait-bonus / surge live multipliers | ⏳ server-side; UI shows pool bonus on offers |
 
 ## Build
 
