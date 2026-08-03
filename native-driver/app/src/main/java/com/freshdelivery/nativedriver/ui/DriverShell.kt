@@ -13,17 +13,23 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.data.DriverTab
 import com.freshdelivery.nativedriver.ui.home.HomeScreen
 import com.freshdelivery.nativedriver.ui.inbox.InboxScreen
 import com.freshdelivery.nativedriver.ui.money.MoneyScreen
 import com.freshdelivery.nativedriver.ui.profile.ProfileScreen
 import com.freshdelivery.nativedriver.ui.referral.ReferralScreen
+import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 
 private data class TabItem(val tab: DriverTab, val label: String, val icon: ImageVector)
 
@@ -57,13 +63,25 @@ fun DriverShell(
     )
 
     Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
+        containerColor = Color.Black,
         bottomBar = {
-            NavigationBar(containerColor = MaterialTheme.colorScheme.surface) {
+            NavigationBar(
+                containerColor = Color(0xFF121212),
+                contentColor = Color.White,
+                tonalElevation = 0.dp,
+            ) {
                 tabs.forEach { item ->
+                    val selected = state.tab == item.tab
                     NavigationBarItem(
-                        selected = state.tab == item.tab,
+                        selected = selected,
                         onClick = { onTab(item.tab) },
+                        colors = NavigationBarItemDefaults.colors(
+                            selectedIconColor = FreshGreen,
+                            selectedTextColor = FreshGreen,
+                            unselectedIconColor = Color(0xFF9E9E9E),
+                            unselectedTextColor = Color(0xFF9E9E9E),
+                            indicatorColor = Color(0xFF1C1C1C),
+                        ),
                         icon = {
                             if (item.tab == DriverTab.Inbox && unread > 0) {
                                 BadgedBox(badge = { Badge { Text("$unread") } }) {
@@ -73,7 +91,13 @@ fun DriverShell(
                                 Icon(item.icon, contentDescription = item.label)
                             }
                         },
-                        label = { Text(item.label) },
+                        label = {
+                            Text(
+                                item.label,
+                                fontSize = 11.sp,
+                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
+                            )
+                        },
                     )
                 }
             }
