@@ -1,4 +1,4 @@
-# Rebuild after all-phases parity (Browse tab + appConfig + driver banners)
+# Rebuild after next-wave premium (ratings, favorites, wallet, order-again, driver earnings/cash)
 name: Build Native APKs
 
 on:
@@ -7,7 +7,7 @@ on:
     paths:
       - "native-driver/**"
       - "native-customer/**"
-      - ".github/workflows/build-native-apks.yml"
+      ".github/workflows/build-native-apks.yml"
 
 jobs:
   build:
