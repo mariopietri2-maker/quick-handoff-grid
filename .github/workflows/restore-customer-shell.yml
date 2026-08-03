@@ -2,6 +2,9 @@ name: Restore CustomerShell
 
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-customer-shell.yml"
 
 jobs:
   restore:
@@ -17,10 +20,8 @@ jobs:
         run: |
           set -euo pipefail
           DEST="native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt"
-          # Last full shell before corruption
           curl -fsSL -o "$DEST" \
             "https://raw.githubusercontent.com/mariopietri2-maker/quick-handoff-grid/33876a13d91520cf139b45c4f82f7b37767293d9/native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt"
-          # Brand + Uber Eats polish
           python3 << 'PY'
           from pathlib import Path
           p = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
@@ -121,8 +122,6 @@ jobs:
           p.write_text(c)
           print("bytes", len(c))
           PY
-          # Remove accidental duplicate LoginScreen.kt if present (shell has LoginScreen)
-          # Keep LoginScreen.kt only if shell no longer defines it — shell still has it, so delete extract to avoid redeclaration
           if grep -q "fun LoginScreen" "$DEST" && [ -f native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt ]; then
             rm -f native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/LoginScreen.kt
             echo "removed duplicate LoginScreen.kt"
