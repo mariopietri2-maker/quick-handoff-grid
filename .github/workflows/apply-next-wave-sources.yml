@@ -1,0 +1,42 @@
+name: Apply Next Wave Kotlin Sources
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-next-wave-sources.yml"
+      - ".github/parity-payloads/next-wave/**"
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode and write next-wave sources
+        run: |
+          python3 << 'PY'
+          import gzip, base64
+          from pathlib import Path
+          mapping = {
+            "CustomerShell.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt",
+            "CustomerViewModel.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt",
+            "CustomerRepository.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt",
+          }
+          base = Path(".github/parity-payloads/next-wave")
+          for name, dest in mapping.items():
+              b64 = (base / name).read_text().strip()
+              raw = gzip.decompress(base64.b64decode(b64))
+              p = Path(dest)
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_bytes(raw)
+              print("wrote", dest, len(raw))
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git diff --cached --stat
+          git commit -m "feat(native): next-wave UI + repo + VM (ratings, favorites, wallet, order-again, filters, promo)" || echo "no changes"
+          git push
