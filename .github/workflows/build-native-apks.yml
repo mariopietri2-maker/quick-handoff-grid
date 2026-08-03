@@ -47,14 +47,14 @@ jobs:
           } >> ~/.gradle/gradle.properties
           echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
 
-      - name: Build driver debug APK + release AAB
+      - name: Build driver debug APK + debug AAB
         working-directory: native-driver
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           chmod +x gradlew
-          ./gradlew :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug :app:bundleDebug --no-daemon --stacktrace
 
       - name: Prepare customer gradle wrapper
         run: |
@@ -62,26 +62,26 @@ jobs:
           cp native-driver/gradlew native-driver/gradlew.bat native-customer/
           chmod +x native-customer/gradlew
 
-      - name: Build customer debug APK + release AAB
+      - name: Build customer debug APK + debug AAB
         id: customer
         continue-on-error: true
         working-directory: native-customer
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
-          ./gradlew :app:assembleDebug :app:bundleRelease --no-daemon --stacktrace
+          ./gradlew :app:assembleDebug :app:bundleDebug --no-daemon --stacktrace
 
       - name: Stage APKs and AABs
         run: |
           mkdir -p dist
           cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
-          if [ -f native-driver/app/build/outputs/bundle/release/app-release.aab ]; then
-            cp native-driver/app/build/outputs/bundle/release/app-release.aab dist/fresh-driver-native-release.aab
+          if [ -f native-driver/app/build/outputs/bundle/debug/app-debug.aab ]; then
+            cp native-driver/app/build/outputs/bundle/debug/app-debug.aab dist/fresh-driver-native-debug.aab
           fi
           if [ -f native-customer/app/build/outputs/apk/debug/app-debug.apk ]; then
             cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh-customer-native-debug.apk
           fi
-          if [ -f native-customer/app/build/outputs/bundle/release/app-release.aab ]; then
-            cp native-customer/app/build/outputs/bundle/release/app-release.aab dist/fresh-customer-native-release.aab
+          if [ -f native-customer/app/build/outputs/bundle/debug/app-debug.aab ]; then
+            cp native-customer/app/build/outputs/bundle/debug/app-debug.aab dist/fresh-customer-native-debug.aab
           fi
           ls -lah dist/
 
@@ -101,7 +101,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view mobile-apks-v1 >/dev/null 2>&1 || \
-            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs + AABs" --notes "Native debug APKs and release AABs. GitHub release only (not website)."
+            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs + AABs" --notes "Native debug APKs and debug AABs. GitHub release only (not website)."
           gh release upload mobile-apks-v1 dist/* --clobber
           echo "Published to GitHub release mobile-apks-v1:"
           ls dist/
