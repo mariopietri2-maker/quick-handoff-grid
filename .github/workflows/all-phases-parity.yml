@@ -15,11 +15,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Phase 1 Browse tab
+      - name: Phase 1 Browse tab nav
         run: python3 .github/parity-payloads/phase1_browse.py
 
       - name: Phase 1 Repository and ViewModel
         run: python3 .github/parity-payloads/phase1_repo_vm.py
+
+      - name: Fix Browse when-branch and appConfig home UI
+        run: python3 .github/parity-payloads/fix_browse_when.py
 
       - name: Phase 2 3 Driver banners and versions
         run: bash .github/parity-payloads/phase23_driver.sh
@@ -30,5 +33,5 @@ jobs:
           git config user.email parity@freshdelivery.local
           git add -A
           git status
-          git commit -m "feat(native): all phases parity Browse appConfig driver banners 2.5 2.3" || echo Nothing to commit
+          git commit -m "feat(native): complete all phases — Browse when + appConfig UI + driver banners" || echo Nothing to commit
           git push origin HEAD:main || true
