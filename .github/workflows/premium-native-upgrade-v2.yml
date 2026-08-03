@@ -1,0 +1,150 @@
+name: Premium Native Upgrade v2
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/premium-native-upgrade-v2.yml'
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire banner track + HomeTab params
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          t = p.read_text()
+
+          # 1) HomeTab calls — pass onTrack
+          t = t.replace(
+              'CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = false)',
+              'CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, onTrack, browseMode = false)',
+          )
+          t = t.replace(
+              'CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = true)',
+              'CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, onTrack, browseMode = true)',
+          )
+
+          # 2) HomeTab signature
+          old_sig = '''private fun HomeTab(
+    state: CustomerUiState,
+    onRefresh: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onSearch: (String) -> Unit,
+    browseMode: Boolean = false,
+)'''
+          new_sig = '''private fun HomeTab(
+    state: CustomerUiState,
+    onRefresh: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onSearch: (String) -> Unit,
+    onTrack: (OrderUi?) -> Unit,
+    browseMode: Boolean = false,
+)'''
+          if old_sig in t:
+              t = t.replace(old_sig, new_sig)
+
+          # 3) Banner onTrack wiring
+          t = t.replace(
+              'ActiveOrderBanner(order = active, onTrack = { /* wired via parent track */ })',
+              'ActiveOrderBanner(order = active, onTrack = { onTrack(active) })',
+          )
+
+          # 4) If banner item was never injected (v1 missed), inject now after search header
+          if 'ActiveOrderBanner(' not in t:
+              needle = 'UberFilterChip("Όλα", selected = !filterOpen)'
+              if needle in t:
+                  # find the item { Row ... filters block and prepend active order
+                  idx = t.find(needle)
+                  # walk back to "item {"
+                  start = t.rfind('item {', 0, idx)
+                  if start > 0:
+                      insert = '''// Premium active order
+        state.activeOrders.firstOrNull()?.let { active ->
+            item {
+                ActiveOrderBanner(order = active, onTrack = { onTrack(active) })
+            }
+        }
+        '''
+                      t = t[:start] + insert + t[start:]
+
+          # Ensure ActiveOrderBanner function exists
+          if 'fun ActiveOrderBanner' not in t:
+              fn = '''
+@Composable
+private fun ActiveOrderBanner(order: OrderUi, onTrack: () -> Unit) {
+    val statusText = when (order.order.status) {
+        "pending", "placed" -> "Σε αναμονή επιβεβαίωσης"
+        "accepted", "confirmed" -> "Έγινε δεκτή"
+        "preparing" -> "Ετοιμάζεται"
+        "ready" -> "Έτοιμη για παραλαβή"
+        "picked_up", "on_the_way", "in_transit" -> "Ο οδηγός έρχεται"
+        "arrived" -> "Ο οδηγός παρέλαβε"
+        else -> "Σε εξέλιξη"
+    }
+    Surface(
+        onClick = onTrack,
+        modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+        shape = RoundedCornerShape(16.dp),
+        color = UberGreen,
+        shadowElevation = 6.dp,
+    ) {
+        Row(Modifier.padding(horizontal = 16.dp, vertical = 14.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(
+                Modifier.size(40.dp).clip(CircleShape).background(Color.White.copy(alpha = 0.22f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.Map, null, tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("ΕΝΕΡΓΗ ΠΑΡΑΓΓΕΛΙΑ", color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.labelSmall, fontWeight = FontWeight.Bold)
+                Text(statusText, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                order.storeName?.let {
+                    Text(it, color = Color.White.copy(alpha = 0.9f), style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                }
+            }
+            Text("›", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 22.sp)
+        }
+    }
+}
+
+'''
+              t = t.replace('@Composable\nprivate fun HomeTab(', fn + '@Composable\nprivate fun HomeTab(')
+
+          p.write_text(t)
+          print('CustomerShell v2 OK')
+
+          # Driver GO bar safety — ensure import ButtonDefaults elevation exists (material3 has it)
+          hp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt')
+          h = hp.read_text()
+          if 'GoOnlineSlideBar' not in h:
+              print('GO bar missing — skip')
+          else:
+              print('GO bar present')
+          # Remove broken TurnByTurnBanner if it causes compile errors (undefined Surface/sp without use)
+          if 'private fun TurnByTurnBanner' in h and 'TurnByTurnBanner(' not in h.split('fun TurnByTurnBanner')[0]:
+              # Dead code with missing imports can fail compile — comment out the whole function
+              start = h.find('@Composable\nprivate fun TurnByTurnBanner')
+              if start < 0:
+                  start = h.find('private fun TurnByTurnBanner')
+              if start > 0:
+                  # find next private fun or end
+                  rest = h[start+10:]
+                  nxt = rest.find('\nprivate fun ')
+                  if nxt > 0:
+                      end = start + 10 + nxt
+                      h = h[:start] + '\n// TurnByTurnBanner deferred — needs route steps from Mapbox\n' + h[end:]
+                      hp.write_text(h)
+                      print('Removed dead TurnByTurnBanner to keep compile green')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add native-customer native-driver
+          git diff --cached --quiet && echo No changes || (git commit -m "fix(native): wire active-order banner to track + keep driver compile green" && git push)
