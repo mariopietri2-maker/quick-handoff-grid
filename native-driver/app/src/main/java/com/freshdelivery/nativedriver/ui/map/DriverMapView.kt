@@ -29,34 +29,30 @@ data class MapMarker(
 private const val DEFAULT_LAT = 39.6650
 private const val DEFAULT_LNG = 20.8537
 
-/** Draws a navigation-arrow pin (points up = north); rotate with iconRotate = bearing. */
 private fun createDriverArrowBitmap(size: Int = 96): Bitmap {
     val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
     val c = Canvas(bmp)
     val cx = size / 2f
     val cy = size / 2f
 
-    // Soft glow disc
     val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.argb(60, 59, 130, 246)
+        color = android.graphics.Color.argb(70, 6, 193, 103)
         style = Paint.Style.FILL
     }
     c.drawCircle(cx, cy, size * 0.42f, glow)
 
-    // White outline disc
     val disc = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
         style = Paint.Style.FILL
     }
     c.drawCircle(cx, cy, size * 0.28f, disc)
 
-    // Blue filled arrow pointing up (north)
     val arrow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#2563EB")
+        color = android.graphics.Color.parseColor("#06C167")
         style = Paint.Style.FILL
     }
     val path = Path().apply {
-        moveTo(cx, cy - size * 0.22f) // tip
+        moveTo(cx, cy - size * 0.22f)
         lineTo(cx + size * 0.14f, cy + size * 0.16f)
         lineTo(cx, cy + size * 0.06f)
         lineTo(cx - size * 0.14f, cy + size * 0.16f)
@@ -82,7 +78,7 @@ fun DriverMapView(
     val viewportState = rememberMapViewportState {
         setCameraOptions {
             center(Point.fromLngLat(lng, lat))
-            zoom(13.2)
+            zoom(14.0)
             pitch(0.0)
         }
     }
@@ -93,19 +89,19 @@ fun DriverMapView(
                 val first = markers.first()
                 viewportState.setCameraOptions {
                     center(Point.fromLngLat(first.lng, first.lat))
-                    zoom(12.8)
+                    zoom(13.0)
                 }
             }
             userLat != null && userLng != null && markers.isEmpty() -> {
                 viewportState.setCameraOptions {
                     center(Point.fromLngLat(userLng, userLat))
-                    zoom(15.0)
+                    zoom(15.2)
                 }
             }
             else -> {
                 viewportState.setCameraOptions {
                     center(Point.fromLngLat(lng, lat))
-                    zoom(13.2)
+                    zoom(14.0)
                 }
             }
         }
@@ -121,11 +117,11 @@ fun DriverMapView(
                         .withPoint(Point.fromLngLat(m.lng, m.lat))
                         .withIconSize(1.15)
                         .withTextField(m.label.take(18))
-                        .withTextSize(11.0)
-                        .withTextOffset(listOf(0.0, 1.4))
-                        .withTextColor("#F1F5F9")
-                        .withTextHaloColor("#0B0F14")
-                        .withTextHaloWidth(1.2),
+                        .withTextSize(12.0)
+                        .withTextOffset(listOf(0.0, 1.5))
+                        .withTextColor("#111111")
+                        .withTextHaloColor("#FFFFFF")
+                        .withTextHaloWidth(1.4),
                 )
             }
             if (userLat != null && userLng != null) {
@@ -134,26 +130,25 @@ fun DriverMapView(
                     PointAnnotationOptions()
                         .withPoint(Point.fromLngLat(userLng, userLat))
                         .withIconImage(driverIcon)
-                        .withIconSize(1.35)
+                        .withIconSize(1.4)
                         .withIconRotate(rotate)
-                        // icon-rotation-alignment is manager/layer-level only in Maps SDK 11.x;
-                        // withIconRotate is enough for bearing-aligned driver arrow.
                         .withTextField("Εσύ")
                         .withTextSize(11.0)
                         .withTextOffset(listOf(0.0, 2.0))
-                        .withTextColor("#93C5FD")
-                        .withTextHaloColor("#0B0F14")
-                        .withTextHaloWidth(1.2),
+                        .withTextColor("#06C167")
+                        .withTextHaloColor("#FFFFFF")
+                        .withTextHaloWidth(1.3),
                 )
             }
         }
     }
 
-    Box(modifier = modifier.background(Color(0xFF0B0F14))) {
+    Box(modifier = modifier.background(Color(0xFFE8EEF2))) {
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
             mapViewportState = viewportState,
-            style = { MapStyle(style = "mapbox://styles/mapbox/dark-v11") },
+            // Light streets — closer to eFood / Delivery Hero rider maps
+            style = { MapStyle(style = "mapbox://styles/mapbox/streets-v12") },
             compass = {},
             scaleBar = {},
             logo = {},
