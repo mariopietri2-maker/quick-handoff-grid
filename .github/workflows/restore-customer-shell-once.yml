@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/workflows/restore-customer-shell-once.yml"
+      - "native-customer/_restore_shell.b64"
 
 permissions:
   contents: write
@@ -14,94 +15,21 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
 
-      - name: Restore full CustomerShell from f08b836e47
+      - name: Decode CustomerShell from b64 artifact in repo
         run: |
           set -euo pipefail
-          TARGET="native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt"
-          git show f08b836e47:"$TARGET" > "$TARGET"
-          bytes=$(wc -c < "$TARGET")
-          echo "Restored $bytes bytes from f08b836e47"
-          test "$bytes" -gt 10000
-          head -3 "$TARGET"
-          python3 -c '
-from pathlib import Path
-p = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
-t = p.read_text()
-old = """                UberFilterChip(\"Όλα\", selected = !filterOpen) { filterOpen = false }
-                UberFilterChip(\"Ανοιχτά\", selected = filterOpen) { filterOpen = true }
-                TextButton(onClick = onRefresh) {
-                    Text(\"Ανανέωση\", color = UberGreen, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-        item {
-            Text(
-                \"Κοντά σου\","""
-new = """                UberFilterChip(\"Όλα\", selected = !filterOpen) { filterOpen = false }
-                UberFilterChip(\"Ανοιχτά\", selected = filterOpen) { filterOpen = true }
-                TextButton(onClick = onRefresh) {
-                    Text(\"Ανανέωση\", color = UberGreen, fontWeight = FontWeight.Bold)
-                }
-            }
-        }
-        item {
-            val categories = listOf(\"🍔 Burger\", \"🍕 Pizza\", \"🍣 Sushi\", \"🥗 Σαλάτες\", \"☕ Καφές\", \"🍰 Γλυκά\", \"🍗 Κοτόπουλο\", \"🌮 Mexican\")
-            Row(
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                categories.forEach { label ->
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = UberChip,
-                        modifier = Modifier.clickable { onSearch(label.substringAfter(\" \").trim()) },
-                    ) {
-                        Text(label, modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp), style = MaterialTheme.typography.labelLarge, fontWeight = FontWeight.SemiBold, color = UberInk)
-                    }
-                }
-            }
-        }
-        item {
-            Text(
-                \"Κοντά σου\","""
-if old in t:
-    t = t.replace(old, new, 1)
-    print("chips ok")
-else:
-    print("chips skip")
-old2 = """        Spacer(Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MetaPill(if (store.is_active == false) \"Κλειστό\" else \"Ανοιχτό\")
-            MetaPill(\"Παράδοση\")
-        }
-    }
-}
-
-@Composable
-private fun MetaPill(text: String) {"""
-new2 = """        Spacer(Modifier.height(6.dp))
-        Text(\"★ 4.8 · 25–35 λεπτά · Παράδοση\", style = MaterialTheme.typography.bodySmall, color = UberMuted)
-        Spacer(Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MetaPill(if (store.is_active == false) \"Κλειστό\" else \"Ανοιχτό\")
-            MetaPill(\"Παράδοση\")
-        }
-    }
-}
-
-@Composable
-private fun MetaPill(text: String) {"""
-if old2 in t:
-    t = t.replace(old2, new2, 1)
-    print("meta ok")
-else:
-    print("meta skip")
-p.write_text(t)
-print("final", p.stat().st_size)
-'
+          python3 <<'PY'
+          import gzip, base64
+          from pathlib import Path
+          b64 = Path('native-customer/_restore_shell.b64').read_text().strip()
+          data = gzip.decompress(base64.b64decode(b64))
+          path = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          path.write_bytes(data)
+          print('wrote', path, 'bytes', len(data))
+          assert len(data) > 10000, len(data)
+          assert data.startswith(b'package '), data[:40]
+          PY
 
       - name: Commit and push
         run: |
