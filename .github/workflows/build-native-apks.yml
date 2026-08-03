@@ -1,4 +1,4 @@
-# Rebuild after next-wave premium (ratings, favorites, wallet, order-again, driver earnings/cash)
+# Rebuild after HomeScreen restore + next-wave compile fix
 name: Build Native APKs
 
 on:
@@ -7,7 +7,7 @@ on:
     paths:
       - "native-driver/**"
       - "native-customer/**"
-      ".github/workflows/build-native-apks.yml"
+      - ".github/workflows/build-native-apks.yml"
 
 jobs:
   build:
