@@ -726,4 +726,3 @@ private fun ProfileTab(
         }
     }
 }
-}
