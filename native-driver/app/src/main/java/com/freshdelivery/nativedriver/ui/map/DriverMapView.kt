@@ -136,7 +136,8 @@ fun DriverMapView(
                         .withIconImage(driverIcon)
                         .withIconSize(1.35)
                         .withIconRotate(rotate)
-                        .withIconRotationAlignment("map")
+                        // icon-rotation-alignment is manager/layer-level only in Maps SDK 11.x;
+                        // withIconRotate is enough for bearing-aligned driver arrow.
                         .withTextField("Εσύ")
                         .withTextSize(11.0)
                         .withTextOffset(listOf(0.0, 2.0))
