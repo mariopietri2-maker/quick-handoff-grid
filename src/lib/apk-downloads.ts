@@ -7,7 +7,7 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 export const APK_BUILD_VERSION = '1.0.7232800';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
-export const APK_NATIVE_DRIVER_VERSION = '2.0.0-native';
+export const APK_NATIVE_DRIVER_VERSION = '2.3.0-native';
 
 /** Native Kotlin/Compose customer (cart + checkout + FCM). */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.1.0-native';

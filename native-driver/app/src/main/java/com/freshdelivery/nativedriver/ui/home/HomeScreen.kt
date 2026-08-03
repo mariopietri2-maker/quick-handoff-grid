@@ -180,7 +180,8 @@ fun HomeScreen(
                         !state.driverActive -> "Αναμονή έγκρισης"
                         state.onBreak -> "Σε διάλειμμα"
                         state.cashCapped -> "Όριο μετρητών"
-                        state.geo != null -> "GPS ενεργό"
+                        state.online && state.geo != null -> "GPS · ορατός στο admin"
+                        state.online -> "Αναμονή GPS…"
                         else -> null
                     }
                     if (sub != null) {

@@ -163,7 +163,6 @@ class DriverRepository(
 
     suspend fun fetchStackedOffers(userId: String, activeStoreId: String, excludeOrderIds: Set<String>, limit: Int): List<OfferUi> {
         if (limit <= 0) return emptyList()
-        // Same-store ready orders not yet assigned (manual stack path + pending).
         val pending = fetchPendingOffers(userId)
             .filter { it.order.store_id == activeStoreId && it.order.id !in excludeOrderIds }
             .take(limit)
@@ -282,10 +281,14 @@ class DriverRepository(
     }
 
     suspend fun setShiftStarted(userId: String, started: Boolean) {
+        val now = Instant.now().toString()
         val payload = buildJsonObject {
             put("driver_id", userId)
-            if (started) put("shift_started_at", Instant.now().toString())
-            else {
+            put("updated_at", now)
+            if (started) {
+                put("shift_started_at", now)
+                put("on_break", false)
+            } else {
                 put("shift_started_at", JsonNull)
                 put("on_break", false)
                 put("break_until", JsonNull)
