@@ -1,6 +1,9 @@
 package com.freshdelivery.nativecustomer.ui
 
-import androidx.lifecycle.ViewModel
+import android.annotation.SuppressLint
+import android.app.Application
+import android.location.Geocoder
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshdelivery.nativecustomer.data.CartLine
 import com.freshdelivery.nativecustomer.data.CustomerRepository
@@ -12,9 +15,12 @@ import com.freshdelivery.nativecustomer.data.ProfileRow
 import com.freshdelivery.nativecustomer.data.StoreRow
 import com.freshdelivery.nativecustomer.data.SupabaseModule
 import com.freshdelivery.nativecustomer.push.PushTokenHolder
+import com.google.android.gms.location.LocationServices
+import com.google.android.gms.location.Priority
 import com.google.firebase.messaging.FirebaseMessaging
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.status.SessionStatus
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -22,6 +28,8 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
+import java.util.Locale
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -51,19 +59,35 @@ data class CustomerUiState(
     val trackingOrder: OrderUi? = null,
     val driverLocation: DriverLocationRow? = null,
     val busy: Boolean = false,
+    val locating: Boolean = false,
+    val savingProfile: Boolean = false,
+    val searchQuery: String = "",
+    val signupMode: Boolean = false,
     val error: String? = null,
     val info: String? = null,
 ) {
     val cartSubtotal: Double get() = cart.sumOf { it.price * it.quantity }
     val cartCount: Int get() = cart.sumOf { it.quantity }
     val grandTotal: Double get() = cartSubtotal + deliveryFee + tipAmount
+    val visibleStores: List<StoreRow>
+        get() = if (searchQuery.isBlank()) stores else stores.filter {
+            (it.name ?: "").contains(searchQuery, ignoreCase = true) ||
+                (it.address ?: "").contains(searchQuery, ignoreCase = true)
+        }
+    val activeOrders: List<OrderUi>
+        get() = orders.filter { it.order.status !in TERMINAL_STATUSES }
 }
 
-class CustomerViewModel : ViewModel() {
+val TERMINAL_STATUSES = listOf("delivered", "cancelled", "rejected", "refunded")
+
+class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = CustomerRepository()
     private val _state = MutableStateFlow(CustomerUiState())
     val state: StateFlow<CustomerUiState> = _state.asStateFlow()
     private var pollJob: Job? = null
+    private var ordersRealtimeJob: Job? = null
+    private var driverRealtimeJob: Job? = null
+    private var driverChannelFor: String? = null
 
     init {
         PushTokenHolder.listener = { token ->
@@ -86,6 +110,10 @@ class CustomerViewModel : ViewModel() {
                     }
                     is SessionStatus.NotAuthenticated -> {
                         pollJob?.cancel()
+                        ordersRealtimeJob?.cancel()
+                        driverRealtimeJob?.cancel()
+                        driverChannelFor = null
+                        repo.unsubscribeAll()
                         _state.value = CustomerUiState(bootstrapping = false, signedIn = false)
                     }
                     else -> Unit
@@ -105,7 +133,29 @@ class CustomerViewModel : ViewModel() {
         }
         registerFcm(userId)
         refreshAll()
+        startRealtime(userId)
         startPolling()
+    }
+
+    /** Live order updates; polling stays as a low-frequency safety net. */
+    private fun startRealtime(userId: String) {
+        ordersRealtimeJob?.cancel()
+        ordersRealtimeJob = viewModelScope.launch {
+            runCatching {
+                repo.subscribeOrders(userId).collect { refreshOrders() }
+            }
+        }
+    }
+
+    private fun watchDriver(driverId: String) {
+        if (driverChannelFor == driverId) return
+        driverChannelFor = driverId
+        driverRealtimeJob?.cancel()
+        driverRealtimeJob = viewModelScope.launch {
+            runCatching {
+                repo.subscribeDriverLocations(driverId).collect { refreshDriverLocation() }
+            }
+        }
     }
 
     private fun registerFcm(userId: String) {
@@ -127,6 +177,131 @@ class CustomerViewModel : ViewModel() {
                 }
                 .onSuccess { _state.value = _state.value.copy(busy = false) }
         }
+    }
+
+    fun toggleSignupMode(on: Boolean) {
+        _state.value = _state.value.copy(signupMode = on, error = null, info = null)
+    }
+
+    /** Native signup — always a customer account, matching the web app. */
+    fun signUp(email: String, password: String, fullName: String, phone: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(busy = true, error = null)
+            runCatching { repo.signUp(email, password, fullName, phone) }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Signup failed")
+                }
+                .onSuccess {
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        signupMode = false,
+                        info = "Έλεγξε το email σου για επιβεβαίωση και μετά συνδέσου.",
+                    )
+                }
+        }
+    }
+
+    fun saveProfile(fullName: String, phone: String) {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(savingProfile = true, error = null)
+            runCatching {
+                repo.updateProfile(uid, fullName, phone)
+                repo.loadProfile(uid)
+            }.onSuccess { profile ->
+                _state.value = _state.value.copy(
+                    savingProfile = false,
+                    profile = profile ?: _state.value.profile,
+                    info = "Το προφίλ αποθηκεύτηκε",
+                )
+            }.onFailure { e ->
+                _state.value = _state.value.copy(savingProfile = false, error = e.message)
+            }
+        }
+    }
+
+    fun cancelOrder(order: OrderUi) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(busy = true, error = null)
+            runCatching { repo.cancelOrder(order.order.id) }
+                .onSuccess {
+                    _state.value = _state.value.copy(busy = false, info = "Η παραγγελία ακυρώθηκε")
+                    refreshOrders()
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        error = e.message ?: "Δεν επιτρέπεται ακύρωση σε αυτό το στάδιο",
+                    )
+                }
+        }
+    }
+
+    fun setSearchQuery(q: String) {
+        _state.value = _state.value.copy(searchQuery = q)
+    }
+
+    /** Fills the delivery address from GPS, reverse-geocoded to a street line. */
+    @SuppressLint("MissingPermission")
+    fun useCurrentLocation() {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(locating = true, error = null)
+            runCatching {
+                val fused = LocationServices.getFusedLocationProviderClient(getApplication())
+                val loc = fused.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).await()
+                    ?: fused.lastLocation.await()
+                    ?: error("Δεν βρέθηκε τοποθεσία")
+                val label = reverseGeocode(loc.latitude, loc.longitude)
+                _state.value = _state.value.copy(
+                    locating = false,
+                    deliveryLat = loc.latitude,
+                    deliveryLng = loc.longitude,
+                    deliveryAddress = label ?: _state.value.deliveryAddress,
+                    info = "Η τοποθεσία ενημερώθηκε",
+                )
+            }.onFailure { e ->
+                _state.value = _state.value.copy(locating = false, error = e.message ?: "Αποτυχία τοποθεσίας")
+            }
+        }
+    }
+
+    /** Turns the typed address into coordinates so dispatch/pricing work. */
+    fun geocodeAddress(address: String) {
+        if (address.isBlank()) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(locating = true, error = null)
+            val hit = runCatching { forwardGeocode(address) }.getOrNull()
+            _state.value = if (hit == null) {
+                _state.value.copy(locating = false, error = "Δεν βρέθηκε η διεύθυνση")
+            } else {
+                _state.value.copy(
+                    locating = false,
+                    deliveryLat = hit.first,
+                    deliveryLng = hit.second,
+                    info = "Η διεύθυνση εντοπίστηκε στον χάρτη",
+                )
+            }
+        }
+    }
+
+    private suspend fun reverseGeocode(lat: Double, lng: Double): String? = withContext(Dispatchers.IO) {
+        runCatching {
+            @Suppress("DEPRECATION")
+            Geocoder(getApplication(), Locale.getDefault())
+                .getFromLocation(lat, lng, 1)
+                ?.firstOrNull()
+                ?.getAddressLine(0)
+        }.getOrNull()
+    }
+
+    private suspend fun forwardGeocode(address: String): Pair<Double, Double>? = withContext(Dispatchers.IO) {
+        runCatching {
+            @Suppress("DEPRECATION")
+            Geocoder(getApplication(), Locale.getDefault())
+                .getFromLocationName(address, 1)
+                ?.firstOrNull()
+                ?.let { it.latitude to it.longitude }
+        }.getOrNull()
     }
 
     fun signOut() {
@@ -296,13 +471,11 @@ class CustomerViewModel : ViewModel() {
         viewModelScope.launch {
             runCatching {
                 val orders = repo.fetchOrders(uid)
-                val active = orders.firstOrNull {
-                    it.order.status !in listOf("delivered", "cancelled", "rejected")
-                }
-                _state.value = _state.value.copy(
-                    orders = orders,
-                    trackingOrder = _state.value.trackingOrder ?: active,
-                )
+                val active = orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+                val tracked = _state.value.trackingOrder
+                    ?.let { cur -> orders.firstOrNull { it.order.id == cur.order.id } }
+                    ?: active
+                _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
                 refreshDriverLocation()
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = e.message)
@@ -312,6 +485,7 @@ class CustomerViewModel : ViewModel() {
 
     private fun refreshDriverLocation() {
         val driverId = _state.value.trackingOrder?.order?.driver_id ?: return
+        watchDriver(driverId)
         viewModelScope.launch {
             runCatching {
                 _state.value = _state.value.copy(driverLocation = repo.fetchDriverLocation(driverId))
@@ -319,15 +493,14 @@ class CustomerViewModel : ViewModel() {
         }
     }
 
+    /** Realtime carries the updates; this is only a slow safety net. */
     private fun startPolling() {
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
             while (true) {
-                delay(5_000)
-                if (_state.value.signedIn) {
-                    if (_state.value.tab == CustomerTab.Track || _state.value.tab == CustomerTab.Orders) {
-                        refreshOrders()
-                    }
+                delay(30_000)
+                if (_state.value.signedIn && _state.value.activeOrders.isNotEmpty()) {
+                    refreshOrders()
                 }
             }
         }
