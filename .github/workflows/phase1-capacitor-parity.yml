@@ -1,0 +1,136 @@
+name: Phase1 Capacitor Parity
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/phase1-capacitor-parity.yml"
+      - "native-customer/_shell_phase1.b64"
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Apply Phase 1 patches
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import gzip, base64
+          from pathlib import Path
+
+          # 1) Shell from verified b64
+          b64 = Path("native-customer/_shell_phase1.b64").read_text().strip()
+          data = gzip.decompress(base64.b64decode(b64))
+          shell = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
+          shell.write_bytes(data)
+          assert b"CustomerTab.Browse" in data
+          assert b"appConfig" in data
+          print("shell", len(data))
+
+          # 2) Repository fetchAppConfig
+          repo = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt")
+          rt = repo.read_text()
+          if "fetchAppConfig" not in rt:
+              rt = rt.replace(
+                  "import kotlinx.serialization.json.put\n",
+                  "import kotlinx.serialization.json.put\n"
+                  "import kotlinx.serialization.json.booleanOrNull\n"
+                  "import kotlinx.serialization.json.contentOrNull\n"
+                  "import kotlinx.serialization.json.jsonArray\n"
+                  "import kotlinx.serialization.json.jsonObject\n"
+                  "import kotlinx.serialization.json.jsonPrimitive\n",
+              )
+              fn = """
+      /** Published admin customer config (same source as Capacitor). */
+      suspend fun fetchAppConfig(): CustomerAppConfig {
+          val row = runCatching {
+              client.from("customer_app_config").select(Columns.list("published_config")) {
+                  limit(1L)
+              }.decodeList<CustomerAppConfigRow>().firstOrNull()
+          }.getOrNull()
+          val el = row?.published_config ?: return CustomerAppConfig()
+          val obj = runCatching { el.jsonObject }.getOrNull() ?: return CustomerAppConfig()
+          val branding = obj["branding"]?.jsonObject
+          val appName = branding?.get("app_name")?.jsonPrimitive?.contentOrNull ?: "Fresh Delivery"
+          val city = branding?.get("city_label")?.jsonPrimitive?.contentOrNull ?: "Ιωάννινα"
+          val tagline = branding?.get("tagline")?.jsonPrimitive?.contentOrNull ?: "Fast · Fresh · Local"
+          val logo = branding?.get("logo_url")?.jsonPrimitive?.contentOrNull
+          val tiles = obj["tiles"]?.jsonArray?.mapNotNull { t ->
+              val o = t.jsonObject
+              CategoryTile(
+                  label = o["label"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
+                  emoji = o["emoji"]?.jsonPrimitive?.contentOrNull ?: "🍽️",
+                  category = o["category"]?.jsonPrimitive?.contentOrNull ?: "all",
+              )
+          }.orEmpty().ifEmpty { CustomerAppConfig().tiles }
+          val promos = obj["promos"]?.jsonArray?.mapNotNull { t ->
+              val o = t.jsonObject
+              PromoBanner(
+                  tag = o["tag"]?.jsonPrimitive?.contentOrNull ?: "NEW",
+                  title = o["title"]?.jsonPrimitive?.contentOrNull ?: "",
+                  subtitle = o["subtitle"]?.jsonPrimitive?.contentOrNull ?: "",
+                  code = o["code"]?.jsonPrimitive?.contentOrNull ?: "",
+                  enabled = o["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,
+              )
+          }?.filter { it.enabled }.orEmpty()
+          return CustomerAppConfig(
+              appName = appName,
+              cityLabel = city,
+              tagline = tagline,
+              logoUrl = logo,
+              tiles = tiles,
+              promos = promos.ifEmpty { CustomerAppConfig().promos },
+          )
+      }
+          """
+              idx = rt.rfind("\n}")
+              rt = rt[:idx] + fn + rt[idx:]
+              repo.write_text(rt)
+              print("repo patched")
+          else:
+              print("repo skip")
+
+          # 3) ViewModel
+          vm = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt")
+          vt = vm.read_text()
+          if "CustomerAppConfig" not in vt:
+              vt = vt.replace(
+                  "import com.freshdelivery.nativecustomer.data.CustomerRepository\n",
+                  "import com.freshdelivery.nativecustomer.data.CustomerAppConfig\nimport com.freshdelivery.nativecustomer.data.CustomerRepository\n",
+              )
+          if "appConfig:" not in vt:
+              vt = vt.replace(
+                  "    val feePerKm: Double = 0.0,\n    val error: String? = null,",
+                  "    val feePerKm: Double = 0.0,\n    val appConfig: CustomerAppConfig = CustomerAppConfig(),\n    val error: String? = null,",
+              )
+          if "repo.fetchAppConfig" not in vt:
+              vt = vt.replace(
+                  "            val profile = repo.loadProfile(userId)\n            val fees = repo.platformFees()",
+                  "            val profile = repo.loadProfile(userId)\n            val cfg = runCatching { repo.fetchAppConfig() }.getOrElse { CustomerAppConfig() }\n            val fees = repo.platformFees()",
+              )
+              vt = vt.replace(
+                  "                profile = profile,\n                feeBase = base,",
+                  "                profile = profile,\n                appConfig = cfg,\n                feeBase = base,",
+              )
+          if "CustomerTab.Browse" not in vt:
+              vt = vt.replace(
+                  "            CustomerTab.Home -> refreshStores()\n            CustomerTab.Profile -> Unit",
+                  "            CustomerTab.Home, CustomerTab.Browse -> refreshStores()\n            CustomerTab.Profile -> Unit",
+              )
+          vm.write_text(vt)
+          print("vm patched")
+          PY
+
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          if git diff --staged --quiet; then echo No changes; exit 0; fi
+          git commit -m "feat(native-customer): Phase 1 Capacitor parity — Browse, admin config, promos, active order"
+          git push
