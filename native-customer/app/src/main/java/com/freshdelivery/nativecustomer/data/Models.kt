@@ -1,8 +1,10 @@
 package com.freshdelivery.nativecustomer.data
 
 import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.JsonElement
 
-enum class CustomerTab { Home, Orders, Track, Profile }
+/** Capacitor parity tabs: Home · Browse · Orders · Account (+ Track overlay). */
+enum class CustomerTab { Home, Browse, Orders, Profile, Track }
 
 @Serializable
 data class StoreRow(
@@ -81,4 +83,40 @@ data class PlatformFees(
 data class OrderUi(
     val order: OrderRow,
     val storeName: String?,
+)
+
+/** Mirrors web customer_app_config.published_config (Capacitor admin branding). */
+data class CategoryTile(
+    val label: String,
+    val emoji: String,
+    val category: String = "all",
+)
+
+data class PromoBanner(
+    val tag: String = "NEW",
+    val title: String = "",
+    val subtitle: String = "",
+    val code: String = "",
+    val enabled: Boolean = true,
+)
+
+data class CustomerAppConfig(
+    val appName: String = "Fresh Delivery",
+    val cityLabel: String = "Ιωάννινα",
+    val tagline: String = "Fast · Fresh · Local",
+    val logoUrl: String? = null,
+    val tiles: List<CategoryTile> = listOf(
+        CategoryTile("Φαγητό", "🍔", "all"),
+        CategoryTile("Πίτσα", "🍕", "Πίτσες"),
+        CategoryTile("Καφές", "☕", "Καφέδες"),
+        CategoryTile("Γλυκά", "🍰", "Γλυκά"),
+    ),
+    val promos: List<PromoBanner> = listOf(
+        PromoBanner("NEW", "Δωρεάν παράδοση", "στην πρώτη σου παραγγελία", "WELCOME", true),
+    ),
+)
+
+@Serializable
+data class CustomerAppConfigRow(
+    val published_config: JsonElement? = null,
 )
