@@ -331,7 +331,8 @@ fun CustomerShell(
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             when (state.tab) {
-                CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch)
+                CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = false)
+                CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = true)
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onCancelOrder)
                 CustomerTab.Track -> TrackTab(state)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut)
@@ -429,7 +430,8 @@ private fun HomeTab(
     state: CustomerUiState,
     onRefresh: () -> Unit,
     onOpenStore: (StoreRow) -> Unit,
-    onSearch: (String) -> Unit,
+    onSearch: (String) -> Unit,,
+    browseMode: Boolean = false,
 ) {
     var filterOpen by remember { mutableStateOf(false) }
     val stores = if (filterOpen) {
@@ -504,7 +506,54 @@ private fun HomeTab(
                 }
             }
         }
+        
+        // Phase1: admin appConfig brand / promo / tiles
         item {
+            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
+                Text(state.appConfig.appName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = UberInk)
+                Text("${state.appConfig.cityLabel} · ${state.appConfig.tagline}", color = UberMuted, style = MaterialTheme.typography.bodySmall)
+            }
+        }
+        state.appConfig.promos.firstOrNull()?.let { promo ->
+            item {
+                Surface(
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    color = UberInk,
+                ) {
+                    Column(Modifier.padding(16.dp)) {
+                        Text(promo.tag, color = UberGreen, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                        Text(promo.title, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(promo.subtitle, color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                        if (promo.code.isNotBlank()) {
+                            Text("Κωδικός: ${promo.code}", color = UberGreen, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
+                }
+            }
+        }
+        item {
+            Row(
+                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+            ) {
+                state.appConfig.tiles.forEach { tile ->
+                    Surface(
+                        onClick = { onSearch(if (tile.category == "all") "" else tile.label) },
+                        shape = RoundedCornerShape(20.dp),
+                        color = UberSurface,
+                    ) {
+                        Text(
+                            "${tile.emoji} ${tile.label}",
+                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                            fontWeight = FontWeight.SemiBold,
+                            color = UberInk,
+                        )
+                    }
+                }
+            }
+        }
+item {
             val categories = listOf(
                 "🍔 Burger", "🍕 Pizza", "🍣 Sushi", "🥗 Σαλάτες",
                 "☕ Καφές", "🍰 Γλυκά", "🍗 Κοτόπουλο", "🌮 Mexican",
