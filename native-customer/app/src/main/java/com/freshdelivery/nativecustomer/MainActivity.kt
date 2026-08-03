@@ -38,7 +38,7 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             FreshCustomerTheme {
-                Surface(Modifier = Modifier.fillMaxSize()) {
+                Surface(modifier = Modifier.fillMaxSize()) {
                     val vm: CustomerViewModel = viewModel()
                     val state by vm.state.collectAsStateWithLifecycle()
                     when {
@@ -54,7 +54,11 @@ class MainActivity : ComponentActivity() {
                             LoginScreen(
                                 busy = state.busy,
                                 error = state.error,
+                                info = state.info,
+                                signupMode = state.signupMode,
+                                onToggleSignup = vm::toggleSignupMode,
                                 onLogin = vm::signIn,
+                                onSignUp = vm::signUp,
                             )
                         }
                         else -> {
@@ -74,6 +78,12 @@ class MainActivity : ComponentActivity() {
                                 onTrack = vm::trackOrder,
                                 onRefresh = vm::refreshAll,
                                 onSignOut = vm::signOut,
+                                onSearch = vm::setSearchQuery,
+                                onUseLocation = vm::useCurrentLocation,
+                                onGeocode = vm::geocodeAddress,
+                                onSaveProfile = vm::saveProfile,
+                                onCancelOrder = vm::cancelOrder,
+                                onClearMessages = vm::clearMessages,
                             )
                         }
                     }
@@ -81,4 +91,5 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
+}
 }
