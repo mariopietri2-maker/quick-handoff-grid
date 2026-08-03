@@ -18,77 +18,17 @@ jobs:
       - name: Phase 1 Browse tab
         run: python3 .github/parity-payloads/phase1_browse.py
 
-      - name: Phase 1 Repository + ViewModel
+      - name: Phase 1 Repository and ViewModel
         run: python3 .github/parity-payloads/phase1_repo_vm.py
 
-      - name: Phase 2/3 Driver banners + version bumps
-        run: |
-          set -euo pipefail
-          HS=native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
-          if [ -f "$HS" ] && ! grep -q 'fun TurnByTurnBanner' "$HS"; then
-            cat >> "$HS" << 'EOF'
-
-@Composable
-private fun TurnByTurnBanner(instruction: String, distanceMeters: Int?, modifier: Modifier = Modifier) {
-    if (instruction.isBlank()) return
-    Surface(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 8.dp),
-        shape = RoundedCornerShape(12.dp),
-        color = Color(0xFF111111),
-        shadowElevation = 6.dp,
-    ) {
-        Row(Modifier.padding(horizontal = 16.dp, vertical = 12.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("↗", fontSize = 22.sp)
-            Spacer(Modifier.width(12.dp))
-            Column(Modifier = Modifier.weight(1f)) {
-                Text(instruction, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall, maxLines = 2, overflow = TextOverflow.Ellipsis)
-                if (distanceMeters != null && distanceMeters > 0) {
-                    val dist = if (distanceMeters >= 1000) String.format("%.1f km", distanceMeters / 1000.0) else "$distanceMeters m"
-                    Text(dist, color = Color(0xFF06C167), style = MaterialTheme.typography.labelMedium)
-                }
-            }
-        }
-    }
-}
-
-@Composable
-private fun SurgeWaitBanner(title: String, subtitle: String, accent: Color = Color(0xFF06C167), modifier: Modifier = Modifier) {
-    if (title.isBlank()) return
-    Surface(
-        modifier = modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
-        shape = RoundedCornerShape(10.dp),
-        color = accent.copy(alpha = 0.15f),
-        border = androidx.compose.foundation.BorderStroke(1.dp, accent.copy(alpha = 0.4f)),
-    ) {
-        Row(Modifier.padding(horizontal = 14.dp, vertical = 10.dp), verticalAlignment = Alignment.CenterVertically) {
-            Text("⚡", fontSize = 18.sp)
-            Spacer(Modifier.width(10.dp))
-            Column {
-                Text(title, fontWeight = FontWeight.Bold, color = Color.White, style = MaterialTheme.typography.labelLarge)
-                if (subtitle.isNotBlank()) Text(subtitle, color = Color.White.copy(alpha = 0.75f), style = MaterialTheme.typography.bodySmall)
-            }
-        }
-    }
-}
-EOF
-            echo Driver banners appended
-          else
-            echo Driver banners ok
-          fi
-          for f in native-customer/app/build.gradle.kts native-customer/app/build.gradle; do
-            [ -f "$f" ] && sed -i 's/versionName *= *"[^"]*"/versionName = "2.5.0-native"/' "$f" && sed -i 's/versionCode *= *[0-9]*/versionCode = 250/' "$f" && echo bumped $f || true
-          done
-          for f in native-driver/app/build.gradle.kts native-driver/app/build.gradle; do
-            [ -f "$f" ] && sed -i 's/versionName *= *"[^"]*"/versionName = "2.3.0-native"/' "$f" && sed -i 's/versionCode *= *[0-9]*/versionCode = 230/' "$f" && echo bumped $f || true
-          done
+      - name: Phase 2 3 Driver banners and versions
+        run: bash .github/parity-payloads/phase23_driver.sh
 
       - name: Commit and push
         run: |
-          set -euo pipefail
           git config user.name parity-bot
           git config user.email parity@freshdelivery.local
           git add -A
           git status
-          git commit -m "feat(native): all phases parity — Browse+appConfig, driver banners, 2.5/2.3" || { echo Nothing to commit; exit 0; }
-          git push origin HEAD:main
-          echo Done
+          git commit -m "feat(native): all phases parity Browse appConfig driver banners 2.5 2.3" || echo Nothing to commit
+          git push origin HEAD:main || true
