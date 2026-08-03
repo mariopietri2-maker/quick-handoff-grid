@@ -1,11 +1,9 @@
 package com.freshdelivery.nativecustomer.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Shapes
 import androidx.compose.material3.Typography
-import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
@@ -15,69 +13,107 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-private val Brand = Color(0xFF00C853)
-private val BrandDark = Color(0xFF00A844)
-private val Ink = Color(0xFF0B0F14)
-private val SoftBg = Color(0xFFF3F5F7)
-private val Card = Color(0xFFFFFFFF)
-private val Muted = Color(0xFF6B7280)
+/** Uber Eats–inspired palette (always light). */
+val UberGreen = Color(0xFF06C167)
+val UberGreenDark = Color(0xFF05A357)
+val UberBlack = Color(0xFF000000)
+val UberInk = Color(0xFF141414)
+val UberMuted = Color(0xFF6B6B6B)
+val UberBg = Color(0xFFFFFFFF)
+val UberSurface = Color(0xFFF6F6F6)
+val UberChip = Color(0xFFEEEEEE)
+val UberDivider = Color(0xFFE8E8E8)
 
-private val DarkColors = darkColorScheme(
-    primary = Brand,
-    onPrimary = Color.Black,
-    background = Color(0xFF0B0F14),
-    surface = Color(0xFF141A22),
-    surfaceVariant = Color(0xFF1C2430),
-    onBackground = Color(0xFFF8FAFC),
-    onSurface = Color(0xFFF8FAFC),
-    onSurfaceVariant = Color(0xFF9CA3AF),
-    outline = Color(0xFF2A3544),
-    error = Color(0xFFFF3B5C),
-)
-
-private val LightColors = lightColorScheme(
-    primary = BrandDark,
+private val UberColors = lightColorScheme(
+    primary = UberGreen,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD4F5E4),
-    onPrimaryContainer = BrandDark,
-    background = SoftBg,
-    surface = Card,
-    surfaceVariant = Color(0xFFEEF1F5),
-    onBackground = Ink,
-    onSurface = Ink,
-    onSurfaceVariant = Muted,
-    outline = Color(0xFFE5E7EB),
-    error = Color(0xFFFF3B5C),
+    primaryContainer = Color(0xFFD4F7E5),
+    onPrimaryContainer = UberGreenDark,
+    secondary = UberInk,
+    onSecondary = Color.White,
+    background = UberBg,
+    surface = UberBg,
+    surfaceVariant = UberSurface,
+    onBackground = UberInk,
+    onSurface = UberInk,
+    onSurfaceVariant = UberMuted,
+    outline = UberDivider,
+    error = Color(0xFFE11900),
+    onError = Color.White,
 )
 
-private val PremiumType = Typography(
-    displaySmall = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold, fontSize = 30.sp, letterSpacing = (-0.5).sp),
-    headlineMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold, fontSize = 22.sp),
-    titleLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Bold, fontSize = 20.sp),
-    titleMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 16.sp),
-    bodyLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 16.sp),
-    bodyMedium = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 14.sp),
-    bodySmall = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.Normal, fontSize = 12.sp),
-    labelLarge = TextStyle(fontFamily = FontFamily.SansSerif, fontWeight = FontWeight.SemiBold, fontSize = 14.sp),
+private val UberType = Typography(
+    displaySmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 28.sp,
+        letterSpacing = (-0.4).sp,
+    ),
+    headlineMedium = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 24.sp,
+        letterSpacing = (-0.3).sp,
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 20.sp,
+    ),
+    titleLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 18.sp,
+    ),
+    titleMedium = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 16.sp,
+    ),
+    bodyLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 16.sp,
+    ),
+    bodyMedium = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 14.sp,
+    ),
+    bodySmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Normal,
+        fontSize = 12.sp,
+        color = UberMuted,
+    ),
+    labelLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 14.sp,
+    ),
+    labelMedium = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Medium,
+        fontSize = 12.sp,
+    ),
 )
 
-private val PremiumShapes = Shapes(
-    extraSmall = RoundedCornerShape(10.dp),
-    small = RoundedCornerShape(14.dp),
-    medium = RoundedCornerShape(20.dp),
-    large = RoundedCornerShape(28.dp),
-    extraLarge = RoundedCornerShape(36.dp),
+private val UberShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(12.dp),
+    medium = RoundedCornerShape(16.dp),
+    large = RoundedCornerShape(20.dp),
+    extraLarge = RoundedCornerShape(28.dp),
 )
 
 @Composable
 fun FreshCustomerTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
-        typography = PremiumType,
-        shapes = PremiumShapes,
+        colorScheme = UberColors,
+        typography = UberType,
+        shapes = UberShapes,
         content = content,
     )
 }
