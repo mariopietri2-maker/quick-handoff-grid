@@ -81,6 +81,7 @@ class MainActivity : ComponentActivity() {
                                 onSearch = vm::setSearchQuery,
                                 onUseLocation = vm::useCurrentLocation,
                                 onGeocode = vm::geocodeAddress,
+                                onPickSuggestion = vm::pickAddressSuggestion,
                                 onSaveProfile = vm::saveProfile,
                                 onCancelOrder = vm::cancelOrder,
                                 onClearMessages = vm::clearMessages,
@@ -91,5 +92,4 @@ class MainActivity : ComponentActivity() {
             }
         }
     }
-}
 }
