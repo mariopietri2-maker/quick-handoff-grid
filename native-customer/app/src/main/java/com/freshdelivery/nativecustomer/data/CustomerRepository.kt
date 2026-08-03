@@ -1,5 +1,10 @@
 package com.freshdelivery.nativecustomer.data
 
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
@@ -98,7 +103,44 @@ class CustomerRepository(
         return rows?.firstOrNull() ?: PlatformFees()
     }
 
-    suspend fun placeOrder(
+    
+    suspend fun fetchAppConfig(): CustomerAppConfig {
+        val row = runCatching {
+            client.postgrest.from("customer_app_config").select { limit(1L) }.decodeSingleOrNull<CustomerAppConfigRow>()
+        }.getOrNull()
+        val el = row?.published_config ?: return CustomerAppConfig()
+        return runCatching {
+            val obj = el.jsonObject
+            fun str(k: String, d: String) = obj[k]?.jsonPrimitive?.contentOrNull ?: d
+            val tiles = obj["tiles"]?.jsonArray?.mapNotNull { x ->
+                val o = x.jsonObject
+                CategoryTile(
+                    label = o["label"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
+                    emoji = o["emoji"]?.jsonPrimitive?.contentOrNull ?: "•",
+                    category = o["category"]?.jsonPrimitive?.contentOrNull ?: "all",
+                )
+            } ?: CustomerAppConfig().tiles
+            val promos = obj["promos"]?.jsonArray?.mapNotNull { x ->
+                val o = x.jsonObject
+                PromoBanner(
+                    tag = o["tag"]?.jsonPrimitive?.contentOrNull ?: "NEW",
+                    title = o["title"]?.jsonPrimitive?.contentOrNull ?: "",
+                    subtitle = o["subtitle"]?.jsonPrimitive?.contentOrNull ?: "",
+                    code = o["code"]?.jsonPrimitive?.contentOrNull ?: "",
+                    enabled = o["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,
+                )
+            }?.filter { it.enabled } ?: CustomerAppConfig().promos
+            CustomerAppConfig(
+                appName = str("appName", "Fresh Delivery"),
+                cityLabel = str("cityLabel", "Ιωάννινα"),
+                tagline = str("tagline", "Fast · Fresh · Local"),
+                logoUrl = obj["logoUrl"]?.jsonPrimitive?.contentOrNull,
+                tiles = tiles,
+                promos = promos,
+            )
+        }.getOrDefault(CustomerAppConfig())
+    }
+suspend fun placeOrder(
         storeId: String,
         items: List<CartLine>,
         deliveryAddress: String,

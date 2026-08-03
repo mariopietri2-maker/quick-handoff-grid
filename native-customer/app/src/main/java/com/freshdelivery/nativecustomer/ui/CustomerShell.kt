@@ -272,8 +272,8 @@ fun CustomerShell(
 
     val tabs = listOf(
         Triple(CustomerTab.Home, "Αρχική", Icons.Outlined.Home),
+        Triple(CustomerTab.Browse, "Αναζήτηση", Icons.Outlined.Search),
         Triple(CustomerTab.Orders, "Παραγγελίες", Icons.Outlined.Receipt),
-        Triple(CustomerTab.Track, "Παρακολούθηση", Icons.Outlined.Map),
         Triple(CustomerTab.Profile, "Λογαριασμός", Icons.Outlined.AccountCircle),
     )
 
@@ -282,7 +282,7 @@ fun CustomerShell(
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             Column {
-                if (state.cartCount > 0 && state.tab == CustomerTab.Home) {
+                if (state.cartCount > 0 && (state.tab == CustomerTab.Home || state.tab == CustomerTab.Browse)) {
                     StickyCartBar(
                         count = state.cartCount,
                         total = state.cartSubtotal,

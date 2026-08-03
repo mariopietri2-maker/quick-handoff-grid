@@ -75,6 +75,7 @@ data class CustomerUiState(
     val feePerKm: Double = 0.0,
     val error: String? = null,
     val info: String? = null,
+    val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),
 ) {
     val cartSubtotal: Double get() = cart.sumOf { it.price * it.quantity }
     val cartCount: Int get() = cart.sumOf { it.quantity }
@@ -152,6 +153,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 deliveryLng = savedLng ?: _state.value.deliveryLng,
             )
             recomputeDeliveryFee()
+        }
+        runCatching {
+            val cfg = repo.fetchAppConfig()
+            _state.value = _state.value.copy(appConfig = cfg)
         }
         registerFcm(userId)
         refreshAll()
