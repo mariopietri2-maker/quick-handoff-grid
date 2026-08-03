@@ -1,3 +1,4 @@
+# Rebuild after all-phases parity (Browse tab + appConfig + driver banners)
 name: Build Native APKs
 
 on:
