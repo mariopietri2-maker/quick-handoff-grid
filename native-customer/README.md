@@ -6,15 +6,17 @@ True native customer app (no Capacitor WebView). Same Supabase backend and **sam
 
 | Area | Status |
 |------|--------|
-| Login + `sync_app_role` | ✅ |
-| Nearby stores list | ✅ |
+| Login + signup + `sync_app_role` | ✅ |
+| Nearby stores list + search | ✅ |
 | Menu + cart + qty | ✅ |
 | Checkout via `place_order` (cash) | ✅ |
-| Active / recent orders | ✅ |
+| Address: GPS + Geocoder autocomplete suggestions | ✅ |
+| Dynamic delivery fee (base + per-km when coords known) | ✅ |
+| Last delivery address remembered (SharedPreferences) | ✅ |
+| Active / recent orders + cancel | ✅ |
 | Live tracking map (Mapbox GL) | ✅ |
 | FCM push (`push_tokens`, app=`customer`) | ✅ |
-| Card / Stripe | ⏳ Capacitor only |
-| Address autocomplete | ⏳ manual lat/lng for now |
+| Card / Stripe in-app | ⏳ use web/Capacitor checkout; native stays cash |
 
 ## Build
 
