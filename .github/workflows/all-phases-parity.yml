@@ -1,0 +1,32 @@
+name: All Phases Capacitor Parity
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/all-phases-parity.yml"
+
+jobs:
+  parity:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Write CustomerShell phase1
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          import base64, gzip
+          from pathlib import Path
+          b64 = """PLACEHOLDER"""
+          data = gzip.decompress(base64.b64decode(b64))
+          dest = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
+          dest.parent.mkdir(parents=True, exist_ok=True)
+          dest.write_bytes(data)
+          text = data.decode()
+          assert "CustomerTab.Browse" in text
+          assert "state.appConfig" in text
+          print("wrote CustomerShell.kt", len(data), "bytes")
+          PY
