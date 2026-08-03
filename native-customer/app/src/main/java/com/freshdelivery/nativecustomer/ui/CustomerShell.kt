@@ -430,7 +430,7 @@ private fun HomeTab(
     state: CustomerUiState,
     onRefresh: () -> Unit,
     onOpenStore: (StoreRow) -> Unit,
-    onSearch: (String) -> Unit,,
+    onSearch: (String) -> Unit,
     browseMode: Boolean = false,
 ) {
     var filterOpen by remember { mutableStateOf(false) }
