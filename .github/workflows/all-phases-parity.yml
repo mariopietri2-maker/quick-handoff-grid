@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/workflows/all-phases-parity.yml"
+      - ".github/parity-payloads/**"
 
 jobs:
   parity:
@@ -14,128 +15,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Phase 1 — Browse tab in CustomerShell
-        run: |
-          set -euo pipefail
-          SHELL=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
-          # Add Browse tab after Home if missing
-          if ! grep -q 'CustomerTab.Browse' "$SHELL"; then
-            python3 -c "
-          from pathlib import Path
-          p = Path('$SHELL')
-          t = p.read_text()
-          t = t.replace(
-              'Triple(CustomerTab.Home, \"Αρχική\", Icons.Outlined.Home),',
-              'Triple(CustomerTab.Home, \"Αρχική\", Icons.Outlined.Home),\n        Triple(CustomerTab.Browse, \"Αναζήτηση\", Icons.Outlined.Search),'
-          )
-          t = t.replace('        Triple(CustomerTab.Track, \"Παρακολούθηση\", Icons.Outlined.Map),\n', '')
-          t = t.replace(
-              'if (state.cartCount > 0 && state.tab == CustomerTab.Home)',
-              'if (state.cartCount > 0 && (state.tab == CustomerTab.Home || state.tab == CustomerTab.Browse))'
-          )
-          p.write_text(t)
-          print('Browse tab + sticky cart wired')
-          "
-          else
-            echo 'Browse already present'
-          fi
+      - name: Phase 1 Browse tab
+        run: python3 .github/parity-payloads/phase1_browse.py
 
-      - name: Phase 1 — fetchAppConfig in Repository
-        run: |
-          set -euo pipefail
-          REPO=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt
-          if grep -q 'fun fetchAppConfig' "$REPO"; then
-            echo 'fetchAppConfig already present'
-            exit 0
-          fi
-          python3 -c "
-          from pathlib import Path
-          p = Path('$REPO')
-          t = p.read_text()
-          insert = '''
-    suspend fun fetchAppConfig(): CustomerAppConfig {
-        val row = runCatching {
-            client.postgrest.from(\"customer_app_config\").select { limit(1L) }.decodeSingleOrNull<CustomerAppConfigRow>()
-        }.getOrNull()
-        val el = row?.published_config ?: return CustomerAppConfig()
-        return runCatching {
-            val obj = el.jsonObject
-            fun str(k: String, d: String) = obj[k]?.jsonPrimitive?.contentOrNull ?: d
-            val tiles = obj[\"tiles\"]?.jsonArray?.mapNotNull { x ->
-                val o = x.jsonObject
-                CategoryTile(
-                    label = o[\"label\"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null,
-                    emoji = o[\"emoji\"]?.jsonPrimitive?.contentOrNull ?: \"•\",
-                    category = o[\"category\"]?.jsonPrimitive?.contentOrNull ?: \"all\",
-                )
-            } ?: CustomerAppConfig().tiles
-            val promos = obj[\"promos\"]?.jsonArray?.mapNotNull { x ->
-                val o = x.jsonObject
-                PromoBanner(
-                    tag = o[\"tag\"]?.jsonPrimitive?.contentOrNull ?: \"NEW\",
-                    title = o[\"title\"]?.jsonPrimitive?.contentOrNull ?: \"\",
-                    subtitle = o[\"subtitle\"]?.jsonPrimitive?.contentOrNull ?: \"\",
-                    code = o[\"code\"]?.jsonPrimitive?.contentOrNull ?: \"\",
-                    enabled = o[\"enabled\"]?.jsonPrimitive?.booleanOrNull ?: true,
-                )
-            }?.filter { it.enabled } ?: CustomerAppConfig().promos
-            CustomerAppConfig(
-                appName = str(\"appName\", \"Fresh Delivery\"),
-                cityLabel = str(\"cityLabel\", \"Ιωάννινα\"),
-                tagline = str(\"tagline\", \"Fast · Fresh · Local\"),
-                logoUrl = obj[\"logoUrl\"]?.jsonPrimitive?.contentOrNull,
-                tiles = tiles,
-                promos = promos,
-            )
-        }.getOrDefault(CustomerAppConfig())
-    }
-'''
-          idx = t.find('suspend fun placeOrder')
-          assert idx > 0, 'placeOrder not found'
-          t = t[:idx] + insert + t[idx:]
-          for imp in [
-              'import kotlinx.serialization.json.jsonObject',
-              'import kotlinx.serialization.json.jsonArray',
-              'import kotlinx.serialization.json.jsonPrimitive',
-              'import kotlinx.serialization.json.contentOrNull',
-              'import kotlinx.serialization.json.booleanOrNull',
-          ]:
-              if imp not in t:
-                  lines = t.splitlines()
-                  for i, ln in enumerate(lines):
-                      if ln.startswith('import '):
-                          lines.insert(i, imp)
-                          break
-                  t = chr(10).join(lines) + chr(10)
-          p.write_text(t)
-          print('fetchAppConfig added')
-          "
+      - name: Phase 1 Repository + ViewModel
+        run: python3 .github/parity-payloads/phase1_repo_vm.py
 
-      - name: Phase 1 — ViewModel appConfig
-        run: |
-          set -euo pipefail
-          VM=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
-          if grep -q 'appConfig:' "$VM"; then
-            echo 'appConfig already in ViewModel'
-            exit 0
-          fi
-          python3 -c "
-          from pathlib import Path
-          p = Path('$VM')
-          t = p.read_text()
-          t = t.replace(
-              'val info: String? = null,\n) {',
-              'val info: String? = null,\n    val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),\n) {'
-          )
-          t = t.replace(
-              'recomputeDeliveryFee()\n        }\n        registerFcm(userId)',
-              'recomputeDeliveryFee()\n        }\n        runCatching {\n            val cfg = repo.fetchAppConfig()\n            _state.value = _state.value.copy(appConfig = cfg)\n        }\n        registerFcm(userId)'
-          )
-          p.write_text(t)
-          print('ViewModel appConfig wired')
-          "
-
-      - name: Phase 2/3 — Driver banners + version bumps
+      - name: Phase 2/3 Driver banners + version bumps
         run: |
           set -euo pipefail
           HS=native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
@@ -185,9 +71,9 @@ private fun SurgeWaitBanner(title: String, subtitle: String, accent: Color = Col
     }
 }
 EOF
-            echo 'Driver banners appended'
+            echo Driver banners appended
           else
-            echo 'Driver banners ok or HS missing'
+            echo Driver banners ok
           fi
           for f in native-customer/app/build.gradle.kts native-customer/app/build.gradle; do
             [ -f "$f" ] && sed -i 's/versionName *= *"[^"]*"/versionName = "2.5.0-native"/' "$f" && sed -i 's/versionCode *= *[0-9]*/versionCode = 250/' "$f" && echo bumped $f || true
@@ -199,10 +85,10 @@ EOF
       - name: Commit and push
         run: |
           set -euo pipefail
-          git config user.name "parity-bot"
-          git config user.email "parity@freshdelivery.local"
+          git config user.name parity-bot
+          git config user.email parity@freshdelivery.local
           git add -A
           git status
           git commit -m "feat(native): all phases parity — Browse+appConfig, driver banners, 2.5/2.3" || { echo Nothing to commit; exit 0; }
           git push origin HEAD:main
-          echo Done — build-native-apks will pick up native changes
+          echo Done
