@@ -664,10 +664,10 @@ private fun TrackTab(state: CustomerUiState) {
                 Text("Επίλεξε παραγγελία από Παραγγελίες για live tracking.")
             } else {
                 Text(order.storeName ?: "Παραγγελία", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-                Text("Status: " + order.order.status, color = MaterialTheme.colorScheme.primary)
+                Text(statusLabel(order.order.status), color = MaterialTheme.colorScheme.primary)
                 order.order.delivery_address?.let { Text(it) }
                 if (state.driverLocation != null) {
-                    Text("Οδηγός στον χάρτη (Mapbox).", style = MaterialTheme.typography.bodySmall)
+                    Text("Ο οδηγός κινείται προς εσένα.", style = MaterialTheme.typography.bodySmall)
                 } else if (!order.order.driver_id.isNullOrBlank()) {
                     Text("Αναμονή θέσης οδηγού…", style = MaterialTheme.typography.bodySmall)
                 } else {
@@ -679,15 +679,51 @@ private fun TrackTab(state: CustomerUiState) {
 }
 
 @Composable
-private fun ProfileTab(state: CustomerUiState, onSignOut: () -> Unit) {
+private fun ProfileTab(
+    state: CustomerUiState,
+    onSaveProfile: (String, String) -> Unit,
+    onSignOut: () -> Unit,
+) {
+    var fullName by remember(state.profile?.full_name) {
+        mutableStateOf(state.profile?.full_name ?: "")
+    }
+    var phone by remember(state.profile?.phone) { mutableStateOf(state.profile?.phone ?: "") }
+
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Text("Προφίλ", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(16.dp))
+        OutlinedTextField(
+            value = fullName,
+            onValueChange = { fullName = it },
+            label = { Text("Ονοματεπώνυμο") },
+            singleLine = true,
+            modifier = Modifier.fillMaxWidth(),
+        )
         Spacer(Modifier.height(12.dp))
-        Text(state.profile?.full_name ?: "—")
-        Text(state.profile?.phone ?: "")
-        Spacer(Modifier.height(8.dp))
-        Text("Push: FCM ενεργό", style = MaterialTheme.typography.bodySmall)
+        OutlinedTextField(
+            value = phone,
+            onValueChange = { phone = it },
+            label = { Text("Τηλέφωνο") },
+            singleLine = true,
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(12.dp))
+        Button(
+            onClick = { onSaveProfile(fullName, phone) },
+            enabled = !state.savingProfile && fullName.isNotBlank(),
+            modifier = Modifier.fillMaxWidth(),
+        ) {
+            if (state.savingProfile) CircularProgressIndicator(color = Color.White)
+            else Text("Αποθήκευση")
+        }
+        Spacer(Modifier.height(20.dp))
+        Text("Ειδοποιήσεις push: ενεργές", style = MaterialTheme.typography.bodySmall)
+        Text("Παραγγελίες συνολικά: ${state.orders.size}", style = MaterialTheme.typography.bodySmall)
         Spacer(Modifier.height(24.dp))
-        Button(onClick = onSignOut) { Text("Αποσύνδεση") }
+        OutlinedButton(onClick = onSignOut, modifier = Modifier.fillMaxWidth()) {
+            Text("Αποσύνδεση")
+        }
     }
+}
 }
