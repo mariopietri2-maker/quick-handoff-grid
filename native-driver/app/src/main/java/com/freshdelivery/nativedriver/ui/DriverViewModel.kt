@@ -506,6 +506,21 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun submitSupportTicket(category: String, description: String) {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(busy = true, error = null)
+            runCatching { repo.createSupportTicket(uid, category, description) }
+                .onSuccess {
+                    _state.value = _state.value.copy(busy = false, info = "Ticket υποβλήθηκε ✓")
+                    refreshInbox()
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                }
+        }
+    }
+
     fun saveProfile(fullName: String, phone: String, vehicleType: String, plate: String, iban: String) {
         val uid = _state.value.userId ?: return
         viewModelScope.launch {
