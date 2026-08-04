@@ -144,6 +144,7 @@ fun HomeScreen(
             userBearing = state.geo?.bearing,
         )
 
+        // Top chrome — no Ops (admin-only)
         Row(
             Modifier
                 .align(Alignment.TopCenter)
@@ -168,18 +169,21 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
+                // Driver break control only — never show "Ops"
                 if (state.online) {
                     Row(
                         Modifier
                             .shadow(6.dp, RoundedCornerShape(22.dp))
                             .clip(RoundedCornerShape(22.dp))
-                            .background(Color(0xFF1C1C1E))
+                            .background(
+                                if (state.onBreak) Color(0xFFFF8A00) else Color(0xFF1C1C1E),
+                            )
                             .clickable(onClick = onToggleBreak)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
-                            if (state.onBreak) "Διάλειμμα" else "Ops",
+                            if (state.onBreak) "Τέλος διαλείμματος" else "Διάλειμμα",
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp,
