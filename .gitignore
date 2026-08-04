@@ -76,3 +76,4 @@ new.github
 
 # Local Vercel CLI leftovers (project is Railway-only)
 .vercel/
+!plugins/*/dist/
