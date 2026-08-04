@@ -1,23 +1,35 @@
 package com.freshdelivery.nativedriver.ui
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material3.Badge
 import androidx.compose.material3.BadgedBox
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
@@ -57,7 +69,6 @@ fun DriverShell(
     onCloseOps: () -> Unit = {},
     onRefreshOps: () -> Unit = {},
     onClaimOps: (String) -> Unit = {},
-    onOpenProfile: () -> Unit = {},
     onSubmitSupport: (String, String) -> Unit = { _, _ -> },
 ) {
     val unread = state.notifications.count { it.read_at == null }
@@ -68,49 +79,10 @@ fun DriverShell(
         TabItem(DriverTab.Referral, "Invite", Icons.Outlined.CardGiftcard),
         TabItem(DriverTab.Profile, "Προφίλ", Icons.Outlined.AccountCircle),
     )
+    var menuOpen by remember { mutableStateOf(false) }
 
-    Scaffold(
-        containerColor = Color.Black,
-        bottomBar = {
-            NavigationBar(
-                containerColor = Color(0xFF121212),
-                contentColor = Color.White,
-                tonalElevation = 0.dp,
-            ) {
-                tabs.forEach { item ->
-                    val selected = state.tab == item.tab
-                    NavigationBarItem(
-                        selected = selected,
-                        onClick = { onTab(item.tab) },
-                        colors = NavigationBarItemDefaults.colors(
-                            selectedIconColor = FreshGreen,
-                            selectedTextColor = FreshGreen,
-                            unselectedIconColor = Color(0xFF9E9E9E),
-                            unselectedTextColor = Color(0xFF9E9E9E),
-                            indicatorColor = Color(0xFF1C1C1C),
-                        ),
-                        icon = {
-                            if (item.tab == DriverTab.Inbox && unread > 0) {
-                                BadgedBox(badge = { Badge { Text("$unread") } }) {
-                                    Icon(item.icon, contentDescription = item.label)
-                                }
-                            } else {
-                                Icon(item.icon, contentDescription = item.label)
-                            }
-                        },
-                        label = {
-                            Text(
-                                item.label,
-                                fontSize = 11.sp,
-                                fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Normal,
-                            )
-                        },
-                    )
-                }
-            }
-        },
-    ) { padding ->
-        androidx.compose.foundation.layout.Box(Modifier.padding(padding)) {
+    Scaffold(containerColor = Color.Black) { padding ->
+        Box(Modifier.padding(padding).fillMaxSize()) {
             if (state.opsOpen && state.isOps) {
                 OpsScreen(
                     orders = state.opsOrders,
@@ -130,7 +102,7 @@ fun DriverShell(
                     onRefresh = onRefresh,
                     onClearMessages = onClearMessages,
                     onOpenOps = onOpenOps,
-                    onOpenProfile = onOpenProfile,
+                    onOpenMenu = { menuOpen = true },
                     onSubmitSupport = onSubmitSupport,
                 )
                 DriverTab.Money -> MoneyScreen(
@@ -150,6 +122,77 @@ fun DriverShell(
                     onSignOut = onSignOut,
                     onUpdateSettings = onUpdateSettings,
                     onPreviewSound = onPreviewSound,
+                )
+            }
+
+            // Avatar button so the menu stays reachable from non-Home tabs
+            if (state.tab != DriverTab.Home && !(state.opsOpen && state.isOps)) {
+                Box(
+                    Modifier
+                        .align(Alignment.TopStart)
+                        .padding(12.dp)
+                        .size(42.dp)
+                        .shadow(6.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(FreshGreen)
+                        .clickable { menuOpen = true },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.Person, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
+            }
+
+            DriverMenu(
+                modifier = Modifier.align(Alignment.TopStart),
+                open = menuOpen,
+                onDismiss = { menuOpen = false },
+                tabs = tabs,
+                current = state.tab,
+                unread = unread,
+                onSelect = { tab ->
+                    menuOpen = false
+                    onTab(tab)
+                },
+            )
+        }
+    }
+}
+
+@Composable
+private fun DriverMenu(
+    modifier: Modifier = Modifier,
+    open: Boolean,
+    onDismiss: () -> Unit,
+    tabs: List<TabItem>,
+    current: DriverTab,
+    unread: Int,
+    onSelect: (DriverTab) -> Unit,
+) {
+    Box(modifier) {
+        DropdownMenu(expanded = open, onDismissRequest = onDismiss) {
+            tabs.forEach { item ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            item.label,
+                            fontWeight = if (item.tab == current) FontWeight.Bold else FontWeight.Normal,
+                        )
+                    },
+                    leadingIcon = {
+                        if (item.tab == DriverTab.Inbox && unread > 0) {
+                            BadgedBox(badge = { Badge { Text("$unread") } }) {
+                                Icon(item.icon, contentDescription = item.label)
+                            }
+                        } else {
+                            Icon(item.icon, contentDescription = item.label)
+                        }
+                    },
+                    trailingIcon = {
+                        if (item.tab == current) {
+                            Text("✓", color = FreshGreen, fontWeight = FontWeight.Bold)
+                        }
+                    },
+                    onClick = { onSelect(item.tab) },
                 )
             }
         }
