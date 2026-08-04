@@ -108,7 +108,7 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onClearMessages: () -> Unit,
     onOpenOps: () -> Unit = {},
-    onOpenProfile: () -> Unit = {},
+    onOpenMenu: () -> Unit = {},
     onSubmitSupport: (String, String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
@@ -188,7 +188,7 @@ fun HomeScreen(
                         .shadow(6.dp, CircleShape)
                         .clip(CircleShape)
                         .background(GreenBtn)
-                        .clickable { onOpenProfile() },
+                        .clickable { onOpenMenu() },
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(Icons.Outlined.Person, null, tint = Color.White, modifier = Modifier.size(22.dp))
@@ -244,30 +244,7 @@ fun HomeScreen(
             }
         }
 
-        // Floating availability toggle — over the Profile tab at bottom-right
-        Box(
-            Modifier
-                .align(Alignment.BottomEnd)
-                .padding(end = 18.dp, bottom = 168.dp)
-                .size(58.dp)
-                .shadow(12.dp, CircleShape)
-                .clip(CircleShape)
-                .background(if (state.online) GreenBtn else Color(0xFF374151))
-                .clickable(enabled = state.driverActive && !state.busy) { onToggleOnline(!state.online) },
-            contentAlignment = Alignment.Center,
-        ) {
-            if (state.busy) {
-                CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
-            } else {
-                Text(
-                    if (state.online) "Ενεργός" else "GO",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 12.sp,
-                )
-            }
-        }
-
+        // Bottom sheet: status card + slide-to-go-available control
         Column(
             Modifier
                 .align(Alignment.BottomCenter)
@@ -293,19 +270,25 @@ fun HomeScreen(
 
             when {
                 !state.online -> {
-                    Button(
-                        onClick = { onToggleOnline(true) },
-                        enabled = state.driverActive && !state.busy,
-                        modifier = Modifier.fillMaxWidth().height(56.dp).shadow(12.dp, RoundedCornerShape(28.dp)),
-                        shape = RoundedCornerShape(28.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = GreenBtn,
-                            contentColor = Color.White,
-                            disabledContainerColor = Color(0xFF9CA3AF),
-                        ),
+                    Card(
+                        Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(24.dp)),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        elevation = CardDefaults.cardElevation(0.dp),
                     ) {
-                        if (state.busy) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
-                        else Text("Γίνε διαθέσιμος", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+                        Column(
+                            Modifier.fillMaxWidth().padding(vertical = 22.dp, horizontal = 16.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                        ) {
+                            Text("Εκτός υπηρεσίας", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark)
+                            Spacer(Modifier.height(4.dp))
+                            Text(
+                                "Δεν λαμβάνεις νέες προσφορές. Σύρε δεξιά για να γίνεις διαθέσιμος.",
+                                fontSize = 13.sp,
+                                color = TextMuted,
+                                textAlign = TextAlign.Center,
+                            )
+                        }
                     }
                 }
 
@@ -389,6 +372,13 @@ fun HomeScreen(
                     }
                 }
             }
+
+            Spacer(Modifier.height(10.dp))
+            SlideToggle(
+                isOn = state.online,
+                enabled = state.driverActive && !state.busy,
+                onToggle = onToggleOnline,
+            )
         }
 
         DriverSupportDialog(
