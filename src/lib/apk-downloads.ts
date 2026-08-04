@@ -10,7 +10,7 @@ export const APK_BUILD_VERSION = '1.0.7232800';
 export const APK_NATIVE_DRIVER_VERSION = '2.3.0-native';
 
 /** Native Kotlin/Compose customer (Uber Eats–style UI). */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.4.0-native';
+export const APK_NATIVE_CUSTOMER_VERSION = '2.5.0-native';
 
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
@@ -82,13 +82,13 @@ export function startApkDownload(flavor: ApkFlavor) {
   a.remove();
 }
 
-/** Parse `?app=` query — accepts legacy aliases. */
-export function parseApkFocus(raw: string | null): ApkFlavor | null {
+export function resolveApkFlavor(raw: string | null | undefined): ApkFlavor | null {
   if (!raw) return null;
-  if (raw === 'customer' || raw === 'customerNative' || raw === 'driver' || raw === 'driverNative') {
-    return raw;
-  }
-  if (raw === 'driver-native' || raw === 'native' || raw === 'native-driver') return 'driverNative';
+  const v = raw.trim().toLowerCase();
+  if (v === 'customer') return 'customer';
+  if (v === 'driver') return 'driver';
+  if (v === 'customernative' || v === 'customer-native' || v === 'native-customer') return 'customerNative';
+  if (v === 'drivernative' || v === 'driver-native' || v === 'native-driver') return 'driverNative';
   if (raw === 'customer-native' || raw === 'native-customer') return 'customerNative';
   return null;
 }
