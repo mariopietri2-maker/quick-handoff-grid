@@ -13,6 +13,7 @@ import { resolve } from 'node:path';
 
 const ROOT = resolve(import.meta.dirname, '..');
 const ENV_FILE = resolve(ROOT, '.env.production');
+const MAPBOX_PLUGIN = resolve(ROOT, 'plugins', 'capacitor-mapbox-maps');
 
 const FORCE_KEYS = [
   'VITE_SUPABASE_PROJECT_ID',
@@ -55,6 +56,22 @@ if (prev && prev !== env.VITE_SUPABASE_URL) {
   console.log(`[build] Overriding host VITE_SUPABASE_URL ${prev} → ${url}`);
 } else {
   console.log(`[build] Supabase project: ${url}`);
+}
+
+// The Capacitor Mapbox Maps plugin ships source-only (dist/ is gitignored).
+// Build it before vite so `@freshdelivery/capacitor-mapbox-maps` resolves on
+// fresh clones / CI, where dist/ does not exist yet.
+if (!existsSync(resolve(MAPBOX_PLUGIN, 'dist'))) {
+  console.log('[build] Building @freshdelivery/capacitor-mapbox-maps…');
+  const plugin = spawnSync('npm', ['run', 'build'], {
+    cwd: MAPBOX_PLUGIN,
+    stdio: 'inherit',
+    shell: process.platform === 'win32',
+  });
+  if (plugin.status !== 0) {
+    console.error('[build] Plugin build failed');
+    process.exit(plugin.status ?? 1);
+  }
 }
 
 const result = spawnSync('npx', ['vite', 'build'], {

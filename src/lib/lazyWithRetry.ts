@@ -26,7 +26,6 @@ export function reloadForStaleChunk(reason?: unknown): boolean {
   } catch {
     /* private mode — still try once */
   }
-  // eslint-disable-next-line no-console
   console.warn('[chunk] stale asset — reloading', reason);
   window.location.reload();
   return true;

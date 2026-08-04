@@ -266,7 +266,7 @@ Deno.serve(async (req) => {
       // restart with a fresh driver pool but keep wave numbers increasing so
       // repeated offers do not collide with the unique offer history.
       let cycleExhausted = currentWave >= s.dist_max_waves;
-      let nextWave = currentWave + 1;
+      const nextWave = currentWave + 1;
       // Always exclude drivers in the 10s cooldown window so the same driver
       // is not re-spammed right after declining/expiring an offer.
       const orderTried = cycleExhausted ? new Set<string>() : new Set(triedDrivers.get(order.id) ?? []);

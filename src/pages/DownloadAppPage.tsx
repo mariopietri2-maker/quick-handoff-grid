@@ -10,7 +10,7 @@ import {
   APK_NATIVE_CUSTOMER_VERSION,
   APK_NATIVE_DRIVER_VERSION,
   apkLandingUrl,
-  parseApkFocus,
+  resolveApkFlavor,
   startApkDownload,
   type ApkFlavor,
 } from '@/lib/apk-downloads';
@@ -102,7 +102,7 @@ function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: bool
 
 export default function DownloadAppPage() {
   const [params] = useSearchParams();
-  const focus = parseApkFocus(params.get('app'));
+  const focus = resolveApkFlavor(params.get('app'));
 
   useEffect(() => {
     if (!focus) return;

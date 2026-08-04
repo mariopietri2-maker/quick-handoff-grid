@@ -17,7 +17,6 @@ export class RouteErrorBoundary extends Component<{ children: ReactNode }, State
   }
 
   componentDidCatch(error: Error, info: unknown) {
-    // eslint-disable-next-line no-console
     console.error('Route crashed:', error, info);
     if (isStaleChunkError(error)) {
       reloadForStaleChunk(error);
