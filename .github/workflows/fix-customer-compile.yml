@@ -1,17 +1,25 @@
 name: Fix Customer Compile Once
+
 on:
   workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-customer-compile.yml"
+
+permissions:
+  contents: write
+
 jobs:
   fix:
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
       - name: Restore + patch customer sources
         run: |
           set -euo pipefail
-          # Restore known-good sources from pre-placeholder commit, then apply fixes
           git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt > /tmp/shell.kt
           git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt > /tmp/vm.kt
 
@@ -43,13 +51,15 @@ jobs:
             CustomerTab.Profile -> Unit
         }
     }"""
-          assert old in vm
+          assert old in vm, "selectTab block not found"
           Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt").write_text(vm.replace(old, new))
           print("patched OK")
           PY
 
-          # sanity
-          ! grep -q "fun LoginScreen" native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          if grep -q "fun LoginScreen" native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt; then
+            echo "ERROR: LoginScreen still in CustomerShell" >&2
+            exit 1
+          fi
           grep -q "CustomerTab.Home, CustomerTab.Browse" native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
 
       - name: Commit and push
@@ -58,6 +68,10 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
                   native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
+          if git diff --cached --quiet; then
+            echo "No changes to commit (already fixed?)"
+            exit 0
+          fi
           git diff --cached --stat
           git commit -m "fix(native-customer): remove duplicate LoginScreen + exhaustive selectTab(Browse)"
           git push origin HEAD:main
