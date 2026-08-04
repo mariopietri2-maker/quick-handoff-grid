@@ -38,7 +38,7 @@ interface AppliedPromo {
 
 export default function CheckoutPage() {
   const navigate = useNavigate();
-  const { items, storeId, storeName, total, itemCount, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, storeId, storeName, total, updateQuantity, clearCart } = useCart();
   const cfg = useCustomerAppConfig();
   const { user } = useAuth();
   const { token: mapboxToken } = useMapboxToken();

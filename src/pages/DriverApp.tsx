@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, X, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
+import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { startPushRegistration } from '@/lib/push-register';
@@ -205,7 +205,7 @@ export default function DriverApp() {
     if (driverActive === false && isOnline) setIsOnline(false);
   }, [driverActive, isOnline]);
 
-  const { error: locError, position: onlinePos } = useDriverLocation(isOnline);
+  const { error: _locError, position: onlinePos } = useDriverLocation(isOnline);
   const { stores: nearbyStores } = useNearbyStoresForDriver();
   const driverPrefs = useDriverAppPrefs();
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);

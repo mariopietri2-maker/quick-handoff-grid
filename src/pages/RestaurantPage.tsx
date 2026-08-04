@@ -60,11 +60,6 @@ export default function RestaurantPage() {
     });
   }, [id]);
 
-  const categories = useMemo(
-    () => [...new Set(menuItems.map((i) => i.category ?? 'Άλλο'))],
-    [menuItems],
-  );
-
   const normalizedQuery = menuQuery.trim().toLowerCase();
   const filteredItems = useMemo(() => {
     if (!normalizedQuery) return menuItems;

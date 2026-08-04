@@ -99,7 +99,7 @@ Deno.serve(async (req) => {
         error: errorMsg ?? null,
         details: payload,
       });
-    } catch (_) { /* logging best-effort */ }
+    } catch { /* logging best-effort */ }
   };
 
 

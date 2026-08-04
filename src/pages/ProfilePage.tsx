@@ -8,10 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Badge } from '@/components/ui/badge';
 import {
-  User, Mail, Phone, Save, Loader2, Shield, Car, Store,
+  Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
-  FileText, RefreshCw, Ticket, Gift, MapPin, Heart, Receipt, ChevronRight,
-  Settings as SettingsIcon, Wallet,
+  FileText, RefreshCw, Ticket, MapPin, Heart, Receipt, ChevronRight,
+  Settings as SettingsIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
 import { LanguageToggle } from '@/components/LanguageToggle';
