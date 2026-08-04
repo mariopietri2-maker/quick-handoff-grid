@@ -1,0 +1,85 @@
+# Build Capacitor customer + driver debug APKs (includes Mapbox plugin for driver)
+name: Build Capacitor APKs
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "plugins/capacitor-mapbox-maps/**"
+      - "scripts/build-apks.sh"
+      - "package.json"
+      - "capacitor.driver.config.ts"
+      - "capacitor.customer.config.ts"
+      - ".github/workflows/build-capacitor-apks.yml"
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Mapbox downloads token
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          TOKEN="${MAPBOX_DOWNLOADS_TOKEN:-}"
+          if [ -z "$TOKEN" ]; then
+            echo "::warning::MAPBOX_DOWNLOADS_TOKEN secret not set — Mapbox SDK resolve may fail"
+          fi
+          mkdir -p ~/.gradle
+          {
+            echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN"
+            echo "systemProp.mapboxDownloadsToken=$TOKEN"
+          } >> ~/.gradle/gradle.properties
+          echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Build Capacitor APKs
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          chmod +x scripts/build-apks.sh
+          ./scripts/build-apks.sh
+
+      - name: Stage artifacts
+        run: |
+          mkdir -p dist
+          cp -f mobile-apks/*.apk dist/ 2>/dev/null || true
+          ls -lah dist/ mobile-apks/ || true
+          sha256sum dist/*.apk mobile-apks/*.apk 2>/dev/null || true
+
+      - name: Upload APKs
+        uses: actions/upload-artifact@v4
+        with:
+          name: capacitor-debug-apks
+          path: |
+            mobile-apks/*.apk
+            dist/*.apk
+          if-no-files-found: warn
+          retention-days: 14
