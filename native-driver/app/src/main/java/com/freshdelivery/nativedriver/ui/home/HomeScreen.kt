@@ -150,32 +150,19 @@ fun HomeScreen(
             userBearing = state.geo?.bearing,
         )
 
-        // Top chrome — no Ops (admin-only)
+        // Top chrome — status pill centered between avatar and support
         Row(
             Modifier
                 .align(Alignment.TopCenter)
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp, vertical = 10.dp),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween,
         ) {
-            Box(
-                Modifier
-                    .size(42.dp)
-                    .shadow(6.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(GreenBtn)
-                    .clickable { onOpenProfile() },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Outlined.Person, null, tint = Color.White, modifier = Modifier.size(22.dp))
-            }
-
             Row(
+                Modifier.weight(1f),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-
                 if (state.isOps) {
                     Row(
                         Modifier
@@ -195,38 +182,65 @@ fun HomeScreen(
                     }
                 }
 
+                Box(
+                    Modifier
+                        .size(42.dp)
+                        .shadow(6.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(GreenBtn)
+                        .clickable { onOpenProfile() },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.Person, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
+            }
+
+            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
                 Row(
                     Modifier
                         .shadow(6.dp, RoundedCornerShape(24.dp))
                         .clip(RoundedCornerShape(24.dp))
-                        .background(Color.White)
+                        .background(if (state.online) GreenBtn else Color(0xFF374151))
                         .padding(horizontal = 14.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Box(
                         Modifier
-                            .size(22.dp)
+                            .size(8.dp)
                             .clip(CircleShape)
-                            .background(GreenBtn),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text("⚡", fontSize = 12.sp)
-                    }
+                            .background(if (state.online) Color.White else Color(0xFF9CA3AF)),
+                    )
                     Spacer(Modifier.width(8.dp))
-                    Text("Fresh Delivery", fontWeight = FontWeight.Bold, fontSize = 14.sp, color = TextDark)
+                    Text(
+                        when {
+                            !state.online -> "Εκτός υπηρεσίας"
+                            hasTrip -> "Σε παράδοση"
+                            state.busy -> "Διαθέσιμος…"
+                            else -> "Διαθέσιμος"
+                        },
+                        color = if (state.online) Color.White else Color(0xFFE5E7EB),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp,
+                    )
                 }
             }
 
-            Box(
-                Modifier
-                    .size(42.dp)
-                    .shadow(6.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(GreenBtn)
-                    .clickable { supportOpen = true },
-                contentAlignment = Alignment.Center,
+            Row(
+                Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.End,
             ) {
-                Icon(Icons.Outlined.HeadsetMic, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                Box(
+                    Modifier
+                        .size(42.dp)
+                        .shadow(6.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(GreenBtn)
+                        .clickable { supportOpen = true },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.HeadsetMic, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                }
             }
         }
 
