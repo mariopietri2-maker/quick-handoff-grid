@@ -96,6 +96,37 @@ write_cap_config() {
 EOF
 }
 
+# Inject Mapbox downloads token so the capacitor-mapbox-maps plugin can resolve
+# com.mapbox.maps:android from api.mapbox.com/downloads Maven.
+patch_mapbox_token() {
+  local app_dir="$1"
+  local token="${MAPBOX_DOWNLOADS_TOKEN:-}"
+  if [ -z "$token" ] && [ -f "$ROOT/.env.development" ]; then
+    token=$(grep -E '^MAPBOX_DOWNLOADS_TOKEN=' "$ROOT/.env.development" | cut -d= -f2- | tr -d '"' | tr -d "'" || true)
+  fi
+  if [ -z "$token" ] && [ -f "$ROOT/.env" ]; then
+    token=$(grep -E '^MAPBOX_DOWNLOADS_TOKEN=' "$ROOT/.env" | cut -d= -f2- | tr -d '"' | tr -d "'" || true)
+  fi
+  if [ -z "$token" ]; then
+    echo "WARN: MAPBOX_DOWNLOADS_TOKEN not set — Mapbox Maps SDK resolve may fail for driver"
+    return 0
+  fi
+  local gp="$app_dir/gradle.properties"
+  mkdir -p "$app_dir"
+  touch "$gp"
+  if grep -q 'MAPBOX_DOWNLOADS_TOKEN' "$gp" 2>/dev/null; then
+    sed -i "s|^MAPBOX_DOWNLOADS_TOKEN=.*|MAPBOX_DOWNLOADS_TOKEN=$token|" "$gp" || true
+  else
+    echo "MAPBOX_DOWNLOADS_TOKEN=$token" >> "$gp"
+  fi
+  if grep -q 'systemProp.mapboxDownloadsToken' "$gp" 2>/dev/null; then
+    sed -i "s|^systemProp.mapboxDownloadsToken=.*|systemProp.mapboxDownloadsToken=$token|" "$gp" || true
+  else
+    echo "systemProp.mapboxDownloadsToken=$token" >> "$gp"
+  fi
+  echo "==> patched Mapbox downloads token into $gp"
+}
+
 sync_flavor() {
   local flavor="$1"
   local app_dir="$2"
@@ -130,10 +161,10 @@ sync_flavor() {
     write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
     mkdir -p "$app_dir/app/src/main/res/raw"
     if [ "$flavor" = "driver" ]; then
-      cp -f "$ROOT/src/assets/sounds/fresh_delivery.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3"
+      cp -f "$ROOT/src/assets/sounds/fresh_delivery.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3" 2>/dev/null || true
     fi
     if [ "$flavor" = "customer" ]; then
-      cp -f "$ROOT/src/assets/sounds/customer_notify.mp3" "$app_dir/app/src/main/res/raw/customer_notify.mp3"
+      cp -f "$ROOT/src/assets/sounds/customer_notify.mp3" "$app_dir/app/src/main/res/raw/customer_notify.mp3" 2>/dev/null || true
     fi
     if [ "$flavor" = "driver" ] || [ "$flavor" = "customer" ]; then
       # Ensure BG location + FG service permissions survive fresh capacitor scaffolds.
@@ -156,6 +187,10 @@ for p in perms:
 path.write_text(text)
 print(f'patched permissions -> {path}')
 PY
+    fi
+    # Mapbox SDK Maven token for driver (native Maps plugin)
+    if [ "$flavor" = "driver" ]; then
+      patch_mapbox_token "$app_dir"
     fi
   fi
 
@@ -180,4 +215,3 @@ sync_flavor customer android-customer com.freshdelivery.customer "Fresh Customer
 sync_flavor driver android-driver com.freshdelivery.driver "Fresh Driver"
 ls -lah mobile-apks/
 sha256sum mobile-apks/*.apk
-
