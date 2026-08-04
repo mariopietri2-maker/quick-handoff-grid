@@ -7,7 +7,6 @@ android-driver
 native-customer
 native-driver
 mobile-signing
-plugins/*/dist
 e2e
 docs
 *.apk
