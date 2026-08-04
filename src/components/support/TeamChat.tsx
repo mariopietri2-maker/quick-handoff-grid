@@ -54,7 +54,6 @@ export function TeamChat() {
   const [agents, setAgents] = useState<AgentProfile[]>([]);
   const [presence, setPresence] = useState<Record<string, boolean>>({});
   const [draft, setDraft] = useState('');
-  const [sending, setSending] = useState(false);
   const [loadingMsgs, setLoadingMsgs] = useState(false);
   const [createOpen, setCreateOpen] = useState(false);
   const [newName, setNewName] = useState('');

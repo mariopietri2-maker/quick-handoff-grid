@@ -2,14 +2,14 @@ import { Suspense, useEffect, useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdminData } from '@/hooks/useAdminData';
 import { supabase } from '@/integrations/supabase/client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+
 import { Input } from '@/components/ui/input';
-import { Shield, Users, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
+import { Shield, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from '@/components/admin/AdminSidebar';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
@@ -103,21 +103,16 @@ const statusLabelsEl: Record<string, string> = {
   delivered: 'Παραδόθηκε', cancelled: 'Ακυρώθηκε',
 };
 
-const roleLabels: Record<string, string> = {
-  customer: 'Πελάτης', driver: 'Οδηγός', store: 'Κατάστημα',
-};
-
 export default function AdminApp() {
   const { signOut } = useAuth();
   const perms = useAdminPermissions();
-  const { orders, stores, profiles, earnings, reviews, userRoles, driverProfiles, driverStates, driverLocations, driverWallets, storeWallets } = useAdminData();
+  const { orders, stores, profiles, reviews, userRoles, driverProfiles, driverStates, driverLocations, driverWallets, storeWallets } = useAdminData();
   const queryClient = useQueryClient();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeSection, setActiveSectionState] = useState(() => {
     return resolveSectionParam(new URLSearchParams(window.location.search).get('section')) ?? 'overview';
   });
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [settingsSearch, setSettingsSearch] = useState('');
 

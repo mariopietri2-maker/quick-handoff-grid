@@ -5,7 +5,6 @@ import {
   AlertDialogDescription, AlertDialogFooter, AlertDialogCancel, AlertDialogAction,
 } from '@/components/ui/alert-dialog';
 import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
 import { Loader2, Sparkles, ShieldAlert, ShieldCheck, AlertTriangle, ArrowRight, Users, TrendingDown } from 'lucide-react';
 import { toast } from 'sonner';
 

@@ -142,7 +142,7 @@ Deno.serve(async (req) => {
           },
           body: JSON.stringify({ driver_id: user.id, batch_id: existingBatch }),
         });
-      } catch (_) { /* best effort */ }
+      } catch { /* best effort */ }
     }
 
 

@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Copy, Hash, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
+import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Zap, AlarmClock, Flag, Siren } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
@@ -25,14 +25,6 @@ import { Users, Mail } from 'lucide-react';
 import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
-
-const QUICK_REPLIES = [
-  { label: 'Καλωσόρισμα', text: 'Γεια σας! Είμαι εδώ για να βοηθήσω. Πείτε μου τι συμβαίνει;' },
-  { label: 'Σε αναμονή', text: 'Σας παρακαλώ περιμένετε λίγο, ελέγχω την κατάσταση...' },
-  { label: 'Αναφορά καταστήματος', text: 'Έχω ενημερώσει το κατάστημα σχετικά με το θέμα. Θα σας ενημερώσω σύντομα.' },
-  { label: 'Επικοινωνία πελάτη', text: 'Δοκιμάστε να καλέσετε ξανά τον πελάτη. Αν δεν απαντήσει σε 5 λεπτά, ενημερώστε με.' },
-  { label: 'Κλείσιμο', text: 'Χαίρομαι που βοηθήσαμε! Καλή συνέχεια στη βάρδιά σας 🙌' },
-];
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   open: { label: 'Ανοιχτό', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
