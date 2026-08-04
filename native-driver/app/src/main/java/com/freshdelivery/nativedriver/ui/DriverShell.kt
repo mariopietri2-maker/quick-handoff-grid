@@ -27,6 +27,7 @@ import com.freshdelivery.nativedriver.data.DriverTab
 import com.freshdelivery.nativedriver.ui.home.HomeScreen
 import com.freshdelivery.nativedriver.ui.inbox.InboxScreen
 import com.freshdelivery.nativedriver.ui.money.MoneyScreen
+import com.freshdelivery.nativedriver.ui.ops.OpsScreen
 import com.freshdelivery.nativedriver.ui.profile.ProfileScreen
 import com.freshdelivery.nativedriver.ui.referral.ReferralScreen
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
@@ -52,6 +53,10 @@ fun DriverShell(
     onClearMessages: () -> Unit,
     onUpdateSettings: (DriverSettings) -> Unit = {},
     onPreviewSound: (String) -> Unit = {},
+    onOpenOps: () -> Unit = {},
+    onCloseOps: () -> Unit = {},
+    onRefreshOps: () -> Unit = {},
+    onClaimOps: (String) -> Unit = {},
 ) {
     val unread = state.notifications.count { it.read_at == null }
     val tabs = listOf(
@@ -104,7 +109,15 @@ fun DriverShell(
         },
     ) { padding ->
         androidx.compose.foundation.layout.Box(Modifier.padding(padding)) {
-            when (state.tab) {
+            if (state.opsOpen && state.isOps) {
+                OpsScreen(
+                    orders = state.opsOrders,
+                    busy = state.busy,
+                    onClaim = onClaimOps,
+                    onRefresh = onRefreshOps,
+                    onClose = onCloseOps,
+                )
+            } else when (state.tab) {
                 DriverTab.Home -> HomeScreen(
                     state = state,
                     onToggleOnline = onToggleOnline,
@@ -114,6 +127,7 @@ fun DriverShell(
                     onAdvance = onAdvance,
                     onRefresh = onRefresh,
                     onClearMessages = onClearMessages,
+                    onOpenOps = onOpenOps,
                 )
                 DriverTab.Money -> MoneyScreen(
                     state = state,
