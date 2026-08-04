@@ -1,0 +1,50 @@
+name: Restore Ops ViewModel + HomeScreen
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-ops-sources.yml"
+      - ".github/parity-payloads/ops/**"
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Decode and write Ops sources
+        run: |
+          python3 << 'PY'
+          import gzip, base64
+          from pathlib import Path
+          base = Path(".github/parity-payloads/ops")
+          mapping = {
+            "DriverViewModel": "native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt",
+            "HomeScreen": "native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt",
+          }
+          for stem, dest in mapping.items():
+              parts = sorted(base.glob(f"{stem}.part*.b64"), key=lambda p: int(p.stem.split("part")[-1]))
+              if not parts:
+                  single = base / f"{stem}.kt.gz.b64"
+                  if single.exists():
+                      b64 = single.read_text().strip()
+                  else:
+                      raise SystemExit(f"missing payload {stem}")
+              else:
+                  b64 = "".join(p.read_text().strip() for p in parts)
+              raw = gzip.decompress(base64.b64decode(b64))
+              p = Path(dest)
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_bytes(raw)
+              print("wrote", dest, len(raw), "has isOps", b"isOps" in raw)
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt \
+                  native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
+          git diff --cached --stat
+          git commit -m "Wire Ops fully: ViewModel role detection + HomeScreen Ops button for admin/M" || echo "no changes"
+          git push
