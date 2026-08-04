@@ -42,7 +42,6 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
         order_items: [
           { name: 'Δοκιμαστικό Προϊόν', quantity: 2, unit_price: 4.75 },
         ],
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       } as any,
       storeName,
       { driverCode: 'DRV 7', customerName: 'Πελάτης δοκιμής', customerPhone: '69xxxxxxx' },

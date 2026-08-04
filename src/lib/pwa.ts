@@ -24,15 +24,15 @@ export function setPwaManifest(kind: PwaManifestKind) {
   }
 
   const theme = kind === 'store' ? '#06C167' : '#06C167';
-  let themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
+  const themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   if (themeMeta) themeMeta.content = theme;
 
-  let appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
+  const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
   if (appleTitle) {
     appleTitle.content = kind === 'store' ? 'Fresh Store' : 'Fresh Delivery';
   }
 
-  let appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
+  const appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
   if (appleIcon) {
     appleIcon.href = kind === 'store' ? '/icons/store-180.png' : '/icons/app-192.png';
   }

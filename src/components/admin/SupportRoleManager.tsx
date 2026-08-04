@@ -43,7 +43,11 @@ export default function SupportRoleManager() {
     toast.success(currentlySupport ? 'Αφαιρέθηκε ρόλος support' : 'Εκχωρήθηκε ρόλος support');
     setSupportIds(prev => {
       const next = new Set(prev);
-      currentlySupport ? next.delete(userId) : next.add(userId);
+      if (currentlySupport) {
+        next.delete(userId);
+      } else {
+        next.add(userId);
+      }
       return next;
     });
   };

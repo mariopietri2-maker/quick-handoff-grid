@@ -56,6 +56,7 @@ export function StackedOrderBanner({ orderId }: StackedOrderBannerProps) {
 
       if (!cancelled) setSiblings(rows);
     })();
+    return () => { cancelled = true; };
   }, [orderId]);
 
   if (siblings.length === 0) return null;

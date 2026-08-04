@@ -125,7 +125,11 @@ export default function AiDynamicPricing() {
     setSaving(true);
     const { error } = await supabase.from('ai_pricing_config' as any).upsert({ id: true, ...cfg } as any);
     setSaving(false);
-    error ? toast.error(error.message) : toast.success('Αποθηκεύτηκε');
+    if (error) {
+      toast.error(error.message);
+    } else {
+      toast.success('Αποθηκεύτηκε');
+    }
     if (!error) load();
   };
 
