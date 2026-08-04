@@ -13,6 +13,12 @@ data class ProfileRow(
 )
 
 @Serializable
+data class UserRoleRow(
+    val user_id: String? = null,
+    val role: String,
+)
+
+@Serializable
 data class DriverProfileRow(
     val user_id: String,
     val is_active: Boolean? = true,
