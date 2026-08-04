@@ -70,10 +70,6 @@ class MainActivity : ComponentActivity() {
                             onSaveProfile = vm::saveProfile,
                             onCancelOrder = vm::cancelOrder,
                             onClearMessages = vm::clearMessages,
-                            onToggleFavorite = { vm.toggleFavorite(it) },
-                            onSetFilterTop = { vm.setFilterTopRated(it) },
-                            onSetFilterFast = { vm.setFilterFast(it) },
-                            onSetPromo = { vm.setPromoCode(it) },
                         )
                     }
                 }
