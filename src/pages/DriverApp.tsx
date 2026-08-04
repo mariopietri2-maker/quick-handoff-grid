@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Car, Navigation, Zap, Radio, MapPin, Crosshair, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck } from 'lucide-react';
+import { Car, Zap, Radio, MapPin, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck, Headphones } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { startPushRegistration } from '@/lib/push-register';
@@ -87,6 +87,7 @@ export default function DriverApp() {
   const [isOnline, setIsOnline] = useState<boolean>(() => {
     try { return localStorage.getItem('driver_is_online_v1') === '1'; } catch { return false; }
   });
+  const [supportOpen, setSupportOpen] = useState(false);
   useEffect(() => {
     try { localStorage.setItem('driver_is_online_v1', isOnline ? '1' : '0'); } catch {}
     // Going online is a user gesture path — unlock WebView audio for offer alerts.
@@ -570,29 +571,23 @@ export default function DriverApp() {
                     setSheetCollapsed(false);
                   }}
                   className={`pointer-events-auto rounded-full pl-2.5 pr-3.5 py-1.5 flex items-center gap-2 min-w-0 max-w-[58%] shadow-[0_4px_16px_-4px_hsl(220,18%,14%,0.14)] border backdrop-blur-xl transition-colors ${
-                    onBreak
-                      ? 'bg-amber-500/95 border-amber-400/40 text-white'
-                      : isOnline
-                        ? 'bg-[hsl(var(--driver-accent))]/95 border-[hsl(var(--driver-accent))]/50 text-white'
-                        : 'bg-[hsl(var(--driver-surface))]/95 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
+                    isOnline
+                      ? 'bg-[hsl(var(--driver-accent))]/95 border-[hsl(var(--driver-accent))]/50 text-white'
+                      : 'bg-[hsl(var(--driver-surface))]/95 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
                   }`}
-                  aria-label={onBreak ? 'Σε διάλειμμα' : isOnline ? 'Διαθέσιμος' : 'Εκτός υπηρεσίας'}
+                  aria-label={isOnline ? 'Διαθέσιμος' : 'Εκτός υπηρεσίας'}
                 >
                   <span
                     className={`h-2 w-2 rounded-full shrink-0 ${
-                      onBreak
-                        ? 'bg-white/90'
-                        : isOnline
-                          ? 'bg-white animate-pulse'
-                          : 'bg-[hsl(var(--driver-text-muted))]'
+                      isOnline
+                        ? 'bg-white animate-pulse'
+                        : 'bg-[hsl(var(--driver-text-muted))]'
                     }`}
                   />
                   <span className="font-heading font-extrabold text-[12.5px] tracking-tight truncate">
-                    {onBreak
-                      ? 'Διάλειμμα'
-                      : isOnline
-                        ? (activeDelivery ? 'Σε παράδοση' : loading ? 'Διαθέσιμος…' : 'Διαθέσιμος')
-                        : 'Εκτός υπηρεσίας'}
+                    {isOnline
+                      ? (activeDelivery ? 'Σε παράδοση' : loading ? 'Διαθέσιμος…' : 'Διαθέσιμος')
+                      : 'Εκτός υπηρεσίας'}
                   </span>
                   {isOnline && !onBreak && todayEarnings.total > 0 && (
                     <span className="font-heading font-bold text-[11px] tabular-nums opacity-90 shrink-0">
@@ -601,7 +596,7 @@ export default function DriverApp() {
                   )}
                 </button>
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
-                  <DriverSupportButton orderId={activeDelivery?.id} />
+                  <DriverSupportButton orderId={activeDelivery?.id} open={supportOpen} onOpenChange={setSupportOpen} />
                 </div>
               </div>
             </div>
@@ -630,7 +625,7 @@ export default function DriverApp() {
           {/* Floating action stack — support + map controls during turn-by-turn */}
           {isNavActive && (
             <div className="fixed right-3 top-1/2 -translate-y-1/2 z-30 flex flex-col gap-3 pointer-events-auto animate-pop">
-              <DriverSupportButton orderId={activeDelivery?.id} />
+              <DriverSupportButton orderId={activeDelivery?.id} open={supportOpen} onOpenChange={setSupportOpen} />
               <button
                 onClick={() => mapRef.current?.fitOverview()}
                 className="h-12 w-12 rounded-full bg-card border border-border flex items-center justify-center shadow-lg hover:bg-accent active:scale-90 transition-all"
@@ -682,35 +677,25 @@ export default function DriverApp() {
             {!hasIncomingOffers && (
             <div className="flex justify-end gap-2 px-3 pb-2 pointer-events-auto">
               <button
-                onClick={() => {
-                  setSheetCollapsed(true);
-                  setTimeout(() => mapRef.current?.fitOverview(), 340);
-                }}
+                onClick={() => setSupportOpen(true)}
                 className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90"
-                aria-label="Προβολή ολόκληρου χάρτη"
-                title="Προβολή ολόκληρου χάρτη"
+                aria-label="Υποστήριξη"
+                title="Υποστήριξη"
               >
-                <Navigation className="h-5 w-5 text-[hsl(var(--driver-text))]" />
-              </button>
-              <button
-                onClick={() => mapRef.current?.recenter()}
-                className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90"
-                aria-label="Επανακέντρωμα"
-              >
-                <Crosshair className="h-5 w-5 text-[hsl(var(--driver-text))]" />
+                <Headphones className="h-5 w-5 text-[hsl(var(--driver-text))]" />
               </button>
             </div>
             )}
 
-            {/* During offers, keep a light recenter control so the map stays usable above the card */}
+            {/* During offers, keep a light support control */}
             {hasIncomingOffers && (
             <div className="flex justify-end gap-2 px-3 pb-2 pointer-events-auto">
               <button
-                onClick={() => mapRef.current?.recenter()}
+                onClick={() => setSupportOpen(true)}
                 className="h-9 w-9 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-md active:scale-90"
-                aria-label="Επανακέντρωμα"
+                aria-label="Υποστήριξη"
               >
-                <Crosshair className="h-4.5 w-4.5 text-[hsl(var(--driver-text))]" />
+                <Headphones className="h-4.5 w-4.5 text-[hsl(var(--driver-text))]" />
               </button>
             </div>
             )}
@@ -839,12 +824,6 @@ export default function DriverApp() {
                         <AnnouncementsBanner audience="drivers" />
                         <SurgeStatusBadge />
                       </>
-                    )}
-
-                    {onBreak && !activeDelivery && !hasIncomingOffers && (
-                      <div className="px-3 py-2.5 rounded-xl bg-warning/15 border border-warning/30 driver-glass flex items-center gap-2">
-                        <span className="text-xs font-heading font-semibold text-warning">⏸ Σε διάλειμμα — δεν λαμβάνετε νέες παραγγελίες</span>
-                      </div>
                     )}
 
                     {activeDelivery && (

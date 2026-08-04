@@ -47,8 +47,10 @@ interface Ticket {
   order_id: string | null;
 }
 
-export function DriverSupportButton({ orderId }: { orderId?: string }) {
-  const [open, setOpen] = useState(false);
+export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChange }: { orderId?: string; open?: boolean; onOpenChange?: (open: boolean) => void }) {
+  const [internalOpen, setInternalOpen] = useState(false);
+  const open = controlledOpen ?? internalOpen;
+  const setOpen = onOpenChange ?? setInternalOpen;
   const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat'>('menu');
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
