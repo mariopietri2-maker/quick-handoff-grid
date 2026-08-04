@@ -1,0 +1,41 @@
+{
+  "name": "@freshdelivery/capacitor-mapbox-maps",
+  "version": "0.1.0",
+  "description": "Native Mapbox Maps SDK for Capacitor (Android; web uses mapbox-gl)",
+  "main": "dist/plugin.cjs.js",
+  "module": "dist/esm/index.js",
+  "types": "dist/esm/index.d.ts",
+  "unpkg": "dist/plugin.js",
+  "files": [
+    "android/",
+    "dist/",
+    "FreshdeliveryCapacitorMapboxMaps.podspec"
+  ],
+  "author": "Fresh Delivery",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/mariopietri2-maker/quick-handoff-grid.git",
+    "directory": "plugins/capacitor-mapbox-maps"
+  },
+  "scripts": {
+    "build": "npm run clean && tsc && rollup -c rollup.config.mjs",
+    "clean": "rimraf dist",
+    "watch": "tsc --watch"
+  },
+  "peerDependencies": {
+    "@capacitor/core": ">=6.0.0"
+  },
+  "devDependencies": {
+    "@capacitor/android": "^8.3.1",
+    "@capacitor/core": "^8.3.1",
+    "rimraf": "^5.0.5",
+    "rollup": "^4.9.0",
+    "typescript": "^5.8.3"
+  },
+  "capacitor": {
+    "android": {
+      "src": "android"
+    }
+  }
+}
