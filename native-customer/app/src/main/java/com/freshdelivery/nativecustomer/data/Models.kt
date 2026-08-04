@@ -144,3 +144,12 @@ data class CustomerWalletRow(
     val balance: Double? = 0.0,
     val lifetime_credit: Double? = 0.0,
 )
+
+@Serializable
+data class CustomerWalletLedgerRow(
+    val id: String,
+    val amount: Double,
+    val type: String? = null,
+    val description: String? = null,
+    val created_at: String? = null,
+)
