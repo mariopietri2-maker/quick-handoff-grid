@@ -1,0 +1,63 @@
+name: Fix Customer Compile Once
+on:
+  workflow_dispatch:
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Restore + patch customer sources
+        run: |
+          set -euo pipefail
+          # Restore known-good sources from pre-placeholder commit, then apply fixes
+          git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt > /tmp/shell.kt
+          git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt > /tmp/vm.kt
+
+          python3 << 'PY'
+          from pathlib import Path
+          shell = Path("/tmp/shell.kt").read_text()
+          start = shell.find("@Composable\nfun LoginScreen(")
+          end = shell.find("@Composable\nfun CustomerShell(")
+          assert start >= 0 and end > start, (start, end)
+          shell = shell[:start] + shell[end:]
+          while "\n\n\n\n" in shell:
+              shell = shell.replace("\n\n\n\n", "\n\n\n")
+          Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt").write_text(shell)
+
+          vm = Path("/tmp/vm.kt").read_text()
+          old = """    fun selectTab(tab: CustomerTab) {
+        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null)
+        when (tab) {
+            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
+            CustomerTab.Home -> refreshStores()
+            CustomerTab.Profile -> Unit
+        }
+    }"""
+          new = """    fun selectTab(tab: CustomerTab) {
+        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null)
+        when (tab) {
+            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
+            CustomerTab.Home, CustomerTab.Browse -> refreshStores()
+            CustomerTab.Profile -> Unit
+        }
+    }"""
+          assert old in vm
+          Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt").write_text(vm.replace(old, new))
+          print("patched OK")
+          PY
+
+          # sanity
+          ! grep -q "fun LoginScreen" native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          grep -q "CustomerTab.Home, CustomerTab.Browse" native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
+                  native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
+          git diff --cached --stat
+          git commit -m "fix(native-customer): remove duplicate LoginScreen + exhaustive selectTab(Browse)"
+          git push origin HEAD:main
