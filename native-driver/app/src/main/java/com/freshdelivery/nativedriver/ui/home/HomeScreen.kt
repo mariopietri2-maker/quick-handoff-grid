@@ -43,6 +43,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -61,6 +62,7 @@ import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.map.DriverMapView
 import com.freshdelivery.nativedriver.ui.map.MapMarker
+import com.freshdelivery.nativedriver.ui.support.DriverSupportDialog
 import kotlinx.coroutines.delay
 import java.time.Duration
 import java.time.Instant
@@ -106,9 +108,12 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onClearMessages: () -> Unit,
     onOpenOps: () -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    onSubmitSupport: (String, String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
     val primary = state.primaryTrip
+    var supportOpen by remember { mutableStateOf(false) }
     val markers = buildList {
         primary?.storeLat?.let { lat ->
             primary.storeLng?.let { lng ->
@@ -160,7 +165,7 @@ fun HomeScreen(
                     .shadow(6.dp, CircleShape)
                     .clip(CircleShape)
                     .background(GreenBtn)
-                    .clickable { onToggleOnline(!state.online) },
+                    .clickable { onOpenProfile() },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Outlined.Person, null, tint = Color.White, modifier = Modifier.size(22.dp))
@@ -183,28 +188,6 @@ fun HomeScreen(
                     ) {
                         Text(
                             "Ops",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                        )
-                    }
-                }
-
-                // Driver break control
-                if (state.online) {
-                    Row(
-                        Modifier
-                            .shadow(6.dp, RoundedCornerShape(22.dp))
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(
-                                if (state.onBreak) Color(0xFFFF8A00) else Color(0xFF1C1C1E),
-                            )
-                            .clickable(onClick = onToggleBreak)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            if (state.onBreak) "Τέλος διαλείμματος" else "Διάλειμμα",
                             color = Color.White,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp,
@@ -239,10 +222,35 @@ fun HomeScreen(
                     .size(42.dp)
                     .shadow(6.dp, CircleShape)
                     .clip(CircleShape)
-                    .background(GreenBtn),
+                    .background(GreenBtn)
+                    .clickable { supportOpen = true },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(Icons.Outlined.HeadsetMic, null, tint = Color.White, modifier = Modifier.size(22.dp))
+            }
+        }
+
+        // Floating availability toggle — over the Profile tab at bottom-right
+        Box(
+            Modifier
+                .align(Alignment.BottomEnd)
+                .padding(end = 18.dp, bottom = 168.dp)
+                .size(58.dp)
+                .shadow(12.dp, CircleShape)
+                .clip(CircleShape)
+                .background(if (state.online) GreenBtn else Color(0xFF374151))
+                .clickable(enabled = state.driverActive && !state.busy) { onToggleOnline(!state.online) },
+            contentAlignment = Alignment.Center,
+        ) {
+            if (state.busy) {
+                CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+            } else {
+                Text(
+                    if (state.online) "Ενεργός" else "GO",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 12.sp,
+                )
             }
         }
 
@@ -368,6 +376,17 @@ fun HomeScreen(
                 }
             }
         }
+
+        DriverSupportDialog(
+            open = supportOpen,
+            onDismiss = { supportOpen = false },
+            tickets = state.tickets,
+            submitting = state.busy,
+            onSubmit = { cat, desc ->
+                onSubmitSupport(cat, desc)
+                supportOpen = false
+            },
+        )
     }
 }
 

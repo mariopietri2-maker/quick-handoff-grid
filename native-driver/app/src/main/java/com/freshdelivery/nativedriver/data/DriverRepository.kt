@@ -374,6 +374,18 @@ class DriverRepository(
         }
     }
 
+    suspend fun createSupportTicket(driverId: String, category: String, description: String?) {
+        client.from("support_tickets").insert(
+            buildJsonObject {
+                put("driver_id", driverId)
+                put("requester_id", driverId)
+                put("requester_role", "driver")
+                put("category", category)
+                if (!description.isNullOrBlank()) put("description", description)
+            },
+        )
+    }
+
     suspend fun fetchOrCreateReferral(userId: String): Pair<String, List<ReferralRow>> {
         val existing = client.from("driver_referrals").select(Columns.ALL) {
             filter { eq("referrer_id", userId) }

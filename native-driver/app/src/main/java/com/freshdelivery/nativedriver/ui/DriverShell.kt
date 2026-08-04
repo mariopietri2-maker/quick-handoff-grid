@@ -57,6 +57,8 @@ fun DriverShell(
     onCloseOps: () -> Unit = {},
     onRefreshOps: () -> Unit = {},
     onClaimOps: (String) -> Unit = {},
+    onOpenProfile: () -> Unit = {},
+    onSubmitSupport: (String, String) -> Unit = { _, _ -> },
 ) {
     val unread = state.notifications.count { it.read_at == null }
     val tabs = listOf(
@@ -128,6 +130,8 @@ fun DriverShell(
                     onRefresh = onRefresh,
                     onClearMessages = onClearMessages,
                     onOpenOps = onOpenOps,
+                    onOpenProfile = onOpenProfile,
+                    onSubmitSupport = onSubmitSupport,
                 )
                 DriverTab.Money -> MoneyScreen(
                     state = state,

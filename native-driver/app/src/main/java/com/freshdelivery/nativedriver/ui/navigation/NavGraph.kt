@@ -9,6 +9,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.freshdelivery.nativedriver.data.DriverTab
 import com.freshdelivery.nativedriver.ui.DriverShell
 import com.freshdelivery.nativedriver.ui.DriverViewModel
 import com.freshdelivery.nativedriver.ui.auth.LoginScreen
@@ -55,6 +56,8 @@ fun DriverNavGraph(
                 onCloseOps = viewModel::closeOps,
                 onRefreshOps = viewModel::refreshOps,
                 onClaimOps = viewModel::claimOpsOrder,
+                onOpenProfile = { viewModel.selectTab(DriverTab.Profile) },
+                onSubmitSupport = viewModel::submitSupportTicket,
             )
         }
     }
