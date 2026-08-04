@@ -1,0 +1,50 @@
+name: Apply Customer Parity Sources
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "native-customer/*.gz.b64"
+      - ".github/workflows/apply-customer-parity-sources.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode parity Kotlin sources
+        run: |
+          python3 <<'PY'
+          import gzip, base64
+          from pathlib import Path
+          mapping = {
+            "native-customer/CustomerRepository.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt",
+            "native-customer/CustomerViewModel.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt",
+            "native-customer/CustomerShell.kt.gz.b64": "native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt",
+          }
+          for src, dest in mapping.items():
+              b64 = Path(src).read_text().strip()
+              data = gzip.decompress(base64.b64decode(b64))
+              p = Path(dest)
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_bytes(data)
+              print("wrote", dest, len(data))
+              assert len(data) > 500
+              assert b"package " in data[:80]
+          PY
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/
+          if git diff --staged --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "feat(native-customer): apply Capacitor parity sources (ratings, favorites, wallet, order-again, filters)"
+          git push
