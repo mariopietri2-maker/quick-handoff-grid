@@ -1,0 +1,17 @@
+node_modules
+dist
+.git
+.github
+android
+android-driver
+native-customer
+native-driver
+mobile-signing
+plugins/*/dist
+e2e
+docs
+*.apk
+*.aab
+.env
+.env.*
+!.env.example
