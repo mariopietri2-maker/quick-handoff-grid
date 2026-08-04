@@ -51,6 +51,10 @@ fun DriverNavGraph(
                 onClearMessages = viewModel::clearMessages,
                 onUpdateSettings = viewModel::updateSettings,
                 onPreviewSound = viewModel::previewSound,
+                onOpenOps = viewModel::openOps,
+                onCloseOps = viewModel::closeOps,
+                onRefreshOps = viewModel::refreshOps,
+                onClaimOps = viewModel::claimOpsOrder,
             )
         }
     }
