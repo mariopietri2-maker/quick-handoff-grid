@@ -17,50 +17,29 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Restore + patch customer sources
+      - name: Restore CustomerShell without duplicate LoginScreen
         run: |
           set -euo pipefail
-          git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt > /tmp/shell.kt
-          git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt > /tmp/vm.kt
+          SRC=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:"$SRC" > "$SRC"
+          # Delete from "@Composable / fun LoginScreen" through the blank line before "@Composable / fun CustomerShell"
+          awk '
+            /^@Composable$/ { buf=$0; getline; if ($0 ~ /^fun LoginScreen\(/) { skip=1; next } else { if (skip) skip=0; print buf; print; next } }
+            skip && /^@Composable$/ { buf=$0; getline; if ($0 ~ /^fun CustomerShell\(/) { skip=0; print buf; print; next } else next }
+            skip { next }
+            { print }
+          ' "$SRC" > /tmp/shell_fixed.kt
+          mv /tmp/shell_fixed.kt "$SRC"
+          if grep -n "fun LoginScreen" "$SRC"; then echo "LoginScreen still present" >&2; exit 1; fi
+          grep -n "fun CustomerShell" "$SRC"
 
-          python3 << 'PY'
-          from pathlib import Path
-          shell = Path("/tmp/shell.kt").read_text()
-          start = shell.find("@Composable\nfun LoginScreen(")
-          end = shell.find("@Composable\nfun CustomerShell(")
-          assert start >= 0 and end > start, (start, end)
-          shell = shell[:start] + shell[end:]
-          while "\n\n\n\n" in shell:
-              shell = shell.replace("\n\n\n\n", "\n\n\n")
-          Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt").write_text(shell)
-
-          vm = Path("/tmp/vm.kt").read_text()
-          old = """    fun selectTab(tab: CustomerTab) {
-        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null)
-        when (tab) {
-            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
-            CustomerTab.Home -> refreshStores()
-            CustomerTab.Profile -> Unit
-        }
-    }"""
-          new = """    fun selectTab(tab: CustomerTab) {
-        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null)
-        when (tab) {
-            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
-            CustomerTab.Home, CustomerTab.Browse -> refreshStores()
-            CustomerTab.Profile -> Unit
-        }
-    }"""
-          assert old in vm, "selectTab block not found"
-          Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt").write_text(vm.replace(old, new))
-          print("patched OK")
-          PY
-
-          if grep -q "fun LoginScreen" native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt; then
-            echo "ERROR: LoginScreen still in CustomerShell" >&2
-            exit 1
-          fi
-          grep -q "CustomerTab.Home, CustomerTab.Browse" native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
+      - name: Fix selectTab exhaustive Browse
+        run: |
+          set -euo pipefail
+          SRC=native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
+          git show a6da17b9bea7d0eedf2d78e7b0da5584dea41752:"$SRC" > "$SRC"
+          sed -i 's/CustomerTab.Home -> refreshStores()/CustomerTab.Home, CustomerTab.Browse -> refreshStores()/' "$SRC"
+          grep -n "CustomerTab.Home, CustomerTab.Browse" "$SRC"
 
       - name: Commit and push
         run: |
@@ -69,9 +48,8 @@ jobs:
           git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
                   native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt
           if git diff --cached --quiet; then
-            echo "No changes to commit (already fixed?)"
+            echo "No changes"
             exit 0
           fi
-          git diff --cached --stat
           git commit -m "fix(native-customer): remove duplicate LoginScreen + exhaustive selectTab(Browse)"
           git push origin HEAD:main
