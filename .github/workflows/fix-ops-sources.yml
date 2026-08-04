@@ -14,167 +14,93 @@ jobs:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
-      - name: Restore ViewModel + HomeScreen from last good commit and wire Ops
+      - name: Restore and wire Ops
         run: |
           set -e
           git checkout c1c700835cde10b671ce8ba9900ab7efe4e0b5f8 -- \
             native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt \
             native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
-
-          python3 << 'PY'
+          python3 - <<'PY'
+          import base64
           from pathlib import Path
 
-          # --- ViewModel ---
+          OPS_METHODS = base64.b64decode(
+              "CiAgICBmdW4gb3Blbk9wcygpIHsKICAgICAgICBpZiAoIV9zdGF0ZS52YWx1ZS5pc09wcykgcmV0dXJuCiAgICAgICAgX3N0YXRlLnZhbHVlID0gX3N0YXRlLnZhbHVlLmNvcHkob3BzT3BlbiA9IHRydWUpCiAgICAgICAgcmVmcmVzaE9wcygpCiAgICB9CgogICAgZnVuIGNsb3NlT3BzKCkgewogICAgICAgIF9zdGF0ZS52YWx1ZSA9IF9zdGF0ZS52YWx1ZS5jb3B5KG9wc09wZW4gPSBmYWxzZSkKICAgIH0KCiAgICBmdW4gcmVmcmVzaE9wcygpIHsKICAgICAgICBpZiAoIV9zdGF0ZS52YWx1ZS5pc09wcykgcmV0dXJuCiAgICAgICAgdmlld01vZGVsU2NvcGUubGF1bmNoIHsKICAgICAgICAgICAgcnVuQ2F0Y2hpbmcgewogICAgICAgICAgICAgICAgdmFsIG9yZGVycyA9IG9wc0hlbHBlci5mZXRjaE9wc09wZW5PcmRlcnMoKQogICAgICAgICAgICAgICAgX3N0YXRlLnZhbHVlID0gX3N0YXRlLnZhbHVlLmNvcHkob3BzT3JkZXJzID0gb3JkZXJzKQogICAgICAgICAgICB9Lm9uRmFpbHVyZSB7IGUgLT4KICAgICAgICAgICAgICAgIF9zdGF0ZS52YWx1ZSA9IF9zdGF0ZS52YWx1ZS5jb3B5KGVycm9yID0gZnJpZW5kbHlFcnJvcihlKSkKICAgICAgICAgICAgfQogICAgICAgIH0KICAgIH0KCiAgICBmdW4gY2xhaW1PcHNPcmRlcihvcmRlcklkOiBTdHJpbmcpIHsKICAgICAgICBpZiAoIV9zdGF0ZS52YWx1ZS5pc09wcykgcmV0dXJuCiAgICAgICAgdmlld01vZGVsU2NvcGUubGF1bmNoIHsKICAgICAgICAgICAgX3N0YXRlLnZhbHVlID0gX3N0YXRlLnZhbHVlLmNvcHkoYnVzeSA9IHRydWUsIGVycm9yID0gbnVsbCkKICAgICAgICAgICAgcnVuQ2F0Y2hpbmcgeyByZXBvLmNsYWltT3JkZXIob3JkZXJJZCkgfQogICAgICAgICAgICAgICAgLm9uU3VjY2VzcyB7CiAgICAgICAgICAgICAgICAgICAgX3N0YXRlLnZhbHVlID0gX3N0YXRlLnZhbHVlLmNvcHkoYnVzeSA9IGZhbHNlLCBpbmZvID0gIk9yZGVyIGNsYWltZWQiLCBvcHNPcGVuID0gZmFsc2UpCiAgICAgICAgICAgICAgICAgICAgcmVmcmVzaFdvcmsoKQogICAgICAgICAgICAgICAgICAgIHJlZnJlc2hPcHMoKQogICAgICAgICAgICAgICAgfQogICAgICAgICAgICAgICAgLm9uRmFpbHVyZSB7IGUgLT4KICAgICAgICAgICAgICAgICAgICBfc3RhdGUudmFsdWUgPSBfc3RhdGUudmFsdWUuY29weShidXN5ID0gZmFsc2UsIGVycm9yID0gZnJpZW5kbHlFcnJvcihlKSkKICAgICAgICAgICAgICAgICAgICByZWZyZXNoT3BzKCkKICAgICAgICAgICAgICAgIH0KICAgICAgICB9CiAgICB9Cgo="
+          ).decode()
+
+          HOME_OPS = base64.b64decode(
+              "CiAgICAgICAgICAgICAgICBpZiAoc3RhdGUuaXNPcHMpIHsKICAgICAgICAgICAgICAgICAgICBSb3coCiAgICAgICAgICAgICAgICAgICAgICAgIE1vZGlmaWVyCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAuc2hhZG93KDYuZHAsIFJvdW5kZWRDb3JuZXJTaGFwZSgyMi5kcCkpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAuY2xpcChSb3VuZGVkQ29ybmVyU2hhcGUoMjIuZHApKQogICAgICAgICAgICAgICAgICAgICAgICAgICAgLmJhY2tncm91bmQoQ29sb3IoMHhGRjFDMUMxRSkpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAuY2xpY2thYmxlKG9uQ2xpY2sgPSBvbk9wZW5PcHMpCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAucGFkZGluZyhob3Jpem9udGFsID0gMTIuZHAsIHZlcnRpY2FsID0gOC5kcCksCiAgICAgICAgICAgICAgICAgICAgICAgIHZlcnRpY2FsQWxpZ25tZW50ID0gQWxpZ25tZW50LkNlbnRlclZlcnRpY2FsbHksCiAgICAgICAgICAgICAgICAgICAgKSB7CiAgICAgICAgICAgICAgICAgICAgICAgIFRleHQoCiAgICAgICAgICAgICAgICAgICAgICAgICAgICAiT3BzIiwKICAgICAgICAgICAgICAgICAgICAgICAgICAgIGNvbG9yID0gQ29sb3IuV2hpdGUsCiAgICAgICAgICAgICAgICAgICAgICAgICAgICBmb250V2VpZ2h0ID0gRm9udFdlaWdodC5TZW1pQm9sZCwKICAgICAgICAgICAgICAgICAgICAgICAgICAgIGZvbnRTaXplID0gMTMuc3AsCiAgICAgICAgICAgICAgICAgICAgICAgICkKICAgICAgICAgICAgICAgICAgICB9CiAgICAgICAgICAgICAgICB9Cgo="
+          ).decode()
+
           vm_path = Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt")
           vm = vm_path.read_text()
-
           if "OpsHelper" not in vm:
               vm = vm.replace(
                   "import com.freshdelivery.nativedriver.data.DriverRepository\n",
                   "import com.freshdelivery.nativedriver.data.DriverRepository\nimport com.freshdelivery.nativedriver.data.OpsHelper\n",
               )
-
           if "val isOps:" not in vm:
               vm = vm.replace(
                   "    val info: String? = null,\n) {",
-                  "    val info: String? = null,\n"
-                  + "    val isOps: Boolean = false,\n"
-                  + "    val opsOpen: Boolean = false,\n"
-                  + "    val opsOrders: List[OfferUi] = emptyList(),\n) {",
+                  "    val info: String? = null,\n    val isOps: Boolean = false,\n    val opsOpen: Boolean = false,\n    val opsOrders: List<" + "OfferUi> = emptyList(),\n) {",
               )
-
           if "private val opsHelper" not in vm:
               vm = vm.replace(
                   "    private val repo = DriverRepository()\n",
                   "    private val repo = DriverRepository()\n    private val opsHelper = OpsHelper()\n",
               )
-
           if "opsHelper.loadRoles" not in vm:
-              old = """            val settings = repo.platformSettings()
-            val online = dState.shift_started_at != null
-            _state.value = _state.value.copy(
-                profile = profile,
-                driverProfile = driver,
-                driverState = dState,
-                settings = settings,
-                online = online,
-            )"""
-              new = """            val settings = repo.platformSettings()
-            val roles = opsHelper.loadRoles(userId)
-            val isOps = opsHelper.isElevated(roles)
-            val online = dState.shift_started_at != null
-            _state.value = _state.value.copy(
-                profile = profile,
-                driverProfile = driver,
-                driverState = dState,
-                settings = settings,
-                online = online,
-                isOps = isOps,
-            )"""
+              old = (
+                  "            val settings = repo.platformSettings()\n"
+                  "            val online = dState.shift_started_at != null\n"
+                  "            _state.value = _state.value.copy(\n"
+                  "                profile = profile,\n"
+                  "                driverProfile = driver,\n"
+                  "                driverState = dState,\n"
+                  "                settings = settings,\n"
+                  "                online = online,\n"
+                  "            )"
+              )
+              new = (
+                  "            val settings = repo.platformSettings()\n"
+                  "            val roles = opsHelper.loadRoles(userId)\n"
+                  "            val isOps = opsHelper.isElevated(roles)\n"
+                  "            val online = dState.shift_started_at != null\n"
+                  "            _state.value = _state.value.copy(\n"
+                  "                profile = profile,\n"
+                  "                driverProfile = driver,\n"
+                  "                driverState = dState,\n"
+                  "                settings = settings,\n"
+                  "                online = online,\n"
+                  "                isOps = isOps,\n"
+                  "            )"
+              )
               if old not in vm:
                   raise SystemExit("onSignedIn block not found")
               vm = vm.replace(old, new)
-
           if "fun openOps()" not in vm:
-              ops_methods = '''
-    fun openOps() {
-        if (!_state.value.isOps) return
-        _state.value = _state.value.copy(opsOpen = true)
-        refreshOps()
-    }
-
-    fun closeOps() {
-        _state.value = _state.value.copy(opsOpen = false)
-    }
-
-    fun refreshOps() {
-        if (!_state.value.isOps) return
-        viewModelScope.launch {
-            runCatching {
-                val orders = opsHelper.fetchOpsOpenOrders()
-                _state.value = _state.value.copy(opsOrders = orders)
-            }.onFailure { e ->
-                _state.value = _state.value.copy(error = friendlyError(e))
-            }
-        }
-    }
-
-    fun claimOpsOrder(orderId: String) {
-        if (!_state.value.isOps) return
-        viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, error = null)
-            runCatching { repo.claimOrder(orderId) }
-                .onSuccess {
-                    _state.value = _state.value.copy(busy = false, info = "Παραγγελία αναλήφθηκε", opsOpen = false)
-                    refreshWork()
-                    refreshOps()
-                }
-                .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
-                    refreshOps()
-                }
-        }
-    }
-
-'''
               marker = "    fun declineOffer(offerId: String) {"
               if marker not in vm:
                   raise SystemExit("declineOffer not found")
-              vm = vm.replace(marker, ops_methods + marker)
-
+              vm = vm.replace(marker, OPS_METHODS + marker)
           vm_path.write_text(vm)
           print("ViewModel OK", "isOps" in vm, "openOps" in vm, len(vm))
 
-          # --- HomeScreen ---
           hs_path = Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt")
           hs = hs_path.read_text()
-
           if "onOpenOps" not in hs:
               hs = hs.replace(
                   "    onClearMessages: () -> Unit,\n) {",
                   "    onClearMessages: () -> Unit,\n    onOpenOps: () -> Unit = {},\n) {",
               )
-
-          if 'if (state.isOps)' not in hs:
-              old = """            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                // Driver break control only — never show \"Ops\"
-                if (state.online) {"""
-              new = """            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                if (state.isOps) {
-                    Row(
-                        Modifier
-                            .shadow(6.dp, RoundedCornerShape(22.dp))
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(Color(0xFF1C1C1E))
-                            .clickable(onClick = onOpenOps)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "Ops",
-                            color = Color.White,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                        )
-                    }
-                }
-
-                // Driver break control
-                if (state.online) {"""
-              if old not in hs:
-                  raise SystemExit("HomeScreen top chrome block not found")
-              hs = hs.replace(old, new)
-
+          if "if (state.isOps)" not in hs:
+              needle = "                // Driver break control only — never show \"Ops\"\n                if (state.online) {"
+              if needle not in hs:
+                  raise SystemExit("HomeScreen needle not found")
+              hs = hs.replace(needle, HOME_OPS + "                // Driver break control\n                if (state.online) {")
           hs_path.write_text(hs)
           print("HomeScreen OK", "onOpenOps" in hs, "state.isOps" in hs, len(hs))
           PY
-
       - name: Commit and push
         run: |
           git config user.name "github-actions[bot]"
