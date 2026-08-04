@@ -540,7 +540,7 @@ export default function DriverApp() {
 
           {!isNavActive && (
             <div className="fixed top-0 left-0 right-0 z-20 safe-area-top animate-slide-down pointer-events-none">
-              <div className="px-3 pt-3 pb-2 flex items-center justify-between gap-2">
+              <div className="px-3 pt-3 pb-2 flex items-center gap-2">
                 <div className="shrink-0 pointer-events-auto flex items-center gap-1.5">
                   <UserMenu />
                   {showMonitorLink && (
@@ -564,19 +564,20 @@ export default function DriverApp() {
                     </button>
                   )}
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    if (showJobSheet) return;
-                    setSheetCollapsed(false);
-                  }}
-                  className={`pointer-events-auto rounded-full pl-2.5 pr-3.5 py-1.5 flex items-center gap-2 min-w-0 max-w-[58%] shadow-[0_4px_16px_-4px_hsl(220,18%,14%,0.14)] border backdrop-blur-xl transition-colors ${
-                    isOnline
-                      ? 'bg-[hsl(var(--driver-accent))]/95 border-[hsl(var(--driver-accent))]/50 text-white'
-                      : 'bg-[hsl(var(--driver-surface))]/95 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
-                  }`}
-                  aria-label={isOnline ? 'Διαθέσιμος' : 'Εκτός υπηρεσίας'}
-                >
+                <div className="flex-1 flex justify-center pointer-events-none">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (showJobSheet) return;
+                      setSheetCollapsed(false);
+                    }}
+                    className={`pointer-events-auto rounded-full pl-2.5 pr-3.5 py-1.5 flex items-center gap-2 min-w-0 max-w-[58%] shadow-[0_4px_16px_-4px_hsl(220,18%,14%,0.14)] border backdrop-blur-xl transition-colors ${
+                      isOnline
+                        ? 'bg-[hsl(var(--driver-accent))]/95 border-[hsl(var(--driver-accent))]/50 text-white'
+                        : 'bg-[hsl(var(--driver-surface))]/95 border-[hsl(var(--driver-border))] text-[hsl(var(--driver-text))]'
+                    }`}
+                    aria-label={isOnline ? 'Διαθέσιμος' : 'Εκτός υπηρεσίας'}
+                  >
                   <span
                     className={`h-2 w-2 rounded-full shrink-0 ${
                       isOnline
@@ -595,6 +596,7 @@ export default function DriverApp() {
                     </span>
                   )}
                 </button>
+                </div>
                 <div className="shrink-0 pointer-events-auto flex items-center gap-2">
                   <DriverSupportButton orderId={activeDelivery?.id} open={supportOpen} onOpenChange={setSupportOpen} />
                 </div>
