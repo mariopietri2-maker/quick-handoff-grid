@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   LogOut, User, Home, UserCircle, Settings, Wallet,
-  Users, FileText, Coffee, Pause, PackageX,
+  Users, FileText, PackageX,
   Shield, Bike, ShoppingCart, Repeat, RefreshCw, Mail, Store, Headphones, MapPin,
 } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
@@ -27,13 +27,11 @@ export function UserMenu() {
   const isDriver = profile?.role === 'driver' || profile?.role === 'm' || isM;
   const isStore = profile?.role === 'store'; 
   const [settingsOpen, setSettingsOpen] = useState(false);
-  const [breakOpen, setBreakOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);
   const [releasing, setReleasing] = useState(false);
   const [activeOrder, setActiveOrder] = useState<{ id: string; status: string } | null>(null);
-  const { state: driverState, startBreak, endBreak } = useDriverState();
-  const onBreak = !!driverState?.on_break;
+  const { state: driverState } = useDriverState();
 
   // Track driver's active (releasable) order so we can offer "Unassign" under Break.
   // Releasable = assigned to me and not yet picked up / delivered / canceled.
@@ -65,31 +63,10 @@ export function UserMenu() {
     const { error } = await (supabase as any).rpc('driver_release_order', { p_order_id: activeOrder.id });
     setReleasing(false);
     if (error) { toast.error(error.message || 'Αποτυχία απόθεσης παραγγελίας'); return; }
-    toast.success('Η παραγγελία επανεκχωρείται σε άλλον οδηγό');
+    toast.success('Η παραγγελία επιστρέφεται σε άλλον οδηγό');
     setReleaseOpen(false);
     setActiveOrder(null);
   };
-
-  // Live tick so the countdown updates while menu is open
-  const [, setTick] = useState(0);
-  useEffect(() => {
-    if (!onBreak) return;
-    const id = setInterval(() => setTick(t => t + 1), 1000);
-    return () => clearInterval(id);
-  }, [onBreak]);
-
-  // Auto-end break when timer expires
-  useEffect(() => {
-    if (onBreak && driverState?.break_until && new Date(driverState.break_until) <= new Date()) {
-      endBreak();
-    }
-  });
-
-  const breakRemaining = driverState?.break_until
-    ? Math.max(0, Math.floor((new Date(driverState.break_until).getTime() - Date.now()) / 1000))
-    : 0;
-  const mm = Math.floor(breakRemaining / 60).toString().padStart(2, '0');
-  const ss = (breakRemaining % 60).toString().padStart(2, '0');
 
   const itemClassName =
     'min-h-11 rounded-xl px-3 py-3 text-sm font-medium text-foreground cursor-pointer transition-colors focus:bg-accent focus:text-accent-foreground data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground';
@@ -173,24 +150,6 @@ export function UserMenu() {
             <>
               {/* SHIFT */}
               <DropdownMenuLabel className={labelClassName}>Βάρδια</DropdownMenuLabel>
-              {onBreak ? (
-                <DropdownMenuItem
-                  className={`${itemClassName} bg-warning/10 text-warning focus:bg-warning/15 focus:text-warning data-[highlighted]:bg-warning/15 data-[highlighted]:text-warning`}
-                  onSelect={(e) => { e.preventDefault(); endBreak(); setMenuOpen(false); }}
-                >
-                  <Pause className="mr-2 h-4 w-4 shrink-0" />
-                  <span className="flex-1">Λήξη Διαλείμματος</span>
-                  <span className="font-heading text-xs font-bold tabular-nums">{mm}:{ss}</span>
-                </DropdownMenuItem>
-              ) : (
-                <DropdownMenuItem
-                  className={itemClassName}
-                  onSelect={(e) => { e.preventDefault(); setMenuOpen(false); setTimeout(() => setBreakOpen(true), 50); }}
-                >
-                  <Coffee className="mr-2 h-4 w-4 shrink-0" />
-                  Διάλειμμα
-                </DropdownMenuItem>
-              )}
               {activeOrder && (
                 <DropdownMenuItem
                   className={`${itemClassName} text-destructive focus:bg-destructive/10 focus:text-destructive data-[highlighted]:bg-destructive/10 data-[highlighted]:text-destructive`}
@@ -359,23 +318,6 @@ export function UserMenu() {
         <>
           {/* Sound settings merged into DriverAppSettings */}
           <DriverAppSettings open={settingsOpen} onOpenChange={setSettingsOpen} />
-          <Dialog open={breakOpen} onOpenChange={setBreakOpen}>
-            <DialogContent className="max-w-xs">
-              <DialogHeader>
-                <DialogTitle>Επιλέξτε διάρκεια διαλείμματος</DialogTitle>
-              </DialogHeader>
-              <div className="grid grid-cols-2 gap-2">
-                {[15, 30, 45, 60].map(m => (
-                  <Button key={m} onClick={() => { startBreak(m); setBreakOpen(false); }} variant="outline" className="h-12">
-                    {m} λεπτά
-                  </Button>
-                ))}
-              </div>
-              <p className="text-xs text-muted-foreground text-center">
-                Δεν θα λαμβάνεις νέες παραγγελίες κατά τη διάρκεια του διαλείμματος.
-              </p>
-            </DialogContent>
-          </Dialog>
 
           <Dialog open={releaseOpen} onOpenChange={setReleaseOpen}>
             <DialogContent className="max-w-xs">
