@@ -9,7 +9,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import com.mapbox.geojson.Point
@@ -113,7 +116,22 @@ fun DriverMapView(
         }
     }
 
-    LaunchedEffect(lat, lng, markers.size, userLat, userLng, destination, route.size) {
+    // Snap the camera to the driver's live position once, on the first GPS fix.
+    // GPS ticks afterwards never move the camera so the driver can pan freely.
+    var initialCentered by remember { mutableStateOf(false) }
+    LaunchedEffect(userLat, userLng) {
+        if (!initialCentered && userLat != null && userLng != null) {
+            initialCentered = true
+            viewportState.setCameraOptions {
+                center(Point.fromLngLat(userLng, userLat))
+                zoom(14.5)
+            }
+        }
+    }
+
+    // Re-center only on trip context changes (offer/trip/destination/route),
+    // never on raw GPS updates.
+    LaunchedEffect(markers.size, destination, route.size) {
         when {
             destination != null -> {
                 viewportState.setCameraOptions {
@@ -128,25 +146,15 @@ fun DriverMapView(
                     zoom(13.2)
                 }
             }
-            userLat != null && userLng != null -> {
-                viewportState.setCameraOptions {
-                    center(Point.fromLngLat(userLng, userLat))
-                    zoom(14.5)
-                }
-            }
-            else -> {
-                viewportState.setCameraOptions {
-                    center(Point.fromLngLat(lng, lat))
-                    zoom(13.5)
-                }
-            }
         }
     }
 
     val driverIcon = remember { createDriverArrowBitmap() }
     val destIcon = remember { createDestinationPinBitmap() }
 
-    val annotations = remember(markers, userLat, userLng, userBearing, destination) {
+    // Static markers + destination only rebuild when their content changes,
+    // not on every location tick.
+    val staticAnnotations = remember(markers, destination) {
         buildList {
             markers.forEach { m ->
                 add(
@@ -175,16 +183,21 @@ fun DriverMapView(
                         .withTextHaloWidth(1.6),
                 )
             }
-            if (userLat != null && userLng != null) {
-                add(
-                    PointAnnotationOptions()
-                        .withPoint(Point.fromLngLat(userLng, userLat))
-                        .withIconImage(driverIcon)
-                        .withIconSize(1.4)
-                        .withIconRotate((userBearing ?: 0f).toDouble()),
-                )
-            }
         }
+    }
+
+    // The driver's live arrow is isolated so it can move every GPS tick
+    // without rebuilding the static markers.
+    val driverAnnotations = if (userLat != null && userLng != null) {
+        listOf(
+            PointAnnotationOptions()
+                .withPoint(Point.fromLngLat(userLng, userLat))
+                .withIconImage(driverIcon)
+                .withIconSize(1.4)
+                .withIconRotate((userBearing ?: 0f).toDouble()),
+        )
+    } else {
+        emptyList()
     }
 
     Box(modifier = modifier.background(Color(0xFFE8EAED))) {
@@ -197,8 +210,11 @@ fun DriverMapView(
             logo = {},
             attribution = {},
         ) {
-            if (annotations.isNotEmpty()) {
-                PointAnnotationGroup(annotations = annotations)
+            if (staticAnnotations.isNotEmpty()) {
+                PointAnnotationGroup(annotations = staticAnnotations)
+            }
+            if (driverAnnotations.isNotEmpty()) {
+                PointAnnotationGroup(annotations = driverAnnotations)
             }
             if (route.isNotEmpty()) {
                 PolylineAnnotationGroup(
