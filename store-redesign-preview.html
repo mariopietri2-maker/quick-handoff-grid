@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fresh Delivery — Store UI Redesign Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+  :root {
+    --bg: #f6f7f9;
+    --surface: #ffffff;
+    --surface-2: #f1f3f6;
+    --border: #e6e9ef;
+    --text: #0f172a;
+    --text-2: #64748b;
+    --text-3: #94a3b8;
+    --primary: #10b981;
+    --primary-700: #047857;
+    --primary-soft: #e7f8f1;
+    --amber: #f59e0b;
+    --amber-soft: #fef3e2;
+    --rose: #f43f5e;
+    --rose-soft: #ffe9ee;
+    --sky: #0ea5e9;
+    --sky-soft: #e6f5fe;
+    --indigo: #6366f1;
+    --indigo-soft: #eef0ff;
+    --shadow: 0 1px 2px rgba(15,23,42,.05), 0 8px 24px -12px rgba(15,23,42,.12);
+    --shadow-lg: 0 8px 20px rgba(15,23,42,.08), 0 24px 60px -24px rgba(15,23,42,.22);
+    --nav-h: 64px;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Inter', system-ui, sans-serif; background: var(--bg); color: var(--text); font-size: 14px; -webkit-font-smoothing: antialiased; }
+  ::-webkit-scrollbar { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-thumb { background: #d3d8e0; border-radius: 8px; }
+
+  .topnav {
+    position: sticky; top: 0; z-index: 40;
+    height: var(--nav-h);
+    background: rgba(255,255,255,.9); backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 14px;
+    padding: 0 20px;
+  }
+  .store-ident { display: flex; align-items: center; gap: 12px; min-width: 0; }
+  .s-logo { width: 40px; height: 40px; border-radius: 12px; flex-shrink: 0; background: linear-gradient(135deg,#fb923c,#f97316); display: grid; place-items: center; color: #fff; box-shadow: 0 6px 14px -6px rgba(249,115,22,.6); }
+  .s-logo svg { width: 21px; height: 21px; stroke-width: 2; }
+  .store-name { font-size: 15px; font-weight: 800; letter-spacing: -.01em; line-height: 1.15; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .store-sub { font-size: 10px; color: var(--text-3); font-weight: 600; }
+
+  .online-pill { display: inline-flex; align-items: center; gap: 7px; font-size: 11px; font-weight: 700; color: var(--primary-700); background: var(--primary-soft); border-radius: 20px; padding: 6px 12px; flex-shrink: 0; }
+  .online-pill .dot { width: 7px; height: 7px; border-radius: 50%; background: var(--primary); animation: pulse 1.6s infinite; }
+  @keyframes pulse { 0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,.5);} 50%{box-shadow:0 0 0 6px rgba(16,185,129,0);} }
+  .nav-sep { flex: 1; }
+  .pill-count { font-size: 11px; font-weight: 800; color: #fff; background: linear-gradient(135deg,#f97316,#ef4444); border-radius: 20px; padding: 4px 11px; display: inline-flex; align-items: center; gap: 6px; box-shadow: 0 6px 14px -6px rgba(239,68,68,.5); flex-shrink: 0; }
+  .icon-btn { width: 38px; height: 38px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface); display: grid; place-items: center; cursor: pointer; color: var(--text-2); position: relative; transition: all .15s; flex-shrink: 0; }
+  .icon-btn:hover { color: var(--text); }
+  .icon-btn svg { width: 17px; height: 17px; stroke-width: 2; }
+  .avatar { width: 36px; height: 36px; border-radius: 50%; background: linear-gradient(135deg,#818cf8,#6366f1); color: #fff; font-size: 11px; font-weight: 700; display: grid; place-items: center; flex-shrink: 0; }
+
+  .tabbar { position: sticky; top: var(--nav-h); z-index: 30; background: rgba(255,255,255,.92); backdrop-filter: blur(12px); border-bottom: 1px solid var(--border); display: flex; gap: 6px; padding: 10px 20px; overflow-x: auto; scrollbar-width: thin; }
+  .tab { display: inline-flex; align-items: center; gap: 7px; white-space: nowrap; font-size: 12.5px; font-weight: 600; color: var(--text-2); border: 1px solid transparent; background: transparent; padding: 8px 13px; border-radius: 11px; cursor: pointer; transition: all .15s; }
+  .tab svg { width: 15px; height: 15px; stroke-width: 2; }
+  .tab:hover { background: var(--surface-2); }
+  .tab.active { background: var(--primary-soft); color: var(--primary-700); border-color: var(--primary); font-weight: 700; }
+  .tab .cnt { background: #fff; border-radius: 20px; padding: 0 7px; font-size: 10px; font-weight: 700; border: 1px solid var(--border); }
+  .tab.active .cnt { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+  .content { max-width: 1560px; margin: 0 auto; padding: 20px 20px 48px; }
+
+  .banner { display: flex; align-items: center; gap: 12px; padding: 12px 16px; margin-bottom: 18px; border-radius: 14px; background: var(--sky-soft); border: 1px solid rgba(14,165,233,.25); }
+  .banner svg { width: 19px; height: 19px; color: var(--sky); flex-shrink: 0; stroke-width: 2; }
+  .banner b { font-size: 13px; display: block; }
+  .banner p { font-size: 11.5px; color: var(--text-2); }
+  .banner .btn { margin-left: auto; background: var(--sky); color: #fff; border: none; font: inherit; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 9px; cursor: pointer; flex-shrink: 0; }
+
+  .strip { display: grid; grid-template-columns: repeat(4,1fr); gap: 14px; margin-bottom: 18px; }
+  @media (max-width: 1100px){ .strip { grid-template-columns: repeat(2,1fr); } }
+  @media (max-width: 620px){ .strip { grid-template-columns: 1fr; } }
+  .big-stat { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); padding: 14px 16px; display: flex; align-items: center; gap: 13px; }
+  .big-stat.sun { border-left: 3px solid var(--amber); }
+  .big-stat .ic { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center; flex-shrink: 0; }
+  .big-stat .ic svg { width: 19px; height: 19px; stroke-width: 2.2; }
+  .big-stat .t b { font-size: 19px; font-weight: 800; letter-spacing: -.02em; display: block; line-height: 1.1; }
+  .big-stat .t span { font-size: 10.5px; color: var(--text-3); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+
+  .board { display: grid; grid-template-columns: repeat(3,1fr); gap: 16px; }
+  @media (max-width: 1000px){ .board { grid-template-columns: 1fr; } }
+  .lane { border-radius: 16px; border: 1px solid var(--border); display: flex; flex-direction: column; min-height: 0; }
+  .lane-head { display: flex; align-items: center; gap: 9px; padding: 13px 15px; font-size: 13px; font-weight: 800; border-bottom: 1px solid var(--border); border-radius: 16px 16px 0 0; background: rgba(255,255,255,.55); }
+  .lane-head .bar { width: 4px; height: 18px; border-radius: 3px; }
+  .lane-head .cnt { margin-left: auto; font-size: 12px; background: var(--surface); border: 1px solid var(--border); border-radius: 20px; min-width: 24px; height: 24px; display: grid; place-items: center; padding: 0 8px; font-weight: 800; }
+  .lane-head .cnt.warn { background: var(--amber-soft); color: #b45309; border-color: rgba(245,158,11,.4); }
+  .lane-head .cnt.hot { background: var(--rose-soft); color: var(--rose); border-color: rgba(244,63,94,.4); }
+  .lane-body { padding: 12px; display: flex; flex-direction: column; gap: 10px; max-height: 720px; overflow: auto; }
+
+  .ticket { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 1px 2px rgba(15,23,42,.04); cursor: pointer; transition: box-shadow .15s, transform .1s; }
+  .ticket:hover { box-shadow: var(--shadow-lg); transform: translateY(-1px); }
+  .ticket.new { border-left: 3px solid var(--primary); background: linear-gradient(0deg,#f7fdfb,#fff); }
+  .ticket.kitchen { border-left: 3px solid var(--amber); }
+  .ticket.ready { border-left: 3px solid var(--sky); }
+  .ticket.urgent { box-shadow: 0 0 0 2px rgba(244,63,94,.35); }
+
+  .tk-top { display: flex; align-items: center; gap: 8px; padding: 12px 13px 7px; }
+  .tk-id { font-family: ui-monospace, SFMono-Regular, monospace; font-size: 14px; font-weight: 800; }
+  .tk-age { font-size: 10.5px; font-weight: 700; color: var(--text-3); background: var(--surface-2); border-radius: 6px; padding: 2px 6px; }
+  .tk-age.late { color: var(--rose); background: var(--rose-soft); }
+  .tk-src { font-size: 9px; font-weight: 800; text-transform: uppercase; letter-spacing: .06em; color: var(--text-2); background: var(--surface-2); border-radius: 5px; padding: 2px 6px; }
+  .tk-amt { margin-left: auto; font-size: 13px; font-weight: 800; }
+  .tk-items { padding: 0 13px; font-size: 12px; color: var(--text-2); line-height: 1.5; }
+  .tk-items b { color: var(--text); font-weight: 600; }
+  .tk-note { margin: 7px 13px; font-size: 11.5px; color: var(--text-2); background: var(--amber-soft); border-radius: 8px; padding: 6px 9px; }
+  .tk-driver { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; color: var(--sky); background: var(--sky-soft); border-radius: 6px; padding: 2px 7px; margin: 0 13px 5px; }
+  .tk-driver svg { width: 11px; height: 11px; }
+
+  .tk-btn { margin: auto 13px 12px; display: flex; gap: 8px; }
+  .act { flex: 1; border: none; border-radius: 10px; padding: 11px; font: inherit; font-size: 12.5px; font-weight: 800; cursor: pointer; transition: all .15s; display: inline-flex; align-items: center; justify-content: center; gap: 6px; }
+  .act.accept { background: linear-gradient(135deg,#34d399,#059669); color: #fff; box-shadow: 0 6px 14px -6px rgba(5,150,105,.55); }
+  .act.accept:hover { filter: brightness(1.06); }
+  .act.ready2 { background: linear-gradient(135deg,#38bdf8,#0284c7); color: #fff; box-shadow: 0 6px 14px -6px rgba(2,132,199,.5); }
+  .act.ready2:hover { filter: brightness(1.06); }
+  .act.print2 { flex: 0 0 auto; width: 42px; background: var(--surface-2); color: var(--text-2); border: 1px solid var(--border); }
+
+  .col-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-top: 24px; }
+  @media (max-width: 1000px){ .col-2 { grid-template-columns: 1fr; } }
+  .panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; }
+  .panel-head { display: flex; align-items: center; gap: 10px; padding: 14px 18px; border-bottom: 1px solid var(--border); }
+  .panel-head svg { width: 16px; height: 16px; color: var(--text-3); }
+  .panel-head h4 { font-size: 13.5px; font-weight: 800; }
+  .panel-head .spacer { flex: 1; }
+  .mini-btn2 { border: 1px solid var(--border); background: var(--surface); border-radius: 9px; font: inherit; font-size: 11.5px; font-weight: 700; color: var(--text-2); padding: 7px 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+  .mini-btn2 svg { width: 14px; height: 14px; }
+  .mini2 { width: 31px; height: 31px; padding: 0; display: grid; place-items: center; }
+
+  .row { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-bottom: 1px solid var(--surface-2); font-size: 12.5px; }
+  .row:last-child { border-bottom: none; }
+  .m-id { font-family: ui-monospace, monospace; font-weight: 800; font-size: 11.5px; width: 64px; flex-shrink: 0; }
+  .st { display: inline-flex; align-items: center; gap: 6px; font-size: 10.5px; font-weight: 700; border-radius: 20px; padding: 3px 9px; flex-shrink: 0; }
+  .st::before { content:''; width:6px; height:6px; border-radius:50%; background:currentColor; }
+  .st.green { color: var(--primary-700); background: var(--primary-soft); }
+  .st.sky { color:#0369a1; background: var(--sky-soft); }
+  .st.amber { color:#b45309; background: var(--amber-soft); }
+  .st.gray { color: var(--text-3); background: var(--surface-2); }
+  .amt { margin-left: auto; font-weight: 800; }
+  .dim { color: var(--text-2); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+  .footer-note { margin-top: 32px; text-align: center; font-size: 11px; color: var(--text-3); }
+  .fade-up { animation: fadeUp .5s ease both; }
+  @keyframes fadeUp { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+</style>
+</head>
+<body>
+
+  <!-- ══════════ TOP NAV ══════════ -->
+  <header class="topnav">
+    <div class="store-ident">
+      <div class="s-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+      </div>
+      <div style="min-width:0">
+        <div class="store-name">Πιτσαρία Μάριος</div>
+        <div class="store-sub">Κέντρο · Ιωάννινα · #ST-1024</div>
+      </div>
+    </div>
+
+    <span class="online-pill"><span class="dot"></span> Ανοιχτό</span>
+
+    <div class="nav-sep"></div>
+
+    <span class="pill-count">4 νέες</span>
+
+    <div class="icon-btn">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+    </div>
+    <div class="avatar">ΜΠ</div>
+  </header>
+
+  <!-- ══════════ TAB BAR ══════════ -->
+  <nav class="tabbar">
+    <button class="tab active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/></svg>Παραγγελίες<span class="cnt">7</span></button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="6" rx="2"/><path d="M5 9v9a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V9"/><path d="M12 13v4"/></svg>Custom Order</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M3 2v7c0 1.1.9 2 2 2h4a2 2 0 0 0 2-2V2"/><path d="M7 2v20"/><path d="M21 15V2a5 5 0 0 0-5 5v6c0 1.1.9 2 2 2h3zm0 0v7"/></svg>Μενού</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M16 11V5a3 3 0 0 0-6 0v6"/><path d="M14 11V6a2 2 0 0 0-4 0v5"/><rect x="12" y="11" width="10" height="7" rx="2"/><path d="M3 11h9v8H6a3 3 0 0 1-3-3v-5z"/></svg>Απόθεμα<span class="cnt">low</span></button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Ωράριο</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>Στατιστικά</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>Πορτοφόλι</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.1 5.4L20 9l-4 4 1 6-5-3-5 3 1-6-4-4 5.9-1.6z"/></svg>Προσφορές</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/></svg>Auto</button>
+    <button class="tab"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/></svg>Ρυθμίσεις</button>
+  </nav>
+
+  <div class="content">
+
+    <!-- Notification banner -->
+    <div class="banner">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>
+      <div><b>Ενεργοποίηση ειδοποιήσεων</b><p>Ηχητική ειδοποίηση για κάθε νέα παραγγελία</p></div>
+      <button class="btn">Ενεργοποίηση</button>
+    </div>
+
+    <!-- Overview strip -->
+    <div class="strip fade-up">
+      <div class="big-stat sun">
+        <div class="ic" style="background:var(--amber-soft);color:#b45309"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg></div>
+        <div class="t"><b>€384,20</b><span>Έσοδα Σήμερα</span></div>
+      </div>
+      <div class="big-stat">
+        <div class="ic" style="background:var(--primary-soft);color:var(--primary-700)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+        <div class="t"><b>26</b><span>Παραγγελίες Σήμερα</span></div>
+      </div>
+      <div class="big-stat">
+        <div class="ic" style="background:var(--sky-soft);color:var(--sky)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg></div>
+        <div class="t"><b>€1.284</b><span>Σε Πορτοφόλι</span></div>
+      </div>
+      <div class="big-stat">
+        <div class="ic" style="background:var(--indigo-soft);color:var(--indigo)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6H6a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h6"/><path d="M18 16L22 20M22 16l-4 4"/></svg></div>
+        <div class="t"><b>94%</b><span>On-time Παράδοση</span></div>
+      </div>
+    </div>
+
+    <!-- ══════════ KITCHEN BOARD ══════════ -->
+    <div class="board fade-up">
+
+      <!-- NEW -->
+      <section class="lane">
+        <div class="lane-head"><span class="bar" style="background:var(--primary)"></span>Νέες<span class="cnt">3</span></div>
+        <div class="lane-body">
+          <div class="ticket new urgent">
+            <div class="tk-top"><span class="tk-id">#2481</span><span class="tk-src">eFood</span><span class="tk-age late">12λ</span><span class="tk-amt">€23,40</span></div>
+            <div class="tk-items"><b>2×</b> Μαργαρίτα · <b>1×</b> Cola · <b>1×</b> Τυροπιτάκια</div>
+            <div class="tk-note">📝 Χωρίς κρεμμύδι, 2 εκ. μηρίτ</div>
+            <div class="tk-btn">
+              <button class="act accept">✓ Αποδοχή · 20λ</button>
+              <button class="act print2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
+          </div>
+          <div class="ticket new">
+            <div class="tk-top"><span class="tk-id">#2480</span><span class="tk-src">Box</span><span class="tk-age">3λ</span><span class="tk-amt">€15,80</span></div>
+            <div class="tk-items"><b>1×</b> Ριδακ-Τίρα · <b>2×</b> Cola</div>
+            <div class="tk-btn">
+              <button class="act accept">✓ Αποδοχή · 15λ</button>
+              <button class="act print2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
+          </div>
+          <div class="ticket new">
+            <div class="tk-top"><span class="tk-id">#2479</span><span class="tk-age">1λ</span><span class="tk-amt">€31,20</span></div>
+            <div class="tk-items"><b>3×</b> Burger προσφ. · <b>1×</b> Milkshake</div>
+            <div class="tk-btn">
+              <button class="act accept">✓ Αποδοχή · 30λ</button>
+              <button class="act print2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- KITCHEN -->
+      <section class="lane">
+        <div class="lane-head"><span class="bar" style="background:var(--amber)"></span>Κουζίνα<span class="cnt warn">4</span></div>
+        <div class="lane-body">
+          <div class="ticket kitchen">
+            <div class="tk-top"><span class="tk-id">#2478</span><span class="tk-age late">28λ</span><span class="tk-amt">€18,60</span></div>
+            <div class="tk-items"><b>2×</b> Γύρος · <b>1×</b> Σαλάτα</div>
+            <div class="tk-driver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M20 21v-2a4 4 0 0 0-3-3.87"/></svg>DRV-204</div>
+            <div class="tk-btn">
+              <button class="act ready2">✓ Έτοιμη</button>
+              <button class="act print2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
+          </div>
+          <div class="ticket kitchen">
+            <div class="tk-top"><span class="tk-id">#2477</span><span class="tk-age">12λ</span><span class="tk-amt">€12,90</span></div>
+            <div class="tk-items"><b>1×</b> Πίτσα μηρί</div>
+            <div class="tk-note">📝 Ελάχ. ψημένα</div>
+            <div class="tk-btn">
+              <button class="act ready2">✓ Έτοιμη</button>
+              <button class="act print2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
+          </div>
+          <div class="ticket kitchen">
+            <div class="tk-top"><span class="tk-id">#2476</span><span class="tk-age">5λ</span><span class="tk-amt">€27,30</span></div>
+            <div class="tk-items"><b>3×</b> Σουβλάκι mix</div>
+            <div class="tk-btn">
+              <button class="act ready2">✓ Έτοιμη</button>
+              <button class="act print2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
+          </div>
+          <div class="ticket kitchen">
+            <div class="tk-top"><span class="tk-id">#2475</span><span class="tk-age late">40λ</span><span class="tk-amt">€22,10</span></div>
+            <div class="tk-items"><b>2×</b> Burger Double</div>
+            <div class="tk-note">⚠ καθυστέρηση</div>
+            <div class="tk-btn">
+              <button class="act ready2">✓ Έτοιμη</button>
+              <button class="act print2"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect x="6" y="14" width="12" height="8"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- READY -->
+      <section class="lane">
+        <div class="lane-head"><span class="bar" style="background:var(--sky)"></span>Έτοιμες<span class="cnt">2</span></div>
+        <div class="lane-body">
+          <div class="ticket ready urgent">
+            <div class="tk-top"><span class="tk-id">#2474</span><span class="tk-age late">18λ</span><span class="tk-amt">€33,80</span></div>
+            <div class="tk-items"><b>2×</b> Πίτσα Μαργαρίτα XL</div>
+            <div class="tk-driver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M20 21v-2a4 4 0 0 0-3-3.87"/></svg>DRV-107</div>
+            <div class="tk-btn"><button class="act ready2" style="box-shadow:none;opacity:.95;pointer-events:none">Περιμένει οδηγό</button></div>
+          </div>
+          <div class="ticket ready">
+            <div class="tk-top"><span class="tk-id">#2473</span><span class="tk-age">6λ</span><span class="tk-amt">€19,40</span></div>
+            <div class="tk-items"><b>1×</b> Burger Combo</div>
+            <div class="tk-driver"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="7" r="4"/><path d="M2 21v-2a4 4 0 0 1 4-4h6a4 4 0 0 1 4 4v2"/><path d="M16 3.13a4 4 0 0 1 0 7.75M20 21v-2a4 4 0 0 0-3-3.87"/></svg>DRV-187</div>
+            <div class="tk-btn"><button class="act ready2">✓ Παρεδόθη</button></div>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <!-- ══════════ BOTTOM ROW ══════════ -->
+    <div class="col-2 fade-up">
+
+      <div class="panel">
+        <div class="panel-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2L3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>
+          <h4>Σύνοψη Παραγγελιών</h4><span class="spacer"></span>
+          <button class="mini-btn2">Προβολή όλων</button>
+        </div>
+        <div>
+          <div class="row"><span class="m-id">#2481</span><span class="st amber">Νέα</span><span class="dim">2× Μαργα · 1× Τυροπιτάκια</span><span class="amt">€23,40</span></div>
+          <div class="row"><span class="m-id">#2478</span><span class="st amber">Κουζίνα</span><span class="dim">2× Γύρος</span><span class="amt">€18,60</span></div>
+          <div class="row"><span class="m-id">#2474</span><span class="st sky">Έτοιμη</span><span class="dim">2× Μαργαρίτα XL</span><span class="amt">€33,80</span></div>
+          <div class="row"><span class="m-id">#2472</span><span class="st green">Παραδόθηκε</span><span class="dim">1× Burger Combo</span><span class="amt">€19,40</span></div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="panel-head">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/></svg>
+          <h4>Σήμερα</h4><span class="spacer"></span>
+          <span class="st green">26 παραγγελίες</span>
+        </div>
+        <div>
+          <div class="row"><span class="dim">Έσοδα</span><span class="amt">€384,20</span></div>
+          <div class="row"><span class="dim">Μέσος χρόνος ετοιμασίας</span><span class="amt">24λ</span></div>
+          <div class="row"><span class="dim">Παραγγελίες εκτός πλατφόρμας (eFood/Wolt)</span><span class="amt">9</span></div>
+          <div class="row"><span class="dim">Ακυρώσεις</span><span class="amt" style="color:var(--rose)">2</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="footer-note fade-up">
+      Fresh Delivery · Store UI Redesign preview — στατική απεικόνιση, όχι συνδεδεμένη με το σύστημα
+    </div>
+
+  </div>
+</body>
+</html>
