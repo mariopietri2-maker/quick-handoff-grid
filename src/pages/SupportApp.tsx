@@ -25,6 +25,7 @@ import { Users, Mail } from 'lucide-react';
 import { type TicketPriority } from '@/hooks/useSlaSettings';
 import { toast } from 'sonner';
 import { format, differenceInMinutes } from 'date-fns';
+import { cn } from '@/lib/utils';
 
 const statusConfig: Record<string, { label: string; color: string }> = {
   open: { label: 'Ανοιχτό', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
@@ -197,7 +198,7 @@ export default function SupportApp() {
 
     return (
       <div className="support-shell">
-        <header className="support-header px-4 h-14 flex items-center gap-3">
+        <header className="support-header sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur-md px-4 h-14 flex items-center gap-3 shadow-[0_1px_0_0_hsl(var(--border)/0.6)]">
           <Button variant="ghost" size="icon" onClick={() => setActiveTicket(null)}>
             <ArrowLeft className="h-5 w-5" />
           </Button>
@@ -333,51 +334,58 @@ export default function SupportApp() {
   // List view
   return (
     <div className="support-shell">
-      <header className="support-header px-4 h-14 flex items-center justify-between gap-3">
-        <div className="flex items-center gap-2">
-          <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center">
-            <Headphones className="h-5 w-5 text-primary" />
+      <header className="support-header sticky top-0 z-30 border-b border-border bg-card/90 backdrop-blur-md px-4 h-14 flex items-center justify-between gap-3 shadow-[0_1px_0_0_hsl(var(--border)/0.6)]">
+        <div className="flex items-center gap-2.5">
+          <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shadow-primary/40">
+            <Headphones className="h-5 w-5 text-primary-foreground" />
           </div>
           <div>
             <p className="font-heading font-bold leading-tight">Support</p>
             <p className="text-[10px] text-muted-foreground leading-tight">{profile?.full_name ?? 'Agent'}</p>
           </div>
         </div>
-        <div className="flex items-center gap-1 bg-muted/50 rounded-lg p-0.5">
+        <div className="flex items-center gap-1 rounded-xl bg-muted/60 p-0.5">
           <button
             onClick={() => setView('tickets')}
-            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-              view === 'tickets' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'tickets' ? 'bg-card shadow-sm text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <MessageSquare className="h-3.5 w-3.5" /> Tickets
           </button>
           <button
             onClick={() => setView('messages')}
-            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-              view === 'messages' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'messages' ? 'bg-card shadow-sm text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Mail className="h-3.5 w-3.5" /> Μηνύματα
           </button>
           <button
             onClick={() => setView('team')}
-            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-              view === 'team' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'team' ? 'bg-card shadow-sm text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Users className="h-3.5 w-3.5" /> Ομάδα
           </button>
           <button
             onClick={() => setView('dcc')}
-            className={`text-xs px-3 py-1.5 rounded-md font-medium transition-colors flex items-center gap-1.5 ${
-              view === 'dcc' ? 'bg-card shadow-sm text-foreground' : 'text-muted-foreground hover:text-foreground'
+            className={`text-xs px-3 py-1.5 rounded-lg font-medium transition-colors flex items-center gap-1.5 ${
+              view === 'dcc' ? 'bg-card shadow-sm text-foreground font-semibold' : 'text-muted-foreground hover:text-foreground'
             }`}
           >
             <Zap className="h-3.5 w-3.5" /> Control
           </button>
         </div>
-        <div className="flex items-center gap-1">
+        <div className="flex items-center gap-1.5">
+          <Badge variant="outline" className="hidden md:inline-flex gap-1.5 text-[10px] font-bold uppercase tracking-wider text-success border-success/30">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-success animate-ping opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-success" />
+            </span>
+            Live
+          </Badge>
           <Button variant="ghost" size="icon" onClick={() => navigate('/profile')} title="Το προφίλ μου">
             <Headphones className="h-4 w-4" />
           </Button>
@@ -407,41 +415,42 @@ export default function SupportApp() {
       <div className="p-4 space-y-4 max-w-3xl mx-auto">
         <AnnouncementsBanner audience="support" />
         <div className="grid grid-cols-3 gap-2">
-          <button
-            onClick={() => setStatusFilter('open')}
-            className={`rounded-xl p-3 border text-left transition-colors ${
-              statusFilter === 'open' ? 'bg-red-500/10 border-red-500/40' : 'bg-card hover:bg-muted/40'
-            }`}
-          >
-            <AlertTriangle className="h-5 w-5 text-red-500 mb-1" />
-            <p className="text-xs text-muted-foreground">Ανοιχτά</p>
-            <p className="font-heading font-bold text-xl">{counts.open}</p>
-          </button>
-          <button
-            onClick={() => setStatusFilter('in_progress')}
-            className={`rounded-xl p-3 border text-left transition-colors ${
-              statusFilter === 'in_progress' ? 'bg-yellow-500/10 border-yellow-500/40' : 'bg-card hover:bg-muted/40'
-            }`}
-          >
-            <Clock className="h-5 w-5 text-yellow-500 mb-1" />
-            <p className="text-xs text-muted-foreground">Σε εξέλιξη</p>
-            <p className="font-heading font-bold text-xl">{counts.in_progress}</p>
-          </button>
-          <button
-            onClick={() => setStatusFilter('resolved')}
-            className={`rounded-xl p-3 border text-left transition-colors ${
-              statusFilter === 'resolved' ? 'bg-green-500/10 border-green-500/40' : 'bg-card hover:bg-muted/40'
-            }`}
-          >
-            <CheckCircle className="h-5 w-5 text-green-500 mb-1" />
-            <p className="text-xs text-muted-foreground">Επιλυμένα</p>
-            <p className="font-heading font-bold text-xl">{counts.resolved}</p>
-          </button>
+          {([
+            { k: 'open', label: 'Ανοιχτά', Icon: AlertTriangle, c: 'text-red-500', bg: 'bg-red-500/10', bar: 'bg-red-500' },
+            { k: 'in_progress', label: 'Σε εξέλιξη', Icon: Clock, c: 'text-yellow-500', bg: 'bg-yellow-500/10', bar: 'bg-yellow-500' },
+            { k: 'resolved', label: 'Επιλυμένα', Icon: CheckCircle, c: 'text-green-500', bg: 'bg-green-500/10', bar: 'bg-green-500' },
+          ].map(({ k, label, Icon, c, bg, bar }) => (
+            <button
+              key={k}
+              onClick={() => setStatusFilter(k)}
+              className={`relative flex items-center gap-3 rounded-xl border p-3 text-left transition-all overflow-hidden ${
+                statusFilter === k ? 'bg-card border-border shadow-md' : 'bg-card border-border/70 hover:border-border hover:shadow-sm'
+              }`}
+            >
+              <span className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl ${statusFilter === k ? bar : 'bg-transparent'}`} />
+              <span className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
+                <Icon className={`h-4.5 w-4.5 ${c}`} />
+              </span>
+              <span className="text-left min-w-0">
+                <span className="block text-[11px] text-muted-foreground font-medium leading-tight">{label}</span>
+                <span className="block font-heading font-bold text-2xl tabular-nums leading-tight">{counts[k]}</span>
+              </span>
+            </button>
+          )))}
         </div>
 
-        <div className="flex gap-2">
-          <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')}>
+        <div className="flex gap-1.5 flex-wrap">
+          <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')} className="rounded-full h-8 px-3.5">
             Όλα
+          </Button>
+          <Button size="sm" variant={statusFilter === 'open' ? 'default' : 'outline'} onClick={() => setStatusFilter('open')} className="rounded-full h-8 px-3.5">
+            Ανοιχτά
+          </Button>
+          <Button size="sm" variant={statusFilter === 'in_progress' ? 'default' : 'outline'} onClick={() => setStatusFilter('in_progress')} className="rounded-full h-8 px-3.5">
+            Σε εξέλιξη
+          </Button>
+          <Button size="sm" variant={statusFilter === 'resolved' ? 'default' : 'outline'} onClick={() => setStatusFilter('resolved')} className="rounded-full h-8 px-3.5">
+            Επιλυμένα
           </Button>
         </div>
 
@@ -473,8 +482,14 @@ export default function SupportApp() {
                   onClick={() => setActiveTicket(ticket)}
                   className="w-full text-left"
                 >
-                  <Card className="hover:bg-muted/40 transition-colors">
-                    <CardContent className="p-3 flex items-start gap-3">
+                  <Card className="hover:bg-muted/40 transition-colors overflow-hidden">
+                    <CardContent className="p-3 flex items-start gap-3 relative">
+                      <span className={cn(
+                        'absolute left-0 top-0 bottom-0 w-[3px]',
+                        (ticket.priority ?? 'normal') === 'sos' ? 'bg-destructive' :
+                        (ticket.priority ?? 'normal') === 'high' ? 'bg-orange-500' :
+                        (ticket.priority ?? 'normal') === 'low' ? 'bg-info' : 'bg-primary',
+                      )} />
                       <div className={`h-10 w-10 rounded-lg bg-muted flex items-center justify-center shrink-0 ${cat.color}`}>
                         <CatIcon className="h-5 w-5" />
                       </div>
@@ -505,9 +520,21 @@ export default function SupportApp() {
                         {ticket.description && (
                           <p className="text-xs text-foreground/80 mt-1 line-clamp-2">{ticket.description}</p>
                         )}
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {format(new Date(ticket.created_at), 'dd MMM, HH:mm')}
-                        </p>
+                        <div className="flex items-center gap-2 mt-1.5">
+                          {subject.role && (
+                            <span className={cn(
+                              'inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold',
+                              subject.role === 'driver' && 'bg-info/10 text-info',
+                              subject.role === 'customer' && 'bg-primary/10 text-primary',
+                              subject.role === 'store' && 'bg-orange-500/10 text-orange-600',
+                            )}>
+                              {roleLabels[subject.role] ?? subject.role}
+                            </span>
+                          )}
+                          <span className="text-[10px] text-muted-foreground font-medium">
+                            {format(new Date(ticket.created_at), 'dd MMM, HH:mm')}
+                          </span>
+                        </div>
                       </div>
                     </CardContent>
                   </Card>
