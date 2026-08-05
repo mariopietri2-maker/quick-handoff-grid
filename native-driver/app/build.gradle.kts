@@ -15,8 +15,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 230
-        versionName = "2.3.0-native"
+        versionCode = 250
+        versionName = "2.5.0-native"
 
         buildConfigField(
             "String",
