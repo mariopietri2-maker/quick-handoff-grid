@@ -1,6 +1,6 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import {
-  TrendingUp, ShoppingBag, Wallet, CheckCircle2, PackagePlus,
+  TrendingUp, ShoppingBag, Wallet, CheckCircle2, PackagePlus, Eye, EyeOff,
 } from 'lucide-react';
 import { useQuery } from '@tanstack/react-query';
 import { cn } from '@/lib/utils';
@@ -52,6 +52,7 @@ export default function StoreDashboard({
   storeId, storeName, orders, onStatusUpdate, pendingIds,
 }: Props) {
   const analytics = useStoreAnalytics(storeId);
+  const [revealMoney, setRevealMoney] = useState(false);
 
   const { data: walletBal } = useQuery({
     queryKey: ['store-wallet-balance', storeId],
@@ -86,6 +87,17 @@ export default function StoreDashboard({
     ? Math.round((onTime.delivered / (onTime.delivered + onTime.cancelled)) * 100)
     : null;
 
+  const money = (n: number | null | undefined) => {
+    if (typeof n !== 'number') return '—';
+    if (!revealMoney) return '€ •••••';
+    return `€${n.toFixed(0)}`;
+  };
+  const moneyFull = (n: number | null | undefined) => {
+    if (typeof n !== 'number') return '—';
+    if (!revealMoney) return '€ •••••';
+    return `€${n.toFixed(2)}`;
+  };
+
   return (
     <div className="space-y-3">
       {/* Overview strip */}
@@ -99,8 +111,8 @@ export default function StoreDashboard({
           sub={`${orders.length} ενεργές`}
           accent="bg-emerald-500/10 text-emerald-700" />
         <BigStat icon={Wallet} label="Σε Πορτοφόλι"
-          value={typeof walletBal === 'number' ? `€${walletBal.toFixed(0)}` : '—'}
-          sub={typeof walletBal === 'number' ? `€${walletBal.toFixed(2)}` : 'φόρτωση…'}
+          value={money(walletBal)}
+          sub={moneyFull(walletBal)}
           accent="bg-sky-500/10 text-sky-600" />
         <BigStat icon={CheckCircle2} label="On-time Παράδοση"
           value={onTimePct === null ? '—' : `${onTimePct}%`}
@@ -142,14 +154,22 @@ export default function StoreDashboard({
           <div className="flex items-center gap-2 border-b border-border p-3">
             <TrendingUp className="h-4 w-4 text-muted-foreground" />
             <h3 className="text-sm font-bold">Σήμερα</h3>
-            <span className="ml-auto inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700">
+            <button
+              type="button"
+              onClick={() => setRevealMoney((r) => !r)}
+              className="ml-auto inline-flex h-7 w-7 items-center justify-center rounded-lg text-muted-foreground hover:bg-muted hover:text-foreground"
+              title={revealMoney ? 'Απόκρυψη ποσών' : 'Εμφάνιση ποσών'}
+            >
+              {revealMoney ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </button>
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-500/10 px-2 py-0.5 text-[10.5px] font-semibold text-emerald-700">
               {orderCount} παραγγελίες
             </span>
           </div>
           <div className="divide-y divide-border/70 text-[12.5px]">
             <div className="flex items-center justify-between px-3 py-2.5">
               <span className="text-muted-foreground">Έσοδα</span>
-              <b className="tabular-nums">€{revenue === null ? '—' : revenue.toFixed(2)}</b>
+              <b className="tabular-nums">{moneyFull(revenue)}</b>
             </div>
             <div className="flex items-center justify-between px-3 py-2.5">
               <span className="text-muted-foreground">Μέσος χρόνος ετοιμασίας</span>
@@ -165,7 +185,7 @@ export default function StoreDashboard({
             </div>
             <div className="flex items-center justify-between px-3 py-2.5">
               <span className="text-muted-foreground">Σε Πορτοφόλι</span>
-              <b className="tabular-nums">{typeof walletBal === 'number' ? `€${walletBal.toFixed(0)}` : '—'}</b>
+              <b className="tabular-nums">{money(walletBal)}</b>
             </div>
           </div>
         </div>

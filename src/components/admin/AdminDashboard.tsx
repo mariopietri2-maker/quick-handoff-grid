@@ -1,8 +1,10 @@
 import { useMemo, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { format, subDays, startOfDay } from 'date-fns';
 import { cn } from '@/lib/utils';
 import { formatOrderNumber } from '@/lib/order-number';
 import { isDriverPresenceOnline } from '@/lib/driver-presence';
+import { supabase } from '@/integrations/supabase/client';
 import {
   TrendingUp, TrendingDown, ShoppingBag, Wallet, Bike, Clock,
 } from 'lucide-react';
@@ -112,6 +114,17 @@ export default function AdminDashboard(props: Props) {
   const { orders, profiles, driverStates = [], driverLocations = [], driverWallets = [], storeWallets = [] } = props;
   const [span, setSpan] = useState<'today' | '7d' | '30d'>('7d');
 
+  const { data: treasuryBal } = useQuery({
+    queryKey: ['admin-dashboard-treasury'],
+    queryFn: async () => {
+      const { data } = await (supabase as any).from('admin_treasury').select('admin_balance, platform_pool').eq('id', 1).maybeSingle();
+      return (data as { admin_balance?: number; platform_pool?: number } | null) ?? null;
+    },
+    refetchInterval: 30_000,
+  });
+  const adminBal = Number(treasuryBal?.admin_balance ?? 0);
+  const platformPool = Number(treasuryBal?.platform_pool ?? 0);
+
   const driverNames = useMemo(() => new Map(profiles.map((p) => [p.user_id, p.full_name])), [profiles]);
   const drivers = useMemo(() => profiles.filter((p) => p.role === 'driver'), [profiles]);
   const locMap = useMemo(() => new Map(driverLocations.map((l) => [l.driver_id, l.updated_at])), [driverLocations]);
@@ -181,7 +194,7 @@ export default function AdminDashboard(props: Props) {
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3 xl:grid-cols-5">
         <Kpi label="Έσοδα σήμερα" value={`€${today.revNow.toFixed(0)}`} sub={`${today.todayCount} παραγγελίες`}
           icon={Wallet} iconCls="bg-emerald-500/10 text-emerald-600" trend={revTrend} spark={series.rev} sparkColor="hsl(var(--success))" />
         <Kpi label="Παραγγελίες" value={String(today.todayCount)} sub={`${today.pending} σε ροή`}
@@ -190,11 +203,13 @@ export default function AdminDashboard(props: Props) {
           icon={Bike} iconCls="bg-sky-500/10 text-sky-500" />
         <Kpi label="Ταμεία Pool" value={`€${pool.toFixed(0)}`} sub="διαθέσιμο balance"
           icon={Clock} iconCls="bg-amber-500/10 text-amber-600" />
+        <Kpi label="Καλάθι (Treasury)" value={`€${adminBal.toFixed(0)}`} sub={`platform pool €${platformPool.toFixed(0)}`}
+          icon={Wallet} iconCls="bg-indigo-500/10 text-indigo-500" />
       </div>
 
       <div className="grid grid-cols-2 gap-2.5 lg:grid-cols-4">
         <Ring color="#10b981" bgColor="#e7f8f1" value="€" label="Driver Pool" sub={`€${pool.toFixed(0)}`} pct={(pool / total) * 100} />
-        <Ring color="#6366f1" bgColor="#eef0ff" value="€" label="Treasury (5%)" sub="προμήθειες" pct={40} />
+        <Ring color="#6366f1" bgColor="#eef0ff" value="€" label="Treasury (Καλάθι)" sub={`€${adminBal.toFixed(0)}`} pct={total > 0 ? (adminBal / total) * 100 : 0} />
         <Ring color="#f59e0b" bgColor="#fef3e2" value="€" label="Owed to Stores" sub={`€${owed.toFixed(0)}`} pct={(owed / total) * 100} />
         <Ring color="#f43f5e" bgColor="#ffe9ee" value="€" label="Cash on Street" sub={`€${cash.toFixed(0)}`} pct={(cash / total) * 100} />
       </div>

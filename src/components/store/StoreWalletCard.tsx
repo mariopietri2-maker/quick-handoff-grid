@@ -3,7 +3,7 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Wallet, TrendingUp, Lock, Banknote, FileDown, Loader2 } from 'lucide-react';
+import { Wallet, TrendingUp, Lock, Banknote, FileDown, Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { format, subDays } from 'date-fns';
 
@@ -14,6 +14,7 @@ interface Props {
 export default function StoreWalletCard({ storeId }: Props) {
   const qc = useQueryClient();
   const [generating, setGenerating] = useState(false);
+  const [reveal, setReveal] = useState(false);
 
   const generateStatement = async () => {
     setGenerating(true);
@@ -113,6 +114,12 @@ export default function StoreWalletCard({ storeId }: Props) {
   const available = Number(wallet?.available_balance ?? 0);
   const lifetime = Number(wallet?.lifetime_earnings ?? 0);
 
+  const money = (n: number, signed = false) => {
+    if (!reveal) return '€ •••••';
+    const v = signed && n >= 0 ? `+€${n.toFixed(2)}` : n < 0 ? `€${n.toFixed(2)}` : `€${n.toFixed(2)}`;
+    return v;
+  };
+
   return (
     <div className="space-y-4">
       {/* Hero: Admin owes you */}
@@ -123,7 +130,7 @@ export default function StoreWalletCard({ storeId }: Props) {
               Ο διαχειριστής σου χρωστάει
             </p>
             <p className="text-5xl font-heading font-extrabold tabular-nums text-emerald-700 dark:text-emerald-400">
-              €{available.toFixed(2)}
+              {money(available)}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
               Αυτό είναι το ποσό που θα σου καταβληθεί στην επόμενη πληρωμή.
@@ -137,7 +144,7 @@ export default function StoreWalletCard({ storeId }: Props) {
               Οφείλεις στην πλατφόρμα
             </p>
             <p className="text-5xl font-heading font-extrabold tabular-nums text-destructive">
-              €{Math.abs(available).toFixed(2)}
+              {money(Math.abs(available))}
             </p>
             <p className="text-xs text-muted-foreground mt-2">
               External παραγγελίες (efood/wolt/box) — θα συμψηφιστεί με μελλοντικά κέρδη.
@@ -159,20 +166,25 @@ export default function StoreWalletCard({ storeId }: Props) {
               <Wallet className="h-4 w-4" /> Πορτοφόλι Καταστήματος
             </CardTitle>
             <span className="flex items-center gap-1 text-[9px] font-heading uppercase tracking-wider text-muted-foreground bg-muted px-2 py-1 rounded-md">
-              <Lock className="h-2.5 w-2.5" /> Read-only
+              <Lock className="h-2.5 w-2.5" /> Ιδιωτικό
             </span>
           </div>
         </CardHeader>
         <CardContent>
-          <p className={`text-4xl font-heading font-extrabold tabular-nums ${available >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
-            €{available.toFixed(2)}
-          </p>
+          <div className="flex items-center gap-2">
+            <p className={`text-4xl font-heading font-extrabold tabular-nums ${available >= 0 ? 'text-emerald-600 dark:text-emerald-400' : 'text-destructive'}`}>
+              {money(available)}
+            </p>
+            <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setReveal((r) => !r)} title={reveal ? 'Απόκρυψη ποσών' : 'Εμφάνιση ποσών'}>
+              {reveal ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+            </Button>
+          </div>
           <p className="text-xs text-muted-foreground mt-1">
             {available >= 0 ? 'Διαθέσιμο για πληρωμή (85% από in-app παραγγελίες)' : 'Οφειλή προς την πλατφόρμα (external delivery)'}
           </p>
           <div className="mt-3 flex items-center gap-2 text-xs">
             <TrendingUp className="h-3 w-3 text-muted-foreground" />
-            <span className="text-muted-foreground">Συνολικά κέρδη: <span className="font-medium tabular-nums">€{lifetime.toFixed(2)}</span></span>
+            <span className="text-muted-foreground">Συνολικά κέρδη: <span className="font-medium tabular-nums">{money(lifetime)}</span></span>
           </div>
           <p className="text-[11px] text-muted-foreground mt-3 leading-relaxed">
             <strong>In-app:</strong> κρατάμε 15% (5% admin + 10% λειτουργίας).<br/>
@@ -209,7 +221,7 @@ export default function StoreWalletCard({ storeId }: Props) {
                     <p className="text-[10px] text-muted-foreground">{new Date(l.created_at).toLocaleString('el-GR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' })}</p>
                   </div>
                   <span className={`font-heading font-bold text-sm tabular-nums ${l.amount >= 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
-                    {l.amount >= 0 ? '+' : ''}€{Number(l.amount).toFixed(2)}
+                    {money(Number(l.amount), true)}
                   </span>
                 </div>
               ))}
