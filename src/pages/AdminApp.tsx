@@ -51,6 +51,7 @@ const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'
 const AdminStoreAppearance = lazy(() => import('@/components/admin/AdminStoreAppearance'));
 const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
+const AdminSettingsHub = lazy(() => import('@/components/admin/SettingsHub'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
@@ -439,6 +440,8 @@ export default function AdminApp() {
         );
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
+      case 'settings_home':
+        return <AdminSettingsHub onNavigate={setActiveSection} />;
       case 'financials':
         // Legacy id — merged into Money Bags
         return <LedgerPanel />;
