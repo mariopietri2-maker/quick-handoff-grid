@@ -28,16 +28,18 @@ import androidx.compose.material.icons.outlined.Visibility
 import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -58,6 +60,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.freshdelivery.nativedriver.R
+import com.freshdelivery.nativedriver.data.DriverPreferences
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 
 @Composable
@@ -68,17 +71,42 @@ fun LoginScreen(
 ) {
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
     var showPassword by remember { mutableStateOf(false) }
     val focus = LocalFocusManager.current
     val context = LocalContext.current
+    val prefs = remember { DriverPreferences(context) }
     val cs = MaterialTheme.colorScheme
+
+    // Prefill saved credentials when "remember me" was enabled.
+    LaunchedEffect(Unit) {
+        rememberMe = prefs.rememberMe
+        if (rememberMe) {
+            email = prefs.savedEmail
+            password = prefs.savedPassword
+        }
+    }
+
+    fun doLogin() {
+        if (email.isNotBlank() && password.isNotBlank() && !busy) {
+            prefs.rememberMe = rememberMe
+            if (rememberMe) {
+                prefs.savedEmail = email.trim()
+                prefs.savedPassword = password
+            } else {
+                prefs.savedEmail = ""
+                prefs.savedPassword = ""
+            }
+            onLogin(email.trim(), password)
+        }
+    }
 
     Box(
         Modifier
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFF0B0F14), Color(0xFF141A22), Color(0xFF0B0F14)),
+                    listOf(Color(0xFFFFFFFF), Color(0xFFF5FBF8), Color(0xFFFFFFFF)),
                 ),
             ),
     ) {
@@ -95,13 +123,13 @@ fun LoginScreen(
                 Modifier
                     .size(88.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(FreshGreen.copy(alpha = 0.15f)),
+                    .background(FreshGreen.copy(alpha = 0.12f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_logo_fresh),
                     contentDescription = "Fresh Delivery",
-                    modifier = Modifier.size(64.dp),
+                    modifier = Modifier.size(68.dp),
                 )
             }
 
@@ -110,7 +138,7 @@ fun LoginScreen(
                 text = "Fresh Driver",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
+                color = Color(0xFF1A1A1A),
             )
             Text(
                 text = "Ιωάννινα · Live deliveries",
@@ -161,16 +189,34 @@ fun LoginScreen(
                 keyboardActions = KeyboardActions(
                     onDone = {
                         focus.clearFocus()
-                        if (email.isNotBlank() && password.isNotBlank() && !busy) {
-                            onLogin(email.trim(), password)
-                        }
+                        doLogin()
                     },
                 ),
                 colors = fieldColors(),
             )
 
-            // Forgot password
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.End) {
+            // Remember me + forgot password
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Checkbox(
+                        checked = rememberMe,
+                        onCheckedChange = { rememberMe = it },
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = FreshGreen,
+                            checkmarkColor = Color.White,
+                        ),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Να με θυμάσαι",
+                        color = cs.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
                 TextButton(
                     onClick = {
                         val uri = Uri.parse(
@@ -196,8 +242,25 @@ fun LoginScreen(
 
             Spacer(Modifier.height(12.dp))
 
+            // Driver application — create a driver account, wait for approval
+            TextButton(
+                onClick = {
+                    val uri = Uri.parse("https://quick-handoff-grid-production.up.railway.app/auth")
+                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                },
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Text(
+                    "Αίτηση για Διανομέας",
+                    color = FreshGreen,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+
             Button(
-                onClick = { onLogin(email.trim(), password) },
+                onClick = { doLogin() },
                 enabled = !busy && email.isNotBlank() && password.isNotBlank(),
                 modifier = Modifier
                     .fillMaxWidth()
@@ -205,13 +268,13 @@ fun LoginScreen(
                 shape = RoundedCornerShape(16.dp),
                 colors = ButtonDefaults.buttonColors(
                     containerColor = FreshGreen,
-                    contentColor = Color.Black,
+                    contentColor = Color.White,
                 ),
             ) {
                 if (busy) {
                     CircularProgressIndicator(
                         Modifier.size(22.dp),
-                        color = Color.Black,
+                        color = Color.White,
                         strokeWidth = 2.dp,
                     )
                 } else {
@@ -220,21 +283,6 @@ fun LoginScreen(
             }
 
             Spacer(Modifier.height(16.dp))
-
-            OutlinedButton(
-                onClick = {
-                    val uri = Uri.parse("mailto:support@freshdelivery.gr?subject=Driver%20account")
-                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(52.dp),
-                shape = RoundedCornerShape(16.dp),
-            ) {
-                Text("Αίτηση λογαριασμού οδηγού")
-            }
-
-            Spacer(Modifier.height(12.dp))
 
             TextButton(
                 onClick = {

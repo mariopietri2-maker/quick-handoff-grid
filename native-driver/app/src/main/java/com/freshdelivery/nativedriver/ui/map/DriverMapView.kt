@@ -16,8 +16,10 @@ import com.mapbox.geojson.Point
 import com.mapbox.maps.extension.compose.MapboxMap
 import com.mapbox.maps.extension.compose.animation.viewport.rememberMapViewportState
 import com.mapbox.maps.extension.compose.annotation.generated.PointAnnotationGroup
+import com.mapbox.maps.extension.compose.annotation.generated.PolylineAnnotationGroup
 import com.mapbox.maps.extension.compose.style.MapStyle
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
+import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
 
 data class MapMarker(
     val lat: Double,
@@ -36,7 +38,7 @@ private fun createDriverArrowBitmap(size: Int = 96): Bitmap {
     val cy = size / 2f
 
     val glow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.argb(80, 37, 99, 235)
+        color = android.graphics.Color.argb(90, 6, 193, 103)
         style = Paint.Style.FILL
     }
     c.drawCircle(cx, cy, size * 0.42f, glow)
@@ -48,7 +50,7 @@ private fun createDriverArrowBitmap(size: Int = 96): Bitmap {
     c.drawCircle(cx, cy, size * 0.30f, disc)
 
     val arrow = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.parseColor("#2563EB")
+        color = android.graphics.Color.parseColor("#06C167")
         style = Paint.Style.FILL
     }
     val path = Path().apply {
@@ -62,6 +64,32 @@ private fun createDriverArrowBitmap(size: Int = 96): Bitmap {
     return bmp
 }
 
+private fun createDestinationPinBitmap(size: Int = 64): Bitmap {
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    val cx = size / 2f
+    val cy = size / 2f
+
+    val ring = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.FILL
+    }
+    c.drawCircle(cx, cy, size * 0.48f, ring)
+
+    val fill = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#06C167")
+        style = Paint.Style.FILL
+    }
+    c.drawCircle(cx, cy, size * 0.38f, fill)
+
+    val dot = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.FILL
+    }
+    c.drawCircle(cx, cy, size * 0.13f, dot)
+    return bmp
+}
+
 @Composable
 fun DriverMapView(
     modifier: Modifier = Modifier,
@@ -71,6 +99,8 @@ fun DriverMapView(
     userLat: Double? = null,
     userLng: Double? = null,
     userBearing: Float? = null,
+    route: List<Point> = emptyList(),
+    destination: MapMarker? = null,
 ) {
     val lat = centerLat ?: userLat ?: DEFAULT_LAT
     val lng = centerLng ?: userLng ?: DEFAULT_LNG
@@ -83,8 +113,14 @@ fun DriverMapView(
         }
     }
 
-    LaunchedEffect(lat, lng, markers.size, userLat, userLng) {
+    LaunchedEffect(lat, lng, markers.size, userLat, userLng, destination, route.size) {
         when {
+            destination != null -> {
+                viewportState.setCameraOptions {
+                    center(Point.fromLngLat(destination.lng, destination.lat))
+                    zoom(14.0)
+                }
+            }
             markers.isNotEmpty() -> {
                 val first = markers.first()
                 viewportState.setCameraOptions {
@@ -108,8 +144,9 @@ fun DriverMapView(
     }
 
     val driverIcon = remember { createDriverArrowBitmap() }
+    val destIcon = remember { createDestinationPinBitmap() }
 
-    val annotations = remember(markers, userLat, userLng, userBearing) {
+    val annotations = remember(markers, userLat, userLng, userBearing, destination) {
         buildList {
             markers.forEach { m ->
                 add(
@@ -119,9 +156,23 @@ fun DriverMapView(
                         .withTextField(m.label.take(18))
                         .withTextSize(11.0)
                         .withTextOffset(listOf(0.0, 1.5))
-                        .withTextColor("#F1F5F9")
-                        .withTextHaloColor("#0B0F14")
-                        .withTextHaloWidth(1.3),
+                        .withTextColor("#1A1A1A")
+                        .withTextHaloColor("#FFFFFF")
+                        .withTextHaloWidth(1.6),
+                )
+            }
+            destination?.let { d ->
+                add(
+                    PointAnnotationOptions()
+                        .withPoint(Point.fromLngLat(d.lng, d.lat))
+                        .withIconImage(destIcon)
+                        .withIconSize(1.2)
+                        .withTextField(d.label.take(18))
+                        .withTextSize(11.0)
+                        .withTextOffset(listOf(0.0, 2.2))
+                        .withTextColor("#00864B")
+                        .withTextHaloColor("#FFFFFF")
+                        .withTextHaloWidth(1.6),
                 )
             }
             if (userLat != null && userLng != null) {
@@ -136,11 +187,11 @@ fun DriverMapView(
         }
     }
 
-    Box(modifier = modifier.background(Color(0xFF1A2332))) {
+    Box(modifier = modifier.background(Color(0xFFE8EAED))) {
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
             mapViewportState = viewportState,
-            style = { MapStyle(style = "mapbox://styles/mapbox/dark-v11") },
+            style = { MapStyle(style = "mapbox://styles/mapbox/light-v11") },
             compass = {},
             scaleBar = {},
             logo = {},
@@ -148,6 +199,16 @@ fun DriverMapView(
         ) {
             if (annotations.isNotEmpty()) {
                 PointAnnotationGroup(annotations = annotations)
+            }
+            if (route.isNotEmpty()) {
+                PolylineAnnotationGroup(
+                    annotations = listOf(
+                        PolylineAnnotationOptions()
+                            .withPoints(route)
+                            .withLineColor("#06C167")
+                            .withLineWidth(4.0),
+                    ),
+                )
             }
         }
     }

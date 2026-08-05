@@ -20,7 +20,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.MailOutline
 import androidx.compose.material.icons.outlined.Refresh
-import androidx.compose.material.icons.outlined.SupportAgent
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -65,7 +64,7 @@ fun InboxScreen(
             Column {
                 Text("Inbox", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
                 Text(
-                    if (unread > 0) "$unread αδιάβαστα" else "Μηνύματα & support",
+                    if (unread > 0) "$unread αδιάβαστα" else "Μηνύματα",
                     color = cs.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )
@@ -143,63 +142,8 @@ fun InboxScreen(
                 }
             }
         }
-
-        Spacer(Modifier.height(20.dp))
-        Text("Support tickets", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(8.dp))
-        if (state.tickets.isEmpty()) {
-            EmptyCard(
-                icon = { Icon(Icons.Outlined.SupportAgent, null, tint = cs.onSurfaceVariant, modifier = Modifier.size(36.dp)) },
-                title = "Κανένα ticket",
-                body = "Τα αιτήματα υποστήριξης θα εμφανίζονται εδώ.",
-            )
-        } else {
-            state.tickets.forEach { t ->
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 5.dp)
-                        .clip(RoundedCornerShape(18.dp))
-                        .background(cs.surface)
-                        .border(1.dp, cs.outline.copy(alpha = 0.25f), RoundedCornerShape(18.dp))
-                        .padding(14.dp),
-                ) {
-                    Row(
-                        Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                    ) {
-                        Text(t.category ?: "Ticket", fontWeight = FontWeight.SemiBold)
-                        StatusChip(t.status ?: "open")
-                    }
-                    Spacer(Modifier.height(6.dp))
-                    Text(t.description ?: "", color = cs.onSurfaceVariant, style = MaterialTheme.typography.bodyMedium)
-                    t.updated_at?.let {
-                        Spacer(Modifier.height(4.dp))
-                        Text(it.take(16).replace('T', ' '), style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
-                    }
-                }
-            }
-        }
         Spacer(Modifier.height(24.dp))
     }
-}
-
-@Composable
-private fun StatusChip(status: String) {
-    val color = when (status.lowercase()) {
-        "open", "pending" -> FreshAmber
-        "resolved", "closed", "done" -> FreshGreen
-        else -> MaterialTheme.colorScheme.onSurfaceVariant
-    }
-    Text(
-        status,
-        color = color,
-        style = MaterialTheme.typography.labelMedium,
-        fontWeight = FontWeight.SemiBold,
-        modifier = Modifier
-            .background(color.copy(alpha = 0.15f), RoundedCornerShape(12.dp))
-            .padding(horizontal = 10.dp, vertical = 4.dp),
-    )
 }
 
 @Composable
