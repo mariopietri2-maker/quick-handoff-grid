@@ -109,8 +109,9 @@ export const NAV_SECTIONS = [
     icon: Settings2,
     accent: 'text-muted-foreground',
     accentBg: 'bg-muted',
-    defaultTab: 'users',
+    defaultTab: 'settings_home',
     tabs: [
+      { id: 'settings_home', label: 'Όλες οι ρυθμίσεις' },
       { id: 'users', label: 'Χρήστες' },
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
