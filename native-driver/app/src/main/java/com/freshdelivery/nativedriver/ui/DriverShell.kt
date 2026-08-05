@@ -1,8 +1,14 @@
 package com.freshdelivery.nativedriver.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CardGiftcard
@@ -15,18 +21,20 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.Badge
-import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
-import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import com.freshdelivery.nativedriver.data.DriverTab
 import com.freshdelivery.nativedriver.ui.home.HomeScreen
@@ -45,7 +53,6 @@ private data class TabItem(
     val unselectedIcon: ImageVector,
 )
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun DriverShell(
     state: DriverUiState,
@@ -88,13 +95,79 @@ fun DriverShell(
 
     val showBottomBar = !(state.opsOpen && state.isOps)
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            if (showBottomBar) {
+    Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+        if (state.opsOpen && state.isOps) {
+            Box(Modifier.fillMaxSize().statusBarsPadding()) {
+                OpsScreen(
+                    orders = state.opsOrders,
+                    busy = state.busy,
+                    onClaim = onClaimOps,
+                    onRefresh = onRefreshOps,
+                    onClose = onCloseOps,
+                )
+            }
+        } else when (state.tab) {
+            DriverTab.Home -> HomeScreen(
+                state = state,
+                onToggleOnline = onToggleOnline,
+                onToggleBreak = onToggleBreak,
+                onAccept = onAccept,
+                onDecline = onDecline,
+                onAdvance = onAdvance,
+                onRefresh = onRefresh,
+                onClearMessages = onClearMessages,
+                onOpenOps = onOpenOps,
+                onSubmitSupport = onSubmitSupport,
+            )
+            else -> Box(
+                Modifier
+                    .fillMaxSize()
+                    .statusBarsPadding()
+                    .padding(bottom = 104.dp),
+            ) {
+                when (state.tab) {
+                    DriverTab.Money -> MoneyScreen(
+                        state = state,
+                        onWithdraw = onWithdraw,
+                        onRefresh = onRefreshMoney,
+                    )
+                    DriverTab.Inbox -> InboxScreen(
+                        state = state,
+                        onMarkRead = onMarkRead,
+                        onRefresh = onRefreshInbox,
+                        onOpenSupport = onOpenSupport,
+                        onOpenTicket = { t -> onSupportOpenTicket(t.id) },
+                    )
+                    DriverTab.Referral -> ReferralScreen(state = state)
+                    DriverTab.Profile -> ProfileScreen(
+                        state = state,
+                        onSave = onSaveProfile,
+                        onSignOut = onSignOut,
+                        onUpdateSettings = onUpdateSettings,
+                        onPreviewSound = onPreviewSound,
+                    )
+                    else -> {}
+                }
+            }
+        }
+
+        // Floating glass bottom nav overlays the full-screen map.
+        if (showBottomBar) {
+            Box(
+                Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .navigationBarsPadding()
+                    .padding(horizontal = 14.dp, vertical = 10.dp),
+            ) {
                 NavigationBar(
-                    containerColor = MaterialTheme.colorScheme.surface,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .shadow(18.dp, RoundedCornerShape(30.dp))
+                        .clip(RoundedCornerShape(30.dp)),
+                    containerColor = Color.White.copy(alpha = 0.96f),
                     tonalElevation = 0.dp,
+                    windowInsets = WindowInsets(0, 0, 0, 0),
                 ) {
                     tabs.forEach { item ->
                         val selected = state.tab == item.tab
@@ -119,7 +192,7 @@ fun DriverShell(
                                 Text(
                                     item.label,
                                     style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = if (selected) androidx.compose.ui.text.font.FontWeight.Bold else null,
+                                    fontWeight = if (selected) FontWeight.Bold else null,
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
@@ -132,51 +205,6 @@ fun DriverShell(
                         )
                     }
                 }
-            }
-        },
-    ) { padding ->
-        Box(Modifier.padding(padding).fillMaxSize()) {
-            if (state.opsOpen && state.isOps) {
-                OpsScreen(
-                    orders = state.opsOrders,
-                    busy = state.busy,
-                    onClaim = onClaimOps,
-                    onRefresh = onRefreshOps,
-                    onClose = onCloseOps,
-                )
-            } else when (state.tab) {
-                DriverTab.Home -> HomeScreen(
-                    state = state,
-                    onToggleOnline = onToggleOnline,
-                    onToggleBreak = onToggleBreak,
-                    onAccept = onAccept,
-                    onDecline = onDecline,
-                    onAdvance = onAdvance,
-                    onRefresh = onRefresh,
-                    onClearMessages = onClearMessages,
-                    onOpenOps = onOpenOps,
-                    onSubmitSupport = onSubmitSupport,
-                )
-                DriverTab.Money -> MoneyScreen(
-                    state = state,
-                    onWithdraw = onWithdraw,
-                    onRefresh = onRefreshMoney,
-                )
-                DriverTab.Inbox -> InboxScreen(
-                    state = state,
-                    onMarkRead = onMarkRead,
-                    onRefresh = onRefreshInbox,
-                    onOpenSupport = onOpenSupport,
-                    onOpenTicket = { t -> onSupportOpenTicket(t.id) },
-                )
-                DriverTab.Referral -> ReferralScreen(state = state)
-                DriverTab.Profile -> ProfileScreen(
-                    state = state,
-                    onSave = onSaveProfile,
-                    onSignOut = onSignOut,
-                    onUpdateSettings = onUpdateSettings,
-                    onPreviewSound = onPreviewSound,
-                )
             }
         }
 
