@@ -12,7 +12,6 @@ import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, A
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
-import SupportDashboard from '@/components/support/SupportDashboard';
 
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
@@ -182,6 +181,7 @@ export default function SupportApp() {
     open: tickets?.filter((t) => t.status === 'open').length ?? 0,
     in_progress: tickets?.filter((t) => t.status === 'in_progress').length ?? 0,
     resolved: tickets?.filter((t) => t.status === 'resolved').length ?? 0,
+    sos: tickets?.filter((t) => t.priority === 'sos' && t.status !== 'resolved').length ?? 0,
   };
 
   // Detail view
@@ -415,45 +415,46 @@ export default function SupportApp() {
 
       <div className="p-4 space-y-4 max-w-3xl mx-auto">
         <AnnouncementsBanner audience="support" />
-        <SupportDashboard tickets={tickets ?? []} />
-        <div className="grid grid-cols-3 gap-2">
-          {([
-            { k: 'open', label: 'Ανοιχτά', Icon: AlertTriangle, c: 'text-red-500', bg: 'bg-red-500/10', bar: 'bg-red-500' },
-            { k: 'in_progress', label: 'Σε εξέλιξη', Icon: Clock, c: 'text-yellow-500', bg: 'bg-yellow-500/10', bar: 'bg-yellow-500' },
-            { k: 'resolved', label: 'Επιλυμένα', Icon: CheckCircle, c: 'text-green-500', bg: 'bg-green-500/10', bar: 'bg-green-500' },
-          ].map(({ k, label, Icon, c, bg, bar }) => (
-            <button
-              key={k}
-              onClick={() => setStatusFilter(k)}
-              className={`relative flex items-center gap-3 rounded-xl border p-3 text-left transition-all overflow-hidden ${
-                statusFilter === k ? 'bg-card border-border shadow-md' : 'bg-card border-border/70 hover:border-border hover:shadow-sm'
-              }`}
-            >
-              <span className={`absolute left-0 top-0 bottom-0 w-[3px] rounded-l-xl ${statusFilter === k ? bar : 'bg-transparent'}`} />
-              <span className={`h-9 w-9 rounded-lg flex items-center justify-center shrink-0 ${bg}`}>
-                <Icon className={`h-4.5 w-4.5 ${c}`} />
-              </span>
-              <span className="text-left min-w-0">
-                <span className="block text-[11px] text-muted-foreground font-medium leading-tight">{label}</span>
-                <span className="block font-heading font-bold text-2xl tabular-nums leading-tight">{counts[k]}</span>
-              </span>
-            </button>
-          )))}
+
+        {/* Tickets-first header: live count strip */}
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-red-500 opacity-60" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+            </span>
+            <h2 className="font-heading font-bold text-lg">Tickets</h2>
+            <span className="rounded-full bg-muted px-2 py-0.5 text-[10.5px] font-semibold text-muted-foreground">
+              {counts.open + counts.in_progress} ενεργά
+              {counts.sos > 0 && <span className="ml-1 text-red-500">· {counts.sos} SOS</span>}
+            </span>
+          </div>
+          <Button
+            size="sm"
+            variant={statusFilter !== 'all' ? 'outline' : 'default'}
+            onClick={() => setStatusFilter('all')}
+          >
+            {statusFilter !== 'all' ? 'Όλα τα tickets' : 'Όλα'}
+          </Button>
         </div>
 
         <div className="flex gap-1.5 flex-wrap">
-          <Button size="sm" variant={statusFilter === 'all' ? 'default' : 'outline'} onClick={() => setStatusFilter('all')} className="rounded-full h-8 px-3.5">
-            Όλα
-          </Button>
-          <Button size="sm" variant={statusFilter === 'open' ? 'default' : 'outline'} onClick={() => setStatusFilter('open')} className="rounded-full h-8 px-3.5">
-            Ανοιχτά
-          </Button>
-          <Button size="sm" variant={statusFilter === 'in_progress' ? 'default' : 'outline'} onClick={() => setStatusFilter('in_progress')} className="rounded-full h-8 px-3.5">
-            Σε εξέλιξη
-          </Button>
-          <Button size="sm" variant={statusFilter === 'resolved' ? 'default' : 'outline'} onClick={() => setStatusFilter('resolved')} className="rounded-full h-8 px-3.5">
-            Επιλυμένα
-          </Button>
+          {([
+            { k: 'all', label: 'Όλα' },
+            { k: 'open', label: `Ανοιχτά · ${counts.open}` },
+            { k: 'in_progress', label: `Σε εξέλιξη · ${counts.in_progress}` },
+            { k: 'resolved', label: `Επιλυμένα · ${counts.resolved}` },
+          ] as const).map(({ k, label }) => (
+            <Button
+              key={k}
+              size="sm"
+              variant={statusFilter === k ? 'default' : 'outline'}
+              onClick={() => setStatusFilter(k)}
+              className="rounded-full h-8 px-3.5"
+            >
+              {label}
+            </Button>
+          ))}
         </div>
 
         <SlaSettingsPanel />
