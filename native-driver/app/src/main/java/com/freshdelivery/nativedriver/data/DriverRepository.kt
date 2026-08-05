@@ -8,8 +8,12 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
-import io.github.jan.supabase.postgrest.rpc
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
 import io.ktor.client.statement.bodyAsText
+import kotlinx.coroutines.flow.Flow
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
@@ -374,8 +378,8 @@ class DriverRepository(
         }
     }
 
-    suspend fun createSupportTicket(driverId: String, category: String, description: String?) {
-        client.from("support_tickets").insert(
+    suspend fun createSupportTicket(driverId: String, category: String, description: String?): String? {
+        val created = client.from("support_tickets").insert(
             buildJsonObject {
                 put("driver_id", driverId)
                 put("requester_id", driverId)
@@ -383,7 +387,49 @@ class DriverRepository(
                 put("category", category)
                 if (!description.isNullOrBlank()) put("description", description)
             },
+        ) {
+            select()
+        }.decodeList<SupportTicketRow>()
+        return created.firstOrNull()?.id
+    }
+
+    suspend fun fetchTicketMessages(ticketId: String): List<TicketMessageRow> {
+        return client.from("ticket_messages").select(Columns.ALL) {
+            filter { eq("ticket_id", ticketId) }
+            order("created_at", Order.ASCENDING)
+        }.decodeList<TicketMessageRow>()
+    }
+
+    suspend fun sendTicketMessage(ticketId: String, senderId: String, message: String) {
+        client.from("ticket_messages").insert(
+            buildJsonObject {
+                put("ticket_id", ticketId)
+                put("sender_id", senderId)
+                put("sender_role", "driver")
+                put("message", message)
+            },
         )
+    }
+
+    suspend fun fetchAgents(userIds: List<String>): Map<String, String> {
+        if (userIds.isEmpty()) return emptyMap()
+        return client.from("profiles").select(Columns.list("user_id", "full_name")) {
+            filter { isIn("user_id", userIds) }
+        }.decodeList<AgentRow>().associate { it.user_id.orEmpty() to (it.full_name ?: "") }
+    }
+
+    /** Live new messages on a support ticket (RLS scopes to the own driver's ticket). */
+    suspend fun subscribeTicketMessages(ticketId: String): Flow<PostgresAction> {
+        val channel = client.channel("driver-ticket-$ticketId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "ticket_messages"
+        }
+        channel.subscribe()
+        return flow
+    }
+
+    suspend fun unsubscribeTicketMessages() {
+        runCatching { client.realtime.removeAllChannels() }
     }
 
     suspend fun fetchOrCreateReferral(userId: String): Pair<String, List<ReferralRow>> {

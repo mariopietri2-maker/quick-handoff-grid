@@ -35,6 +35,7 @@ import com.freshdelivery.nativedriver.ui.money.MoneyScreen
 import com.freshdelivery.nativedriver.ui.ops.OpsScreen
 import com.freshdelivery.nativedriver.ui.profile.ProfileScreen
 import com.freshdelivery.nativedriver.ui.referral.ReferralScreen
+import com.freshdelivery.nativedriver.ui.support.TicketChatDialog
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 
 private data class TabItem(
@@ -69,6 +70,12 @@ fun DriverShell(
     onRefreshOps: () -> Unit = {},
     onClaimOps: (String) -> Unit = {},
     onSubmitSupport: (String, String) -> Unit = { _, _ -> },
+    onOpenSupport: () -> Unit = {},
+    onCloseSupport: () -> Unit = {},
+    onSupportOpenTicket: (String) -> Unit = {},
+    onSupportNewTicket: () -> Unit = {},
+    onSendChat: (String) -> Unit = {},
+    onCloseChat: () -> Unit = {},
 ) {
     val unread = state.notifications.count { it.read_at == null }
     val tabs = listOf(
@@ -159,6 +166,8 @@ fun DriverShell(
                     state = state,
                     onMarkRead = onMarkRead,
                     onRefresh = onRefreshInbox,
+                    onOpenSupport = onOpenSupport,
+                    onOpenTicket = { t -> onSupportOpenTicket(t.id) },
                 )
                 DriverTab.Referral -> ReferralScreen(state = state)
                 DriverTab.Profile -> ProfileScreen(
@@ -169,6 +178,20 @@ fun DriverShell(
                     onPreviewSound = onPreviewSound,
                 )
             }
+        }
+
+        state.chatTicketId?.let { chatId ->
+            val ticket = state.tickets.firstOrNull { it.id == chatId }
+            val category = ticket?.category
+            TicketChatDialog(
+                ticketCategory = category,
+                messages = state.chatMessages,
+                agents = state.chatAgents,
+                loading = state.chatLoading,
+                busy = state.busy,
+                onBack = onCloseChat,
+                onSend = onSendChat,
+            )
         }
     }
 }

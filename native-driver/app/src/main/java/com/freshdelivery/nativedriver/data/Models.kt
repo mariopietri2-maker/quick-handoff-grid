@@ -141,6 +141,22 @@ data class SupportTicketRow(
 )
 
 @Serializable
+data class TicketMessageRow(
+    val id: String,
+    val ticket_id: String? = null,
+    val sender_id: String? = null,
+    val sender_role: String? = null,
+    val message: String? = null,
+    val created_at: String? = null,
+)
+
+@Serializable
+data class AgentRow(
+    val user_id: String? = null,
+    val full_name: String? = null,
+)
+
+@Serializable
 data class ReferralRow(
     val id: String? = null,
     val referrer_id: String,

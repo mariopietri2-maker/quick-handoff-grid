@@ -28,6 +28,8 @@ import com.freshdelivery.nativedriver.data.ProfileRow
 import com.freshdelivery.nativedriver.data.ReferralRow
 import com.freshdelivery.nativedriver.data.SupabaseProvider
 import com.freshdelivery.nativedriver.data.SupportTicketRow
+import com.freshdelivery.nativedriver.data.TicketMessageRow
+import io.github.jan.supabase.realtime.PostgresAction
 import com.freshdelivery.nativedriver.location.DriverGeo
 import com.freshdelivery.nativedriver.location.DriverLocationService
 import com.freshdelivery.nativedriver.location.DriverLocationTracker
@@ -68,6 +70,11 @@ data class DriverUiState(
     val money: MoneyUi? = null,
     val notifications: List<DriverNotificationRow> = emptyList(),
     val tickets: List<SupportTicketRow> = emptyList(),
+    val chatTicketId: String? = null,
+    val chatMessages: List<TicketMessageRow> = emptyList(),
+    val chatAgents: Map<String, String> = emptyMap(),
+    val chatLoading: Boolean = false,
+    val chatSubscribed: Boolean = false,
     val referralCode: String? = null,
     val referrals: List<ReferralRow> = emptyList(),
     val geo: DriverGeo? = null,
@@ -122,6 +129,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     val state: StateFlow<DriverUiState> = _state.asStateFlow()
 
     private var pollJob: Job? = null
+    private var chatJob: Job? = null
     /** Keeps driver_locations.updated_at fresh while online (admin Online + dispatch). */
     private var heartbeatJob: Job? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -511,13 +519,95 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.createSupportTicket(uid, category, description) }
-                .onSuccess {
+                .onSuccess { newId ->
                     _state.value = _state.value.copy(busy = false, info = "Ticket υποβλήθηκε ✓")
                     refreshInbox()
+                    if (!newId.isNullOrBlank()) openChat(newId, submitFirst = true)
                 }
                 .onFailure { e ->
                     _state.value = _state.value.copy(busy = false, error = friendlyError(e))
                 }
+        }
+    }
+
+    fun openChat(ticketId: String, submitFirst: Boolean = false) {
+        if (_state.value.chatTicketId != ticketId) {
+            closeChat()
+            _state.value = _state.value.copy(chatTicketId = ticketId)
+        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(chatLoading = true, error = null)
+            runCatching { repo.fetchTicketMessages(ticketId) }
+                .onSuccess { msgs ->
+                    val agents = resolveAgents(msgs)
+                    _state.value = _state.value.copy(
+                        chatMessages = msgs,
+                        chatAgents = agents,
+                        chatLoading = false,
+                    )
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(chatLoading = false, error = friendlyError(e))
+                }
+            startChatSubscription(ticketId)
+        }
+        if (submitFirst) refreshInbox()
+    }
+
+    private suspend fun resolveAgents(msgs: List<TicketMessageRow>): Map<String, String> {
+        val agentIds = msgs
+            .filter { it.sender_role == "support" || it.sender_role == "admin" }
+            .mapNotNull { it.sender_id }
+            .distinct()
+        return runCatching { repo.fetchAgents(agentIds) }.getOrDefault(emptyMap())
+    }
+
+    private fun startChatSubscription(ticketId: String) {
+        chatJob?.cancel()
+        chatJob = viewModelScope.launch {
+            runCatching { repo.subscribeTicketMessages(ticketId) }
+                .onSuccess { flow ->
+                    _state.value = _state.value.copy(chatSubscribed = true)
+                    flow.collect { _ -> refreshChatMessages(ticketId) }
+                }
+        }
+    }
+
+    private fun refreshChatMessages(ticketId: String) {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching { repo.fetchTicketMessages(ticketId) }
+                .onSuccess { msgs ->
+                    val agents = resolveAgents(msgs)
+                    _state.value = _state.value.copy(chatMessages = msgs, chatAgents = agents)
+                }
+        }
+    }
+
+    fun sendChatMessage(text: String) {
+        val uid = _state.value.userId ?: return
+        val ticketId = _state.value.chatTicketId ?: return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.sendTicketMessage(ticketId, uid, trimmed) }
+                .onSuccess { refreshChatMessages(ticketId) }
+                .onFailure { e -> _state.value = _state.value.copy(error = friendlyError(e)) }
+        }
+    }
+
+    fun closeChat() {
+        chatJob?.cancel()
+        chatJob = null
+        viewModelScope.launch {
+            runCatching { repo.unsubscribeTicketMessages() }
+            _state.value = _state.value.copy(
+                chatTicketId = null,
+                chatMessages = emptyList(),
+                chatAgents = emptyMap(),
+                chatLoading = false,
+                chatSubscribed = false,
+            )
         }
     }
 
