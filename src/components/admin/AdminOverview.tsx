@@ -103,16 +103,18 @@ function StatCard({
   icon: React.ElementType; tone?: 'default' | 'danger' | 'info' | 'success'; sub?: string;
 }) {
   const toneMap = {
-    default: { val: 'text-foreground',    icon: 'text-muted-foreground', spark: 'hsl(var(--primary))' },
-    danger:  { val: 'text-red-600 dark:text-red-400',     icon: 'text-red-500',     spark: 'hsl(0 84% 60%)' },
-    info:    { val: 'text-blue-600 dark:text-blue-400',   icon: 'text-blue-500',    spark: 'hsl(217 91% 60%)' },
-    success: { val: 'text-emerald-600 dark:text-emerald-400', icon: 'text-emerald-500', spark: 'hsl(142 76% 45%)' },
+    default: { val: 'text-foreground', icon: 'text-muted-foreground', iconBg: 'bg-muted', spark: 'hsl(var(--primary))' },
+    danger:  { val: 'text-red-600 dark:text-red-400', icon: 'text-red-500', iconBg: 'bg-red-500/10', spark: 'hsl(0 84% 60%)' },
+    info:    { val: 'text-blue-600 dark:text-blue-400', icon: 'text-blue-500', iconBg: 'bg-blue-500/10', spark: 'hsl(217 91% 60%)' },
+    success: { val: 'text-emerald-600 dark:text-emerald-400', icon: 'text-emerald-500', iconBg: 'bg-emerald-500/10', spark: 'hsl(142 76% 45%)' },
   }[tone];
   return (
-    <div className="rounded-xl border border-border bg-card p-3.5">
+    <div className="rounded-xl border border-border bg-card p-4 hover:shadow-md transition-shadow">
       <div className="flex items-center justify-between mb-1">
         <span className="text-[11px] uppercase tracking-wide text-muted-foreground font-medium">{label}</span>
-        <Icon className={cn('h-4 w-4', toneMap.icon)} />
+        <span className={cn('h-8 w-8 rounded-lg flex items-center justify-center', toneMap.iconBg)}>
+          <Icon className={cn('h-4 w-4', toneMap.icon)} />
+        </span>
       </div>
       <div className="flex items-end justify-between gap-2">
         <div className="min-w-0">

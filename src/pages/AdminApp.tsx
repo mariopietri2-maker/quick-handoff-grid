@@ -541,7 +541,7 @@ export default function AdminApp() {
               </Button>
               <button
                 onClick={() => setPaletteOpen(true)}
-                className="relative hidden sm:flex items-center gap-2 pl-2.5 pr-2 h-8 w-72 rounded-md bg-muted/40 border border-border/60 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                className="relative hidden sm:flex items-center gap-2 pl-3 pr-2 h-9 w-72 rounded-full bg-muted/40 border border-border/60 text-[12.5px] text-muted-foreground hover:bg-muted hover:text-foreground transition-colors shadow-sm"
               >
                 <Search className="h-3.5 w-3.5" />
                 <span className="flex-1 text-left">Αναζήτηση & μετάβαση…</span>
@@ -553,7 +553,7 @@ export default function AdminApp() {
             </div>
             <div className="flex items-center gap-2">
               {/* Environment + system status chip */}
-              <div className="hidden md:flex items-center gap-1.5 h-7 pl-1.5 pr-2.5 rounded-md border border-border/70 bg-muted/30">
+              <div className="hidden md:flex items-center gap-1.5 h-7 pl-2.5 pr-2.5 rounded-full border border-border/70 bg-muted/30">
                 <span className="relative flex h-2 w-2">
                   <span className="absolute inline-flex h-full w-full rounded-full bg-success/60 animate-ping opacity-50" />
                   <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
@@ -562,10 +562,17 @@ export default function AdminApp() {
                 <span className="h-3 w-px bg-border mx-0.5" />
                 <span className="text-[10.5px] font-medium tabular-nums text-foreground/80">v2.4</span>
               </div>
+              <div className="hidden lg:flex items-center gap-1.5 h-7 px-2.5 rounded-full bg-primary/10 border border-primary/25">
+                <span className="relative flex h-2 w-2">
+                  <span className="absolute inline-flex h-full w-full rounded-full bg-primary/60 animate-ping opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                </span>
+                <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary">Live</span>
+              </div>
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-8 w-8 relative"
+                className="h-8 w-8 relative rounded-full hover:bg-muted"
                 title="Live παραγγελίες"
                 onClick={() => setActiveSection('live_ops')}
               >
@@ -1138,9 +1145,9 @@ function KpiTile({
   const showDelta = typeof delta === 'number' && isFinite(delta);
   const deltaUp = showDelta && delta! >= 0;
   return (
-    <div className="relative flex items-center gap-2.5 pl-3 pr-3.5 h-11 rounded-lg bg-card border border-border/70 shadow-[0_1px_0_0_hsl(var(--border)/0.5)] hover:border-border transition-colors shrink-0 overflow-hidden">
+    <div className="relative flex items-center gap-2.5 pl-3 pr-3.5 h-11 rounded-xl bg-card border border-border/70 shadow-sm hover:border-border hover:shadow-md transition-all shrink-0 overflow-hidden">
       <span className={cn('absolute left-0 top-0 bottom-0 w-[2px]', a.bar)} />
-      <span className={cn('relative flex items-center justify-center h-6 w-6 rounded-md', a.bg, a.text)}>
+      <span className={cn('relative flex items-center justify-center h-6 w-6 rounded-lg', a.bg, a.text)}>
         <Icon className="h-3.5 w-3.5" />
         {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse ring-2 ring-card" />}
       </span>
