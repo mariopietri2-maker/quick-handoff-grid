@@ -12,6 +12,7 @@ import { Input } from '@/components/ui/input';
 import { Shield, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from '@/components/admin/AdminSidebar';
+import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
 import { isDriverPresenceOnline } from '@/lib/driver-presence';
@@ -402,11 +403,10 @@ export default function AdminApp() {
     }
     switch (activeSection) {
       case 'overview':
-        return <OpsHome onNavigate={setActiveSection} />;
+      case 'overview_legacy':
+        return <AdminDashboard orders={orders.data ?? []} profiles={profiles.data ?? []} driverStates={driverStates.data ?? []} driverLocations={driverLocations.data ?? []} driverWallets={driverWallets.data ?? []} storeWallets={storeWallets.data ?? []} onNavigate={setActiveSection} />;
       case 'capacity':
         return <CapacityPanel onNavigate={setActiveSection} />;
-      case 'overview_legacy':
-        return <OpsHome onNavigate={setActiveSection} />;
       case 'live_ops':
         return <AdminLiveDriversMap />;
       case 'system_health':
