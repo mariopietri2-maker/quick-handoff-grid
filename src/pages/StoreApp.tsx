@@ -130,15 +130,17 @@ export default function StoreApp() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-[var(--shadow-sm)]">
-        <div className="flex items-center gap-2 min-w-0">
+      <header className="bg-card/90 backdrop-blur-md border-b border-border px-4 py-3 flex items-center justify-between sticky top-0 z-50 shadow-[0_1px_0_0_hsl(var(--border)/0.6)]">
+        <div className="flex items-center gap-2.5 min-w-0">
           {view === 'manage' && stores.length > 1 ? (
             <Button variant="ghost" size="sm" className="h-8 gap-1.5 shrink-0" onClick={backToPortal}>
               <ArrowLeft className="h-4 w-4" />
               <span className="hidden sm:inline">Όλα</span>
             </Button>
           ) : (
-            <Store className="h-6 w-6 text-primary shrink-0" />
+            <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0 shadow-primary/40">
+              <Store className="h-4.5 w-4.5 text-primary-foreground" />
+            </div>
           )}
           <div className="min-w-0">
             <h1 className="font-heading font-bold text-lg text-foreground truncate">
@@ -150,6 +152,13 @@ export default function StoreApp() {
           </div>
         </div>
         <div className="flex items-center gap-2 shrink-0">
+          <Badge variant="outline" className="hidden md:inline-flex gap-1.5 text-[10px] font-bold uppercase tracking-wider text-success border-success/30">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="absolute inline-flex h-full w-full rounded-full bg-success animate-ping opacity-60" />
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-success" />
+            </span>
+            Live
+          </Badge>
           {view === 'manage' && stores.length > 1 && (
             <Button variant="outline" size="sm" className="h-8 gap-1.5 hidden sm:inline-flex" onClick={backToPortal}>
               <LayoutGrid className="h-3.5 w-3.5" />
@@ -276,8 +285,8 @@ export default function StoreApp() {
               Νέα Custom Order (eFood / Wolt / Box)
             </Button>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList ref={tabsListRef} className={`w-full h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin ${activeTab === 'orders' ? 'mb-2' : 'mb-4'}`}>
-                <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading relative">
+<TabsList ref={tabsListRef} className={`w-full h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin rounded-xl border border-border bg-muted/40 p-1 ${activeTab === 'orders' ? 'mb-2' : 'mb-4'}`}>
+                <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading rounded-lg data-[state=active]:rounded-lg data-[state=active]:bg-card data-[state=active]:shadow-sm">
                   <ClipboardList className="h-4 w-4 mr-1.5" />
                   Παραγγελίες
                   {newOrders + kitchenOrders + readyOrders > 0 && (
@@ -286,39 +295,39 @@ export default function StoreApp() {
                     </Badge>
                   )}
                 </TabsTrigger>
-                <TabsTrigger value="external" className="flex-1 min-w-[110px] font-heading">
+                <TabsTrigger value="external" className="flex-1 min-w-[110px] font-heading rounded-lg">
                   <PackagePlus className="h-4 w-4 mr-1.5" />
                   Custom Order
                 </TabsTrigger>
-                <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading">
+                <TabsTrigger value="menu" className="flex-1 min-w-[80px] font-heading rounded-lg">
                   <UtensilsCrossed className="h-4 w-4 mr-1.5" />
                   Μενού
                 </TabsTrigger>
-                <TabsTrigger value="inventory" className="flex-1 min-w-[90px] font-heading">
+                <TabsTrigger value="inventory" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Package className="h-4 w-4 mr-1.5" />
                   Απόθεμα
                 </TabsTrigger>
-                <TabsTrigger value="hours" className="flex-1 min-w-[80px] font-heading">
+                <TabsTrigger value="hours" className="flex-1 min-w-[80px] font-heading rounded-lg">
                   <Clock className="h-4 w-4 mr-1.5" />
                   Ωράριο
                 </TabsTrigger>
-                <TabsTrigger value="analytics" className="flex-1 min-w-[90px] font-heading">
+                <TabsTrigger value="analytics" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <BarChart3 className="h-4 w-4 mr-1.5" />
                   Στατιστικά
                 </TabsTrigger>
-                <TabsTrigger value="wallet" className="flex-1 min-w-[90px] font-heading">
+                <TabsTrigger value="wallet" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Wallet className="h-4 w-4 mr-1.5" />
                   Πορτοφόλι
                 </TabsTrigger>
-                <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading">
+                <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Tag className="h-4 w-4 mr-1.5" />
                   Προσφορές
                 </TabsTrigger>
-                <TabsTrigger value="automation" className="flex-1 min-w-[90px] font-heading">
+                <TabsTrigger value="automation" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Zap className="h-4 w-4 mr-1.5" />
                   Auto
                 </TabsTrigger>
-                <TabsTrigger value="settings" className="flex-1 min-w-[90px] font-heading">
+                <TabsTrigger value="settings" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Settings className="h-4 w-4 mr-1.5" />
                   Ρυθμίσεις
                 </TabsTrigger>
