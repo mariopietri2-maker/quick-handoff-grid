@@ -415,11 +415,7 @@ export default function SupportApp() {
 
       <div className="p-4 space-y-4 max-w-3xl mx-auto">
         <AnnouncementsBanner audience="support" />
-        <SupportDashboard
-          tickets={tickets ?? []}
-          profiles={profiles ?? []}
-          onOpen={(id) => setActiveTicket(tickets?.find((t) => t.id === id) ?? null)}
-        />
+        <SupportDashboard tickets={tickets ?? []} />
         <div className="grid grid-cols-3 gap-2">
           {([
             { k: 'open', label: 'Ανοιχτά', Icon: AlertTriangle, c: 'text-red-500', bg: 'bg-red-500/10', bar: 'bg-red-500' },
