@@ -187,10 +187,14 @@ fun HomeScreen(
     onClearMessages: () -> Unit,
     onOpenOps: () -> Unit = {},
     onSubmitSupport: (String, String) -> Unit = { _, _ -> },
+    onSupportShowNew: () -> Unit = {},
+    onSupportDismissNew: () -> Unit = {},
+    onSupportOpenTicket: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val primary = state.primaryTrip
     var supportOpen by remember { mutableStateOf(false) }
+    var supportNew by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var navRoute by remember { mutableStateOf<List<Point>>(emptyList()) }
     var navDest by remember { mutableStateOf<MapMarker?>(null) }
@@ -503,11 +507,30 @@ fun HomeScreen(
 
         DriverSupportDialog(
             open = supportOpen,
-            onDismiss = { supportOpen = false },
             submitting = state.busy,
-            onSubmit = { cat, desc ->
+            tickets = state.tickets,
+            showNew = supportNew,
+            onNewTicketSelected = {
+                supportNew = true
+                onSupportShowNew()
+            },
+            onDismissNew = {
+                supportNew = false
+                onSupportDismissNew()
+            },
+            onOpenTicket = { t ->
+                supportOpen = false
+                supportNew = false
+                onSupportOpenTicket(t.id)
+            },
+            onCreateTicket = { cat, desc ->
                 onSubmitSupport(cat, desc)
                 supportOpen = false
+                supportNew = false
+            },
+            onDismiss = {
+                supportOpen = false
+                supportNew = false
             },
         )
     }
