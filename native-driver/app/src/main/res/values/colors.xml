@@ -1,3 +1,4 @@
 <resources>
     <color name="ic_launcher_background">#06C167</color>
+    <color name="status_bar_color">#F7F7F8</color>
 </resources>

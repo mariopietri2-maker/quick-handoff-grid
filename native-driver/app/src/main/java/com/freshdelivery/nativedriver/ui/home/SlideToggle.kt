@@ -38,6 +38,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 
 /** Slide-to-go-on-duty / slide-to-go-off-duty control, mirrors the web SlideToggle. */
@@ -64,10 +65,10 @@ fun SlideToggle(
             .fillMaxWidth()
             .height(64.dp)
             .clip(RoundedCornerShape(32.dp))
-            .background(if (isOn) Color(0xFF1DB954).copy(alpha = 0.16f) else Color(0xFFE8E8EC))
+            .background(if (isOn) Color(0xFF06C167).copy(alpha = 0.14f) else Color(0xFFF1F1F2))
             .border(
-                1.dp,
-                if (isOn) Color(0xFF1DB954).copy(alpha = 0.35f) else Color(0xFFD4D4D8),
+                1.5.dp,
+                if (isOn) Color(0xFF06C167).copy(alpha = 0.45f) else Color(0xFFE8E8EB),
                 RoundedCornerShape(32.dp),
             )
             .alpha(if (enabled) 1f else 0.5f)
@@ -116,7 +117,7 @@ fun SlideToggle(
                 p > 0.5f -> "Άσε για υπηρεσία"
                 else -> "Σύρε για υπηρεσία"
             },
-            color = if (isOn) Color(0xFF1DB954) else Color(0xFF6B7280),
+            color = if (isOn) Color(0xFF06C167) else Color(0xFF707070),
             fontWeight = FontWeight.Bold,
             fontSize = 13.sp,
             textAlign = TextAlign.Center,
@@ -130,7 +131,7 @@ fun SlideToggle(
                 .size(52.dp)
                 .shadow(10.dp, CircleShape)
                 .clip(CircleShape)
-                .background(if (isOn) Color(0xFF1DB954) else Color(0xFF1F2937)),
+                .background(if (isOn) Color(0xFF06C167) else Color(0xFF1A1A1A)),
             contentAlignment = Alignment.Center,
         ) {
             Icon(Icons.Filled.Power, null, tint = Color.White, modifier = Modifier.size(22.dp))

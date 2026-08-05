@@ -37,7 +37,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.data.OfferUi
 
-private val GreenBtn = Color(0xFF1DB954)
+private val GreenBtn = Color(0xFF06C167)
 private val TextDark = Color(0xFF1A1A1A)
 private val TextMuted = Color(0xFF6B7280)
 

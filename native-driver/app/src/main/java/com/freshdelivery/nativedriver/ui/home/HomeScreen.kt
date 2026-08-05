@@ -27,7 +27,6 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.HeadsetMic
 import androidx.compose.material.icons.outlined.Navigation
-import androidx.compose.material.icons.outlined.Person
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.Button
@@ -37,6 +36,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -45,6 +45,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -57,19 +58,29 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.data.ActiveTripUi
 import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.map.DriverMapView
 import com.freshdelivery.nativedriver.ui.map.MapMarker
 import com.freshdelivery.nativedriver.ui.support.DriverSupportDialog
+import com.freshdelivery.nativedriver.ui.theme.FreshGreen
+import com.freshdelivery.nativedriver.ui.theme.FreshOrange
+import com.mapbox.geojson.Point
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import org.json.JSONObject
+import java.net.HttpURLConnection
+import java.net.URL
 import java.time.Duration
 import java.time.Instant
 
-private val GreenBtn = Color(0xFF1DB954)
+private val GreenBtn = Color(0xFF06C167)
 private val TextDark = Color(0xFF1A1A1A)
-private val TextMuted = Color(0xFF6B7280)
+private val TextMuted = Color(0xFF707070)
 
 private fun eur(v: Double): String = "%.2f".format(v) + "€"
 private fun moneyPlain(v: Double): String = "%.2f".format(v)
@@ -97,6 +108,73 @@ private fun formatTimer(seconds: Int): String {
     return "%d:%02d".format(m, s)
 }
 
+/** In-app route shown on the Mapbox map — no Google Maps / external apps involved. */
+private data class RouteResult(
+    val points: List<Point>,
+    val distanceMeters: Double,
+    val durationSeconds: Long,
+)
+
+private suspend fun fetchRoute(
+    startLat: Double,
+    startLng: Double,
+    endLat: Double,
+    endLng: Double,
+): RouteResult? = withContext(Dispatchers.IO) {
+    val url = "https://api.mapbox.com/directions/v5/mapbox/driving/" +
+        "$startLng,$startLat;$endLng,$endLat?overview=full&geometries=polyline6&access_token=${BuildConfig.MAPBOX_TOKEN}"
+    runCatching {
+        val conn = (URL(url).openConnection() as HttpURLConnection).apply {
+            connectTimeout = 8000
+            readTimeout = 8000
+        }
+        try {
+            val json = conn.inputStream.bufferedReader().use { it.readText() }
+            val root = JSONObject(json)
+            val routes = root.optJSONArray("routes") ?: return@runCatching null
+            if (routes.length() == 0) return@runCatching null
+            val route = routes.getJSONObject(0)
+            val points = decodePolyline6(route.getString("geometry"))
+            val leg = route.optJSONArray("legs")?.optJSONObject(0)
+            RouteResult(
+                points = points,
+                distanceMeters = leg?.optDouble("distance", 0.0) ?: 0.0,
+                durationSeconds = leg?.optLong("duration", 0L) ?: 0L,
+            )
+        } finally {
+            conn.disconnect()
+        }
+    }.getOrNull()
+}
+
+private fun decodePolyline6(encoded: String): List<Point> {
+    val points = mutableListOf<Point>()
+    var index = 0
+    var lat = 0
+    var lng = 0
+    while (index < encoded.length) {
+        var result = 0
+        var shift = 0
+        var b: Int
+        do {
+            b = encoded[index++].code - 63
+            result = result or ((b and 0x1f) shl shift)
+            shift += 5
+        } while (b >= 0x20)
+        lat += if (result and 1 != 0) (result shr 1).inv() else result shr 1
+        result = 0
+        shift = 0
+        do {
+            b = encoded[index++].code - 63
+            result = result or ((b and 0x1f) shl shift)
+            shift += 5
+        } while (b >= 0x20)
+        lng += if (result and 1 != 0) (result shr 1).inv() else result shr 1
+        points.add(Point.fromLngLat(lng / 1e6, lat / 1e6))
+    }
+    return points
+}
+
 @Composable
 fun HomeScreen(
     state: DriverUiState,
@@ -108,12 +186,18 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onClearMessages: () -> Unit,
     onOpenOps: () -> Unit = {},
-    onOpenMenu: () -> Unit = {},
     onSubmitSupport: (String, String) -> Unit = { _, _ -> },
 ) {
     val context = LocalContext.current
     val primary = state.primaryTrip
     var supportOpen by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    var navRoute by remember { mutableStateOf<List<Point>>(emptyList()) }
+    var navDest by remember { mutableStateOf<MapMarker?>(null) }
+    var navDistM by remember { mutableStateOf<Double?>(null) }
+    var navDurS by remember { mutableStateOf<Long?>(null) }
+    var navLoading by remember { mutableStateOf(false) }
+    var navFailed by remember { mutableStateOf(false) }
     val markers = buildList {
         primary?.storeLat?.let { lat ->
             primary.storeLng?.let { lng ->
@@ -138,8 +222,18 @@ fun HomeScreen(
     val err = friendlyError(state.error)
     val hasOffer = state.online && state.activeTrips.isEmpty() && state.offers.isNotEmpty()
     val hasTrip = state.activeTrips.isNotEmpty()
+    val cs = MaterialTheme.colorScheme
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF1A2332))) {
+    // Clear in-app Mapbox navigation when the trip moves to the next step.
+    LaunchedEffect(primary?.order?.status) {
+        navRoute = emptyList()
+        navDest = null
+        navDistM = null
+        navDurS = null
+        navFailed = false
+    }
+
+    Box(Modifier.fillMaxSize().background(Color(0xFFE8EAED))) {
         DriverMapView(
             modifier = Modifier.fillMaxSize(),
             centerLat = centerLat,
@@ -148,9 +242,11 @@ fun HomeScreen(
             userLat = state.geo?.lat,
             userLng = state.geo?.lng,
             userBearing = state.geo?.bearing,
+            route = navRoute,
+            destination = navDest,
         )
 
-        // Top chrome — status pill centered between avatar and support
+        // Top chrome — brand status pill centered between Ops and support
         Row(
             Modifier
                 .align(Alignment.TopCenter)
@@ -168,30 +264,19 @@ fun HomeScreen(
                         Modifier
                             .shadow(6.dp, RoundedCornerShape(22.dp))
                             .clip(RoundedCornerShape(22.dp))
-                            .background(Color(0xFF1C1C1E))
+                            .background(Color.White)
+                            .border(1.dp, cs.outline, RoundedCornerShape(22.dp))
                             .clickable(onClick = onOpenOps)
                             .padding(horizontal = 12.dp, vertical = 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Text(
                             "Ops",
-                            color = Color.White,
+                            color = TextDark,
                             fontWeight = FontWeight.SemiBold,
                             fontSize = 13.sp,
                         )
                     }
-                }
-
-                Box(
-                    Modifier
-                        .size(42.dp)
-                        .shadow(6.dp, CircleShape)
-                        .clip(CircleShape)
-                        .background(GreenBtn)
-                        .clickable { onOpenMenu() },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Outlined.Person, null, tint = Color.White, modifier = Modifier.size(22.dp))
                 }
             }
 
@@ -200,7 +285,12 @@ fun HomeScreen(
                     Modifier
                         .shadow(6.dp, RoundedCornerShape(24.dp))
                         .clip(RoundedCornerShape(24.dp))
-                        .background(if (state.online) GreenBtn else Color(0xFF374151))
+                        .background(if (state.online) GreenBtn else Color.White)
+                        .border(
+                            1.dp,
+                            if (state.online) Color.Transparent else cs.outline,
+                            RoundedCornerShape(24.dp),
+                        )
                         .padding(horizontal = 14.dp, vertical = 9.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
@@ -218,7 +308,7 @@ fun HomeScreen(
                             state.busy -> "Διαθέσιμος…"
                             else -> "Διαθέσιμος"
                         },
-                        color = if (state.online) Color.White else Color(0xFFE5E7EB),
+                        color = if (state.online) Color.White else TextDark,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                     )
@@ -235,16 +325,17 @@ fun HomeScreen(
                         .size(42.dp)
                         .shadow(6.dp, CircleShape)
                         .clip(CircleShape)
-                        .background(GreenBtn)
+                        .background(Color.White)
+                        .border(1.dp, cs.outline, CircleShape)
                         .clickable { supportOpen = true },
                     contentAlignment = Alignment.Center,
                 ) {
-                    Icon(Icons.Outlined.HeadsetMic, null, tint = Color.White, modifier = Modifier.size(22.dp))
+                    Icon(Icons.Outlined.HeadsetMic, null, tint = FreshGreen, modifier = Modifier.size(22.dp))
                 }
             }
         }
 
-        // Bottom sheet: status card + slide-to-go-available control
+        // Bottom dock — status card + slide-to-go-available control
         Column(
             Modifier
                 .align(Alignment.BottomCenter)
@@ -266,6 +357,24 @@ fun HomeScreen(
                         Text("OK")
                     }
                 }
+            }
+
+            navDest?.let { dest ->
+                NavBanner(
+                    label = dest.label,
+                    distanceMeters = navDistM,
+                    durationSeconds = navDurS,
+                    loading = navLoading,
+                    failed = navFailed,
+                    onClose = {
+                        navDest = null
+                        navRoute = emptyList()
+                        navDistM = null
+                        navDurS = null
+                        navFailed = false
+                    },
+                )
+                Spacer(Modifier.height(10.dp))
             }
 
             when {
@@ -294,7 +403,7 @@ fun HomeScreen(
 
                 hasTrip -> {
                     Card(
-                        Modifier.fillMaxWidth().heightIn(max = 400.dp).shadow(16.dp, RoundedCornerShape(28.dp)),
+                        Modifier.fillMaxWidth().heightIn(max = 460.dp).shadow(16.dp, RoundedCornerShape(28.dp)),
                         shape = RoundedCornerShape(28.dp),
                         colors = CardDefaults.cardColors(containerColor = Color.White),
                         elevation = CardDefaults.cardElevation(0.dp),
@@ -313,16 +422,27 @@ fun HomeScreen(
                                             context.startActivity(Intent(Intent.ACTION_DIAL, Uri.parse("tel:$phone")))
                                         }
                                     },
-                                    onNavigate = { lat, lng, _ ->
-                                        val uri = Uri.parse("google.navigation:q=$lat,$lng&mode=d")
-                                        val intent = Intent(Intent.ACTION_VIEW, uri).setPackage("com.google.android.apps.maps")
-                                        runCatching { context.startActivity(intent) }.onFailure {
-                                            context.startActivity(
-                                                Intent(
-                                                    Intent.ACTION_VIEW,
-                                                    Uri.parse("https://www.google.com/maps/dir/?api=1&destination=$lat,$lng"),
-                                                ),
-                                            )
+                                    onNavigate = { lat, lng, label ->
+                                        navDest = MapMarker(lat, lng, label, "#06C167")
+                                        navRoute = emptyList()
+                                        navDistM = null
+                                        navDurS = null
+                                        navFailed = false
+                                        val startLat = state.geo?.lat
+                                        val startLng = state.geo?.lng
+                                        if (startLat != null && startLng != null) {
+                                            navLoading = true
+                                            scope.launch {
+                                                val res = fetchRoute(startLat, startLng, lat, lng)
+                                                navLoading = false
+                                                if (res != null) {
+                                                    navRoute = res.points
+                                                    navDistM = res.distanceMeters
+                                                    navDurS = res.durationSeconds
+                                                } else {
+                                                    navFailed = true
+                                                }
+                                            }
                                         }
                                     },
                                 )
@@ -384,7 +504,6 @@ fun HomeScreen(
         DriverSupportDialog(
             open = supportOpen,
             onDismiss = { supportOpen = false },
-            tickets = state.tickets,
             submitting = state.busy,
             onSubmit = { cat, desc ->
                 onSubmitSupport(cat, desc)
@@ -400,6 +519,71 @@ private fun Handle() {
         Box(
             Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFFD1D5DB)),
         )
+    }
+}
+
+@Composable
+private fun NavBanner(
+    label: String,
+    distanceMeters: Double?,
+    durationSeconds: Long?,
+    loading: Boolean,
+    failed: Boolean,
+    onClose: () -> Unit,
+) {
+    Card(
+        Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(20.dp)),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(0.dp),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(38.dp)
+                    .clip(RoundedCornerShape(12.dp))
+                    .background(FreshGreen.copy(alpha = 0.14f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.Navigation, null, tint = GreenBtn, modifier = Modifier.size(20.dp))
+            }
+            Spacer(Modifier.width(10.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Οδηγίες Mapbox", fontSize = 12.sp, fontWeight = FontWeight.SemiBold, color = TextMuted)
+                Text(
+                    when {
+                        loading -> "Υπολογισμός διαδρομής…"
+                        failed -> "Δεν βρέθηκε διαδρομή — δείχνω τον προορισμό στον χάρτη."
+                        else -> buildString {
+                            append(label)
+                            distanceMeters?.let { d ->
+                                append(" · ")
+                                append(if (d < 1000) "${d.toInt()} μ" else "%.1f km".format(d / 1000))
+                            }
+                            durationSeconds?.let { t ->
+                                append(" · ${(t / 60).coerceAtLeast(1)} λεπτά")
+                            }
+                        }
+                    },
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark,
+                )
+            }
+            Spacer(Modifier.width(8.dp))
+            Box(
+                Modifier
+                    .size(30.dp)
+                    .clip(CircleShape)
+                    .clickable(onClick = onClose),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Filled.Close, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+            }
+        }
     }
 }
 
@@ -460,7 +644,7 @@ private fun OfferSheet(
                         "ΝΕΑ ΠΡΟΣΦΟΡΑ · #$orderCode",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color(0xFF9CA3AF),
+                        color = TextMuted,
                         letterSpacing = 0.3.sp,
                     )
                     Spacer(Modifier.height(4.dp))
@@ -473,7 +657,10 @@ private fun OfferSheet(
                         overflow = TextOverflow.Ellipsis,
                     )
                 }
-                Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 28.sp, color = GreenBtn)
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("Κέρδος", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
+                    Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 28.sp, color = GreenBtn)
+                }
             }
 
             Spacer(Modifier.height(10.dp))
@@ -483,7 +670,7 @@ private fun OfferSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (isCash) {
-                    Chip("Μετρητά ${moneyPlain(cashAmount)}€", Color(0xFFFFF3E0), Color(0xFFE65100))
+                    Chip("Μετρητά ${moneyPlain(cashAmount)}€", Color(0xFFFFF3E0), FreshOrange)
                 }
                 formatDistance(offer.order.distance_km)?.let {
                     Chip(it, Color(0xFFF3F4F6), TextMuted)
@@ -510,7 +697,7 @@ private fun OfferSheet(
             Spacer(Modifier.height(14.dp))
 
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Storefront, null, tint = Color(0xFFE65100), modifier = Modifier.size(18.dp))
+                Icon(Icons.Outlined.Storefront, null, tint = FreshOrange, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(8.dp))
                 Text(
                     buildString {
@@ -592,6 +779,74 @@ private fun Chip(text: String, bg: Color, fg: Color) {
     )
 }
 
+/** Uber Eats-style 3-step trip progress: Παραλαβή → Οδήγηση → Παράδοση. */
+private fun tripStepIndex(status: String): Int = when (status) {
+    "accepted", "preparing", "ready" -> 0
+    "arrived" -> 1
+    "picked_up" -> 2
+    else -> 2
+}
+
+private fun tripStepLabel(index: Int): String = when (index) {
+    0 -> "Παραλαβή"
+    1 -> "Στο κατάστημα"
+    else -> "Παράδοση"
+}
+
+@Composable
+private fun TripProgress(currentStep: Int) {
+    Row(
+        Modifier.fillMaxWidth().padding(vertical = 2.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        (0..2).forEach { i ->
+            val done = i < currentStep
+            val active = i == currentStep
+            val color = when {
+                done -> GreenBtn
+                active -> FreshGreen
+                else -> Color(0xFFD1D5DB)
+            }
+            Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    Modifier
+                        .size(22.dp)
+                        .clip(CircleShape)
+                        .background(if (done || active) color else Color(0xFFE5E7EB))
+                        .border(if (done) 0.dp else 1.5.dp, if (active) color else Color(0xFFD1D5DB), CircleShape),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (done) {
+                        Icon(Icons.Filled.Check, null, tint = Color.White, modifier = Modifier.size(13.dp))
+                    } else if (active) {
+                        Text("${i + 1}", color = Color.White, fontSize = 11.sp, fontWeight = FontWeight.Bold)
+                    }
+                }
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    tripStepLabel(i),
+                    fontSize = 10.sp,
+                    color = if (done || active) TextDark else TextMuted,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Medium,
+                )
+            }
+            if (i < 2) {
+                Box(
+                    Modifier
+                        .weight(0.5f)
+                        .height(2.dp)
+                        .clip(RoundedCornerShape(1.dp))
+                        .background(
+                            if (i < currentStep) GreenBtn
+                            else if (i == currentStep) GreenBtn.copy(alpha = 0.35f)
+                            else Color(0xFFE5E7EB),
+                        ),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 private fun ActiveTripCard(
     trip: ActiveTripUi,
@@ -606,6 +861,7 @@ private fun ActiveTripCard(
     val payout = (trip.order.driver_payout ?: 0.0) +
         (trip.order.tip_amount ?: 0.0) +
         (trip.order.driver_pool_bonus ?: 0.0)
+    val currentStep = tripStepIndex(status)
 
     Column(Modifier.fillMaxWidth()) {
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -623,10 +879,13 @@ private fun ActiveTripCard(
         }
         if (trip.order.payment_method?.equals("cash", ignoreCase = true) == true) {
             Spacer(Modifier.height(6.dp))
-            Chip("Είσπραξη ${eur(trip.order.total_amount ?: 0.0)}", Color(0xFFFFF3E0), Color(0xFFE65100))
+            Chip("Είσπραξη ${eur(trip.order.total_amount ?: 0.0)}", Color(0xFFFFF3E0), FreshOrange)
         }
 
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(14.dp))
+        TripProgress(currentStep)
+
+        Spacer(Modifier.height(14.dp))
         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             val storeLat = trip.storeLat
             val storeLng = trip.storeLng

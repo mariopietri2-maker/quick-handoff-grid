@@ -115,7 +115,7 @@ fun ProfileScreen(
                 enabled = !state.busy,
                 modifier = Modifier.fillMaxWidth().height(50.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = FreshGreen, contentColor = Color.Black),
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreen, contentColor = Color.White),
             ) { Text("Αποθήκευση", fontWeight = FontWeight.Bold) }
         }
 
@@ -204,7 +204,7 @@ fun ProfileScreen(
         }
         Spacer(Modifier.height(12.dp))
         Text(
-            "Fresh Driver Native · v2.2",
+            "Fresh Driver Native · v2.3",
             color = cs.onSurfaceVariant,
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.align(Alignment.CenterHorizontally),

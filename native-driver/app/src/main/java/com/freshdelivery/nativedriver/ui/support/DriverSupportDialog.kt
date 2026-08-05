@@ -39,12 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import com.freshdelivery.nativedriver.data.SupportTicketRow
 import com.freshdelivery.nativedriver.ui.theme.FreshAmber
 import com.freshdelivery.nativedriver.ui.theme.FreshBlue
 import com.freshdelivery.nativedriver.ui.theme.FreshError
@@ -73,7 +71,6 @@ private val CATEGORIES = listOf(
 fun DriverSupportDialog(
     open: Boolean,
     onDismiss: () -> Unit,
-    tickets: List<SupportTicketRow>,
     submitting: Boolean,
     onSubmit: (category: String, description: String) -> Unit,
 ) {
@@ -117,16 +114,6 @@ fun DriverSupportDialog(
                     TextButton(onClick = onDismiss) {
                         Text("Κλείσιμο")
                     }
-                }
-
-                if (tickets.isNotEmpty()) {
-                    Spacer(Modifier.height(16.dp))
-                    Text(
-                        "Ανοιχτά tickets: ${tickets.count { it.status != "resolved" }}",
-                        color = FreshGreen,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
                 }
 
                 Spacer(Modifier.height(16.dp))
@@ -183,17 +170,9 @@ fun DriverSupportDialog(
                     } else {
                         androidx.compose.material3.Icon(Icons.Outlined.HeadsetMic, null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.size(8.dp))
-                        Text("Υποβολή & Άνοιγμα Συνομιλίας", fontWeight = FontWeight.Bold)
+                        Text("Υποβολή Αιτήματος", fontWeight = FontWeight.Bold)
                     }
                 }
-                Spacer(Modifier.height(6.dp))
-                Text(
-                    "Οι συνομιλίες σας εμφανίζονται στο Inbox.",
-                    color = cs.onSurfaceVariant,
-                    fontSize = 11.sp,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.fillMaxWidth(),
-                )
             }
         }
     }
