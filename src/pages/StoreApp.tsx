@@ -6,6 +6,7 @@ import {
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { OrderQueue } from '@/components/store/OrderQueue';
+import StoreDashboard from '@/components/store/StoreDashboard';
 import { MenuControl } from '@/components/store/MenuControl';
 import { StoreSettings } from '@/components/store/StoreSettings';
 import { PrinterSettings } from '@/components/store/PrinterSettings';
@@ -339,19 +340,12 @@ export default function StoreApp() {
                     <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-3" />
                     <p className="text-muted-foreground font-heading">Φόρτωση παραγγελιών...</p>
                   </div>
-                ) : orders.length === 0 ? (
-                  <div className="text-center py-16">
-                    <ClipboardList className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                    <p className="font-heading text-foreground">Δεν υπάρχουν ενεργές παραγγελίες</p>
-                    <p className="text-sm text-muted-foreground mt-1">
-                      Νέες παραγγελίες θα εμφανιστούν εδώ σε πραγματικό χρόνο
-                    </p>
-                  </div>
                 ) : (
-                  <OrderQueue
+                  <StoreDashboard
+                    storeId={store.id}
+                    storeName={store.name}
                     orders={orders}
                     onStatusUpdate={updateOrderStatus}
-                    storeName={store.name}
                     pendingIds={pendingIds}
                   />
                 )}
