@@ -6,14 +6,16 @@ COPY package.json package-lock.json* ./
 RUN npm ci --legacy-peer-deps
 
 COPY . .
-# Vite inlines VITE_* vars at build time — set them in Railway service variables.
+# Use the repo's build script so the canonical Supabase project (and all
+# VITE_* keys) are always forced from .env.production, regardless of any
+# stale Railway dashboard VITE_* overrides pointing at an older project.
 ARG VITE_SUPABASE_URL
 ARG VITE_SUPABASE_PUBLISHABLE_KEY
 ARG VITE_SUPABASE_ANON_KEY
 ARG VITE_SUPABASE_PROJECT_ID
 ARG VITE_MAPBOX_TOKEN
 ARG VITE_PAYMENTS_CLIENT_TOKEN
-RUN npm run build:vite
+RUN npm run build
 
 FROM node:20-alpine AS runtime
 WORKDIR /app
