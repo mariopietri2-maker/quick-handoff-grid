@@ -163,7 +163,7 @@ function SidebarBody({
     <>
       {/* Brand — corporate wordmark */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0 bg-gradient-to-b from-card to-muted/20">
-        <div className="h-9 w-9 rounded-lg bg-gradient-to-br from-primary via-primary to-primary/60 flex items-center justify-center shrink-0 shadow-md ring-1 ring-primary/20">
+        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/60 flex items-center justify-center shrink-0 shadow-md ring-1 ring-primary/20">
           <Shield className="h-[18px] w-[18px] text-primary-foreground" strokeWidth={2.5} />
         </div>
         {!collapsed && (
@@ -177,52 +177,63 @@ function SidebarBody({
       {/* Nav */}
       <ScrollArea className="flex-1 py-3">
         <nav className="px-2 space-y-1">
-          {NAV_SECTIONS.map((sec) => {
+          {NAV_SECTIONS.map((sec, i) => {
             const isActive = activeParent === sec.id;
             const showBadge = sec.id === 'money' && pendingTickets > 0;
+            const sectionLabel =
+              i === 0 ? 'Πλοήγηση'
+              : sec.id === 'stores' ? 'Λειτουργία'
+              : sec.id === 'money' ? 'Οικονομικά'
+              : null;
             return (
-              <button
-                key={sec.id}
-                onClick={() => onSectionChange(sec.defaultTab)}
-                title={collapsed ? sec.label : undefined}
-                className={cn(
-                  'group relative w-full flex items-center gap-3 rounded-lg transition-all',
-                  collapsed ? 'h-10 px-2 justify-center' : 'h-11 px-3',
-                  isActive
-                    ? 'bg-gradient-to-r from-primary/[0.08] via-card to-card border border-border shadow-sm'
-                    : 'hover:bg-muted/60',
+              <div key={sec.id}>
+                {sectionLabel && !collapsed && (
+                  <p className="px-3 pt-3 pb-1 text-[10px] font-semibold uppercase tracking-[0.12em] text-muted-foreground/70">
+                    {sectionLabel}
+                  </p>
                 )}
-              >
-                {isActive && !collapsed && (
-                  <span className="absolute left-0 top-2 bottom-2 w-[3px] rounded-full bg-primary" />
-                )}
-                <span
+                <button
+                  onClick={() => onSectionChange(sec.defaultTab)}
+                  title={collapsed ? sec.label : undefined}
                   className={cn(
-                    'h-8 w-8 rounded-md flex items-center justify-center shrink-0 transition-colors',
-                    isActive ? sec.accentBg : 'bg-transparent group-hover:bg-muted',
+                    'group relative w-full flex items-center gap-3 rounded-xl transition-all',
+                    collapsed ? 'h-10 px-2 justify-center' : 'h-11 px-3',
+                    isActive
+                      ? 'bg-primary/10 border border-primary/25 text-foreground'
+                      : 'border border-transparent text-muted-foreground hover:bg-muted/60 hover:text-foreground',
                   )}
                 >
-                  <sec.icon className={cn('h-4 w-4', isActive ? sec.accent : 'text-muted-foreground')} strokeWidth={isActive ? 2.25 : 2} />
-                </span>
-                {!collapsed && (
-                  <>
-                    <span className={cn(
-                      'flex-1 text-left text-[13px] truncate',
-                      isActive ? 'text-foreground font-semibold' : 'text-muted-foreground font-medium',
-                    )}>
-                      {sec.label}
-                    </span>
-                    {showBadge && (
-                      <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px]">
-                        {pendingTickets}
-                      </Badge>
+                  {isActive && !collapsed && (
+                    <span className="absolute left-0 top-2.5 bottom-2.5 w-[3px] rounded-full bg-primary shadow-primary" />
+                  )}
+                  <span
+                    className={cn(
+                      'h-8 w-8 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+                      isActive ? 'bg-primary text-primary-foreground shadow-primary' : 'bg-transparent group-hover:bg-muted',
                     )}
-                  </>
-                )}
-                {collapsed && showBadge && (
-                  <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-destructive" />
-                )}
-              </button>
+                  >
+                    <sec.icon className={cn('h-4 w-4')} strokeWidth={isActive ? 2.25 : 2} />
+                  </span>
+                  {!collapsed && (
+                    <>
+                      <span className={cn(
+                        'flex-1 text-left text-[13px] truncate',
+                        isActive ? 'text-foreground font-semibold' : 'font-medium',
+                      )}>
+                        {sec.label}
+                      </span>
+                      {showBadge && (
+                        <Badge variant="destructive" className="h-5 min-w-[20px] px-1.5 text-[10px]">
+                          {pendingTickets}
+                        </Badge>
+                      )}
+                    </>
+                  )}
+                  {collapsed && showBadge && (
+                    <span className="absolute right-1 top-1 h-1.5 w-1.5 rounded-full bg-destructive" />
+                  )}
+                </button>
+              </div>
             );
           })}
         </nav>
@@ -230,6 +241,20 @@ function SidebarBody({
 
       {/* Footer */}
       <div className="border-t border-border p-2 shrink-0 space-y-1">
+        <div className={cn(
+          'flex items-center gap-2.5 rounded-lg px-2 py-1.5 hover:bg-muted/60 transition-colors cursor-pointer',
+          collapsed && 'justify-center px-1',
+        )}>
+          <div className="h-8 w-8 rounded-full bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0 ring-2 ring-primary/20">
+            <UserCircle className="h-4 w-4 text-primary-foreground" />
+          </div>
+          {!collapsed && (
+            <div className="min-w-0">
+              <p className="text-[11.5px] font-semibold truncate">Διαχειριστής</p>
+              <p className="text-[10px] text-muted-foreground truncate">Super Admin</p>
+            </div>
+          )}
+        </div>
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button
