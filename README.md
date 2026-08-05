@@ -118,6 +118,16 @@ Customer and driver production apps use Capacitor shells for Play / App Store. T
 ./scripts/sync-ios-apps.sh       # scaffold ios-customer + ios-driver (archive on a Mac)
 ```
 
+### 📲 Download the native Driver app (Android)
+
+Scan with your phone to download the latest **Fresh Delivery Driver** APK.
+
+<div align="center">
+  <img src="docs/qr-driver-apk.png" width="220" height="220" alt="QR code — Fresh Delivery Driver APK download"/>
+  <br/>
+  <sub>→ <code>fresh-driver-native-debug.apk</code> from the <a href="https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1">mobile-apks-v1</a> release. The URL is stable, so this QR always reflects the newest build.</sub>
+</div>
+
 **True native driver (Kotlin + Jetpack Compose)** — Capacitor-parity app in [`native-driver/`](native-driver/):
 
 ```bash
