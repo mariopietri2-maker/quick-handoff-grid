@@ -12,6 +12,7 @@ import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, A
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportAIPanel } from '@/components/support/SupportAIPanel';
+import SupportDashboard from '@/components/support/SupportDashboard';
 
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
@@ -414,6 +415,11 @@ export default function SupportApp() {
 
       <div className="p-4 space-y-4 max-w-3xl mx-auto">
         <AnnouncementsBanner audience="support" />
+        <SupportDashboard
+          tickets={tickets ?? []}
+          profiles={profiles ?? []}
+          onOpen={(id) => setActiveTicket(tickets?.find((t) => t.id === id) ?? null)}
+        />
         <div className="grid grid-cols-3 gap-2">
           {([
             { k: 'open', label: 'Ανοιχτά', Icon: AlertTriangle, c: 'text-red-500', bg: 'bg-red-500/10', bar: 'bg-red-500' },
