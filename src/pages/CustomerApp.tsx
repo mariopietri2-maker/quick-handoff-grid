@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo, useRef } from 'react';
+import { useState, useEffect, useMemo, useRef, lazy, Suspense } from 'react';
 import {
   Search,
   MapPin,
@@ -23,7 +23,6 @@ import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
-import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
@@ -31,6 +30,12 @@ import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import { AiSpotlightCard, AiCardStrip } from '@/components/customer/AiSpotlightCard';
 import { storeMatchesCategory } from '@/lib/category-match';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
+
+// Lazy-load the address picker: it pulls in the ~1.7MB mapbox-gl chunk, so it
+// should only load when the customer actually opens the delivery address sheet.
+const AddressAutocomplete = lazy(() =>
+  import('@/components/AddressAutocomplete').then((m) => ({ default: m.AddressAutocomplete })),
+);
 
 type StoreRow = Database['public']['Tables']['stores']['Row'] & {
   cover_image_url?: string | null;
@@ -774,14 +779,16 @@ export default function CustomerApp() {
             <SheetTitle>Διεύθυνση παράδοσης</SheetTitle>
           </SheetHeader>
           <div className="mt-4 space-y-3">
-            <AddressAutocomplete
-              value={pendingAddress}
-              onChange={(addr, lat, lon) => {
-                setPendingAddress(addr);
-                if (lat != null && lon != null) setPendingCoords({ lat, lon });
-                else if (!addr) setPendingCoords(null);
-              }}
-            />
+            <Suspense fallback={<div className="h-12 rounded-lg bg-muted animate-pulse" />}>
+              <AddressAutocomplete
+                value={pendingAddress}
+                onChange={(addr, lat, lon) => {
+                  setPendingAddress(addr);
+                  if (lat != null && lon != null) setPendingCoords({ lat, lon });
+                  else if (!addr) setPendingCoords(null);
+                }}
+              />
+            </Suspense>
             <div className="flex justify-end gap-2 pt-2">
               {deliveryAddress && (
                 <button
