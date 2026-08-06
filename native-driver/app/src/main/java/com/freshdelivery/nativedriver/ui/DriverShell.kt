@@ -160,12 +160,15 @@ fun DriverShell(
         }
 
         // Global floating menu button overlays every screen; opens the tab list.
-        GlobalMenuButton(
-            tabs = tabs,
-            current = state.tab,
-            unread = unread,
-            onTab = onTab,
-        )
+        // Hidden while the Ops screen is open so it does not overlap it.
+        if (!state.opsOpen) {
+            GlobalMenuButton(
+                tabs = tabs,
+                current = state.tab,
+                unread = unread,
+                onTab = onTab,
+            )
+        }
 
         if (state.supportOpen) {
             SupportCenter(
@@ -210,51 +213,53 @@ private fun GlobalMenuButton(
             .statusBarsPadding()
             .padding(start = 12.dp, top = 10.dp),
     ) {
-        Box(
-            Modifier
-                .align(Alignment.TopStart)
-                .size(42.dp)
-                .shadow(6.dp, CircleShape)
-                .clip(CircleShape)
-                .background(MenuSurface)
-                .border(1.dp, MenuBorder, CircleShape)
-                .clickable { open = true },
-            contentAlignment = Alignment.Center,
-        ) {
-            Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
-        }
+        // Anchor box sized to the button so the dropdown opens directly below it.
+        Box(Modifier.align(Alignment.TopStart)) {
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .shadow(6.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(MenuSurface)
+                    .border(1.dp, MenuBorder, CircleShape)
+                    .clickable { open = true },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+            }
 
-        DropdownMenu(
-            expanded = open,
-            onDismissRequest = { open = false },
-            containerColor = MenuSurface,
-        ) {
-            tabs.forEach { item ->
-                val selected = current == item.tab
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            item.label,
-                            fontWeight = if (selected) FontWeight.Bold else null,
-                            color = if (selected) FreshGreenBright else MenuTextMuted,
-                        )
-                    },
-                    leadingIcon = {
-                        if (item.tab == DriverTab.Inbox && unread > 0) {
-                            BadgedIcon(icon = item.unselectedIcon, count = unread)
-                        } else {
-                            Icon(
-                                if (selected) item.selectedIcon else item.unselectedIcon,
-                                contentDescription = item.label,
-                                tint = if (selected) FreshGreenBright else MenuIconMuted,
+            DropdownMenu(
+                expanded = open,
+                onDismissRequest = { open = false },
+                containerColor = MenuSurface,
+            ) {
+                tabs.forEach { item ->
+                    val selected = current == item.tab
+                    DropdownMenuItem(
+                        text = {
+                            Text(
+                                item.label,
+                                fontWeight = if (selected) FontWeight.Bold else null,
+                                color = if (selected) FreshGreenBright else MenuTextMuted,
                             )
-                        }
-                    },
-                    onClick = {
-                        open = false
-                        onTab(item.tab)
-                    },
-                )
+                        },
+                        leadingIcon = {
+                            if (item.tab == DriverTab.Inbox && unread > 0) {
+                                BadgedIcon(icon = item.unselectedIcon, count = unread)
+                            } else {
+                                Icon(
+                                    if (selected) item.selectedIcon else item.unselectedIcon,
+                                    contentDescription = item.label,
+                                    tint = if (selected) FreshGreenBright else MenuIconMuted,
+                                )
+                            }
+                        },
+                        onClick = {
+                            open = false
+                            onTab(item.tab)
+                        },
+                    )
+                }
             }
         }
     }

@@ -270,7 +270,12 @@ fun HomeScreen(
                 Spacer(Modifier.width(0.dp))
             }
 
-            Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
+            Box(
+                Modifier
+                    .weight(1f)
+                    .align(Alignment.Top),
+                contentAlignment = Alignment.Center,
+            ) {
                 Row(
                     Modifier
                         .shadow(6.dp, RoundedCornerShape(24.dp))
