@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import QRCode from 'qrcode';
-import { Download, Smartphone, Bike, ArrowLeft, ShieldAlert, Cpu } from 'lucide-react';
+import { Download, Smartphone, Bike, ArrowLeft, ShieldAlert, Cpu, ExternalLink } from 'lucide-react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
@@ -41,7 +41,7 @@ function flavorIcon(flavor: ApkFlavor) {
   return Bike;
 }
 
-function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: boolean }) {
+function ApkCard({ flavor, highlighted, previewHref }: { flavor: ApkFlavor; highlighted: boolean; previewHref?: string }) {
   const apk = APK_DOWNLOADS[flavor];
   const landing = useMemo(
     () => apkLandingUrl(flavor, typeof window !== 'undefined' ? window.location.origin : undefined),
@@ -96,6 +96,18 @@ function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: bool
         <Download className="h-4 w-4 mr-2" />
         Κατέβασε {apk.title} · {apk.sizeLabel}
       </Button>
+
+      {previewHref && (
+        <a
+          href={previewHref}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="mt-3 inline-flex items-center gap-1.5 text-xs font-heading font-bold text-primary hover:text-primary/80 transition-colors"
+        >
+          <ExternalLink className="h-3.5 w-3.5" />
+          Προεπισκόπηση Driver UI (HTML)
+        </a>
+      )}
     </article>
   );
 }
@@ -160,7 +172,7 @@ export default function DownloadAppPage() {
           <ApkCard flavor="customer" highlighted={focus === 'customer'} />
           <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
           <ApkCard flavor="driver" highlighted={focus === 'driver'} />
-          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
+          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} previewHref="/driver-ui-preview.html" />
         </div>
 
         <div className="mt-8 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 flex gap-3 text-left max-w-2xl mx-auto">
