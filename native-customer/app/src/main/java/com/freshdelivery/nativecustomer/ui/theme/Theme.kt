@@ -13,41 +13,49 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Uber Eats–inspired palette (always light). */
-val UberGreen = Color(0xFF06C167)
-val UberGreenDark = Color(0xFF05A357)
-val UberBlack = Color(0xFF000000)
-val UberInk = Color(0xFF141414)
-val UberMuted = Color(0xFF6B6B6B)
-val UberBg = Color(0xFFFFFFFF)
-val UberSurface = Color(0xFFF6F6F6)
-val UberChip = Color(0xFFEEEEEE)
-val UberDivider = Color(0xFFE8E8E8)
+/** Modern fresh palette — airy surfaces, emerald primary, violet accent. */
+val FreshGreen = Color(0xFF10B981)
+val FreshGreenDark = Color(0xFF0E9F6E)
+val FreshGreenSoft = Color(0xFFDCFCE7)
+val FreshViolet = Color(0xFF7C6CFF)
+val FreshVioletSoft = Color(0xFFEFEBFF)
+val FreshAmber = Color(0xFFF59E0B)
+val FreshAmberSoft = Color(0xFFFFF4E5)
+val FreshRose = Color(0xFFF43F5E)
+val FreshRoseSoft = Color(0xFFFFE9EC)
+val FreshInk = Color(0xFF151821)
+val FreshMuted = Color(0xFF6E7482)
+val FreshBg = Color(0xFFF6F7F9)
+val FreshSurface = Color(0xFFFFFFFF)
+val FreshChip = Color(0xFFEDF0F4)
+val FreshDivider = Color(0xFFE9EBF0)
 
-private val UberColors = lightColorScheme(
-    primary = UberGreen,
+private val FreshColors = lightColorScheme(
+    primary = FreshGreen,
     onPrimary = Color.White,
-    primaryContainer = Color(0xFFD4F7E5),
-    onPrimaryContainer = UberGreenDark,
-    secondary = UberInk,
+    primaryContainer = FreshGreenSoft,
+    onPrimaryContainer = FreshGreenDark,
+    secondary = FreshViolet,
     onSecondary = Color.White,
-    background = UberBg,
-    surface = UberBg,
-    surfaceVariant = UberSurface,
-    onBackground = UberInk,
-    onSurface = UberInk,
-    onSurfaceVariant = UberMuted,
-    outline = UberDivider,
-    error = Color(0xFFE11900),
+    secondaryContainer = FreshVioletSoft,
+    onSecondaryContainer = FreshViolet,
+    background = FreshBg,
+    surface = FreshSurface,
+    surfaceVariant = FreshChip,
+    onBackground = FreshInk,
+    onSurface = FreshInk,
+    onSurfaceVariant = FreshMuted,
+    outline = FreshDivider,
+    error = FreshRose,
     onError = Color.White,
 )
 
-private val UberType = Typography(
+private val FreshType = Typography(
     displaySmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 28.sp,
-        letterSpacing = (-0.4).sp,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 30.sp,
+        letterSpacing = (-0.5).sp,
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -59,6 +67,7 @@ private val UberType = Typography(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
         fontSize = 20.sp,
+        letterSpacing = (-0.2).sp,
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -84,7 +93,7 @@ private val UberType = Typography(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Normal,
         fontSize = 12.sp,
-        color = UberMuted,
+        color = FreshMuted,
     ),
     labelLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -98,12 +107,12 @@ private val UberType = Typography(
     ),
 )
 
-private val UberShapes = Shapes(
-    extraSmall = RoundedCornerShape(8.dp),
-    small = RoundedCornerShape(12.dp),
-    medium = RoundedCornerShape(16.dp),
-    large = RoundedCornerShape(20.dp),
-    extraLarge = RoundedCornerShape(28.dp),
+private val FreshShapes = Shapes(
+    extraSmall = RoundedCornerShape(12.dp),
+    small = RoundedCornerShape(14.dp),
+    medium = RoundedCornerShape(18.dp),
+    large = RoundedCornerShape(24.dp),
+    extraLarge = RoundedCornerShape(32.dp),
 )
 
 @Composable
@@ -111,9 +120,9 @@ fun FreshCustomerTheme(
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
-        colorScheme = UberColors,
-        typography = UberType,
-        shapes = UberShapes,
+        colorScheme = FreshColors,
+        typography = FreshType,
+        shapes = FreshShapes,
         content = content,
     )
 }

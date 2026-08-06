@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -29,15 +30,27 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ChevronRight
+import androidx.compose.material.icons.outlined.Close
+import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.DirectionsBike
+import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Home
+import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Logout
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.MyLocation
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Remove
+import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ShoppingBag
+import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Store
+import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -69,13 +82,13 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
-import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -86,11 +99,21 @@ import com.freshdelivery.nativecustomer.data.OrderUi
 import com.freshdelivery.nativecustomer.data.StoreRow
 import com.freshdelivery.nativecustomer.ui.map.MapMarker
 import com.freshdelivery.nativecustomer.ui.map.MapboxView
-import com.freshdelivery.nativecustomer.ui.theme.UberChip
-import com.freshdelivery.nativecustomer.ui.theme.UberGreen
-import com.freshdelivery.nativecustomer.ui.theme.UberInk
-import com.freshdelivery.nativecustomer.ui.theme.UberMuted
-import com.freshdelivery.nativecustomer.ui.theme.UberSurface
+import com.freshdelivery.nativecustomer.ui.theme.FreshAmber
+import com.freshdelivery.nativecustomer.ui.theme.FreshChip
+import com.freshdelivery.nativecustomer.ui.theme.FreshDivider
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreen
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreenDark
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreenSoft
+import com.freshdelivery.nativecustomer.ui.theme.FreshInk
+import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
+import com.freshdelivery.nativecustomer.ui.theme.FreshRose
+import com.freshdelivery.nativecustomer.ui.theme.FreshRoseSoft
+import com.freshdelivery.nativecustomer.ui.theme.FreshSurface
+import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
+import com.freshdelivery.nativecustomer.ui.theme.FreshVioletSoft
+
+private val FreshGradient = Brush.horizontalGradient(listOf(FreshGreen, FreshViolet))
 
 @Composable
 fun CustomerShell(
@@ -153,24 +176,27 @@ fun CustomerShell(
     )
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = FreshBg,
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             Column {
                 if (state.cartCount > 0 && (state.tab == CustomerTab.Home || state.tab == CustomerTab.Browse)) {
-                    StickyCartBar(
+                    FreshCartBar(
                         count = state.cartCount,
                         total = state.cartSubtotal,
                         onClick = { onToggleCart(true) },
                     )
                 }
                 NavigationBar(
-                    containerColor = Color.White,
+                    containerColor = FreshSurface,
                     tonalElevation = 0.dp,
-                    modifier = Modifier.border(
-                        width = 0.5.dp,
-                        color = MaterialTheme.colorScheme.outline,
-                    ),
+                    modifier = Modifier
+                        .shadow(10.dp, RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .border(
+                            width = 0.5.dp,
+                            color = FreshDivider,
+                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        ),
                 ) {
                     tabs.forEach { (tab, label, icon) ->
                         val selected = state.tab == tab
@@ -192,11 +218,11 @@ fun CustomerShell(
                                 )
                             },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = UberInk,
-                                selectedTextColor = UberInk,
-                                unselectedIconColor = UberMuted,
-                                unselectedTextColor = UberMuted,
-                                indicatorColor = Color.Transparent,
+                                selectedIconColor = FreshGreen,
+                                selectedTextColor = FreshInk,
+                                unselectedIconColor = FreshMuted,
+                                unselectedTextColor = FreshMuted,
+                                indicatorColor = FreshGreenSoft,
                             ),
                         )
                     }
@@ -217,33 +243,34 @@ fun CustomerShell(
 }
 
 @Composable
-private fun StickyCartBar(count: Int, total: Double, onClick: () -> Unit) {
-    Surface(
-        onClick = onClick,
-        color = UberInk,
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier
+private fun FreshCartBar(count: Int, total: Double, onClick: () -> Unit) {
+    Box(
+        Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .shadow(12.dp, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(FreshGradient)
+            .clickable(onClick = onClick),
     ) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 14.dp),
+                .padding(horizontal = 18.dp, vertical = 14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     Modifier
-                        .size(28.dp)
+                        .size(26.dp)
                         .clip(CircleShape)
-                        .background(UberGreen),
+                        .background(Color.White),
                     contentAlignment = Alignment.Center,
                 ) {
                     Text(
                         "$count",
-                        color = Color.White,
+                        color = FreshGreen,
                         fontWeight = FontWeight.Bold,
                         fontSize = 13.sp,
                     )
@@ -270,14 +297,14 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
         Modifier
             .fillMaxWidth()
             .height(height.dp)
-            .background(UberSurface),
+            .background(FreshChip),
         contentAlignment = Alignment.Center,
     ) {
         if (url.isNullOrBlank()) {
             Icon(
                 Icons.Outlined.Store,
                 contentDescription = null,
-                tint = UberMuted,
+                tint = FreshMuted,
                 modifier = Modifier.size(48.dp),
             )
         } else {
@@ -293,7 +320,7 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.15f)),
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f)),
                     ),
                 ),
         )
@@ -318,7 +345,7 @@ private fun HomeTab(
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.White),
+            .background(FreshBg),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
         item {
@@ -330,41 +357,73 @@ private fun HomeTab(
                     .padding(top = 8.dp, bottom = 4.dp),
             ) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(
-                        Icons.Outlined.LocationOn,
-                        contentDescription = null,
-                        tint = UberInk,
-                        modifier = Modifier.size(18.dp),
-                    )
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        text = state.deliveryAddress.ifBlank { "Επίλεξε διεύθυνση παράδοσης" },
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Box(
+                        Modifier
+                            .size(30.dp)
+                            .clip(CircleShape)
+                            .background(FreshGreenSoft),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Outlined.LocationOn,
+                            contentDescription = null,
+                            tint = FreshGreen,
+                            modifier = Modifier.size(16.dp),
+                        )
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            "Παράδοση σε",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                        Text(
+                            text = state.deliveryAddress.ifBlank { "Επίλεξε διεύθυνση" },
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+                    }
+                    IconButton(onClick = onRefresh) {
+                        Icon(Icons.Outlined.MyLocation, contentDescription = "Refresh", tint = FreshGreen)
+                    }
                 }
                 Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = state.searchQuery,
-                    onValueChange = onSearch,
-                    singleLine = true,
-                    leadingIcon = {
-                        Icon(Icons.Outlined.Search, contentDescription = null, tint = UberMuted)
-                    },
-                    placeholder = { Text("Αναζήτηση καταστημάτων", color = UberMuted) },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedContainerColor = UberSurface,
-                        focusedContainerColor = UberSurface,
-                        unfocusedBorderColor = Color.Transparent,
-                        focusedBorderColor = UberGreen,
-                        cursorColor = UberGreen,
-                    ),
-                )
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White),
+                ) {
+                    OutlinedTextField(
+                        value = state.searchQuery,
+                        onValueChange = onSearch,
+                        singleLine = true,
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Search, contentDescription = null, tint = FreshMuted)
+                        },
+                        trailingIcon = if (state.searchQuery.isNotEmpty()) {
+                            {
+                                IconButton(onClick = { onSearch("") }) {
+                                    Icon(Icons.Outlined.Close, contentDescription = "Clear", tint = FreshMuted)
+                                }
+                            }
+                        } else null,
+                        placeholder = { Text("Αναζήτηση καταστημάτων", color = FreshMuted) },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = Color.Transparent,
+                            cursorColor = FreshGreen,
+                        ),
+                    )
+                }
             }
         }
         item {
@@ -374,34 +433,65 @@ private fun HomeTab(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                UberFilterChip("Όλα", selected = !filterOpen) { filterOpen = false }
-                UberFilterChip("Ανοιχτά", selected = filterOpen) { filterOpen = true }
-                TextButton(onClick = onRefresh) {
-                    Text("Ανανέωση", color = UberGreen, fontWeight = FontWeight.Bold)
-                }
+                FreshFilterChip("Όλα", selected = !filterOpen) { filterOpen = false }
+                FreshFilterChip("Ανοιχτά", selected = filterOpen) { filterOpen = true }
+                FreshFilterChip("Κοντά μου", selected = false) {}
             }
         }
-        
+
         // Phase1: admin appConfig brand / promo / tiles
-        item {
-            Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp)) {
-                Text(state.appConfig.appName, style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold, color = UberInk)
-                Text("${state.appConfig.cityLabel} · ${state.appConfig.tagline}", color = UberMuted, style = MaterialTheme.typography.bodySmall)
-            }
-        }
         state.appConfig.promos.firstOrNull()?.let { promo ->
             item {
-                Surface(
-                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    color = UberInk,
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 6.dp)
+                        .shadow(10.dp, RoundedCornerShape(24.dp))
+                        .clip(RoundedCornerShape(24.dp))
+                        .background(FreshGradient),
                 ) {
-                    Column(Modifier.padding(16.dp)) {
-                        Text(promo.tag, color = UberGreen, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
-                        Text(promo.title, color = Color.White, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
-                        Text(promo.subtitle, color = Color.White.copy(alpha = 0.8f), style = MaterialTheme.typography.bodySmall)
+                    Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color.White.copy(alpha = 0.22f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Outlined.LocalOffer, contentDescription = null, tint = Color.White)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                promo.tag,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                            Text(
+                                promo.title,
+                                color = Color.White,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.titleMedium,
+                            )
+                            Text(
+                                promo.subtitle,
+                                color = Color.White.copy(alpha = 0.8f),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                         if (promo.code.isNotBlank()) {
-                            Text("Κωδικός: ${promo.code}", color = UberGreen, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
+                            Surface(
+                                color = Color.White,
+                                shape = RoundedCornerShape(10.dp),
+                            ) {
+                                Text(
+                                    promo.code,
+                                    color = FreshGreenDark,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                )
+                            }
                         }
                     }
                 }
@@ -409,77 +499,93 @@ private fun HomeTab(
         }
         item {
             Row(
-                Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                state.appConfig.tiles.forEach { tile ->
-                    Surface(
-                        onClick = { onSearch(if (tile.category == "all") "" else tile.label) },
-                        shape = RoundedCornerShape(20.dp),
-                        color = UberSurface,
-                    ) {
-                        Text(
-                            "${tile.emoji} ${tile.label}",
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
-                            fontWeight = FontWeight.SemiBold,
-                            color = UberInk,
-                        )
-                    }
-                }
-            }
-        }
-item {
-            val categories = listOf(
-                "🍔 Burger", "🍕 Pizza", "🍣 Sushi", "🥗 Σαλάτες",
-                "☕ Καφές", "🍰 Γλυκά", "🍗 Κοτόπουλο", "🌮 Mexican",
-            )
-            Row(
                 Modifier
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                categories.forEach { label ->
-                    Surface(
-                        shape = RoundedCornerShape(20.dp),
-                        color = UberSurface,
-                        modifier = Modifier.clickable { onSearch(label.substringAfter(" ").trim()) },
+                val tiles = state.appConfig.tiles.ifEmpty {
+                    listOf(
+                        com.freshdelivery.nativecustomer.data.CategoryTile("Φαγητό", "🍔", "all"),
+                        com.freshdelivery.nativecustomer.data.CategoryTile("Πίτσα", "🍕", "Πίτσες"),
+                        com.freshdelivery.nativecustomer.data.CategoryTile("Καφές", "☕", "Καφέδες"),
+                        com.freshdelivery.nativecustomer.data.CategoryTile("Γλυκά", "🍰", "Γλυκά"),
+                    )
+                }
+                tiles.forEach { tile ->
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(16.dp))
+                            .clickable { onSearch(if (tile.category == "all") "" else tile.label) },
                     ) {
+                        Box(
+                            Modifier
+                                .size(58.dp)
+                                .shadow(4.dp, CircleShape)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Text(tile.emoji, fontSize = 26.sp)
+                        }
+                        Spacer(Modifier.height(6.dp))
                         Text(
-                            label,
-                            modifier = Modifier.padding(horizontal = 14.dp, vertical = 8.dp),
-                            style = MaterialTheme.typography.labelLarge,
+                            tile.label,
+                            style = MaterialTheme.typography.labelMedium,
+                            color = FreshInk,
                             fontWeight = FontWeight.SemiBold,
-                            color = UberInk,
                         )
                     }
                 }
             }
         }
         item {
-            Text(
-                "Κοντά σου",
-                style = MaterialTheme.typography.titleLarge,
-                modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
-            )
-        }
-        if (stores.isEmpty()) {
-            item {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 16.dp, bottom = 4.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
                 Text(
-                    "Δεν βρέθηκαν καταστήματα.",
-                    color = UberMuted,
-                    modifier = Modifier.padding(16.dp),
+                    if (browseMode) "Όλα τα καταστήματα" else "Κοντά σου",
+                    style = MaterialTheme.typography.titleLarge,
+                )
+                Text(
+                    if (browseMode) "${stores.size} καταστήματα" else "${stores.size} κοντά σου",
+                    color = FreshMuted,
+                    style = MaterialTheme.typography.bodySmall,
                 )
             }
         }
+        if (stores.isEmpty()) {
+            item {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        "Δεν βρέθηκαν καταστήματα.",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
+            }
+        }
         items(stores, key = { it.id }) { store ->
-            UberStoreCard(store = store, onClick = { onOpenStore(store) })
+            FreshStoreCard(store = store, onClick = { onOpenStore(store) })
         }
     }
 }
 
 @Composable
-private fun UberFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
+private fun FreshFilterChip(label: String, selected: Boolean, onClick: () -> Unit) {
     FilterChip(
         selected = selected,
         onClick = onClick,
@@ -489,68 +595,111 @@ private fun UberFilterChip(label: String, selected: Boolean, onClick: () -> Unit
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
             )
         },
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(16.dp),
         colors = FilterChipDefaults.filterChipColors(
-            selectedContainerColor = UberInk,
+            selectedContainerColor = FreshGreen,
             selectedLabelColor = Color.White,
-            containerColor = UberChip,
-            labelColor = UberInk,
+            containerColor = Color.White,
+            labelColor = FreshInk,
         ),
         border = null,
     )
 }
 
 @Composable
-private fun UberStoreCard(store: StoreRow, onClick: () -> Unit) {
+private fun FreshStoreCard(store: StoreRow, onClick: () -> Unit) {
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 10.dp)
-            .clip(RoundedCornerShape(16.dp))
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .shadow(6.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color.White)
             .clickable(onClick = onClick),
     ) {
-        StoreHeroImage(store.image_url, height = 168)
-        Spacer(Modifier.height(10.dp))
-        Text(
-            store.name ?: "Κατάστημα",
-            style = MaterialTheme.typography.titleLarge,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-        )
-        store.address?.let {
+        Box(Modifier.fillMaxWidth().height(160.dp)) {
+            StoreHeroImage(store.image_url, height = 160)
+            Surface(
+                color = if (store.is_active == false) {
+                    Color.Black.copy(alpha = 0.65f)
+                } else {
+                    Color.White.copy(alpha = 0.92f)
+                },
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .align(Alignment.TopStart)
+                    .padding(10.dp),
+            ) {
+                Text(
+                    if (store.is_active == false) "Κλειστό" else "Ανοιχτό",
+                    color = if (store.is_active == false) Color.White else FreshGreenDark,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+            }
+            Surface(
+                color = Color.White.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(10.dp),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(13.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("4.8", color = FreshInk, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                }
+            }
+        }
+        Column(Modifier.padding(14.dp)) {
             Text(
-                it,
-                style = MaterialTheme.typography.bodySmall,
-                color = UberMuted,
+                store.name ?: "Κατάστημα",
+                style = MaterialTheme.typography.titleLarge,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-        }
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "★ 4.8 · 25–35 λεπτά · Παράδοση",
-            style = MaterialTheme.typography.bodySmall,
-            color = UberMuted,
-        )
-        Spacer(Modifier.height(6.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            MetaPill(if (store.is_active == false) "Κλειστό" else "Ανοιχτό")
-            MetaPill("Παράδοση")
+            store.address?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = FreshMuted,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
+                FreshMetaPill {
+                    Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("25–35'", color = FreshInk, fontWeight = FontWeight.SemiBold)
+                }
+                FreshMetaPill {
+                    Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
+                    Spacer(Modifier.width(4.dp))
+                    Text("Παράδοση", color = FreshInk, fontWeight = FontWeight.SemiBold)
+                }
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
+            }
         }
     }
 }
 
 @Composable
-private fun MetaPill(text: String) {
+private fun FreshMetaPill(content: @Composable RowScope.() -> Unit) {
     Surface(
-        color = UberSurface,
-        shape = RoundedCornerShape(6.dp),
+        color = FreshChip,
+        shape = RoundedCornerShape(10.dp),
     ) {
-        Text(
-            text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelMedium,
-            color = UberInk,
+        Row(
+            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            content = content,
         )
     }
 }
@@ -563,38 +712,79 @@ private fun MenuScreen(
     onOpenCart: () -> Unit,
 ) {
     val store = state.selectedStore
-    Box(Modifier.fillMaxSize().background(Color.White)) {
+    Box(Modifier.fillMaxSize().background(FreshBg)) {
         LazyColumn(Modifier.fillMaxSize()) {
             item {
                 Box {
-                    StoreHeroImage(store?.image_url, height = 220)
+                    StoreHeroImage(store?.image_url, height = 250)
+                    Box(
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        Color.Transparent,
+                                        Color.Black.copy(alpha = 0.55f),
+                                    ),
+                                    startY = 120f,
+                                ),
+                            ),
+                    )
                     IconButton(
                         onClick = onBack,
                         modifier = Modifier
                             .statusBarsPadding()
                             .padding(8.dp)
-                            .background(Color.White.copy(alpha = 0.92f), CircleShape),
+                            .shadow(6.dp, CircleShape)
+                            .background(Color.White, CircleShape),
                     ) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = FreshInk)
+                    }
+                    Column(
+                        Modifier
+                            .align(Alignment.BottomStart)
+                            .statusBarsPadding()
+                            .padding(16.dp),
+                    ) {
+                        Text(
+                            store?.name ?: "Μενού",
+                            style = MaterialTheme.typography.headlineMedium,
+                            color = Color.White,
+                        )
+                        store?.address?.let {
+                            Text(it, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        Spacer(Modifier.height(8.dp))
+                        Surface(
+                            color = Color.White.copy(alpha = 0.22f),
+                            shape = RoundedCornerShape(10.dp),
+                        ) {
+                            Text(
+                                "${state.menu.size} προϊόντα",
+                                color = Color.White,
+                                fontWeight = FontWeight.SemiBold,
+                                style = MaterialTheme.typography.labelMedium,
+                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                            )
+                        }
                     }
                 }
             }
             item {
-                Column(Modifier.padding(16.dp)) {
-                    Text(
-                        store?.name ?: "Μενού",
-                        style = MaterialTheme.typography.headlineMedium,
-                    )
-                    store?.address?.let {
-                        Text(it, color = UberMuted, style = MaterialTheme.typography.bodyMedium)
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.Favorite, contentDescription = null, tint = FreshRose, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Μενού", style = MaterialTheme.typography.titleLarge)
+                    Spacer(Modifier.weight(1f))
+                    TextButton(onClick = {}) {
+                        Text("Αγαπημένα", color = FreshMuted)
                     }
-                    Text(
-                        "${state.menu.size} προϊόντα",
-                        color = UberMuted,
-                        style = MaterialTheme.typography.bodySmall,
-                    )
                 }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
             }
             if (state.busy) {
                 item {
@@ -604,16 +794,13 @@ private fun MenuScreen(
                             .padding(40.dp),
                         contentAlignment = Alignment.Center,
                     ) {
-                        CircularProgressIndicator(color = UberGreen)
+                        CircularProgressIndicator(color = FreshGreen)
                     }
                 }
             } else {
                 items(state.menu, key = { it.id }) { item ->
-                    UberMenuRow(item = item, onAdd = { onAdd(item) })
-                    HorizontalDivider(
-                        color = MaterialTheme.colorScheme.outline,
-                        modifier = Modifier.padding(start = 16.dp),
-                    )
+                    FreshMenuRow(item = item, onAdd = { onAdd(item) })
+                    Spacer(Modifier.height(6.dp))
                 }
                 item { Spacer(Modifier.height(100.dp)) }
             }
@@ -625,7 +812,7 @@ private fun MenuScreen(
                     .navigationBarsPadding()
                     .padding(12.dp),
             ) {
-                StickyCartBar(
+                FreshCartBar(
                     count = state.cartCount,
                     total = state.cartSubtotal,
                     onClick = onOpenCart,
@@ -636,12 +823,16 @@ private fun MenuScreen(
 }
 
 @Composable
-private fun UberMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
+private fun FreshMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
     Row(
         Modifier
             .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .shadow(3.dp, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White)
             .clickable(onClick = onAdd)
-            .padding(16.dp),
+            .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
@@ -651,7 +842,7 @@ private fun UberMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
                 Text(
                     it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = UberMuted,
+                    color = FreshMuted,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis,
                 )
@@ -660,14 +851,15 @@ private fun UberMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
             Text(
                 "€" + "%.2f".format(item.price),
                 fontWeight = FontWeight.Bold,
+                color = FreshGreenDark,
             )
         }
         Box {
             Box(
                 Modifier
                     .size(96.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(UberSurface),
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(FreshChip),
                 contentAlignment = Alignment.Center,
             ) {
                 if (!item.image_url.isNullOrBlank()) {
@@ -678,7 +870,7 @@ private fun UberMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
                         modifier = Modifier.fillMaxSize(),
                     )
                 } else {
-                    Icon(Icons.Outlined.ShoppingBag, null, tint = UberMuted)
+                    Icon(Icons.Outlined.ShoppingBag, null, tint = FreshMuted)
                 }
             }
             Box(
@@ -686,13 +878,13 @@ private fun UberMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
                     .align(Alignment.BottomEnd)
                     .padding(4.dp)
                     .size(32.dp)
+                    .shadow(4.dp, CircleShape)
                     .clip(CircleShape)
-                    .background(Color.White)
-                    .border(1.dp, MaterialTheme.colorScheme.outline, CircleShape)
+                    .background(FreshGradient)
                     .clickable(onClick = onAdd),
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.Add, contentDescription = "Add", tint = UberGreen, modifier = Modifier.size(20.dp))
+                Icon(Icons.Outlined.Add, contentDescription = "Add", tint = Color.White, modifier = Modifier.size(20.dp))
             }
         }
     }
@@ -716,244 +908,308 @@ private fun CartCheckoutScreen(
     var address by remember(state.deliveryAddress) { mutableStateOf(state.deliveryAddress) }
     var tipText by remember { mutableStateOf(state.tipAmount.toString()) }
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = UberGreen,
-        focusedLabelColor = UberGreen,
-        cursorColor = UberGreen,
+        focusedBorderColor = FreshGreen,
+        focusedLabelColor = FreshGreen,
+        cursorColor = FreshGreen,
     )
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(FreshBg)
             .statusBarsPadding(),
     ) {
         SnackbarHost(snackbar)
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(8.dp),
+                .padding(horizontal = 8.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onBack) {
-                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back")
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = FreshInk)
             }
             Text(
                 "Καλάθι",
                 style = MaterialTheme.typography.titleLarge,
                 modifier = Modifier.weight(1f),
             )
+            Surface(
+                color = FreshGreenSoft,
+                shape = RoundedCornerShape(10.dp),
+            ) {
+                Text(
+                    state.cartStoreName ?: "",
+                    color = FreshGreenDark,
+                    fontWeight = FontWeight.SemiBold,
+                    style = MaterialTheme.typography.labelMedium,
+                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                )
+            }
         }
-        Text(
-            state.cartStoreName ?: "",
-            color = UberMuted,
-            modifier = Modifier.padding(horizontal = 16.dp),
-            style = MaterialTheme.typography.bodyMedium,
-        )
         LazyColumn(
             Modifier
                 .weight(1f)
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            item {
+                Text("Τα αντικείμενά σου", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+            }
             items(state.cart, key = { it.menuItemId }) { line ->
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp),
+                        .shadow(3.dp, RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White)
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
                     Column(Modifier.weight(1f)) {
                         Text(line.name, fontWeight = FontWeight.SemiBold)
-                        Text("€" + "%.2f".format(line.price * line.quantity), color = UberMuted)
+                        Text(
+                            "€" + "%.2f".format(line.price * line.quantity),
+                            color = FreshGreenDark,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
                     }
                     Row(
                         verticalAlignment = Alignment.CenterVertically,
                         modifier = Modifier
                             .clip(RoundedCornerShape(20.dp))
-                            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(20.dp))
+                            .background(FreshChip)
                             .padding(horizontal = 4.dp),
                     ) {
                         IconButton(
                             onClick = { onUpdateQty(line.menuItemId, line.quantity - 1) },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(34.dp),
                         ) {
-                            Icon(Icons.Outlined.Remove, contentDescription = "-", tint = UberGreen)
+                            Icon(Icons.Outlined.Remove, contentDescription = "-", tint = FreshGreen)
                         }
-                        Text("${line.quantity}", fontWeight = FontWeight.Bold, modifier = Modifier.width(24.dp))
+                        Text("${line.quantity}", fontWeight = FontWeight.Bold, modifier = Modifier.width(22.dp), textAlign = androidx.compose.ui.text.style.TextAlign.Center)
                         IconButton(
                             onClick = { onUpdateQty(line.menuItemId, line.quantity + 1) },
-                            modifier = Modifier.size(36.dp),
+                            modifier = Modifier.size(34.dp),
                         ) {
-                            Icon(Icons.Outlined.Add, contentDescription = "+", tint = UberGreen)
-                        }
-                    }
-                }
-                HorizontalDivider(color = MaterialTheme.colorScheme.outline)
-            }
-            item {
-                Spacer(Modifier.height(16.dp))
-                Text("Διεύθυνση παράδοσης", fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = address,
-                    onValueChange = {
-                        address = it
-                        onSetDelivery(it, state.deliveryLat, state.deliveryLng)
-                    },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("Οδός, αριθμός, πόλη") },
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors,
-                )
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = onUseLocation,
-                        enabled = !state.locating,
-                        modifier = Modifier.weight(1f),
-                        colors = ButtonDefaults.buttonColors(containerColor = UberGreen),
-                        shape = RoundedCornerShape(24.dp),
-                    ) {
-                        Icon(Icons.Outlined.MyLocation, contentDescription = null)
-                        Spacer(Modifier.width(6.dp))
-                        Text("Η τοποθεσία μου")
-                    }
-                    OutlinedButton(
-                        onClick = { onGeocode(address) },
-                        enabled = !state.locating && address.isNotBlank(),
-                        modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(24.dp),
-                    ) {
-                        Text("Εύρεση")
-                    }
-                }
-                if (state.locating) {
-                    Spacer(Modifier.height(6.dp))
-                    LinearProgressIndicator(
-                        modifier = Modifier.fillMaxWidth(),
-                        color = UberGreen,
-                    )
-                }
-                val pinned = state.deliveryLat != null && state.deliveryLng != null
-                Text(
-                    if (pinned) {
-                        "Σημείο: %.5f, %.5f".format(state.deliveryLat, state.deliveryLng)
-                    } else {
-                        "Χωρίς σημείο στον χάρτη — πάτα τοποθεσία ή εύρεση."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (pinned) UberGreen else MaterialTheme.colorScheme.error,
-                )
-                if (state.addressSuggestions.isNotEmpty()) {
-                    Spacer(Modifier.height(8.dp))
-                    Text("Προτάσεις", fontWeight = FontWeight.SemiBold)
-                    state.addressSuggestions.forEach { s ->
-                        Surface(
-                            onClick = { onPickSuggestion(s) },
-                            color = UberSurface,
-                            shape = RoundedCornerShape(12.dp),
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(top = 6.dp),
-                        ) {
-                            Text(s.label, modifier = Modifier.padding(12.dp))
+                            Icon(Icons.Outlined.Add, contentDescription = "+", tint = FreshGreen)
                         }
                     }
                 }
             }
             item {
-                Spacer(Modifier.height(12.dp))
-                OutlinedTextField(
-                    value = state.notes,
-                    onValueChange = onSetNotes,
-                    label = { Text("Σημειώσεις για τον οδηγό") },
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors,
-                )
-            }
-            item {
-                OutlinedTextField(
-                    value = tipText,
-                    onValueChange = {
-                        tipText = it
-                        onSetTip(it.toDoubleOrNull() ?: 0.0)
-                    },
-                    label = { Text("Φιλοδώρημα €") },
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = fieldColors,
-                )
-            }
-            item {
-                Spacer(Modifier.height(8.dp))
-                Text("Πληρωμή", fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(8.dp))
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(
-                        onClick = { onSetPayment("cash") },
-                        enabled = state.paymentMethod != "cash",
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = if (state.paymentMethod == "cash") UberGreen else UberSurface,
-                            contentColor = if (state.paymentMethod == "cash") Color.White else UberInk,
-                        ),
-                        shape = RoundedCornerShape(20.dp),
-                    ) { Text("Μετρητά") }
-                    OutlinedButton(onClick = {}, enabled = false, shape = RoundedCornerShape(20.dp)) {
-                        Text("Κάρτα (web)")
-                    }
-                }
-            }
-            item {
-                Spacer(Modifier.height(16.dp))
-                SummaryLine("Υποσύνολο", state.cartSubtotal)
-                val feeNote = if (state.feePerKm > 0 && state.deliveryLat != null) {
-                    "βάση €" + "%.2f".format(state.feeBase) + " + €" + "%.2f".format(state.feePerKm) + "/km"
-                } else null
-                SummaryLine(
-                    "Παράδοση" + (if (feeNote != null) " ($feeNote)" else ""),
-                    state.deliveryFee,
-                )
-                SummaryLine("Φιλοδώρημα", state.tipAmount)
-                HorizontalDivider(
-                    Modifier.padding(vertical = 8.dp),
-                    color = MaterialTheme.colorScheme.outline,
-                )
-                Row(
-                    Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text("Σύνολο", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
-                    Text(
-                        "€" + "%.2f".format(state.grandTotal),
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleLarge,
-                    )
-                }
-                if (!state.error.isNullOrBlank()) {
-                    Text(state.error!!, color = MaterialTheme.colorScheme.error)
-                }
-                Spacer(Modifier.height(16.dp))
-                Button(
-                    onClick = onPlaceOrder,
-                    enabled = !state.busy && state.cart.isNotEmpty() && address.isNotBlank(),
-                    modifier = Modifier
+                Column(
+                    Modifier
                         .fillMaxWidth()
-                        .height(56.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = UberGreen),
+                        .padding(vertical = 6.dp),
                 ) {
-                    if (state.busy) {
-                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
-                    } else {
-                        Text(
-                            "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal),
-                            fontWeight = FontWeight.Bold,
+                    Text("Διεύθυνση παράδοσης", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = address,
+                        onValueChange = {
+                            address = it
+                            onSetDelivery(it, state.deliveryLat, state.deliveryLng)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        label = { Text("Οδός, αριθμός, πόλη") },
+                        leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshMuted) },
+                        shape = RoundedCornerShape(16.dp),
+                        colors = fieldColors,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onUseLocation,
+                            enabled = !state.locating,
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                            shape = RoundedCornerShape(16.dp),
+                        ) {
+                            Icon(Icons.Outlined.MyLocation, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Η τοποθεσία μου")
+                        }
+                        OutlinedButton(
+                            onClick = { onGeocode(address) },
+                            enabled = !state.locating && address.isNotBlank(),
+                            modifier = Modifier.weight(1f),
+                            shape = RoundedCornerShape(16.dp),
+                        ) {
+                            Text("Εύρεση")
+                        }
+                    }
+                    if (state.locating) {
+                        Spacer(Modifier.height(6.dp))
+                        LinearProgressIndicator(
+                            modifier = Modifier.fillMaxWidth(),
+                            color = FreshGreen,
                         )
                     }
+                    val pinned = state.deliveryLat != null && state.deliveryLng != null
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        if (pinned) {
+                            "Σημείο: %.5f, %.5f".format(state.deliveryLat, state.deliveryLng)
+                        } else {
+                            "Χωρίς σημείο στον χάρτη — πάτα τοποθεσία ή εύρεση."
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (pinned) FreshGreen else MaterialTheme.colorScheme.error,
+                    )
+                    if (state.addressSuggestions.isNotEmpty()) {
+                        Spacer(Modifier.height(8.dp))
+                        Text("Προτάσεις", fontWeight = FontWeight.SemiBold)
+                        state.addressSuggestions.forEach { s ->
+                            Surface(
+                                onClick = { onPickSuggestion(s) },
+                                color = FreshChip,
+                                shape = RoundedCornerShape(12.dp),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(top = 6.dp),
+                            ) {
+                                Text(s.label, modifier = Modifier.padding(12.dp))
+                            }
+                        }
+                    }
                 }
-                Spacer(Modifier.height(32.dp))
+            }
+            item {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .shadow(3.dp, RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White)
+                        .padding(14.dp),
+                ) {
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Icon(Icons.Outlined.Notifications, contentDescription = null, tint = FreshViolet, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(8.dp))
+                        Text("Σημειώσεις για τον οδηγό", fontWeight = FontWeight.SemiBold)
+                    }
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = state.notes,
+                        onValueChange = onSetNotes,
+                        placeholder = { Text("π.χ. Χτύπα το κουδούνι") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                    )
+                    Spacer(Modifier.height(10.dp))
+                    OutlinedTextField(
+                        value = tipText,
+                        onValueChange = {
+                            tipText = it
+                            onSetTip(it.toDoubleOrNull() ?: 0.0)
+                        },
+                        label = { Text("Φιλοδώρημα (€)") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(14.dp),
+                        colors = fieldColors,
+                    )
+                }
+            }
+            item {
+                Column(Modifier.fillMaxWidth()) {
+                    Text("Πληρωμή", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    Spacer(Modifier.height(8.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { onSetPayment("cash") },
+                            enabled = state.paymentMethod != "cash",
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (state.paymentMethod == "cash") FreshGreen else FreshChip,
+                                contentColor = if (state.paymentMethod == "cash") Color.White else FreshInk,
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Outlined.Wallet, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Μετρητά")
+                        }
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = FreshChip,
+                                contentColor = FreshMuted,
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Outlined.CreditCard, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Κάρτα (σύντομα)")
+                        }
+                    }
+                }
+            }
+            item {
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 6.dp),
+                ) {
+                    SummaryLine("Υποσύνολο", state.cartSubtotal)
+                    val feeNote = if (state.feePerKm > 0 && state.deliveryLat != null) {
+                        "βάση €" + "%.2f".format(state.feeBase) + " + €" + "%.2f".format(state.feePerKm) + "/km"
+                    } else null
+                    SummaryLine(
+                        "Παράδοση" + (if (feeNote != null) " ($feeNote)" else ""),
+                        state.deliveryFee,
+                    )
+                    SummaryLine("Φιλοδώρημα", state.tipAmount)
+                    HorizontalDivider(
+                        Modifier.padding(vertical = 8.dp),
+                        color = FreshDivider,
+                    )
+                    Row(
+                        Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Σύνολο", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            "€" + "%.2f".format(state.grandTotal),
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = FreshGreenDark,
+                        )
+                    }
+                    if (!state.error.isNullOrBlank()) {
+                        Text(state.error!!, color = MaterialTheme.colorScheme.error)
+                    }
+                    Spacer(Modifier.height(16.dp))
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(58.dp)
+                            .shadow(12.dp, RoundedCornerShape(29.dp))
+                            .clip(RoundedCornerShape(29.dp))
+                            .background(if (state.busy || state.cart.isEmpty() || address.isBlank()) FreshChip else FreshGradient)
+                            .clickable(
+                                enabled = !state.busy && state.cart.isNotEmpty() && address.isNotBlank(),
+                                onClick = onPlaceOrder,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (state.busy) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(
+                                "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal),
+                                fontWeight = FontWeight.Bold,
+                                color = if (state.cart.isEmpty() || address.isBlank()) FreshMuted else Color.White,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(32.dp))
+                }
             }
         }
     }
@@ -964,11 +1220,11 @@ private fun SummaryLine(label: String, amount: Double) {
     Row(
         Modifier
             .fillMaxWidth()
-            .padding(vertical = 2.dp),
+            .padding(vertical = 3.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
     ) {
-        Text(label, color = UberMuted)
-        Text("€" + "%.2f".format(amount))
+        Text(label, color = FreshMuted)
+        Text("€" + "%.2f".format(amount), fontWeight = FontWeight.SemiBold)
     }
 }
 
@@ -984,6 +1240,31 @@ private fun statusLabel(status: String): String = when (status) {
     else -> status
 }
 
+private fun statusColors(status: String): Pair<Color, Color> = when {
+    status in listOf("pending", "accepted", "confirmed", "preparing", "ready", "picked_up", "on_the_way", "in_transit") ->
+        FreshVioletSoft to FreshViolet
+    status == "delivered" -> FreshGreenSoft to FreshGreenDark
+    status in listOf("cancelled", "rejected", "refunded") -> FreshRoseSoft to FreshRose
+    else -> FreshChip to FreshInk
+}
+
+@Composable
+private fun StatusPill(status: String) {
+    val (bg, fg) = statusColors(status)
+    Surface(
+        color = bg,
+        shape = RoundedCornerShape(10.dp),
+    ) {
+        Text(
+            statusLabel(status),
+            color = fg,
+            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+        )
+    }
+}
+
 @Composable
 private fun OrdersTab(
     state: CustomerUiState,
@@ -994,7 +1275,7 @@ private fun OrdersTab(
     LazyColumn(
         Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(FreshBg)
             .padding(horizontal = 16.dp),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
@@ -1008,14 +1289,32 @@ private fun OrdersTab(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 Text("Παραγγελίες", style = MaterialTheme.typography.headlineMedium)
-                TextButton(onClick = onRefresh) {
-                    Text("Ανανέωση", color = UberGreen, fontWeight = FontWeight.Bold)
+                IconButton(
+                    onClick = onRefresh,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White)
+                        .shadow(3.dp, RoundedCornerShape(14.dp)),
+                ) {
+                    Icon(Icons.Outlined.Receipt, contentDescription = "Ανανέωση", tint = FreshGreen)
                 }
             }
         }
         if (state.orders.isEmpty()) {
             item {
-                Text("Δεν υπάρχουν παραγγελίες ακόμα.", color = UberMuted)
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(Icons.Outlined.Receipt, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
+                    Spacer(Modifier.height(10.dp))
+                    Text("Δεν υπάρχουν παραγγελίες ακόμα.", color = FreshMuted, style = MaterialTheme.typography.bodyMedium)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Παράγγειλε από ένα κατάστημα για να εμφανιστούν εδώ.", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                }
             }
         }
         items(state.orders, key = { it.order.id }) { item ->
@@ -1023,49 +1322,76 @@ private fun OrdersTab(
             Column(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(16.dp))
-                    .background(UberSurface)
+                    .padding(vertical = 6.dp)
+                    .shadow(4.dp, RoundedCornerShape(20.dp))
+                    .clip(RoundedCornerShape(20.dp))
+                    .background(Color.White)
                     .clickable { onTrack(item) }
-                    .padding(16.dp)
-                    .padding(bottom = 4.dp),
+                    .padding(16.dp),
             ) {
                 Row(
                     Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(
-                        item.storeName ?: "Κατάστημα",
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.weight(1f),
-                    )
+                    Row(Modifier.weight(1f), verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(FreshGreenSoft),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(20.dp))
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                item.storeName ?: "Κατάστημα",
+                                fontWeight = FontWeight.Bold,
+                            )
+                            item.order.delivery_address?.let {
+                                Text(it, style = MaterialTheme.typography.bodySmall, color = FreshMuted, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                            }
+                        }
+                    }
                     item.order.store_order_number?.let {
-                        Text("#%04d".format(it), color = UberGreen, fontWeight = FontWeight.Bold)
+                        Text("#%04d".format(it), color = FreshGreen, fontWeight = FontWeight.Bold)
                     }
                 }
-                Spacer(Modifier.height(6.dp))
-                MetaPill(statusLabel(item.order.status))
-                item.order.delivery_address?.let {
-                    Spacer(Modifier.height(6.dp))
-                    Text(it, style = MaterialTheme.typography.bodySmall, color = UberMuted)
+                Spacer(Modifier.height(12.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    StatusPill(item.order.status)
+                    Spacer(Modifier.weight(1f))
+                    item.order.total_amount?.let {
+                        Text("€" + "%.2f".format(it), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    }
                 }
-                item.order.total_amount?.let {
-                    Text("€" + "%.2f".format(it), fontWeight = FontWeight.Bold)
-                }
+                HorizontalDivider(Modifier.padding(vertical = 12.dp), color = FreshDivider)
                 Row {
-                    TextButton(onClick = { onTrack(item) }) {
-                        Text("Παρακολούθηση", color = UberGreen, fontWeight = FontWeight.Bold)
+                    Button(
+                        onClick = { onTrack(item) },
+                        colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.weight(1f),
+                    ) {
+                        Icon(Icons.Outlined.Map, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Παρακολούθηση", fontWeight = FontWeight.Bold)
                     }
                     if (cancellable) {
-                        TextButton(
+                        Spacer(Modifier.width(8.dp))
+                        OutlinedButton(
                             onClick = { onCancelOrder(item) },
                             enabled = !state.busy,
+                            shape = RoundedCornerShape(14.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = FreshRose),
                         ) {
-                            Text("Ακύρωση", color = MaterialTheme.colorScheme.error)
+                            Text("Ακύρωση")
                         }
                     }
                 }
             }
-            Spacer(Modifier.height(10.dp))
         }
     }
 }
@@ -1076,21 +1402,21 @@ private fun TrackTab(state: CustomerUiState) {
     val markers = buildList {
         order?.order?.delivery_latitude?.let { lat ->
             order.order.delivery_longitude?.let { lng ->
-                add(MapMarker(lat, lng, "Παράδοση", "#06C167"))
+                add(MapMarker(lat, lng, "Παράδοση", "#10B981"))
             }
         }
         state.driverLocation?.let { d ->
-            add(MapMarker(d.latitude, d.longitude, "Οδηγός", "#141414"))
+            add(MapMarker(d.latitude, d.longitude, "Οδηγός", "#7C6CFF"))
         }
     }
     val centerLat = markers.firstOrNull()?.lat ?: 39.6650
     val centerLng = markers.firstOrNull()?.lng ?: 20.8537
-    Column(Modifier.fillMaxSize().background(Color.White)) {
+    Column(Modifier.fillMaxSize().background(FreshBg)) {
         Box(
             Modifier
                 .fillMaxWidth()
-                .height(300.dp)
-                .background(UberSurface),
+                .weight(1f)
+                .clip(RoundedCornerShape(bottomStart = 28.dp, bottomEnd = 28.dp)),
         ) {
             MapboxView(
                 modifier = Modifier.fillMaxSize(),
@@ -1099,33 +1425,55 @@ private fun TrackTab(state: CustomerUiState) {
                 markers = markers,
             )
         }
-        Column(Modifier.padding(16.dp)) {
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .navigationBarsPadding()
+                .padding(16.dp),
+        ) {
             if (order == null) {
                 Text(
                     "Επίλεξε παραγγελία από Παραγγελίες για live tracking.",
-                    color = UberMuted,
+                    color = FreshMuted,
                 )
             } else {
-                Text(
-                    order.storeName ?: "Παραγγελία",
-                    style = MaterialTheme.typography.headlineSmall,
-                )
-                Spacer(Modifier.height(6.dp))
-                MetaPill(statusLabel(order.order.status))
-                order.order.delivery_address?.let {
-                    Spacer(Modifier.height(8.dp))
-                    Text(it)
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Column(Modifier.weight(1f)) {
+                        Text(
+                            order.storeName ?: "Παραγγελία",
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                        order.order.delivery_address?.let {
+                            Text(it, color = FreshMuted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis)
+                        }
+                    }
+                    StatusPill(order.order.status)
                 }
-                Spacer(Modifier.height(8.dp))
-                Text(
-                    when {
-                        state.driverLocation != null -> "Ο οδηγός κινείται προς εσένα."
-                        !order.order.driver_id.isNullOrBlank() -> "Αναμονή θέσης οδηγού…"
-                        else -> "Δεν έχει ανατεθεί οδηγός ακόμα."
-                    },
-                    color = UberMuted,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                Spacer(Modifier.height(14.dp))
+                Surface(
+                    color = if (state.driverLocation != null) FreshGreenSoft else FreshVioletSoft,
+                    shape = RoundedCornerShape(18.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Icon(
+                            Icons.Outlined.DirectionsBike,
+                            contentDescription = null,
+                            tint = if (state.driverLocation != null) FreshGreen else FreshViolet,
+                        )
+                        Spacer(Modifier.width(10.dp))
+                        Text(
+                            when {
+                                state.driverLocation != null -> "Ο οδηγός κινείται προς εσένα."
+                                !order.order.driver_id.isNullOrBlank() -> "Αναμονή θέσης οδηγού…"
+                                else -> "Δεν έχει ανατεθεί οδηγός ακόμα."
+                            },
+                            color = FreshInk,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
             }
         }
     }
@@ -1144,62 +1492,129 @@ private fun ProfileTab(
         mutableStateOf(state.profile?.phone ?: "")
     }
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = UberGreen,
-        focusedLabelColor = UberGreen,
-        cursorColor = UberGreen,
+        focusedBorderColor = FreshGreen,
+        focusedLabelColor = FreshGreen,
+        cursorColor = FreshGreen,
     )
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(FreshBg)
             .statusBarsPadding()
-            .padding(16.dp),
+            .padding(horizontal = 16.dp),
     ) {
-        Text("Λογαριασμός", style = MaterialTheme.typography.headlineMedium)
-        Spacer(Modifier.height(20.dp))
-        OutlinedTextField(
-            value = fullName,
-            onValueChange = { fullName = it },
-            label = { Text("Ονοματεπώνυμο") },
-            singleLine = true,
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = fieldColors,
+        Text(
+            "Λογαριασμός",
+            style = MaterialTheme.typography.headlineMedium,
+            modifier = Modifier.padding(vertical = 12.dp),
         )
-        Spacer(Modifier.height(12.dp))
-        OutlinedTextField(
-            value = phone,
-            onValueChange = { phone = it },
-            label = { Text("Τηλέφωνο") },
-            singleLine = true,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
-            modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
-            colors = fieldColors,
-        )
-        Spacer(Modifier.height(16.dp))
-        Button(
-            onClick = { onSaveProfile(fullName, phone) },
-            enabled = !state.savingProfile && fullName.isNotBlank(),
-            modifier = Modifier
+        Column(
+            Modifier
                 .fillMaxWidth()
-                .height(52.dp),
-            shape = RoundedCornerShape(26.dp),
-            colors = ButtonDefaults.buttonColors(containerColor = UberGreen),
+                .shadow(4.dp, RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White)
+                .padding(16.dp),
         ) {
-            if (state.savingProfile) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
-            else Text("Αποθήκευση", fontWeight = FontWeight.Bold)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Box(
+                    Modifier
+                        .size(56.dp)
+                        .shadow(6.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(FreshGradient),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.AccountCircle, contentDescription = null, tint = Color.White, modifier = Modifier.size(30.dp))
+                }
+                Spacer(Modifier.width(14.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        fullName.ifBlank { "Φίλος του Fresh" },
+                        style = MaterialTheme.typography.titleLarge,
+                    )
+                    Text(
+                        state.profile?.phone?.ifBlank { "Κατάστημα αγαπημένο: ${state.orders.size}" } ?: "Καλησπέρα! 👋",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            HorizontalDivider(color = FreshDivider)
+            Spacer(Modifier.height(12.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Outlined.Receipt, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Παραγγελίες: ${state.orders.size}", color = FreshInk, fontWeight = FontWeight.SemiBold)
+                Spacer(Modifier.weight(1f))
+                Icon(Icons.Outlined.Notifications, contentDescription = null, tint = FreshViolet, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(8.dp))
+                Text("Push: ενεργές", color = FreshMuted)
+            }
         }
-        Spacer(Modifier.height(24.dp))
-        Text("Παραγγελίες: ${state.orders.size}", color = UberMuted)
-        Text("Push: ενεργές", color = UberMuted)
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(20.dp))
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .shadow(4.dp, RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White)
+                .padding(16.dp),
+        ) {
+            Text("Στοιχεία προφίλ", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = fullName,
+                onValueChange = { fullName = it },
+                label = { Text("Ονοματεπώνυμο") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = fieldColors,
+            )
+            Spacer(Modifier.height(12.dp))
+            OutlinedTextField(
+                value = phone,
+                onValueChange = { phone = it },
+                label = { Text("Τηλέφωνο") },
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(14.dp),
+                colors = fieldColors,
+            )
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = { onSaveProfile(fullName, phone) },
+                enabled = !state.savingProfile && fullName.isNotBlank(),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(52.dp)
+                    .shadow(8.dp, RoundedCornerShape(26.dp)),
+                shape = RoundedCornerShape(26.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+            ) {
+                if (state.savingProfile) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(22.dp))
+                else Text("Αποθήκευση", fontWeight = FontWeight.Bold)
+            }
+        }
+        Spacer(Modifier.weight(1f))
         OutlinedButton(
             onClick = onSignOut,
-            modifier = Modifier.fillMaxWidth().height(48.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+                .navigationBarsPadding()
+                .padding(bottom = 8.dp),
             shape = RoundedCornerShape(24.dp),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = FreshRose),
+            border = androidx.compose.foundation.BorderStroke(1.dp, FreshRose),
         ) {
-            Text("Αποσύνδεση", color = UberInk, fontWeight = FontWeight.SemiBold)
+            Icon(Icons.Outlined.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.width(6.dp))
+            Text("Αποσύνδεση", fontWeight = FontWeight.SemiBold)
         }
+        Spacer(Modifier.height(12.dp))
     }
 }

@@ -2,6 +2,7 @@ package com.freshdelivery.nativecustomer.ui
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
@@ -10,11 +11,15 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
@@ -27,14 +32,25 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
-import com.freshdelivery.nativecustomer.ui.theme.UberGreen
-import com.freshdelivery.nativecustomer.ui.theme.UberInk
-import com.freshdelivery.nativecustomer.ui.theme.UberMuted
+import androidx.compose.ui.unit.sp
+import com.freshdelivery.nativecustomer.ui.theme.FreshBg
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreen
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreenDark
+import com.freshdelivery.nativecustomer.ui.theme.FreshGreenSoft
+import com.freshdelivery.nativecustomer.ui.theme.FreshInk
+import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
+import com.freshdelivery.nativecustomer.ui.theme.FreshRose
+import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
+
+private val LoginGradient = Brush.linearGradient(listOf(FreshGreen, FreshViolet))
 
 @Composable
 fun LoginScreen(
@@ -51,31 +67,47 @@ fun LoginScreen(
     var fullName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = UberGreen,
-        focusedLabelColor = UberGreen,
-        cursorColor = UberGreen,
+        focusedBorderColor = FreshGreen,
+        focusedLabelColor = FreshGreen,
+        cursorColor = FreshGreen,
     )
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(FreshBg)
             .statusBarsPadding()
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
+        Box(
+            Modifier
+                .size(72.dp)
+                .shadow(14.dp, CircleShape)
+                .clip(CircleShape)
+                .background(LoginGradient),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Outlined.Storefront,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(34.dp),
+            )
+        }
+        Spacer(Modifier.height(18.dp))
         Text(
             "Fresh Delivery",
             style = MaterialTheme.typography.displaySmall,
-            color = UberInk,
+            color = FreshInk,
             fontWeight = FontWeight.Bold,
         )
         Text(
             if (signupMode) "Δημιούργησε λογαριασμό" else "Παράγγειλε από τα αγαπημένα σου",
-            color = UberMuted,
+            color = FreshMuted,
             style = MaterialTheme.typography.bodyMedium,
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(28.dp))
         if (signupMode) {
             OutlinedTextField(
                 value = fullName,
@@ -83,7 +115,7 @@ fun LoginScreen(
                 label = { Text("Ονοματεπώνυμο") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = fieldColors,
             )
             Spacer(Modifier.height(12.dp))
@@ -94,7 +126,7 @@ fun LoginScreen(
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = fieldColors,
             )
             Spacer(Modifier.height(12.dp))
@@ -106,7 +138,7 @@ fun LoginScreen(
             singleLine = true,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = fieldColors,
         )
         Spacer(Modifier.height(12.dp))
@@ -118,16 +150,24 @@ fun LoginScreen(
             visualTransformation = PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
-            shape = RoundedCornerShape(12.dp),
+            shape = RoundedCornerShape(16.dp),
             colors = fieldColors,
         )
         if (!error.isNullOrBlank()) {
             Spacer(Modifier.height(12.dp))
-            Text(error, color = MaterialTheme.colorScheme.error)
+            Box(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(14.dp))
+                    .background(FreshGreenSoft)
+                    .padding(12.dp),
+            ) {
+                Text(error, color = FreshRose, style = MaterialTheme.typography.bodySmall)
+            }
         }
         if (!info.isNullOrBlank()) {
             Spacer(Modifier.height(12.dp))
-            Text(info, color = UberGreen)
+            Text(info, color = FreshGreenDark, style = MaterialTheme.typography.bodySmall)
         }
         Spacer(Modifier.height(24.dp))
         Button(
@@ -139,10 +179,11 @@ fun LoginScreen(
                 (!signupMode || fullName.isNotBlank()),
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(56.dp)
+                .shadow(12.dp, RoundedCornerShape(28.dp)),
             shape = RoundedCornerShape(28.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = UberGreen,
+                containerColor = FreshGreen,
                 contentColor = Color.White,
             ),
         ) {
@@ -156,7 +197,8 @@ fun LoginScreen(
             Text(
                 if (signupMode) "Έχεις λογαριασμό; Σύνδεση"
                 else "Νέος χρήστης; Δημιουργία λογαριασμού",
-                color = UberInk,
+                color = FreshGreenDark,
+                fontWeight = FontWeight.SemiBold,
             )
         }
     }
