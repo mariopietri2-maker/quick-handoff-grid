@@ -151,6 +151,16 @@ data class TicketMessageRow(
 )
 
 @Serializable
+data class LiveChatMessageRow(
+    val id: String,
+    val driver_id: String? = null,
+    val sender_id: String? = null,
+    val sender_role: String? = null,
+    val message: String? = null,
+    val created_at: String? = null,
+)
+
+@Serializable
 data class AgentRow(
     val user_id: String? = null,
     val full_name: String? = null,

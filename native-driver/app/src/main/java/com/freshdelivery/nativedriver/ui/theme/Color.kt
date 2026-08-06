@@ -3,33 +3,41 @@ package com.freshdelivery.nativedriver.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * Fresh Delivery — Uber Eats-inspired palette (light-first).
- * Brand name stays Fresh Delivery; the logo green is the primary action color.
+ * Fresh Delivery — premium dark-first palette.
+ * Deep charcoal surfaces with a vivid green action color that pops on dark.
  */
-val FreshGreen = Color(0xFF06C167)          // Uber Eats green / primary action
-val FreshGreenDark = Color(0xFF05A357)
-val FreshGreenDeep = Color(0xFF00864B)
-val FreshGreenSoft = Color(0xFFE6F9F0)      // soft green tint for chips/containers
+val FreshGreen = Color(0xFF06C167)          // brand green / primary action
+val FreshGreenBright = Color(0xFF2FE795)    // vivid green for text/icons on dark
+val FreshGreenDark = Color(0xFF0A6B3D)
+val FreshGreenDeep = Color(0xFF0E7A46)
+val FreshGreenSoft = Color(0xFF0E3B24)      // dark green container
+val FreshGreenGlow = Color(0xFF4FFFC1)      // glow accent
 
-val FreshBlack = Color(0xFF1A1A1A)          // primary text on light surfaces
-val FreshCharcoal = Color(0xFF1F1F23)
-val FreshTextMuted = Color(0xFF707070)      // secondary text
-val FreshTextFaint = Color(0xFF9E9E9E)
+val FreshBlack = Color(0xFFF0F4F1)          // primary text on dark surfaces
+val FreshCharcoal = Color(0xFF0B0E0C)       // app background
+val FreshTextMuted = Color(0xFF9AA6A0)      // secondary text
+val FreshTextFaint = Color(0xFF67716B)
 
-val FreshBackground = Color(0xFFF7F7F8)     // app background (Uber Eats near-white)
-val FreshSurface = Color(0xFFFFFFFF)        // cards / sheets
-val FreshSurfaceAlt = Color(0xFFF1F1F2)     // subtle wells / disabled chips
-val FreshOutline = Color(0xFFE8E8EB)        // hairline borders
+val FreshBackground = Color(0xFF0B0E0C)     // near-black app background
+val FreshSurface = Color(0xFF121614)        // cards / sheets
+val FreshSurfaceAlt = Color(0xFF1F2521)     // wells / disabled chips
+val FreshSurfaceHigh = Color(0xFF181D1A)    // elevated cards
+val FreshOutline = Color(0xFF262D28)        // hairline borders
 
-val FreshMuted = Color(0xFF9E9E9E)
+val FreshMuted = Color(0xFF9AA6A0)
 val FreshAmber = Color(0xFFFFC043)          // break / cash accent
 val FreshAmberDeep = Color(0xFFE8890C)
-val FreshError = Color(0xFFD93025)          // Uber-style red
-val FreshBlue = Color(0xFF276EF1)           // customer / info accent
-val FreshPurple = Color(0xFF6E4DED)
-val FreshOrange = Color(0xFFF97316)
+val FreshAmberContainer = Color(0xFF3A2C10)
+val FreshError = Color(0xFFFF5A6A)          // vibrant error on dark
+val FreshErrorContainer = Color(0xFF4A1216)
+val FreshBlue = Color(0xFF6FA8FF)           // customer / info accent
+val FreshPurple = Color(0xFFB197FF)
+val FreshOrange = Color(0xFFFFA166)
 
-/** Dark-first palette kept for night / nav-mode surfaces. */
-val FreshCharcoalDark = Color(0xFF101014)
-val FreshSurfaceDark = Color(0xFF17171B)
-val FreshCardDark = Color(0xFF222228)
+/** Legacy light-first tokens (kept for reference / light mode). */
+val LightBg = Color(0xFFF7F7F8)
+val LightSurface = Color(0xFFFFFFFF)
+val LightSurfaceAlt = Color(0xFFF1F1F2)
+val LightOutline = Color(0xFFE8E8EB)
+val LightText = Color(0xFF1A1A1A)
+val LightTextMuted = Color(0xFF707070)

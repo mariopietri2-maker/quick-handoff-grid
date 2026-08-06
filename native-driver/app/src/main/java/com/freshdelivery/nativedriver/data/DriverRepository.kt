@@ -432,6 +432,40 @@ class DriverRepository(
         runCatching { client.realtime.removeAllChannels() }
     }
 
+    /** Live support chat — one channel per driver, separate from tickets. */
+    suspend fun fetchLiveChat(driverId: String): List<LiveChatMessageRow> {
+        return client.from("live_chat_messages").select(Columns.ALL) {
+            filter { eq("driver_id", driverId) }
+            order("created_at", Order.ASCENDING)
+            limit(500L)
+        }.decodeList<LiveChatMessageRow>()
+    }
+
+    suspend fun sendLiveChatMessage(driverId: String, senderId: String, message: String) {
+        client.from("live_chat_messages").insert(
+            buildJsonObject {
+                put("driver_id", driverId)
+                put("sender_id", senderId)
+                put("sender_role", "driver")
+                put("message", message)
+            },
+        )
+    }
+
+    /** Live incoming messages on the driver's live chat channel. */
+    suspend fun subscribeLiveChat(driverId: String): Flow<PostgresAction> {
+        val channel = client.channel("driver-live-chat-$driverId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "live_chat_messages"
+        }
+        channel.subscribe()
+        return flow
+    }
+
+    suspend fun unsubscribeLiveChat() {
+        runCatching { client.realtime.removeAllChannels() }
+    }
+
     suspend fun fetchOrCreateReferral(userId: String): Pair<String, List<ReferralRow>> {
         val existing = client.from("driver_referrals").select(Columns.ALL) {
             filter { eq("referrer_id", userId) }

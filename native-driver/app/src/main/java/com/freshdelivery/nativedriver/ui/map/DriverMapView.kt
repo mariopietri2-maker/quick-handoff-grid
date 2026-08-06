@@ -104,6 +104,7 @@ fun DriverMapView(
     userBearing: Float? = null,
     route: List<Point> = emptyList(),
     destination: MapMarker? = null,
+    recenterKey: Int = 0,
 ) {
     val lat = centerLat ?: userLat ?: DEFAULT_LAT
     val lng = centerLng ?: userLng ?: DEFAULT_LNG
@@ -129,7 +130,20 @@ fun DriverMapView(
         }
     }
 
-    // Re-center only on trip context changes (offer/trip/destination/route),
+    // Snap the camera back to the driver's live GPS position when the
+    // recenter button is pressed (recenterKey is bumped each press).
+    LaunchedEffect(recenterKey) {
+        if (recenterKey > 0) {
+            val rLat = userLat ?: centerLat ?: DEFAULT_LAT
+            val rLng = userLng ?: centerLng ?: DEFAULT_LNG
+            viewportState.setCameraOptions {
+                center(Point.fromLngLat(rLng, rLat))
+                zoom(14.5)
+            }
+        }
+    }
+
+    // Re-center only on trip context changes (pin/trip/destination/route),
     // never on raw GPS updates.
     LaunchedEffect(markers.size, destination, route.size) {
         when {
@@ -164,8 +178,8 @@ fun DriverMapView(
                         .withTextField(m.label.take(18))
                         .withTextSize(11.0)
                         .withTextOffset(listOf(0.0, 1.5))
-                        .withTextColor("#1A1A1A")
-                        .withTextHaloColor("#FFFFFF")
+                        .withTextColor("#FFFFFF")
+                        .withTextHaloColor("#0B0E0C")
                         .withTextHaloWidth(1.6),
                 )
             }
@@ -178,8 +192,8 @@ fun DriverMapView(
                         .withTextField(d.label.take(18))
                         .withTextSize(11.0)
                         .withTextOffset(listOf(0.0, 2.2))
-                        .withTextColor("#00864B")
-                        .withTextHaloColor("#FFFFFF")
+                        .withTextColor("#2FE795")
+                        .withTextHaloColor("#0B0E0C")
                         .withTextHaloWidth(1.6),
                 )
             }
@@ -200,11 +214,11 @@ fun DriverMapView(
         emptyList()
     }
 
-    Box(modifier = modifier.background(Color(0xFFE8EAED))) {
+    Box(modifier = modifier.background(Color(0xFF0B0E0C))) {
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
             mapViewportState = viewportState,
-            style = { MapStyle(style = "mapbox://styles/mapbox/light-v11") },
+            style = { MapStyle(style = "mapbox://styles/mapbox/dark-v11") },
             compass = {},
             scaleBar = {},
             logo = {},
@@ -221,7 +235,7 @@ fun DriverMapView(
                     annotations = listOf(
                         PolylineAnnotationOptions()
                             .withPoints(route)
-                            .withLineColor("#06C167")
+                            .withLineColor("#2FE795")
                             .withLineWidth(4.0),
                     ),
                 )

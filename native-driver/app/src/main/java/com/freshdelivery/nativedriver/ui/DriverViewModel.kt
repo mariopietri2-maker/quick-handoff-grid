@@ -20,6 +20,7 @@ import com.freshdelivery.nativedriver.data.DriverRepository
 import com.freshdelivery.nativedriver.data.OpsHelper
 import com.freshdelivery.nativedriver.data.DriverStateRow
 import com.freshdelivery.nativedriver.data.DriverTab
+import com.freshdelivery.nativedriver.data.LiveChatMessageRow
 import com.freshdelivery.nativedriver.data.MoneyUi
 import com.freshdelivery.nativedriver.data.OfferSoundId
 import com.freshdelivery.nativedriver.data.OfferUi
@@ -75,6 +76,12 @@ data class DriverUiState(
     val chatAgents: Map<String, String> = emptyMap(),
     val chatLoading: Boolean = false,
     val chatSubscribed: Boolean = false,
+    val liveChatOpen: Boolean = false,
+    val liveChatMessages: List<LiveChatMessageRow> = emptyList(),
+    val liveChatAgents: Map<String, String> = emptyMap(),
+    val liveChatLoading: Boolean = false,
+    val liveChatSubscribed: Boolean = false,
+    val supportOpen: Boolean = false,
     val referralCode: String? = null,
     val referrals: List<ReferralRow> = emptyList(),
     val geo: DriverGeo? = null,
@@ -130,6 +137,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     private var pollJob: Job? = null
     private var chatJob: Job? = null
+    private var liveChatJob: Job? = null
     /** Keeps driver_locations.updated_at fresh while online (admin Online + dispatch). */
     private var heartbeatJob: Job? = null
     private var mediaPlayer: MediaPlayer? = null
@@ -609,6 +617,87 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 chatSubscribed = false,
             )
         }
+    }
+
+    fun openLiveChat() {
+        val uid = _state.value.userId ?: return
+        if (_state.value.liveChatOpen) return
+        _state.value = _state.value.copy(liveChatOpen = true, liveChatLoading = true, error = null)
+        viewModelScope.launch {
+            runCatching { repo.fetchLiveChat(uid) }
+                .onSuccess { msgs ->
+                    _state.value = _state.value.copy(
+                        liveChatMessages = msgs,
+                        liveChatLoading = false,
+                    )
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(liveChatLoading = false, error = friendlyError(e))
+                }
+            startLiveChatSubscription(uid)
+        }
+    }
+
+    /** Opens live chat from the headphone flow, seeding the first message. */
+    fun startLiveChat(initialMessage: String?) {
+        openLiveChat()
+        val msg = initialMessage?.trim()
+        if (!msg.isNullOrBlank()) sendLiveChatMessage(msg)
+    }
+
+    fun sendLiveChatMessage(text: String) {
+        val uid = _state.value.userId ?: return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.sendLiveChatMessage(uid, uid, trimmed) }
+                .onSuccess { refreshLiveChat(uid) }
+                .onFailure { e -> _state.value = _state.value.copy(error = friendlyError(e)) }
+        }
+    }
+
+    private fun startLiveChatSubscription(driverId: String) {
+        liveChatJob?.cancel()
+        liveChatJob = viewModelScope.launch {
+            runCatching { repo.subscribeLiveChat(driverId) }
+                .onSuccess { flow ->
+                    _state.value = _state.value.copy(liveChatSubscribed = true)
+                    flow.collect { _ -> refreshLiveChat(driverId) }
+                }
+        }
+    }
+
+    private fun refreshLiveChat(driverId: String) {
+        viewModelScope.launch {
+            runCatching { repo.fetchLiveChat(driverId) }
+                .onSuccess { msgs -> _state.value = _state.value.copy(liveChatMessages = msgs) }
+        }
+    }
+
+    fun closeLiveChat() {
+        liveChatJob?.cancel()
+        liveChatJob = null
+        viewModelScope.launch {
+            runCatching { repo.unsubscribeLiveChat() }
+            _state.value = _state.value.copy(
+                liveChatOpen = false,
+                liveChatMessages = emptyList(),
+                liveChatAgents = emptyMap(),
+                liveChatLoading = false,
+                liveChatSubscribed = false,
+            )
+        }
+    }
+
+    fun openSupport() {
+        _state.value = _state.value.copy(supportOpen = true)
+        openLiveChat()
+    }
+
+    fun closeSupport() {
+        closeLiveChat()
+        closeChat()
+        _state.value = _state.value.copy(supportOpen = false)
     }
 
     fun saveProfile(fullName: String, phone: String, vehicleType: String, plate: String, iban: String) {

@@ -9,10 +9,17 @@ import androidx.compose.ui.unit.sp
 val FreshTypography = Typography(
     displaySmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
-        fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        letterSpacing = (-0.5).sp,
-        lineHeight = 38.sp,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 34.sp,
+        letterSpacing = (-0.6).sp,
+        lineHeight = 40.sp,
+    ),
+    headlineLarge = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.ExtraBold,
+        fontSize = 28.sp,
+        letterSpacing = (-0.4).sp,
+        lineHeight = 34.sp,
     ),
     headlineMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -20,6 +27,13 @@ val FreshTypography = Typography(
         fontSize = 24.sp,
         letterSpacing = (-0.3).sp,
         lineHeight = 30.sp,
+    ),
+    headlineSmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.Bold,
+        fontSize = 22.sp,
+        letterSpacing = (-0.2).sp,
+        lineHeight = 28.sp,
     ),
     titleLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
@@ -34,6 +48,13 @@ val FreshTypography = Typography(
         fontSize = 17.sp,
         letterSpacing = (-0.1).sp,
         lineHeight = 22.sp,
+    ),
+    titleSmall = TextStyle(
+        fontFamily = FontFamily.SansSerif,
+        fontWeight = FontWeight.SemiBold,
+        fontSize = 14.sp,
+        lineHeight = 20.sp,
+        letterSpacing = 0.1.sp,
     ),
     bodyLarge = TextStyle(
         fontFamily = FontFamily.SansSerif,
