@@ -127,6 +127,23 @@ class DriverRepository(
             }.decodeList<StoreRow>().associateBy { it.id }
     }
 
+    /** Active stores (public catalog view) for the driver map, incl. photos. */
+    suspend fun fetchMapStores(): List<StoreRow> {
+        return client.from("stores_public")
+            .select(Columns.list("id", "name", "latitude", "longitude", "image_url", "cover_image_url")) {
+                order("name", Order.ASCENDING)
+                limit(100L)
+            }.decodeList<StoreRow>()
+    }
+
+    /** Active kitchen order counts per store for map badges. */
+    suspend fun fetchStoreActiveCounts(): Map<String, Long> {
+        val rows = runCatching {
+            client.postgrest.rpc("get_store_active_order_counts").decodeList<StoreCountRow>()
+        }.getOrDefault(emptyList())
+        return rows.associate { it.store_id to (it.active_count ?: 0L) }
+    }
+
     suspend fun fetchPendingOffers(userId: String): List<OfferUi> {
         val now = Instant.now().toString()
         val pending = client.from("pending_offers").select(Columns.ALL) {
