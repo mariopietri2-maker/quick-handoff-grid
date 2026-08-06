@@ -28,6 +28,7 @@ import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.HeadsetMic
+import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Navigation
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Storefront
@@ -38,7 +39,6 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.LinearProgressIndicator
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -66,8 +66,10 @@ import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.map.DriverMapView
 import com.freshdelivery.nativedriver.ui.map.MapMarker
-import com.freshdelivery.nativedriver.ui.support.DriverSupportDialog
+import com.freshdelivery.nativedriver.ui.theme.FreshAmber
+import com.freshdelivery.nativedriver.ui.theme.FreshError
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
+import com.freshdelivery.nativedriver.ui.theme.FreshGreenBright
 import com.freshdelivery.nativedriver.ui.theme.FreshOrange
 import com.mapbox.geojson.Point
 import kotlinx.coroutines.Dispatchers
@@ -81,8 +83,10 @@ import java.time.Duration
 import java.time.Instant
 
 private val GreenBtn = Color(0xFF06C167)
-private val TextDark = Color(0xFF1A1A1A)
-private val TextMuted = Color(0xFF707070)
+private val TextDark = Color(0xFFF0F4F1)
+private val TextMuted = Color(0xFF9AA6A0)
+private val SurfaceCard = Color(0xFF151A17)
+private val TrackFill = Color(0xFF1F2521)
 
 private fun eur(v: Double): String = "%.2f".format(v) + "€"
 private fun moneyPlain(v: Double): String = "%.2f".format(v)
@@ -188,15 +192,10 @@ fun HomeScreen(
     onRefresh: () -> Unit,
     onClearMessages: () -> Unit,
     onOpenOps: () -> Unit = {},
-    onSubmitSupport: (String, String) -> Unit = { _, _ -> },
-    onSupportShowNew: () -> Unit = {},
-    onSupportDismissNew: () -> Unit = {},
-    onSupportOpenTicket: (String) -> Unit = {},
+    onOpenSupport: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val primary = state.primaryTrip
-    var supportOpen by remember { mutableStateOf(false) }
-    var supportNew by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
     var navRoute by remember { mutableStateOf<List<Point>>(emptyList()) }
     var navDest by remember { mutableStateOf<MapMarker?>(null) }
@@ -204,6 +203,7 @@ fun HomeScreen(
     var navDurS by remember { mutableStateOf<Long?>(null) }
     var navLoading by remember { mutableStateOf(false) }
     var navFailed by remember { mutableStateOf(false) }
+    var recenterKey by remember { mutableIntStateOf(0) }
     val markers = buildList {
         primary?.storeLat?.let { lat ->
             primary.storeLng?.let { lng ->
@@ -228,7 +228,6 @@ fun HomeScreen(
     val err = friendlyError(state.error)
     val hasOffer = state.online && state.activeTrips.isEmpty() && state.offers.isNotEmpty()
     val hasTrip = state.activeTrips.isNotEmpty()
-    val cs = MaterialTheme.colorScheme
 
     // Clear in-app Mapbox navigation when the trip moves to the next step.
     LaunchedEffect(primary?.order?.status) {
@@ -239,7 +238,7 @@ fun HomeScreen(
         navFailed = false
     }
 
-    Box(Modifier.fillMaxSize().background(Color(0xFFE8EAED))) {
+    Box(Modifier.fillMaxSize().background(Color(0xFF0B0E0C))) {
         DriverMapView(
             modifier = Modifier.fillMaxSize(),
             centerLat = centerLat,
@@ -250,9 +249,11 @@ fun HomeScreen(
             userBearing = state.geo?.bearing,
             route = navRoute,
             destination = navDest,
+            recenterKey = recenterKey,
         )
 
-        // Top chrome — brand status pill centered between Ops and support
+        // Top chrome — brand status pill centered between the global menu and the
+        // right-side action stack (Support, Ops, Recenter).
         Row(
             Modifier
                 .align(Alignment.TopCenter)
@@ -266,25 +267,7 @@ fun HomeScreen(
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                if (state.isOps) {
-                    Row(
-                        Modifier
-                            .shadow(6.dp, RoundedCornerShape(22.dp))
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(Color.White)
-                            .border(1.dp, cs.outline, RoundedCornerShape(22.dp))
-                            .clickable(onClick = onOpenOps)
-                            .padding(horizontal = 12.dp, vertical = 8.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            "Ops",
-                            color = TextDark,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 13.sp,
-                        )
-                    }
-                }
+                Spacer(Modifier.width(0.dp))
             }
 
             Box(Modifier.weight(1f), contentAlignment = Alignment.Center) {
@@ -292,10 +275,16 @@ fun HomeScreen(
                     Modifier
                         .shadow(6.dp, RoundedCornerShape(24.dp))
                         .clip(RoundedCornerShape(24.dp))
-                        .background(if (state.online) GreenBtn else Color.White)
+                        .background(
+                            when {
+                                state.online -> GreenBtn
+                                state.busy -> Color(0xFF2F8A63)
+                                else -> SurfaceCard
+                            },
+                        )
                         .border(
                             1.dp,
-                            if (state.online) Color.Transparent else cs.outline,
+                            if (state.online) Color.Transparent else Color(0xFF2A322C),
                             RoundedCornerShape(24.dp),
                         )
                         .padding(horizontal = 14.dp, vertical = 9.dp),
@@ -305,7 +294,7 @@ fun HomeScreen(
                         Modifier
                             .size(8.dp)
                             .clip(CircleShape)
-                            .background(if (state.online) Color.White else Color(0xFF9CA3AF)),
+                            .background(if (state.online) Color.White else Color(0xFF67716B)),
                     )
                     Spacer(Modifier.width(8.dp))
                     Text(
@@ -324,20 +313,51 @@ fun HomeScreen(
 
             Row(
                 Modifier.weight(1f),
-                verticalAlignment = Alignment.CenterVertically,
+                verticalAlignment = Alignment.Top,
                 horizontalArrangement = Arrangement.End,
             ) {
-                Box(
-                    Modifier
-                        .size(42.dp)
-                        .shadow(6.dp, CircleShape)
-                        .clip(CircleShape)
-                        .background(Color.White)
-                        .border(1.dp, cs.outline, CircleShape)
-                        .clickable { supportOpen = true },
-                    contentAlignment = Alignment.Center,
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp),
                 ) {
-                    Icon(Icons.Outlined.HeadsetMic, null, tint = FreshGreen, modifier = Modifier.size(22.dp))
+                    Box(
+                        Modifier
+                            .size(42.dp)
+                            .shadow(6.dp, CircleShape)
+                            .clip(CircleShape)
+                            .background(SurfaceCard)
+                            .border(1.dp, Color(0xFF2A322C), CircleShape)
+                            .clickable(onClick = onOpenSupport),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Outlined.HeadsetMic, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+                    }
+                    if (state.isOps) {
+                        Box(
+                            Modifier
+                                .size(42.dp)
+                                .shadow(6.dp, CircleShape)
+                                .clip(CircleShape)
+                                .background(SurfaceCard)
+                                .border(1.dp, Color(0xFF2A322C), CircleShape)
+                                .clickable(onClick = onOpenOps),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Outlined.Storefront, null, tint = FreshAmber, modifier = Modifier.size(22.dp))
+                        }
+                    }
+                    Box(
+                        Modifier
+                            .size(42.dp)
+                            .shadow(6.dp, CircleShape)
+                            .clip(CircleShape)
+                            .background(SurfaceCard)
+                            .border(1.dp, Color(0xFF2A322C), CircleShape)
+                            .clickable { recenterKey++ },
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Outlined.MyLocation, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+                    }
                 }
             }
         }
@@ -349,7 +369,7 @@ fun HomeScreen(
                 .fillMaxWidth()
                 .navigationBarsPadding()
                 .padding(horizontal = 10.dp, vertical = 8.dp)
-                .padding(bottom = 100.dp),
+                .padding(bottom = 12.dp),
         ) {
             err?.let { msg ->
                 Row(
@@ -357,11 +377,12 @@ fun HomeScreen(
                         .fillMaxWidth()
                         .padding(bottom = 8.dp)
                         .clip(RoundedCornerShape(16.dp))
-                        .background(Color(0xFFFFEBEE))
+                        .background(Color(0xFF3A1418))
+                        .border(1.dp, FreshError.copy(alpha = 0.4f), RoundedCornerShape(16.dp))
                         .padding(horizontal = 14.dp, vertical = 10.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(msg, color = Color(0xFFB71C1C), modifier = Modifier.weight(1f), fontSize = 13.sp)
+                    Text(msg, color = Color(0xFFFFB4B9), modifier = Modifier.weight(1f), fontSize = 13.sp)
                     OutlinedButton(onClick = { onClearMessages(); onRefresh() }, shape = RoundedCornerShape(14.dp)) {
                         Text("OK")
                     }
@@ -391,7 +412,7 @@ fun HomeScreen(
                     Card(
                         Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(24.dp)),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
                         elevation = CardDefaults.cardElevation(0.dp),
                     ) {
                         Column(
@@ -414,7 +435,7 @@ fun HomeScreen(
                     Card(
                         Modifier.fillMaxWidth().heightIn(max = 460.dp).shadow(16.dp, RoundedCornerShape(28.dp)),
                         shape = RoundedCornerShape(28.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
                         elevation = CardDefaults.cardElevation(0.dp),
                     ) {
                         Column(
@@ -476,7 +497,7 @@ fun HomeScreen(
                     Card(
                         Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(24.dp)),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
                         elevation = CardDefaults.cardElevation(0.dp),
                     ) {
                         Column(
@@ -509,35 +530,6 @@ fun HomeScreen(
                 onToggle = onToggleOnline,
             )
         }
-
-        DriverSupportDialog(
-            open = supportOpen,
-            submitting = state.busy,
-            tickets = state.tickets,
-            showNew = supportNew,
-            onNewTicketSelected = {
-                supportNew = true
-                onSupportShowNew()
-            },
-            onDismissNew = {
-                supportNew = false
-                onSupportDismissNew()
-            },
-            onOpenTicket = { t ->
-                supportOpen = false
-                supportNew = false
-                onSupportOpenTicket(t.id)
-            },
-            onCreateTicket = { cat, desc ->
-                onSubmitSupport(cat, desc)
-                supportOpen = false
-                supportNew = false
-            },
-            onDismiss = {
-                supportOpen = false
-                supportNew = false
-            },
-        )
     }
 }
 
@@ -545,7 +537,7 @@ fun HomeScreen(
 private fun Handle() {
     Box(Modifier.fillMaxWidth().padding(bottom = 10.dp), contentAlignment = Alignment.Center) {
         Box(
-            Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFFD1D5DB)),
+            Modifier.width(40.dp).height(4.dp).clip(RoundedCornerShape(2.dp)).background(Color(0xFF3A423C)),
         )
     }
 }
@@ -562,7 +554,7 @@ private fun NavBanner(
     Card(
         Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(20.dp)),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
         elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Row(
@@ -656,7 +648,7 @@ private fun OfferSheet(
     Card(
         Modifier.fillMaxWidth().shadow(20.dp, RoundedCornerShape(28.dp)),
         shape = RoundedCornerShape(28.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
         elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Column(Modifier.padding(horizontal = 18.dp, vertical = 14.dp)) {
@@ -687,7 +679,7 @@ private fun OfferSheet(
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("Κέρδος", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
-                    Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 28.sp, color = GreenBtn)
+                    Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 28.sp, color = FreshGreenBright)
                 }
             }
 
@@ -698,19 +690,19 @@ private fun OfferSheet(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 if (isCash) {
-                    Chip("Μετρητά ${moneyPlain(cashAmount)}€", Color(0xFFFFF3E0), FreshOrange)
+                    Chip("Μετρητά ${moneyPlain(cashAmount)}€", Color(0xFF3A2C10), FreshAmber)
                 }
                 formatDistance(offer.order.distance_km)?.let {
-                    Chip(it, Color(0xFFF3F4F6), TextMuted)
+                    Chip(it, TrackFill, TextMuted)
                 }
                 itemCount?.let {
-                    Chip("$it", Color(0xFFF3F4F6), TextMuted)
+                    Chip("$it", TrackFill, TextMuted)
                 }
                 Spacer(Modifier.weight(1f))
                 Chip(
                     formatTimer(secondsLeft),
-                    Color(0xFFF3F4F6),
-                    if (secondsLeft <= 10) Color(0xFFE11900) else TextMuted,
+                    TrackFill,
+                    if (secondsLeft <= 10) Color(0xFFFF6B6B) else TextMuted,
                 )
             }
 
@@ -718,8 +710,8 @@ private fun OfferSheet(
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
                 modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
-                color = if (secondsLeft <= 10) Color(0xFFE11900) else GreenBtn,
-                trackColor = Color(0xFFE5E7EB),
+                color = if (secondsLeft <= 10) Color(0xFFFF6B6B) else GreenBtn,
+                trackColor = TrackFill,
             )
 
             Spacer(Modifier.height(14.dp))
@@ -770,7 +762,8 @@ private fun OfferSheet(
                     Modifier
                         .size(52.dp)
                         .clip(CircleShape)
-                        .border(1.5.dp, Color(0xFFE5E7EB), CircleShape)
+                        .border(1.5.dp, Color(0xFF3A423C), CircleShape)
+                        .background(TrackFill)
                         .clickable(enabled = !busy && offer.offerId.isNotBlank(), onClick = onDecline),
                     contentAlignment = Alignment.Center,
                 ) {
@@ -832,16 +825,16 @@ private fun TripProgress(currentStep: Int) {
             val active = i == currentStep
             val color = when {
                 done -> GreenBtn
-                active -> FreshGreen
-                else -> Color(0xFFD1D5DB)
+                active -> FreshGreenBright
+                else -> Color(0xFF3A423C)
             }
             Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
                 Box(
                     Modifier
                         .size(22.dp)
                         .clip(CircleShape)
-                        .background(if (done || active) color else Color(0xFFE5E7EB))
-                        .border(if (done) 0.dp else 1.5.dp, if (active) color else Color(0xFFD1D5DB), CircleShape),
+                        .background(if (done || active) color else Color(0xFF1F2521))
+                        .border(if (done) 0.dp else 1.5.dp, if (active) color else Color(0xFF3A423C), CircleShape),
                     contentAlignment = Alignment.Center,
                 ) {
                     if (done) {
@@ -867,7 +860,7 @@ private fun TripProgress(currentStep: Int) {
                         .background(
                             if (i < currentStep) GreenBtn
                             else if (i == currentStep) GreenBtn.copy(alpha = 0.35f)
-                            else Color(0xFFE5E7EB),
+                            else Color(0xFF3A423C),
                         ),
                 )
             }
@@ -895,9 +888,9 @@ private fun ActiveTripCard(
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
             Column(Modifier.weight(1f)) {
                 Text(trip.storeName ?: "Κατάστημα", fontWeight = FontWeight.Bold, fontSize = 18.sp, color = TextDark)
-                Text(statusLabel(status), color = GreenBtn, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                Text(statusLabel(status), color = FreshGreenBright, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
             }
-            Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = GreenBtn)
+            Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 22.sp, color = FreshGreenBright)
         }
         trip.storeAddress?.let {
             Text(it, fontSize = 13.sp, color = TextMuted, modifier = Modifier.padding(top = 2.dp))
@@ -907,7 +900,7 @@ private fun ActiveTripCard(
         }
         if (trip.order.payment_method?.equals("cash", ignoreCase = true) == true) {
             Spacer(Modifier.height(6.dp))
-            Chip("Είσπραξη ${eur(trip.order.total_amount ?: 0.0)}", Color(0xFFFFF3E0), FreshOrange)
+            Chip("Είσπραξη ${eur(trip.order.total_amount ?: 0.0)}", Color(0xFF3A2C10), FreshAmber)
         }
 
         Spacer(Modifier.height(14.dp))

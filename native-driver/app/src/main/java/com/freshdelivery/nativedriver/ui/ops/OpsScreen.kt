@@ -38,8 +38,10 @@ import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.data.OfferUi
 
 private val GreenBtn = Color(0xFF06C167)
-private val TextDark = Color(0xFF1A1A1A)
-private val TextMuted = Color(0xFF6B7280)
+private val TextDark = Color(0xFFF0F4F1)
+private val TextMuted = Color(0xFF9AA6A0)
+private val SurfaceCard = Color(0xFF151A17)
+private val TrackFill = Color(0xFF1F2521)
 
 private fun eur(v: Double): String = "%.2f".format(v) + "€"
 
@@ -54,7 +56,7 @@ fun OpsScreen(
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color(0xFFF3F4F6))
+            .background(Color(0xFF0B0E0C))
             .padding(top = 8.dp),
     ) {
         Row(
@@ -116,8 +118,8 @@ private fun OpsOrderCard(
     Card(
         Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(18.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(2.dp),
+        colors = CardDefaults.cardColors(containerColor = SurfaceCard),
+        elevation = CardDefaults.cardElevation(0.dp),
     ) {
         Column(Modifier.padding(14.dp)) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
@@ -157,13 +159,13 @@ private fun OpsOrderCard(
                 horizontalArrangement = Arrangement.spacedBy(6.dp),
             ) {
                 if (isCash) {
-                    Tag("Μετρητά ${eur(offer.order.total_amount ?: 0.0)}", Color(0xFFFFF3E0), Color(0xFFE65100))
+                    Tag("Μετρητά ${eur(offer.order.total_amount ?: 0.0)}", Color(0xFF3A2C10), Color(0xFFFFC043))
                 }
                 offer.order.distance_km?.let {
-                    Tag("%.1f km".format(it), Color(0xFFF3F4F6), TextMuted)
+                    Tag("%.1f km".format(it), TrackFill, TextMuted)
                 }
                 if (!offer.order.driver_id.isNullOrBlank()) {
-                    Tag("Έχει οδηγό", Color(0xFFFFEBEE), Color(0xFFC62828))
+                    Tag("Έχει οδηγό", Color(0xFF3A1418), Color(0xFFFF6B6B))
                 }
             }
             Spacer(Modifier.height(10.dp))

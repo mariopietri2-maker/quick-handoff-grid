@@ -107,7 +107,7 @@ fun LoginScreen(
             .fillMaxSize()
             .background(
                 Brush.verticalGradient(
-                    listOf(Color(0xFFFFFFFF), Color(0xFFF5FBF8), Color(0xFFFFFFFF)),
+                    listOf(Color(0xFF0B0E0C), Color(0xFF0E1A14), Color(0xFF0B0E0C)),
                 ),
             ),
     ) {
@@ -125,7 +125,7 @@ fun LoginScreen(
                 Modifier
                     .size(88.dp)
                     .clip(RoundedCornerShape(24.dp))
-                    .background(FreshGreen.copy(alpha = 0.12f)),
+                    .background(FreshGreen.copy(alpha = 0.14f)),
                 contentAlignment = Alignment.Center,
             ) {
                 Image(
@@ -140,7 +140,7 @@ fun LoginScreen(
                 text = "Fresh Driver",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1A1A1A),
+                color = cs.onBackground,
             )
             Text(
                 text = "Ιωάννινα · Live deliveries",
@@ -271,6 +271,8 @@ fun LoginScreen(
                 colors = ButtonDefaults.buttonColors(
                     containerColor = FreshGreen,
                     contentColor = Color.White,
+                    disabledContainerColor = Color(0xFF2A322C),
+                    disabledContentColor = Color(0xFF67716B),
                 ),
             ) {
                 if (busy) {

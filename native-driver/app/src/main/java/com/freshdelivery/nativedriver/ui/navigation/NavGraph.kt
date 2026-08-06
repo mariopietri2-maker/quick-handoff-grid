@@ -56,12 +56,12 @@ fun DriverNavGraph(
                 onRefreshOps = viewModel::refreshOps,
                 onClaimOps = viewModel::claimOpsOrder,
                 onSubmitSupport = viewModel::submitSupportTicket,
-                onOpenSupport = { },
-                onCloseSupport = { },
+                onOpenSupport = viewModel::openSupport,
+                onCloseSupport = viewModel::closeSupport,
                 onSupportOpenTicket = viewModel::openChat,
-                onSupportNewTicket = { },
                 onSendChat = viewModel::sendChatMessage,
                 onCloseChat = viewModel::closeChat,
+                onSendLiveChat = viewModel::sendLiveChatMessage,
             )
         }
     }

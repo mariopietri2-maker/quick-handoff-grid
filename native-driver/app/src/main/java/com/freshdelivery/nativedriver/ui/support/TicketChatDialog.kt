@@ -75,7 +75,7 @@ fun TicketChatDialog(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 IconButton(onClick = onBack) {
-                    Icon(Icons.Filled.ArrowBack, contentDescription = "Πίσω", tint = Color(0xFF1A1A1A))
+                    Icon(Icons.Filled.ArrowBack, contentDescription = "Πίσω", tint = MaterialTheme.colorScheme.onBackground)
                 }
                 Column(Modifier.weight(1f)) {
                     Text(
@@ -208,7 +208,7 @@ private fun ChatBubble(
     senderName: String?,
 ) {
     val bubbleColor = if (mine) FreshGreen else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f)
-    val textColor = if (mine) Color.White else Color(0xFF1A1A1A)
+    val textColor = if (mine) Color.White else MaterialTheme.colorScheme.onSurface
     Column(
         Modifier.fillMaxWidth(),
         horizontalAlignment = if (mine) Alignment.End else Alignment.Start,

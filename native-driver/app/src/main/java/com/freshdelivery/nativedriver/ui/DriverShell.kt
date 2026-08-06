@@ -1,14 +1,14 @@
 package com.freshdelivery.nativedriver.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.CardGiftcard
@@ -19,15 +19,19 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mail
+import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material3.Badge
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -43,8 +47,15 @@ import com.freshdelivery.nativedriver.ui.money.MoneyScreen
 import com.freshdelivery.nativedriver.ui.ops.OpsScreen
 import com.freshdelivery.nativedriver.ui.profile.ProfileScreen
 import com.freshdelivery.nativedriver.ui.referral.ReferralScreen
+import com.freshdelivery.nativedriver.ui.support.SupportCenter
 import com.freshdelivery.nativedriver.ui.support.TicketChatDialog
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
+import com.freshdelivery.nativedriver.ui.theme.FreshGreenBright
+
+private val MenuSurface = Color(0xFF151A17)
+private val MenuTextMuted = Color(0xFF9AA6A0)
+private val MenuIconMuted = Color(0xFF67716B)
+private val MenuBorder = Color(0xFF2A322C)
 
 private data class TabItem(
     val tab: DriverTab,
@@ -80,9 +91,9 @@ fun DriverShell(
     onOpenSupport: () -> Unit = {},
     onCloseSupport: () -> Unit = {},
     onSupportOpenTicket: (String) -> Unit = {},
-    onSupportNewTicket: () -> Unit = {},
     onSendChat: (String) -> Unit = {},
     onCloseChat: () -> Unit = {},
+    onSendLiveChat: (String) -> Unit = {},
 ) {
     val unread = state.notifications.count { it.read_at == null }
     val tabs = listOf(
@@ -92,8 +103,6 @@ fun DriverShell(
         TabItem(DriverTab.Referral, "Invite", Icons.Filled.CardGiftcard, Icons.Outlined.CardGiftcard),
         TabItem(DriverTab.Profile, "Λογαριασμός", Icons.Filled.AccountCircle, Icons.Outlined.AccountCircle),
     )
-
-    val showBottomBar = !(state.opsOpen && state.isOps)
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
         if (state.opsOpen && state.isOps) {
@@ -117,13 +126,12 @@ fun DriverShell(
                 onRefresh = onRefresh,
                 onClearMessages = onClearMessages,
                 onOpenOps = onOpenOps,
-                onSubmitSupport = onSubmitSupport,
+                onOpenSupport = onOpenSupport,
             )
             else -> Box(
                 Modifier
                     .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(bottom = 104.dp),
+                    .statusBarsPadding(),
             ) {
                 when (state.tab) {
                     DriverTab.Money -> MoneyScreen(
@@ -151,65 +159,28 @@ fun DriverShell(
             }
         }
 
-        // Floating glass bottom nav overlays the full-screen map.
-        if (showBottomBar) {
-            Box(
-                Modifier
-                    .align(Alignment.BottomCenter)
-                    .fillMaxWidth()
-                    .navigationBarsPadding()
-                    .padding(horizontal = 14.dp, vertical = 10.dp),
-            ) {
-                NavigationBar(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .shadow(18.dp, RoundedCornerShape(30.dp))
-                        .clip(RoundedCornerShape(30.dp)),
-                    containerColor = Color.White.copy(alpha = 0.96f),
-                    tonalElevation = 0.dp,
-                    windowInsets = WindowInsets(0, 0, 0, 0),
-                ) {
-                    tabs.forEach { item ->
-                        val selected = state.tab == item.tab
-                        NavigationBarItem(
-                            selected = selected,
-                            onClick = { onTab(item.tab) },
-                            icon = {
-                                if (item.tab == DriverTab.Inbox && unread > 0) {
-                                    BadgedIcon(
-                                        icon = if (selected) item.selectedIcon else item.unselectedIcon,
-                                        count = unread,
-                                    )
-                                } else {
-                                    Icon(
-                                        if (selected) item.selectedIcon else item.unselectedIcon,
-                                        contentDescription = item.label,
-                                        tint = if (selected) FreshGreen else Color(0xFF8A8A8E),
-                                    )
-                                }
-                            },
-                            label = {
-                                Text(
-                                    item.label,
-                                    style = MaterialTheme.typography.labelSmall,
-                                    fontWeight = if (selected) FontWeight.Bold else null,
-                                )
-                            },
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = FreshGreen,
-                                selectedTextColor = FreshGreen,
-                                indicatorColor = FreshGreen.copy(alpha = 0.14f),
-                                unselectedIconColor = Color(0xFF8A8A8E),
-                                unselectedTextColor = Color(0xFF8A8A8E),
-                            ),
-                        )
-                    }
-                }
-            }
+        // Global floating menu button overlays every screen; opens the tab list.
+        GlobalMenuButton(
+            tabs = tabs,
+            current = state.tab,
+            unread = unread,
+            onTab = onTab,
+        )
+
+        if (state.supportOpen) {
+            SupportCenter(
+                state = state,
+                onBack = onCloseSupport,
+                onSendLiveChat = onSendLiveChat,
+                onOpenTicket = { t -> onSupportOpenTicket(t.id) },
+                onCloseTicket = onCloseChat,
+                onSendTicketChat = onSendChat,
+                onSubmitTicket = onSubmitSupport,
+            )
         }
 
-        state.chatTicketId?.let { chatId ->
-            val ticket = state.tickets.firstOrNull { it.id == chatId }
+        if (state.chatTicketId != null && !state.supportOpen) {
+            val ticket = state.tickets.firstOrNull { it.id == state.chatTicketId }
             val category = ticket?.category
             TicketChatDialog(
                 ticketCategory = category,
@@ -220,6 +191,71 @@ fun DriverShell(
                 onBack = onCloseChat,
                 onSend = onSendChat,
             )
+        }
+    }
+}
+
+@Composable
+private fun GlobalMenuButton(
+    tabs: List<TabItem>,
+    current: DriverTab,
+    unread: Int,
+    onTab: (DriverTab) -> Unit,
+) {
+    var open by remember { mutableStateOf(false) }
+
+    Box(
+        Modifier
+            .fillMaxSize()
+            .statusBarsPadding()
+            .padding(start = 12.dp, top = 10.dp),
+    ) {
+        Box(
+            Modifier
+                .align(Alignment.TopStart)
+                .size(42.dp)
+                .shadow(6.dp, CircleShape)
+                .clip(CircleShape)
+                .background(MenuSurface)
+                .border(1.dp, MenuBorder, CircleShape)
+                .clickable { open = true },
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+        }
+
+        DropdownMenu(
+            expanded = open,
+            onDismissRequest = { open = false },
+            containerColor = MenuSurface,
+        ) {
+            tabs.forEach { item ->
+                val selected = current == item.tab
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            item.label,
+                            fontWeight = if (selected) FontWeight.Bold else null,
+                            color = if (selected) FreshGreenBright else MenuTextMuted,
+                        )
+                    },
+                    leadingIcon = {
+                        if (item.tab == DriverTab.Inbox && unread > 0) {
+                            BadgedIcon(icon = item.unselectedIcon, count = unread)
+                        } else {
+                            Icon(
+                                if (selected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label,
+                                tint = if (selected) FreshGreenBright else MenuIconMuted,
+                            )
+                        }
+                    },
+                    onClick = {
+                        open = false
+                        onTab(item.tab)
+                    },
+                )
+            }
         }
     }
 }
@@ -241,7 +277,7 @@ private fun BadgedIcon(icon: ImageVector, count: Int) {
         Icon(
             icon,
             contentDescription = "Inbox",
-            tint = Color(0xFF8A8A8E),
+            tint = MenuIconMuted,
         )
     }
 }
