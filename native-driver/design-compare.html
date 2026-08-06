@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh Delivery Driver — design comparison: local working copy vs GitHub remote</title>
+<style>
+  :root {
+    --green: #06C167;
+    --green-dark: #00864B;
+    --green-soft: #E6F9F0;
+    --black: #1A1A1A;
+    --muted: #707070;
+    --faint: #9E9E9E;
+    --bg: #F7F7F8;
+    --surface: #FFFFFF;
+    --well: #F1F1F2;
+    --outline: #E8E8EB;
+    --amber: #FFC043;
+    --error: #D93025;
+    --font: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    /* remote (GitHub) palette */
+    --r-green: #1DB954;
+    --r-dark: #1C1C1E;
+    --r-muted: #6B7280;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: #E8E8EC;
+    color: var(--black);
+    padding: 28px 18px 64px;
+  }
+  .hero { max-width: 1500px; margin: 0 auto 22px; }
+  .hero h1 { font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
+  .hero p { color: var(--muted); margin-top: 6px; font-size: 14px; max-width: 900px; line-height: 1.5; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 14px; }
+  .legend span { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; }
+  .swatch { display: inline-block; width: 18px; height: 18px; border-radius: 6px; margin-right: 6px; vertical-align: middle; border: 1px solid rgba(0,0,0,.08); }
+  .row { display: flex; flex-wrap: wrap; gap: 26px; justify-content: center; max-width: 1500px; margin: 0 auto 30px; }
+  .side { flex: 1 1 560px; min-width: 0; }
+  .side h2 { font-size: 18px; font-weight: 800; margin-bottom: 2px; }
+  .side .tag { font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .side-a h2 { color: var(--green-dark); }
+  .side-b h2 { color: #17A34A; }
+  .phones { display: flex; flex-wrap: wrap; gap: 24px; justify-content: center; }
+  .screen-col { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .screen-col h3 { font-size: 13px; font-weight: 700; letter-spacing: .3px; }
+  .screen-col .cap { font-size: 11px; color: var(--muted); margin-top: -4px; }
+  .phone {
+    width: 330px; height: 700px; background: var(--surface); border-radius: 38px;
+    border: 9px solid #1a1a1a; overflow: hidden; position: relative;
+    box-shadow: 0 24px 50px rgba(0,0,0,.22), 0 8px 16px rgba(0,0,0,.1);
+  }
+  .notch {
+    position: absolute; top: 7px; left: 50%; transform: translateX(-50%);
+    width: 108px; height: 21px; background: #1a1a1a; border-radius: 0 0 14px 14px; z-index: 50;
+  }
+  .screen { position: absolute; inset: 0; overflow: hidden; background: var(--bg); }
+
+  /* ---------- shared components ---------- */
+  .statusbar { position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 40; display: flex; justify-content: space-between; align-items: center; padding: 8px 18px 0; font-size: 11px; font-weight: 600; }
+  .dock { position: absolute; left: 0; right: 0; bottom: 0; height: 74px; background: var(--surface); border-top: 1px solid var(--outline); display: flex; align-items: center; justify-content: space-around; padding: 0 6px; z-index: 45; }
+  .dock .dtab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 9.5px; color: #8A8A8E; min-width: 52px; }
+  .dock .dtab.on { color: var(--green); }
+  .dock .dtab.on-b { color: var(--r-green); }
+  .dock .dtab svg { width: 20px; height: 20px; }
+  .pill { display: inline-flex; align-items: center; gap: 5px; font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; }
+
+  /* ---------- OUR version (A) ---------- */
+  .login-a { background: linear-gradient(180deg, #FFFFFF 0%, #F5FBF8 55%, #FFFFFF 100%); }
+  .login-a .body { padding: 78px 24px 24px; display: flex; flex-direction: column; height: 100%; }
+  .logo-tile { width: 76px; height: 76px; border-radius: 22px; background: var(--green-soft); display: flex; align-items: center; justify-content: center; margin: 0 auto 14px; }
+  .login-a h1 { text-align: center; font-size: 26px; font-weight: 800; }
+  .login-a .sub { text-align: center; color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .field { position: relative; margin-top: 14px; border: 1.5px solid var(--outline); border-radius: 14px; padding: 11px 13px; background: #fff; }
+  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .field input { border: none; outline: none; width: 100%; font-size: 14px; font-family: inherit; color: var(--black); background: transparent; }
+  .remrow { display: flex; align-items: center; justify-content: space-between; margin-top: 8px; }
+  .check { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--muted); }
+  .check input { accent-color: var(--green); width: 15px; height: 15px; }
+  .forgot a { color: var(--green); font-size: 12px; font-weight: 700; text-decoration: none; }
+  .apply { display: block; text-align: center; color: var(--green); font-size: 14px; font-weight: 800; text-decoration: none; margin-top: 12px; }
+  .btn-primary { width: 100%; height: 50px; border: none; border-radius: 15px; background: var(--green); color: #fff; font-size: 15px; font-weight: 800; font-family: inherit; margin-top: 10px; }
+  .terms { text-align: center; font-size: 10.5px; color: var(--faint); margin-top: 12px; }
+
+  /* home idle A */
+  .map-bg { position: absolute; inset: 0; background: #E8EAED; }
+  .map-lines { position: absolute; inset: 0; opacity: .5; background-image: linear-gradient(#d5d9dd 1px, transparent 1px), linear-gradient(90deg, #d5d9dd 1px, transparent 1px); background-size: 34px 34px; }
+  .topbar { position: absolute; top: 34px; left: 0; right: 0; padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; z-index: 20; }
+  .topbar .brand { display: inline-flex; align-items: center; gap: 6px; background: #fff; border: 1px solid var(--outline); padding: 5px 10px; border-radius: 999px; font-size: 11px; font-weight: 700; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .icon-circle { width: 30px; height: 30px; border-radius: 50%; background: #fff; border: 1px solid var(--outline); display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 8px rgba(0,0,0,.06); }
+  .status-card { position: absolute; left: 14px; right: 14px; bottom: 88px; background: #fff; border-radius: 20px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 20; }
+  .status-card .row1 { display: flex; align-items: center; justify-content: space-between; }
+  .status-card h4 { font-size: 14px; font-weight: 800; }
+  .status-card .sub { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .slide { margin-top: 10px; height: 54px; border-radius: 27px; background: var(--green-soft); border: 1.5px solid var(--green); position: relative; display: flex; align-items: center; justify-content: center; }
+  .slide .thumb { position: absolute; left: 6px; top: 50%; transform: translateY(-50%); width: 42px; height: 42px; border-radius: 50%; background: var(--green); box-shadow: 0 4px 10px rgba(0,0,0,.2); }
+  .slide .txt { font-size: 12px; font-weight: 700; color: var(--green); }
+
+  /* offer A */
+  .offer-card { position: absolute; left: 14px; right: 14px; bottom: 88px; background: #fff; border-radius: 20px; padding: 14px 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 20; }
+  .offer-card .head { display: flex; align-items: center; gap: 8px; }
+  .offer-card .store { font-size: 15px; font-weight: 800; flex: 1; }
+  .offer-card .eta { font-size: 12px; color: var(--muted); }
+  .offer-card .pay { font-size: 24px; font-weight: 800; color: var(--green); margin-top: 8px; }
+  .offer-card .d { font-size: 11.5px; color: var(--muted); margin-top: 2px; }
+  .offer-card .btns { display: flex; gap: 8px; margin-top: 12px; }
+  .btn-decline { flex: 1; height: 44px; border-radius: 13px; border: 1.5px solid var(--outline); background: #fff; color: var(--black); font-weight: 700; font-size: 13px; font-family: inherit; }
+  .btn-accept { flex: 1; height: 44px; border-radius: 13px; border: none; background: var(--green); color: #fff; font-weight: 800; font-size: 13px; font-family: inherit; }
+
+  /* active trip A */
+  .trip { position: absolute; left: 14px; right: 14px; bottom: 88px; background: #fff; border-radius: 20px; padding: 13px 16px; box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 20; }
+  .trip .step { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+  .trip .dot { width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 11px; font-weight: 800; }
+  .trip .dot.done { background: var(--green); color: #fff; }
+  .trip .dot.cur { background: var(--green-soft); color: var(--green); border: 1.5px solid var(--green); }
+  .trip .dot.todo { background: var(--well); color: var(--faint); }
+  .trip .sname { font-size: 13px; font-weight: 700; }
+  .trip .saddr { font-size: 11px; color: var(--muted); }
+  .nav-banner { margin-top: 8px; background: var(--green-soft); border: 1px solid var(--green); border-radius: 12px; padding: 8px 10px; display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; font-weight: 700; color: var(--green-dark); }
+  .route-svg { position: absolute; left: 0; right: 0; top: 110px; height: 120px; opacity: .9; }
+
+  /* money A */
+  .earn-card { background: linear-gradient(135deg, #00A854 0%, #007A3D 100%); border-radius: 22px; padding: 16px 18px; color: #fff; position: relative; }
+  .earn-card .lbl { font-size: 11px; opacity: .85; }
+  .earn-card .amt { font-size: 34px; font-weight: 800; margin-top: 4px; }
+  .earn-card .btn { margin-top: 12px; background: #fff; color: #007A3D; border-radius: 14px; height: 42px; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 13px; }
+  .stat-mini { background: var(--surface); border: 1px solid var(--outline); border-radius: 16px; padding: 11px 12px; flex: 1; }
+  .stat-mini .sl { font-size: 10.5px; color: var(--muted); }
+  .stat-mini .sv { font-size: 16px; font-weight: 800; margin-top: 2px; }
+  .cash-card { background: var(--surface); border: 1.5px solid var(--amber); border-radius: 18px; padding: 13px 15px; }
+  .scroll { position: absolute; inset: 0; overflow-y: auto; padding: 78px 16px 88px; }
+
+  /* inbox A */
+  .msg-row { display: flex; gap: 10px; background: var(--surface); border: 1px solid var(--outline); border-radius: 14px; padding: 11px 12px; margin-bottom: 8px; }
+  .msg-row .mt { font-size: 13px; font-weight: 700; }
+  .msg-row .mb { font-size: 11px; color: var(--muted); margin-top: 2px; }
+
+  /* referral A */
+  .ref-card { background: linear-gradient(135deg, var(--amber) 0%, #F5A623 100%); border-radius: 20px; padding: 16px; color: #1A1A1A; }
+  .code-box { background: #fff; border-radius: 12px; padding: 12px; text-align: center; font-size: 18px; font-weight: 800; letter-spacing: 3px; margin-top: 10px; }
+
+  /* profile A */
+  .prof-row { display: flex; align-items: center; gap: 10px; background: var(--surface); border: 1px solid var(--outline); border-radius: 14px; padding: 11px 12px; margin-bottom: 8px; }
+  .prof-row .pt { font-size: 13px; font-weight: 700; }
+
+  /* ---------- REMOTE version (B) ---------- */
+  .login-b { background: linear-gradient(180deg, #FFFFFF 0%, #EAF8F0 55%, #FFFFFF 100%); }
+  .login-b .body { padding: 78px 24px 24px; display: flex; flex-direction: column; height: 100%; }
+  .login-b h1 { text-align: center; font-size: 26px; font-weight: 800; }
+  .login-b .sub { text-align: center; color: var(--r-muted); font-size: 13px; margin-top: 3px; }
+  .login-b .field { margin-top: 14px; border: 1.5px solid var(--outline); border-radius: 14px; padding: 11px 13px; background: #fff; }
+  .login-b .btn { width: 100%; height: 50px; border: none; border-radius: 15px; background: var(--r-green); color: #fff; font-size: 15px; font-weight: 800; font-family: inherit; margin-top: 12px; }
+  .login-b .outline-btn { width: 100%; height: 46px; border: 1.5px solid var(--outline); border-radius: 15px; background: #fff; color: var(--black); font-size: 13px; font-weight: 700; font-family: inherit; margin-top: 10px; }
+  .login-b .forgot { text-align: right; margin-top: 8px; }
+  .login-b .forgot a { color: var(--r-green); font-size: 12px; font-weight: 700; text-decoration: none; }
+
+  .topbar-b { position: absolute; top: 34px; left: 0; right: 0; background: var(--r-dark); padding: 10px 14px; display: flex; align-items: center; justify-content: space-between; z-index: 20; }
+  .topbar-b .brand { color: #fff; font-size: 14px; font-weight: 700; }
+  .topbar-b .status { color: #fff; font-size: 11px; background: rgba(255,255,255,.12); padding: 4px 10px; border-radius: 999px; }
+  .offer-b { position: absolute; left: 12px; right: 12px; bottom: 86px; background: #fff; border-radius: 18px; padding: 13px 15px; box-shadow: 0 8px 24px rgba(0,0,0,.12); z-index: 20; }
+  .offer-b .store { font-size: 14px; font-weight: 800; }
+  .offer-b .pay { font-size: 26px; font-weight: 800; color: var(--r-green); margin-top: 6px; }
+  .offer-b .chips { display: flex; gap: 6px; margin-top: 8px; flex-wrap: wrap; }
+  .chip { font-size: 10px; font-weight: 700; padding: 4px 9px; border-radius: 999px; }
+  .chip.cash { background: #FFF3E0; color: #E65100; }
+  .chip.gray { background: #F3F4F6; color: var(--r-muted); }
+  .chip.orange { background: #FFF3E0; color: #E65100; }
+  .offer-b .accept { width: 100%; height: 44px; border: none; border-radius: 13px; background: var(--r-green); color: #fff; font-weight: 800; font-size: 13px; font-family: inherit; margin-top: 10px; }
+  .offer-b .decline { width: 100%; height: 38px; border: 1.5px solid var(--outline); border-radius: 13px; background: #fff; color: var(--black); font-weight: 700; font-size: 12px; font-family: inherit; margin-top: 6px; }
+
+  .progress-b { display: flex; align-items: center; gap: 4px; margin-top: 10px; }
+  .progress-b .seg { flex: 1; height: 4px; border-radius: 2px; background: #D1D5DB; }
+  .progress-b .seg.act { background: var(--r-green); }
+  .progress-b .seg.warn { background: #E11900; }
+
+  .email-row { display: flex; gap: 10px; background: #fff; border: 1px solid var(--outline); border-radius: 12px; padding: 11px 12px; margin-bottom: 8px; }
+  .email-row .mt { font-size: 13px; font-weight: 700; }
+  .email-row .mb { font-size: 11px; color: var(--r-muted); margin-top: 2px; }
+  .email-row .badge { font-size: 9px; font-weight: 800; padding: 2px 7px; border-radius: 999px; }
+  .badge.high { background: #FEE2E2; color: #B91C1C; }
+  .badge.info { background: #DBEAFE; color: #1D4ED8; }
+  .lang-switch { display: inline-flex; background: var(--well); border-radius: 999px; padding: 3px; }
+  .lang-switch span { font-size: 10.5px; font-weight: 700; padding: 4px 10px; border-radius: 999px; color: var(--muted); }
+  .lang-switch span.on { background: #fff; color: var(--green); box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+  .subtitle { font-size: 11.5px; color: var(--muted); margin-bottom: 12px; }
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <h1>Fresh Delivery Driver — design comparison</h1>
+  <p>Both versions were redesigned from the same old commit. The GitHub remote (<b>B</b>) has i18n Greek/English, an email-style inbox, cash-collect confirm, and Google-Maps navigation. This working copy (<b>A</b>) has the Uber-Eats light theme, Mapbox-only navigation, remember-me + &quot;Αίτηση για Διανομέας&quot; login, and a notifications-only inbox. Compare, then choose a merge direction.</p>
+  <div class="legend">
+    <span><i class="swatch" style="background:#06C167"></i>A · working copy — green #06C167, Mapbox-only</span>
+    <span><i class="swatch" style="background:#1DB954"></i>B · GitHub remote — green #1DB954, Google Maps</span>
+  </div>
+</div>
+
+<!-- ================== ROW 1: LOGIN + HOME ================== -->
+<div class="row">
+  <!-- SIDE A -->
+  <div class="side side-a">
+    <h2>A · This working copy</h2>
+    <p class="tag">commit cffa4a99 (local) — remember-me ✓ · Αίτηση για Διανομέας ✓ · Mapbox-only ✓</p>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>Login</h3>
+        <div class="phone"><div class="screen login-a">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="body">
+            <div class="logo-tile">
+              <svg viewBox="0 0 24 24" fill="#06C167"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/></svg>
+            </div>
+            <h1>Fresh Driver</h1>
+            <p class="sub">Ιωάννινα · Live deliveries</p>
+            <div class="field"><label>Email</label><input value="driver@fresh.gr" readonly></div>
+            <div class="field"><label>Κωδικός</label><input type="password" value="password" readonly></div>
+            <div class="remrow">
+              <label class="check"><input type="checkbox" checked> Να με θυμάσαι</label>
+              <span class="forgot"><a href="#">Ξέχασες τον κωδικό;</a></span>
+            </div>
+            <a class="apply" href="#">Αίτηση για Διανομέας</a>
+            <button class="btn-primary">Σύνδεση</button>
+            <p class="terms">Με τη σύνδεση συμφωνείς με τους όρους χρήσης.</p>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="screen-col">
+        <h3>Home idle</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="map-bg"><div class="map-lines"></div></div>
+          <div class="topbar">
+            <span class="brand"><span style="color:var(--green)">●</span> Fresh Driver</span>
+            <span class="icon-circle">◎</span>
+          </div>
+          <div class="status-card">
+            <div class="row1"><h4>Εκτός υπηρεσίας</h4><span class="pill" style="background:var(--green-soft);color:var(--green-dark)">● Online όταν σύρεις</span></div>
+            <p class="sub">Σύρε το κουμπί για να γίνεις διαθέσιμος</p>
+            <div class="slide"><span class="thumb"></span><span class="txt">Σύρε για υπηρεσία</span></div>
+          </div>
+          <div class="dock">
+            <div class="dtab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Αρχική</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1zm0 17.5c-3.2-.8-6-3.4-7-7.6V6.7l7-2.9 7 2.9v4.2c-1 4.2-3.8 6.8-7 7.6z"/></svg>Χρήματα</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6zm-2 12H7V8h2v2h2V8h2v2h2V8h2v2h2v8z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zm0 2c-3.3 0-8 1.7-8 5v1h16v-1c0-3.3-4.7-5-8-5z"/></svg>Προφίλ</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SIDE B -->
+  <div class="side side-b">
+    <h2>B · GitHub remote</h2>
+    <p class="tag">commit c16adedb (origin/main, APK 2.4.0) — i18n ✓ · email inbox ✓ · Google Maps ✓</p>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>Login</h3>
+        <div class="phone"><div class="screen login-b">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="body">
+            <div class="logo-tile" style="background:#E6F9F0">
+              <svg viewBox="0 0 24 24" fill="#1DB954"><path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z"/></svg>
+            </div>
+            <h1>Fresh Driver</h1>
+            <p class="sub">Ιωάννινα · Live deliveries</p>
+            <div class="field"><label>Email</label><input value="driver@fresh.gr" readonly></div>
+            <div class="field"><label>Κωδικός</label><input type="password" value="password" readonly></div>
+            <div class="forgot"><a href="#">Ξέχασες τον κωδικό;</a></div>
+            <button class="btn">Σύνδεση</button>
+            <button class="outline-btn">Αίτηση λογαριασμού οδηγού</button>
+            <p class="terms">Με τη σύνδεση συμφωνείς με τους όρους χρήσης.</p>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="screen-col">
+        <h3>Home idle</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span style="color:#fff">09:41</span><span style="color:#fff">◉</span></div>
+          <div class="notch"></div>
+          <div class="map-bg"><div class="map-lines"></div></div>
+          <div class="topbar-b">
+            <span class="brand">Fresh Delivery</span>
+            <span class="status">Διαθέσιμος</span>
+          </div>
+          <div class="offer-b">
+            <p class="store">Εκτός υπηρεσίας</p>
+            <p class="pay">⚡</p>
+            <div class="chips">
+              <span class="chip gray">Σύρε για υπηρεσία</span>
+            </div>
+            <div class="slide" style="margin-top:12px;height:50px;background:#EAF8F0;border-color:var(--r-green)">
+              <span class="thumb" style="background:var(--r-green)"></span>
+              <span class="txt" style="color:var(--r-green)">Σύρε για υπηρεσία</span>
+            </div>
+          </div>
+          <div class="dock">
+            <div class="dtab on-b"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Money</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2zm0 4-8 5-8-5V6l8 5 8-5v2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Profile</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================== ROW 2: OFFER + ACTIVE TRIP ================== -->
+<div class="row">
+  <div class="side side-a">
+    <h2>A · Offer &amp; active trip</h2>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>New offer</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="map-bg"><div class="map-lines"></div></div>
+          <div class="offer-card">
+            <div class="head">
+              <span style="font-size:20px">🏪</span>
+              <span class="store">Goody's Ιωάννινα</span>
+              <span class="eta">~12 λεπτά</span>
+            </div>
+            <div class="pay">€3.80</div>
+            <div class="d">📦 Αεροδρομίου 12 · 2.1 χλμ · 🕐 2.5 χλμ εκτίμηση</div>
+            <div class="btns">
+              <button class="btn-decline">Απόρριψη</button>
+              <button class="btn-accept">Αποδοχή · €3.80</button>
+            </div>
+          </div>
+          <div class="dock">
+            <div class="dtab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Αρχική</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Χρήματα</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Προφίλ</div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="screen-col">
+        <h3>Active trip · Mapbox route</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="map-bg"><div class="map-lines"></div></div>
+          <svg class="route-svg" viewBox="0 0 320 120" fill="none">
+            <path d="M20 100 C80 90 90 30 160 45 S260 25 300 18" stroke="#06C167" stroke-width="4" stroke-linecap="round"/>
+            <circle cx="20" cy="100" r="7" fill="#fff" stroke="#06C167" stroke-width="3"/>
+            <circle cx="300" cy="18" r="7" fill="#06C167"/>
+          </svg>
+          <div class="trip">
+            <div class="step"><span class="dot done">✓</span><span class="sname">Goody's Ιωάννινα</span></div>
+            <div class="step"><span class="dot cur">2</span><span class="sname">Παραλαβή</span></div>
+            <div class="step"><span class="dot todo">3</span><span class="sname">Αεροδρομίου 12</span></div>
+            <div class="nav-banner">
+              <span>🧭 Οδηγίες Mapbox · 2.1 χλμ</span>
+              <span style="font-weight:800">4:32</span>
+            </div>
+          </div>
+          <div class="dock">
+            <div class="dtab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Αρχική</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Χρήματα</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Προφίλ</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="side side-b">
+    <h2>B · Offer &amp; active trip</h2>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>New offer · cash confirm</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="map-bg"><div class="map-lines"></div></div>
+          <div class="offer-b">
+            <p class="store">Goody's Ιωάννινα</p>
+            <p class="pay">€3.80</p>
+            <div class="chips">
+              <span class="chip cash">Μετρητά €12.50</span>
+              <span class="chip gray">2.1 χλμ</span>
+              <span class="chip orange">~12 λεπτά</span>
+            </div>
+            <div class="progress-b"><span class="seg act"></span><span class="seg"></span><span class="seg"></span></div>
+            <button class="accept">Αποδοχή · €3.80</button>
+            <button class="decline">Απόρριψη</button>
+          </div>
+          <div class="dock">
+            <div class="dtab on-b"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Money</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Profile</div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="screen-col">
+        <h3>Active trip · Google Maps</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="map-bg"><div class="map-lines"></div></div>
+          <div class="offer-b">
+            <p class="store">Παραλαβή · Goody's</p>
+            <p class="pay" style="font-size:15px;color:var(--black);font-weight:700">🕐 4:32</p>
+            <div class="chips">
+              <span class="chip gray">Παραλαβή</span>
+              <span class="chip gray">Παράδοση</span>
+              <span class="chip gray">Αεροδρομίου 12</span>
+            </div>
+            <button class="accept">🌐 Άνοιγμα στους Χάρτες Google</button>
+          </div>
+          <div class="dock">
+            <div class="dtab on-b"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Money</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Profile</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================== ROW 3: MONEY + INBOX ================== -->
+<div class="row">
+  <div class="side side-a">
+    <h2>A · Money &amp; Inbox</h2>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>Money</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="scroll">
+            <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Χρήματα</h2>
+            <p class="subtitle">Δύο ξεχωριστά ποσά: τα κέρδη σου και τα μετρητά πελατών.</p>
+            <div class="earn-card">
+              <p class="lbl">Διαθέσιμο για ανάληψη</p>
+              <p class="amt">€124.80</p>
+              <p style="font-size:11px;opacity:.75;margin-top:2px">+€8.40 εκκρεμεί</p>
+              <div class="btn">Αίτημα ανάληψης</div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:12px">
+              <div class="stat-mini"><p class="sl">Σήμερα</p><p class="sv">€32.10</p><p style="font-size:10px;color:var(--muted)">5 παραδόσεις</p></div>
+              <div class="stat-mini"><p class="sl">Εβδομάδα</p><p class="sv">€210.50</p><p style="font-size:10px;color:var(--muted)">συνολικά κέρδη</p></div>
+            </div>
+            <div class="cash-card" style="margin-top:12px">
+              <p style="font-weight:800;font-size:13px">Μετρητά στη βάρδια</p>
+              <p style="font-size:24px;font-weight:800;margin-top:4px">€46.00 <span style="font-size:12px;color:var(--muted)">/ €200</span></p>
+              <p style="font-size:10.5px;color:var(--muted);margin-top:4px">Είσπραξη — δεν είναι δικά σου κέρδη.</p>
+            </div>
+          </div>
+          <div class="dock">
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Αρχική</div>
+            <div class="dtab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Χρήματα</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Προφίλ</div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="screen-col">
+        <h3>Inbox · notifications only</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="scroll">
+            <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Inbox</h2>
+            <p class="subtitle">Μηνύματα</p>
+            <div class="msg-row">
+              <span class="mt">📣 Νέο: μπόνους για βραδινές βάρδιες</span>
+            </div>
+            <div class="msg-row">
+              <span class="mt">📋 Ανακοίνωση · αλλαγή ωρών λειτουργίας</span>
+            </div>
+            <div class="msg-row">
+              <span class="mt">✅ Η παραλαβή ολοκληρώθηκε</span>
+            </div>
+            <p style="font-size:11px;color:var(--faint);margin-top:14px;text-align:center">Μόνο ειδοποιήσεις — το support γίνεται από τη φόρμα.</p>
+          </div>
+          <div class="dock">
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Αρχική</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Χρήματα</div>
+            <div class="dtab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Προφίλ</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="side side-b">
+    <h2>B · Money &amp; Inbox</h2>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>Money</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="scroll">
+            <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Χρήματα</h2>
+            <div class="earn-card" style="background:linear-gradient(135deg,#1DB954 0%,#0E8A3E 100%)">
+              <p class="lbl">Διαθέσιμο για ανάληψη</p>
+              <p class="amt">€124.80</p>
+              <p style="font-size:11px;opacity:.75;margin-top:2px">+€8.40 εκκρεμεί</p>
+              <div class="btn">Αίτημα ανάληψης</div>
+            </div>
+            <div class="cash-card" style="margin-top:12px;border-color:var(--r-green)">
+              <p style="font-weight:800;font-size:13px">Μετρητά στη βάρδια</p>
+              <p style="font-size:24px;font-weight:800;margin-top:4px">€46.00</p>
+              <div class="progress-b" style="margin-top:8px"><span class="seg act"></span><span class="seg"></span><span class="seg"></span></div>
+            </div>
+            <p style="font-size:12px;font-weight:700;margin:14px 0 6px">Κινήσεις</p>
+            <div class="msg-row"><span class="mt">Παράδοση · €3.80</span></div>
+            <div class="msg-row"><span class="mt">Παράδοση · €4.10</span></div>
+          </div>
+          <div class="dock">
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</div>
+            <div class="dtab on-b"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Money</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Profile</div>
+          </div>
+        </div></div>
+      </div>
+
+      <div class="screen-col">
+        <h3>Inbox · email style + tickets</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="scroll">
+            <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Inbox</h2>
+            <p class="subtitle">2 νέα μηνύματα</p>
+            <div class="email-row">
+              <div>
+                <p class="mt">📣 Μπόνους βάρδιας <span class="badge high">Υψηλή</span></p>
+                <p class="mb">Διαχειριστής · πριν 1 ώρα</p>
+              </div>
+            </div>
+            <div class="email-row">
+              <div>
+                <p class="mt">ℹ️ Αλλαγή ωρών <span class="badge info">Πληροφορία</span></p>
+                <p class="mb">Σύστημα · πριν 3 ώρες</p>
+              </div>
+            </div>
+            <div class="email-row">
+              <div>
+                <p class="mt">🎫 Ticket #1024 · εκκρεμεί</p>
+                <p class="mb">Support · χθες</p>
+              </div>
+            </div>
+            <p style="font-size:11px;color:var(--faint);margin-top:14px;text-align:center">Email-style λίστα + support tickets.</p>
+          </div>
+          <div class="dock">
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Money</div>
+            <div class="dtab on-b"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Profile</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================== ROW 4: PROFILE + REFERRAL ================== -->
+<div class="row">
+  <div class="side side-a">
+    <h2>A · Profile</h2>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>Profile</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="scroll">
+            <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Προφίλ</h2>
+            <div class="prof-row"><span style="font-size:20px">👤</span><div><p class="pt">Γιάννης Παπαδόπουλος</p><p style="font-size:11px;color:var(--muted)">Οδηγός · Διαθέσιμος</p></div></div>
+            <div class="prof-row"><span style="font-size:18px">🚗</span><div><p class="pt">Τα στοιχεία σου</p><p style="font-size:11px;color:var(--muted)">Όνομα, τηλέφωνο, όχημα, IBAN</p></div></div>
+            <div class="prof-row"><span style="font-size:18px">🎧</span><div><p class="pt">Βοήθεια / Support</p><p style="font-size:11px;color:var(--muted)">Φόρμα αιτήματος</p></div></div>
+            <div class="prof-row"><span style="font-size:18px">⚙️</span><div><p class="pt">Ρυθμίσεις</p><p style="font-size:11px;color:var(--muted)">Ήχος, δονήσεις, οθόνη</p></div></div>
+            <div class="prof-row"><span style="font-size:18px">➡️</span><div><p class="pt">Αποσύνδεση</p></div></div>
+          </div>
+          <div class="dock">
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Αρχική</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Χρήματα</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab on"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Προφίλ</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="side side-b">
+    <h2>B · Profile</h2>
+    <div class="phones">
+      <div class="screen-col">
+        <h3>Profile · language selector</h3>
+        <div class="phone"><div class="screen">
+          <div class="statusbar"><span>09:41</span><span>◉</span></div>
+          <div class="notch"></div>
+          <div class="scroll">
+            <h2 style="font-size:20px;font-weight:800;margin-bottom:4px">Προφίλ</h2>
+            <p style="font-size:13px;font-weight:700;margin-bottom:6px">Γλώσσα / Language</p>
+            <div class="lang-switch"><span class="on">Ελληνικά</span><span>English</span></div>
+            <p style="font-size:13px;font-weight:700;margin:14px 0 6px">Στοιχεία</p>
+            <div class="email-row"><span class="mt">Ονοματεπώνυμο · Γιάννης Παπαδόπουλος</span></div>
+            <div class="email-row"><span class="mt">Όχημα · Honda CBR 600</span></div>
+            <div class="email-row"><span class="mt">IBAN · GR…1234</span></div>
+            <p style="font-size:13px;font-weight:700;margin:14px 0 6px">Ρυθμίσεις</p>
+            <div class="email-row"><span class="mt">Ήχος προσφοράς · Κλασικό</span></div>
+            <div class="email-row"><span class="mt">Δόνηση · Ενεργή</span></div>
+            <div class="prof-row" style="margin-top:12px"><span style="font-size:18px">➡️</span><div><p class="pt">Αποσύνδεση</p></div></div>
+          </div>
+          <div class="dock">
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z"/></svg>Home</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 1 3 5v6c0 5 3.8 9.7 9 11 5.2-1.3 9-6 9-11V5L12 1z"/></svg>Money</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 4H4a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"/></svg>Inbox</div>
+            <div class="dtab"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M20 6h-2v2h-2V6H9v2H7V6H5v14h14V6z"/></svg>Invite</div>
+            <div class="dtab on-b"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8z"/></svg>Profile</div>
+          </div>
+        </div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="hero" style="margin-top:10px">
+  <p style="font-size:13px;color:var(--muted)">Preview is approximate — colors/labels are read from the actual Kotlin source of both commits (A = local cffa4a99, B = origin/main c16adedb). Decide which direction to merge, then I'll resolve conflicts accordingly, rebuild the APK, and push.</p>
+</div>
+
+</body>
+</html>

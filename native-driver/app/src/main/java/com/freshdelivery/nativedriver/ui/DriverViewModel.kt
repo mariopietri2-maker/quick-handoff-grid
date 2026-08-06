@@ -30,6 +30,7 @@ import com.freshdelivery.nativedriver.data.ReferralRow
 import com.freshdelivery.nativedriver.data.SupabaseProvider
 import com.freshdelivery.nativedriver.data.SupportTicketRow
 import com.freshdelivery.nativedriver.data.TicketMessageRow
+import com.freshdelivery.nativedriver.data.StoreRow
 import io.github.jan.supabase.realtime.PostgresAction
 import com.freshdelivery.nativedriver.location.DriverGeo
 import com.freshdelivery.nativedriver.location.DriverLocationService
@@ -81,7 +82,10 @@ data class DriverUiState(
     val liveChatAgents: Map<String, String> = emptyMap(),
     val liveChatLoading: Boolean = false,
     val liveChatSubscribed: Boolean = false,
+    val liveChatError: String? = null,
     val supportOpen: Boolean = false,
+    val mapStores: List<StoreRow> = emptyList(),
+    val storeCounts: Map<String, Long> = emptyMap(),
     val referralCode: String? = null,
     val referrals: List<ReferralRow> = emptyList(),
     val geo: DriverGeo? = null,
@@ -334,6 +338,18 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         refreshMoney()
         refreshInbox()
         refreshReferral()
+        refreshStoreMap()
+    }
+
+    /** Stores + their active order counts for the Home map. */
+    fun refreshStoreMap() {
+        viewModelScope.launch {
+            runCatching {
+                val stores = repo.fetchMapStores()
+                val counts = repo.fetchStoreActiveCounts()
+                _state.value = _state.value.copy(mapStores = stores, storeCounts = counts)
+            }
+        }
     }
 
     fun refreshWork() {
@@ -622,17 +638,21 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     fun openLiveChat() {
         val uid = _state.value.userId ?: return
         if (_state.value.liveChatOpen) return
-        _state.value = _state.value.copy(liveChatOpen = true, liveChatLoading = true, error = null)
+        _state.value = _state.value.copy(liveChatOpen = true, liveChatLoading = true, liveChatError = null)
         viewModelScope.launch {
             runCatching { repo.fetchLiveChat(uid) }
                 .onSuccess { msgs ->
                     _state.value = _state.value.copy(
                         liveChatMessages = msgs,
                         liveChatLoading = false,
+                        liveChatError = null,
                     )
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(liveChatLoading = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(
+                        liveChatLoading = false,
+                        liveChatError = friendlyError(e),
+                    )
                 }
             startLiveChatSubscription(uid)
         }
@@ -652,7 +672,11 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             runCatching { repo.sendLiveChatMessage(uid, uid, trimmed) }
                 .onSuccess { refreshLiveChat(uid) }
-                .onFailure { e -> _state.value = _state.value.copy(error = friendlyError(e)) }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        liveChatError = friendlyError(e),
+                    )
+                }
         }
     }
 
@@ -685,6 +709,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 liveChatAgents = emptyMap(),
                 liveChatLoading = false,
                 liveChatSubscribed = false,
+                liveChatError = null,
             )
         }
     }
