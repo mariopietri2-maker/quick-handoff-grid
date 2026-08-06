@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Fresh Delivery — Customer App Redesign Preview</title>
+<title>Fresh Delivery — Customer App Redesign · Full Preview</title>
 <style>
   @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap');
 
@@ -304,6 +304,87 @@
   .switch-notes { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin-top: 14px; }
   .switch-notes .snote { font-size: 11px; color: #8b8f99; }
   .switch-notes .snote b { color: #c8ccd6; }
+
+  .switcher { display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; margin: 0 auto 24px; max-width: 980px; }
+  .sw-btn { border: 1px solid #dde1e8; background: #fff; color: #3c404b; font: inherit; font-size: 12px; font-weight: 700; padding: 8px 14px; border-radius: 999px; cursor: pointer; transition: all .15s; }
+  .sw-btn:hover { border-color: var(--green); color: var(--green-dark); }
+  .sw-btn.on { background: linear-gradient(90deg, var(--green), var(--violet)); color: #fff; border-color: transparent; box-shadow: 0 8px 20px -8px rgba(124,108,255,.6); }
+
+  .authwrap { height: calc(100% - 30px); display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 0 28px; text-align: center; }
+  .auth-logo { width: 74px; height: 74px; border-radius: 50%; background: linear-gradient(135deg, var(--green), var(--violet)); display: grid; place-items: center; box-shadow: 0 16px 36px -12px rgba(124,108,255,.65); }
+  .auth-logo svg { width: 34px; height: 34px; color: #fff; }
+  .authwrap h3 { font-size: 26px; font-weight: 900; margin-top: 16px; }
+  .auth-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .authform { width: 100%; margin-top: 26px; }
+  .inbox { height: 52px; border-radius: 16px; background: #f4f6f9; border: 1px solid #e7eaf0; display: flex; align-items: center; gap: 10px; padding: 0 16px; color: #9aa1ac; font-size: 13px; }
+  .inbox svg { width: 17px; height: 17px; }
+  .authbtn { height: 54px; border-radius: 27px; background: linear-gradient(90deg, var(--green), var(--violet)); color: #fff; font-weight: 800; display: grid; place-items: center; box-shadow: 0 16px 34px -12px rgba(124,108,255,.65); cursor: pointer; }
+  .authlink { color: var(--green-dark); font-weight: 700; font-size: 13px; margin-top: 18px; cursor: pointer; }
+
+  .track-top { display: flex; align-items: center; gap: 10px; padding: 34px 16px 12px; }
+  .track-top .l1 { font-size: 15px; font-weight: 800; }
+  .track-top .l2 { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .trackmap { position: relative; height: 320px; background: #e8edf3; overflow: hidden; margin-top: 4px; }
+  .grid { position: absolute; inset: 0; background-image: linear-gradient(rgba(96,120,150,.14) 1px, transparent 1px), linear-gradient(90deg, rgba(96,120,150,.14) 1px, transparent 1px); background-size: 34px 34px; }
+  .road { position: absolute; background: #fff; box-shadow: 0 0 0 1px #d3dbe6; border-radius: 3px; height: 10px; }
+  .road.r1 { left: -30px; top: 118px; width: 380px; transform: rotate(-7deg); }
+  .road.r2 { left: 60px; top: 30px; width: 170px; transform: rotate(92deg); }
+  .road.r3 { left: 200px; top: 150px; width: 150px; transform: rotate(84deg); }
+  .route { position: absolute; left: 92px; top: 120px; width: 170px; height: 3px; background: repeating-linear-gradient(90deg, var(--violet) 0 7px, transparent 7px 11px); border-radius: 2px; transform: rotate(-22deg); }
+  .mk { position: absolute; width: 18px; height: 18px; border-radius: 50%; border: 3px solid #fff; box-shadow: 0 0 0 2px rgba(17,24,39,.2); transform: translate(-50%, -50%); z-index: 5; }
+  .mk.driver { left: 104px; top: 126px; background: var(--violet); }
+  .mk.dest { left: 250px; top: 72px; background: var(--green); }
+  .mk .lbl { position: absolute; bottom: 22px; left: 50%; transform: translateX(-50%); white-space: nowrap; font-size: 10px; font-weight: 800; color: var(--ink); background: #fff; padding: 4px 10px; border-radius: 9px; box-shadow: 0 6px 16px -8px rgba(17,24,39,.35); }
+  .trackcard { position: absolute; left: 16px; right: 16px; bottom: 18px; background: #fff; border-radius: 22px; box-shadow: 0 20px 40px -18px rgba(17,24,39,.4); padding: 14px; z-index: 6; }
+  .eta { font-size: 12px; color: var(--muted); }
+  .eta b { color: var(--green-dark); font-size: 18px; font-weight: 900; }
+  .trinfo { display: flex; gap: 10px; align-items: center; margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--divider); font-size: 13px; font-weight: 800; }
+  .trinfo .tic { width: 38px; height: 38px; border-radius: 12px; background: var(--green-soft); display: grid; place-items: center; flex-shrink: 0; }
+  .trinfo .tic svg { width: 18px; height: 18px; color: var(--green); }
+  .trinfo .l1 { font-size: 11px; color: var(--muted); font-weight: 600; }
+
+  .ds { max-width: 980px; margin: 0 auto 40px; }
+  .ds h2 { font-size: 22px; font-weight: 800; }
+  .ds h2 b { color: var(--green-dark); }
+  .ds-sub { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .ds-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; margin-top: 18px; }
+  .ds-card { background: #fff; border: 1px solid var(--divider); border-radius: 20px; padding: 18px; box-shadow: 0 8px 26px -18px rgba(17,24,39,.28); }
+  .ds-card h3 { font-size: 12px; font-weight: 800; text-transform: uppercase; letter-spacing: .04em; color: var(--muted); margin-bottom: 12px; }
+  .sw { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+  .swatch { display: flex; align-items: center; gap: 8px; font-size: 11px; }
+  .swatch span { width: 30px; height: 30px; border-radius: 10px; flex-shrink: 0; }
+  .swatch b { font-weight: 800; }
+  .swatch em { display: block; color: var(--muted); font-style: normal; }
+  .type { display: grid; gap: 10px; }
+  .type > div { display: flex; align-items: center; gap: 10px; }
+  .type span { color: var(--green-dark); }
+  .t-display { font-size: 26px; font-weight: 800; width: 40px; }
+  .t-headline { font-size: 22px; font-weight: 700; width: 40px; }
+  .t-title { font-size: 17px; font-weight: 700; width: 40px; }
+  .t-body { font-size: 14px; width: 40px; }
+  .t-label { font-size: 11px; font-weight: 600; width: 40px; }
+  .type b { font-weight: 700; font-size: 12px; width: 70px; }
+  .type em { font-size: 11px; color: var(--muted); font-style: normal; }
+  .ds-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 10px; }
+  .ds-row:first-child { margin-top: 0; }
+  .ds-btn { border: none; font: inherit; font-size: 12px; font-weight: 800; padding: 10px 16px; border-radius: 999px; cursor: pointer; }
+  .ds-btn.grad { background: linear-gradient(90deg, var(--green), var(--violet)); color: #fff; box-shadow: 0 10px 22px -10px rgba(124,108,255,.6); }
+  .ds-btn.solid { background: var(--green); color: #fff; }
+  .ds-btn.outline { background: #fff; border: 1.5px solid var(--divider); color: var(--ink); }
+  .stpill.amber { background: #FEF3C7; color: #B45309; }
+  .stpill.rose { background: #FFE4E6; color: #BE123C; }
+  .stpill.gray { background: #EEF1F4; color: #4B5563; }
+  .shapes { display: flex; gap: 10px; align-items: center; }
+  .shape { width: 42px; height: 42px; background: linear-gradient(135deg, var(--green), var(--violet)); }
+  .shape.r12 { border-radius: 12px; }
+  .shape.r16 { border-radius: 16px; }
+  .shape.r22 { border-radius: 22px; }
+  .shape.pill { border-radius: 21px; width: 60px; }
+  .shape.circle { border-radius: 50%; }
+  .shadowbox { font-size: 10px; font-weight: 800; color: var(--muted); padding: 12px 14px; border-radius: 12px; background: #fff; }
+  .shadowbox.sm { box-shadow: 0 1px 2px rgba(17,24,39,.06); }
+  .shadowbox.md { box-shadow: 0 8px 24px -14px rgba(17,24,39,.25); }
+  .shadowbox.lg { box-shadow: 0 24px 48px -20px rgba(17,24,39,.35); }
 </style>
 </head>
 <body>
@@ -318,8 +399,11 @@
   </div>
   <p class="subtitle">
     <b>Modern fresh</b> look for the native customer app: airy off-white surfaces, emerald→violet gradients, soft shadows and rounded cards.
-    Left: current Uber-Eats style. Right: interactive preview — tap the bottom navigation to switch screens.
+    Left: current Uber-Eats style. Right: interactive preview — 9 screens. Use the screen switcher below, the bottom navigation,
+    the store / promo cards, the order track buttons or the cart bar to move around.
   </p>
+
+  <div class="switcher" id="switcher"></div>
 
   <div class="layout">
     <!-- ================= BEFORE ================= -->
@@ -699,26 +783,148 @@
               <div class="on"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg>Λογαριασμός</div>
             </div>
           </div>
+
+          <!-- LOGIN -->
+          <div class="screen-new" id="sc-login" style="display:none">
+            <div class="statusbar"></div>
+            <div class="authwrap">
+              <div class="auth-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l1-5h16l1 5"/><path d="M4 9v10h16V9"/><path d="M9 13h6"/></svg></div>
+              <h3>Fresh Delivery</h3>
+              <p class="auth-sub">Παράγγειλε από τα αγαπημένα σου καταστήματα</p>
+              <div class="authform">
+                <div class="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 6h16v12H4z"/><path d="m4 6 8 7 8-7"/></svg><span>Email</span></div>
+                <div class="inbox" style="margin-top:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Κωδικός</span></div>
+                <div class="authbtn login-cta" style="margin-top:24px">Σύνδεση</div>
+              </div>
+              <div class="authlink" onclick="go('sc-signup')">Νέος χρήστης; Δημιουργία λογαριασμού</div>
+            </div>
+          </div>
+
+          <!-- SIGNUP -->
+          <div class="screen-new" id="sc-signup" style="display:none">
+            <div class="statusbar"></div>
+            <div class="authwrap">
+              <div class="auth-logo" style="width:62px;height:62px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 3.6-6 8-6s8 2 8 6"/></svg></div>
+              <h3 style="font-size:21px;margin-top:14px">Δημιουργία λογαριασμού</h3>
+              <p class="auth-sub">2 βήματα · Επαλήθευση τηλεφώνου</p>
+              <div class="authform">
+                <div class="inbox"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span>Όνομα</span></div>
+                <div class="inbox" style="margin-top:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3 19.5 19.5 0 0 1-6-6 19.8 19.8 0 0 1-3-8.7A2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.8a2 2 0 0 1-.5 2.1L8.1 9.9a16 16 0 0 0 6 6l1.3-1.2a2 2 0 0 1 2.1-.5c.9.3 1.8.6 2.8.7a2 2 0 0 1 1.7 2z"/></svg><span>Τηλέφωνο</span></div>
+                <div class="inbox" style="margin-top:12px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V7a4 4 0 0 1 8 0v3"/></svg><span>Κωδικός</span></div>
+                <div class="authbtn login-cta" style="margin-top:24px">Συνέχεια</div>
+              </div>
+              <div class="authlink" onclick="go('sc-login')">Έχεις ήδη λογαριασμό; Σύνδεση</div>
+            </div>
+          </div>
+
+          <!-- TRACK -->
+          <div class="screen-new" id="sc-track" style="display:none">
+            <div class="track-top">
+              <svg class="trk-back" style="width:26px;height:26px;cursor:pointer" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M15 18l-6-6 6-6"/></svg>
+              <div><div class="l1">Pizza Napoli</div><div class="l2">#0042 · Παράδοση στο 1ο χλμ Ιωαννίνων</div></div>
+              <span class="stpill violet" style="margin-left:auto">Καθ' οδόν</span>
+            </div>
+            <div class="trackmap">
+              <div class="grid"></div>
+              <div class="road r1"></div><div class="road r2"></div><div class="road r3"></div>
+              <div class="route"></div>
+              <div class="mk driver"><span class="lbl">Οδηγός · 12λ</span></div>
+              <div class="mk dest"><span class="lbl">Παράδοση</span></div>
+              <div class="trackcard">
+                <div class="eta"><b>12 λεπτά</b> έως την παράδοση</div>
+                <div class="trinfo">
+                  <div class="tic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="6" cy="15" r="3"/><circle cx="18" cy="15" r="3"/><path d="M14 6h4l3 5v4M9 15h6M14 6v9"/></svg></div>
+                  <div>Ο οδηγός κινείται προς εσένα.<div class="l1">Μάριος Π. · Σκούτερ</div></div>
+                </div>
+              </div>
+            </div>
+          </div>
+
         </div>
       </div>
       <div class="switch-notes">
-        <span class="snote">Πατήστε: <b>Αρχική</b> · <b>Αναζήτηση</b> · <b>Παραγγελίες</b> · <b>Λογαριασμός</b></span>
+        <span class="snote">Πατήστε: <b>Σύνδεση</b> · <b>Εγγραφή</b> · <b>Αρχική</b> · <b>Αναζήτηση</b> · <b>Μενού</b> · <b>Καλάθι</b> · <b>Παραγγελίες</b> · <b>Tracking</b> · <b>Λογαριασμός</b></span>
       </div>
     </div>
   </div>
 </div>
 
+<section class="ds">
+  <h2>Design System — <b>Fresh</b></h2>
+  <p class="ds-sub">Παλέτα, τυπογραφία, σχήματα και components που εφαρμόστηκαν στα native apps (customer, driver, store).</p>
+  <div class="ds-grid">
+    <div class="ds-card">
+      <h3>Χρώματα</h3>
+      <div class="sw">
+        <div class="swatch"><span style="background:#10B981"></span><b>Emerald</b><em>#10B981</em></div>
+        <div class="swatch"><span style="background:#0E9F6E"></span><b>Emerald dark</b><em>#0E9F6E</em></div>
+        <div class="swatch"><span style="background:#DCFCE7"></span><b>Emerald soft</b><em>#DCFCE7</em></div>
+        <div class="swatch"><span style="background:#7C6CFF"></span><b>Violet</b><em>#7C6CFF</em></div>
+        <div class="swatch"><span style="background:#EFEBFF"></span><b>Violet soft</b><em>#EFEBFF</em></div>
+        <div class="swatch"><span style="background:#111827"></span><b>Ink</b><em>#111827</em></div>
+        <div class="swatch"><span style="background:#F6F7F9"></span><b>Background</b><em>#F6F7F9</em></div>
+        <div class="swatch"><span style="background:#FFFFFF;border:1px solid #E9EBF0"></span><b>Surface</b><em>#FFFFFF</em></div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <h3>Τυπογραφία</h3>
+      <div class="type">
+        <div><span class="t-display">Aa</span><b>Display</b><em>30 / ExtraBold</em></div>
+        <div><span class="t-headline">Aa</span><b>Headline</b><em>24 / Bold</em></div>
+        <div><span class="t-title">Aa</span><b>Title</b><em>18 / Bold</em></div>
+        <div><span class="t-body">Aa</span><b>Body</b><em>14 / Regular</em></div>
+        <div><span class="t-label">Aa</span><b>Label</b><em>11 / SemiBold</em></div>
+      </div>
+    </div>
+    <div class="ds-card">
+      <h3>Buttons &amp; Status Pills</h3>
+      <div class="ds-row"><button class="ds-btn grad">Πρωτεύον</button><button class="ds-btn solid">Solid</button><button class="ds-btn outline">Outline</button></div>
+      <div class="ds-row">
+        <span class="stpill green">Παραδόθηκε</span>
+        <span class="stpill violet">Καθ' οδόν</span>
+        <span class="stpill amber">Προετοιμασία</span>
+        <span class="stpill rose">Ακυρώθηκε</span>
+        <span class="stpill gray">Εκκρεμεί</span>
+      </div>
+    </div>
+    <div class="ds-card">
+      <h3>Σχήματα &amp; Σκιές</h3>
+      <div class="shapes">
+        <div class="shape r12"></div><div class="shape r16"></div><div class="shape r22"></div><div class="shape pill"></div><div class="shape circle"></div>
+      </div>
+      <div class="ds-row">
+        <div class="shadowbox sm">shadow·sm</div>
+        <div class="shadowbox md">shadow</div>
+        <div class="shadowbox lg">shadow·lg</div>
+      </div>
+    </div>
+  </div>
+</section>
+
 <script>
-  const screens = ['sc-home','sc-search','sc-menu','sc-cart','sc-orders','sc-profile'];
+  const screens = ['sc-login','sc-signup','sc-home','sc-search','sc-menu','sc-cart','sc-orders','sc-track','sc-profile'];
+  const labels  = {'sc-login':'Σύνδεση','sc-signup':'Εγγραφή','sc-home':'Αρχική','sc-search':'Αναζήτηση','sc-menu':'Μενού','sc-cart':'Καλάθι','sc-orders':'Παραγγελίες','sc-track':'Tracking','sc-profile':'Λογαριασμός'};
+  const sw = document.getElementById('switcher');
+  screens.forEach(s=>{
+    const b=document.createElement('button');
+    b.className='sw-btn'; b.textContent=labels[s];
+    b.addEventListener('click',()=>go(s));
+    sw.appendChild(b);
+  });
   function go(id){
-    screens.forEach(s=>{ const el = document.getElementById(s); if(el) el.style.display = (s===id ? 'block':'none'); });
-    window.scrollTo({top:0, behavior:'smooth'});
+    screens.forEach(s=>{ const el=document.getElementById(s); if(el) el.style.display=(s===id?'block':'none'); });
+    sw.querySelectorAll('.sw-btn').forEach((b,i)=>b.classList.toggle('on',screens[i]===id));
+    window.scrollTo({top:0,behavior:'smooth'});
   }
-  // clicking store card opens menu; cart bar opens cart (convenience shortcuts)
+  // convenience shortcuts: store card / promo -> menu; cart bar -> cart; back buttons -> home; login -> home; order track -> live map
   document.querySelectorAll('.store-card').forEach(c=>{ c.style.cursor='pointer'; c.addEventListener('click',()=>go('sc-menu')); });
+  document.querySelectorAll('.promo').forEach(p=>{ p.style.cursor='pointer'; p.addEventListener('click',()=>go('sc-menu')); });
   document.querySelectorAll('.cartbar').forEach(c=>{ c.style.cursor='pointer'; c.addEventListener('click',()=>go('sc-cart')); });
-  // quick default: also wire menu back button to home
   document.querySelectorAll('.menu-hero .back, .cart-top .back').forEach(b=>{ b.style.cursor='pointer'; b.addEventListener('click',()=>go('sc-home')); });
+  document.querySelectorAll('.login-cta').forEach(b=>{ b.addEventListener('click',()=>go('sc-home')); });
+  document.querySelectorAll('.ocard .track').forEach(b=>{ b.style.cursor='pointer'; b.addEventListener('click',()=>go('sc-track')); });
+  document.querySelectorAll('.trk-back').forEach(b=>{ b.addEventListener('click',()=>go('sc-orders')); });
+  go('sc-login');
 </script>
 </body>
 </html>
