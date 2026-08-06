@@ -1,0 +1,811 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh Delivery Driver — dark-first redesign preview</title>
+<style>
+  :root {
+    --bg: #0B0E0C;
+    --surface: #121614;
+    --surface-card: #151A17;
+    --surface-high: #181D1A;
+    --well: #1F2521;
+    --outline: #262D28;
+    --outline2: #2A322C;
+    --outline3: #3A423C;
+    --green: #06C167;
+    --green-bright: #2FE795;
+    --green-glow: #4FFFC1;
+    --green-soft: #0E3B24;
+    --amber: #FFC043;
+    --amber-container: #3A2C10;
+    --error: #FF5A6A;
+    --error-container: #3A1418;
+    --error-text: #FFB4B9;
+    --blue: #6FA8FF;
+    --orange: #FFA166;
+    --text: #F0F4F1;
+    --muted: #9AA6A0;
+    --faint: #67716B;
+    --font: -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: var(--font);
+    background: #06080A;
+    color: var(--text);
+    padding: 34px 20px 70px;
+  }
+  .hero { max-width: 1300px; margin: 0 auto 30px; }
+  .hero h1 { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
+  .hero p { color: var(--muted); margin-top: 8px; font-size: 15px; max-width: 760px; line-height: 1.55; }
+  .hero .brand {
+    display: inline-flex; align-items: center; gap: 10px; margin-bottom: 14px;
+    background: var(--surface-card); border: 1px solid var(--outline2);
+    padding: 7px 16px 7px 8px; border-radius: 999px; font-weight: 700; font-size: 15px;
+  }
+  .brand .logo {
+    width: 30px; height: 30px; border-radius: 9px;
+    background: linear-gradient(135deg, var(--green), #007A3D);
+    display: inline-flex; align-items: center; justify-content: center;
+    color: #fff; font-size: 16px; font-weight: 900;
+  }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+  .legend span { font-size: 12px; color: var(--muted); display: inline-flex; align-items: center; }
+  .swatch { display: inline-block; width: 16px; height: 16px; border-radius: 5px; margin-right: 6px; border: 1px solid rgba(255,255,255,.1); }
+  .screens {
+    display: flex; flex-wrap: wrap; gap: 28px; justify-content: center;
+    max-width: 1300px; margin: 0 auto;
+  }
+  .screen-col { display: flex; flex-direction: column; gap: 10px; align-items: center; }
+  .screen-col h3 { font-size: 13px; font-weight: 700; color: var(--text); letter-spacing: .3px; }
+  .screen-col .cap { font-size: 11px; color: var(--muted); margin-top: -5px; }
+  .phone {
+    width: 390px; height: 840px; background: var(--bg); border-radius: 44px;
+    border: 10px solid #06080A; outline: 1px solid #262D28; overflow: hidden; position: relative;
+    box-shadow: 0 30px 60px rgba(0,0,0,.55), 0 8px 20px rgba(0,0,0,.35);
+  }
+  .notch {
+    position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
+    width: 130px; height: 24px; background: #06080A; border-radius: 0 0 16px 16px; z-index: 60;
+    border: 1px solid #1A1E1C; border-top: none;
+  }
+  .screen { position: absolute; inset: 0; overflow: hidden; background: var(--bg); display: flex; flex-direction: column; }
+  .statusbar {
+    position: relative; z-index: 50; height: 34px; display: flex; justify-content: space-between;
+    align-items: center; padding: 8px 20px 0; font-size: 11px; font-weight: 600; color: var(--text);
+    background: transparent;
+  }
+  .body { flex: 1; position: relative; min-height: 0; }
+  .dock { position: absolute; left: 0; right: 0; bottom: 12px; padding: 0 14px; z-index: 45; }
+  .dock .nav {
+    display: flex; align-items: center; justify-content: space-around;
+    background: rgba(21,26,23,.97); border: 1px solid var(--outline2);
+    border-radius: 30px; padding: 6px 4px; height: 66px;
+    box-shadow: 0 18px 40px rgba(0,0,0,.5);
+  }
+  .nav .tab { display: flex; flex-direction: column; align-items: center; gap: 3px; font-size: 9.5px; color: var(--faint); min-width: 56px; font-weight: 500; }
+  .nav .tab .ic { width: 20px; height: 20px; }
+  .nav .tab.on { color: var(--green-bright); }
+  .nav .tab .pill { background: rgba(6,193,103,.22); padding: 2px 8px; border-radius: 14px; }
+  svg { display: block; }
+
+  /* ---------- generic ui atoms ---------- */
+  .card { background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 22px; }
+  .chip {
+    display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 600;
+    border-radius: 20px; padding: 4px 10px;
+  }
+  .btn { border-radius: 26px; height: 52px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 15px; border: none; cursor: pointer; }
+  .btn.green { background: var(--green); color: #fff; box-shadow: 0 8px 22px rgba(6,193,103,.35); }
+  .btn.white { background: #fff; color: #0A6B3D; }
+  .round-btn {
+    width: 42px; height: 42px; border-radius: 50%; background: var(--surface-card);
+    border: 1px solid var(--outline2); display: flex; align-items: center; justify-content: center; color: var(--text);
+  }
+  .status-pill {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 700;
+    border-radius: 24px; padding: 9px 14px; background: var(--surface-card); border: 1px solid var(--outline2);
+  }
+  .round-btn.menu { color: var(--green-bright); }
+  .stack { display: flex; flex-direction: column; gap: 8px; align-items: center; }
+  .status-pill.green { background: var(--green); border-color: transparent; color: #fff; }
+  .dot { width: 8px; height: 8px; border-radius: 50%; }
+  .dot.green { background: #fff; }
+  .dot.gray { background: var(--faint); }
+
+  /* ---------- LOGIN ---------- */
+  .login .body { display: flex; flex-direction: column; align-items: center; padding: 70px 28px 0; }
+  .login .logo-tile {
+    width: 88px; height: 88px; border-radius: 24px; background: rgba(6,193,103,.14);
+    display: flex; align-items: center; justify-content: center; font-size: 52px; font-weight: 900; color: var(--green);
+  }
+  .login h1 { font-size: 30px; font-weight: 800; margin-top: 18px; letter-spacing: -.5px; }
+  .login .sub { color: var(--muted); font-size: 14px; margin-top: 4px; }
+  .field {
+    width: 100%; margin-top: 16px; background: rgba(255,255,255,.03);
+    border: 1.5px solid var(--outline2); border-radius: 16px; padding: 12px 14px;
+  }
+  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .field input { border: none; outline: none; width: 100%; font-size: 15px; color: var(--text); background: transparent; font-family: inherit; }
+  .field.focused { border-color: var(--green); box-shadow: 0 0 0 3px rgba(6,193,103,.15); }
+  .login .remember { display: flex; align-items: center; justify-content: space-between; width: 100%; margin-top: 10px; font-size: 13px; color: var(--muted); }
+  .login .remember .check { display: flex; align-items: center; gap: 6px; }
+  .login .remember .check input { accent-color: var(--green); width: 15px; height: 15px; }
+  .login .forgot { color: var(--green-bright); font-weight: 700; }
+  .login .login-btn { width: 100%; margin-top: 18px; background: var(--green); color: #fff; border-radius: 16px; height: 56px; font-size: 16px; font-weight: 800; display: flex; align-items: center; justify-content: center; box-shadow: 0 10px 26px rgba(6,193,103,.3); }
+  .login .apply { color: var(--green-bright); font-weight: 800; font-size: 16px; margin-top: 16px; }
+  .login .terms { color: var(--faint); font-size: 11px; margin-top: auto; margin-bottom: 26px; }
+
+  /* ---------- HOME / MAP ---------- */
+  .home .mapbg {
+    position: absolute; inset: 0;
+    background:
+      radial-gradient(circle at 72% 26%, #1E2A22 0 10px, transparent 11px),
+      radial-gradient(circle at 60% 42%, #233026 0 7px, transparent 8px),
+      radial-gradient(circle at 82% 55%, #1A2420 0 9px, transparent 10px),
+      radial-gradient(circle at 30% 62%, #1E2A22 0 11px, transparent 12px),
+      radial-gradient(circle at 48% 78%, #232E28 0 6px, transparent 7px),
+      radial-gradient(circle at 18% 30%, #222D26 0 8px, transparent 9px),
+      radial-gradient(circle at 90% 85%, #1C2722 0 10px, transparent 11px),
+      linear-gradient(160deg, #0E1512 0%, #0B0F0D 60%, #0C1210 100%);
+  }
+  .home .mapbg::after {
+    content: ""; position: absolute; inset: 0;
+    background: linear-gradient(180deg, rgba(11,14,12,.35) 0%, rgba(11,14,12,0) 40%);
+  }
+  .home .topbar {
+    position: absolute; top: 40px; left: 0; right: 0; z-index: 20;
+    display: flex; align-items: flex-start; justify-content: space-between; gap: 10px;
+    padding: 8px 12px;
+  }
+  .home .ops-pill { font-size: 13px; font-weight: 600; padding: 8px 12px; border-radius: 22px; }
+  .home .stack .dock { bottom: 14px; }
+  .slide {
+    width: 100%; height: 64px; border-radius: 32px; border: 1.5px solid var(--outline2);
+    display: flex; align-items: center; position: relative; padding: 0 6px;
+    background: var(--surface-card);
+  }
+  .slide.off { background: #1A201C; }
+  .slide .txt { flex: 1; text-align: center; font-size: 13px; font-weight: 700; color: var(--muted); }
+  .slide .thumb {
+    width: 52px; height: 52px; border-radius: 50%; background: var(--green);
+    display: flex; align-items: center; justify-content: center; color: #fff;
+    box-shadow: 0 10px 20px rgba(0,0,0,.5);
+  }
+
+  /* ---------- OFFER SHEET ---------- */
+  .home .sheet {
+    position: absolute; left: 10px; right: 10px; bottom: 92px; z-index: 30;
+    background: var(--surface-card); border: 1px solid var(--outline2);
+    border-radius: 28px; padding: 14px 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.55);
+  }
+  .sheet .handle { width: 40px; height: 4px; border-radius: 2px; background: var(--outline3); margin: 0 auto 12px; }
+  .sheet .row-top { display: flex; align-items: flex-start; justify-content: space-between; }
+  .sheet .kicker { font-size: 12px; font-weight: 600; color: var(--muted); letter-spacing: .3px; }
+  .sheet .store { font-size: 22px; font-weight: 800; margin-top: 3px; }
+  .sheet .payout-lbl { font-size: 11px; color: var(--muted); font-weight: 600; text-align: right; }
+  .sheet .payout { font-size: 28px; font-weight: 800; color: var(--green-bright); }
+  .sheet .chips { display: flex; gap: 6px; align-items: center; margin-top: 12px; }
+  .sheet .progress { height: 4px; border-radius: 2px; background: var(--well); margin-top: 12px; overflow: hidden; }
+  .sheet .progress .fill { height: 100%; background: var(--green); width: 68%; }
+  .sheet .loc { display: flex; align-items: center; gap: 8px; margin-top: 10px; font-size: 13px; color: var(--text); }
+  .sheet .loc .i { width: 18px; height: 18px; opacity: .9; }
+  .sheet .actions { display: flex; gap: 12px; align-items: center; margin-top: 14px; }
+  .sheet .decline {
+    width: 52px; height: 52px; border-radius: 50%; border: 1.5px solid var(--outline3);
+    background: var(--well); display: flex; align-items: center; justify-content: center; color: var(--muted);
+  }
+
+  /* ---------- ACTIVE TRIP ---------- */
+  .home .trip {
+    position: absolute; left: 10px; right: 10px; bottom: 92px; z-index: 30;
+    background: var(--surface-card); border: 1px solid var(--outline2);
+    border-radius: 28px; padding: 16px 18px;
+    box-shadow: 0 20px 50px rgba(0,0,0,.55);
+  }
+  .trip .h { display: flex; justify-content: space-between; }
+  .trip .store { font-size: 18px; font-weight: 800; }
+  .trip .status { color: var(--green-bright); font-weight: 600; font-size: 13px; }
+  .trip .pay { font-size: 22px; font-weight: 800; color: var(--green-bright); }
+  .trip .addr { color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .trip .deli { font-size: 14px; margin-top: 6px; }
+  .steps { display: flex; align-items: center; justify-content: space-between; margin-top: 16px; }
+  .steps .st { display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 10px; }
+  .steps .st .node {
+    width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-size: 11px; font-weight: 700;
+  }
+  .steps .st .node.done { background: var(--green); color: #fff; }
+  .steps .st .node.active { background: var(--green-bright); color: #06080A; border: 1.5px solid var(--green-bright); }
+  .steps .st .node.todo { background: var(--well); border: 1.5px solid var(--outline3); color: var(--muted); }
+  .steps .bar { flex: 1; height: 2px; margin: 0 6px; margin-bottom: 16px; border-radius: 1px; }
+  .steps .bar.filled { background: var(--green); }
+  .steps .bar.half { background: linear-gradient(90deg, var(--green) 50%, var(--outline3) 50%); }
+  .steps .bar.empty { background: var(--outline3); }
+  .trip .mini { display: flex; gap: 8px; margin-top: 14px; }
+  .trip .mini .mbtn {
+    display: flex; align-items: center; gap: 5px; font-size: 13px; font-weight: 600;
+    border-radius: 14px; border: 1px solid var(--outline2); padding: 8px 12px; color: var(--text); background: var(--surface);
+  }
+
+  /* ---------- MONEY ---------- */
+  .screen .scroll { position: absolute; inset: 0; overflow-y: auto; padding: 18px 16px 30px; }
+  .screen .hdr { display: flex; align-items: center; justify-content: space-between; }
+  .screen .hdr h2 { font-size: 24px; font-weight: 800; letter-spacing: -.3px; }
+  .screen .hdr .refresh { width: 40px; height: 40px; border-radius: 50%; border: 1px solid var(--outline2); display: flex; align-items: center; justify-content: center; color: var(--text); }
+  .screen .sub { color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .sec { font-size: 20px; font-weight: 800; margin-top: 22px; }
+  .sec-sub { font-size: 12px; color: var(--muted); margin-top: 2px; }
+  .earn {
+    margin-top: 12px; border-radius: 28px; padding: 22px;
+    background: linear-gradient(150deg, #00A854, #007A3D);
+    box-shadow: 0 16px 36px rgba(0,122,61,.35);
+  }
+  .earn .lbl { color: rgba(255,255,255,.85); font-size: 14px; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+  .earn .val { color: #fff; font-size: 34px; font-weight: 800; margin-top: 8px; }
+  .earn .pend { color: rgba(255,255,255,.75); font-size: 12px; margin-top: 4px; }
+  .earn .wbtn { margin-top: 14px; background: #fff; color: #007A3D; border-radius: 16px; height: 50px; font-weight: 800; display: flex; align-items: center; justify-content: center; font-size: 15px; }
+  .row2 { display: flex; gap: 12px; margin-top: 12px; }
+  .stat { flex: 1; background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 20px; padding: 14px; }
+  .stat .lbl { color: var(--muted); font-size: 11px; font-weight: 600; margin-top: 8px; }
+  .stat .val { font-size: 20px; font-weight: 800; margin-top: 2px; }
+  .stat .sub2 { color: var(--muted); font-size: 11px; }
+  .row-item {
+    display: flex; align-items: center; justify-content: space-between; margin-top: 8px;
+    background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 14px; padding: 12px 14px;
+  }
+  .row-item .l { font-size: 14px; }
+  .row-item .s { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .row-item .amt { font-weight: 800; color: var(--green-bright); }
+  .row-item .amt.err { color: var(--error); }
+  .cash { margin-top: 12px; background: var(--surface-card); border: 1.5px solid rgba(255,192,67,.4); border-radius: 24px; padding: 18px; }
+  .cash .lbl { display: flex; align-items: center; gap: 8px; font-size: 17px; font-weight: 600; }
+  .cash .val { font-size: 28px; font-weight: 800; margin-top: 8px; }
+  .cash .limit { color: var(--muted); font-size: 12px; }
+  .cash .gauge { height: 10px; border-radius: 5px; background: var(--outline2); margin-top: 12px; overflow: hidden; }
+  .cash .gauge .fill { height: 100%; width: 34%; background: var(--amber); }
+  .cash .note { display: flex; gap: 8px; margin-top: 12px; background: rgba(255,192,67,.12); border-radius: 14px; padding: 12px; font-size: 12px; color: var(--text); align-items: flex-start; }
+
+  /* ---------- INBOX ---------- */
+  .inbox .sec2 { font-size: 13px; font-weight: 800; color: var(--muted); margin-top: 20px; }
+  .inbox .new-req { display: flex; justify-content: space-between; align-items: center; }
+  .inbox .new-req a { color: var(--green-bright); font-weight: 700; font-size: 12px; }
+  .ticket {
+    display: flex; align-items: center; gap: 12px; margin-top: 8px;
+    background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 16px; padding: 12px;
+  }
+  .ticket .ic { width: 38px; height: 38px; border-radius: 12px; background: rgba(6,193,103,.12); display: flex; align-items: center; justify-content: center; color: var(--green-bright); }
+  .ticket .t { flex: 1; font-size: 14px; font-weight: 600; }
+  .ticket .d { font-size: 11px; color: var(--muted); margin-top: 2px; }
+  .ticket .state { font-size: 11px; font-weight: 700; }
+  .ticket .state.ok { color: var(--green-bright); }
+  .ticket .state.pend { color: var(--amber); }
+  .notif {
+    margin-top: 10px; background: var(--surface-card);
+    border: 1px solid var(--outline2); border-radius: 18px; padding: 14px;
+  }
+  .notif.unread { border: 1.5px solid rgba(255,192,67,.5); }
+  .notif .h { display: flex; align-items: center; gap: 8px; }
+  .notif .h .ball { width: 9px; height: 9px; border-radius: 50%; background: var(--amber); }
+  .notif .h b { font-size: 14px; font-weight: 700; flex: 1; }
+  .notif .h .date { font-size: 11px; color: var(--muted); }
+  .notif p { color: var(--muted); font-size: 12px; margin-top: 6px; line-height: 1.5; }
+
+  /* ---------- LIVE CHAT ---------- */
+  .livechat .body { display: flex; flex-direction: column; padding: 0 14px; }
+  .lc-head { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid rgba(255,255,255,.07); }
+  .lc-title { font-size: 16px; font-weight: 800; }
+  .lc-live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green-bright); }
+  .lc-thread { flex: 1; display: flex; flex-direction: column; gap: 8px; padding: 14px 2px; overflow: hidden; }
+  .lc-bubble { max-width: 78%; display: flex; flex-direction: column; gap: 2px; }
+  .lc-bubble.o { align-self: flex-start; }
+  .lc-bubble.m { align-self: flex-end; }
+  .lc-bubble .b { padding: 10px 12px; font-size: 13px; line-height: 1.45; }
+  .lc-bubble.o .b { background: var(--well); border-radius: 16px 16px 16px 4px; color: var(--text); }
+  .lc-bubble.m .b { background: var(--green); color: #fff; border-radius: 16px 16px 4px 16px; }
+  .lc-bubble .t { font-size: 10px; color: var(--faint); padding: 0 4px; }
+  .lc-composer { display: flex; align-items: center; gap: 8px; padding: 10px 0 16px; }
+  .lc-composer input { flex: 1; background: rgba(255,255,255,.04); border: 1px solid var(--outline2); border-radius: 16px; padding: 12px 14px; color: var(--text); font-size: 14px; outline: none; font-family: inherit; }
+  .lc-send { width: 44px; height: 44px; border-radius: 14px; background: var(--green); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+
+  /* ---------- SUPPORT CENTER ---------- */
+  .sc-body { display: flex; flex-direction: column; padding: 0 14px; height: 100%; }
+  .sc-head { display: flex; align-items: center; gap: 10px; padding: 12px 0 8px; }
+  .sc-head .mid { flex: 1; }
+  .sc-title { font-size: 16px; font-weight: 800; }
+  .sc-live { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--green-bright); }
+  .sc-tabs { display: flex; gap: 3px; background: var(--surface-card); border-radius: 12px; padding: 3px; }
+  .sc-tab { font-size: 11px; font-weight: 700; padding: 6px 10px; border-radius: 9px; color: var(--muted); }
+  .sc-tab.on { background: var(--green); color: #fff; }
+  .sc-card { display: flex; align-items: center; gap: 12px; background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 18px; padding: 12px; margin-top: 8px; }
+  .sc-avatar { width: 44px; height: 44px; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 18px; font-weight: 800; }
+  .sc-card .who { flex: 1; min-width: 0; }
+  .sc-card .who .n { font-size: 14px; font-weight: 600; }
+  .sc-card .who .m { font-size: 12px; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .sc-call { width: 38px; height: 38px; border-radius: 12px; color: #fff; display: flex; align-items: center; justify-content: center; font-size: 16px; }
+  .sc-threadwrap { flex: 1; min-height: 0; display: flex; flex-direction: column; background: var(--surface-card); border-radius: 22px; margin-top: 12px; padding: 12px; }
+  .sc-thread { flex: 1; display: flex; flex-direction: column; gap: 8px; overflow: hidden; }
+
+  /* ---------- PROFILE ---------- */
+  .prof .field-card { background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 22px; padding: 16px; margin-top: 16px; }
+  .prof .field-card h3 { font-size: 17px; font-weight: 600; margin-bottom: 12px; }
+  .field2 { width: 100%; margin-top: 8px; background: rgba(255,255,255,.03); border: 1px solid var(--outline2); border-radius: 14px; padding: 12px 14px; }
+  .field2 label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+  .field2 input { border: none; outline: none; width: 100%; font-size: 14px; color: var(--text); background: transparent; font-family: inherit; }
+  .setting-row { display: flex; align-items: center; gap: 12px; padding: 14px 6px; border-bottom: 1px solid rgba(255,255,255,.06); }
+  .setting-row:last-child { border-bottom: none; }
+  .setting-row .ic { width: 22px; height: 22px; color: var(--muted); }
+  .setting-row .t { flex: 1; font-size: 15px; font-weight: 500; }
+  .setting-row .s { font-size: 12px; color: var(--muted); }
+  .switch { width: 46px; height: 26px; border-radius: 15px; background: var(--green); position: relative; flex-shrink: 0; }
+  .switch::after { content: ""; position: absolute; top: 3px; right: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; }
+  .signout { margin-top: 20px; border: 1px solid var(--outline2); border-radius: 16px; height: 50px; display: flex; align-items: center; justify-content: center; font-weight: 600; color: var(--text); }
+  .ver { text-align: center; color: var(--faint); font-size: 11px; margin-top: 14px; }
+
+  /* ---------- REFERRAL ---------- */
+  .ref .hero-card {
+    margin-top: 14px; border-radius: 28px; padding: 24px; text-align: center;
+    background: linear-gradient(150deg, #00A854, #006B35);
+    box-shadow: 0 16px 36px rgba(0,107,53,.35);
+  }
+  .ref .hero-card .gift { font-size: 40px; }
+  .ref .hero-card h3 { color: #fff; font-size: 22px; font-weight: 800; margin-top: 10px; }
+  .ref .hero-card p { color: rgba(255,255,255,.85); font-size: 14px; margin-top: 4px; }
+  .ref .code { color: #fff; font-size: 34px; font-weight: 800; letter-spacing: 2px; margin-top: 18px; }
+  .ref .btns { display: flex; gap: 10px; justify-content: center; margin-top: 16px; }
+  .ref .btns .o { border: 1px solid rgba(255,255,255,.6); color: #fff; border-radius: 14px; padding: 10px 16px; font-size: 13px; font-weight: 600; }
+  .ref .btns .f { background: #fff; color: #006B35; border-radius: 14px; padding: 10px 16px; font-size: 13px; font-weight: 800; }
+  .ref .stat3 { display: flex; gap: 12px; margin-top: 16px; }
+  .ref .stat3 .c { flex: 1; background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 18px; padding: 14px; text-align: center; }
+  .ref .stat3 .c .l { color: var(--muted); font-size: 11px; }
+  .ref .stat3 .c .v { font-size: 20px; font-weight: 800; margin-top: 4px; }
+
+  /* ---------- OPS ---------- */
+  .ops .body { background: var(--bg); }
+  .ops .hdr { display: flex; align-items: center; gap: 8px; padding: 10px 12px; }
+  .ops .hdr h2 { font-size: 20px; font-weight: 800; flex: 1; }
+  .ops .hdr .n { color: var(--muted); font-size: 13px; }
+  .ops .ops-list { padding: 4px 12px 20px; overflow-y: auto; position: absolute; top: 60px; left: 0; right: 0; bottom: 0; }
+  .ops .ocard { background: var(--surface-card); border: 1px solid var(--outline2); border-radius: 18px; padding: 14px; margin-bottom: 10px; }
+  .ops .ocard .h { display: flex; justify-content: space-between; }
+  .ops .ocard .meta { font-size: 12px; color: var(--muted); font-weight: 600; }
+  .ops .ocard .store { font-size: 17px; font-weight: 800; margin-top: 2px; }
+  .ops .ocard .pay { font-size: 18px; font-weight: 800; color: var(--green-bright); }
+  .ops .ocard .addr { font-size: 12px; color: var(--muted); margin-top: 4px; }
+  .ops .ocard .addr2 { font-size: 13px; margin-top: 4px; }
+  .ops .ocard .tags { display: flex; gap: 6px; margin-top: 8px; }
+  .ops .ocard .claim { margin-top: 10px; border-radius: 14px; height: 46px; background: var(--green); color: #fff; font-weight: 800; display: flex; align-items: center; justify-content: center; }
+</style>
+</head>
+<body>
+  <div class="hero">
+    <div class="brand"><span class="logo">F</span> Fresh Delivery · Driver</div>
+    <h1>Dark-first redesign — native driver app</h1>
+    <p>
+      Premium near-black surfaces with layered cards, a vivid green accent (<span style="color:var(--green-bright)">#2FE795</span>) that pops on dark,
+      a dark Mapbox map, and refined spacing. All screens below mirror the new Compose theme.
+    </p>
+    <div class="legend">
+      <span><i class="swatch" style="background:#0B0E0C"></i>Background</span>
+      <span><i class="swatch" style="background:#151A17"></i>Card</span>
+      <span><i class="swatch" style="background:#06C167"></i>Green</span>
+      <span><i class="swatch" style="background:#2FE795"></i>GreenBright</span>
+      <span><i class="swatch" style="background:#FFC043"></i>Amber</span>
+      <span><i class="swatch" style="background:#FF5A6A"></i>Error</span>
+      <span><i class="swatch" style="background:#6FA8FF"></i>Blue</span>
+      <span><i class="swatch" style="background:#FFA166"></i>Orange</span>
+    </div>
+  </div>
+
+  <div class="screens">
+
+    <!-- LOGIN -->
+    <div class="screen-col">
+      <h3>1 · Login</h3>
+      <span class="cap">ui/auth/LoginScreen</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen login">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="logo-tile">F</div>
+            <h1>Fresh Driver</h1>
+            <div class="sub">Ιωάννινα · Live deliveries</div>
+            <div style="height:36px"></div>
+            <div class="field"><label>Email</label><input value="driver@fresh.gr" placeholder="Email"></div>
+            <div class="field focused"><label>Κωδικός</label><input type="password" value="••••••••" placeholder="Κωδικός"></div>
+            <div class="remember">
+              <span class="check"><input type="checkbox" checked> Να με θυμάσαι</span>
+              <span class="forgot">Ξέχασες τον κωδικό;</span>
+            </div>
+            <div class="login-btn">Σύνδεση</div>
+            <div class="apply">Αίτηση για Διανομέας</div>
+            <div class="terms">Με την είσοδο αποδέχεσαι τους όρους χρήσης</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- HOME IDLE -->
+    <div class="screen-col">
+      <h3>2 · Home (idle)</h3>
+      <span class="cap">HomeScreen + SlideToggle</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen home">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="mapbg"></div>
+            <div class="topbar">
+              <span class="round-btn menu">☰</span>
+              <span class="status-pill"><span class="dot green"></span> Διαθέσιμος</span>
+              <span class="stack">
+                <span class="round-btn">🎧</span>
+                <span class="round-btn" style="background:var(--amber-container);color:var(--amber)">Σ⤨</span>
+                <span class="round-btn">⌖</span>
+              </span>
+            </div>
+            <div class="dock">
+              <div class="slide off">
+                <div class="txt">Σύρε για υπηρεσία</div>
+                <div class="thumb" style="position:absolute;left:6px;top:6px">⏻</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OFFER SHEET -->
+    <div class="screen-col">
+      <h3>3 · New offer</h3>
+      <span class="cap">OfferSheet · dark card</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen home">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="mapbg"></div>
+            <div class="topbar">
+              <span class="round-btn menu">☰</span>
+              <span class="status-pill green"><span class="dot green"></span> Διαθέσιμος</span>
+              <span class="stack">
+                <span class="round-btn">🎧</span>
+                <span class="round-btn">⌖</span>
+              </span>
+            </div>
+            <div class="sheet">
+              <div class="handle"></div>
+              <div class="row-top">
+                <div><div class="kicker">ΝΕΑ ΠΡΟΣΦΟΡΑ · #1042</div><div class="store">Καφέ Μεζές</div></div>
+                <div><div class="payout-lbl">Κέρδος</div><div class="payout">4.80€</div></div>
+              </div>
+              <div class="chips">
+                <span class="chip" style="background:var(--amber-container);color:var(--amber)">Μετρητά 12.00€</span>
+                <span class="chip" style="background:var(--well);color:var(--muted)">1.2 km</span>
+                <span class="chip" style="background:var(--well);color:var(--muted)">3</span>
+                <span class="chip" style="background:var(--well);color:var(--muted)">0:42</span>
+              </div>
+              <div class="progress"><div class="fill"></div></div>
+              <div class="loc" style="color:var(--orange)"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M4 10l16-6-6 16-3-7-7-3z"/></svg> Καφέ Μεζές · Λεωφ. Δωδώνης 14</div>
+              <div class="loc" style="color:var(--green-bright)"><svg class="i" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2a7 7 0 00-7 7c0 5 7 13 7 13s7-8 7-13a7 7 0 00-7-7zm0 9.5A2.5 2.5 0 1112 6a2.5 2.5 0 010 5.5z"/></svg> Οδός Αβέρωφ 21</div>
+              <div class="actions">
+                <div class="decline">✕</div>
+                <div class="btn green" style="flex:1">✓&nbsp; Αποδοχή · 4.80€</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ACTIVE TRIP -->
+    <div class="screen-col">
+      <h3>4 · Active trip</h3>
+      <span class="cap">ActiveTripCard · 3-step progress</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen home">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="mapbg"></div>
+            <div class="topbar">
+              <span class="round-btn menu">☰</span>
+              <span class="status-pill green"><span class="dot green"></span> Σε παράδοση</span>
+              <span class="stack">
+                <span class="round-btn">🎧</span>
+                <span class="round-btn">⌖</span>
+              </span>
+            </div>
+            <div class="trip">
+              <div class="h">
+                <div><div class="store">Καφέ Μεζές</div><div class="status">Προς κατάστημα</div></div>
+                <div class="pay">4.80€</div>
+              </div>
+              <div class="addr">Λεωφ. Δωδώνης 14</div>
+              <div class="deli">Παράδοση: Οδός Αβέρωφ 21</div>
+              <div class="steps">
+                <div class="st"><div class="node done">✓</div><span>Παραλαβή</span></div>
+                <div class="bar half"></div>
+                <div class="st"><div class="node active">2</div><span>Στο κατάστημα</span></div>
+                <div class="bar empty"></div>
+                <div class="st"><div class="node todo">3</div><span>Παράδοση</span></div>
+              </div>
+              <div class="mini">
+                <div class="mbtn">🧭 Πλοήγηση</div>
+                <div class="mbtn">📞 Κλήση</div>
+              </div>
+              <div style="height:12px"></div>
+              <div class="btn green">Έφτασα στο κατάστημα</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- MONEY -->
+    <div class="screen-col">
+      <h3>5 · Money</h3>
+      <span class="cap">MoneyScreen · wallet + cash</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="scroll">
+              <div class="hdr"><h2>Χρήματα</h2><div class="refresh">↻</div></div>
+              <div class="sub">Δύο ξεχωριστά ποσά: τα κέρδη σου και τα μετρητά που εισέπραξες.</div>
+              <div class="sec">Κέρδη οδηγού</div>
+              <div class="sec-sub">Δικά σου — μπορείς να κάνεις ανάληψη</div>
+              <div class="earn">
+                <div class="lbl">👛 Διαθέσιμο για ανάληψη</div>
+                <div class="val">€86.40</div>
+                <div class="pend">+€12.00 εκκρεμεί (δεν είναι ακόμα διαθέσιμο)</div>
+                <div class="wbtn">Αίτημα ανάληψης</div>
+              </div>
+              <div class="row2">
+                <div class="stat"><svg width="20" height="20" style="color:var(--green-bright)" viewBox="0 0 24 24" fill="currentColor"><path d="M7 2h10v5h-5v4h5v5h-5v6H7V2z"/></svg><div class="lbl">Σήμερα</div><div class="val">€23.50</div><div class="sub2">4 παραδόσεις</div></div>
+                <div class="stat"><svg width="20" height="20" style="color:var(--amber)" viewBox="0 0 24 24" fill="currentColor"><path d="M3 6h18l-9 7-9-7z"/><path d="M3 8v10a1 1 0 001 1h16a1 1 0 001-1V8l-9 7L3 8z"/></svg><div class="lbl">Εβδομάδα</div><div class="val">€148.00</div><div class="sub2">συνολικά κέρδη</div></div>
+              </div>
+              <div class="sec" style="font-size:17px;margin-top:18px">Ιστορικό κερδών</div>
+              <div class="row-item"><div><div class="l">2026-08-06 12:40</div><div class="s">βάση €3.20 · tip €1.60</div></div><div class="amt">+€4.80</div></div>
+              <div class="row-item"><div><div class="l">2026-08-06 11:15</div><div class="s">βάση €3.00 · tip €0.00</div></div><div class="amt">+€3.00</div></div>
+              <div class="row-item"><div><div class="l">2026-08-06 09:05</div><div class="s">βάση €2.80 · tip €0.00</div></div><div class="amt">+€2.80</div></div>
+              <div class="sec" style="font-size:17px;margin-top:22px">Κινήσεις πορτοφολιού</div>
+              <div class="row-item"><div><div class="l">Ανάληψη</div><div class="s">completed · 2026-08-02</div></div><div class="amt err">€-50.00</div></div>
+              <div class="sec">Μετρητά πελατών</div>
+              <div class="sec-sub">Είσπραξη — δεν είναι δικά σου κέρδη</div>
+              <div class="cash">
+                <div class="lbl">💵 Μετρητά στη βάρδια</div>
+                <div class="val">€68.00</div>
+                <div class="limit">Όριο €200</div>
+                <div class="gauge"><div class="fill"></div></div>
+                <div class="note">ℹ️ Αυτά είναι μετρητά που πλήρωσαν οι πελάτες στις παραδόσεις cash. Δεν μπαίνουν στο πορτοφόλι κερδών — τα παραδίδεις στο κατάστημα / admin.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- INBOX -->
+    <div class="screen-col">
+      <h3>6 · Inbox</h3>
+      <span class="cap">InboxScreen · tickets + messages</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen inbox">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="scroll">
+              <div class="hdr"><h2>Inbox</h2><div class="refresh">↻</div></div>
+              <div class="sub">1 αδιάβαστα · Μηνύματα &amp; αιτήματα</div>
+              <div class="new-req" style="margin-top:20px">
+                <div class="sec2" style="margin:0">Υποστήριξη</div>
+                <a href="#">Νέο αίτημα →</a>
+              </div>
+              <div class="ticket"><div class="ic">🎧</div><div><div class="t">Πρόβλημα με πληρωμή της βάρδιας</div><div class="d">2026-08-06 10:12</div></div><div class="state pend">Εκκρεμεί</div></div>
+              <div class="ticket"><div class="ic">🎧</div><div><div class="t">Λάθος διεύθυνση παραγγελίας</div><div class="d">2026-08-04 18:40</div></div><div class="state ok">Λύθηκε</div></div>
+              <div class="sec2">Μηνύματα</div>
+              <div class="notif unread">
+                <div class="h"><span class="ball"></span><b>Ανανέωση βάρδιας</b><span class="date">2026-08-06</span></div>
+                <p>Μην ξεχνάς να παραδώσεις τα μετρητά στο κατάστημα πριν κλείσεις τη βάρδια σου.</p>
+              </div>
+              <div class="notif">
+                <div class="h"><b>Καλώς όρισες!</b><span class="date">2026-07-01</span></div>
+                <p>Το προφίλ σου εγκρίθηκε. Μπορείς να ξεκινήσεις τη βάρδια σου.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- LIVE CHAT -->
+    <div class="screen-col">
+      <h3>7 · Live Chat</h3>
+      <span class="cap">Live Chat tab · thread + composer (inside Support Center)</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen livechat">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="lc-head">
+              <span class="round-btn" style="width:38px;height:38px">←</span>
+              <div><div class="lc-title">Live Chat Υποστήριξης</div><div class="lc-live"><span class="dot green"></span> Ομάδα διαθέσιμη</div></div>
+            </div>
+            <div class="lc-thread">
+              <div class="lc-bubble o"><div class="b">Γεια σου Μάριε! 👋 Πώς μπορούμε να βοηθήσουμε;</div><div class="t">10:24</div></div>
+              <div class="lc-bubble m"><div class="b">Καλημέρα, η πληρωμή της βάρδιας δεν εμφανίζεται στα κέρδη μου.</div><div class="t">10:26</div></div>
+              <div class="lc-bubble o"><div class="b">Έλεγξε το πορτοφόλι σου σε 5 λεπτά — το βλέπω ήδη στο σύστημα. ✅</div><div class="t">10:27</div></div>
+              <div class="lc-bubble m"><div class="b">Τέλεια, ευχαριστώ!</div><div class="t">10:28</div></div>
+            </div>
+            <div class="lc-composer">
+              <input placeholder="Γράψε ένα μήνυμα…" value="">
+              <span class="lc-send">➤</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- SUPPORT CENTER -->
+    <div class="screen-col">
+      <h3>8 · Support Center</h3>
+      <span class="cap">SupportCenter · live chat + tickets + context</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen livechat">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="sc-body">
+            <div class="sc-head">
+              <span class="round-btn" style="width:38px;height:38px">←</span>
+              <div class="mid"><div class="sc-title">Υποστήριξη</div><div class="sc-live"><span class="dot green"></span> Ομάδα διαθέσιμη 24/7</div></div>
+              <div class="sc-tabs"><span class="sc-tab on">Live Chat</span><span class="sc-tab">Αιτήματα</span></div>
+            </div>
+            <div class="sc-card">
+              <div class="sc-avatar" style="background:rgba(6,193,103,.15);color:var(--green-bright)">Μ</div>
+              <div class="who"><div class="n">Μάριος Πέτρου</div><div class="m">Scooter · ΙΟΚ 1023 · +30 690 000 0000</div></div>
+              <div class="sc-call" style="background:var(--green)">☏</div>
+            </div>
+            <div class="sc-card">
+              <div class="sc-avatar" style="background:rgba(111,168,255,.15);color:var(--blue)">Ν</div>
+              <div class="who"><div class="n">Νίκος Παπαδόπουλος</div><div class="m">Οδός Αβέρωφ 21 · Καφέ Μεζές</div></div>
+              <div class="sc-call" style="background:var(--blue)">☏</div>
+            </div>
+            <div class="sc-threadwrap">
+              <div class="sc-thread">
+                <div class="lc-bubble o"><div class="b">Γεια σου Μάριε! 👋 Πώς μπορούμε να βοηθήσουμε;</div><div class="t">10:24</div></div>
+                <div class="lc-bubble m"><div class="b">Καλημέρα, η πληρωμή της βάρδιας δεν εμφανίζεται στα κέρδη μου.</div><div class="t">10:26</div></div>
+                <div class="lc-bubble o"><div class="b">Έλεγξε το πορτοφόλι σου σε 5 λεπτά — το βλέπω ήδη στο σύστημα. ✅</div><div class="t">10:27</div></div>
+              </div>
+              <div class="lc-composer">
+                <input placeholder="Γράψε ένα μήνυμα…" value="">
+                <span class="lc-send">➤</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="screen-col">
+      <h3>9 · Profile</h3>
+      <span class="cap">ProfileScreen · settings</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen prof">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="scroll">
+              <div class="hdr"><h2>Προφίλ</h2></div>
+              <div class="status-pill" style="margin-top:8px;background:rgba(6,193,103,.15);border-color:transparent;color:var(--green-bright);border-radius:12px;padding:6px 12px;font-size:12px">✓ Ενεργός οδηγός</div>
+              <div class="field-card">
+                <h3>Στοιχεία</h3>
+                <div class="field2"><label>Ονοματεπώνυμο</label><input value="Μάριος Πέτρου"></div>
+                <div class="field2"><label>Τηλέφωνο</label><input value="+30 690 000 0000"></div>
+                <div class="field2"><label>Όχημα</label><input value="Scooter"></div>
+                <div class="field2"><label>Πινακίδα</label><input value="ΙΟΚ 1023"></div>
+                <div class="field2"><label>IBAN</label><input value="GR96 0110 ..."></div>
+                <div class="btn green" style="border-radius:16px;height:50px;margin-top:14px">Αποθήκευση</div>
+              </div>
+              <div class="sec" style="font-size:17px;margin-top:18px">Ρυθμίσεις εφαρμογής</div>
+              <div class="field-card" style="padding:4px 8px">
+                <div class="setting-row"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M3 9v6h4l5 5V4L7 9H3z"/><path d="M16 7a5 5 0 010 10v-2a3 3 0 000-6V7z"/></svg><div class="t">Ήχος νέας προσφοράς<div class="s">Παίζει ήχο όταν έρθει παραγγελία</div></div><div class="switch"></div></div>
+                <div class="setting-row"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M7 8l4-5h2l4 5v12l-4 2-4-2V8z"/></svg><div class="t">Δόνηση<div class="s">Δόνηση μαζί με τον ήχο</div></div><div class="switch"></div></div>
+                <div class="setting-row"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 4a7 7 0 017 7c0 2-.8 3.8-2 5v4H7v-4c-1.2-1.2-2-3-2-5a7 7 0 017-7z"/></svg><div class="t">Οθόνη ανοιχτή σε προσφορά<div class="s">Κρατά την οθόνη ενεργή</div></div><div class="switch"></div></div>
+                <div class="setting-row"><svg class="ic" viewBox="0 0 24 24" fill="currentColor"><path d="M12 22a10 10 0 100-20 10 10 0 000 20zm-1-11h2V6h-2v5zm0 6h2v-3h-2v3z"/></svg><div class="t">Ειδοποιήσεις προσφορών<div class="s">Push / local όταν είσαι online</div></div><div class="switch"></div></div>
+              </div>
+              <div class="signout">Έξοδος</div>
+              <div class="ver">Fresh Driver Native · v2.5.0</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- REFERRAL -->
+    <div class="screen-col">
+      <h3>10 · Referral</h3>
+      <span class="cap">ReferralScreen · invite &amp; earn</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen ref">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="scroll">
+              <div class="hdr"><h2>Invite</h2></div>
+              <div class="hero-card">
+                <div class="gift">🎁</div>
+                <h3>Κάλεσε &amp; Κέρδισε</h3>
+                <p>€10 μπόνους για κάθε οδηγό που εγγράφεται με τον κωδικό σου</p>
+                <div class="code">FRESH-1042</div>
+                <div class="btns"><span class="o">⧉ Αντιγραφή</span><span class="f">Κοινοποίηση</span></div>
+              </div>
+              <div class="stat3">
+                <div class="c"><div class="l">Προσκλήσεις</div><div class="v">3</div></div>
+                <div class="c"><div class="l">Ολοκληρωμένες</div><div class="v">2</div></div>
+                <div class="c"><div class="l">Μπόνους</div><div class="v">€20</div></div>
+              </div>
+              <div class="sec" style="font-size:17px;margin-top:20px">Ιστορικό</div>
+              <div class="row-item"><div><div class="l">FRESH-1011</div><div class="s">2026-07-20</div></div><div class="amt" style="color:var(--green-bright);font-size:13px">completed</div></div>
+              <div class="row-item"><div><div class="l">FRESH-1020</div><div class="s">2026-07-28</div></div><div class="amt" style="color:var(--muted);font-size:13px">pending</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- OPS -->
+    <div class="screen-col">
+      <h3>11 · Ops</h3>
+      <span class="cap">OpsScreen · claim pool</span>
+      <div class="phone">
+        <div class="notch"></div>
+        <div class="screen ops">
+          <div class="statusbar"><span>9:41</span><span>●▰▰ ▱</span></div>
+          <div class="body">
+            <div class="hdr"><span class="round-btn" style="width:38px;height:38px">✕</span><h2>Ops</h2><div class="n">3 διαθέσιμες</div><span class="round-btn" style="width:38px;height:38px">↻</span></div>
+            <div class="ops-list">
+              <div class="ocard">
+                <div class="h"><div><div class="meta">#1090 · new</div><div class="store">Καφέ Μεζές</div></div><div class="pay">5.20€</div></div>
+                <div class="addr">Λεωφ. Δωδώνης 14</div>
+                <div class="addr2">→ Οδός Αβέρωφ 21</div>
+                <div class="tags">
+                  <span class="chip" style="background:var(--amber-container);color:var(--amber)">Μετρητά 14.50€</span>
+                  <span class="chip" style="background:var(--well);color:var(--muted)">1.4 km</span>
+                </div>
+                <div class="claim">Ανάληψη παραγγελίας</div>
+              </div>
+              <div class="ocard">
+                <div class="h"><div><div class="meta">#1087 · new</div><div class="store">Γιουβέτσι Της Γειτονιάς</div></div><div class="pay">4.10€</div></div>
+                <div class="addr">Πλ. Πάργας 3</div>
+                <div class="addr2">→ Οδός Ναπολέοντος 8</div>
+                <div class="tags">
+                  <span class="chip" style="background:var(--well);color:var(--muted)">0.8 km</span>
+                </div>
+                <div class="claim">Ανάληψη παραγγελίας</div>
+              </div>
+              <div class="ocard">
+                <div class="h"><div><div class="meta">#1085 · assigned</div><div class="store">Σούβλες Το Στέκι</div></div><div class="pay">3.60€</div></div>
+                <div class="addr">Λεωφ. Γράμμου 22</div>
+                <div class="addr2">→ Οδός Χαριλάου 5</div>
+                <div class="tags">
+                  <span class="chip" style="background:var(--error-container);color:var(--error)">Έχει οδηγό</span>
+                  <span class="chip" style="background:var(--well);color:var(--muted)">2.1 km</span>
+                </div>
+                <div class="claim" style="opacity:.5">Ανάληψη παραγγελίας</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</body>
+</html>
