@@ -61,7 +61,11 @@ fun TicketChatDialog(
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
-            listState.scrollToItem(messages.lastIndex)
+            val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            val nearBottom = lastVisibleIndex == -1 || lastVisibleIndex >= messages.lastIndex - 2
+            if (nearBottom) {
+                listState.animateScrollToItem(messages.lastIndex)
+            }
         }
     }
 
