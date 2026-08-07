@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Badge } from '@/components/ui/badge';
@@ -11,6 +12,20 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { MessageSquare, CheckCircle, Clock, AlertTriangle } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+
+type SupportTicketRow = Pick<
+  Database['public']['Tables']['support_tickets']['Row'],
+  | 'id'
+  | 'requester_id'
+  | 'requester_role'
+  | 'driver_id'
+  | 'category'
+  | 'description'
+  | 'status'
+  | 'created_at'
+  | 'resolution_notes'
+>;
+type ProfileLookupRow = Pick<Database['public']['Tables']['profiles']['Row'], 'user_id' | 'full_name'>;
 
 const statusConfig: Record<string, { label: string; color: string; icon: React.ElementType }> = {
   open: { label: 'Ανοιχτό', color: 'bg-red-500/10 text-red-600 border-red-500/20', icon: AlertTriangle },
@@ -56,23 +71,23 @@ export default function SupportTicketsManager() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('support_tickets')
-        .select('*')
+        .select('id, requester_id, requester_role, driver_id, category, description, status, created_at, resolution_notes')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return (data ?? []) as SupportTicketRow[];
     },
   });
 
   const { data: profiles } = useQuery({
     queryKey: ['admin-profiles'],
     queryFn: async () => {
-      const { data, error } = await supabase.from('profiles').select('*');
+      const { data, error } = await supabase.from('profiles').select('user_id, full_name');
       if (error) throw error;
-      return data;
+      return (data ?? []) as ProfileLookupRow[];
     },
   });
 
-  const ticketSubject = (ticket: any) => {
+  const ticketSubject = (ticket: SupportTicketRow) => {
     const id = ticket.requester_id || ticket.driver_id;
     const p = id ? profiles?.find((pr) => pr.user_id === id) : null;
     const role = ticket.requester_role || (ticket.driver_id ? 'driver' : null);

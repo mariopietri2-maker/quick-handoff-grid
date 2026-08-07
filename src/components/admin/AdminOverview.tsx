@@ -11,6 +11,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { format, subDays } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Progress } from '@/components/ui/progress';
@@ -29,6 +30,16 @@ interface Props {
   reviews: any[];
   earnings: any[];
 }
+
+type TreasuryOverviewRow = Pick<
+  Database['public']['Tables']['admin_treasury']['Row'],
+  'admin_balance' | 'platform_pool' | 'lifetime_admin_earned' | 'lifetime_platform_earned'
+>;
+type StoreWalletBalanceRow = Pick<Database['public']['Tables']['store_wallets']['Row'], 'available_balance'>;
+type DriverCashRow = Pick<
+  Database['public']['Tables']['driver_state']['Row'],
+  'shift_cash_balance' | 'shift_started_at'
+>;
 
 /* ─────────────────────────  Sparkline (pure SVG)  ───────────────────────── */
 function Sparkline({ values, color = 'hsl(var(--primary))' }: { values: number[]; color?: string }) {
@@ -150,8 +161,12 @@ export default function AdminOverview({ orders, profiles }: Props) {
   const { data: treasury } = useQuery({
     queryKey: ['admin-treasury-overview'],
     queryFn: async () => {
-      const { data } = await (supabase as any).from('admin_treasury').select('*').eq('id', 1).maybeSingle();
-      return data as { admin_balance: number; platform_pool: number; lifetime_admin_earned: number; lifetime_platform_earned: number } | null;
+      const { data } = await supabase
+        .from('admin_treasury')
+        .select('admin_balance, platform_pool, lifetime_admin_earned, lifetime_platform_earned')
+        .eq('id', 1)
+        .maybeSingle();
+      return (data as TreasuryOverviewRow | null) ?? null;
     },
     refetchInterval: 30_000,
   });
@@ -160,8 +175,11 @@ export default function AdminOverview({ orders, profiles }: Props) {
   const { data: storeOwed } = useQuery({
     queryKey: ['admin-store-owed'],
     queryFn: async () => {
-      const { data } = await (supabase as any).from('store_wallets').select('available_balance');
-      return (data ?? []).reduce((s: number, r: any) => s + Number(r.available_balance ?? 0), 0);
+      const { data } = await supabase.from('store_wallets').select('available_balance');
+      return ((data ?? []) as StoreWalletBalanceRow[]).reduce(
+        (sum, row) => sum + Number(row.available_balance ?? 0),
+        0,
+      );
     },
     refetchInterval: 30_000,
   });
@@ -170,8 +188,12 @@ export default function AdminOverview({ orders, profiles }: Props) {
   const { data: cashOnStreet } = useQuery({
     queryKey: ['admin-cash-on-street'],
     queryFn: async () => {
-      const { data } = await (supabase as any).from('driver_state').select('shift_cash_balance, shift_started_at');
-      return (data ?? []).filter((r: any) => r.shift_started_at).reduce((s: number, r: any) => s + Number(r.shift_cash_balance ?? 0), 0);
+      const { data } = await supabase
+        .from('driver_state')
+        .select('shift_cash_balance, shift_started_at');
+      return ((data ?? []) as DriverCashRow[])
+        .filter((row) => row.shift_started_at)
+        .reduce((sum, row) => sum + Number(row.shift_cash_balance ?? 0), 0);
     },
     refetchInterval: 30_000,
   });
