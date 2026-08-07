@@ -79,6 +79,7 @@ fun LoginScreen(
     val context = LocalContext.current
     val prefs = remember { DriverPreferences(context) }
     val cs = MaterialTheme.colorScheme
+    val normalizedEmail = email.trim()
 
     // Prefill saved credentials when "remember me" was enabled.
     LaunchedEffect(Unit) {
@@ -90,7 +91,6 @@ fun LoginScreen(
     }
 
     fun doLogin() {
-        val normalizedEmail = email.trim()
         if (normalizedEmail.isNotBlank() && password.isNotBlank() && !busy) {
             prefs.rememberMe = rememberMe
             if (rememberMe) {
@@ -265,7 +265,7 @@ fun LoginScreen(
 
             Button(
                 onClick = { doLogin() },
-                enabled = !busy && email.trim().isNotBlank() && password.isNotBlank(),
+                enabled = !busy && normalizedEmail.isNotBlank() && password.isNotBlank(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
