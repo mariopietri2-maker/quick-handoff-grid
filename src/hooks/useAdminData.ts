@@ -1,6 +1,36 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
+
+type OrderRow = Database['public']['Tables']['orders']['Row'];
+type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
+type StoreRow = Database['public']['Tables']['stores']['Row'];
+type ProfileRow = Database['public']['Tables']['profiles']['Row'];
+type EarningsRow = Database['public']['Tables']['earnings']['Row'];
+type ReviewRow = Database['public']['Tables']['reviews']['Row'];
+type UserRoleRow = Pick<Database['public']['Tables']['user_roles']['Row'], 'user_id' | 'role'>;
+type DriverProfileRow = Pick<
+  Database['public']['Tables']['driver_profiles']['Row'],
+  'user_id' | 'driver_code' | 'is_active' | 'suspended_at' | 'created_at'
+>;
+type DriverStateRow = Pick<
+  Database['public']['Tables']['driver_state']['Row'],
+  'driver_id' | 'shift_cash_balance' | 'shift_started_at' | 'on_break'
+>;
+type DriverLocationRow = Pick<
+  Database['public']['Tables']['driver_locations']['Row'],
+  'driver_id' | 'updated_at'
+>;
+type DriverWalletRow = Pick<
+  Database['public']['Tables']['driver_wallets']['Row'],
+  'driver_id' | 'available_balance' | 'pending_balance' | 'total_withdrawn'
+>;
+type StoreWalletRow = Pick<
+  Database['public']['Tables']['store_wallets']['Row'],
+  'store_id' | 'available_balance' | 'lifetime_earnings'
+>;
+type AdminOrderRow = OrderRow & { order_items: OrderItemRow[] };
 
 /** Poll only while the admin tab is visible — avoids background request storms. */
 function useVisibleRefetchInterval(ms: number): number | false {
@@ -28,7 +58,7 @@ export function useAdminData() {
         .order('created_at', { ascending: false })
         .limit(100);
       if (error) throw error;
-      return data;
+      return (data ?? []) as AdminOrderRow[];
     },
   });
 
@@ -41,7 +71,7 @@ export function useAdminData() {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return (data ?? []) as StoreRow[];
     },
   });
 
@@ -54,7 +84,7 @@ export function useAdminData() {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return (data ?? []) as ProfileRow[];
     },
   });
 
@@ -67,7 +97,7 @@ export function useAdminData() {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return (data ?? []) as EarningsRow[];
     },
   });
 
@@ -80,7 +110,7 @@ export function useAdminData() {
         .select('*')
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return data;
+      return (data ?? []) as ReviewRow[];
     },
   });
 
@@ -90,9 +120,9 @@ export function useAdminData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('user_roles')
-        .select('*');
+        .select('user_id, role');
       if (error) throw error;
-      return data;
+      return (data ?? []) as UserRoleRow[];
     },
   });
 
@@ -102,16 +132,10 @@ export function useAdminData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_profiles')
-        .select('user_id, driver_code, is_active, suspended_at, created_at' as any)
-        .order('created_at' as any, { ascending: false });
+        .select('user_id, driver_code, is_active, suspended_at, created_at')
+        .order('created_at', { ascending: false });
       if (error) throw error;
-      return data as unknown as {
-        user_id: string;
-        driver_code: string | null;
-        is_active: boolean;
-        suspended_at: string | null;
-        created_at: string | null;
-      }[];
+      return (data ?? []) as DriverProfileRow[];
     },
   });
 
@@ -119,11 +143,11 @@ export function useAdminData() {
     queryKey: ['admin-driver-states'],
     refetchInterval: poll,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('driver_state')
         .select('driver_id, shift_cash_balance, shift_started_at, on_break');
       if (error) throw error;
-      return (data ?? []) as { driver_id: string; shift_cash_balance: number; shift_started_at: string | null; on_break: boolean }[];
+      return (data ?? []) as DriverStateRow[];
     },
   });
 
@@ -135,7 +159,7 @@ export function useAdminData() {
         .from('driver_locations')
         .select('driver_id, updated_at');
       if (error) throw error;
-      return (data ?? []) as { driver_id: string; updated_at: string }[];
+      return (data ?? []) as DriverLocationRow[];
     },
   });
 
@@ -147,7 +171,7 @@ export function useAdminData() {
         .from('driver_wallets')
         .select('driver_id, available_balance, pending_balance, total_withdrawn');
       if (error) throw error;
-      return (data ?? []) as { driver_id: string; available_balance: number; pending_balance: number; total_withdrawn: number }[];
+      return (data ?? []) as DriverWalletRow[];
     },
   });
 
@@ -155,11 +179,11 @@ export function useAdminData() {
     queryKey: ['admin-store-wallets'],
     refetchInterval: poll,
     queryFn: async () => {
-      const { data, error } = await (supabase as any)
+      const { data, error } = await supabase
         .from('store_wallets')
         .select('store_id, available_balance, lifetime_earnings');
       if (error) throw error;
-      return (data ?? []) as { store_id: string; available_balance: number; lifetime_earnings: number }[];
+      return (data ?? []) as StoreWalletRow[];
     },
   });
 
