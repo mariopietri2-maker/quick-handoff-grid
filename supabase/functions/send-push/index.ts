@@ -34,14 +34,9 @@ Deno.serve(async (req) => {
   const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
   const auth = req.headers.get("Authorization") ?? "";
   const bearer = auth.toLowerCase().startsWith("bearer ") ? auth.slice(7).trim() : "";
-  // Exact key match OR JWT with role=service_role (handles key rotation / whitespace).
-  let isService = Boolean(serviceKey) && bearer === serviceKey;
-  if (!isService && bearer.split(".").length === 3) {
-    try {
-      const payload = JSON.parse(atob(bearer.split(".")[1]!.replace(/-/g, "+").replace(/_/g, "/")));
-      isService = payload?.role === "service_role";
-    } catch { /* ignore */ }
-  }
+  // Only accept an exact service-role key match (or a valid CRON_SECRET).
+  // Never trust an unverified JWT payload, even one claiming role=service_role.
+  const isService = Boolean(serviceKey) && bearer === serviceKey;
   if (!hasCronSecret(req) && !isService) {
     return json({ error: "unauthorized" }, 401);
   }
