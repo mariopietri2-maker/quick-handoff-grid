@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.ArrowBack
@@ -30,7 +30,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +42,6 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.freshdelivery.nativedriver.data.TicketMessageRow
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
-import kotlinx.coroutines.launch
 
 @Composable
 fun TicketChatDialog(
@@ -56,15 +54,21 @@ fun TicketChatDialog(
     onSend: (String) -> Unit,
 ) {
     var draft by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
 
-    Dialog(onDismissRequest = onBack, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    Dialog(
+        onDismissRequest = onBack,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false,
+        ),
+    ) {
         Column(
             Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .imePadding()
                 .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 16.dp),
         ) {
             // Header
@@ -104,26 +108,27 @@ fun TicketChatDialog(
                         CircularProgressIndicator(color = FreshGreen)
                     }
                 } else {
-                    Column(
+                    LazyColumn(
                         Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
                             .padding(horizontal = 12.dp, vertical = 6.dp),
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (messages.isEmpty()) {
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Στείλε ένα μήνυμα στην ομάδα για να ξεκινήσει η συζήτηση.",
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 13.sp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                            )
+                            item {
+                                Spacer(Modifier.height(8.dp))
+                                Text(
+                                    "Στείλε ένα μήνυμα στην ομάδα για να ξεκινήσει η συζήτηση.",
+                                    textAlign = TextAlign.Center,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(vertical = 24.dp),
+                                )
+                            }
                         }
-                        messages.forEach { m ->
+                        items(messages) { m ->
                             val mine = m.sender_role == "driver"
                             ChatBubble(
                                 message = m,
@@ -131,7 +136,7 @@ fun TicketChatDialog(
                                 senderName = agentDisplayName(m, agents),
                             )
                         }
-                        Spacer(Modifier.height(4.dp))
+                        item { Spacer(Modifier.height(4.dp)) }
                     }
                 }
             }

@@ -88,8 +88,8 @@ fun SupportCenter(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .imePadding()
             .navigationBarsPadding()
+            .imePadding()
             .statusBarsPadding()
             .padding(horizontal = 16.dp),
     ) {

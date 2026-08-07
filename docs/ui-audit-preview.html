@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Quick Handoff Grid - Native UI Audit Preview</title>
+  <style>
+    body { font-family: Inter, system-ui, -apple-system, Segoe UI, Roboto, sans-serif; margin: 24px; line-height: 1.5; color: #0f172a; }
+    h1, h2, h3 { margin-bottom: 8px; }
+    section { margin-top: 28px; }
+    .card { border: 1px solid #cbd5e1; border-radius: 10px; padding: 12px 14px; margin: 10px 0; background: #f8fafc; }
+    ul { margin-top: 6px; }
+    code { background: #e2e8f0; padding: 1px 5px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>Native Apps UI/UX Audit Preview</h1>
+  <p><strong>Date:</strong> 2026-08-07</p>
+
+  <section>
+    <h2>Driver app (native-driver)</h2>
+
+    <div class="card">
+      <h3>Screen/component: Support Ticket Chat Dialog</h3>
+      <p><strong>Symptom:</strong> Long message threads could become hard to use on smaller displays and around keyboard open/close transitions.</p>
+      <p><strong>Root cause:</strong> Scroll area used <code>Column + verticalScroll</code> in a full-screen dialog, and inset modifier ordering could produce inconsistent bottom spacing.</p>
+      <p><strong>Fix summary:</strong> Switched thread container to <code>LazyColumn</code>, set explicit dialog dismiss behavior, and reordered insets to apply <code>navigationBarsPadding()</code> before <code>imePadding()</code>.</p>
+      <p><strong>Before/after notes:</strong> Before, thread composition/insets were more brittle under IME transitions. After, thread remains scrollable and spacing is stable with keyboard/system bars.</p>
+    </div>
+
+    <div class="card">
+      <h3>Screen/component: Ops list screen</h3>
+      <p><strong>Symptom:</strong> Last list rows and CTA area could sit too close to or under system navigation on some devices.</p>
+      <p><strong>Root cause:</strong> Root screen container lacked navigation bar inset padding.</p>
+      <p><strong>Fix summary:</strong> Added <code>navigationBarsPadding()</code> to the root <code>OpsScreen</code> container.</p>
+      <p><strong>Before/after notes:</strong> Before, bottom content risked collision with nav area. After, content is lifted above bottom system UI.</p>
+    </div>
+
+    <div class="card">
+      <h3>Screen/component: Support Center root layout</h3>
+      <p><strong>Symptom:</strong> Inset behavior around keyboard + bottom system UI could feel inconsistent across devices.</p>
+      <p><strong>Root cause:</strong> IME and navigation bar paddings were applied in the less stable order.</p>
+      <p><strong>Fix summary:</strong> Reordered modifier chain to <code>navigationBarsPadding()</code> then <code>imePadding()</code>.</p>
+      <p><strong>Before/after notes:</strong> Better consistency when keyboard appears while preserving existing behavior.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Customer app (native-customer)</h2>
+
+    <div class="card">
+      <h3>Screen/component: Store Menu screen + floating Cart bar</h3>
+      <p><strong>Symptom:</strong> Menu list relied on a hardcoded bottom spacer and could still feel overlap-prone with floating cart CTA.</p>
+      <p><strong>Root cause:</strong> Manual <code>Spacer(100.dp)</code> workaround instead of structured list content padding.</p>
+      <p><strong>Fix summary:</strong> Replaced spacer hack with dynamic <code>LazyColumn</code> <code>contentPadding</code> tied to cart visibility.</p>
+      <p><strong>Before/after notes:</strong> Before, static spacing could be too much or too little. After, bottom spacing is explicit and flow-safe when cart CTA is present.</p>
+    </div>
+  </section>
+
+  <section>
+    <h2>Validated flows checklist</h2>
+    <ul>
+      <li>Driver: Support chat dialog opens, dismisses, scrolls, and send CTA remains usable during keyboard transitions.</li>
+      <li>Driver: Ops list remains navigable and bottom actions are visible above system navigation.</li>
+      <li>Driver: Support center root insets stay stable with keyboard/system bars.</li>
+      <li>Customer: Menu list -> add item -> floating cart bar path no longer relies on spacer hacks and avoids bottom overlap.</li>
+      <li>Customer: Navigation between Home/Menu/Cart remains unchanged.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Known limitations / future improvements</h2>
+    <ul>
+      <li>No screenshot bundle included in this preview file.</li>
+      <li>A wider pass can still convert additional long <code>verticalScroll</code> screens to <code>LazyColumn</code> for stronger performance consistency.</li>
+    </ul>
+  </section>
+</body>
+</html>

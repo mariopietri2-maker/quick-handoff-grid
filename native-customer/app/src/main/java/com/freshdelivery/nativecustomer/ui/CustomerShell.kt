@@ -714,8 +714,12 @@ private fun MenuScreen(
     onOpenCart: () -> Unit,
 ) {
     val store = state.selectedStore
+    val menuBottomPadding = if (state.cartCount > 0) 112.dp else 16.dp
     Box(Modifier.fillMaxSize().background(FreshBg)) {
-        LazyColumn(Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize(),
+            contentPadding = PaddingValues(bottom = menuBottomPadding),
+        ) {
             item {
                 Box {
                     StoreHeroImage(store?.image_url, height = 250)
@@ -804,7 +808,6 @@ private fun MenuScreen(
                     FreshMenuRow(item = item, onAdd = { onAdd(item) })
                     Spacer(Modifier.height(6.dp))
                 }
-                item { Spacer(Modifier.height(100.dp)) }
             }
         }
         if (state.cartCount > 0) {
