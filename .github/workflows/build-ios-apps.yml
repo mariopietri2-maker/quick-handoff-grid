@@ -1,0 +1,138 @@
+# Build iOS (Capacitor) customer + driver apps on a macOS runner and publish
+# unsigned .ipa + Xcode project zips to the ios-xcode-projects-v1 release.
+# macOS + Xcode are required for any iOS build; GitHub Actions macos-latest is
+# the cloud Mac used here. App Store signing is a manual handoff on a Mac with
+# an Apple Developer team (see scripts/sync-ios-apps.sh footer).
+name: Build iOS Apps (macOS)
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/sync-ios-apps.sh"
+      - "capacitor.config.ts"
+      - "capacitor.customer.config.ts"
+      - "capacitor.driver.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - "plugins/**"
+      - ".github/workflows/build-ios-apps.yml"
+
+jobs:
+  build-ios:
+    runs-on: macos-latest
+    timeout-minutes: 90
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Shim sha256sum (macOS has shasum, not sha256sum)
+        run: |
+          if ! command -v sha256sum >/dev/null 2>&1; then
+            printf '#!/bin/bash\nexec /usr/bin/shasum -a 256 "$@"\n' | sudo tee /usr/local/bin/sha256sum >/dev/null
+            sudo chmod +x /usr/local/bin/sha256sum
+          fi
+          sha256sum --version >/dev/null 2>&1 || true
+
+      - name: Scaffold + sync iOS Xcode projects
+        env:
+          IOS_BUILD_NUMBER: ${{ github.run_number }}
+          IOS_VERSION_NAME: 1.0.${{ github.run_number }}
+        run: |
+          chmod +x scripts/sync-ios-apps.sh
+          ./scripts/sync-ios-apps.sh
+          ls -lah store-bundles/
+
+      - name: Build unsigned .ipa + .xcarchive (customer)
+        working-directory: ios-customer
+        env:
+          IOS_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          xcodebuild -project App/App.xcodeproj -scheme App \
+            -configuration Release -sdk iphoneos \
+            -derivedDataPath build/ \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            build | tail -n 30
+          xcodebuild -project App/App.xcodeproj -scheme App \
+            -configuration Release -sdk iphoneos \
+            -archivePath build/ios-customer.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            archive | tail -n 30
+
+      - name: Build unsigned .ipa + .xcarchive (driver)
+        working-directory: ios-driver
+        env:
+          IOS_BUILD_NUMBER: ${{ github.run_number }}
+        run: |
+          set -euo pipefail
+          xcodebuild -project App/App.xcodeproj -scheme App \
+            -configuration Release -sdk iphoneos \
+            -derivedDataPath build/ \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            build | tail -n 30
+          xcodebuild -project App/App.xcodeproj -scheme App \
+            -configuration Release -sdk iphoneos \
+            -archivePath build/ios-driver.xcarchive \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO \
+            archive | tail -n 30
+
+      - name: Package unsigned IPAs
+        run: |
+          set -euo pipefail
+          for flavor in customer driver; do
+            app_path=$(find "ios-$flavor/build/Build/Products" -maxdepth 2 -name "*.app" -type d | head -1)
+            if [ -z "$app_path" ]; then
+              echo "::error::no .app produced for $flavor"
+              exit 1
+            fi
+            mkdir -p "payload-$flavor/Payload"
+            cp -R "$app_path" "payload-$flavor/Payload/App.app"
+            (
+              cd "payload-$flavor"
+              zip -qry "../fresh-$flavor-ios.ipa" Payload
+            )
+            rm -rf "payload-$flavor"
+          done
+          ls -lah fresh-*-ios.ipa
+
+      - name: Stage artifacts
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          cp -f fresh-customer-ios.ipa fresh-driver-ios.ipa dist/
+          cp -f store-bundles/fresh-customer-ios-xcode.zip store-bundles/fresh-driver-ios-xcode.zip dist/
+          cp -f ios-customer/build/ios-customer.xcarchive dist/fresh-customer-ios.xcarchive 2>/dev/null || true
+          cp -f ios-driver/build/ios-driver.xcarchive dist/fresh-driver-ios.xcarchive 2>/dev/null || true
+          ls -lah dist/
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: ios-apps
+          path: dist/*
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Publish to ios-xcode-projects-v1 GitHub release
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release view ios-xcode-projects-v1 >/dev/null 2>&1 || \
+            gh release create ios-xcode-projects-v1 --title "iOS apps (Capacitor, Xcode handoff)" --notes "Unsigned .ipa + Xcode project zips for customer & driver. Sign on a Mac with an Apple Developer team to install (see scripts/sync-ios-apps.sh)."
+          gh release upload ios-xcode-projects-v1 dist/* --clobber
+          echo "Published to GitHub release ios-xcode-projects-v1:"
+          ls dist/
