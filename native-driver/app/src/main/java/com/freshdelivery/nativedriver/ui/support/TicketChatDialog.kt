@@ -26,10 +26,12 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,8 +42,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
+import kotlinx.coroutines.launch
 import com.freshdelivery.nativedriver.data.TicketMessageRow
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 @Composable
 fun TicketChatDialog(
@@ -53,7 +57,16 @@ fun TicketChatDialog(
     onBack: () -> Unit,
     onSend: (String) -> Unit,
 ) {
-    var draft by remember { mutableStateOf("") }
+    var draft by rememberSaveable { mutableStateOf("") }
+    val normalizedDraft = draft.trim()
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            listState.scrollToItem(messages.lastIndex)
+        }
+    }
 
     Dialog(
         onDismissRequest = onBack,
@@ -112,6 +125,7 @@ fun TicketChatDialog(
                         Modifier
                             .fillMaxSize()
                             .padding(horizontal = 12.dp, vertical = 6.dp),
+                        state = listState,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (messages.isEmpty()) {
@@ -130,7 +144,10 @@ fun TicketChatDialog(
                                 }
                             }
                         }
-                        items(messages) { m ->
+                        items(
+                            items = messages,
+                            key = { messageKey(it) },
+                        ) { m ->
                             val mine = m.sender_role == "driver"
                             ChatBubble(
                                 message = m,
@@ -152,7 +169,7 @@ fun TicketChatDialog(
             ) {
                 OutlinedTextField(
                     value = draft,
-                    onValueChange = { draft = it },
+                    onValueChange = { draft = it.take(500) },
                     placeholder = { Text("Γράψε ένα μήνυμα…") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
@@ -161,12 +178,17 @@ fun TicketChatDialog(
                 Spacer(Modifier.width(8.dp))
                 IconButton(
                     onClick = {
-                        if (draft.isNotBlank() && !busy) {
-                            onSend(draft)
+                        if (normalizedDraft.isNotBlank() && !busy) {
+                            onSend(normalizedDraft)
                             draft = ""
+                            scope.launch {
+                                if (messages.isNotEmpty()) {
+                                    listState.animateScrollToItem(messages.lastIndex)
+                                }
+                            }
                         }
                     },
-                    enabled = draft.isNotBlank() && !busy,
+                    enabled = normalizedDraft.isNotBlank() && !busy,
                 ) {
                     Box(
                         Modifier
@@ -194,6 +216,14 @@ fun TicketChatDialog(
         }
     }
 }
+
+private fun messageKey(message: TicketMessageRow): String =
+    listOf(
+        message.id,
+        message.created_at ?: "",
+        message.sender_id ?: "",
+        message.message ?: "",
+    ).joinToString("|")
 
 private fun agentDisplayName(m: TicketMessageRow, agents: Map<String, String>): String? {
     if (m.sender_role == "driver") return null

@@ -28,7 +28,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -62,10 +62,13 @@ fun LoginScreen(
     onLogin: (String, String) -> Unit,
     onSignUp: (String, String, String, String) -> Unit = { _, _, _, _ -> },
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var fullName by remember { mutableStateOf("") }
-    var phone by remember { mutableStateOf("") }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var fullName by rememberSaveable { mutableStateOf("") }
+    var phone by rememberSaveable { mutableStateOf("") }
+    val normalizedEmail = email.trim()
+    val normalizedFullName = fullName.trim()
+    val normalizedPhone = phone.trim()
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = FreshGreen,
         focusedLabelColor = FreshGreen,
@@ -111,7 +114,7 @@ fun LoginScreen(
         if (signupMode) {
             OutlinedTextField(
                 value = fullName,
-                onValueChange = { fullName = it },
+                onValueChange = { fullName = it.take(80) },
                 label = { Text("Ονοματεπώνυμο") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth(),
@@ -121,7 +124,11 @@ fun LoginScreen(
             Spacer(Modifier.height(12.dp))
             OutlinedTextField(
                 value = phone,
-                onValueChange = { phone = it },
+                onValueChange = { input ->
+                    phone = input
+                        .filter { it.isDigit() || it in setOf('+', ' ', '-', '(', ')') }
+                        .take(20)
+                },
                 label = { Text("Τηλέφωνο") },
                 singleLine = true,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
@@ -172,11 +179,11 @@ fun LoginScreen(
         Spacer(Modifier.height(24.dp))
         Button(
             onClick = {
-                if (signupMode) onSignUp(email, password, fullName, phone)
-                else onLogin(email, password)
+                if (signupMode) onSignUp(normalizedEmail, password, normalizedFullName, normalizedPhone)
+                else onLogin(normalizedEmail, password)
             },
-            enabled = !busy && email.isNotBlank() && password.length >= 6 &&
-                (!signupMode || fullName.isNotBlank()),
+            enabled = !busy && normalizedEmail.isNotBlank() && password.length >= 6 &&
+                (!signupMode || normalizedFullName.isNotBlank()),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
