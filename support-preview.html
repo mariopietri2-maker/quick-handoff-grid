@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Fresh Delivery — Κέντρο Υποστήριξης · Πρώτη εντύπωση</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&display=swap" rel="stylesheet" />
+<style>
+  :root {
+    --primary: hsl(210 70% 48%);
+    --primary-600: hsl(210 75% 40%);
+    --primary-soft: hsl(210 80% 95%);
+    --accent: hsl(38 92% 50%);
+    --accent-soft: hsl(38 92% 95%);
+    --bg: hsl(220 25% 97%);
+    --surface: #ffffff;
+    --surface-2: hsl(220 25% 97%);
+    --border: hsl(220 20% 90%);
+    --text: hsl(220 30% 12%);
+    --text-2: hsl(220 15% 42%);
+    --text-3: hsl(220 12% 60%);
+    --rose: hsl(355 70% 48%);
+    --rose-soft: hsl(355 80% 95%);
+    --green: hsl(152 60% 40%);
+    --green-soft: hsl(152 60% 94%);
+    --amber: hsl(38 92% 50%);
+    --amber-soft: hsl(38 92% 94%);
+    --slate: hsl(220 10% 45%);
+    --slate-soft: hsl(220 15% 93%);
+    --radius: 14px;
+    --shadow-sm: 0 1px 2px rgba(15,23,42,.05);
+    --shadow: 0 1px 2px rgba(15,23,42,.05), 0 10px 30px -12px rgba(15,23,42,.12);
+    --ring: 0 0 0 3px hsl(210 70% 48% / .18);
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; }
+  body {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    background: var(--bg); color: var(--text); overflow: hidden;
+    font-size: 14px;
+  }
+  .font-heading { font-family: 'Plus Jakarta Sans', 'DM Sans', system-ui, sans-serif; }
+  .mono { font-variant-numeric: tabular-nums; letter-spacing: .3px; }
+  button { font-family: inherit; border: none; background: none; cursor: pointer; color: inherit; }
+  input { font-family: inherit; }
+
+  .app { display: flex; flex-direction: column; height: 100vh; }
+
+  /* ===== Header ===== */
+  .topbar {
+    flex-shrink: 0; height: 56px; display: flex; align-items: center; gap: 6px;
+    padding: 0 16px; background: var(--surface); border-bottom: 1px solid var(--border);
+  }
+  .icon-btn {
+    width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+    color: var(--text-2); transition: background .15s, color .15s;
+  }
+  .icon-btn:hover { background: var(--surface-2); color: var(--text); }
+  .brand { display: flex; align-items: center; gap: 10px; margin-left: 4px; }
+  .brand-logo {
+    width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: linear-gradient(135deg, var(--primary), var(--primary-600)); color: #fff;
+    box-shadow: 0 4px 12px hsl(210 70% 48% / .35);
+  }
+  .brand-name { font-weight: 800; font-size: 15px; letter-spacing: -.2px; }
+  .brand-sub { font-size: 11px; color: var(--text-3); margin-top: -1px; }
+  .topbar .sep { width: 1px; height: 24px; background: var(--border); margin: 0 8px; }
+  .nav-tabs { display: flex; gap: 2px; margin-left: 8px; }
+  .nav-tab {
+    padding: 7px 14px; border-radius: 9px; font-size: 13px; font-weight: 600;
+    color: var(--text-2); transition: all .15s; position: relative;
+  }
+  .nav-tab:hover { color: var(--text); background: var(--surface-2); }
+  .nav-tab.active { color: var(--primary); background: var(--primary-soft); }
+  .nav-tab.active::after {
+    content: ''; position: absolute; left: 14px; right: 14px; bottom: -10px; height: 2px;
+    border-radius: 2px; background: var(--primary);
+  }
+  .nav-tab .dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--rose); margin-left: 5px; }
+  .topbar-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .live-pill {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+    font-size: 11px; font-weight: 700; color: var(--green); background: var(--green-soft);
+    border: 1px solid hsl(152 60% 40% / .25);
+  }
+  .live-pill .pulse { width: 7px; height: 7px; border-radius: 50%; background: var(--green); animation: pulse 1.8s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: .45; transform: scale(.8); } }
+  .agents-chip {
+    display: inline-flex; align-items: center; gap: 6px; padding: 5px 11px; border-radius: 999px;
+    font-size: 11px; font-weight: 600; color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border);
+  }
+  .agents-chip .stack { display: flex; }
+  .agents-chip .stack span {
+    width: 18px; height: 18px; border-radius: 50%; border: 2px solid var(--surface);
+    background: linear-gradient(135deg, var(--accent), hsl(38 92% 40%));
+    display: grid; place-items: center; font-size: 8px; font-weight: 800; color: #fff;
+  }
+  .agents-chip .stack span:nth-child(2) { margin-left: -6px; background: linear-gradient(135deg, #34d399, #059669); }
+  .agents-chip .stack span:nth-child(3) { margin-left: -6px; background: linear-gradient(135deg, #93c5fd, #3b82f6); }
+  .profile {
+    display: flex; align-items: center; gap: 9px; padding: 4px 8px 4px 4px; border-radius: 999px;
+    border: 1px solid transparent; transition: border .15s, background .15s;
+  }
+  .profile:hover { border-color: var(--border); background: var(--surface-2); }
+  .profile .avatar {
+    width: 32px; height: 32px; border-radius: 50%; background: linear-gradient(135deg, var(--primary), #8b5cf6);
+    display: grid; place-items: center; color: #fff; font-weight: 800; font-size: 12px;
+  }
+  .profile .meta { line-height: 1.15; text-align: left; }
+  .profile .meta b { display: block; font-size: 12.5px; font-weight: 700; }
+  .profile .meta span { font-size: 10.5px; color: var(--text-3); }
+
+  /* ===== Body ===== */
+  .body { flex: 1; min-height: 0; display: flex; }
+
+  /* ---- Left queue ---- */
+  .queue {
+    width: 348px; flex-shrink: 0; border-right: 1px solid var(--border);
+    background: var(--surface); display: flex; flex-direction: column; min-height: 0;
+  }
+  .queue-top { padding: 12px 14px 8px; }
+  .queue-actions { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+  .search {
+    flex: 1; display: flex; align-items: center; gap: 8px; height: 36px; padding: 0 11px;
+    border-radius: 10px; background: var(--surface-2); border: 1px solid transparent;
+    transition: all .15s; color: var(--text-3); font-size: 13px;
+  }
+  .search:focus-within { border-color: var(--primary); background: var(--surface); box-shadow: var(--ring); color: var(--text-2); }
+  .search input { flex: 1; border: none; outline: none; background: none; font-size: 13px; color: var(--text); min-width: 0; }
+  .search input::placeholder { color: var(--text-3); }
+  .btn-new {
+    display: inline-flex; align-items: center; gap: 6px; height: 36px; padding: 0 13px;
+    border-radius: 10px; background: var(--primary); color: #fff; font-size: 12.5px; font-weight: 700;
+    box-shadow: 0 4px 12px hsl(210 70% 48% / .3); transition: background .15s, transform .1s;
+    white-space: nowrap;
+  }
+  .btn-new:hover { background: var(--primary-600); }
+  .btn-new:active { transform: translateY(1px); }
+  .filters { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-chip {
+    padding: 5px 11px; border-radius: 999px; font-size: 11.5px; font-weight: 600;
+    color: var(--text-2); background: var(--surface-2); border: 1px solid var(--border);
+    transition: all .15s;
+  }
+  .filter-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .filter-chip.active { background: var(--primary-soft); border-color: transparent; color: var(--primary); }
+  .filter-chip .c { font-size: 10.5px; opacity: .75; margin-left: 4px; }
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 12px 0 4px; }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border); border-radius: 12px;
+    padding: 9px 10px;
+  }
+  .kpi .k-label { font-size: 10px; font-weight: 600; color: var(--text-3); text-transform: uppercase; letter-spacing: .4px; }
+  .kpi .k-val { font-size: 19px; font-weight: 800; margin-top: 2px; font-family: 'Plus Jakarta Sans'; }
+  .kpi.sos .k-val { color: var(--rose); }
+  .kpi.live .k-val { color: var(--green); }
+  .queue-list { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 8px 8px; }
+  .queue-list::-webkit-scrollbar, .chat-scroll::-webkit-scrollbar, .copilot-scroll::-webkit-scrollbar { width: 6px; }
+  .queue-list::-webkit-scrollbar-thumb, .chat-scroll::-webkit-scrollbar-thumb, .copilot-scroll::-webkit-scrollbar-thumb { background: hsl(220 15% 85%); border-radius: 3px; }
+  .sla-section { margin-top: 10px; padding-top: 12px; border-top: 1px solid var(--border); }
+  .sla-section .sla-title { font-size: 10.5px; font-weight: 700; text-transform: uppercase; letter-spacing: .5px; color: var(--text-3); margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+  .sla-section .sla-title svg { width: 13px; height: 13px; }
+  .sla-row { display: flex; align-items: center; justify-content: space-between; font-size: 12px; padding: 6px 2px; }
+  .sla-row .l { color: var(--text-2); display: flex; align-items: center; gap: 7px; }
+  .sla-row .l .sw { width: 34px; height: 19px; border-radius: 999px; background: var(--primary); position: relative; }
+  .sla-row .l .sw::after { content: ''; position: absolute; top: 2px; right: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); }
+  .sla-row .v { font-weight: 700; font-size: 12.5px; }
+
+  .ticket-row {
+    display: flex; gap: 10px; padding: 10px 10px; border-radius: 11px; cursor: pointer;
+    border: 1px solid transparent; transition: all .15s; position: relative;
+  }
+  .ticket-row:hover { background: var(--surface-2); }
+  .ticket-row.active { background: var(--primary-soft); border-color: hsl(210 70% 48% / .25); }
+  .ticket-row .rail { width: 3px; align-self: stretch; border-radius: 2px; background: var(--slate-soft); }
+  .ticket-row .rail.sos { background: var(--rose); }
+  .ticket-row .rail.high { background: var(--amber); }
+  .ticket-row .rail.normal { background: var(--primary); }
+  .ticket-row .rail.low { background: var(--slate-soft); }
+  .ticket-row .ticon {
+    width: 32px; height: 32px; border-radius: 9px; flex-shrink: 0; display: grid; place-items: center;
+    color: var(--primary); background: var(--primary-soft);
+  }
+  .ticket-row .ticon.cust { background: var(--green-soft); color: var(--green); }
+  .ticket-row .ticon svg { width: 16px; height: 16px; }
+  .ticket-row .tmain { flex: 1; min-width: 0; }
+  .ticket-row .ttop { display: flex; align-items: center; gap: 6px; }
+  .ticket-row .tsubj { font-size: 13px; font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .ticket-row .tbadge {
+    font-size: 9.5px; font-weight: 800; padding: 2px 6px; border-radius: 5px; flex-shrink: 0;
+    background: var(--surface-2); color: var(--text-2); text-transform: uppercase; letter-spacing: .3px;
+  }
+  .ticket-row .tbadge.new { background: var(--rose); color: #fff; animation: pulse 2s ease-in-out infinite; }
+  .ticket-row .tbadge.inprogress { background: var(--amber-soft); color: var(--amber); }
+  .ticket-row .tbadge.resolved { background: var(--green-soft); color: var(--green); }
+  .ticket-row .tmeta { display: flex; align-items: center; gap: 6px; margin-top: 3px; font-size: 11px; color: var(--text-3); }
+  .ticket-row .tmeta .role { font-weight: 700; color: var(--text-2); }
+  .ticket-row .tmeta .sepdot { width: 3px; height: 3px; border-radius: 50%; background: var(--border); }
+  .ticket-row .age { margin-left: auto; font-weight: 700; font-size: 10.5px; color: var(--rose); }
+
+  /* ---- Center workspace ---- */
+  .workspace { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
+  .ticket-header {
+    flex-shrink: 0; background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 10px 16px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .ticket-header .row1 { display: flex; align-items: center; gap: 10px; }
+  .back-btn {
+    width: 30px; height: 30px; border-radius: 8px; display: grid; place-items: center;
+    color: var(--text-2); border: 1px solid var(--border); transition: all .15s;
+  }
+  .back-btn:hover { background: var(--surface-2); color: var(--text); }
+  .th-avatar {
+    width: 38px; height: 38px; border-radius: 11px; display: grid; place-items: center; flex-shrink: 0;
+    background: var(--primary-soft); color: var(--primary);
+  }
+  .th-avatar svg { width: 19px; height: 19px; }
+  .th-title { min-width: 0; }
+  .th-title .subject { font-size: 14.5px; font-weight: 800; letter-spacing: -.2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .th-title .meta { font-size: 11.5px; color: var(--text-3); margin-top: 1px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .th-title .meta .ticketno { font-weight: 700; color: var(--text-2); }
+  .th-badges { display: flex; gap: 6px; margin-left: 10px; }
+  .pill {
+    display: inline-flex; align-items: center; gap: 5px; padding: 4px 9px; border-radius: 999px;
+    font-size: 10.5px; font-weight: 800; letter-spacing: .3px; text-transform: uppercase;
+  }
+  .pill.sos { background: var(--rose); color: #fff; }
+  .pill.sos-soft { background: var(--rose-soft); color: var(--rose); }
+  .pill.new { background: var(--rose); color: #fff; animation: pulse 2s ease-in-out infinite; }
+  .pill.primary-soft { background: var(--primary-soft); color: var(--primary); }
+  .pill.amber-soft { background: var(--amber-soft); color: var(--amber); }
+  .th-right { margin-left: auto; display: flex; align-items: center; gap: 8px; }
+  .age-chip { display: flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 600; color: var(--text-3); padding: 5px 9px; border: 1px solid var(--border); border-radius: 9px; }
+  .age-chip svg { width: 13px; height: 13px; }
+  .copilot-toggle {
+    width: 34px; height: 34px; border-radius: 9px; display: grid; place-items: center;
+    color: var(--text-2); border: 1px solid var(--border); transition: all .15s; position: relative;
+  }
+  .copilot-toggle:hover { border-color: var(--primary); color: var(--primary); }
+  .copilot-toggle.on { background: linear-gradient(135deg, var(--primary), #7c3aed); color: #fff; border-color: transparent; box-shadow: 0 4px 12px hsl(210 70% 48% / .35); }
+  .copilot-toggle svg { width: 16px; height: 16px; }
+  .row2 { display: flex; align-items: center; gap: 8px; }
+  .field-group { display: flex; align-items: center; gap: 8px; }
+  .field-group .fg-label { font-size: 11px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .4px; }
+  .select {
+    display: inline-flex; align-items: center; gap: 8px; height: 32px; padding: 0 10px;
+    border-radius: 9px; border: 1px solid var(--border); background: var(--surface);
+    font-size: 12.5px; font-weight: 600; color: var(--text); transition: all .15s;
+  }
+  .select:hover { border-color: var(--primary); }
+  .select svg { width: 13px; height: 13px; color: var(--text-3); }
+  .status-btns { display: flex; gap: 6px; margin-left: 4px; }
+  .status-btn {
+    height: 32px; padding: 0 13px; border-radius: 9px; font-size: 12.5px; font-weight: 700;
+    border: 1px solid var(--border); color: var(--text-2); background: var(--surface); transition: all .15s;
+  }
+  .status-btn:hover { border-color: var(--primary); color: var(--primary); }
+  .status-btn.active { border-color: transparent; color: #fff; }
+  .status-btn.active.progress { background: var(--amber); }
+  .status-btn.active.resolve { background: var(--green); }
+  .status-btn svg { width: 13px; height: 13px; vertical-align: -2px; margin-right: 5px; }
+  .row2-right { margin-left: auto; display: flex; gap: 8px; align-items: center; }
+  .btn-ghost {
+    height: 32px; padding: 0 13px; border-radius: 9px; font-size: 12.5px; font-weight: 700;
+    color: var(--text-2); border: 1px solid var(--border); transition: all .15s;
+  }
+  .btn-ghost:hover { background: var(--surface-2); color: var(--text); }
+  .btn-resolve {
+    height: 32px; padding: 0 14px; border-radius: 9px; font-size: 12.5px; font-weight: 800; color: #fff;
+    background: linear-gradient(135deg, var(--green), hsl(152 60% 32%));
+    box-shadow: 0 4px 12px hsl(152 60% 40% / .3); transition: all .15s;
+  }
+  .btn-resolve:hover { filter: brightness(1.06); }
+
+  .ws-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px 16px; display: flex; flex-direction: column; gap: 14px; }
+  .ws-grid { display: grid; grid-template-columns: 1fr 340px; gap: 14px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    box-shadow: var(--shadow-sm);
+  }
+  .card-pad { padding: 14px; }
+  .card-head { display: flex; align-items: center; gap: 8px; padding: 12px 14px; border-bottom: 1px solid var(--border); }
+  .card-head .ch-icon { width: 26px; height: 26px; border-radius: 8px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); }
+  .card-head .ch-icon svg { width: 14px; height: 14px; }
+  .card-head h3 { font-size: 13px; font-weight: 800; font-family: 'Plus Jakarta Sans'; }
+  .card-head .ch-right { margin-left: auto; font-size: 11px; color: var(--text-3); font-weight: 600; }
+  .detail-text { font-size: 13px; line-height: 1.6; color: var(--text-2); }
+  .detail-text b { color: var(--text); font-weight: 700; }
+  .info-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px 12px; }
+  .info-item .i-label { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .4px; }
+  .info-item .i-val { font-size: 13px; font-weight: 600; margin-top: 2px; }
+  .info-item .i-val .tag { display: inline-block; padding: 1px 7px; border-radius: 6px; font-size: 10.5px; font-weight: 700; background: var(--green-soft); color: var(--green); }
+  .notes-empty {
+    border: 1.5px dashed var(--border); border-radius: 10px; padding: 12px; text-align: center;
+    font-size: 12px; color: var(--text-3); background: var(--surface-2);
+  }
+
+  /* Driver 360 */
+  .driver-head { display: flex; align-items: center; gap: 11px; }
+  .driver-avatar {
+    width: 42px; height: 42px; border-radius: 12px; background: linear-gradient(135deg, var(--amber), hsl(38 92% 38%));
+    display: grid; place-items: center; font-weight: 800; font-size: 15px; color: #fff;
+  }
+  .driver-head .dname { font-size: 14px; font-weight: 800; }
+  .driver-head .dsub { font-size: 11.5px; color: var(--text-3); display: flex; align-items: center; gap: 5px; }
+  .online-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--green); display: inline-block; animation: pulse 1.8s ease-in-out infinite; }
+  .rating-chip { display: inline-flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 800; color: hsl(38 80% 35%); }
+  .rating-chip svg { width: 13px; height: 13px; fill: var(--amber); color: var(--amber); }
+  .d360-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+  .d360-item { background: var(--surface-2); border-radius: 10px; padding: 9px 10px; }
+  .d360-item .i-label { font-size: 9.5px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .4px; display: flex; align-items: center; gap: 5px; }
+  .d360-item .i-label svg { width: 12px; height: 12px; }
+  .d360-item .i-val { font-size: 13px; font-weight: 700; margin-top: 3px; }
+
+  /* Chat */
+  .chat-card { flex: 1; display: flex; flex-direction: column; min-height: 320px; }
+  .chat-head { display: flex; align-items: center; gap: 10px; padding: 10px 14px; border-bottom: 1px solid var(--border); }
+  .chat-head .ch-avatar { width: 28px; height: 28px; border-radius: 50%; background: var(--green-soft); color: var(--green); display: grid; place-items: center; font-weight: 800; font-size: 11px; }
+  .chat-head .ch-name { font-size: 13px; font-weight: 800; }
+  .chat-head .ch-sub { font-size: 10.5px; color: var(--text-3); }
+  .sla-timer {
+    display: flex; align-items: center; gap: 7px; padding: 5px 10px; border-radius: 999px;
+    background: var(--green-soft); color: var(--green); font-size: 11px; font-weight: 800; margin-left: auto;
+  }
+  .sla-timer.warn { background: var(--amber-soft); color: var(--amber); }
+  .sla-timer.crit { background: var(--rose-soft); color: var(--rose); }
+  .sla-timer svg { width: 12px; height: 12px; }
+  .chat-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 14px; display: flex; flex-direction: column; gap: 12px; background: var(--surface-2); }
+  .bubble { max-width: 74%; padding: 9px 12px; border-radius: 13px; font-size: 13px; line-height: 1.5; position: relative; }
+  .bubble .btime { font-size: 10px; opacity: .6; margin-top: 4px; }
+  .bubble.in { align-self: flex-start; background: var(--surface); border: 1px solid var(--border); border-bottom-left-radius: 4px; color: var(--text); }
+  .bubble.out { align-self: flex-end; background: var(--primary); color: #fff; border-bottom-right-radius: 4px; }
+  .bubble .bname { font-size: 10px; font-weight: 800; text-transform: uppercase; letter-spacing: .4px; opacity: .75; margin-bottom: 2px; }
+  .ai-draft {
+    align-self: flex-start; width: 84%; border-radius: 13px; border: 1.5px solid hsl(210 70% 48% / .4);
+    background: hsl(210 80% 96%); overflow: hidden;
+  }
+  .ai-draft .ai-head { display: flex; align-items: center; gap: 6px; padding: 7px 11px; background: hsl(210 70% 48% / .08); color: var(--primary); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+  .ai-draft .ai-head svg { width: 12px; height: 12px; }
+  .ai-draft .ai-body { padding: 9px 11px; font-size: 13px; color: var(--text-2); line-height: 1.5; }
+  .ai-draft .ai-actions { display: flex; gap: 7px; padding: 8px 11px; border-top: 1px solid hsl(210 70% 48% / .15); }
+  .ai-chip { display: inline-flex; align-items: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 4px 9px; border-radius: 7px; background: var(--surface); border: 1px solid var(--border); color: var(--text-2); transition: all .15s; }
+  .ai-chip:hover { border-color: var(--primary); color: var(--primary); }
+  .ai-chip.send { background: var(--primary); border-color: transparent; color: #fff; }
+  .ai-chip svg { width: 11px; height: 11px; }
+  .day-sep { display: flex; align-items: center; gap: 10px; margin: 2px 0; }
+  .day-sep::before, .day-sep::after { content: ''; flex: 1; height: 1px; background: var(--border); }
+  .day-sep span { font-size: 10px; font-weight: 700; color: var(--text-3); text-transform: uppercase; letter-spacing: .5px; }
+  .composer { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--border); background: var(--surface); }
+  .composer input {
+    flex: 1; height: 38px; border-radius: 10px; border: 1px solid var(--border); padding: 0 12px;
+    font-size: 13px; outline: none; transition: all .15s; color: var(--text);
+  }
+  .composer input:focus { border-color: var(--primary); box-shadow: var(--ring); }
+  .composer input::placeholder { color: var(--text-3); }
+  .composer .send-btn {
+    width: 38px; height: 38px; border-radius: 10px; display: grid; place-items: center;
+    background: var(--primary); color: #fff; transition: all .15s; box-shadow: 0 4px 10px hsl(210 70% 48% / .3);
+  }
+  .composer .send-btn:hover { background: var(--primary-600); }
+  .composer .send-btn svg { width: 16px; height: 16px; }
+
+  /* ---- Right copilot ---- */
+  .copilot {
+    width: 352px; flex-shrink: 0; border-left: 1px solid var(--border); background: var(--surface);
+    display: flex; flex-direction: column; min-height: 0; transition: margin .2s ease;
+  }
+  .copilot.hidden { margin-left: -352px; border-left-width: 0; }
+  .copilot-grad {
+    flex-shrink: 0; padding: 13px 14px; color: #fff; position: relative; overflow: hidden;
+    background: linear-gradient(135deg, hsl(210 70% 45%), #7c3aed 70%, #9333ea);
+  }
+  .copilot-grad::after {
+    content: ''; position: absolute; inset: 0; opacity: .25;
+    background-image: radial-gradient(circle at 85% 15%, rgba(255,255,255,.4), transparent 45%);
+  }
+  .copilot-grad .cp-top { display: flex; align-items: center; gap: 9px; position: relative; z-index: 1; }
+  .cp-logo { width: 30px; height: 30px; border-radius: 9px; background: rgba(255,255,255,.16); display: grid; place-items: center; backdrop-filter: blur(4px); }
+  .cp-logo svg { width: 16px; height: 16px; }
+  .cp-title { font-size: 13.5px; font-weight: 800; font-family: 'Plus Jakarta Sans'; }
+  .cp-sub { font-size: 10.5px; opacity: .8; display: flex; align-items: center; gap: 5px; margin-top: 1px; }
+  .cp-live { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: #fff; animation: pulse 1.8s ease-in-out infinite; }
+  .cp-close { margin-left: auto; width: 26px; height: 26px; border-radius: 7px; display: grid; place-items: center; color: rgba(255,255,255,.85); transition: background .15s; position: relative; z-index: 1; }
+  .cp-close:hover { background: rgba(255,255,255,.15); }
+  .cp-close svg { width: 14px; height: 14px; }
+  .cp-ticket { margin-top: 8px; font-size: 11px; font-weight: 700; background: rgba(255,255,255,.12); border-radius: 8px; padding: 5px 9px; display: inline-flex; align-items: center; gap: 6px; position: relative; z-index: 1; }
+  .cp-tabs { display: flex; gap: 4px; padding: 8px 10px 0; flex-shrink: 0; border-bottom: 1px solid var(--border); }
+  .cp-tab {
+    flex: 1; display: flex; align-items: center; justify-content: center; gap: 6px; height: 34px;
+    border-radius: 9px 9px 0 0; font-size: 12.5px; font-weight: 700; color: var(--text-3);
+    border-bottom: 2px solid transparent; transition: all .15s;
+  }
+  .cp-tab svg { width: 14px; height: 14px; }
+  .cp-tab:hover { color: var(--text-2); }
+  .cp-tab.active { color: var(--primary); border-bottom-color: var(--primary); background: hsl(210 70% 48% / .05); }
+  .copilot-scroll { flex: 1; min-height: 0; overflow-y: auto; padding: 12px 12px 8px; }
+  .quick-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .qa {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 3px; text-align: left;
+    padding: 11px 12px; border-radius: 11px; border: 1px solid var(--border); background: var(--surface);
+    transition: all .15s; position: relative;
+  }
+  .qa:hover { border-color: var(--primary); box-shadow: var(--shadow); transform: translateY(-1px); }
+  .qa .qa-icon { width: 24px; height: 24px; border-radius: 7px; display: grid; place-items: center; background: var(--primary-soft); color: var(--primary); margin-bottom: 2px; }
+  .qa .qa-icon svg { width: 13px; height: 13px; }
+  .qa .qa-label { font-size: 11.5px; font-weight: 800; font-family: 'Plus Jakarta Sans'; }
+  .qa .qa-hint { font-size: 10px; color: var(--text-3); line-height: 1.3; }
+  .qa.qa-accent .qa-icon { background: var(--accent-soft); color: var(--accent); }
+  .qa .qa-shortcut { position: absolute; top: 8px; right: 9px; font-size: 9px; font-weight: 800; color: var(--text-3); background: var(--surface-2); padding: 2px 5px; border-radius: 5px; }
+  .prompt-box { margin-top: 12px; }
+  .prompt-box .pb-label { font-size: 10.5px; font-weight: 800; color: var(--text-2); text-transform: uppercase; letter-spacing: .5px; margin-bottom: 6px; display: flex; align-items: center; gap: 6px; }
+  .prompt-box .pb-label svg { width: 12px; height: 12px; color: var(--primary); }
+  .prompt-box textarea {
+    width: 100%; min-height: 74px; resize: none; border-radius: 11px; border: 1px solid var(--border);
+    padding: 10px 11px; font-size: 12.5px; font-family: inherit; outline: none; color: var(--text);
+    background: var(--surface); transition: all .15s;
+  }
+  .prompt-box textarea:focus { border-color: var(--primary); box-shadow: var(--ring); }
+  .prompt-box textarea::placeholder { color: var(--text-3); }
+  .prompt-run { margin-top: 8px; width: 100%; height: 34px; border-radius: 9px; background: var(--primary); color: #fff; font-size: 12.5px; font-weight: 800; display: flex; align-items: center; justify-content: center; gap: 7px; box-shadow: 0 4px 12px hsl(210 70% 48% / .28); transition: all .15s; }
+  .prompt-run:hover { background: var(--primary-600); }
+  .prompt-run svg { width: 14px; height: 14px; }
+
+  .ai-result { margin-top: 12px; border: 1px solid hsl(210 70% 48% / .3); border-radius: 12px; overflow: hidden; background: hsl(210 80% 97%); }
+  .ai-result .ar-head { display: flex; align-items: center; gap: 7px; padding: 8px 11px; background: hsl(210 70% 48% / .1); color: var(--primary); font-size: 10.5px; font-weight: 800; text-transform: uppercase; letter-spacing: .5px; }
+  .ai-result .ar-head svg { width: 12px; height: 12px; }
+  .ai-result .ar-head .ar-time { margin-left: auto; text-transform: none; font-weight: 600; letter-spacing: 0; }
+  .ai-result .ar-body { padding: 10px 12px; font-size: 12.5px; color: var(--text-2); line-height: 1.55; }
+  .triage-chips { display: flex; flex-wrap: wrap; gap: 6px; padding: 0 12px 10px; }
+  .triage { display: inline-flex; align-items: center; gap: 5px; font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 999px; }
+  .triage .tdot { width: 6px; height: 6px; border-radius: 50%; }
+  .triage.t-pri { background: var(--rose-soft); color: var(--rose); } .triage.t-pri .tdot { background: var(--rose); }
+  .triage.t-status { background: var(--amber-soft); color: var(--amber); } .triage.t-status .tdot { background: var(--amber); }
+  .triage.t-agent { background: var(--primary-soft); color: var(--primary); } .triage.t-agent .tdot { background: var(--primary); }
+  .triage.t-est { background: var(--green-soft); color: var(--green); } .triage.t-est .tdot { background: var(--green); }
+  .ar-actions { display: flex; gap: 6px; padding: 9px 12px; border-top: 1px solid hsl(210 70% 48% / .15); }
+  .ar-action { flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 5px; font-size: 11px; font-weight: 700; padding: 6px 8px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); color: var(--text-2); transition: all .15s; }
+  .ar-action:hover { border-color: var(--primary); color: var(--primary); }
+  .ar-action.primary { background: var(--primary); border-color: transparent; color: #fff; }
+  .ar-action svg { width: 11px; height: 11px; }
+
+  .ai-empty { margin-top: 12px; border: 1.5px dashed var(--border); border-radius: 12px; padding: 18px 14px; text-align: center; }
+  .ai-empty .ae-icon { width: 34px; height: 34px; border-radius: 10px; background: var(--surface-2); display: grid; place-items: center; margin: 0 auto 8px; color: var(--text-3); }
+  .ai-empty .ae-icon svg { width: 16px; height: 16px; }
+  .ai-empty p { font-size: 12px; color: var(--text-3); line-height: 1.45; }
+
+  /* Actions tab */
+  .actions-list { display: flex; flex-direction: column; gap: 7px; }
+  .action-item {
+    display: flex; align-items: center; gap: 10px; padding: 10px 11px; border-radius: 11px;
+    border: 1px solid var(--border); background: var(--surface); text-align: left; transition: all .15s;
+  }
+  .action-item:hover { border-color: var(--primary); box-shadow: var(--shadow); transform: translateY(-1px); }
+  .action-item.danger:hover { border-color: var(--rose); }
+  .action-item .a-icon { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center; background: var(--surface-2); color: var(--text-2); flex-shrink: 0; }
+  .action-item .a-icon svg { width: 15px; height: 15px; }
+  .action-item.danger .a-icon { background: var(--rose-soft); color: var(--rose); }
+  .action-item.accent .a-icon { background: var(--amber-soft); color: var(--amber); }
+  .action-item .a-main { flex: 1; min-width: 0; }
+  .action-item .a-title { font-size: 12.5px; font-weight: 800; font-family: 'Plus Jakarta Sans'; }
+  .action-item .a-desc { font-size: 10.5px; color: var(--text-3); margin-top: 1px; line-height: 1.3; }
+  .action-item .a-chev { color: var(--text-3); }
+  .action-item .a-chev svg { width: 14px; height: 14px; }
+
+  .copilot-foot { flex-shrink: 0; border-top: 1px solid var(--border); padding: 10px 14px; background: var(--surface); }
+  .auto-row { display: flex; align-items: center; justify-content: space-between; }
+  .auto-row .auto-label { display: flex; align-items: center; gap: 7px; font-size: 11.5px; font-weight: 700; color: var(--text-2); }
+  .auto-row .auto-label svg { width: 13px; height: 13px; color: var(--primary); }
+  .auto-switch { width: 34px; height: 19px; border-radius: 999px; background: var(--primary); position: relative; cursor: pointer; transition: background .15s; }
+  .auto-switch::after { content: ''; position: absolute; top: 2px; right: 2px; width: 15px; height: 15px; border-radius: 50%; background: #fff; box-shadow: 0 1px 2px rgba(0,0,0,.2); transition: all .15s; }
+  .meter { margin-top: 10px; }
+  .meter .m-top { display: flex; justify-content: space-between; font-size: 10px; font-weight: 700; color: var(--text-3); }
+  .meter .m-top b { color: var(--text-2); }
+  .meter .m-bar { height: 5px; border-radius: 999px; background: var(--surface-2); margin-top: 5px; overflow: hidden; }
+  .meter .m-fill { height: 100%; border-radius: 999px; background: linear-gradient(90deg, var(--primary), #7c3aed); width: 5%; }
+
+  /* Toggle for demo strip */
+  .demo-bar {
+    position: fixed; left: 50%; transform: translateX(-50%); bottom: 16px; z-index: 50;
+    background: hsl(220 30% 12%); color: #e5e7eb; border-radius: 12px; padding: 9px 14px;
+    display: flex; align-items: center; gap: 12px; font-size: 12px; box-shadow: 0 12px 40px -12px rgba(0,0,0,.5);
+    opacity: .96;
+  }
+  .demo-bar b { color: #fff; }
+  .demo-bar .db-btns { display: flex; gap: 6px; }
+  .demo-bar button {
+    padding: 5px 10px; border-radius: 7px; background: rgba(255,255,255,.12); color: #fff;
+    font-size: 11px; font-weight: 700; transition: background .15s;
+  }
+  .demo-bar button:hover { background: rgba(255,255,255,.22); }
+  .demo-bar button.on { background: var(--primary); }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <!-- ================= HEADER ================= -->
+  <header class="topbar">
+    <button class="icon-btn" title="Μενού">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="4" x2="20" y1="6" y2="6"/><line x1="4" x2="20" y1="12" y2="12"/><line x1="4" x2="20" y1="18" y2="18"/></svg>
+    </button>
+    <div class="brand">
+      <div class="brand-logo">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+      </div>
+      <div>
+        <div class="brand-name">Fresh Delivery</div>
+        <div class="brand-sub">Κέντρο Υποστήριξης</div>
+      </div>
+    </div>
+    <div class="sep"></div>
+    <nav class="nav-tabs">
+      <button class="nav-tab active">Tickets</button>
+      <button class="nav-tab">Μηνύματα <span class="dot"></span></button>
+      <button class="nav-tab">Ομάδα</button>
+      <button class="nav-tab">Control</button>
+    </nav>
+    <div class="topbar-right">
+      <span class="live-pill"><span class="pulse"></span>Live</span>
+      <span class="agents-chip">
+        <span class="stack"><span>Γ</span><span>Μ</span><span>Κ</span></span>
+        <span>2/3 online</span>
+      </span>
+      <button class="icon-btn" title="Ειδοποιήσεις">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+      </button>
+      <div class="sep" style="height:20px;"></div>
+      <button class="profile">
+        <span class="avatar">ΕΠ</span>
+        <span class="meta"><b>Ελένη Παππά</b><span>Αντιπρόσωπος εξυπηρέτησης</span></span>
+      </button>
+      <button class="icon-btn" title="Αποσύνδεση">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" x2="9" y1="12" y2="12"/></svg>
+      </button>
+    </div>
+  </header>
+
+  <!-- ================= BODY ================= -->
+  <div class="body">
+
+    <!-- ---------- LEFT : QUEUE ---------- -->
+    <aside class="queue">
+      <div class="queue-top">
+        <div class="queue-actions">
+          <div class="search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+            <input placeholder="Αναζήτηση tickets, πελάτες, οδηγοί..." />
+          </div>
+          <button class="btn-new">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M5 12h14"/><path d="M12 5v14"/></svg>
+            Νέο
+          </button>
+        </div>
+        <div class="filters">
+          <button class="filter-chip active" data-filter="all">Όλα <span class="c">5</span></button>
+          <button class="filter-chip" data-filter="open">Ενεργά <span class="c">4</span></button>
+          <button class="filter-chip" data-filter="sos">SOS <span class="c">2</span></button>
+          <button class="filter-chip" data-filter="today">Σημερινά <span class="c">5</span></button>
+        </div>
+        <div class="kpis">
+          <div class="kpi"><div class="k-label">Ενεργά</div><div class="k-val">4</div></div>
+          <div class="kpi sos"><div class="k-label">SOS</div><div class="k-val">2</div></div>
+          <div class="kpi live"><div class="k-label">Agents</div><div class="k-val">3</div></div>
+        </div>
+      </div>
+
+      <div class="queue-list">
+        <div class="ticket-row active" data-ticket="t1">
+          <div class="rail sos"></div>
+          <div class="ticon cust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div class="tmain">
+            <div class="ttop"><span class="tsubj">Δεν έφτασε η παραγγελία #2041</span><span class="tbadge new">Νέο</span></div>
+            <div class="tmeta"><span class="role">Πελάτης</span><span class="sepdot"></span>Κατερίνα Παπά<span class="sepdot"></span>#FD-2041<span class="age">5′</span></div>
+          </div>
+        </div>
+
+        <div class="ticket-row" data-ticket="t2">
+          <div class="rail high"></div>
+          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/></svg></div>
+          <div class="tmain">
+            <div class="ttop"><span class="tsubj">Ακύρωση παραγγελίας</span><span class="tbadge inprogress">Σε εξέλιξη</span></div>
+            <div class="tmeta"><span class="role">Πελάτης</span><span class="sepdot"></span>Γιώργος Αντωνίου<span class="sepdot"></span>#FD-2039<span class="age">12′</span></div>
+          </div>
+        </div>
+
+        <div class="ticket-row" data-ticket="t3">
+          <div class="rail normal"></div>
+          <div class="ticon cust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></div>
+          <div class="tmain">
+            <div class="ttop"><span class="tsubj">Αλλαγή τρόπου πληρωμής</span><span class="tbadge inprogress">Σε εξέλιξη</span></div>
+            <div class="tmeta"><span class="role">Πελάτης</span><span class="sepdot"></span>Μαρία Κωνσταντίνου<span class="sepdot"></span>#FD-2035<span class="age">38′</span></div>
+          </div>
+        </div>
+
+        <div class="ticket-row" data-ticket="t4">
+          <div class="rail high"></div>
+          <div class="ticon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+          <div class="tmain">
+            <div class="ttop"><span class="tsubj">Καθυστέρηση παράδοσης</span><span class="tbadge inprogress">Σε εξέλιξη</span></div>
+            <div class="tmeta"><span class="role">Οδηγός</span><span class="sepdot"></span>Νίκος Παππάς<span class="sepdot"></span>#FD-2032<span class="age" style="color:var(--amber);">1 ω</span></div>
+          </div>
+        </div>
+
+        <div class="ticket-row" data-ticket="t5">
+          <div class="rail low"></div>
+          <div class="ticon cust"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg></div>
+          <div class="tmain">
+            <div class="ttop"><span class="tsubj">Πρόβλημα με έκπτωση</span><span class="tbadge resolved">Επίλυση</span></div>
+            <div class="tmeta"><span class="role">Πελάτης</span><span class="sepdot"></span>Ελένη Βλάχου<span class="sepdot"></span>#FD-2028<span class="age" style="color:var(--text-3);">2 ω</span></div>
+          </div>
+        </div>
+
+        <!-- SLA settings -->
+        <div class="sla-section">
+          <div class="sla-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            Ρυθμίσεις SLA
+          </div>
+          <div class="sla-row"><span class="l"><span class="sw"></span>Ενεργό SLA</span><span class="v">30 λεπτά</span></div>
+          <div class="sla-row"><span class="l">Μερίδιο SOS απαντήσεων</span><span class="v">98%</span></div>
+          <div class="sla-row"><span class="l">Μέσος χρόνος απάντησης</span><span class="v">2′ 40″</span></div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- ---------- CENTER : WORKSPACE ---------- -->
+    <main class="workspace">
+      <div class="ticket-header">
+        <div class="row1">
+          <button class="back-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+          <div class="th-avatar"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg></div>
+          <div class="th-title">
+            <div class="subject" id="th-subject">Δεν έφτασε η παραγγελία #2041</div>
+            <div class="meta">
+              <span class="ticketno mono" id="th-no">#FD-2041</span>
+              <span>·</span>
+              <span id="th-cust">Κατερίνα Παπά</span>
+              <span>·</span>
+              <span id="th-req">Πελάτης</span>
+              <span>·</span>
+              <span>Παραγγελία <b class="mono" id="th-order">#1049</b></span>
+              <span>·</span>
+              <span>2 αντικείμενα · 6,8 km</span>
+            </div>
+          </div>
+          <div class="th-badges">
+            <span class="pill sos">SOS</span>
+            <span class="pill new" id="th-status">Νέο</span>
+          </div>
+          <div class="th-right">
+            <span class="age-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span class="mono" id="th-age">5′</span></span>
+            <button class="copilot-toggle on" id="copilot-toggle-btn" title="ΑΙ Copilot">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 8 12.5 3 12l4.5 9.5L12 14l4.5 7.5L21 12l-5 .5Z"/><path d="M4 4l2 2"/><path d="M20 4l-2 2"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="row2">
+          <div class="field-group">
+            <span class="fg-label">Προτεραιότητα</span>
+            <span class="select">
+              <span id="sel-prio">SOS</span>
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </span>
+          </div>
+          <div class="status-btns">
+            <button class="status-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg>Αναμένεται</button>
+            <button class="status-btn active progress" id="sb-progress"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><polygon points="5 3 19 12 5 21 5 3"/></svg>Σε εξέλιξη</button>
+            <button class="status-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>Επίλυση</button>
+          </div>
+          <div class="row2-right">
+            <button class="btn-ghost">Κλήση</button>
+            <button class="btn-resolve">Επίλυση ticket</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="ws-scroll">
+        <div class="ws-grid">
+          <!-- Detail card -->
+          <div class="card">
+            <div class="card-head">
+              <div class="ch-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></div>
+              <h3>Περιγραφή προβλήματος</h3>
+              <span class="ch-right">Τύπος: <b>Παράδοση</b></span>
+            </div>
+            <div class="card-pad">
+              <p class="detail-text">
+                Η πελάτισσα δηλώνει ότι <b>δεν έλαβε ακόμα την παραγγελία της</b> αν και ο εφαρμογή εμφανίζει
+                την κατάσταση <b>«Σε παράδοση»</b> για περισσότερο από 40 λεπτά. Ο οδηγός επιβεβαίωσε ότι είναι
+                κοντά στο σημείο παράδοσης αλλά αντιμετωπίζει <b>κυκλοφοριακή συμφόρηση</b> λόγω κλειστής λεωφόρου.
+                Ζητά ενημέρωση για τον εκτιμώμενο χρόνο άφιξης (ETA).
+              </p>
+              <div style="height:12px;"></div>
+              <div class="info-grid">
+                <div class="info-item"><div class="i-label">Μέθοδος πληρωμής</div><div class="i-val">Αντικαταβολή</div></div>
+                <div class="info-item"><div class="i-label">Διεύθυνση παράδοσης</div><div class="i-val">Αριστοτέλους 12, Αθήνα</div></div>
+                <div class="info-item"><div class="i-label">Κατάστημα</div><div class="i-val">Μαμά Γης — Κέντρο</div></div>
+                <div class="info-item"><div class="i-label">Εκτιμώμενο κόστος</div><div class="i-val">14,90 €</div></div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Driver 360 card -->
+          <div class="card">
+            <div class="card-head">
+              <div class="ch-icon" style="background:var(--amber-soft);color:var(--amber);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg></div>
+              <h3>Προφίλ Οδηγού · 360°</h3>
+              <span class="ch-right"><span class="online-dot"></span> Σε σύνδεση</span>
+            </div>
+            <div class="card-pad">
+              <div class="driver-head">
+                <div class="driver-avatar">ΓΜ</div>
+                <div>
+                  <div class="dname">Γιώργος Μάκος</div>
+                  <div class="dsub"><span class="rating-chip"><svg viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="1"><path d="M12 2l2.9 6.26 6.6.7-4.9 4.5 1.3 6.54L12 16.77 6.1 20l1.3-6.54-4.9-4.5 6.6-.7z"/></svg>4,8</span>· <span>698 123 4567</span> · <span>Διαθέσιμος</span></div>
+                </div>
+              </div>
+              <div class="d360-grid">
+                <div class="d360-item"><div class="i-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>Χρόνος στο δίκτυο</div><div class="i-val">3 έτη</div></div>
+                <div class="d360-item"><div class="i-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/></svg>Παραδόσεις</div><div class="i-val">1.204</div></div>
+                <div class="d360-item"><div class="i-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/></svg>Ποσοστό επιτυχίας</div><div class="i-val">99,2%</div></div>
+                <div class="d360-item"><div class="i-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/></svg>Αναφορές</div><div class="i-val">0</div></div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Chat -->
+        <div class="card chat-card">
+          <div class="chat-head">
+            <div class="ch-avatar">ΚΠ</div>
+            <div>
+              <div class="ch-name">Κατερίνα Παπά</div>
+              <div class="ch-sub">Ανοιχτό από 5′</div>
+            </div>
+            <div class="sla-timer warn" id="sla-timer">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+              <span>SLA · 8:12</span>
+            </div>
+          </div>
+          <div class="chat-scroll" id="chat-scroll">
+            <div class="day-sep"><span>Σήμερα</span></div>
+            <div class="bubble in">
+              <div class="bname">Κατερίνα</div>
+              Γεια σας, η παραγγελία μου #1049 δεν έχει έρθει ακόμα. Λέει «Σε παράδοση» εδώ και 40 λεπτά. Μπορείτε να δείτε τι γίνεται;
+              <div class="btime">09:12</div>
+            </div>
+            <div class="ai-draft">
+              <div class="ai-head">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 8 12.5 3 12l4.5 9.5L12 14l4.5 7.5L21 12l-5 .5Z"/></svg>
+                Πρόταση AI · Triage
+              </div>
+              <div class="ai-body">
+                «Καλημέρα Κατερίνα, σας ευχαριστούμε που μας ενημερώσατε. Ο οδηγός σας είναι καθ' οδόν και
+                η παράδοση εκτιμάται σε <b>6-8 λεπτά</b> λόγω έντονης κυκλοφορίας. Θα σας ενημερώσουμε μόλις φτάσει.»
+              </div>
+              <div class="triage-chips" style="padding:0 11px 8px;">
+                <span class="triage t-status"><span class="tdot"></span>Καθυστέρηση</span>
+                <span class="triage t-pri"><span class="tdot"></span>Προτεραιότητα SOS</span>
+                <span class="triage t-est"><span class="tdot"></span>ETA ~7′</span>
+              </div>
+              <div class="ai-actions">
+                <button class="ai-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Αντιγραφή</button>
+                <button class="ai-chip"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Χρήση ως πρόχειρο</button>
+                <button class="ai-chip send"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Στείλε τώρα</button>
+              </div>
+            </div>
+            <div class="bubble out">
+              <div class="bname">Ελένη</div>
+              Ελέγχω άμεσα την κατάσταση της παραγγελίας σας. Μία στιγμή, παρακαλώ.
+              <div class="btime">09:13</div>
+            </div>
+            <div class="bubble in">
+              <div class="bname">Κατερίνα</div>
+              Ωραία, σας ευχαριστώ πολύ!
+              <div class="btime">09:14</div>
+            </div>
+          </div>
+          <div class="composer">
+            <input placeholder="Γράψε μήνυμα..." />
+            <button class="send-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></button>
+          </div>
+        </div>
+      </div>
+    </main>
+
+    <!-- ---------- RIGHT : AI COPILOT ---------- -->
+    <aside class="copilot" id="copilot">
+      <div class="copilot-grad">
+        <div class="cp-top">
+          <div class="cp-logo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 8 12.5 3 12l4.5 9.5L12 14l4.5 7.5L21 12l-5 .5Z"/></svg></div>
+          <div>
+            <div class="cp-title">AI Copilot</div>
+            <div class="cp-sub"><span class="cp-live"></span>Online · απαντά σε ~3s</div>
+          </div>
+          <button class="cp-close" id="copilot-close-btn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg></button>
+        </div>
+        <span class="cp-ticket"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="M3 9h18"/><path d="M9 21V9"/></svg>#FD-2041 · SOS</span>
+      </div>
+
+      <div class="cp-tabs">
+        <button class="cp-tab active" data-tab="ai">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 8 12.5 3 12l4.5 9.5L12 14l4.5 7.5L21 12l-5 .5Z"/></svg>AI
+        </button>
+        <button class="cp-tab" data-tab="actions">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>Ενέργειες
+        </button>
+      </div>
+
+      <div class="copilot-scroll">
+        <!-- AI tab -->
+        <div class="cp-pane" data-pane="ai">
+          <div class="quick-actions">
+            <button class="qa">
+              <span class="qa-shortcut">↵</span>
+              <span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+              <span class="qa-label">Πρόταση απάντησης</span>
+              <span class="qa-hint">Βάσει ιστορικού & SLA</span>
+            </button>
+            <button class="qa">
+              <span class="qa-shortcut">↵</span>
+              <span class="qa-icon" style="background:var(--green-soft);color:var(--green);"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg></span>
+              <span class="qa-label">Αυτόματη αποστολή</span>
+              <span class="qa-hint">Σύνταξη + αποστολή σε 1 κλικ</span>
+            </button>
+            <button class="qa">
+              <span class="qa-shortcut">↵</span>
+              <span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 2 4 8v11a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1V8l-5-6Z"/><path d="M4 8h16"/><path d="M9 12h6"/></svg></span>
+              <span class="qa-label">Σύνοψη ticket</span>
+              <span class="qa-hint">Συμπύκνωση σε 3 γραμμές</span>
+            </button>
+            <button class="qa qa-accent">
+              <span class="qa-shortcut">↵</span>
+              <span class="qa-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v4l3 2"/></svg></span>
+              <span class="qa-label">Triage</span>
+              <span class="qa-hint">Προτεραιότητα & εκτίμηση</span>
+            </button>
+          </div>
+
+          <div class="prompt-box">
+            <div class="pb-label">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2Z"/><path d="M20 9a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2Z"/><path d="M4 21a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2Z"/><path d="M20 21a2 2 0 0 1-2-2v-2a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2a2 2 0 0 1-2 2Z"/><circle cx="12" cy="12" r="3"/></svg>
+              Κάνε μια ερώτηση στον AI βοηθό
+            </div>
+            <textarea placeholder="π.χ. Ποιος είναι ο πιο κοντινός διαθέσιμος οδηγός για παράδοση στο Κουκάκι;"></textarea>
+            <button class="prompt-run">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 8 12.5 3 12l4.5 9.5L12 14l4.5 7.5L21 12l-5 .5Z"/></svg>
+              Ρώτησε το AI
+            </button>
+          </div>
+
+          <div class="ai-result">
+            <div class="ar-head">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 8 12.5 3 12l4.5 9.5L12 14l4.5 7.5L21 12l-5 .5Z"/></svg>
+              Αποτέλεσμα
+              <span class="ar-time">0.4s · gpt-4o-mini</span>
+            </div>
+            <div class="ar-body">
+              Ο <b>Γιώργος Μάκος</b> είναι ο πλησιέστερος διαθέσιμος οδηγός (1,2 km από το κατάστημα,
+              ETA 6′). Προτείνεται να μοιραστείτε το ζωντανό στίγμα με την πελάτισσα για μείωση της έντασης.
+            </div>
+            <div class="triage-chips">
+              <span class="triage t-agent"><span class="tdot"></span>Οδηγός: Γ. Μάκος</span>
+              <span class="triage t-est"><span class="tdot"></span>ETA 6′</span>
+              <span class="triage t-status"><span class="tdot"></span>Μοίρασμα στίγματος</span>
+            </div>
+            <div class="ar-actions">
+              <button class="ar-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="14" height="14" x="8" y="8" rx="2"/><path d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"/></svg>Αντιγραφή</button>
+              <button class="ar-action"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><path d="M14 2v6h6"/></svg>Πρόχειρο</button>
+              <button class="ar-action primary"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4Z"/><path d="M22 2 11 13"/></svg>Στείλε</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Actions tab -->
+        <div class="cp-pane" data-pane="actions" style="display:none;">
+          <div class="actions-list">
+            <button class="action-item">
+              <span class="a-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg></span>
+              <span class="a-main"><span class="a-title">Τοποθεσία οχήματος</span><span class="a-desc">Ζωντανό στίγμα οδηγού και ETA</span></span>
+              <span class="a-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+            </button>
+            <button class="action-item">
+              <span class="a-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></span>
+              <span class="a-main"><span class="a-title">Μήνυμα σε οδηγό</span><span class="a-desc">Άμεση ειδοποίηση στον Γιώργο Μάκο</span></span>
+              <span class="a-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+            </button>
+            <button class="action-item danger">
+              <span class="a-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="14" y="4" width="4" height="16" rx="1"/><rect x="6" y="4" width="4" height="16" rx="1"/></svg></span>
+              <span class="a-main"><span class="a-title">Αναστολή οδηγού</span><span class="a-desc">Παύση αναθέσεων με αιτιολογία</span></span>
+              <span class="a-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+            </button>
+            <button class="action-item">
+              <span class="a-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4"/><path d="M4 7h16"/><path d="m16 21 4-4-4-4"/><path d="M20 17H4"/></svg></span>
+              <span class="a-main"><span class="a-title">Αλλαγή οδηγού</span><span class="a-desc">Ανάθεση στον πλησιέστερο διαθέσιμο</span></span>
+              <span class="a-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+            </button>
+            <button class="action-item accent">
+              <span class="a-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/></svg></span>
+              <span class="a-main"><span class="a-title">Πίστωση</span><span class="a-desc">Επιστροφή ποσού ή έκπτωση πελάτη</span></span>
+              <span class="a-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+            </button>
+            <button class="action-item danger">
+              <span class="a-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><path d="M12 9v4"/><path d="M12 17h.01"/></svg></span>
+              <span class="a-main"><span class="a-title">Έκτακτο SOS</span><span class="a-desc">Κλιμάκωση σε όλη την ομάδα υποστήριξης</span></span>
+              <span class="a-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+            </button>
+            <button class="action-item">
+              <span class="a-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/><rect width="20" height="14" x="2" y="6" rx="2"/></svg></span>
+              <span class="a-main"><span class="a-title">Ακύρωση / Τροποποίηση</span><span class="a-desc">Διαχείριση της παραγγελίας #1049</span></span>
+              <span class="a-chev"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span>
+            </button>
+          </div>
+          <p style="font-size:10.5px;color:var(--text-3);margin-top:10px;line-height:1.5;padding:0 2px;">
+            Τα εργαλεία ενεργοποιούνται αυτόματα με βάση τον ρόλο που ζήτησε το ticket (πελάτης/οδηγός).
+          </p>
+        </div>
+      </div>
+
+      <div class="copilot-foot">
+        <div class="auto-row">
+          <span class="auto-label"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/></svg>Αυτόματη πρόταση</span>
+          <span class="auto-switch"></span>
+        </div>
+        <div class="meter">
+          <div class="m-top"><span>AI σήμερα</span><span><b class="mono">23</b> / 500 χρησιμοποιήσεις</span></div>
+          <div class="m-bar"><div class="m-fill"></div></div>
+        </div>
+      </div>
+    </aside>
+
+  </div>
+</div>
+
+<!-- ================= DEMO BAR ================= -->
+<div class="demo-bar">
+  <b>Προεπισκόπηση — Κέντρο Υποστήριξης</b>
+  <span>Κάνε κλικ σε ένα ticket για εναλλαγή</span>
+  <span class="db-btns">
+    <button id="db-copilot" class="on">Copilot</button>
+    <button id="db-sla">SLA 12:04</button>
+  </span>
+</div>
+
+<script>
+  const tickets = {
+    t1: {
+      subject: 'Δεν έφτασε η παραγγελία #2041', no: '#FD-2041', cust: 'Κατερίνα Παπά', req: 'Πελάτης',
+      order: '#1049', age: '5′', prio: 'SOS', status: 'Νέο', sla: 'warn', slaText: 'SLA · 8:12',
+      roleIcon: 'bag', driver: 'Γιώργος Μάκος', init: 'ΓΜ',
+      chat: [
+        { name: 'Κατερίνα', side: 'in', text: 'Γεια σας, η παραγγελία μου #1049 δεν έχει έρθει ακόμα. Λέει «Σε παράδοση» εδώ και 40 λεπτά. Μπορείτε να δείτε τι γίνεται;', time: '09:12' },
+        { name: 'Ελένη', side: 'out', text: 'Ελέγχω άμεσα την κατάσταση της παραγγελίας σας. Μία στιγμή, παρακαλώ.', time: '09:13' },
+        { name: 'Κατερίνα', side: 'in', text: 'Ωραία, σας ευχαριστώ πολύ!', time: '09:14' }
+      ]
+    },
+    t2: {
+      subject: 'Ακύρωση παραγγελίας', no: '#FD-2039', cust: 'Γιώργος Αντωνίου', req: 'Πελάτης',
+      order: '#1043', age: '12′', prio: 'Υψηλή', status: 'Σε εξέλιξη', sla: 'ok', slaText: 'SLA · 14:02',
+      roleIcon: 'spark', driver: 'Νίκος Παππάς', init: 'ΝΠ',
+      chat: [
+        { name: 'Γιώργος', side: 'in', text: 'Θέλω να ακυρώσω την παραγγελία, αλλάξαμε γνώμη.', time: '09:00' },
+        { name: 'Ελένη', side: 'out', text: 'Κατανοητό. Έλεγχος αν η παραγγελία βρίσκεται ήδη σε παράδοση...', time: '09:01' }
+      ]
+    },
+    t3: {
+      subject: 'Αλλαγή τρόπου πληρωμής', no: '#FD-2035', cust: 'Μαρία Κωνσταντίνου', req: 'Πελάτης',
+      order: '#1038', age: '38′', prio: 'Κανονική', status: 'Σε εξέλιξη', sla: 'ok', slaText: 'SLA · 22:18',
+      roleIcon: 'card', driver: 'Αλέξης Ρώμας', init: 'ΑΡ',
+      chat: [
+        { name: 'Μαρία', side: 'in', text: 'Μπορώ να πληρώσω με κάρτα αντί για αντικαταβολή;', time: '08:34' }
+      ]
+    },
+    t4: {
+      subject: 'Καθυστέρηση παράδοσης', no: '#FD-2032', cust: 'Νίκος Παππάς', req: 'Οδηγός',
+      order: '#1031', age: '1 ω', prio: 'Υψηλή', status: 'Σε εξέλιξη', sla: 'ok', slaText: 'SLA · 18:41',
+      roleIcon: 'bolt', driver: 'Νίκος Παππάς', init: 'ΝΠ',
+      chat: [
+        { name: 'Νίκος', side: 'in', text: 'Εγκλωβίστηκα στην κυκλοφορία, η παραγγελία θα καθυστερήσει ~15 λεπτά.', time: '08:10' },
+        { name: 'Ελένη', side: 'out', text: 'Ενημερώνω τον πελάτη για το νέο ETA. Ευχαριστούμε!', time: '08:11' }
+      ]
+    },
+    t5: {
+      subject: 'Πρόβλημα με έκπτωση', no: '#FD-2028', cust: 'Ελένη Βλάχου', req: 'Πελάτης',
+      order: '#1022', age: '2 ω', prio: 'Χαμηλή', status: 'Επίλυση', sla: 'ok', slaText: 'SLA · —',
+      roleIcon: 'shield', driver: 'Μαρία Κέλλυ', init: 'ΜΚ',
+      chat: [
+        { name: 'Ελένη', side: 'in', text: 'Δεν εφαρμόστηκε η έκπτωση 20% του κωδικού WELCOME.', time: '07:30' },
+        { name: 'Ελένη', side: 'out', text: 'Εφαρμόστηκε refund 3,00 € στην κάρτα σας. Λυπούμαστε για την ταλαιπωρία!', time: '07:45' }
+      ]
+    }
+  };
+
+  function roleIconSvg(kind) {
+    if (kind === 'bag') return '<path d="M6 2 3 6v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2V6l-3-4Z"/><path d="M3 6h18"/><path d="M16 10a4 4 0 0 1-8 0"/>';
+    if (kind === 'card') return '<rect width="20" height="14" x="2" y="5" rx="2"/><line x1="2" x2="22" y1="10" y2="10"/>';
+    if (kind === 'bolt') return '<path d="M13 2 3 14h9l-1 8 10-12h-9l1-8z"/>';
+    if (kind === 'shield') return '<path d="M20 13c0 5-3.5 7.5-7.66 8.95a1 1 0 0 1-.67-.01C7.5 20.5 4 18 4 13V6a1 1 0 0 1 1-1c2 0 4.5-1.2 6.24-2.72a1 1 0 0 1 1.52 0C14.51 3.81 17 5 19 5a1 1 0 0 1 1 1z"/>';
+    return '<path d="m12 3-1.9 5.8a2 2 0 0 1-1.3 1.3L3 12l5.8 1.9a2 2 0 0 1 1.3 1.3L12 21l1.9-5.8a2 2 0 0 1 1.3-1.3L21 12l-5.8-1.9a2 2 0 0 1-1.3-1.3Z"/>';
+  }
+
+  const rows = document.querySelectorAll('.ticket-row');
+  const scroll = document.getElementById('chat-scroll');
+
+  function selectTicket(id) {
+    const t = tickets[id];
+    rows.forEach(r => r.classList.toggle('active', r.dataset.ticket === id));
+    document.getElementById('th-subject').textContent = t.subject;
+    document.getElementById('th-no').textContent = t.no;
+    document.getElementById('th-cust').textContent = t.cust;
+    document.getElementById('th-req').textContent = t.req;
+    document.getElementById('th-order').textContent = t.order;
+    document.getElementById('th-age').textContent = t.age;
+    document.getElementById('sel-prio').textContent = t.prio;
+    const st = document.getElementById('th-status');
+    st.textContent = t.status;
+    st.className = 'pill ' + (t.status === 'Νέο' ? 'new' : t.status === 'Επίλυση' ? 'resolved' : 'amber-soft');
+    const sla = document.getElementById('sla-timer');
+    sla.className = 'sla-timer ' + t.sla;
+    sla.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg><span>' + t.slaText + '</span>';
+
+    scroll.innerHTML = '';
+    scroll.appendChild(Object.assign(document.createElement('div'), { className: 'day-sep' }));
+    scroll.lastChild.appendChild(Object.assign(document.createElement('span'), { textContent: 'Σήμερα' }));
+    t.chat.forEach(m => {
+      const b = document.createElement('div');
+      b.className = 'bubble ' + m.side;
+      b.innerHTML = '<div class="bname">' + m.name + '</div>' + m.text + '<div class="btime">' + m.time + '</div>';
+      scroll.appendChild(b);
+    });
+    scroll.scrollTop = scroll.scrollHeight;
+  }
+
+  rows.forEach(r => r.addEventListener('click', () => selectTicket(r.dataset.ticket)));
+
+  // Copilot toggle
+  const copilot = document.getElementById('copilot');
+  const cpToggleBtn = document.getElementById('copilot-toggle-btn');
+  const cpCloseBtn = document.getElementById('copilot-close-btn');
+  const dbCp = document.getElementById('db-copilot');
+  function setCopilot(on) {
+    copilot.classList.toggle('hidden', !on);
+    cpToggleBtn.classList.toggle('on', on);
+    dbCp.classList.toggle('on', on);
+    if (on) { copilot.style.marginLeft = ''; } else { copilot.style.marginLeft = ''; }
+  }
+  cpToggleBtn.addEventListener('click', () => setCopilot(copilot.classList.contains('hidden')));
+  cpCloseBtn.addEventListener('click', () => setCopilot(false));
+  dbCp.addEventListener('click', () => setCopilot(copilot.classList.contains('hidden')));
+
+  // Copilot tabs
+  const tabBtns = document.querySelectorAll('.cp-tab');
+  const panes = document.querySelectorAll('.cp-pane');
+  tabBtns.forEach(btn => btn.addEventListener('click', () => {
+    tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+    panes.forEach(p => p.style.display = (p.dataset.pane === btn.dataset.tab) ? '' : 'none');
+  }));
+
+  // Demo SLA states
+  const dbSla = document.getElementById('db-sla');
+  let slaIdx = 0;
+  dbSla.addEventListener('click', () => {
+    slaIdx = (slaIdx + 1) % 3;
+    const states = [
+      { label: 'SLA 12:04', cls: 'warn' },
+      { label: 'SLA 04:31', cls: 'crit' },
+      { label: 'SLA 22:10', cls: 'ok' }
+    ];
+    const s = states[slaIdx];
+    const sla = document.getElementById('sla-timer');
+    sla.className = 'sla-timer ' + s.cls;
+    sla.querySelector('span').textContent = s.label;
+    dbSla.textContent = 'SLA ' + s.label;
+  });
+
+  // Filter chips visual
+  document.querySelectorAll('.filter-chip').forEach(chip => chip.addEventListener('click', () => {
+    document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+  }));
+
+  // Status buttons visual
+  document.querySelectorAll('.status-btn').forEach(btn => btn.addEventListener('click', () => {
+    document.querySelectorAll('.status-btn').forEach(b => b.classList.remove('active', 'progress', 'resolve'));
+    btn.classList.add('active');
+    if (btn.textContent.includes('Εξέλιξη')) btn.classList.add('progress');
+    if (btn.textContent.includes('Επίλυση')) btn.classList.add('resolve');
+  }));
+
+  selectTicket('t1');
+</script>
+</body>
+</html>

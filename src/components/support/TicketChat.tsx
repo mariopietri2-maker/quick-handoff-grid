@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
 import { ChatComposer, type ComposerAttachment } from '@/components/chat/ChatComposer';
 import { ChatAttachment } from '@/components/chat/ChatAttachment';
+import { cn } from '@/lib/utils';
 
 interface Message {
   id: string;
@@ -35,8 +36,8 @@ function formatElapsed(totalSeconds: number) {
   return `${s}δ`;
 }
 
-export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; priority?: TicketPriority }>(function TicketChat(
-  { ticketId, priority = 'normal' },
+export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; priority?: TicketPriority; className?: string }>(function TicketChat(
+  { ticketId, priority = 'normal', className },
   ref
 ) {
   const { user, isAdmin, profile } = useAuth();
@@ -203,7 +204,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
     : 'Σε εκκρεμότητα';
 
   return (
-    <div className="flex flex-col h-[480px] border rounded-lg bg-card">
+    <div className={cn('flex flex-col h-[480px] border rounded-lg bg-card', className)}>
       {/* Live response timer bar */}
       <div className={`flex items-center justify-between gap-2 px-3 py-2 border-b text-xs font-heading ${waitingOn ? timerTone : 'bg-muted/40 text-muted-foreground'}`}>
         <span className="flex items-center gap-1.5">
