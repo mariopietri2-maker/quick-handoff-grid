@@ -100,6 +100,7 @@ import com.freshdelivery.nativecustomer.data.StoreRow
 import com.freshdelivery.nativecustomer.ui.map.MapMarker
 import com.freshdelivery.nativecustomer.ui.map.MapboxView
 import com.freshdelivery.nativecustomer.ui.theme.FreshAmber
+import com.freshdelivery.nativecustomer.ui.theme.FreshBg
 import com.freshdelivery.nativecustomer.ui.theme.FreshChip
 import com.freshdelivery.nativecustomer.ui.theme.FreshDivider
 import com.freshdelivery.nativecustomer.ui.theme.FreshGreen
@@ -114,6 +115,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 import com.freshdelivery.nativecustomer.ui.theme.FreshVioletSoft
 
 private val FreshGradient = Brush.horizontalGradient(listOf(FreshGreen, FreshViolet))
+private val FreshChipGradient = Brush.horizontalGradient(listOf(FreshChip, FreshChip))
 
 @Composable
 fun CustomerShell(
@@ -1191,7 +1193,7 @@ private fun CartCheckoutScreen(
                             .height(58.dp)
                             .shadow(12.dp, RoundedCornerShape(29.dp))
                             .clip(RoundedCornerShape(29.dp))
-                            .background(if (state.busy || state.cart.isEmpty() || address.isBlank()) FreshChip else FreshGradient)
+                            .background(if (state.busy || state.cart.isEmpty() || address.isBlank()) FreshChipGradient else FreshGradient)
                             .clickable(
                                 enabled = !state.busy && state.cart.isNotEmpty() && address.isNotBlank(),
                                 onClick = onPlaceOrder,
