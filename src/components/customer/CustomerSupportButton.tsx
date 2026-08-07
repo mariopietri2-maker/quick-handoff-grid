@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { TicketChat } from '@/components/support/TicketChat';
+import { CustomerLiveChat } from '@/components/customer/CustomerLiveChat';
 import { format } from 'date-fns';
 import { hasSupportPhone, SUPPORT_PHONE } from '@/lib/support-phone';
 
@@ -62,7 +63,7 @@ export function CustomerSupportButton({
   className = '',
 }: CustomerSupportButtonProps) {
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat'>('menu');
+  const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat' | 'live'>('menu');
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -178,14 +179,14 @@ export function CustomerSupportButton({
           <div className="px-5 pt-5 pb-3 bg-gradient-to-br from-primary/15 to-transparent border-b">
             <DialogHeader>
               <DialogTitle className="font-heading text-lg flex items-center gap-2">
-                {(view === 'category' || view === 'chat') && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      if (view === 'chat') { setActiveTicket(null); setView('tickets'); }
-                      else setView('menu');
-                      setCategory(null);
-                    }}
+                  {(view === 'category' || view === 'chat' || view === 'live') && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (view === 'chat') { setActiveTicket(null); setView('tickets'); }
+                        else setView('menu');
+                        setCategory(null);
+                      }}
                     className="text-muted-foreground hover:text-foreground"
                   >
                     <ArrowLeft className="h-4 w-4" />
@@ -196,6 +197,8 @@ export function CustomerSupportButton({
                   ? `Ticket #${activeTicket.id.slice(0, 6)}`
                   : view === 'tickets'
                   ? 'Οι συνομιλίες μου'
+                  : view === 'live'
+                  ? 'Ζωντανή Συνομιλία'
                   : 'Υποστήριξη Πελάτη'}
               </DialogTitle>
               <DialogDescription className="text-xs">
@@ -203,6 +206,8 @@ export function CustomerSupportButton({
                   ? category.hint
                   : view === 'chat'
                   ? 'Συνομιλία για τη παραγγελία σας'
+                  : view === 'live'
+                  ? 'Επείγον — απάντηση σε πραγματικό χρόνο από την ομάδα μας.'
                   : orderId
                   ? 'Βοήθεια για αυτή την παραγγελία — διαφορετική ουρά από καταστήματα/οδηγούς.'
                   : 'Βοήθεια με παραγγελίες, πληρωμές και παράδοση.'}
@@ -227,6 +232,20 @@ export function CustomerSupportButton({
                     </div>
                   </a>
                 )}
+
+                <button
+                  type="button"
+                  onClick={() => setView('live')}
+                  className="w-full flex items-center gap-3 p-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 transition-colors"
+                >
+                  <span className="h-10 w-10 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md">
+                    <MessageCircle className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-heading font-bold text-sm">Ζωντανή Συνομιλία</p>
+                    <p className="text-[11px] text-muted-foreground">Επείγον — απάντηση σε πραγματικό χρόνο</p>
+                  </div>
+                </button>
 
                 {tickets.length > 0 && (
                   <button
@@ -259,7 +278,7 @@ export function CustomerSupportButton({
                       <button
                         key={c.key}
                         type="button"
-                        onClick={() => { setCategory(c); setView('category'); }}
+                        onClick={() => { setCategory(c); setView(c.urgent ? 'live' : 'category'); }}
                         className="flex flex-col items-start gap-2 p-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors text-left"
                       >
                         <span className={`h-8 w-8 rounded-lg ${c.tone} flex items-center justify-center`}>
@@ -341,6 +360,10 @@ export function CustomerSupportButton({
 
             {view === 'chat' && activeTicket && (
               <TicketChat ticketId={activeTicket.id} />
+            )}
+
+            {view === 'live' && (
+              <CustomerLiveChat orderId={orderId} className="h-[62vh]" />
             )}
           </div>
         </DialogContent>

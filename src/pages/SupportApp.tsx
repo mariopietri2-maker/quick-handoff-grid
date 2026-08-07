@@ -8,10 +8,11 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, ArrowLeft, Car, Smartphone, Phone, Zap, AlarmClock, Flag, Siren, Users, Mail, Search, Sparkles, Inbox } from 'lucide-react';
+import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, MessageCircle, ArrowLeft, Car, Smartphone, Phone, Zap, AlarmClock, Flag, Siren, Users, Mail, Search, Sparkles, Inbox } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportCopilot } from '@/components/support/SupportCopilot';
+import { LiveChatConsole } from '@/components/support/LiveChatConsole';
 
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
 import DriverMessagesPanel from '@/components/admin/DriverMessagesPanel';
@@ -85,7 +86,7 @@ export default function SupportApp() {
   const [activeTicket, setActiveTicket] = useState<any | null>(null);
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
-  const [view, setView] = useState<'tickets' | 'team' | 'dcc' | 'messages'>('tickets');
+  const [view, setView] = useState<'tickets' | 'live' | 'team' | 'dcc' | 'messages'>('tickets');
   const [copilotOpen, setCopilotOpen] = useState(true);
   const chatRef = useRef<TicketChatHandle>(null);
 
@@ -207,6 +208,7 @@ export default function SupportApp() {
 
   const navTabs = [
     { k: 'tickets' as const, label: 'Tickets', icon: MessageSquare },
+    { k: 'live' as const, label: 'Live Chat', icon: MessageCircle },
     { k: 'messages' as const, label: 'Μηνύματα', icon: Mail },
     { k: 'team' as const, label: 'Ομάδα', icon: Users },
     { k: 'dcc' as const, label: 'Control', icon: Zap },
@@ -266,20 +268,26 @@ export default function SupportApp() {
 
       {/* ── Non-ticket views (single column) ──────────── */}
       {view !== 'tickets' ? (
-        <main className="flex-1 min-h-0 overflow-y-auto">
-          <div className="p-4 max-w-7xl mx-auto space-y-4">
-            <AnnouncementsBanner audience="support" />
-            {view === 'team' ? (
-              <TeamChat />
-            ) : view === 'messages' ? (
-              <div className="max-w-3xl mx-auto">
-                <DriverMessagesPanel />
-              </div>
-            ) : (
-              <DeliveryControlCenter />
-            )}
-          </div>
-        </main>
+        view === 'live' ? (
+          <main className="flex-1 min-h-0 overflow-hidden">
+            <LiveChatConsole />
+          </main>
+        ) : (
+          <main className="flex-1 min-h-0 overflow-y-auto">
+            <div className="p-4 max-w-7xl mx-auto space-y-4">
+              <AnnouncementsBanner audience="support" />
+              {view === 'team' ? (
+                <TeamChat />
+              ) : view === 'messages' ? (
+                <div className="max-w-3xl mx-auto">
+                  <DriverMessagesPanel />
+                </div>
+              ) : (
+                <DeliveryControlCenter />
+              )}
+            </div>
+          </main>
+        )
       ) : (
         <main className="flex-1 min-h-0 flex">
           {/* ── Pane 1 · Ticket queue ─────────────────── */}

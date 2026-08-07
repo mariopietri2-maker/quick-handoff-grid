@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { DriverTicketChat } from '@/components/driver/DriverTicketChat';
+import { DriverLiveChat } from '@/components/driver/DriverLiveChat';
 import { format } from 'date-fns';
 import { hasSupportPhone, SUPPORT_PHONE } from '@/lib/support-phone';
 
@@ -51,7 +52,7 @@ export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChang
   const [internalOpen, setInternalOpen] = useState(false);
   const open = controlledOpen ?? internalOpen;
   const setOpen = onOpenChange ?? setInternalOpen;
-  const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat'>('menu');
+  const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat' | 'live'>('menu');
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -147,7 +148,7 @@ export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChang
             <DialogHeader className="relative">
               <div className="flex items-start justify-between gap-3">
                 <div className="flex items-center gap-2.5">
-                  {(view === 'category' || view === 'chat') && (
+                  {(view === 'category' || view === 'chat' || view === 'live') && (
                     <button
                       onClick={() => {
                         if (view === 'chat') { setActiveTicket(null); setView('tickets'); }
@@ -169,6 +170,8 @@ export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChang
                         ? `Ticket #${activeTicket.id.slice(0, 6).toUpperCase()}`
                         : view === 'tickets'
                         ? 'Οι Συνομιλίες μου'
+                        : view === 'live'
+                        ? 'Ζωντανή Συνομιλία'
                         : 'Υποστήριξη Οδηγών'}
                     </DialogTitle>
                     <DialogDescription className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 leading-snug">
@@ -176,6 +179,8 @@ export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChang
                         ? category.hint
                         : view === 'chat'
                         ? 'Συνομιλία σε πραγματικό χρόνο'
+                        : view === 'live'
+                        ? 'Επείγον — απάντηση σε πραγματικό χρόνο από την ομάδα.'
                         : 'Διαθέσιμοι 24/7 · μέσος χρόνος < 5 λ'}
                     </DialogDescription>
                   </div>
@@ -211,6 +216,19 @@ export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChang
                   </a>
                 )}
 
+                <button
+                  onClick={() => setView('live')}
+                  className="w-full flex items-center gap-3 p-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 transition-colors"
+                >
+                  <span className="h-10 w-10 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md">
+                    <MessageCircle className="h-5 w-5" />
+                  </span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Ζωντανή Συνομιλία</p>
+                    <p className="text-[11px] text-[hsl(var(--driver-text-muted))]">Επείγον — απάντηση σε πραγματικό χρόνο</p>
+                  </div>
+                </button>
+
                 {tickets.length > 0 && (
                   <button
                     onClick={() => setView('tickets')}
@@ -240,7 +258,7 @@ export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChang
                     return (
                       <button
                         key={cat.key}
-                        onClick={() => { setCategory(cat); setView('category'); }}
+                        onClick={() => { setCategory(cat); setView(cat.urgent ? 'live' : 'category'); }}
                         className={`group relative flex flex-col items-start gap-2 p-3 rounded-xl border bg-[hsl(var(--driver-bg))] border-[hsl(var(--driver-border))] hover:border-[hsl(var(--driver-accent))]/50 transition-all active:scale-[0.97] text-left ${cat.urgent ? 'ring-1 ring-red-500/30' : ''}`}
                       >
                         <span className={`h-9 w-9 rounded-lg flex items-center justify-center shadow-md ${cat.tone}`}>
@@ -347,6 +365,10 @@ export function DriverSupportButton({ orderId, open: controlledOpen, onOpenChang
 
             {view === 'chat' && activeTicket && (
               <DriverTicketChat ticketId={activeTicket.id} />
+            )}
+
+            {view === 'live' && (
+              <DriverLiveChat orderId={orderId} className="h-[62vh]" />
             )}
           </div>
         </DialogContent>
