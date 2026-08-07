@@ -3,6 +3,9 @@
 # macOS + Xcode are required for any iOS build; GitHub Actions macos-latest is
 # the cloud Mac used here. App Store signing is a manual handoff on a Mac with
 # an Apple Developer team (see scripts/sync-ios-apps.sh footer).
+#
+# ci: rebuild unsigned iOS artifacts after live-chat/ticket split release.
+# Android Play Store AABs build separately via build-release-aabs.yml.
 name: Build iOS Apps (macOS)
 
 on:
