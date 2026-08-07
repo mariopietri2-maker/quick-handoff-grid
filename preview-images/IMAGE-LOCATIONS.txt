@@ -1,0 +1,3 @@
+Native app preview images:
+
+/home/runner/work/quick-handoff-grid/quick-handoff-grid/preview-images/native-app-changes.png
