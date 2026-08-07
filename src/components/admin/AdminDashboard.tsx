@@ -5,6 +5,7 @@ import { cn } from '@/lib/utils';
 import { formatOrderNumber } from '@/lib/order-number';
 import { isDriverPresenceOnline } from '@/lib/driver-presence';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import {
   TrendingUp, TrendingDown, ShoppingBag, Wallet, Bike, Clock,
 } from 'lucide-react';
@@ -38,6 +39,10 @@ const STATUS_TONE: Record<string, string> = {
 };
 
 const CARD = 'rounded-2xl border border-border bg-card shadow-[0_1px_2px_rgba(15,23,42,.05),0_8px_24px_-12px_rgba(15,23,42,.12)]';
+type TreasuryBalanceRow = Pick<
+  Database['public']['Tables']['admin_treasury']['Row'],
+  'admin_balance' | 'platform_pool'
+>;
 
 function Sparkline({ data, color = 'hsl(var(--primary))' }: { data: number[]; color?: string }) {
   if (!data.length) return null;
@@ -117,8 +122,12 @@ export default function AdminDashboard(props: Props) {
   const { data: treasuryBal } = useQuery({
     queryKey: ['admin-dashboard-treasury'],
     queryFn: async () => {
-      const { data } = await (supabase as any).from('admin_treasury').select('admin_balance, platform_pool').eq('id', 1).maybeSingle();
-      return (data as { admin_balance?: number; platform_pool?: number } | null) ?? null;
+      const { data } = await supabase
+        .from('admin_treasury')
+        .select('admin_balance, platform_pool')
+        .eq('id', 1)
+        .maybeSingle();
+      return (data as TreasuryBalanceRow | null) ?? null;
     },
     refetchInterval: 30_000,
   });
