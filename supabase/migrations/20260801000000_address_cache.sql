@@ -56,10 +56,9 @@ REVOKE ALL ON FUNCTION public.cleanup_stale_cached_addresses() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.cleanup_stale_cached_addresses() TO service_role;
 
 -- Schedule cleanup (requires pg_cron)
--- This will run every Sunday at 02:00 UTC
-SELECT cron.schedule_in_timezone(
+-- This will run every Sunday at 02:00 UTC (Supabase server default TZ = UTC)
+SELECT cron.schedule(
   'cleanup_stale_cached_addresses',
-  'UTC',
   '0 2 * * 0',  -- Sunday 2am UTC
   'SELECT public.cleanup_stale_cached_addresses();'
-) ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule;
+);

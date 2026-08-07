@@ -169,12 +169,11 @@ REVOKE ALL ON FUNCTION public.auto_adjust_pricing_by_driver_scarcity() FROM PUBL
 GRANT EXECUTE ON FUNCTION public.auto_adjust_pricing_by_driver_scarcity() TO service_role;
 
 -- Schedule hourly pricing adjustment
-SELECT cron.schedule_in_timezone(
+SELECT cron.schedule(
   'auto_adjust_pricing_by_driver_scarcity',
-  'UTC',
   '0 * * * *',  -- Every hour
   'SELECT public.auto_adjust_pricing_by_driver_scarcity();'
-) ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule;
+);
 
 -- ────────────────────────────────────────────────────────────────────
 -- Peak hour detection and surging
@@ -251,9 +250,8 @@ REVOKE ALL ON FUNCTION public.detect_and_surge_peak_hours() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.detect_and_surge_peak_hours() TO service_role;
 
 -- Run peak hour detection every 15 minutes during active hours
-SELECT cron.schedule_in_timezone(
+SELECT cron.schedule(
   'detect_and_surge_peak_hours',
-  'UTC',
   '*/15 11-22 * * *',  -- Every 15 min, 11am-10pm
   'SELECT public.detect_and_surge_peak_hours();'
-) ON CONFLICT (jobname) DO UPDATE SET schedule = EXCLUDED.schedule;
+);
