@@ -1,14 +1,21 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from 'react';
 import { User, Session } from '@supabase/supabase-js';
 import { supabase } from '@/integrations/supabase/client';
+import type { Database } from '@/integrations/supabase/types';
 import { mobileHomePath, resolveMobileFlavor } from '@/lib/mobileApp';
 import { syncRoleForMobileShell } from '@/lib/syncAppRole';
+
+type ProfileRow = Pick<
+  Database['public']['Tables']['profiles']['Row'],
+  'role' | 'full_name' | 'public_code'
+>;
+type UserRoleRow = Pick<Database['public']['Tables']['user_roles']['Row'], 'role'>;
 
 interface AuthContextType {
   user: User | null;
   session: Session | null;
   loading: boolean;
-  profile: { role: string; full_name: string | null; public_code?: string | null } | null;
+  profile: ProfileRow | null;
   isAdmin: boolean;
   isSupport: boolean;
   isStore: boolean;
@@ -35,7 +42,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
-  const [profile, setProfile] = useState<{ role: string; full_name: string | null; public_code?: string | null } | null>(null);
+  const [profile, setProfile] = useState<ProfileRow | null>(null);
   const [isAdmin, setIsAdmin] = useState(false);
   const [isSupport, setIsSupport] = useState(false);
   const [isStore, setIsStore] = useState(false);
@@ -47,17 +54,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role, full_name, public_code')
       .eq('user_id', userId)
       .maybeSingle();
-    setProfile(data ? (data as any) : { role: 'customer', full_name: null });
+    setProfile(data ?? { role: 'customer', full_name: null, public_code: null });
 
     const { data: roles } = await supabase
       .from('user_roles')
       .select('role')
       .eq('user_id', userId);
-    const roleList = (roles ?? []).map((r: any) => r.role);
+    const roleList = (roles ?? []).map((r: UserRoleRow) => r.role);
     setIsAdmin(roleList.includes('admin'));
     setIsSupport(roleList.includes('support'));
     setIsStore(roleList.includes('store'));
-    setIsM(roleList.includes('m') || (data as any)?.role === 'm');
+    setIsM(roleList.includes('m') || data?.role === 'm');
   };
 
   /** Customer app → customer role, Driver app → driver role (Capacitor appId aware). */
