@@ -116,6 +116,16 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshVioletSoft
 
 private val FreshGradient = Brush.horizontalGradient(listOf(FreshGreen, FreshViolet))
 private val FreshChipGradient = Brush.horizontalGradient(listOf(FreshChip, FreshChip))
+private val DefaultMenuBottomPadding = 16.dp
+private val CartBarHostVerticalPadding = 12.dp
+private val CartBarContainerVerticalPadding = 8.dp
+private val CartBarBodyVerticalPadding = 14.dp
+private val CartBarContentMinHeight = 44.dp
+private val CartOverlayReservedBottomPadding =
+    CartBarContentMinHeight +
+        (CartBarHostVerticalPadding * 2) +
+        (CartBarContainerVerticalPadding * 2) +
+        (CartBarBodyVerticalPadding * 2)
 
 @Composable
 fun CustomerShell(
@@ -249,7 +259,7 @@ private fun FreshCartBar(count: Int, total: Double, onClick: () -> Unit) {
     Box(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
+            .padding(horizontal = 12.dp, vertical = CartBarContainerVerticalPadding)
             .shadow(12.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(FreshGradient)
@@ -258,7 +268,7 @@ private fun FreshCartBar(count: Int, total: Double, onClick: () -> Unit) {
         Row(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
+                .padding(horizontal = 18.dp, vertical = CartBarBodyVerticalPadding),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
@@ -714,7 +724,7 @@ private fun MenuScreen(
     onOpenCart: () -> Unit,
 ) {
     val store = state.selectedStore
-    val menuBottomPadding = if (state.cartCount > 0) 112.dp else 16.dp
+    val menuBottomPadding = if (state.cartCount > 0) CartOverlayReservedBottomPadding else DefaultMenuBottomPadding
     Box(Modifier.fillMaxSize().background(FreshBg)) {
         LazyColumn(
             modifier = Modifier.fillMaxSize(),
@@ -815,7 +825,7 @@ private fun MenuScreen(
                 Modifier
                     .align(Alignment.BottomCenter)
                     .navigationBarsPadding()
-                    .padding(12.dp),
+                    .padding(CartBarHostVerticalPadding),
             ) {
                 FreshCartBar(
                     count = state.cartCount,

@@ -116,16 +116,18 @@ fun TicketChatDialog(
                     ) {
                         if (messages.isEmpty()) {
                             item {
-                                Spacer(Modifier.height(8.dp))
-                                Text(
-                                    "Στείλε ένα μήνυμα στην ομάδα για να ξεκινήσει η συζήτηση.",
-                                    textAlign = TextAlign.Center,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    fontSize = 13.sp,
-                                    modifier = Modifier
-                                        .fillMaxWidth()
-                                        .padding(vertical = 24.dp),
-                                )
+                                Column {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Στείλε ένα μήνυμα στην ομάδα για να ξεκινήσει η συζήτηση.",
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 13.sp,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 24.dp),
+                                    )
+                                }
                             }
                         }
                         items(messages) { m ->
