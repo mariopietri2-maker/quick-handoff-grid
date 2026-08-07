@@ -69,7 +69,6 @@ fun LoginScreen(
     val normalizedEmail = email.trim()
     val normalizedFullName = fullName.trim()
     val normalizedPhone = phone.trim()
-    val hasPhoneDigits = normalizedPhone.any { it.isDigit() }
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = FreshGreen,
         focusedLabelColor = FreshGreen,
@@ -184,7 +183,7 @@ fun LoginScreen(
                 else onLogin(normalizedEmail, password)
             },
             enabled = !busy && normalizedEmail.isNotBlank() && password.length >= 6 &&
-                (!signupMode || (normalizedFullName.isNotBlank() && hasPhoneDigits)),
+                (!signupMode || (normalizedFullName.isNotBlank() && normalizedPhone.isNotBlank())),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)

@@ -210,7 +210,7 @@ fun TicketChatDialog(
 }
 
 private fun messageKey(message: TicketMessageRow): String =
-    message.id
+    "${message.id}|${message.created_at.orEmpty()}"
 
 private fun agentDisplayName(m: TicketMessageRow, agents: Map<String, String>): String? {
     if (m.sender_role == "driver") return null
