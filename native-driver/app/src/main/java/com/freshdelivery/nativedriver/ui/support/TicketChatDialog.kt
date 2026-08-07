@@ -30,7 +30,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -42,7 +41,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
-import kotlinx.coroutines.launch
 import com.freshdelivery.nativedriver.data.TicketMessageRow
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -60,7 +58,6 @@ fun TicketChatDialog(
     var draft by rememberSaveable { mutableStateOf("") }
     val normalizedDraft = draft.trim()
     val listState = rememberLazyListState()
-    val scope = rememberCoroutineScope()
 
     LaunchedEffect(messages.size) {
         if (messages.isNotEmpty()) {
@@ -181,11 +178,6 @@ fun TicketChatDialog(
                         if (normalizedDraft.isNotBlank() && !busy) {
                             onSend(normalizedDraft)
                             draft = ""
-                            scope.launch {
-                                if (messages.isNotEmpty()) {
-                                    listState.animateScrollToItem(messages.lastIndex)
-                                }
-                            }
                         }
                     },
                     enabled = normalizedDraft.isNotBlank() && !busy,
@@ -218,12 +210,7 @@ fun TicketChatDialog(
 }
 
 private fun messageKey(message: TicketMessageRow): String =
-    listOf(
-        message.id,
-        message.created_at ?: "",
-        message.sender_id ?: "",
-        message.message ?: "",
-    ).joinToString("|")
+    message.id
 
 private fun agentDisplayName(m: TicketMessageRow, agents: Map<String, String>): String? {
     if (m.sender_role == "driver") return null
