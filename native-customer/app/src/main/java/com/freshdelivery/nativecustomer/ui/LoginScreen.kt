@@ -183,7 +183,7 @@ fun LoginScreen(
                 else onLogin(normalizedEmail, password)
             },
             enabled = !busy && normalizedEmail.isNotBlank() && password.length >= 6 &&
-                (!signupMode || (normalizedFullName.isNotBlank() && normalizedPhone.isNotBlank())),
+                (!signupMode || normalizedFullName.isNotBlank()),
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp)
