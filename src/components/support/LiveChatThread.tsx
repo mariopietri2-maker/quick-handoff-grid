@@ -190,6 +190,11 @@ export function LiveChatThread({
             }
           }}
           placeholder="Γράψτε ένα μήνυμα..."
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          autoCapitalize="sentences"
+          inputMode="text"
           className="h-10 text-sm bg-muted/40 border-0 focus-visible:ring-1"
         />
         <Button size="icon" onClick={() => void send()} disabled={sending || !text.trim()} className="h-10 w-10 shrink-0">
