@@ -75,8 +75,8 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
   branding: {
     app_name: 'Fresh Delivery',
     city_label: 'Ιωάννινα',
-    accent_hsl: '152 100% 39%',
-    accent_dark_hsl: '152 100% 28%',
+    accent_hsl: '24 100% 62%',
+    accent_dark_hsl: '24 90% 51%',
     logo_url: null,
     tagline: 'Fast · Fresh · Local',
     show_header_brand: true,

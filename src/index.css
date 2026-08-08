@@ -401,47 +401,69 @@
   }
 
   /* ───────────────────────────────────────────────
-     Customer shell — Uber Eats–inspired structure:
-     white surfaces, near-black type, green accent.
-     Admin branding can still override --c-accent.
+     Customer shell — Warm & Playful redesign:
+     cream surfaces, warm ink, orange→pink accent,
+     bubbly radius. Admin branding can still override
+     --c-accent; the scoped global-token overrides keep
+     every customer component on the warm palette.
      ─────────────────────────────────────────────── */
   .customer-shell {
-    --c-bg: 0 0% 100%;
+    --c-bg: 35 93% 96%;                /* warm cream page */
     --c-surface: 0 0% 100%;
-    --c-surface-muted: 0 0% 96%;
-    --c-border: 0 0% 90%;
-    --c-text: 0 0% 9%;
-    --c-text-muted: 0 0% 38%;
-    --c-text-soft: 0 0% 42%;
-    --c-accent: 152 100% 39%;         /* Uber Eats green */
-    --c-accent-soft: 152 100% 39% / 0.12;
-    --c-accent-dark: 152 100% 28%;
-    --c-radius: 12px;
+    --c-surface-muted: 30 95% 93%;     /* warm chip */
+    --c-border: 33 65% 88%;            /* warm hairline */
+    --c-text: 25 39% 18%;              /* warm ink */
+    --c-text-muted: 30 32% 56%;
+    --c-text-soft: 31 30% 47%;
+    --c-accent: 24 100% 62%;           /* warm orange */
+    --c-accent-soft: 24 100% 62% / 0.12;
+    --c-accent-dark: 24 90% 51%;
+    --c-radius: 16px;
     --c-elevated: 0 0% 100%;
+    /* Global-token override — keep the customer UI warm even
+       where components use primary/accent/gradient utilities. */
+    --primary: 24 100% 62%;
+    --primary-foreground: 0 0% 100%;
+    --ring: 24 100% 62%;
+    --accent: 24 100% 62%;
+    --accent-foreground: 0 0% 100%;
+    --border: 33 65% 88%;
+    --input: 33 65% 88%;
+    --gradient-primary: linear-gradient(120deg, hsl(24 90% 55%), hsl(24 100% 62%) 48%, hsl(343 100% 68%));
+    --gradient-accent: linear-gradient(120deg, hsl(24 90% 55%), hsl(343 100% 68%));
+    --shadow-primary: 0 4px 14px hsl(24 100% 55% / 0.25);
     background: hsl(var(--c-bg));
     color: hsl(var(--c-text));
     color-scheme: light;
   }
   html.dark .customer-shell {
-    --c-bg: 0 0% 7%;
-    --c-surface: 0 0% 10%;
-    --c-surface-muted: 0 0% 14%;
-    --c-border: 0 0% 18%;
-    --c-text: 0 0% 96%;
-    --c-text-muted: 0 0% 62%;
-    --c-text-soft: 0 0% 58%;
-    --c-accent-soft: 152 100% 45% / 0.18;
-    --c-elevated: 0 0% 12%;
+    --c-bg: 24 30% 9%;
+    --c-surface: 24 25% 13%;
+    --c-surface-muted: 24 22% 18%;
+    --c-border: 24 20% 22%;
+    --c-text: 35 45% 94%;
+    --c-text-muted: 30 20% 62%;
+    --c-text-soft: 30 18% 56%;
+    --c-accent-soft: 24 100% 68% / 0.18;
+    --c-elevated: 24 25% 15%;
+    --primary: 24 100% 66%;
+    --primary-foreground: 24 40% 10%;
+    --ring: 24 100% 66%;
+    --accent: 24 100% 66%;
+    --accent-foreground: 24 40% 10%;
+    --border: 24 20% 22%;
+    --input: 24 20% 22%;
+    --gradient-primary: linear-gradient(120deg, hsl(24 90% 58%), hsl(343 100% 66%));
     color-scheme: dark;
   }
   /* Make status-bar safe area match the header instead of showing body grey */
   html:has(.customer-shell),
   body:has(.customer-shell) {
-    background-color: #fff;
+    background-color: #fff7ec;
   }
   html.dark:has(.customer-shell),
   html.dark body:has(.customer-shell) {
-    background-color: #121212;
+    background-color: #1a120c;
   }
   .customer-shell .c-accent { color: hsl(var(--c-accent)); }
   .customer-shell .c-bg-accent { background: hsl(var(--c-accent)); color: #fff; }
@@ -466,7 +488,7 @@
     backdrop-filter: blur(12px);
   }
   .customer-shell .c-gradient-hero {
-    background: linear-gradient(120deg, hsl(152 100% 32%), hsl(152 80% 42%) 55%, hsl(168 70% 48%));
+    background: linear-gradient(120deg, hsl(24 90% 52%), hsl(24 100% 62%) 50%, hsl(343 100% 68%));
   }
   .customer-shell .c-gradient-dark {
     background: linear-gradient(135deg, hsl(0 0% 8%), hsl(0 0% 18%));
@@ -477,8 +499,8 @@
     inset: 0 0 auto 0;
     height: 280px;
     background:
-      radial-gradient(70% 80% at 12% 0%, hsl(var(--c-accent) / 0.18), transparent 60%),
-      radial-gradient(55% 70% at 88% 8%, hsl(168 70% 48% / 0.12), transparent 55%);
+      radial-gradient(70% 80% at 12% 0%, hsl(var(--c-accent) / 0.22), transparent 60%),
+      radial-gradient(55% 70% at 88% 8%, hsl(343 100% 68% / 0.16), transparent 55%);
     opacity: 0.9;
     animation: customer-ambient-drift 14s ease-in-out infinite alternate;
   }

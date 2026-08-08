@@ -1,9 +1,9 @@
 import type { CSSProperties } from 'react';
 
-/** Uber Eats–inspired customer brand tokens (HSL without hsl()). */
-export const CUSTOMER_ACCENT_HSL = '152 100% 39%';
-export const CUSTOMER_ACCENT_DARK_HSL = '152 100% 28%';
-export const CUSTOMER_INK = '0 0% 9%';
+/** Warm &amp; playful customer brand tokens (HSL without hsl()). */
+export const CUSTOMER_ACCENT_HSL = '24 100% 62%';
+export const CUSTOMER_ACCENT_DARK_HSL = '24 90% 51%';
+export const CUSTOMER_INK = '25 39% 18%';
 
 /** Inline style object to stamp --c-accent vars on any customer-shell root. */
 export function customerAccentStyle(accent?: string | null, accentDark?: string | null): CSSProperties {

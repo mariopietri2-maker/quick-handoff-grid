@@ -30,7 +30,7 @@ const CATEGORIES: Category[] = [
   { key: 'wrong_order',    label: 'Λάθος',         hint: 'Έλαβε λάθος παραγγελία',       icon: AlertTriangle,  tone: 'bg-red-500 text-white', urgent: true },
   { key: 'address_issue',  label: 'Διεύθυνση',     hint: 'Λάθος / αλλαγή διεύθυνσης',    icon: MapPin,         tone: 'bg-indigo-500 text-white' },
   { key: 'driver_issue',   label: 'Οδηγός',        hint: 'Πρόβλημα με τον οδηγό',        icon: MessageCircle,  tone: 'bg-blue-500 text-white' },
-  { key: 'refund',         label: 'Επιστροφή',     hint: 'Αίτημα επιστροφής χρημάτων',   icon: RotateCcw,      tone: 'bg-emerald-500 text-white' },
+  { key: 'refund',         label: 'Επιστροφή',     hint: 'Αίτημα επιστροφής χρημάτων',   icon: RotateCcw,      tone: 'bg-orange-500 text-white' },
   { key: 'payment',        label: 'Πληρωμή',       hint: 'Χρέωση, κουπόνι, πορτοφόλι',   icon: CreditCard,     tone: 'bg-teal-500 text-white' },
   { key: 'app_issue',      label: 'Εφαρμογή',      hint: 'Bug ή πρόβλημα στην εφαρμογή', icon: Smartphone,     tone: 'bg-slate-600 text-white' },
 ];
@@ -38,7 +38,7 @@ const CATEGORIES: Category[] = [
 const statusLabel: Record<string, { label: string; tone: string }> = {
   open: { label: 'Ανοιχτό', tone: 'bg-red-500/15 text-red-600 border-red-500/30' },
   in_progress: { label: 'Σε εξέλιξη', tone: 'bg-yellow-500/15 text-yellow-600 border-yellow-500/30' },
-  resolved: { label: 'Επιλύθηκε', tone: 'bg-green-500/15 text-green-700 border-green-500/30' },
+  resolved: { label: 'Επιλύθηκε', tone: 'bg-orange-500/15 text-orange-700 border-orange-500/30' },
 };
 
 interface Ticket {
@@ -221,9 +221,9 @@ export function CustomerSupportButton({
                 {hasSupportPhone && (
                   <a
                     href={`tel:${SUPPORT_PHONE}`}
-                    className="flex items-center gap-3 p-3 mb-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 hover:bg-emerald-500/15 transition-colors"
+                    className="flex items-center gap-3 p-3 mb-3 rounded-xl bg-orange-500/10 border border-orange-500/25 hover:bg-orange-500/15 transition-colors"
                   >
-                    <span className="h-10 w-10 rounded-full bg-emerald-500 text-white flex items-center justify-center shadow-md">
+                    <span className="h-10 w-10 rounded-full bg-orange-500 text-white flex items-center justify-center shadow-md">
                       <Phone className="h-5 w-5" />
                     </span>
                     <div className="flex-1 min-w-0">

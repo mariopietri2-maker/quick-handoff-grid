@@ -32,7 +32,7 @@ function applyTheme(theme: Theme) {
   root.style.colorScheme = resolved;
   try {
     const meta = document.querySelector('meta[name="theme-color"]');
-    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#121212' : '#06C167');
+    if (meta) meta.setAttribute('content', resolved === 'dark' ? '#1a120c' : '#FF8A3D');
   } catch {}
   return resolved;
 }
