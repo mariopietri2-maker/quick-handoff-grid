@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Send, Package } from 'lucide-react';
+import { Loader2, Send, Package, Tag } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { cn } from '@/lib/utils';
@@ -11,9 +11,11 @@ interface LiveMessage {
   id: string;
   driver_id: string | null;
   customer_id: string | null;
+  store_id?: string | null;
   order_id?: string | null;
   sender_id: string;
   sender_role: string;
+  topic?: string | null;
   message: string;
   created_at: string;
 }
@@ -23,14 +25,29 @@ const ROLE_LABELS: Record<string, string> = {
   admin: 'Διαχειριστής',
   driver: 'Οδηγός',
   customer: 'Πελάτης',
+  store: 'Κατάστημα',
+};
+
+const TOPIC_LABELS: Record<string, string> = {
+  late_delivery: 'Καθυστέρηση',
+  missing_items: 'Λείπουν',
+  wrong_order: 'Λάθος',
+  address_issue: 'Διεύθυνση',
+  driver_issue: 'Οδηγός',
+  refund: 'Επιστροφή',
+  payment: 'Πληρωμή',
+  app_issue: 'Εφαρμογή',
 };
 
 interface LiveChatThreadProps {
-  /** Exactly one of driverId / customerId identifies the channel. */
+  /** Exactly one of driverId / customerId / storeId identifies the channel. */
   driverId?: string | null;
   customerId?: string | null;
+  storeId?: string | null;
   orderId?: string | null;
-  viewerRole: 'support' | 'admin' | 'driver' | 'customer';
+  viewerRole: 'support' | 'admin' | 'driver' | 'customer' | 'store';
+  /** Read-only when the session is closed. */
+  disabled?: boolean;
   title?: string;
   subtitle?: string;
   className?: string;
@@ -39,8 +56,10 @@ interface LiveChatThreadProps {
 export function LiveChatThread({
   driverId,
   customerId,
+  storeId,
   orderId,
   viewerRole,
+  disabled = false,
   title,
   subtitle,
   className,
@@ -52,7 +71,8 @@ export function LiveChatThread({
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
-  const participantId = driverId ?? customerId;
+  const participantId = driverId ?? customerId ?? storeId;
+  const topic = messages.find((m) => m.topic)?.topic ?? null;
 
   useEffect(() => {
     if (!participantId) return;
@@ -62,6 +82,7 @@ export function LiveChatThread({
     const load = async () => {
       let q: any = (supabase as any).from('live_chat_messages').select('*').order('created_at', { ascending: true });
       if (driverId) q = q.eq('driver_id', driverId);
+      else if (storeId) q = q.eq('store_id', storeId);
       else q = q.eq('customer_id', customerId);
       const { data } = await q.limit(200);
       if (active) {
@@ -71,7 +92,11 @@ export function LiveChatThread({
     };
     load();
 
-    const filter = driverId ? `driver_id=eq.${driverId}` : `customer_id=eq.${customerId}`;
+    const filter = driverId
+      ? `driver_id=eq.${driverId}`
+      : storeId
+        ? `store_id=eq.${storeId}`
+        : `customer_id=eq.${customerId}`;
     const channel = supabase
       .channel(`live-thread-${participantId}`)
       .on(
@@ -88,7 +113,7 @@ export function LiveChatThread({
       active = false;
       supabase.removeChannel(channel);
     };
-  }, [driverId, customerId, participantId]);
+  }, [driverId, customerId, storeId, participantId]);
 
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
@@ -96,12 +121,13 @@ export function LiveChatThread({
 
   const send = async () => {
     const msg = text.trim();
-    if (!msg || !user || !participantId || sending) return;
+    if (!msg || !user || !participantId || sending || disabled) return;
     setSending(true);
     const optimistic: LiveMessage = {
       id: crypto.randomUUID(),
       driver_id: driverId ?? null,
       customer_id: customerId ?? null,
+      store_id: storeId ?? null,
       order_id: orderId ?? null,
       sender_id: user.id,
       sender_role: viewerRole,
@@ -113,6 +139,7 @@ export function LiveChatThread({
     const { error } = await (supabase as any).from('live_chat_messages').insert({
       driver_id: driverId ?? null,
       customer_id: customerId ?? null,
+      store_id: storeId ?? null,
       order_id: orderId ?? null,
       sender_id: user.id,
       sender_role: viewerRole,
@@ -135,6 +162,11 @@ export function LiveChatThread({
             {orderId && (
               <p className="text-[10px] text-muted-foreground truncate flex items-center gap-1">
                 <Package className="h-3 w-3" /> Παραγγελία #{orderId.slice(0, 8)}
+              </p>
+            )}
+            {topic && (
+              <p className="text-[10px] text-primary font-bold truncate flex items-center gap-1">
+                <Tag className="h-3 w-3" /> {TOPIC_LABELS[topic] ?? topic}
               </p>
             )}
           </div>
@@ -179,23 +211,29 @@ export function LiveChatThread({
         )}
       </div>
 
-      <div className="shrink-0 border-t bg-card p-2 flex items-center gap-2">
-        <Input
-          value={text}
-          onChange={(e) => setText(e.target.value)}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' && !e.shiftKey) {
-              e.preventDefault();
-              void send();
-            }
-          }}
-          placeholder="Γράψτε ένα μήνυμα..."
-          className="h-10 text-sm bg-muted/40 border-0 focus-visible:ring-1"
-        />
-        <Button size="icon" onClick={() => void send()} disabled={sending || !text.trim()} className="h-10 w-10 shrink-0">
-          <Send className="h-4 w-4" />
-        </Button>
-      </div>
+      {disabled ? (
+        <div className="shrink-0 border-t bg-card p-3 text-center text-xs text-muted-foreground">
+          Συνομιλία κλειστή — μόνο για ανάγνωση.
+        </div>
+      ) : (
+        <div className="shrink-0 border-t bg-card p-2 flex items-center gap-2">
+          <Input
+            value={text}
+            onChange={(e) => setText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                void send();
+              }
+            }}
+            placeholder="Γράψτε ένα μήνυμα..."
+            className="h-10 text-sm bg-muted/40 border-0 focus-visible:ring-1"
+          />
+          <Button size="icon" onClick={() => void send()} disabled={sending || !text.trim()} className="h-10 w-10 shrink-0">
+            <Send className="h-4 w-4" />
+          </Button>
+        </div>
+      )}
     </div>
   );
 }
