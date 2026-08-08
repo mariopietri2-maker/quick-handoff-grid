@@ -28,7 +28,7 @@
     color: var(--black);
     padding: 32px 20px 64px;
   }
-  .hero { max-width: 1400px; margin: 0 auto 28px; }
+  .hero { max-width: 1200px; margin: 0 auto 28px; }
   .hero h1 { font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
   .hero p { color: var(--muted); margin-top: 6px; font-size: 15px; max-width: 700px; }
   .hero .brand {
@@ -39,62 +39,62 @@
   .brand-dot { width: 32px; height: 32px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; }
   .screens {
     display: flex; flex-wrap: wrap; gap: 28px; justify-content: center;
-    max-width: 1400px; margin: 0 auto;
+    max-width: 1200px; margin: 0 auto;
   }
   .screen-col { display: flex; flex-direction: column; gap: 10px; align-items: center; }
   .screen-col h3 { font-size: 14px; font-weight: 700; color: var(--black); letter-spacing: .3px; }
   .screen-col .cap { font-size: 12px; color: var(--muted); margin-top: -4px; }
   .phone {
-    width: 340px; height: 720px; background: var(--surface); border-radius: 44px;
+    width: 390px; height: 840px; background: var(--surface); border-radius: 44px;
     border: 10px solid #1a1a1a; overflow: hidden; position: relative;
     box-shadow: 0 30px 60px rgba(0,0,0,.25), 0 8px 20px rgba(0,0,0,.12);
   }
   .notch {
     position: absolute; top: 8px; left: 50%; transform: translateX(-50%);
-    width: 110px; height: 22px; background: #1a1a1a; border-radius: 0 0 14px 14px; z-index: 50;
+    width: 130px; height: 24px; background: #1a1a1a; border-radius: 0 0 16px 16px; z-index: 50;
   }
   .screen { position: absolute; inset: 0; overflow: hidden; background: var(--bg); }
 
   /* ---- STATUSBAR ---- */
   .statusbar {
-    position: absolute; top: 0; left: 0; right: 0; height: 32px; z-index: 40;
+    position: absolute; top: 0; left: 0; right: 0; height: 34px; z-index: 40;
     display: flex; justify-content: space-between; align-items: center;
-    padding: 6px 16px 0; font-size: 11px; font-weight: 600; color: var(--black);
+    padding: 8px 18px 0; font-size: 11px; font-weight: 600; color: var(--black);
   }
 
   /* ---- DOCK NAV ---- */
   .nav {
-    position: absolute; bottom: 0; left: 0; right: 0; height: 70px;
+    position: absolute; bottom: 0; left: 0; right: 0; height: 74px;
     background: var(--surface); border-top: 1px solid var(--outline);
     display: flex; align-items: center; justify-content: space-around;
     padding: 0 4px; z-index: 45;
   }
   .ntab {
     display: flex; flex-direction: column; align-items: center; gap: 2px;
-    font-size: 9px; color: #8A8A8E; min-width: 52px; padding: 6px 0;
+    font-size: 10px; color: #8A8A8E; min-width: 52px; padding: 6px 0;
   }
   .ntab.on { color: var(--green); }
   .ntab svg { width: 20px; height: 20px; }
 
   /* ---- LOGIN ---- */
   .login { background: linear-gradient(180deg, #fff 0%, #F5FBF8 55%, #fff 100%); }
-  .login .body { padding: 80px 24px 24px; display: flex; flex-direction: column; height: 100%; }
+  .login .body { padding: 90px 28px 30px; display: flex; flex-direction: column; height: 100%; }
   .logo-tile {
-    width: 80px; height: 80px; border-radius: 22px; background: var(--green-soft);
+    width: 88px; height: 88px; border-radius: 24px; background: var(--green-soft);
     display: flex; align-items: center; justify-content: center; margin: 0 auto 16px;
   }
-  .login h1 { text-align: center; font-size: 26px; font-weight: 800; letter-spacing: -.5px; }
-  .login .sub { text-align: center; color: var(--muted); font-size: 13px; margin-top: 3px; }
+  .login h1 { text-align: center; font-size: 30px; font-weight: 800; letter-spacing: -.5px; }
+  .login .sub { text-align: center; color: var(--muted); font-size: 14px; margin-top: 4px; }
   .field {
-    position: relative; margin-top: 14px; border: 1.5px solid var(--outline);
-    border-radius: 14px; padding: 11px 13px;
+    position: relative; margin-top: 18px; border: 1.5px solid var(--outline);
+    border-radius: 16px; padding: 13px 15px;
   }
-  .field label { display: block; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
-  .field input { border: none; outline: none; width: 100%; font-size: 14px; font-family: inherit; color: var(--black); background: transparent; }
+  .field label { display: block; font-size: 12px; color: var(--muted); margin-bottom: 4px; }
+  .field input { border: none; outline: none; width: 100%; font-size: 16px; font-family: inherit; color: var(--black); background: transparent; }
   .field.active { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
   .btn-primary {
-    margin-top: auto; width: 100%; height: 52px; border-radius: 26px; border: none;
-    background: var(--green); color: #fff; font-size: 15px; font-weight: 800; font-family: inherit;
+    margin-top: auto; width: 100%; height: 56px; border-radius: 28px; border: none;
+    background: var(--green); color: #fff; font-size: 16px; font-weight: 800; font-family: inherit;
     cursor: pointer; box-shadow: 0 8px 20px rgba(6,193,103,.3);
   }
   .login .terms { text-align: center; font-size: 10px; color: var(--faint); margin-top: 12px; }
@@ -114,7 +114,7 @@
     display: flex; align-items: center; padding: 0 10px; gap: 6px;
     font-size: 13px; color: var(--muted);
   }
-  .store-scroll { position: absolute; top: 116px; left: 0; right: 0; bottom: 70px; overflow: hidden; }
+  .store-scroll { position: absolute; top: 120px; left: 0; right: 0; bottom: 74px; overflow: hidden; }
   .filter-row { display: flex; gap: 8px; padding: 10px 14px 4px; overflow: hidden; }
   .fchip {
     display: inline-flex; align-items: center; gap: 4px; font-size: 11px; font-weight: 700;
@@ -141,7 +141,7 @@
   }
   .store-header-name { font-size: 17px; font-weight: 800; }
   .store-header-meta { font-size: 11px; color: var(--muted); margin-top: 2px; }
-  .menu-list { position: absolute; top: 100px; left: 0; right: 0; bottom: 70px; overflow: hidden; }
+  .menu-list { position: absolute; top: 104px; left: 0; right: 0; bottom: 74px; overflow: hidden; }
   .cat-label { padding: 10px 14px 4px; font-size: 11px; font-weight: 800; letter-spacing: 1px; color: var(--muted); text-transform: uppercase; }
   .menu-item {
     display: flex; align-items: center; gap: 12px; padding: 10px 14px;
@@ -173,7 +173,7 @@
     padding: 32px 14px 10px;
   }
   .checkout-header h2 { font-size: 17px; font-weight: 800; }
-  .checkout-body { position: absolute; top: 82px; left: 0; right: 0; bottom: 70px; overflow: hidden; padding: 12px 14px; }
+  .checkout-body { position: absolute; top: 86px; left: 0; right: 0; bottom: 74px; overflow: hidden; padding: 12px 14px; }
   .cart-item-row { display: flex; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--outline); }
   .qty-ctrl { display: flex; align-items: center; gap: 8px; }
   .qty-btn { width: 26px; height: 26px; border-radius: 50%; background: var(--well); border: 1px solid var(--outline); font-size: 14px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
@@ -185,7 +185,7 @@
   .summary-row { display: flex; justify-content: space-between; font-size: 13px; padding: 4px 0; }
   .summary-row.total { font-weight: 800; font-size: 15px; border-top: 1px solid var(--outline); margin-top: 6px; padding-top: 8px; }
   .checkout-btn {
-    position: absolute; bottom: 80px; left: 14px; right: 14px; z-index: 40;
+    position: absolute; bottom: 84px; left: 14px; right: 14px; z-index: 40;
     height: 50px; border-radius: 25px; border: none; background: var(--green);
     color: #fff; font-size: 15px; font-weight: 800; font-family: inherit; cursor: pointer;
     box-shadow: 0 8px 20px rgba(6,193,103,.3);
@@ -236,7 +236,7 @@
     padding: 32px 14px 10px;
   }
   .orders-header h2 { font-size: 17px; font-weight: 800; }
-  .orders-body { position: absolute; top: 78px; left: 0; right: 0; bottom: 70px; overflow: hidden; padding: 12px 14px; }
+  .orders-body { position: absolute; top: 82px; left: 0; right: 0; bottom: 74px; overflow: hidden; padding: 12px 14px; }
   .order-card {
     background: var(--surface); border: 1px solid var(--outline); border-radius: 14px;
     padding: 12px 14px; margin-bottom: 10px;
@@ -264,7 +264,7 @@
     padding: 32px 14px 10px;
   }
   .profile-header h2 { font-size: 17px; font-weight: 800; }
-  .profile-body { position: absolute; top: 78px; left: 0; right: 0; bottom: 70px; overflow: hidden; padding: 0; }
+  .profile-body { position: absolute; top: 82px; left: 0; right: 0; bottom: 74px; overflow: hidden; padding: 0; }
   .profile-hero { background: linear-gradient(135deg, var(--green-soft), #fff); padding: 20px 14px; display: flex; align-items: center; gap: 14px; }
   .profile-avatar { width: 60px; height: 60px; border-radius: 50%; background: var(--green); display: flex; align-items: center; justify-content: center; color: #fff; font-size: 22px; font-weight: 800; flex-shrink: 0; }
   .profile-name { font-size: 17px; font-weight: 800; }
