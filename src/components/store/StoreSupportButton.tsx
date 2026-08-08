@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import {
   LifeBuoy, AlertTriangle, Smartphone, MessageCircle, Send,
   Package, CreditCard, Phone, Headphones, MessagesSquare, ArrowLeft,
-  ChefHat, Bike,
+  ChefHat, Bike, Zap,
 } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from '@/hooks/use-toast';
 import { TicketChat } from '@/components/support/TicketChat';
+import { StoreLiveChat } from '@/components/store/StoreLiveChat';
 import { format } from 'date-fns';
 import { hasSupportPhone, SUPPORT_PHONE } from '@/lib/support-phone';
 
@@ -54,7 +55,7 @@ interface StoreSupportButtonProps {
 
 export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
   const [open, setOpen] = useState(false);
-  const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat'>('menu');
+  const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat' | 'live'>('menu');
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -148,7 +149,7 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
           <div className="px-5 pt-5 pb-3 bg-gradient-to-br from-primary/15 to-transparent border-b">
             <DialogHeader>
               <DialogTitle className="font-heading text-lg flex items-center gap-2">
-                {(view === 'category' || view === 'chat') && (
+                {(view === 'category' || view === 'chat' || view === 'live') && (
                   <button
                     onClick={() => {
                       if (view === 'chat') { setActiveTicket(null); setView('tickets'); }
@@ -165,6 +166,8 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
                   ? `Ticket #${activeTicket.id.slice(0, 6)}`
                   : view === 'tickets'
                   ? 'Οι Συνομιλίες μου'
+                  : view === 'live'
+                  ? 'Ζωντανή Συνομιλία'
                   : 'Υποστήριξη Καταστήματος'}
               </DialogTitle>
               <DialogDescription className="text-xs">
@@ -172,6 +175,8 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
                   ? category.hint
                   : view === 'chat'
                   ? 'Συνομιλία κουζίνας / καταστήματος με την υποστήριξη'
+                  : view === 'live'
+                  ? 'Επείγον — άμεση επικοινωνία σε πραγματικό χρόνο με την υποστήριξη'
                   : 'Βοήθεια για παραγγελίες, οδηγούς & κουζίνα — ξεχωριστή ουρά από πελάτες/οδηγούς.'}
               </DialogDescription>
             </DialogHeader>
@@ -194,6 +199,23 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
                     </div>
                   </a>
                 )}
+
+                <button
+                  onClick={() => setView('live')}
+                  className="w-full flex items-center gap-3 p-3 mb-2 rounded-xl bg-amber-500/10 border border-amber-500/30 hover:bg-amber-500/15 transition-colors"
+                >
+                  <span className="relative h-10 w-10 rounded-full bg-amber-500 text-white flex items-center justify-center shadow-md">
+                    <Zap className="h-5 w-5" />
+                    <span className="absolute -top-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-red-500 ring-2 ring-card animate-pulse" />
+                  </span>
+                  <div className="flex-1 min-w-0 text-left">
+                    <p className="font-heading font-bold text-sm">
+                      Ζωντανή Συνομιλία
+                      <span className="ml-2 text-[9px] px-1.5 py-0.5 rounded-full bg-red-500 text-white font-heading uppercase tracking-wide">Άμεση</span>
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">Επείγον πρόβλημα — απάντηση σε πραγματικό χρόνο</p>
+                  </div>
+                </button>
 
                 {tickets.length > 0 && (
                   <button
@@ -325,6 +347,10 @@ export function StoreSupportButton({ orderId }: StoreSupportButtonProps) {
                   Μέσος χρόνος απάντησης: <span className="font-bold text-primary">{'< 5 λεπτά'}</span>
                 </p>
               </div>
+            )}
+
+            {view === 'live' && (
+              <StoreLiveChat className="h-[420px] -mx-5 -mb-5 border-t" />
             )}
 
             {view === 'chat' && activeTicket && (

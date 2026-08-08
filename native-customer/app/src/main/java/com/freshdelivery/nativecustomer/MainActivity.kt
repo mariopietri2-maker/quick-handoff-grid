@@ -1,9 +1,12 @@
 package com.freshdelivery.nativecustomer
 
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -28,6 +31,19 @@ class MainActivity : ComponentActivity() {
             FreshCustomerTheme {
                 val state by vm.state.collectAsState()
                 var splashMinElapsed by remember { mutableStateOf(false) }
+                val permissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestMultiplePermissions(),
+                ) {}
+                LaunchedEffect(Unit) {
+                    val perms = buildList {
+                        add(android.Manifest.permission.ACCESS_FINE_LOCATION)
+                        add(android.Manifest.permission.ACCESS_COARSE_LOCATION)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            add(android.Manifest.permission.POST_NOTIFICATIONS)
+                        }
+                    }
+                    permissionLauncher.launch(perms.toTypedArray())
+                }
                 LaunchedEffect(Unit) {
                     delay(1_600)
                     splashMinElapsed = true
@@ -57,6 +73,7 @@ class MainActivity : ComponentActivity() {
                             onUpdateQty = vm::updateQty,
                             onToggleCart = vm::toggleCart,
                             onSetDelivery = vm::setDelivery,
+                            onSaveAddress = vm::saveAddress,
                             onSetNotes = vm::setNotes,
                             onSetTip = vm::setTip,
                             onSetPayment = vm::setPaymentMethod,
@@ -68,6 +85,10 @@ class MainActivity : ComponentActivity() {
                             onUseLocation = vm::useCurrentLocation,
                             onGeocode = vm::geocodeAddress,
                             onPickSuggestion = vm::pickAddressSuggestion,
+                            onAutocomplete = vm::autocompleteAddress,
+                            onClearSuggestions = vm::clearAddressSuggestions,
+                            onSelectSaved = vm::selectSavedAddress,
+                            onDeleteSaved = vm::deleteSavedAddress,
                             onSaveProfile = vm::saveProfile,
                             onCancelOrder = vm::cancelOrder,
                             onClearMessages = vm::clearMessages,
@@ -79,7 +100,13 @@ class MainActivity : ComponentActivity() {
                             onToggleAdmin = vm::toggleAdmin,
                             onOpenSupport = vm::openSupport,
                             onCloseSupport = vm::closeSupport,
+                            onSelectSupportTopic = vm::selectSupportTopic,
+                            onClearSupportTopic = vm::clearSupportTopic,
                             onSendLiveChat = vm::sendLiveChatMessage,
+                            onShowMyTickets = vm::openMyTickets,
+                            onOpenTicket = vm::openTicket,
+                            onSubmitTicket = vm::submitTicket,
+                            onSendTicket = vm::sendTicketMessage,
                         )
                     }
                 }

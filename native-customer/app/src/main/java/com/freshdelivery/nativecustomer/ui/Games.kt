@@ -37,6 +37,8 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Switch
 import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
@@ -495,6 +497,7 @@ fun AdminPanel(
     onCardToggle: (Int, Boolean) -> Unit,
     onCardPrize: (Int, String) -> Unit,
     onClose: () -> Unit,
+    snackbar: SnackbarHostState? = null,
 ) {
     Column(
         Modifier
@@ -503,6 +506,9 @@ fun AdminPanel(
             .statusBarsPadding()
             .navigationBarsPadding(),
     ) {
+        if (snackbar != null) {
+            SnackbarHost(snackbar)
+        }
         Row(
             Modifier
                 .fillMaxWidth()

@@ -1,9 +1,10 @@
 package com.freshdelivery.nativecustomer.ui
 
-import android.annotation.SuppressLint
 import android.app.Application
 import android.content.Context
+import android.content.pm.PackageManager
 import android.location.Geocoder
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshdelivery.nativecustomer.data.CartLine
@@ -18,8 +19,12 @@ import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.data.MysteryCardDef
 import com.freshdelivery.nativecustomer.data.OrderUi
 import com.freshdelivery.nativecustomer.data.ProfileRow
+import com.freshdelivery.nativecustomer.data.SavedAddressRow
 import com.freshdelivery.nativecustomer.data.StoreRow
+import com.freshdelivery.nativecustomer.data.StoreRating
+import com.freshdelivery.nativecustomer.data.SupportTicketRow
 import com.freshdelivery.nativecustomer.data.SupabaseModule
+import com.freshdelivery.nativecustomer.data.TicketMessageRow
 import com.freshdelivery.nativecustomer.data.WHEEL_SEGMENTS
 import com.freshdelivery.nativecustomer.data.WheelSegment
 import com.freshdelivery.nativecustomer.data.defaultMysteryCards
@@ -51,6 +56,12 @@ data class AddressSuggestion(
     val lng: Double,
 )
 
+/** Which support surface the customer is on: picker, ticket composer, list, or a thread. */
+enum class SupportView { Topics, Compose, MyTickets, Live, Ticket }
+
+/** Topics that skip the async ticket queue and open the urgent live chat instead (mirrors web). */
+private val URGENT_TOPICS = setOf("wrong_order")
+
 data class CustomerUiState(
     val bootstrapping: Boolean = true,
     val signedIn: Boolean = false,
@@ -58,6 +69,9 @@ data class CustomerUiState(
     val profile: ProfileRow? = null,
     val tab: CustomerTab = CustomerTab.Home,
     val stores: List<StoreRow> = emptyList(),
+    val storeRatings: Map<String, StoreRating> = emptyMap(),
+    val favoriteStoreIds: Set<String> = emptySet(),
+    val canManageGames: Boolean = false,
     val selectedStore: StoreRow? = null,
     val menu: List<MenuItemRow> = emptyList(),
     val cart: List<CartLine> = emptyList(),
@@ -80,6 +94,7 @@ data class CustomerUiState(
     val searchQuery: String = "",
     val signupMode: Boolean = false,
     val addressSuggestions: List<AddressSuggestion> = emptyList(),
+    val savedAddresses: List<SavedAddressRow> = emptyList(),
     val feeBase: Double = 0.99,
     val feePerKm: Double = 0.0,
     val error: String? = null,
@@ -103,10 +118,22 @@ data class CustomerUiState(
     val adminOpen: Boolean = false,
     // Live support chat (live_chat_messages, customer channel)
     val supportOpen: Boolean = false,
+    val supportView: SupportView = SupportView.Topics,
+    val liveChatTopic: String? = null,
+    val liveChatSessionId: String? = null,
+    val liveChatClosed: Boolean = false,
     val liveChatMessages: List<LiveChatMessageRow> = emptyList(),
     val liveChatLoading: Boolean = false,
     val liveChatSubscribed: Boolean = false,
     val liveChatError: String? = null,
+    // Async support tickets (support_tickets, ticket_messages)
+    val ticketTopic: String? = null,
+    val tickets: List<SupportTicketRow> = emptyList(),
+    val activeTicket: SupportTicketRow? = null,
+    val ticketMessages: List<TicketMessageRow> = emptyList(),
+    val ticketLoading: Boolean = false,
+    val ticketPending: Boolean = false,
+    val ticketError: String? = null,
 ) {
     val cartSubtotal: Double get() = cart.sumOf { it.price * it.quantity }
     val cartCount: Int get() = cart.sumOf { it.quantity }
@@ -120,10 +147,7 @@ data class CustomerUiState(
     val grandTotal: Double
         get() = (cartSubtotal + deliveryFee + tipAmount - gameDiscount).coerceAtLeast(0.0)
     val visibleStores: List<StoreRow>
-        get() = if (searchQuery.isBlank()) stores else stores.filter {
-            (it.name ?: "").contains(searchQuery, ignoreCase = true) ||
-                (it.address ?: "").contains(searchQuery, ignoreCase = true)
-        }
+        get() = if (searchQuery.isBlank()) stores else stores
     val activeOrders: List<OrderUi>
         get() = orders.filter { it.order.status !in TERMINAL_STATUSES }
 }
@@ -140,6 +164,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var driverChannelFor: String? = null
     private var gameTickerJob: Job? = null
     private var liveChatJob: Job? = null
+    private var liveChatSessionJob: Job? = null
+    private var ticketJob: Job? = null
+    private var autocompleteJob: Job? = null
+    private var searchJob: Job? = null
 
     init {
         _state.value = _state.value.copy(gameShow = Random.nextDouble() < 0.6)
@@ -169,6 +197,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         driverChannelFor = null
                         liveChatJob?.cancel()
                         liveChatJob = null
+                        liveChatSessionJob?.cancel()
+                        liveChatSessionJob = null
+                        ticketJob?.cancel()
+                        ticketJob = null
                         repo.unsubscribeAll()
                         val gameActive = _state.value.gameActive
                         val cards = _state.value.cards
@@ -205,9 +237,15 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             )
             recomputeDeliveryFee()
         }
+        refreshSavedAddresses()
+        refreshFavorites()
         runCatching {
             val cfg = repo.fetchAppConfig()
             _state.value = _state.value.copy(appConfig = cfg).applyGameConfig(cfg.games)
+        }
+        viewModelScope.launch {
+            runCatching { repo.canManageGames() }
+                .onSuccess { can -> _state.value = _state.value.copy(canManageGames = can) }
         }
         registerFcm(userId)
         refreshAll()
@@ -227,13 +265,21 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun watchDriver(driverId: String) {
         if (driverChannelFor == driverId) return
-        driverChannelFor = driverId
         driverRealtimeJob?.cancel()
+        driverChannelFor = driverId
         driverRealtimeJob = viewModelScope.launch {
             runCatching {
                 repo.subscribeDriverLocations(driverId).collect { refreshDriverLocation() }
             }
         }
+    }
+
+    private fun stopWatchingDriver() {
+        if (driverChannelFor == null && driverRealtimeJob == null) return
+        driverRealtimeJob?.cancel()
+        driverRealtimeJob = null
+        driverChannelFor = null
+        viewModelScope.launch { runCatching { repo.unsubscribeDriverLocations() } }
     }
 
     private fun registerFcm(userId: String) {
@@ -316,10 +362,27 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setSearchQuery(q: String) {
         _state.value = _state.value.copy(searchQuery = q)
+        searchJob?.cancel()
+        val trimmed = q.trim()
+        if (trimmed.isBlank()) {
+            refreshStores()
+            return
+        }
+        searchJob = viewModelScope.launch {
+            delay(280)
+            val results = repo.searchStores(trimmed)
+            _state.value = _state.value.copy(stores = results)
+        }
     }
 
-    @SuppressLint("MissingPermission")
     fun useCurrentLocation() {
+        val app = getApplication()
+        if (ContextCompat.checkSelfPermission(app, android.Manifest.permission.ACCESS_FINE_LOCATION)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            _state.value = _state.value.copy(error = "Ενεργοποίησε την πρόσβαση τοποθεσίας από τις ρυθμίσεις της συσκευής")
+            return
+        }
         viewModelScope.launch {
             _state.value = _state.value.copy(locating = true, error = null)
             runCatching {
@@ -338,6 +401,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 recomputeDeliveryFee()
                 persistLastAddress()
+                if (label != null) seedGeocodeCache(label, loc.latitude, loc.longitude)
             }.onFailure { e ->
                 _state.value = _state.value.copy(locating = false, error = e.message ?: "Αποτυχία τοποθεσίας")
             }
@@ -365,6 +429,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     )
                     recomputeDeliveryFee()
                     persistLastAddress()
+                    seedGeocodeCache(h.label, h.lat, h.lng)
                 }
                 else -> {
                     _state.value = _state.value.copy(
@@ -378,15 +443,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun pickAddressSuggestion(s: AddressSuggestion) {
-        _state.value = _state.value.copy(
-            deliveryAddress = s.label,
-            deliveryLat = s.lat,
-            deliveryLng = s.lng,
-            addressSuggestions = emptyList(),
-            info = "Η διεύθυνση επιλέχθηκε",
-        )
-        recomputeDeliveryFee()
-        persistLastAddress()
+        applyAddress(s.label, s.lat, s.lng)
+        _state.value = _state.value.copy(info = "Η διεύθυνση επιλέχθηκε")
+        seedGeocodeCache(s.label, s.lat, s.lng)
     }
 
     private fun recomputeDeliveryFee() {
@@ -442,7 +501,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectTab(tab: CustomerTab) {
-        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null)
+        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null, menu = emptyList())
         when (tab) {
             CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
             CustomerTab.Home, CustomerTab.Browse -> refreshStores()
@@ -518,12 +577,129 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    fun saveAddress() {
+        val s = _state.value
+        persistLastAddress()
+        val addr = s.deliveryAddress.trim()
+        if (addr.length < 5) return
+        val lat = s.deliveryLat
+        val lng = s.deliveryLng
+        viewModelScope.launch {
+            runCatching {
+                repo.saveMyDeliveryAddress(addr, lat, lng)
+                if (lat != null && lng != null) repo.rememberAddressGeocode(addr, addr, lat, lng)
+                refreshSavedAddresses()
+            }
+        }
+    }
+
+    fun clearAddressSuggestions() {
+        _state.value = _state.value.copy(addressSuggestions = emptyList())
+    }
+
+    /** Debounced live autocomplete: shared cache → saved addresses → device geocoder. */
+    fun autocompleteAddress(query: String) {
+        autocompleteJob?.cancel()
+        val q = query.trim()
+        if (q.length < 3) {
+            _state.value = _state.value.copy(addressSuggestions = emptyList())
+            return
+        }
+        autocompleteJob = viewModelScope.launch {
+            delay(220)
+            val cached = runCatching { repo.suggestCachedAddresses(q, 6) }.getOrDefault(emptyList())
+            val geocoder = runCatching { forwardGeocodeMany(q) }.getOrDefault(emptyList())
+            val streetKey = streetKeyOf(q)
+            val saved = _state.value.savedAddresses
+                .filter { it.latitude != null && it.longitude != null }
+                .filter { it.address.contains(q, ignoreCase = true) || streetKeyOf(it.address) == streetKey }
+                .map { AddressSuggestion(it.address, it.latitude!!, it.longitude!!) }
+            val merged = LinkedHashMap<String, AddressSuggestion>()
+            (saved + cached.map { AddressSuggestion(it.display_address, it.latitude ?: 0.0, it.longitude ?: 0.0) } + geocoder)
+                .filter { it.lat != 0.0 || it.lng != 0.0 }
+                .forEach { s -> merged.putIfAbsent(s.label.trim().lowercase(), s) }
+            _state.value = _state.value.copy(addressSuggestions = merged.values.take(8).toList())
+        }
+    }
+
+    /** Apply a personally saved address (resolves coords on the fly if missing). */
+    fun selectSavedAddress(sa: SavedAddressRow) {
+        val addr = sa.address.trim()
+        if (sa.latitude != null && sa.longitude != null) {
+            applyAddress(addr, sa.latitude, sa.longitude)
+            saveAddress()
+        } else {
+            _state.value = _state.value.copy(locating = true, error = null)
+            viewModelScope.launch {
+                val hit = runCatching { forwardGeocodeMany(addr) }.getOrNull()?.firstOrNull()
+                if (hit != null) {
+                    applyAddress(hit.label, hit.lat, hit.lng)
+                    saveAddress()
+                } else {
+                    _state.value = _state.value.copy(locating = false, error = "Δεν βρέθηκε η διεύθυνση")
+                }
+            }
+        }
+    }
+
+    fun deleteSavedAddress(id: String) {
+        viewModelScope.launch {
+            runCatching {
+                repo.deleteSavedAddress(id)
+                refreshSavedAddresses()
+            }
+        }
+    }
+
+    fun setDefaultSavedAddress(id: String) {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                repo.setDefaultSavedAddress(uid, id)
+                refreshSavedAddresses()
+            }
+        }
+    }
+
+    fun refreshSavedAddresses() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                _state.value = _state.value.copy(savedAddresses = repo.fetchSavedAddresses())
+            }
+        }
+    }
+
+    private fun applyAddress(label: String, lat: Double?, lng: Double?) {
+        _state.value = _state.value.copy(
+            deliveryAddress = label,
+            deliveryLat = lat,
+            deliveryLng = lng,
+            addressSuggestions = emptyList(),
+        )
+        recomputeDeliveryFee()
+        persistLastAddress()
+    }
+
+    private fun seedGeocodeCache(label: String, lat: Double, lng: Double) {
+        viewModelScope.launch {
+            runCatching { repo.rememberAddressGeocode(label, label, lat, lng) }
+        }
+    }
+
+    /** Strip the trailing house number so "Δημοκρατίας 15" matches "Δημοκρατίας 12". */
+    private fun streetKeyOf(address: String): String =
+        address.lowercase().trim()
+            .replace(Regex("\\d.*$"), "")
+            .replace(Regex("\\s+"), " ")
+            .trim()
+
     fun setNotes(notes: String) {
         _state.value = _state.value.copy(notes = notes)
     }
 
     fun setTip(tip: Double) {
-        _state.value = _state.value.copy(tipAmount = tip.coerceAtLeast(0.0))
+        _state.value = _state.value.copy(tipAmount = tip.coerceIn(0.0, 100.0))
     }
 
     fun setPaymentMethod(method: String) {
@@ -563,9 +739,11 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     deliveryFee = s.deliveryFee,
                     notes = s.notes.ifBlank { null },
                     distanceKm = distanceKm,
+                    promoCode = s.appliedDeal?.code,
                 )
             }.onSuccess {
                 persistLastAddress()
+                saveAddress()
                 _state.value = _state.value.copy(
                     busy = false,
                     cart = emptyList(),
@@ -599,9 +777,36 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshStores() {
         viewModelScope.launch {
             runCatching {
-                _state.value = _state.value.copy(stores = repo.fetchStores())
+                _state.value = _state.value.copy(
+                    stores = repo.fetchStores(),
+                    storeRatings = repo.fetchStoreRatings(),
+                )
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }
+
+    fun refreshFavorites() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching { repo.fetchFavoriteStoreIds(uid) }
+                .onSuccess { ids -> _state.value = _state.value.copy(favoriteStoreIds = ids.toSet()) }
+        }
+    }
+
+    fun toggleFavorite(storeId: String) {
+        val uid = _state.value.userId ?: return
+        val cur = _state.value.favoriteStoreIds
+        val adding = storeId !in cur
+        _state.value = _state.value.copy(
+            favoriteStoreIds = if (adding) cur + storeId else cur - storeId,
+        )
+        viewModelScope.launch {
+            runCatching {
+                if (adding) repo.addFavoriteStore(uid, storeId) else repo.removeFavoriteStore(uid, storeId)
+            }.onFailure { e ->
+                _state.value = _state.value.copy(favoriteStoreIds = cur, error = e.message)
             }
         }
     }
@@ -624,7 +829,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun refreshDriverLocation() {
-        val driverId = _state.value.trackingOrder?.order?.driver_id ?: return
+        val driverId = _state.value.trackingOrder?.order?.driver_id ?: run {
+            stopWatchingDriver()
+            return
+        }
         watchDriver(driverId)
         viewModelScope.launch {
             runCatching {
@@ -663,6 +871,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun spinWheel() {
         val s = _state.value
         if (!s.gameEnabled || s.spinning || s.spinLocked || !s.gameShow || s.gameActive != "wheel") return
+        if (!canSpinToday()) {
+            _state.value = s.copy(info = "Η ρόδα είναι διαθέσιμη μία φορά την ημέρα")
+            return
+        }
         val segs = s.wheelSegments.ifEmpty { WHEEL_SEGMENTS }
         val target = Random.nextInt(segs.size)
         _state.value = s.copy(spinning = true, wheelPendingTarget = target, wheelResult = null)
@@ -688,6 +900,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 ),
                 appliedDeal = deal,
             )
+            persistSpinDay()
         }
     }
 
@@ -695,11 +908,40 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         val card = s.cards.getOrNull(index) ?: return
         if (!s.gameEnabled || !card.enabled || s.cardClaimed || !s.gameShow || s.gameActive != "cards") return
+        if (!canClaimCardToday()) {
+            _state.value = s.copy(info = "Οι κάρτες ξαναεμφανίζονται αύριο")
+            return
+        }
         _state.value = s.copy(
             cardClaimed = true,
             claimedCardIndex = index,
             openedCards = s.cards.indices.toSet(),
+            appliedDeal = prizeToDeal(card.prize),
         )
+        persistCardClaimDay()
+    }
+
+    /** Turn a mystery-card prize string into a real checkout deal (code + pct/free delivery). */
+    private fun prizeToDeal(prize: String): GameDeal? {
+        val p = prize.trim()
+        if (p.isEmpty()) return null
+        val pct = Regex("(\\d+)\\s*%").find(p)?.groupValues?.get(1)?.toIntOrNull()
+        val free = p.contains("δωρεάν", ignoreCase = true) || p.contains("free", ignoreCase = true)
+        return if (free) {
+            GameDeal(code = "ΠΑΡΑΔΟΣΗ", freeDelivery = true, label = "Δωρεάν παράδοση")
+        } else if (pct != null) {
+            val code = when (pct) {
+                5 -> "FRESH5"
+                10 -> "FRESH10"
+                15 -> "FRESH15"
+                20 -> "FRESH20"
+                25 -> "FRESH25"
+                else -> "FRESH$pct"
+            }
+            GameDeal(code = code, pct = pct, label = "$pct% έκπτωση")
+        } else {
+            null
+        }
     }
 
     fun selectGame(game: String) {
@@ -729,18 +971,215 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openSupport() {
         if (_state.value.supportOpen) return
-        _state.value = _state.value.copy(supportOpen = true)
-        openLiveChat()
+        _state.value = _state.value.copy(supportOpen = true, supportView = SupportView.Topics)
+        viewModelScope.launch {
+            val uid = _state.value.userId ?: return@launch
+            runCatching { repo.fetchMyTickets(uid) }
+                .onSuccess { list -> _state.value = _state.value.copy(tickets = list) }
+            val session = repo.getMyLiveChatSession()
+            if (session != null && session.id != null) {
+                val closed = session.status == "closed"
+                _state.value = _state.value.copy(
+                    supportView = SupportView.Live,
+                    liveChatSessionId = session.id,
+                    liveChatClosed = closed,
+                    liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: "Γενικό",
+                    liveChatLoading = true,
+                )
+                fetchLiveChatHistory()
+                if (!closed) startLiveChatSubscription(uid)
+            }
+        }
     }
 
     fun closeSupport() {
         closeLiveChat()
-        _state.value = _state.value.copy(supportOpen = false)
+        cancelTicketSubscriptions()
+        _state.value = _state.value.copy(
+            supportOpen = false,
+            supportView = SupportView.Topics,
+            liveChatTopic = null,
+            liveChatSessionId = null,
+            liveChatClosed = false,
+            ticketTopic = null,
+            tickets = emptyList(),
+            activeTicket = null,
+            ticketMessages = emptyList(),
+            ticketError = null,
+        )
+    }
+
+    /** Customer picks a problem first — urgent topics go to live chat, the rest become tickets. */
+    fun selectSupportTopic(topic: String) {
+        if (_state.value.userId == null) return
+        if (topic in URGENT_TOPICS) {
+            selectLiveChatTopic(topic)
+        } else {
+            _state.value = _state.value.copy(
+                supportView = SupportView.Compose,
+                ticketTopic = topic,
+                ticketError = null,
+            )
+        }
+    }
+
+    private fun selectLiveChatTopic(topic: String) {
+        viewModelScope.launch {
+            val sessionId = repo.ensureMyLiveChatSession(topic)
+            _state.value = _state.value.copy(
+                supportView = SupportView.Live,
+                liveChatTopic = topic,
+                liveChatSessionId = sessionId ?: _state.value.liveChatSessionId,
+                liveChatClosed = false,
+                liveChatError = null,
+            )
+            openLiveChat()
+        }
+    }
+
+    /** Back to the topic picker (closes the active chat/ticket, keeps the support screen open). */
+    fun clearSupportTopic() {
+        closeLiveChat()
+        cancelTicketSubscriptions()
+        _state.value = _state.value.copy(
+            supportView = SupportView.Topics,
+            liveChatTopic = null,
+            liveChatSessionId = null,
+            liveChatClosed = false,
+            ticketTopic = null,
+            activeTicket = null,
+            ticketMessages = emptyList(),
+            ticketError = null,
+        )
+    }
+
+    // ── Async support tickets ──
+
+    fun openMyTickets() {
+        val uid = _state.value.userId ?: return
+        _state.value = _state.value.copy(supportView = SupportView.MyTickets, ticketError = null)
+        viewModelScope.launch {
+            runCatching { repo.fetchMyTickets(uid) }
+                .onSuccess { list -> _state.value = _state.value.copy(tickets = list) }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        ticketError = e.message ?: "Δεν φορτώθηκαν τα αιτήματα",
+                    )
+                }
+        }
+    }
+
+    /** Create the ticket and jump straight into its thread. */
+    fun submitTicket(description: String) {
+        val uid = _state.value.userId ?: return
+        val topic = _state.value.ticketTopic ?: return
+        val trimmed = description.trim()
+        if (trimmed.isEmpty() || _state.value.ticketPending) return
+        viewModelScope.launch {
+            _state.value = _state.value.copy(ticketPending = true, ticketError = null)
+            runCatching {
+                repo.createTicket(uid, topic, trimmed, _state.value.trackingOrder?.order?.id)
+                repo.fetchMyTickets(uid)
+            }.onSuccess { list ->
+                val created = list.firstOrNull()
+                _state.value = _state.value.copy(
+                    ticketPending = false,
+                    tickets = list,
+                    activeTicket = created,
+                    ticketTopic = null,
+                    supportView = SupportView.Ticket,
+                )
+                if (created != null) openTicketThread(created)
+            }.onFailure { e ->
+                _state.value = _state.value.copy(
+                    ticketPending = false,
+                    ticketError = e.message ?: "Αποτυχία υποβολής",
+                )
+            }
+        }
+    }
+
+    fun openTicket(ticket: SupportTicketRow) {
+        _state.value = _state.value.copy(
+            activeTicket = ticket,
+            supportView = SupportView.Ticket,
+            ticketError = null,
+        )
+        openTicketThread(ticket)
+    }
+
+    private fun openTicketThread(ticket: SupportTicketRow) {
+        ticketJob?.cancel()
+        _state.value = _state.value.copy(ticketLoading = true)
+        viewModelScope.launch {
+            runCatching { repo.fetchTicketMessages(ticket.id) }
+                .onSuccess { msgs ->
+                    _state.value = _state.value.copy(ticketMessages = msgs, ticketLoading = false)
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        ticketLoading = false,
+                        ticketError = e.message ?: "Δεν φορτώθηκε το ticket",
+                    )
+                }
+        }
+        val uid = _state.value.userId ?: return
+        ticketJob = viewModelScope.launch {
+            runCatching { repo.subscribeTicketMessages(ticket.id) }
+                .onSuccess { flow -> flow.collect { _ -> refreshTicketMessages(ticket.id) } }
+        }
+    }
+
+    fun sendTicketMessage(text: String) {
+        val uid = _state.value.userId ?: return
+        val ticketId = _state.value.activeTicket?.id ?: return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.sendTicketMessage(ticketId, uid, trimmed) }
+                .onSuccess { refreshTicketMessages(ticketId) }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        ticketError = e.message ?: "Αποτυχία αποστολής",
+                    )
+                }
+        }
+    }
+
+    private fun refreshTicketMessages(ticketId: String) {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching { repo.fetchTicketMessages(ticketId) }
+                .onSuccess { msgs -> _state.value = _state.value.copy(ticketMessages = msgs) }
+            runCatching { repo.fetchMyTickets(uid) }
+                .onSuccess { list ->
+                    val activeId = _state.value.activeTicket?.id
+                    _state.value = _state.value.copy(
+                        tickets = list,
+                        activeTicket = list.firstOrNull { it.id == activeId } ?: _state.value.activeTicket,
+                    )
+                }
+        }
+    }
+
+    private fun cancelTicketSubscriptions() {
+        ticketJob?.cancel()
+        ticketJob = null
+        viewModelScope.launch {
+            runCatching { repo.unsubscribeTickets() }
+        }
     }
 
     private fun openLiveChat() {
         val uid = _state.value.userId ?: return
-        _state.value = _state.value.copy(liveChatLoading = true, liveChatError = null)
+        _state.value = _state.value.copy(liveChatLoading = true, liveChatError = null, liveChatClosed = false)
+        fetchLiveChatHistory()
+        startLiveChatSubscription(uid)
+    }
+
+    /** Load the full past conversation so the customer keeps their history. */
+    private fun fetchLiveChatHistory() {
+        val uid = _state.value.userId ?: return
         viewModelScope.launch {
             runCatching { repo.fetchLiveChat(uid) }
                 .onSuccess { msgs ->
@@ -756,7 +1195,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         liveChatError = e.message ?: "Δεν συνδέθηκε το chat",
                     )
                 }
-            startLiveChatSubscription(uid)
         }
     }
 
@@ -764,8 +1202,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         val uid = _state.value.userId ?: return
         val trimmed = text.trim()
         if (trimmed.isEmpty()) return
+        if (_state.value.liveChatClosed) {
+            _state.value = _state.value.copy(liveChatError = "Η συνομιλία έκλεισε από την υποστήριξη")
+            return
+        }
         viewModelScope.launch {
-            runCatching { repo.sendLiveChatMessage(uid, uid, trimmed) }
+            runCatching { repo.sendLiveChatMessage(uid, uid, trimmed, _state.value.liveChatTopic) }
                 .onSuccess { refreshLiveChat(uid) }
                 .onFailure { e ->
                     _state.value = _state.value.copy(
@@ -790,6 +1232,22 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
         }
+        liveChatSessionJob?.cancel()
+        liveChatSessionJob = viewModelScope.launch {
+            runCatching { repo.subscribeLiveChatSessions(customerId) }
+                .onSuccess { flow ->
+                    flow.collect { _ ->
+                        val session = runCatching { repo.getMyLiveChatSession() }.getOrNull()
+                        if (session != null) {
+                            _state.value = _state.value.copy(
+                                liveChatSessionId = session.id,
+                                liveChatClosed = session.status == "closed",
+                                liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: _state.value.liveChatTopic,
+                            )
+                        }
+                    }
+                }
+        }
     }
 
     private fun refreshLiveChat(customerId: String) {
@@ -802,6 +1260,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private fun closeLiveChat() {
         liveChatJob?.cancel()
         liveChatJob = null
+        liveChatSessionJob?.cancel()
+        liveChatSessionJob = null
         viewModelScope.launch {
             runCatching { repo.unsubscribeLiveChat() }
             _state.value = _state.value.copy(
@@ -813,6 +1273,35 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun todayKey(): String = java.time.LocalDate.now().toString()
+
+    private fun canSpinToday(): Boolean {
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        return prefs.getString("wheel_last_spin_day", null) != todayKey()
+    }
+
+    private fun canClaimCardToday(): Boolean {
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        return prefs.getString("card_claim_day", null) != todayKey()
+    }
+
+    private fun persistSpinDay() {
+        getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+            .edit().putString("wheel_last_spin_day", todayKey()).apply()
+    }
+
+    private fun persistCardClaimDay() {
+        getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+            .edit().putString("card_claim_day", todayKey()).apply()
+    }
+
+    /** Seconds until local midnight — drives the daily game-cycle countdown. */
+    private fun secondsToMidnight(): Int =
+        java.time.Duration.between(
+            java.time.LocalDateTime.now(),
+            java.time.LocalDate.now().plusDays(1).atStartOfDay(),
+        ).seconds.toInt().coerceAtLeast(1)
+
     private fun startGameTicker() {
         gameTickerJob?.cancel()
         gameTickerJob = viewModelScope.launch {
@@ -820,13 +1309,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 delay(1_000)
                 val s = _state.value
                 if (!s.signedIn) continue
-                val next = s.dealSeconds - 1
-                if (next <= 0) {
+                if (s.dealSeconds <= 0) {
                     _state.value = s.copy(
-                        dealSeconds = 899,
+                        dealSeconds = secondsToMidnight(),
                         spinning = false,
                         wheelPendingTarget = null,
-                        spinLocked = false,
+                        spinLocked = !canSpinToday(),
                         wheelResult = null,
                         cardClaimed = false,
                         claimedCardIndex = null,
@@ -835,7 +1323,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         gameShow = if (s.gameEnabled) Random.nextDouble() < 0.6 else false,
                     )
                 } else {
-                    _state.value = s.copy(dealSeconds = next)
+                    _state.value = s.copy(dealSeconds = s.dealSeconds - 1)
                 }
             }
         }
@@ -885,6 +1373,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         PushTokenHolder.listener = null
         gameTickerJob?.cancel()
         liveChatJob?.cancel()
+        liveChatSessionJob?.cancel()
+        ticketJob?.cancel()
+        searchJob?.cancel()
         super.onCleared()
     }
 }

@@ -26,6 +26,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.AccountCircle
@@ -33,6 +34,7 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DirectionsBike
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Headset
@@ -98,6 +100,8 @@ import coil.compose.AsyncImage
 import com.freshdelivery.nativecustomer.data.CustomerTab
 import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.data.OrderUi
+import com.freshdelivery.nativecustomer.data.SavedAddressRow
+import com.freshdelivery.nativecustomer.data.StoreRating
 import com.freshdelivery.nativecustomer.data.StoreRow
 import com.freshdelivery.nativecustomer.ui.map.MapMarker
 import com.freshdelivery.nativecustomer.ui.map.MapboxView
@@ -115,6 +119,17 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshRoseSoft
 import com.freshdelivery.nativecustomer.ui.theme.FreshSurface
 import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 import com.freshdelivery.nativecustomer.ui.theme.FreshVioletSoft
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlin.math.atan2
+import kotlin.math.cos
+import kotlin.math.sin
+import kotlin.math.sqrt
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 private val FreshGradient = Brush.horizontalGradient(listOf(FreshGreen, FreshViolet))
 private val FreshChipGradient = Brush.horizontalGradient(listOf(FreshChip, FreshChip))
@@ -125,10 +140,12 @@ fun CustomerShell(
     onTab: (CustomerTab) -> Unit,
     onOpenStore: (StoreRow) -> Unit,
     onCloseStore: () -> Unit,
+    onToggleFavorite: (String) -> Unit = {},
     onAddToCart: (MenuItemRow) -> Unit,
     onUpdateQty: (String, Int) -> Unit,
     onToggleCart: (Boolean) -> Unit,
     onSetDelivery: (String, Double?, Double?) -> Unit,
+    onSaveAddress: () -> Unit = {},
     onSetNotes: (String) -> Unit,
     onSetTip: (Double) -> Unit,
     onSetPayment: (String) -> Unit,
@@ -140,6 +157,10 @@ fun CustomerShell(
     onUseLocation: () -> Unit = {},
     onGeocode: (String) -> Unit = {},
     onPickSuggestion: (AddressSuggestion) -> Unit = {},
+    onAutocomplete: (String) -> Unit = {},
+    onClearSuggestions: () -> Unit = {},
+    onSelectSaved: (SavedAddressRow) -> Unit = {},
+    onDeleteSaved: (String) -> Unit = {},
     onSaveProfile: (String, String) -> Unit = { _, _ -> },
     onCancelOrder: (OrderUi) -> Unit = {},
     onClearMessages: () -> Unit = {},
@@ -151,9 +172,16 @@ fun CustomerShell(
     onToggleAdmin: (Boolean) -> Unit = {},
     onOpenSupport: () -> Unit = {},
     onCloseSupport: () -> Unit = {},
+    onSelectSupportTopic: (String) -> Unit = {},
+    onClearSupportTopic: () -> Unit = {},
     onSendLiveChat: (String) -> Unit = {},
+    onShowMyTickets: () -> Unit = {},
+    onOpenTicket: (com.freshdelivery.nativecustomer.data.SupportTicketRow) -> Unit = {},
+    onSubmitTicket: (String) -> Unit = {},
+    onSendTicket: (String) -> Unit = {},
 ) {
     val snackbar = remember { SnackbarHostState() }
+    var addressOpen by remember { mutableStateOf(false) }
     LaunchedEffect(state.info, state.error) {
         val msg = state.error ?: state.info
         if (!msg.isNullOrBlank()) {
@@ -161,17 +189,41 @@ fun CustomerShell(
             onClearMessages()
         }
     }
-    BackHandler(enabled = state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen) {
-        if (state.supportOpen) onCloseSupport()
+    BackHandler(enabled = addressOpen || state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen) {
+        if (addressOpen) addressOpen = false
+        else if (state.supportOpen) onCloseSupport()
         else if (state.adminOpen) onToggleAdmin(false)
         else if (state.showCart) onToggleCart(false)
         else onCloseStore()
+    }
+    if (addressOpen) {
+        AddressPickerScreen(
+            state = state,
+            onBack = { addressOpen = false },
+            onSetDelivery = onSetDelivery,
+            onUseLocation = onUseLocation,
+            onGeocode = onGeocode,
+            onPickSuggestion = onPickSuggestion,
+            onSaveAddress = onSaveAddress,
+            onAutocomplete = onAutocomplete,
+            onSelectSaved = onSelectSaved,
+            onDeleteSaved = onDeleteSaved,
+            snackbar = snackbar,
+        )
+        return
     }
     if (state.supportOpen) {
         SupportScreen(
             state = state,
             onBack = onCloseSupport,
             onSend = onSendLiveChat,
+            onSelectTopic = onSelectSupportTopic,
+            onClearTopic = onClearSupportTopic,
+            onShowMyTickets = onShowMyTickets,
+            onOpenTicket = onOpenTicket,
+            onSubmitTicket = onSubmitTicket,
+            onSendTicket = onSendTicket,
+            snackbar = snackbar,
         )
         return
     }
@@ -188,6 +240,8 @@ fun CustomerShell(
             onBack = onCloseStore,
             onAdd = onAddToCart,
             onOpenCart = { onToggleCart(true) },
+            isFavorite = state.favoriteStoreIds.contains(state.selectedStore.id),
+            onToggleFavorite = { onToggleFavorite(state.selectedStore.id) },
         )
         return
     }
@@ -198,6 +252,7 @@ fun CustomerShell(
             onCardToggle = onCardToggle,
             onCardPrize = onCardPrize,
             onClose = { onToggleAdmin(false) },
+            snackbar = snackbar,
         )
         return
     }
@@ -267,18 +322,22 @@ fun CustomerShell(
         Box(Modifier.padding(padding).fillMaxSize()) {
             when (state.tab) {
                 CustomerTab.Home -> HomeTab(
-                    state, onRefresh, onOpenStore, onSearch,
+                    state, onOpenStore, onSearch,
                     browseMode = false,
                     onSpinWheel = onSpinWheel,
                     onOpenCard = onOpenCard,
                     onToggleAdmin = { onToggleAdmin(true) },
+                    onEditAddress = { addressOpen = true; onClearSuggestions() },
+                    onUseLocation = onUseLocation,
                 )
                 CustomerTab.Browse -> HomeTab(
-                    state, onRefresh, onOpenStore, onSearch,
+                    state, onOpenStore, onSearch,
                     browseMode = true,
                     onSpinWheel = onSpinWheel,
                     onOpenCard = onOpenCard,
                     onToggleAdmin = { onToggleAdmin(true) },
+                    onEditAddress = { addressOpen = true; onClearSuggestions() },
+                    onUseLocation = onUseLocation,
                 )
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onCancelOrder)
                 CustomerTab.Track -> TrackTab(state)
@@ -376,19 +435,29 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
 @Composable
 private fun HomeTab(
     state: CustomerUiState,
-    onRefresh: () -> Unit,
     onOpenStore: (StoreRow) -> Unit,
     onSearch: (String) -> Unit,
     browseMode: Boolean = false,
     onSpinWheel: () -> Unit = {},
     onOpenCard: (Int) -> Unit = {},
     onToggleAdmin: () -> Unit = {},
+    onEditAddress: () -> Unit = {},
+    onUseLocation: () -> Unit = {},
 ) {
-    var filterOpen by remember { mutableStateOf(false) }
-    val stores = if (filterOpen) {
-        state.visibleStores.filter { it.is_active != false }
-    } else {
-        state.visibleStores
+    var filter by remember { mutableStateOf(HomeFilter.All) }
+    val base = state.visibleStores
+    val hasLocation = state.deliveryLat != null && state.deliveryLng != null
+    val stores = remember(filter, base, hasLocation, state.favoriteStoreIds) {
+        val open = base.filter { isStoreOpenNow(it) }
+        val near = if (hasLocation) {
+            base.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, store) }
+        } else base
+        when (filter) {
+            HomeFilter.All -> base
+            HomeFilter.Open -> open
+            HomeFilter.Near -> near
+            HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }
+        }
     }
 
     LazyColumn(
@@ -421,7 +490,11 @@ private fun HomeTab(
                         )
                     }
                     Spacer(Modifier.width(8.dp))
-                    Column(Modifier.weight(1f)) {
+                    Column(
+                        Modifier
+                            .weight(1f)
+                            .clickable(onClick = onEditAddress),
+                    ) {
                         Text(
                             "Παράδοση σε",
                             color = FreshMuted,
@@ -435,11 +508,13 @@ private fun HomeTab(
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    IconButton(onClick = onRefresh) {
-                        Icon(Icons.Outlined.MyLocation, contentDescription = "Refresh", tint = FreshGreen)
+                    IconButton(onClick = onUseLocation) {
+                        Icon(Icons.Outlined.MyLocation, contentDescription = "Η τοποθεσία μου", tint = FreshGreen)
                     }
-                    IconButton(onClick = onToggleAdmin) {
-                        Icon(Icons.Outlined.Tune, contentDescription = "Διαχείριση παιχνιδιών", tint = FreshMuted)
+                    if (state.canManageGames) {
+                        IconButton(onClick = onToggleAdmin) {
+                            Icon(Icons.Outlined.Tune, contentDescription = "Διαχείριση παιχνιδιών", tint = FreshMuted)
+                        }
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -485,9 +560,10 @@ private fun HomeTab(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FreshFilterChip("Όλα", selected = !filterOpen) { filterOpen = false }
-                FreshFilterChip("Ανοιχτά", selected = filterOpen) { filterOpen = true }
-                FreshFilterChip("Κοντά μου", selected = false) {}
+                FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { filter = HomeFilter.All }
+                FreshFilterChip("Ανοιχτά", selected = filter == HomeFilter.Open) { filter = HomeFilter.Open }
+                FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { filter = HomeFilter.Near }
+                FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { filter = HomeFilter.Fav }
             }
         }
 
@@ -569,7 +645,7 @@ private fun HomeTab(
                         horizontalAlignment = Alignment.CenterHorizontally,
                         modifier = Modifier
                             .clip(RoundedCornerShape(16.dp))
-                            .clickable { onSearch(if (tile.category == "all") "" else tile.label) },
+                            .clickable { onSearch(if (tile.category == "all") "" else tile.category) },
                     ) {
                         Box(
                             Modifier
@@ -609,12 +685,15 @@ private fun HomeTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                val heading = when (filter) {
+                    HomeFilter.All -> if (browseMode) "Όλα τα καταστήματα" else "Κοντά σου"
+                    HomeFilter.Open -> "Ανοιχτά τώρα"
+                    HomeFilter.Near -> "Κοντά μου"
+                    HomeFilter.Fav -> "Αγαπημένα"
+                }
+                Text(heading, style = MaterialTheme.typography.titleLarge)
                 Text(
-                    if (browseMode) "Όλα τα καταστήματα" else "Κοντά σου",
-                    style = MaterialTheme.typography.titleLarge,
-                )
-                Text(
-                    if (browseMode) "${stores.size} καταστήματα" else "${stores.size} κοντά σου",
+                    "${stores.size} καταστήματα",
                     color = FreshMuted,
                     style = MaterialTheme.typography.bodySmall,
                 )
@@ -631,7 +710,13 @@ private fun HomeTab(
                     Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        "Δεν βρέθηκαν καταστήματα.",
+                        if (filter == HomeFilter.Near && !hasLocation) {
+                            "Ορισμός διεύθυνσης για εγγύτητα"
+                        } else if (filter == HomeFilter.Fav) {
+                            "Δεν έχεις αγαπημένα ακόμα."
+                        } else {
+                            "Δεν βρέθηκαν καταστήματα."
+                        },
                         color = FreshMuted,
                         style = MaterialTheme.typography.bodyMedium,
                     )
@@ -639,7 +724,14 @@ private fun HomeTab(
             }
         }
         items(stores, key = { it.id }) { store ->
-            FreshStoreCard(store = store, onClick = { onOpenStore(store) })
+            FreshStoreCard(
+                store = store,
+                rating = state.storeRatings[store.id],
+                isFavorite = state.favoriteStoreIds.contains(store.id),
+                deliveryLat = state.deliveryLat,
+                deliveryLng = state.deliveryLng,
+                onClick = { onOpenStore(store) },
+            )
         }
     }
 }
@@ -666,8 +758,75 @@ private fun FreshFilterChip(label: String, selected: Boolean, onClick: () -> Uni
     )
 }
 
+private enum class HomeFilter { All, Open, Near, Fav }
+
+private const val EARTH_RADIUS_KM = 6371.0
+
+private fun storeDistanceKm(lat: Double, lng: Double, store: StoreRow): Double {
+    val slat = store.latitude ?: return Double.MAX_VALUE
+    val slng = store.longitude ?: return Double.MAX_VALUE
+    val dLat = Math.toRadians(slat - lat)
+    val dLng = Math.toRadians(slng - lng)
+    val a = sin(dLat / 2) * sin(dLat / 2) +
+        cos(Math.toRadians(lat)) * cos(Math.toRadians(slat)) *
+        sin(dLng / 2) * sin(dLng / 2)
+    return EARTH_RADIUS_KM * 2 * atan2(sqrt(a), sqrt(1 - a))
+}
+
+/** A store is open if it has no holiday today and today's opening_hours window covers the current time. */
+private fun isStoreOpenNow(store: StoreRow): Boolean {
+    if (store.is_active == false) return false
+    val today = LocalDate.now()
+    val holidayDates = store.holiday_dates ?: emptyList()
+    val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
+    if (holidayDates.any { it.contains(dateKey) }) return false
+    val hours = store.opening_hours ?: return true
+    val now = LocalDateTime.now()
+    val dayKey = when (now.dayOfWeek) {
+        DayOfWeek.MONDAY -> "mon"
+        DayOfWeek.TUESDAY -> "tue"
+        DayOfWeek.WEDNESDAY -> "wed"
+        DayOfWeek.THURSDAY -> "thu"
+        DayOfWeek.FRIDAY -> "fri"
+        DayOfWeek.SATURDAY -> "sat"
+        DayOfWeek.SUNDAY -> "sun"
+    }
+    val schedule = hours.jsonObject[dayKey] ?: return true
+    val obj = schedule.jsonObject
+    val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+    if (!enabled) return false
+    val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: return true
+    val close = obj["close"]?.jsonPrimitive?.contentOrNull ?: return true
+    fun toMin(v: String): Int? {
+        val hhmm = v.trim().split(":")
+        if (hhmm.size != 2) return null
+        return hhmm[0].toIntOrNull()?.times(60)?.plus(hhmm[1].toIntOrNull() ?: 0)
+    }
+    val openMin = toMin(open) ?: return true
+    val closeMin = toMin(close) ?: return true
+    val minuteOfDay = now.hour * 60 + now.minute
+    return if (closeMin > openMin) minuteOfDay in openMin until closeMin else minuteOfDay >= openMin || minuteOfDay < closeMin
+}
+
+private fun storeDeliveryEstimate(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String {
+    if (deliveryLat == null || deliveryLng == null) return "25–35'"
+    val km = storeDistanceKm(deliveryLat, deliveryLng, store)
+    if (km == Double.MAX_VALUE) return "25–35'"
+    val minutes = (18 + km * 4).toInt().coerceIn(20, 75)
+    return "${minutes - 5}–${minutes + 5}'"
+}
+
 @Composable
-private fun FreshStoreCard(store: StoreRow, onClick: () -> Unit) {
+private fun FreshStoreCard(
+    store: StoreRow,
+    onClick: () -> Unit,
+    rating: StoreRating? = null,
+    isFavorite: Boolean = false,
+    deliveryLat: Double? = null,
+    deliveryLng: Double? = null,
+) {
+    val openNow = isStoreOpenNow(store)
+    val active = store.is_active != false
     Column(
         Modifier
             .fillMaxWidth()
@@ -680,7 +839,7 @@ private fun FreshStoreCard(store: StoreRow, onClick: () -> Unit) {
         Box(Modifier.fillMaxWidth().height(160.dp)) {
             StoreHeroImage(store.image_url, height = 160)
             Surface(
-                color = if (store.is_active == false) {
+                color = if (!active || !openNow) {
                     Color.Black.copy(alpha = 0.65f)
                 } else {
                     Color.White.copy(alpha = 0.92f)
@@ -691,12 +850,28 @@ private fun FreshStoreCard(store: StoreRow, onClick: () -> Unit) {
                     .padding(10.dp),
             ) {
                 Text(
-                    if (store.is_active == false) "Κλειστό" else "Ανοιχτό",
-                    color = if (store.is_active == false) Color.White else FreshGreenDark,
+                    if (!active) "Κλειστό" else if (openNow) "Ανοιχτό" else "Κλειστό",
+                    color = if (!active || !openNow) Color.White else FreshGreenDark,
                     fontWeight = FontWeight.Bold,
                     style = MaterialTheme.typography.labelMedium,
                     modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
                 )
+            }
+            Surface(
+                color = Color.White.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(10.dp),
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .padding(10.dp),
+            ) {
+                if (isFavorite) {
+                    Icon(
+                        Icons.Filled.Favorite,
+                        contentDescription = null,
+                        tint = FreshRose,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    )
+                }
             }
             Surface(
                 color = Color.White.copy(alpha = 0.92f),
@@ -711,7 +886,14 @@ private fun FreshStoreCard(store: StoreRow, onClick: () -> Unit) {
                 ) {
                     Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(13.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("4.8", color = FreshInk, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                    val avg = rating?.avg ?: 0.0
+                    val count = rating?.count ?: 0
+                    Text(
+                        if (count > 0) "%.1f".format(avg) else "Νέο",
+                        color = FreshInk,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
                 }
             }
         }
@@ -736,7 +918,11 @@ private fun FreshStoreCard(store: StoreRow, onClick: () -> Unit) {
                 FreshMetaPill {
                     Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("25–35'", color = FreshInk, fontWeight = FontWeight.SemiBold)
+                    Text(
+                        storeDeliveryEstimate(store, deliveryLat, deliveryLng),
+                        color = FreshInk,
+                        fontWeight = FontWeight.SemiBold,
+                    )
                 }
                 FreshMetaPill {
                     Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
@@ -770,6 +956,8 @@ private fun MenuScreen(
     onBack: () -> Unit,
     onAdd: (MenuItemRow) -> Unit,
     onOpenCart: () -> Unit,
+    isFavorite: Boolean = false,
+    onToggleFavorite: () -> Unit = {},
 ) {
     val store = state.selectedStore
     Box(Modifier.fillMaxSize().background(FreshBg)) {
@@ -837,12 +1025,22 @@ private fun MenuScreen(
                         .padding(horizontal = 16.dp, vertical = 14.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Icon(Icons.Outlined.Favorite, contentDescription = null, tint = FreshRose, modifier = Modifier.size(18.dp))
+                    Icon(Icons.Outlined.RestaurantMenu, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(8.dp))
                     Text("Μενού", style = MaterialTheme.typography.titleLarge)
                     Spacer(Modifier.weight(1f))
-                    TextButton(onClick = {}) {
-                        Text("Αγαπημένα", color = FreshMuted)
+                    TextButton(onClick = onToggleFavorite) {
+                        Icon(
+                            if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                            contentDescription = null,
+                            tint = if (isFavorite) FreshRose else FreshMuted,
+                            modifier = Modifier.size(18.dp),
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            if (isFavorite) "Αγαπημένο" else "Αγαπημένα",
+                            color = if (isFavorite) FreshRose else FreshMuted,
+                        )
                     }
                 }
             }
@@ -1069,7 +1267,7 @@ private fun CartCheckoutScreen(
                         value = address,
                         onValueChange = {
                             address = it
-                            onSetDelivery(it, state.deliveryLat, state.deliveryLng)
+                            onSetDelivery(it, null, null)
                         },
                         modifier = Modifier.fillMaxWidth(),
                         singleLine = true,
@@ -1297,6 +1495,216 @@ private fun CartCheckoutScreen(
 }
 
 @Composable
+private fun AddressPickerScreen(
+    state: CustomerUiState,
+    onBack: () -> Unit,
+    onSetDelivery: (String, Double?, Double?) -> Unit,
+    onUseLocation: () -> Unit,
+    onGeocode: (String) -> Unit,
+    onPickSuggestion: (AddressSuggestion) -> Unit,
+    onSaveAddress: () -> Unit,
+    onAutocomplete: (String) -> Unit = {},
+    onSelectSaved: (SavedAddressRow) -> Unit = {},
+    onDeleteSaved: (String) -> Unit = {},
+    snackbar: SnackbarHostState? = null,
+) {
+    var address by remember(state.deliveryAddress) { mutableStateOf(state.deliveryAddress) }
+    val fieldColors = OutlinedTextFieldDefaults.colors(
+        focusedBorderColor = FreshGreen,
+        focusedLabelColor = FreshGreen,
+        cursorColor = FreshGreen,
+    )
+    Column(
+        Modifier
+            .fillMaxSize()
+            .background(FreshBg)
+            .statusBarsPadding(),
+    ) {
+        if (snackbar != null) {
+            SnackbarHost(snackbar)
+        }
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = FreshInk)
+            }
+            Text(
+                "Διεύθυνση παράδοσης",
+                style = MaterialTheme.typography.titleLarge,
+                modifier = Modifier.weight(1f),
+            )
+        }
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+        ) {
+            OutlinedTextField(
+                value = address,
+                onValueChange = {
+                    address = it
+                    onAutocomplete(it)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+                label = { Text("Οδός, αριθμός, πόλη") },
+                leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshMuted) },
+                shape = RoundedCornerShape(16.dp),
+                colors = fieldColors,
+            )
+            if (state.savedAddresses.isNotEmpty()) {
+                Spacer(Modifier.height(12.dp))
+                Text("Αποθηκευμένες διευθύνσεις", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                state.savedAddresses.forEach { sa ->
+                    Surface(
+                        onClick = {
+                            onSelectSaved(sa)
+                            onBack()
+                        },
+                        color = if (sa.is_default == true) FreshGreenSoft else FreshChip,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp),
+                    ) {
+                        Row(
+                            Modifier.padding(start = 12.dp, top = 4.dp, bottom = 4.dp, end = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(
+                                Icons.Outlined.LocationOn,
+                                contentDescription = null,
+                                tint = FreshGreen,
+                                modifier = Modifier.size(18.dp),
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text(
+                                    (sa.label ?: "Σπίτι").ifBlank { "Σπίτι" },
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodySmall,
+                                )
+                                Text(
+                                    sa.address,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = FreshMuted,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            IconButton(onClick = { onDeleteSaved(sa.id) }) {
+                                Icon(Icons.Outlined.Delete, contentDescription = "Διαγραφή", tint = FreshRose)
+                            }
+                        }
+                    }
+                }
+            }
+            Spacer(Modifier.height(10.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(
+                    onClick = onUseLocation,
+                    enabled = !state.locating,
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Icon(Icons.Outlined.MyLocation, contentDescription = null)
+                    Spacer(Modifier.width(6.dp))
+                    Text("Η τοποθεσία μου")
+                }
+                OutlinedButton(
+                    onClick = { onGeocode(address) },
+                    enabled = !state.locating && address.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text("Εύρεση")
+                }
+            }
+            if (state.locating) {
+                Spacer(Modifier.height(6.dp))
+                LinearProgressIndicator(
+                    modifier = Modifier.fillMaxWidth(),
+                    color = FreshGreen,
+                )
+            }
+            val pinned = state.deliveryLat != null && state.deliveryLng != null
+            Spacer(Modifier.height(6.dp))
+            Text(
+                if (pinned) {
+                    "Σημείο: %.5f, %.5f".format(state.deliveryLat, state.deliveryLng)
+                } else {
+                    "Χωρίς σημείο στον χάρτη — πάτα τοποθεσία ή εύρεση."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = if (pinned) FreshGreen else MaterialTheme.colorScheme.error,
+            )
+            if (state.addressSuggestions.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text("Προτάσεις", fontWeight = FontWeight.SemiBold)
+                state.addressSuggestions.forEach { s ->
+                    Surface(
+                        onClick = {
+                            onPickSuggestion(s)
+                            onSaveAddress()
+                            onBack()
+                        },
+                        color = FreshChip,
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 6.dp),
+                    ) {
+                        Text(s.label, modifier = Modifier.padding(12.dp))
+                    }
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                if (state.deliveryAddress.isNotBlank()) {
+                    OutlinedButton(
+                        onClick = {
+                            onSetDelivery("", null, null)
+                            onSaveAddress()
+                            onBack()
+                        },
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(16.dp),
+                    ) {
+                        Text("Καθαρισμός")
+                    }
+                }
+                Button(
+                    onClick = {
+                        val committed = address.trim()
+                        val keepCoords = committed == state.deliveryAddress
+                        onSetDelivery(
+                            committed,
+                            if (keepCoords) state.deliveryLat else null,
+                            if (keepCoords) state.deliveryLng else null,
+                        )
+                        onSaveAddress()
+                        onBack()
+                    },
+                    enabled = address.isNotBlank(),
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                    shape = RoundedCornerShape(16.dp),
+                ) {
+                    Text("Αποθήκευση")
+                }
+            }
+            Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+@Composable
 private fun SummaryLine(label: String, amount: Double) {
     Row(
         Modifier
@@ -1310,6 +1718,7 @@ private fun SummaryLine(label: String, amount: Double) {
 }
 
 private fun statusLabel(status: String): String = when (status) {
+    "placed" -> "Καταχωρήθηκε"
     "pending" -> "Σε αναμονή"
     "accepted", "confirmed" -> "Αποδεκτή"
     "preparing" -> "Ετοιμάζεται"
@@ -1318,6 +1727,7 @@ private fun statusLabel(status: String): String = when (status) {
     "delivered" -> "Παραδόθηκε"
     "cancelled" -> "Ακυρώθηκε"
     "rejected" -> "Απορρίφθηκε"
+    "refunded" -> "Επιστροφή χρημάτων"
     else -> status
 }
 
@@ -1399,7 +1809,7 @@ private fun OrdersTab(
             }
         }
         items(state.orders, key = { it.order.id }) { item ->
-            val cancellable = item.order.status in listOf("pending", "accepted", "confirmed")
+            val cancellable = item.order.status in listOf("placed", "pending")
             Column(
                 Modifier
                     .fillMaxWidth()

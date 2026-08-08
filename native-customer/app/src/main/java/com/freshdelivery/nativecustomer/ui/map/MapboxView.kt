@@ -5,7 +5,10 @@ import android.webkit.WebSettings
 import android.webkit.WebView
 import android.webkit.WebViewClient
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.viewinterop.AndroidView
 import com.freshdelivery.nativecustomer.BuildConfig
@@ -35,6 +38,7 @@ fun MapboxView(
             markers = markers,
         )
     }
+    var lastInjected by remember { mutableStateOf<String?>(null) }
     AndroidView(
         modifier = modifier,
         factory = { context ->
@@ -47,13 +51,16 @@ fun MapboxView(
             }
         },
         update = { webView ->
-            webView.loadDataWithBaseURL(
-                "https://api.mapbox.com",
-                html,
-                "text/html",
-                "utf-8",
-                null,
-            )
+            if (lastInjected != html) {
+                lastInjected = html
+                webView.loadDataWithBaseURL(
+                    "https://api.mapbox.com",
+                    html,
+                    "text/html",
+                    "utf-8",
+                    null,
+                )
+            }
         },
     )
 }

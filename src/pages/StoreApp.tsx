@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
-  Package, Clock, Zap, PackagePlus, Wallet, ArrowLeft, LayoutGrid,
+  Package, Clock, Zap, PackagePlus, ArrowLeft, LayoutGrid,
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -54,10 +54,11 @@ export default function StoreApp() {
       const t = new URLSearchParams(window.location.search).get('tab');
       if (
         t &&
-        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'wallet', 'promos', 'automation', 'settings'].includes(t)
+        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'promos', 'automation', 'settings'].includes(t)
       ) {
         return t;
       }
+      if (t === 'wallet') return 'settings';
     } catch { /* noop */ }
     return 'orders';
   });
@@ -316,10 +317,6 @@ export default function StoreApp() {
                   <BarChart3 className="h-4 w-4 mr-1.5" />
                   Στατιστικά
                 </TabsTrigger>
-                <TabsTrigger value="wallet" className="flex-1 min-w-[90px] font-heading rounded-lg">
-                  <Wallet className="h-4 w-4 mr-1.5" />
-                  Πορτοφόλι
-                </TabsTrigger>
                 <TabsTrigger value="promos" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Tag className="h-4 w-4 mr-1.5" />
                   Προσφορές
@@ -366,9 +363,6 @@ export default function StoreApp() {
               <TabsContent value="analytics">
                 <StoreAnalyticsDashboard storeId={store.id} />
               </TabsContent>
-              <TabsContent value="wallet">
-                <StoreWalletCard storeId={store.id} />
-              </TabsContent>
               <TabsContent value="promos">
                 <PromoManager storeId={store.id} />
               </TabsContent>
@@ -376,6 +370,7 @@ export default function StoreApp() {
                 <AutoAcceptRules storeId={store.id} />
               </TabsContent>
               <TabsContent value="settings" className="space-y-4">
+                <StoreWalletCard storeId={store.id} />
                 <StoreSettings storeId={store.id} />
                 <PrinterSettings storeName={store.name} />
               </TabsContent>

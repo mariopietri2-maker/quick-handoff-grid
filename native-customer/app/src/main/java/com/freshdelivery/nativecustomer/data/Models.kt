@@ -16,6 +16,9 @@ data class StoreRow(
     val is_active: Boolean? = true,
     val image_url: String? = null,
     val prep_buffer_minutes: Int? = 0,
+    val busy_mode: Boolean? = false,
+    val opening_hours: kotlinx.serialization.json.JsonElement? = null,
+    val holiday_dates: List<String>? = null,
 )
 
 @Serializable
@@ -230,6 +233,57 @@ data class LiveChatMessageRow(
     val order_id: String? = null,
     val sender_id: String? = null,
     val sender_role: String? = null,
+    val topic: String? = null,
     val message: String? = null,
     val created_at: String? = null,
+)
+
+/** The customer's live chat session (live_chat_sessions) — only support can close it. */
+@Serializable
+data class LiveChatSessionRow(
+    val id: String? = null,
+    val status: String? = "open",
+    val topic: String? = null,
+    val closed_at: String? = null,
+)
+
+/** A customer support ticket (support_tickets) — the non-urgent async queue. */
+@Serializable
+data class SupportTicketRow(
+    val id: String = "",
+    val category: String? = null,
+    val description: String? = null,
+    val status: String? = "open",
+    val created_at: String? = null,
+    val order_id: String? = null,
+)
+
+/** One message in a ticket thread (ticket_messages). */
+@Serializable
+data class TicketMessageRow(
+    val id: String = "",
+    val ticket_id: String? = null,
+    val sender_id: String? = null,
+    val sender_role: String? = null,
+    val message: String? = null,
+    val created_at: String? = null,
+)
+
+/** Row from the shared `suggest_cached_addresses` RPC (cross-customer geocode cache). */
+@Serializable
+data class CachedSuggestionRow(
+    val display_address: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+)
+
+/** A personally saved delivery address (saved_addresses). */
+@Serializable
+data class SavedAddressRow(
+    val id: String,
+    val label: String? = null,
+    val address: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val is_default: Boolean? = false,
 )

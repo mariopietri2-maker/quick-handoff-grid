@@ -12,6 +12,7 @@ import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, M
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
 import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
+import { TicketOrderContext } from '@/components/support/TicketOrderContext';
 import { LiveChatConsole } from '@/components/support/LiveChatConsole';
 
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
@@ -622,6 +623,10 @@ function Workspace({
                 </div>
               )}
             </div>
+
+            {ticket.order_id && (
+              <TicketOrderContext orderId={ticket.order_id} />
+            )}
 
             {(ticket.requester_role === 'customer' || ticket.requester_role === 'store') && ticket.requester_id ? (
               <CustomerProfilePanel userId={ticket.requester_id} />

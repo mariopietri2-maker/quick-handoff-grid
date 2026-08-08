@@ -4,19 +4,18 @@ import { useAuth } from '@/hooks/useAuth';
 import { LiveChatThread } from '@/components/support/LiveChatThread';
 import { supabase } from '@/integrations/supabase/client';
 
-export function CustomerLiveChat({ orderId, className }: { orderId?: string | null; className?: string }) {
+export function StoreLiveChat({ orderId, className }: { orderId?: string | null; className?: string }) {
   const { user } = useAuth();
   const [ready, setReady] = useState(false);
 
-  // Ensure an OPEN live-chat session exists, otherwise a previously closed
-  // session would block this urgent chat (server trigger). A closed session is
-  // replaced by a brand-new open request, keeping customers unblocked.
+  // Ensure an OPEN live-chat session exists for this store owner, otherwise a
+  // previously closed session would block this urgent chat (server trigger).
   useEffect(() => {
     if (!user) return;
     let active = true;
     (async () => {
       try {
-        await (supabase as any).rpc('ensure_my_live_chat_session', { p_topic: null });
+        await (supabase as any).rpc('ensure_store_live_chat_session', { p_topic: null });
       } catch {
         /* non-fatal: fall through to chat, server may reject only if closed */
       }
@@ -37,9 +36,9 @@ export function CustomerLiveChat({ orderId, className }: { orderId?: string | nu
   }
   return (
     <LiveChatThread
-      customerId={user.id}
+      storeId={user.id}
       orderId={orderId}
-      viewerRole="customer"
+      viewerRole="store"
       title="Ζωντανή Συνομιλία"
       subtitle="Επείγον — απάντηση σε πραγματικό χρόνο"
       className={className}

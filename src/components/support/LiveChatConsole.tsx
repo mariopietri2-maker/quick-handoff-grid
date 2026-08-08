@@ -3,30 +3,37 @@ import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { LiveChatThread } from '@/components/support/LiveChatThread';
-import { Loader2, MessageSquare, Search, Users, Phone } from 'lucide-react';
+import { Loader2, MessageSquare, MessageSquareOff, Search, Users, Phone } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
+import { toast } from '@/hooks/use-toast';
 import { cn } from '@/lib/utils';
 import { format, differenceInMinutes } from 'date-fns';
 
 interface Conversation {
   participant_id: string;
-  participant_role: 'driver' | 'customer';
+  participant_role: 'driver' | 'customer' | 'store';
   order_id: string | null;
   last_message_at: string;
   last_message: string | null;
   last_sender_role: string;
   message_count: number;
+  session_id: string | null;
+  session_status: 'open' | 'closed' | null;
+  session_topic?: string | null;
+  session_closed_at?: string | null;
 }
 
 const roleChip: Record<string, string> = {
   driver: 'bg-info/10 text-info',
   customer: 'bg-primary/10 text-primary',
+  store: 'bg-amber-500/10 text-amber-600',
 };
 
 const roleLabel: Record<string, string> = {
   driver: 'Οδηγός',
   customer: 'Πελάτης',
+  store: 'Κατάστημα',
 };
 
 export function LiveChatConsole() {
@@ -34,11 +41,20 @@ export function LiveChatConsole() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [active, setActive] = useState<Conversation | null>(null);
+  const [closing, setClosing] = useState(false);
 
   const { data: profiles } = useQuery({
     queryKey: ['live-chat-profiles'],
     queryFn: async () => {
       const { data } = await supabase.from('profiles').select('user_id, full_name, phone');
+      return data ?? [];
+    },
+  });
+
+  const { data: stores } = useQuery({
+    queryKey: ['live-chat-stores'],
+    queryFn: async () => {
+      const { data } = await supabase.from('stores').select('id, name, owner_id');
       return data ?? [];
     },
   });
@@ -64,24 +80,65 @@ export function LiveChatConsole() {
         queryClient.invalidateQueries({ queryKey: ['live-chat-conversations'] });
       })
       .subscribe();
+    const sessionChannel = supabase
+      .channel('live-chat-conversation-sessions')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'live_chat_sessions' }, () => {
+        queryClient.invalidateQueries({ queryKey: ['live-chat-conversations'] });
+      })
+      .subscribe();
     return () => {
       supabase.removeChannel(channel);
+      supabase.removeChannel(sessionChannel);
     };
   }, [queryClient]);
 
   const profileInfo = (id: string | null | undefined) =>
     id ? profiles?.find((p: any) => p.user_id === id) : undefined;
 
+  const storeNameFor = (id: string | null | undefined) => {
+    const store = id ? (stores ?? []).find((s: any) => s.owner_id === id) : undefined;
+    return store ? (store as any).name : undefined;
+  };
+
+  const displayName = (c: Conversation) =>
+    c.participant_role === 'store'
+      ? storeNameFor(c.participant_id)
+      : profileInfo(c.participant_id)?.full_name;
+
   const searched = (conversations ?? []).filter((c) => {
     const q = search.trim().toLowerCase();
     if (!q) return true;
     const p = profileInfo(c.participant_id);
-    return [p?.full_name, p?.phone, roleLabel[c.participant_role], c.last_message]
+    return [displayName(c), p?.phone, roleLabel[c.participant_role], c.last_message]
       .filter(Boolean)
       .some((v) => String(v).toLowerCase().includes(q));
   });
 
   const selectedProfile = active ? profileInfo(active.participant_id) : null;
+
+  // Keep the open thread in sync when the list refreshes (e.g. closed elsewhere).
+  useEffect(() => {
+    if (!active) return;
+    const fresh = (conversations ?? []).find((c) => c.participant_id === active.participant_id);
+    if (fresh && fresh.session_status !== active.session_status) setActive(fresh);
+  }, [conversations]);
+
+  const closeChat = async () => {
+    if (!active) return;
+    if (!window.confirm('Κλείσιμο συνομιλίας; Ο πελάτης δεν θα μπορεί να στείλει μηνύματα μέχρι να ξεκινήσει νέο αίτημα.')) return;
+    setClosing(true);
+    const { error } = await (supabase as any).rpc('close_live_chat_for_user', {
+      p_participant_id: active.participant_id,
+    });
+    setClosing(false);
+    if (error) {
+      toast({ title: 'Σφάλμα', description: error.message ?? 'Αποτυχία κλεισίματος', variant: 'destructive' });
+    } else {
+      toast({ title: 'Κλείστηκε', description: 'Η συνομιλία έκλεισε.' });
+      setActive((prev) => (prev ? { ...prev, session_status: 'closed', session_closed_at: new Date().toISOString() } : prev));
+      queryClient.invalidateQueries({ queryKey: ['live-chat-conversations'] });
+    }
+  };
 
   return (
     <div className="h-full flex gap-3 min-h-0">
@@ -121,7 +178,6 @@ export function LiveChatConsole() {
             </p>
           ) : (
             searched.map((c) => {
-              const p = profileInfo(c.participant_id);
               const isNew =
                 differenceInMinutes(new Date(), new Date(c.last_message_at)) < 10 &&
                 c.last_sender_role !== (isAdmin ? 'admin' : 'support');
@@ -141,15 +197,17 @@ export function LiveChatConsole() {
                       'h-9 w-9 rounded-lg flex items-center justify-center shrink-0 text-xs font-heading font-bold',
                       c.participant_role === 'driver'
                         ? 'bg-info/10 text-info'
+                        : c.participant_role === 'store'
+                        ? 'bg-amber-500/10 text-amber-600'
                         : 'bg-primary/10 text-primary',
                     )}
                   >
-                    {(p?.full_name ?? c.participant_id.slice(0, 2)).slice(0, 2).toUpperCase()}
+                    {(displayName(c) ?? c.participant_id.slice(0, 2)).slice(0, 2).toUpperCase()}
                   </div>
                   <div className="flex-1 min-w-0">
                     <div className="flex items-center justify-between gap-2">
                       <p className="font-heading font-semibold text-[13px] truncate flex items-center gap-1.5">
-                        {p?.full_name ?? `${c.participant_id.slice(0, 8)}…`}
+                        {displayName(c) ?? `${c.participant_id.slice(0, 8)}…`}
                         {isNew && (
                           <span className="relative flex h-1.5 w-1.5 shrink-0">
                             <span className="absolute inline-flex h-full w-full rounded-full bg-primary animate-ping opacity-60" />
@@ -173,6 +231,11 @@ export function LiveChatConsole() {
                       >
                         {roleLabel[c.participant_role] ?? c.participant_role}
                       </span>
+                      {c.session_status === 'closed' && (
+                        <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[9.5px] font-bold bg-muted text-muted-foreground">
+                          Κλειστό
+                        </span>
+                      )}
                       {c.order_id && (
                         <span className="text-[9.5px] text-muted-foreground font-medium">
                           Παραγγελία #{c.order_id.slice(0, 6)}
@@ -193,14 +256,15 @@ export function LiveChatConsole() {
           <div className="flex-1 min-h-0 flex flex-col border rounded-xl bg-card overflow-hidden">
             <div className="shrink-0 border-b bg-card/70 px-4 py-2.5 flex items-center gap-2">
               <div className="h-8 w-8 rounded-lg bg-muted flex items-center justify-center text-xs font-heading font-bold">
-                {(selectedProfile?.full_name ?? active.participant_id.slice(0, 2)).slice(0, 2).toUpperCase()}
+                {(displayName(active) ?? active.participant_id.slice(0, 2)).slice(0, 2).toUpperCase()}
               </div>
               <div className="flex-1 min-w-0">
                 <p className="font-heading font-bold text-sm truncate leading-tight">
-                  {selectedProfile?.full_name ?? `${active.participant_id.slice(0, 8)}…`}
+                  {displayName(active) ?? `${active.participant_id.slice(0, 8)}…`}
                 </p>
                 <p className="text-[10px] text-muted-foreground truncate leading-tight">
-                  {roleLabel[active.participant_role]} · ζωντανή συνομιλία
+                  {roleLabel[active.participant_role]}
+                  {active.session_status === 'closed' ? ' · κλειστή συνομιλία' : ' · ζωντανή συνομιλία'}
                   {selectedProfile?.phone ? ` · ${selectedProfile.phone}` : ''}
                 </p>
               </div>
@@ -212,12 +276,23 @@ export function LiveChatConsole() {
                   <Phone className="h-3.5 w-3.5" />
                 </a>
               )}
+              <button
+                type="button"
+                onClick={() => void closeChat()}
+                disabled={closing || active.session_status !== 'open'}
+                title="Κλείσιμο συνομιλίας (μόνο υποστήριξη)"
+                className="h-8 w-8 rounded-lg border flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-40 disabled:hover:text-muted-foreground disabled:hover:bg-transparent"
+              >
+                {closing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <MessageSquareOff className="h-3.5 w-3.5" />}
+              </button>
             </div>
             <LiveChatThread
               driverId={active.participant_role === 'driver' ? active.participant_id : null}
               customerId={active.participant_role === 'customer' ? active.participant_id : null}
+              storeId={active.participant_role === 'store' ? active.participant_id : null}
               orderId={active.order_id}
               viewerRole={isAdmin ? 'admin' : 'support'}
+              disabled={active.session_status === 'closed'}
               className="flex-1 min-h-0"
             />
           </div>
@@ -229,7 +304,7 @@ export function LiveChatConsole() {
               </div>
               <p className="font-heading font-bold text-sm">Επίλεξε μια ζωντανή συνομιλία</p>
               <p className="text-xs text-muted-foreground mt-1">
-                Οι οδηγοί και οι πελάτες βλέπουν εδώ σε πραγματικό χρόνο. Επείγοντα θέματα — όχι tickets.
+                Οι οδηγοί, οι πελάτες και τα καταστήματα βλέπουν εδώ σε πραγματικό χρόνο. Επείγοντα θέματα — όχι tickets.
               </p>
             </div>
           </div>

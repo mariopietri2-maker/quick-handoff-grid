@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Car, Zap, Radio, MapPin, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck, Headphones } from 'lucide-react';
+import { Car, Zap, Radio, MapPin, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck, Headphones, Navigation, Crosshair } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { startPushRegistration } from '@/lib/push-register';
