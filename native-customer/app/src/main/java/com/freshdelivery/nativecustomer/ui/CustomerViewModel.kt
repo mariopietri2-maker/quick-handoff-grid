@@ -10,11 +10,17 @@ import com.freshdelivery.nativecustomer.data.CartLine
 import com.freshdelivery.nativecustomer.data.CustomerRepository
 import com.freshdelivery.nativecustomer.data.CustomerTab
 import com.freshdelivery.nativecustomer.data.DriverLocationRow
+import com.freshdelivery.nativecustomer.data.GameDeal
+import com.freshdelivery.nativecustomer.data.GamePrize
+import com.freshdelivery.nativecustomer.data.LiveChatMessageRow
 import com.freshdelivery.nativecustomer.data.MenuItemRow
+import com.freshdelivery.nativecustomer.data.MysteryCardDef
 import com.freshdelivery.nativecustomer.data.OrderUi
 import com.freshdelivery.nativecustomer.data.ProfileRow
 import com.freshdelivery.nativecustomer.data.StoreRow
 import com.freshdelivery.nativecustomer.data.SupabaseModule
+import com.freshdelivery.nativecustomer.data.WHEEL_SEGMENTS
+import com.freshdelivery.nativecustomer.data.defaultMysteryCards
 import com.freshdelivery.nativecustomer.push.PushTokenHolder
 import com.google.android.gms.location.LocationServices
 import com.google.android.gms.location.Priority
@@ -35,6 +41,7 @@ import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
 import kotlin.math.sqrt
+import kotlin.random.Random
 
 data class AddressSuggestion(
     val label: String,
@@ -76,10 +83,38 @@ data class CustomerUiState(
     val error: String? = null,
     val info: String? = null,
     val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),
+    // Emerald v2 games — lucky wheel / mystery cards (mirrors the web prototype)
+    val gameActive: String = "wheel",
+    val gameShow: Boolean = true,
+    val dealSeconds: Int = 899,
+    val spinning: Boolean = false,
+    val wheelPendingTarget: Int? = null,
+    val spinLocked: Boolean = false,
+    val wheelResult: GamePrize? = null,
+    val cardClaimed: Boolean = false,
+    val claimedCardIndex: Int? = null,
+    val openedCards: Set<Int> = emptySet(),
+    val cards: List<MysteryCardDef> = defaultMysteryCards(),
+    val appliedDeal: GameDeal? = null,
+    val adminOpen: Boolean = false,
+    // Live support chat (live_chat_messages, customer channel)
+    val supportOpen: Boolean = false,
+    val liveChatMessages: List<LiveChatMessageRow> = emptyList(),
+    val liveChatLoading: Boolean = false,
+    val liveChatSubscribed: Boolean = false,
+    val liveChatError: String? = null,
 ) {
     val cartSubtotal: Double get() = cart.sumOf { it.price * it.quantity }
     val cartCount: Int get() = cart.sumOf { it.quantity }
-    val grandTotal: Double get() = cartSubtotal + deliveryFee + tipAmount
+    val gameDiscount: Double
+        get() {
+            val deal = appliedDeal ?: return 0.0
+            if (deal.freeDelivery) return deliveryFee
+            val pct = deal.pct ?: 0
+            return Math.round(cartSubtotal * pct / 100.0 * 100.0) / 100.0
+        }
+    val grandTotal: Double
+        get() = (cartSubtotal + deliveryFee + tipAmount - gameDiscount).coerceAtLeast(0.0)
     val visibleStores: List<StoreRow>
         get() = if (searchQuery.isBlank()) stores else stores.filter {
             (it.name ?: "").contains(searchQuery, ignoreCase = true) ||
@@ -99,8 +134,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var ordersRealtimeJob: Job? = null
     private var driverRealtimeJob: Job? = null
     private var driverChannelFor: String? = null
+    private var gameTickerJob: Job? = null
+    private var liveChatJob: Job? = null
 
     init {
+        _state.value = _state.value.copy(gameShow = Random.nextDouble() < 0.6)
+        loadAdminState()
         PushTokenHolder.listener = { token ->
             val uid = _state.value.userId
             if (uid != null) {
@@ -124,8 +163,16 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         ordersRealtimeJob?.cancel()
                         driverRealtimeJob?.cancel()
                         driverChannelFor = null
+                        liveChatJob?.cancel()
+                        liveChatJob = null
                         repo.unsubscribeAll()
-                        _state.value = CustomerUiState(bootstrapping = false, signedIn = false)
+                        val gameActive = _state.value.gameActive
+                        val cards = _state.value.cards
+                        _state.value = CustomerUiState(bootstrapping = false, signedIn = false).copy(
+                            gameActive = gameActive,
+                            cards = cards,
+                            gameShow = Random.nextDouble() < 0.6,
+                        )
                     }
                     else -> Unit
                 }
@@ -162,6 +209,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         refreshAll()
         startRealtime(userId)
         startPolling()
+        startGameTicker()
     }
 
     private fun startRealtime(userId: String) {
@@ -525,6 +573,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     addressSuggestions = emptyList(),
                     info = "Η παραγγελία καταχωρήθηκε!",
                     tab = CustomerTab.Orders,
+                    appliedDeal = null,
                 )
                 refreshOrders()
             }.onFailure { e ->
@@ -596,6 +645,218 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(error = null, info = null)
     }
 
+    // ---------- Emerald v2 games: lucky wheel + mystery cards ----------
+
+    fun spinWheel() {
+        val s = _state.value
+        if (s.spinning || s.spinLocked || !s.gameShow || s.gameActive != "wheel") return
+        val target = Random.nextInt(WHEEL_SEGMENTS.size)
+        _state.value = s.copy(spinning = true, wheelPendingTarget = target, wheelResult = null)
+        viewModelScope.launch {
+            delay(4_200)
+            val cur = _state.value
+            val seg = WHEEL_SEGMENTS[target]
+            val deal = GameDeal(
+                code = seg.sub,
+                pct = seg.pct,
+                freeDelivery = seg.freeDelivery,
+                label = if (seg.freeDelivery) "Δωρεάν παράδοση" else "${seg.label} έκπτωση",
+            )
+            _state.value = cur.copy(
+                spinning = false,
+                wheelPendingTarget = null,
+                spinLocked = true,
+                wheelResult = GamePrize(
+                    label = if (seg.freeDelivery) "ΔΩΡΕΑΝ ΠΑΡΑΔΟΣΗ!" else "Κέρδισες ${seg.label} έκπτωση! Ο κωδικός εφαρμόστηκε.",
+                    code = seg.sub,
+                    pct = seg.pct,
+                    freeDelivery = seg.freeDelivery,
+                ),
+                appliedDeal = deal,
+            )
+        }
+    }
+
+    fun openMysteryCard(index: Int) {
+        val s = _state.value
+        val card = s.cards.getOrNull(index) ?: return
+        if (!card.enabled || s.cardClaimed || !s.gameShow || s.gameActive != "cards") return
+        _state.value = s.copy(
+            cardClaimed = true,
+            claimedCardIndex = index,
+            openedCards = s.cards.indices.toSet(),
+        )
+    }
+
+    fun selectGame(game: String) {
+        _state.value = _state.value.copy(gameActive = game, gameShow = true)
+        persistAdminState()
+    }
+
+    fun toggleCard(index: Int, on: Boolean) {
+        _state.value = _state.value.copy(
+            cards = _state.value.cards.mapIndexed { j, c -> c.copy(enabled = on && j == index) },
+        )
+        persistAdminState()
+    }
+
+    fun setCardPrize(index: Int, prize: String) {
+        _state.value = _state.value.copy(
+            cards = _state.value.cards.mapIndexed { j, c -> if (j == index) c.copy(prize = prize) else c },
+        )
+        persistAdminState()
+    }
+
+    fun toggleAdmin(open: Boolean) {
+        _state.value = _state.value.copy(adminOpen = open)
+    }
+
+    // ── Live support chat ──
+
+    fun openSupport() {
+        if (_state.value.supportOpen) return
+        _state.value = _state.value.copy(supportOpen = true)
+        openLiveChat()
+    }
+
+    fun closeSupport() {
+        closeLiveChat()
+        _state.value = _state.value.copy(supportOpen = false)
+    }
+
+    private fun openLiveChat() {
+        val uid = _state.value.userId ?: return
+        _state.value = _state.value.copy(liveChatLoading = true, liveChatError = null)
+        viewModelScope.launch {
+            runCatching { repo.fetchLiveChat(uid) }
+                .onSuccess { msgs ->
+                    _state.value = _state.value.copy(
+                        liveChatMessages = msgs,
+                        liveChatLoading = false,
+                        liveChatError = null,
+                    )
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        liveChatLoading = false,
+                        liveChatError = e.message ?: "Δεν συνδέθηκε το chat",
+                    )
+                }
+            startLiveChatSubscription(uid)
+        }
+    }
+
+    fun sendLiveChatMessage(text: String) {
+        val uid = _state.value.userId ?: return
+        val trimmed = text.trim()
+        if (trimmed.isEmpty()) return
+        viewModelScope.launch {
+            runCatching { repo.sendLiveChatMessage(uid, uid, trimmed) }
+                .onSuccess { refreshLiveChat(uid) }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        liveChatError = e.message ?: "Αποτυχία αποστολής",
+                    )
+                }
+        }
+    }
+
+    private fun startLiveChatSubscription(customerId: String) {
+        liveChatJob?.cancel()
+        liveChatJob = viewModelScope.launch {
+            runCatching { repo.subscribeLiveChat(customerId) }
+                .onSuccess { flow ->
+                    _state.value = _state.value.copy(liveChatSubscribed = true)
+                    flow.collect { _ -> refreshLiveChat(customerId) }
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        liveChatSubscribed = false,
+                        liveChatError = e.message ?: "Δεν συνδέθηκε το chat",
+                    )
+                }
+        }
+    }
+
+    private fun refreshLiveChat(customerId: String) {
+        viewModelScope.launch {
+            runCatching { repo.fetchLiveChat(customerId) }
+                .onSuccess { msgs -> _state.value = _state.value.copy(liveChatMessages = msgs) }
+        }
+    }
+
+    private fun closeLiveChat() {
+        liveChatJob?.cancel()
+        liveChatJob = null
+        viewModelScope.launch {
+            runCatching { repo.unsubscribeLiveChat() }
+            _state.value = _state.value.copy(
+                liveChatMessages = emptyList(),
+                liveChatLoading = false,
+                liveChatSubscribed = false,
+                liveChatError = null,
+            )
+        }
+    }
+
+    private fun startGameTicker() {
+        gameTickerJob?.cancel()
+        gameTickerJob = viewModelScope.launch {
+            while (true) {
+                delay(1_000)
+                val s = _state.value
+                if (!s.signedIn) continue
+                val next = s.dealSeconds - 1
+                if (next <= 0) {
+                    _state.value = s.copy(
+                        dealSeconds = 899,
+                        spinning = false,
+                        wheelPendingTarget = null,
+                        spinLocked = false,
+                        wheelResult = null,
+                        cardClaimed = false,
+                        claimedCardIndex = null,
+                        openedCards = emptySet(),
+                        appliedDeal = null,
+                        gameShow = Random.nextDouble() < 0.6,
+                    )
+                } else {
+                    _state.value = s.copy(dealSeconds = next)
+                }
+            }
+        }
+    }
+
+    private fun persistAdminState() {
+        val s = _state.value
+        val sb = StringBuilder()
+        s.cards.forEach { c ->
+            sb.append(c.tag).append('|').append(c.name).append('|').append(c.prize).append('|').append(c.enabled).append('\n')
+        }
+        getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+            .edit()
+            .putString("game_active", s.gameActive)
+            .putString("game_cards", sb.toString())
+            .apply()
+    }
+
+    private fun loadAdminState() {
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        val active = prefs.getString("game_active", null)
+        val raw = prefs.getString("game_cards", null) ?: return
+        val cards = raw.split('\n').mapNotNull { line ->
+            val p = line.split('|')
+            if (p.size < 4) return@mapNotNull null
+            MysteryCardDef(tag = p[0], name = p[1], prize = p[2], enabled = p[3].toBoolean())
+        }
+        if (cards.isNotEmpty()) {
+            _state.value = _state.value.copy(
+                cards = cards,
+                gameActive = active ?: _state.value.gameActive,
+            )
+        }
+    }
+
     private fun haversineKm(lat1: Double, lon1: Double, lat2: Double, lon2: Double): Double {
         val r = 6371.0
         val dLat = Math.toRadians(lat2 - lat1)
@@ -608,6 +869,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     override fun onCleared() {
         PushTokenHolder.listener = null
+        gameTickerJob?.cancel()
+        liveChatJob?.cancel()
         super.onCleared()
     }
 }
