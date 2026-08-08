@@ -10,6 +10,7 @@ import com.freshdelivery.nativecustomer.data.CartLine
 import com.freshdelivery.nativecustomer.data.CustomerRepository
 import com.freshdelivery.nativecustomer.data.CustomerTab
 import com.freshdelivery.nativecustomer.data.DriverLocationRow
+import com.freshdelivery.nativecustomer.data.GameConfig
 import com.freshdelivery.nativecustomer.data.GameDeal
 import com.freshdelivery.nativecustomer.data.GamePrize
 import com.freshdelivery.nativecustomer.data.LiveChatMessageRow
@@ -20,6 +21,7 @@ import com.freshdelivery.nativecustomer.data.ProfileRow
 import com.freshdelivery.nativecustomer.data.StoreRow
 import com.freshdelivery.nativecustomer.data.SupabaseModule
 import com.freshdelivery.nativecustomer.data.WHEEL_SEGMENTS
+import com.freshdelivery.nativecustomer.data.WheelSegment
 import com.freshdelivery.nativecustomer.data.defaultMysteryCards
 import com.freshdelivery.nativecustomer.push.PushTokenHolder
 import com.google.android.gms.location.LocationServices
@@ -86,6 +88,8 @@ data class CustomerUiState(
     // Emerald v2 games — lucky wheel / mystery cards (mirrors the web prototype)
     val gameActive: String = "wheel",
     val gameShow: Boolean = true,
+    val gameEnabled: Boolean = true,
+    val wheelSegments: List<WheelSegment> = WHEEL_SEGMENTS,
     val dealSeconds: Int = 899,
     val spinning: Boolean = false,
     val wheelPendingTarget: Int? = null,
@@ -203,7 +207,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
         runCatching {
             val cfg = repo.fetchAppConfig()
-            _state.value = _state.value.copy(appConfig = cfg)
+            _state.value = _state.value.copy(appConfig = cfg).applyGameConfig(cfg.games)
         }
         registerFcm(userId)
         refreshAll()
@@ -645,17 +649,27 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(error = null, info = null)
     }
 
+    /** Server-published games config overrides the local (prefs) state. */
+    private fun CustomerUiState.applyGameConfig(g: GameConfig): CustomerUiState = copy(
+        gameEnabled = g.enabled,
+        gameActive = if (g.active == "cards") "cards" else "wheel",
+        gameShow = if (g.enabled) gameShow else false,
+        wheelSegments = g.wheelSegments,
+        cards = g.cards,
+    )
+
     // ---------- Emerald v2 games: lucky wheel + mystery cards ----------
 
     fun spinWheel() {
         val s = _state.value
-        if (s.spinning || s.spinLocked || !s.gameShow || s.gameActive != "wheel") return
-        val target = Random.nextInt(WHEEL_SEGMENTS.size)
+        if (!s.gameEnabled || s.spinning || s.spinLocked || !s.gameShow || s.gameActive != "wheel") return
+        val segs = s.wheelSegments.ifEmpty { WHEEL_SEGMENTS }
+        val target = Random.nextInt(segs.size)
         _state.value = s.copy(spinning = true, wheelPendingTarget = target, wheelResult = null)
         viewModelScope.launch {
             delay(4_200)
             val cur = _state.value
-            val seg = WHEEL_SEGMENTS[target]
+            val seg = segs[target]
             val deal = GameDeal(
                 code = seg.sub,
                 pct = seg.pct,
@@ -680,7 +694,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun openMysteryCard(index: Int) {
         val s = _state.value
         val card = s.cards.getOrNull(index) ?: return
-        if (!card.enabled || s.cardClaimed || !s.gameShow || s.gameActive != "cards") return
+        if (!s.gameEnabled || !card.enabled || s.cardClaimed || !s.gameShow || s.gameActive != "cards") return
         _state.value = s.copy(
             cardClaimed = true,
             claimedCardIndex = index,
@@ -818,7 +832,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         claimedCardIndex = null,
                         openedCards = emptySet(),
                         appliedDeal = null,
-                        gameShow = Random.nextDouble() < 0.6,
+                        gameShow = if (s.gameEnabled) Random.nextDouble() < 0.6 else false,
                     )
                 } else {
                     _state.value = s.copy(dealSeconds = next)

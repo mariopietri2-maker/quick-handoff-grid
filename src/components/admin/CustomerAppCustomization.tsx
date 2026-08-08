@@ -38,6 +38,19 @@ export default function CustomerAppCustomization() {
         promos: Array.isArray(data.draft_config?.promos) ? data.draft_config.promos : DEFAULT_CONFIG.promos,
         tiles: Array.isArray(data.draft_config?.tiles) ? data.draft_config.tiles : DEFAULT_CONFIG.tiles,
         hero_cards: Array.isArray(data.draft_config?.hero_cards) ? data.draft_config.hero_cards : [],
+        games: {
+          enabled: data.draft_config?.games?.enabled ?? DEFAULT_CONFIG.games.enabled,
+          active: data.draft_config?.games?.active === 'cards' ? 'cards' : 'wheel',
+          wheel_segments:
+            Array.isArray(data.draft_config?.games?.wheel_segments) &&
+            data.draft_config.games.wheel_segments.length > 0
+              ? data.draft_config.games.wheel_segments
+              : DEFAULT_CONFIG.games.wheel_segments,
+          cards:
+            Array.isArray(data.draft_config?.games?.cards) && data.draft_config.games.cards.length > 0
+              ? data.draft_config.games.cards
+              : DEFAULT_CONFIG.games.cards,
+        },
       };
       setRow(data);
       setDraft(merged);
@@ -74,7 +87,7 @@ export default function CustomerAppCustomization() {
 
   const revert = () => {
     if (!row) return;
-    const pub = row.published_config ?? {};
+    const pub = (row.published_config ?? {}) as any;
     setDraft({
       ...DEFAULT_CONFIG,
       ...pub,
@@ -83,6 +96,18 @@ export default function CustomerAppCustomization() {
       promos: Array.isArray((pub as any).promos) ? (pub as any).promos : DEFAULT_CONFIG.promos,
       tiles: Array.isArray((pub as any).tiles) ? (pub as any).tiles : DEFAULT_CONFIG.tiles,
       hero_cards: Array.isArray((pub as any).hero_cards) ? (pub as any).hero_cards : [],
+      games: {
+        enabled: pub?.games?.enabled ?? DEFAULT_CONFIG.games.enabled,
+        active: pub?.games?.active === 'cards' ? 'cards' : 'wheel',
+        wheel_segments:
+          Array.isArray(pub?.games?.wheel_segments) && pub.games.wheel_segments.length > 0
+            ? pub.games.wheel_segments
+            : DEFAULT_CONFIG.games.wheel_segments,
+        cards:
+          Array.isArray(pub?.games?.cards) && pub.games.cards.length > 0
+            ? pub.games.cards
+            : DEFAULT_CONFIG.games.cards,
+      },
     });
     toast.info('Επαναφορά στο δημοσιευμένο');
   };
@@ -114,11 +139,12 @@ export default function CustomerAppCustomization() {
       </div>
 
       <Tabs defaultValue="branding">
-        <TabsList className="grid grid-cols-4 w-full max-w-2xl">
+        <TabsList className="grid grid-cols-5 w-full max-w-3xl">
           <TabsTrigger value="branding">Branding</TabsTrigger>
           <TabsTrigger value="tiles">Πλακίδια</TabsTrigger>
           <TabsTrigger value="promos">Promo banners</TabsTrigger>
           <TabsTrigger value="sections">Ενότητες</TabsTrigger>
+          <TabsTrigger value="games">Παιχνίδια</TabsTrigger>
         </TabsList>
 
         <TabsContent value="branding">
@@ -313,7 +339,7 @@ export default function CustomerAppCustomization() {
           </Card>
         </TabsContent>
 
-        <TabsContent value="sections">
+          <TabsContent value="sections">
           <Card>
             <CardHeader><CardTitle className="text-base">Ενότητες αρχικής</CardTitle></CardHeader>
             <CardContent className="space-y-3">
@@ -341,6 +367,248 @@ export default function CustomerAppCustomization() {
               ))}
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="games">
+          <div className="space-y-4">
+            <Card>
+              <CardContent className="p-3">
+                <div className="flex items-center justify-between gap-2 flex-wrap">
+                  <div>
+                    <p className="text-sm font-heading font-bold">Ενεργά παιχνίδια</p>
+                    <p className="text-xs text-muted-foreground">
+                      Όταν είναι κλειστά, το customer app δεν δείχνει κανένα παιχνίδι.
+                    </p>
+                  </div>
+                  <Switch
+                    checked={draft.games.enabled}
+                    onCheckedChange={v => setDraft({ ...draft, games: { ...draft.games, enabled: v } })}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Ενεργό παιχνίδι</CardTitle>
+                <p className="text-xs text-muted-foreground">
+                  Μόνο ένα παιχνίδι εμφανίζεται κάθε φορά · ο πελάτης κερδίζει μία φορά ανά κύκλο.
+                </p>
+              </CardHeader>
+              <CardContent className="grid grid-cols-2 gap-2">
+                {(['wheel', 'cards'] as const).map(g => (
+                  <button
+                    key={g}
+                    type="button"
+                    onClick={() => setDraft({ ...draft, games: { ...draft.games, active: g } })}
+                    className={`rounded-xl border px-3 py-2.5 text-sm font-heading font-bold text-center transition-colors ${
+                      draft.games.active === g
+                        ? 'border-primary bg-primary/10 text-primary'
+                        : 'border-border bg-card text-muted-foreground hover:bg-muted'
+                    }`}
+                  >
+                    {g === 'wheel' ? 'Ρόδα εκπτώσεων' : 'Μυστικές κάρτες'}
+                  </button>
+                ))}
+              </CardContent>
+            </Card>
+
+            {draft.games.active === 'wheel' ? (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center justify-between">
+                    Τμήματα ρόδας (6)
+                    <span className="text-xs font-normal text-muted-foreground">
+                      Η ρόδα χρησιμοποιεί ακριβώς 6 τμήματα
+                    </span>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {draft.games.wheel_segments.map((seg, i) => (
+                    <div key={i} className="grid grid-cols-2 sm:grid-cols-[90px_1fr_80px_1fr_auto_auto] gap-2 items-center border rounded-lg p-2.5 bg-card">
+                      <div>
+                        <Label className="text-xs">Ετικέτα</Label>
+                        <Input
+                          value={seg.label}
+                          onChange={e => {
+                            const wheel_segments = [...draft.games.wheel_segments];
+                            wheel_segments[i] = { ...seg, label: e.target.value };
+                            setDraft({ ...draft, games: { ...draft.games, wheel_segments } });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Κωδικός</Label>
+                        <Input
+                          value={seg.code}
+                          onChange={e => {
+                            const wheel_segments = [...draft.games.wheel_segments];
+                            wheel_segments[i] = { ...seg, code: e.target.value };
+                            setDraft({ ...draft, games: { ...draft.games, wheel_segments } });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Έκπτωση %</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          disabled={seg.free_delivery}
+                          value={seg.free_delivery ? '' : (seg.pct ?? '')}
+                          onChange={e => {
+                            const wheel_segments = [...draft.games.wheel_segments];
+                            wheel_segments[i] = { ...seg, pct: e.target.value === '' ? null : Number(e.target.value) };
+                            setDraft({ ...draft, games: { ...draft.games, wheel_segments } });
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-1 border rounded-lg px-2 py-1.5">
+                        <span className="text-[11px] text-muted-foreground">Δωρεάν delivery</span>
+                        <Switch
+                          checked={seg.free_delivery}
+                          onCheckedChange={v => {
+                            const wheel_segments = [...draft.games.wheel_segments];
+                            wheel_segments[i] = { ...seg, free_delivery: v, pct: v ? null : seg.pct };
+                            setDraft({ ...draft, games: { ...draft.games, wheel_segments } });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Χρώμα</Label>
+                        <div className="flex gap-1.5 items-center">
+                          <Input
+                            value={seg.color}
+                            onChange={e => {
+                              const wheel_segments = [...draft.games.wheel_segments];
+                              wheel_segments[i] = { ...seg, color: e.target.value };
+                              setDraft({ ...draft, games: { ...draft.games, wheel_segments } });
+                            }}
+                          />
+                          <div
+                            className="h-8 w-8 rounded-md border shrink-0"
+                            style={{ background: seg.color.startsWith('#') ? seg.color : `#${seg.color}` }}
+                          />
+                        </div>
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            games: { ...draft.games, wheel_segments: draft.games.wheel_segments.filter((_, j) => j !== i) },
+                          })
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={draft.games.wheel_segments.length >= 6}
+                    onClick={() =>
+                      setDraft({
+                        ...draft,
+                        games: {
+                          ...draft.games,
+                          wheel_segments: [...draft.games.wheel_segments, { label: '10%', code: 'CODE', pct: 10, free_delivery: false, color: '#10B981' }],
+                        },
+                      })
+                    }
+                  >
+                    <Plus className="h-4 w-4 mr-1" /> Προσθήκη τμήματος
+                  </Button>
+                </CardContent>
+              </Card>
+            ) : (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-base flex items-center justify-between">
+                    Μυστικές κάρτες
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        setDraft({
+                          ...draft,
+                          games: {
+                            ...draft.games,
+                            cards: [...draft.games.cards, { tag: 'D', name: 'Μυστική κάρτα 4', prize: 'Έπαθλο', enabled: true }],
+                          },
+                        })
+                      }
+                    >
+                      <Plus className="h-4 w-4 mr-1" /> Προσθήκη κάρτας
+                    </Button>
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  {draft.games.cards.map((card, i) => (
+                    <div key={i} className="grid grid-cols-[64px_1fr_1fr_auto_auto] gap-2 items-center border rounded-lg p-2.5 bg-card">
+                      <div>
+                        <Label className="text-xs">Tag</Label>
+                        <Input
+                          value={card.tag}
+                          onChange={e => {
+                            const cards = [...draft.games.cards];
+                            cards[i] = { ...card, tag: e.target.value };
+                            setDraft({ ...draft, games: { ...draft.games, cards } });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Όνομα</Label>
+                        <Input
+                          value={card.name}
+                          onChange={e => {
+                            const cards = [...draft.games.cards];
+                            cards[i] = { ...card, name: e.target.value };
+                            setDraft({ ...draft, games: { ...draft.games, cards } });
+                          }}
+                        />
+                      </div>
+                      <div>
+                        <Label className="text-xs">Έπαθλο</Label>
+                        <Input
+                          value={card.prize}
+                          onChange={e => {
+                            const cards = [...draft.games.cards];
+                            cards[i] = { ...card, prize: e.target.value };
+                            setDraft({ ...draft, games: { ...draft.games, cards } });
+                          }}
+                        />
+                      </div>
+                      <div className="flex items-center justify-between gap-1 border rounded-lg px-2 py-1.5">
+                        <span className="text-[11px] text-muted-foreground">Ενεργή</span>
+                        <Switch
+                          checked={card.enabled}
+                          onCheckedChange={v => {
+                            const cards = [...draft.games.cards];
+                            cards[i] = { ...card, enabled: v };
+                            setDraft({ ...draft, games: { ...draft.games, cards } });
+                          }}
+                        />
+                      </div>
+                      <Button
+                        size="icon"
+                        variant="ghost"
+                        onClick={() =>
+                          setDraft({
+                            ...draft,
+                            games: { ...draft.games, cards: draft.games.cards.filter((_, j) => j !== i) },
+                          })
+                        }
+                      >
+                        <Trash2 className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
+          </div>
         </TabsContent>
       </Tabs>
     </div>
