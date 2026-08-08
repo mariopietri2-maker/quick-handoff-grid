@@ -19,9 +19,6 @@ verify_jwt = true
 [functions.send-push]
 verify_jwt = false
 
-[functions.support-ai]
-verify_jwt = false
-
 [functions.ai-dynamic-pricing]
 verify_jwt = false
 

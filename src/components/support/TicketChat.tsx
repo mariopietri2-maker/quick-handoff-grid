@@ -1,7 +1,7 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Timer, AlarmClock, Sparkles } from 'lucide-react';
+import { Loader2, Timer, AlarmClock } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
 import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
@@ -17,7 +17,6 @@ interface Message {
   message: string | null;
   attachment_url?: string | null;
   attachment_type?: string | null;
-  is_ai?: boolean | null;
   created_at: string;
 }
 
@@ -49,7 +48,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
 
   const viewerIsAgent = isAdmin || profile?.role === 'support' || profile?.role === 'admin';
 
-  const send = async (messageText: string, attachment: ComposerAttachment | null, opts?: { isAi?: boolean }) => {
+  const send = async (messageText: string, attachment: ComposerAttachment | null) => {
     if ((!messageText.trim() && !attachment) || !user) return;
     const senderRole = isAdmin
       ? 'admin'
@@ -68,7 +67,6 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
       message: messageText.trim() || null,
       attachment_url: attachment?.url ?? null,
       attachment_type: attachment?.type ?? null,
-      is_ai: opts?.isAi ?? false,
       created_at: new Date().toISOString(),
     };
     setMessages((prev) => [...prev, optimistic]);
@@ -80,7 +78,6 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
       message: messageText.trim() || null,
       attachment_url: attachment?.url ?? null,
       attachment_type: attachment?.type ?? null,
-      is_ai: opts?.isAi ?? false,
     } as any);
 
     if (error) {
@@ -249,18 +246,15 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
                     <p className="text-sm whitespace-pre-wrap break-words">{m.message}</p>
                   )}
                   <p className={`text-[10px] mt-1 flex items-center gap-1 ${isMine ? 'text-primary-foreground/70' : 'text-muted-foreground'}`}>
-                    {m.is_ai && <Sparkles className="h-3 w-3 shrink-0" />}
-                    {m.is_ai
-                      ? 'AI Υποστήριξη'
-                      : m.sender_role === 'driver'
-                        ? 'Οδηγός'
-                        : m.sender_role === 'store'
-                          ? 'Κατάστημα'
-                          : m.sender_role === 'customer'
-                            ? 'Πελάτης'
-                            : isAgentMsg
-                              ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη')
-                              : m.sender_role}
+                    {m.sender_role === 'driver'
+                      ? 'Οδηγός'
+                      : m.sender_role === 'store'
+                        ? 'Κατάστημα'
+                        : m.sender_role === 'customer'
+                          ? 'Πελάτης'
+                          : isAgentMsg
+                            ? (m.sender_role === 'admin' ? 'Admin' : 'Υποστήριξη')
+                            : m.sender_role}
                     {' · '}
                     {format(new Date(m.created_at), 'HH:mm')}
                   </p>

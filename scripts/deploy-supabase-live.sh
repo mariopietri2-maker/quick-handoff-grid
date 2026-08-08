@@ -17,7 +17,6 @@ echo "→ Pushing DB migrations..."
 npx supabase db push --linked
 
 echo "→ Deploying edge functions..."
-npx supabase functions deploy support-ai --project-ref "$REF" --no-verify-jwt
 npx supabase functions deploy ai-dynamic-pricing --project-ref "$REF" --no-verify-jwt
 npx supabase functions deploy google-geocode --project-ref "$REF"
 

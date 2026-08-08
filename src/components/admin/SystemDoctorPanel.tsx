@@ -294,7 +294,7 @@ export default function SystemDoctorPanel() {
       return { status: res.status, ms: Math.round(performance.now() - t0) };
     };
 
-    for (const fn of ['auto-dispatch', 'support-ai', 'predict-dispatch-time']) {
+    for (const fn of ['auto-dispatch', 'predict-dispatch-time']) {
       try {
         const { status, ms } = await pingFn(fn);
         const reachable = status > 0 && status < 500;

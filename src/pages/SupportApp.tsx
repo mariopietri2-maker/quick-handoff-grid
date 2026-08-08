@@ -8,10 +8,10 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, MessageCircle, ArrowLeft, Car, Smartphone, Phone, Zap, AlarmClock, Flag, Siren, Users, Mail, Search, Sparkles, Inbox } from 'lucide-react';
+import { Headphones, AlertTriangle, Clock, CheckCircle, LogOut, MessageSquare, MessageCircle, ArrowLeft, Car, Smartphone, Phone, Zap, AlarmClock, Flag, Siren, Users, Mail, Search, Inbox } from 'lucide-react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { TicketChat, type TicketChatHandle } from '@/components/support/TicketChat';
-import { SupportCopilot } from '@/components/support/SupportCopilot';
+import { SupportActionToolbox } from '@/components/support/SupportActionToolbox';
 import { LiveChatConsole } from '@/components/support/LiveChatConsole';
 
 import DeliveryControlCenter from '@/components/admin/DeliveryControlCenter';
@@ -87,7 +87,6 @@ export default function SupportApp() {
   const [resolveOpen, setResolveOpen] = useState(false);
   const [resolutionNotes, setResolutionNotes] = useState('');
   const [view, setView] = useState<'tickets' | 'live' | 'team' | 'dcc' | 'messages'>('tickets');
-  const [copilotOpen, setCopilotOpen] = useState(true);
   const chatRef = useRef<TicketChatHandle>(null);
 
   const { data: tickets } = useQuery({
@@ -373,8 +372,10 @@ export default function SupportApp() {
                 onStatus={updateStatus}
                 onPriority={updatePriority}
                 onResolve={() => setResolveOpen(true)}
-                copilotOpen={copilotOpen}
-                onToggleCopilot={() => setCopilotOpen((o) => !o)}
+                onDriverChanged={() =>
+                  activeTicket.driver_id &&
+                  queryClient.invalidateQueries({ queryKey: ['support-driver-profile', activeTicket.driver_id] })
+                }
               />
             ) : (
               <div className="flex-1 min-h-0 overflow-y-auto">
@@ -386,54 +387,13 @@ export default function SupportApp() {
                     </div>
                     <h3 className="font-heading font-bold text-lg">Επίλεξε ένα ticket</h3>
                     <p className="text-sm text-muted-foreground mt-1">
-                      Η ουρά στα αριστερά περιέχει όλα τα ενεργά αιτήματα. Διάλεξε ένα για να ανοίξει ο πίνακας εργασίας με το AI Copilot.
+                      Η ουρά στα αριστερά περιέχει όλα τα ενεργά αιτήματα. Διάλεξε ένα για να ανοίξει ο πίνακας εργασίας.
                     </p>
                   </div>
                 </div>
               </div>
             )}
           </section>
-
-          {/* ── Pane 3 · AI Copilot / Actions ──────────── */}
-          <aside className={cn('shrink-0 border-l flex-col min-h-0 bg-card', copilotOpen ? 'w-[320px] xl:w-[360px] flex' : 'hidden')}>
-            {activeTicket ? (
-              <SupportCopilot
-                key={activeTicket.id}
-                ticketId={activeTicket.id}
-                ticketShortId={activeTicket.id?.slice(0, 8)}
-                driver={profileInfo(activeTicket.driver_id)}
-                onDriverChanged={() =>
-                  activeTicket.driver_id &&
-                  queryClient.invalidateQueries({ queryKey: ['support-driver-profile', activeTicket.driver_id] })
-                }
-                onUseReply={(text) => chatRef.current?.setDraft(text)}
-                onReplySent={() => {
-                  queryClient.invalidateQueries({ queryKey: ['support-tickets'] });
-                }}
-              />
-            ) : (
-              <div className="flex-1 min-h-0 overflow-y-auto p-3 space-y-3">
-                <div className="rounded-2xl gradient-primary text-primary-foreground p-4 shadow-primary">
-                  <div className="flex items-center gap-2 mb-2">
-                    <div className="h-9 w-9 rounded-xl bg-white/15 flex items-center justify-center">
-                      <Sparkles className="h-5 w-5" />
-                    </div>
-                    <div>
-                      <p className="font-heading font-bold text-sm">AI Copilot</p>
-                      <p className="text-[10px] text-primary-foreground/70">Αναμένει επιλογή ticket</p>
-                    </div>
-                  </div>
-                  <p className="text-[11px] leading-relaxed text-primary-foreground/80">
-                    Άνοιξε ένα ticket για να δεις προτάσεις απάντησης, σύνοψη, triage και εργαλεία ενεργειών σε έναν πίνακα.
-                  </p>
-                </div>
-                <div className="grid grid-cols-2 gap-2">
-                  <MiniStat label="Ενεργά" value={counts.open + counts.in_progress} />
-                  <MiniStat label="SOS" value={counts.sos} danger={counts.sos > 0} />
-                </div>
-              </div>
-            )}
-          </aside>
         </main>
       )}
 
@@ -468,15 +428,6 @@ function MiniKpi({ label, value, dot, pulse }: { label: string; value: string | 
         <span className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</span>
       </div>
       <p className="font-heading font-bold text-base tabular-nums leading-tight mt-0.5">{value}</p>
-    </div>
-  );
-}
-
-function MiniStat({ label, value, danger }: { label: string; value: string | number; danger?: boolean }) {
-  return (
-    <div className={cn('rounded-xl border p-3', danger ? 'border-destructive/30 bg-destructive/5' : 'bg-card border-border/70')}>
-      <p className="text-[9px] uppercase tracking-wider font-semibold text-muted-foreground">{label}</p>
-      <p className={cn('font-heading font-bold text-2xl tabular-nums mt-1', danger && 'text-destructive')}>{value}</p>
     </div>
   );
 }
@@ -558,8 +509,7 @@ function Workspace({
   onStatus,
   onPriority,
   onResolve,
-  copilotOpen,
-  onToggleCopilot,
+  onDriverChanged,
 }: {
   ticket: any;
   subject: any;
@@ -569,8 +519,7 @@ function Workspace({
   onStatus: (id: string, status: string) => void;
   onPriority: (id: string, p: TicketPriority) => void;
   onResolve: () => void;
-  copilotOpen: boolean;
-  onToggleCopilot: () => void;
+  onDriverChanged: () => void;
 }) {
   const cat = categoryConfig[ticket.category] ?? categoryConfig.other;
   const CatIcon = cat.icon;
@@ -607,9 +556,6 @@ function Workspace({
               </Badge>
             )}
             <Badge variant="outline" className={cn(cfg.color, 'text-[10px]')}>{cfg.label}</Badge>
-            <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onToggleCopilot} title="Εναλλαγή AI Copilot">
-              <Sparkles className={cn('h-4 w-4', copilotOpen ? 'text-primary' : 'text-muted-foreground')} />
-            </Button>
           </div>
         </div>
 
@@ -682,6 +628,8 @@ function Workspace({
             ) : ticket.driver_id ? (
               <DriverProfilePanel driverId={ticket.driver_id} />
             ) : null}
+
+            <SupportActionToolbox ticket={ticket} driver={driver} onDriverChanged={onDriverChanged} />
           </div>
         </div>
 

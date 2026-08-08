@@ -35,8 +35,7 @@ INSERT INTO public.feature_flags (key, label, description, category) VALUES
   ('driver_payouts_enabled', 'Πληρωμές οδηγών', 'Επιτρέπει αιτήσεις cash-out', 'finance'),
   ('promo_codes_enabled', 'Κωδικοί έκπτωσης', 'Επιτρέπει χρήση promo codes στο checkout', 'orders'),
   ('reviews_enabled', 'Κριτικές', 'Επιτρέπει στους πελάτες να αφήνουν κριτικές', 'general'),
-  ('chat_support_enabled', 'Chat υποστήριξης', 'Ενεργοποιεί ζωντανό chat με support', 'support'),
-  ('ai_support_enabled', 'AI Support', 'Ενεργοποιεί τον AI βοηθό υποστήριξης', 'support')
+  ('chat_support_enabled', 'Chat υποστήριξης', 'Ενεργοποιεί ζωντανό chat με support', 'support')
 ON CONFLICT (key) DO NOTHING;
 
 -- ============================================
