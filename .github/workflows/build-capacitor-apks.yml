@@ -85,28 +85,7 @@ jobs:
           for dir in android-customer android-driver; do
             gradle="$dir/build.gradle"
             if ! grep -q 'api.mapbox.com' "$gradle" 2>/dev/null; then
-              python3 - "$gradle" <<'PY'
-import re, sys
-path = sys.argv[1]
-text = open(path).read()
-block = """\n        maven {
-            url = 'https://api.mapbox.com/downloads/v2/releases/maven'
-            authentication { basic(BasicAuthentication) }
-            credentials {
-                username = 'mapbox'
-                password = project.findProperty('MAPBOX_DOWNLOADS_TOKEN') ?: System.getenv('MAPBOX_DOWNLOADS_TOKEN') ?: ''
-            }
-        }"""
-# Insert into allprojects { repositories { ... } } block
-pat = re.compile(r"(allprojects\s*\{\s*\n\s*repositories\s*\{\s*\n)(.*?)(\n\s*\}\s*\n\s*\})", re.DOTALL)
-m = pat.search(text)
-if not m:
-    print(f"WARN: could not find allprojects.repositories block in {path}")
-    sys.exit(0)
-text = text[:m.end(1)] + m.group(2) + block + text[m.end(2):]
-open(path, "w").write(text)
-print(f"patched mapbox maven repo -> {path}")
-PY
+              python3 scripts/patch-mapbox-maven.py "$gradle"
             else
               echo "mapbox repo already present in $gradle"
             fi
