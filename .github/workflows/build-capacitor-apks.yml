@@ -111,6 +111,8 @@ jobs:
 
       - name: Upload APKs to mobile-apks-v1 release
         if: ${{ github.event_name == 'push' }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release upload mobile-apks-v1 mobile-apks/*.apk --clobber
 
