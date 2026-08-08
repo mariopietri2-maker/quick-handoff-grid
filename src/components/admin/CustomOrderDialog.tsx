@@ -199,22 +199,56 @@ export default function CustomOrderDialog() {
           <div className="grid grid-cols-2 gap-2">
             <div>
               <Label className="text-xs">Όνομα πελάτη</Label>
-              <Input value={customerName} onChange={(e) => setCustomerName(e.target.value)} />
+              <Input
+                value={customerName}
+                onChange={(e) => setCustomerName(e.target.value)}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="sentences"
+                inputMode="text"
+              />
             </div>
             <div>
               <Label className="text-xs">Τηλέφωνο</Label>
-              <Input value={customerPhone} onChange={(e) => setCustomerPhone(e.target.value)} />
+              <Input
+                value={customerPhone}
+                onChange={(e) => setCustomerPhone(e.target.value)}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
+                autoCapitalize="sentences"
+                inputMode="text"
+              />
             </div>
           </div>
 
           <div>
             <Label className="text-xs">Προϊόντα (περίληψη)</Label>
-            <Input value={items} onChange={(e) => setItems(e.target.value)} placeholder="2x Πίτσα, 1 Coke…" />
+            <Input
+              value={items}
+              onChange={(e) => setItems(e.target.value)}
+              placeholder="2x Πίτσα, 1 Coke…"
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              autoCapitalize="sentences"
+              inputMode="text"
+            />
           </div>
 
           <div>
             <Label className="text-xs">Σημειώσεις</Label>
-            <Textarea value={notes} onChange={(e) => setNotes(e.target.value)} rows={2} />
+            <Textarea
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              rows={2}
+              autoComplete="off"
+              autoCorrect="off"
+              spellCheck={false}
+              autoCapitalize="sentences"
+              inputMode="text"
+            />
           </div>
         </div>
 

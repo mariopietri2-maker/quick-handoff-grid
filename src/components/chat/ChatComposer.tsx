@@ -290,6 +290,11 @@ export function ChatComposer({
           }}
           placeholder={placeholder}
           rows={rows}
+          autoComplete="off"
+          autoCorrect="off"
+          spellCheck={false}
+          autoCapitalize="sentences"
+          inputMode="text"
           className="resize-none"
           disabled={disabled}
         />
