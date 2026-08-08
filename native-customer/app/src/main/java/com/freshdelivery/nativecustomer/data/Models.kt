@@ -115,6 +115,7 @@ data class CustomerAppConfig(
     val promos: List<PromoBanner> = listOf(
         PromoBanner("NEW", "Δωρεάν παράδοση", "στην πρώτη σου παραγγελία", "WELCOME", true),
     ),
+    val games: GameConfig = defaultGameConfig(),
 )
 
 @Serializable
@@ -202,6 +203,24 @@ fun defaultMysteryCards(): List<MysteryCardDef> = listOf(
     MysteryCardDef("B", "Μυστική κάρτα 2", "Δωρεάν παράδοση"),
     MysteryCardDef("C", "Μυστική κάρτα 3", "15% έκπτωση"),
 )
+
+/** Games section of the published customer_app_config (mirrors web `games`). */
+data class GameConfig(
+    val enabled: Boolean = true,
+    val active: String = "wheel",
+    val wheelSegments: List<WheelSegment> = WHEEL_SEGMENTS,
+    val cards: List<MysteryCardDef> = defaultMysteryCards(),
+)
+
+fun defaultGameConfig(): GameConfig = GameConfig()
+
+/** Parse a "#RRGGBB" / "0xFFRRGGBB" hex color into a packed ARGB Long. */
+fun parseSegmentColor(hex: String?): Long {
+    if (hex.isNullOrBlank()) return 0xFF10B981L
+    val h = hex.removePrefix("#").removePrefix("0x")
+    val v = h.toLongOrNull(16) ?: return 0xFF10B981L
+    return if (h.length <= 6) 0xFF000000L or v else v
+}
 
 /** One message in the customer's live support chat channel (live_chat_messages). */
 @Serializable

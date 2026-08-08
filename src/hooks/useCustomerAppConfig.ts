@@ -29,6 +29,34 @@ export function heroCardImage(card: Pick<HeroCard, 'image_url' | 'image_data_url
   return card.image_url || card.image_data_url || null;
 }
 
+export type WheelSegmentConfig = {
+  /** Display label on the wheel, e.g. "10%". */
+  label: string;
+  /** Promo code awarded on spin, e.g. "FRESH10". */
+  code: string;
+  /** Discount percent (null when free_delivery). */
+  pct: number | null;
+  free_delivery: boolean;
+  /** Hex color of the segment, e.g. "#F97316". */
+  color: string;
+};
+
+export type MysteryCardConfig = {
+  tag: string;
+  name: string;
+  prize: string;
+  enabled: boolean;
+};
+
+export type GameConfig = {
+  /** Master switch — when off, no games show on the customer app. */
+  enabled: boolean;
+  /** Which game is live: 'wheel' (lucky wheel) or 'cards' (mystery cards). */
+  active: 'wheel' | 'cards';
+  wheel_segments: WheelSegmentConfig[];
+  cards: MysteryCardConfig[];
+};
+
 export type CustomerAppConfig = {
   branding: {
     app_name: string;
@@ -53,6 +81,7 @@ export type CustomerAppConfig = {
     image_url?: string | null;
   }[];
   hero_cards: HeroCard[];
+  games: GameConfig;
   sections: {
     show_tiles: boolean;
     show_promos: boolean;
@@ -91,6 +120,23 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     { tag: 'NEW', title: 'Δωρεάν παράδοση', subtitle: 'στην πρώτη σου παραγγελία', code: 'WELCOME', gradient: 'hero', enabled: true, image_url: null },
   ],
   hero_cards: [],
+  games: {
+    enabled: true,
+    active: 'wheel',
+    wheel_segments: [
+      { label: '10%', code: 'FRESH10', pct: 10, free_delivery: false, color: '#F97316' },
+      { label: '15%', code: 'FRESH15', pct: 15, free_delivery: false, color: '#F59E0B' },
+      { label: '20%', code: 'FRESH20', pct: 20, free_delivery: false, color: '#10B981' },
+      { label: 'ΔΩΡΕΑΝ', code: 'ΠΑΡΑΔΟΣΗ', pct: null, free_delivery: true, color: '#14B8A6' },
+      { label: '25%', code: 'FRESH25', pct: 25, free_delivery: false, color: '#8B5CF6' },
+      { label: '5%', code: 'FRESH5', pct: 5, free_delivery: false, color: '#EF4444' },
+    ],
+    cards: [
+      { tag: 'A', name: 'Μυστική κάρτα 1', prize: '10% έκπτωση', enabled: true },
+      { tag: 'B', name: 'Μυστική κάρτα 2', prize: 'Δωρεάν παράδοση', enabled: true },
+      { tag: 'C', name: 'Μυστική κάρτα 3', prize: '15% έκπτωση', enabled: true },
+    ],
+  },
   sections: {
     show_tiles: true,
     show_promos: true,
@@ -108,6 +154,15 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
 };
 
 function mergeConfig(cfg: any): CustomerAppConfig {
+  const games = cfg?.games ?? {};
+  const wheelSegments =
+    Array.isArray(games?.wheel_segments) && (games.wheel_segments as any[]).length > 0
+      ? games.wheel_segments
+      : DEFAULT_CONFIG.games.wheel_segments;
+  const cards =
+    Array.isArray(games?.cards) && (games.cards as any[]).length > 0
+      ? games.cards
+      : DEFAULT_CONFIG.games.cards;
   return {
     ...DEFAULT_CONFIG,
     ...cfg,
@@ -118,6 +173,12 @@ function mergeConfig(cfg: any): CustomerAppConfig {
       : DEFAULT_CONFIG.promos,
     tiles: Array.isArray(cfg?.tiles) ? cfg.tiles : DEFAULT_CONFIG.tiles,
     hero_cards: Array.isArray(cfg?.hero_cards) ? cfg.hero_cards : [],
+    games: {
+      enabled: games?.enabled ?? DEFAULT_CONFIG.games.enabled,
+      active: games?.active === 'cards' ? 'cards' : 'wheel',
+      wheel_segments: wheelSegments,
+      cards: cards,
+    },
   };
 }
 

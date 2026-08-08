@@ -69,7 +69,6 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativecustomer.data.MysteryCardDef
-import com.freshdelivery.nativecustomer.data.WHEEL_SEGMENTS
 import com.freshdelivery.nativecustomer.ui.theme.FreshBg
 import com.freshdelivery.nativecustomer.ui.theme.FreshDivider
 import com.freshdelivery.nativecustomer.ui.theme.FreshGold
@@ -167,7 +166,8 @@ fun LuckyWheelCard(
                     val center = this.center
                     val radius = size.minDimension / 2f
                     val labelRadius = radius * 0.58f
-                    WHEEL_SEGMENTS.forEachIndexed { i, seg ->
+                    val segments = state.wheelSegments.ifEmpty { com.freshdelivery.nativecustomer.data.WHEEL_SEGMENTS }
+                    segments.forEachIndexed { i, seg ->
                         val centerAngle = i * 60f - 90f
                         drawArc(
                             color = Color(seg.color),
@@ -188,7 +188,7 @@ fun LuckyWheelCard(
                             strokeWidth = 2f,
                         )
                     }
-                    WHEEL_SEGMENTS.forEachIndexed { i, seg ->
+                    segments.forEachIndexed { i, seg ->
                         val midAngle = Math.toRadians((i * 60f - 90f).toDouble())
                         val x = center.x + cos(midAngle).toFloat() * labelRadius
                         val y = center.y + sin(midAngle).toFloat() * labelRadius

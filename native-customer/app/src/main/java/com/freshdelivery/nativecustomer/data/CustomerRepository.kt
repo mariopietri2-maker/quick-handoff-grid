@@ -1,7 +1,9 @@
 package com.freshdelivery.nativecustomer.data
 
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
@@ -140,8 +142,44 @@ class CustomerRepository(
                 logoUrl = obj["logoUrl"]?.jsonPrimitive?.contentOrNull,
                 tiles = tiles,
                 promos = promos,
+                games = parseGameConfig(obj),
             )
         }.getOrDefault(CustomerAppConfig())
+    }
+
+    /** Games section of the published config — server wins over local prefs. */
+    private fun parseGameConfig(obj: JsonObject): GameConfig {
+        val g = obj["games"]?.jsonObject ?: return GameConfig()
+        val wheel = g["wheel_segments"]?.jsonArray?.mapNotNull { x ->
+            val o = x.jsonObject
+            val label = o["label"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            val free = o["free_delivery"]?.jsonPrimitive?.booleanOrNull ?: false
+            val pct = if (free) null else o["pct"]?.jsonPrimitive?.intOrNull
+            WheelSegment(
+                label = label,
+                sub = o["code"]?.jsonPrimitive?.contentOrNull ?: label,
+                color = parseSegmentColor(o["color"]?.jsonPrimitive?.contentOrNull),
+                pct = pct,
+                freeDelivery = free,
+            )
+        } ?: emptyList()
+        val cards = g["cards"]?.jsonArray?.mapNotNull { x ->
+            val o = x.jsonObject
+            val tag = o["tag"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+            MysteryCardDef(
+                tag = tag,
+                name = o["name"]?.jsonPrimitive?.contentOrNull ?: "Κάρτα $tag",
+                prize = o["prize"]?.jsonPrimitive?.contentOrNull ?: "",
+                enabled = o["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,
+            )
+        } ?: emptyList()
+        return GameConfig(
+            enabled = g["enabled"]?.jsonPrimitive?.booleanOrNull ?: true,
+            active = g["active"]?.jsonPrimitive?.contentOrNull ?: "wheel",
+            // The wheel always draws exactly 6 segments.
+            wheelSegments = if (wheel.size == 6) wheel else WHEEL_SEGMENTS,
+            cards = if (cards.isNotEmpty()) cards else defaultMysteryCards(),
+        )
     }
 suspend fun placeOrder(
         storeId: String,
