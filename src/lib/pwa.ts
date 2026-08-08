@@ -23,7 +23,7 @@ export function setPwaManifest(kind: PwaManifestKind) {
     link.setAttribute('href', href);
   }
 
-  const theme = kind === 'store' ? '#06C167' : '#06C167';
+  const theme = '#FF8A3D';
   const themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   if (themeMeta) themeMeta.content = theme;
 

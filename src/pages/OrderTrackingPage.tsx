@@ -188,7 +188,7 @@ export default function OrderTrackingPage() {
       {showThankYou && (
         <div
           className="fixed inset-0 z-50 flex flex-col items-center justify-center px-8 text-center animate-in fade-in duration-500"
-          style={{ background: 'linear-gradient(180deg, hsl(152 100% 32%) 0%, hsl(152 100% 24%) 100%)' }}
+          style={{ background: 'linear-gradient(180deg, hsl(24 90% 46%) 0%, hsl(24 100% 56%) 55%, hsl(343 100% 66%) 100%)' }}
         >
           <div className="text-8xl mb-6 animate-bounce">🎉</div>
           <h1 className="font-heading font-extrabold text-4xl text-primary-foreground mb-3">
