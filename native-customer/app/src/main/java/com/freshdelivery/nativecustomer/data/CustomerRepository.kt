@@ -14,6 +14,7 @@ import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.github.jan.supabase.postgrest.rpc
 import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.RealtimeChannel
 import io.github.jan.supabase.realtime.channel
 import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
@@ -26,6 +27,8 @@ import kotlinx.serialization.json.put
 class CustomerRepository(
     private val client: SupabaseClient = SupabaseModule.client,
 ) {
+    private var liveChatChannel: RealtimeChannel? = null
+
     suspend fun signIn(email: String, password: String) {
         client.auth.signInWith(Email) {
             this.email = email.trim()
@@ -244,5 +247,42 @@ suspend fun placeOrder(
 
     suspend fun unsubscribeAll() {
         runCatching { client.realtime.removeAllChannels() }
+    }
+
+    // ── Customer live support chat (live_chat_messages, customer channel) ──
+
+    suspend fun fetchLiveChat(customerId: String): List<LiveChatMessageRow> {
+        return client.from("live_chat_messages").select(Columns.ALL) {
+            filter { eq("customer_id", customerId) }
+            order("created_at", Order.ASCENDING)
+            limit(500L)
+        }.decodeList<LiveChatMessageRow>()
+    }
+
+    suspend fun sendLiveChatMessage(customerId: String, senderId: String, message: String) {
+        client.from("live_chat_messages").insert(
+            buildJsonObject {
+                put("customer_id", customerId)
+                put("sender_id", senderId)
+                put("sender_role", "customer")
+                put("message", message)
+            },
+        )
+    }
+
+    /** Live incoming agent messages on the customer's support channel. */
+    suspend fun subscribeLiveChat(customerId: String): Flow<PostgresAction> {
+        val channel = client.channel("customer-live-chat-$customerId")
+        liveChatChannel = channel
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "live_chat_messages"
+        }
+        channel.subscribe()
+        return flow
+    }
+
+    suspend fun unsubscribeLiveChat() {
+        liveChatChannel?.let { ch -> runCatching { client.realtime.removeChannel(ch) } }
+        liveChatChannel = null
     }
 }

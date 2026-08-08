@@ -35,6 +35,7 @@ import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CreditCard
 import androidx.compose.material.icons.outlined.DirectionsBike
 import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.Headset
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material.icons.outlined.LocationOn
@@ -50,6 +51,7 @@ import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Store
 import androidx.compose.material.icons.outlined.Timer
+import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Wallet
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -141,6 +143,15 @@ fun CustomerShell(
     onSaveProfile: (String, String) -> Unit = { _, _ -> },
     onCancelOrder: (OrderUi) -> Unit = {},
     onClearMessages: () -> Unit = {},
+    onSpinWheel: () -> Unit = {},
+    onOpenCard: (Int) -> Unit = {},
+    onGameSelect: (String) -> Unit = {},
+    onCardToggle: (Int, Boolean) -> Unit = { _, _ -> },
+    onCardPrize: (Int, String) -> Unit = { _, _ -> },
+    onToggleAdmin: (Boolean) -> Unit = {},
+    onOpenSupport: () -> Unit = {},
+    onCloseSupport: () -> Unit = {},
+    onSendLiveChat: (String) -> Unit = {},
 ) {
     val snackbar = remember { SnackbarHostState() }
     LaunchedEffect(state.info, state.error) {
@@ -150,8 +161,19 @@ fun CustomerShell(
             onClearMessages()
         }
     }
-    BackHandler(enabled = state.showCart || state.selectedStore != null) {
-        if (state.showCart) onToggleCart(false) else onCloseStore()
+    BackHandler(enabled = state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen) {
+        if (state.supportOpen) onCloseSupport()
+        else if (state.adminOpen) onToggleAdmin(false)
+        else if (state.showCart) onToggleCart(false)
+        else onCloseStore()
+    }
+    if (state.supportOpen) {
+        SupportScreen(
+            state = state,
+            onBack = onCloseSupport,
+            onSend = onSendLiveChat,
+        )
+        return
     }
     if (state.showCart) {
         CartCheckoutScreen(
@@ -166,6 +188,16 @@ fun CustomerShell(
             onBack = onCloseStore,
             onAdd = onAddToCart,
             onOpenCart = { onToggleCart(true) },
+        )
+        return
+    }
+    if (state.adminOpen) {
+        AdminPanel(
+            state = state,
+            onGameSelect = onGameSelect,
+            onCardToggle = onCardToggle,
+            onCardPrize = onCardPrize,
+            onClose = { onToggleAdmin(false) },
         )
         return
     }
@@ -234,11 +266,23 @@ fun CustomerShell(
     ) { padding ->
         Box(Modifier.padding(padding).fillMaxSize()) {
             when (state.tab) {
-                CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = false)
-                CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, browseMode = true)
+                CustomerTab.Home -> HomeTab(
+                    state, onRefresh, onOpenStore, onSearch,
+                    browseMode = false,
+                    onSpinWheel = onSpinWheel,
+                    onOpenCard = onOpenCard,
+                    onToggleAdmin = { onToggleAdmin(true) },
+                )
+                CustomerTab.Browse -> HomeTab(
+                    state, onRefresh, onOpenStore, onSearch,
+                    browseMode = true,
+                    onSpinWheel = onSpinWheel,
+                    onOpenCard = onOpenCard,
+                    onToggleAdmin = { onToggleAdmin(true) },
+                )
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onCancelOrder)
                 CustomerTab.Track -> TrackTab(state)
-                CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut)
+                CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport)
             }
         }
     }
@@ -336,6 +380,9 @@ private fun HomeTab(
     onOpenStore: (StoreRow) -> Unit,
     onSearch: (String) -> Unit,
     browseMode: Boolean = false,
+    onSpinWheel: () -> Unit = {},
+    onOpenCard: (Int) -> Unit = {},
+    onToggleAdmin: () -> Unit = {},
 ) {
     var filterOpen by remember { mutableStateOf(false) }
     val stores = if (filterOpen) {
@@ -390,6 +437,9 @@ private fun HomeTab(
                     }
                     IconButton(onClick = onRefresh) {
                         Icon(Icons.Outlined.MyLocation, contentDescription = "Refresh", tint = FreshGreen)
+                    }
+                    IconButton(onClick = onToggleAdmin) {
+                        Icon(Icons.Outlined.Tune, contentDescription = "Διαχείριση παιχνιδιών", tint = FreshMuted)
                     }
                 }
                 Spacer(Modifier.height(12.dp))
@@ -539,6 +589,14 @@ private fun HomeTab(
                             fontWeight = FontWeight.SemiBold,
                         )
                     }
+                }
+            }
+        }
+        if (state.gameShow) {
+            item {
+                when (state.gameActive) {
+                    "wheel" -> LuckyWheelCard(state = state, onSpin = onSpinWheel)
+                    else -> MysteryCardsSection(state = state, onOpenCard = onOpenCard)
                 }
             }
         }
@@ -1167,6 +1225,27 @@ private fun CartCheckoutScreen(
                         state.deliveryFee,
                     )
                     SummaryLine("Φιλοδώρημα", state.tipAmount)
+                    state.appliedDeal?.let { deal ->
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(
+                                "Καλή τύχη · ${deal.label}",
+                                color = FreshGreenDark,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                            )
+                            Text(
+                                "−€" + "%.2f".format(state.gameDiscount),
+                                color = FreshRose,
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 13.sp,
+                            )
+                        }
+                    }
                     HorizontalDivider(
                         Modifier.padding(vertical = 8.dp),
                         color = FreshDivider,
@@ -1486,6 +1565,7 @@ private fun ProfileTab(
     state: CustomerUiState,
     onSaveProfile: (String, String) -> Unit,
     onSignOut: () -> Unit,
+    onOpenSupport: () -> Unit = {},
 ) {
     var fullName by remember(state.profile?.full_name) {
         mutableStateOf(state.profile?.full_name ?: "")
@@ -1554,6 +1634,32 @@ private fun ProfileTab(
                 Spacer(Modifier.width(8.dp))
                 Text("Push: ενεργές", color = FreshMuted)
             }
+        }
+        Spacer(Modifier.height(14.dp))
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .shadow(4.dp, RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(22.dp))
+                .background(Color.White)
+                .clickable(onClick = onOpenSupport)
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(44.dp)
+                    .background(FreshGreenSoft, RoundedCornerShape(14.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(Icons.Outlined.Headset, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(22.dp))
+            }
+            Spacer(Modifier.width(12.dp))
+            Column(Modifier.weight(1f)) {
+                Text("Βοήθεια & Υποστήριξη", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                Text("Live chat με την ομάδα μας — 24/7", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+            }
+            Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
         }
         Spacer(Modifier.height(20.dp))
         Column(

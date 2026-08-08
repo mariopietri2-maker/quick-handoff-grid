@@ -153,3 +153,64 @@ data class CustomerWalletLedgerRow(
     val description: String? = null,
     val created_at: String? = null,
 )
+
+/** One segment of the lucky discount wheel (mirrors web WHEEL_SEGS). */
+data class WheelSegment(
+    val label: String,
+    val sub: String,
+    val color: Long,
+    val pct: Int? = null,
+    val freeDelivery: Boolean = false,
+)
+
+/** Fixed 6-segment wheel. Order matches the web conic-gradient. */
+val WHEEL_SEGMENTS: List<WheelSegment> = listOf(
+    WheelSegment("10%", "FRESH10", 0xFFF97316, pct = 10),
+    WheelSegment("15%", "FRESH15", 0xFFF59E0B, pct = 15),
+    WheelSegment("20%", "FRESH20", 0xFF10B981, pct = 20),
+    WheelSegment("ΔΩΡΕΑΝ", "ΠΑΡΑΔΟΣΗ", 0xFF14B8A6, freeDelivery = true),
+    WheelSegment("25%", "FRESH25", 0xFF8B5CF6, pct = 25),
+    WheelSegment("5%", "FRESH5", 0xFFEF4444, pct = 5),
+)
+
+/** Result of a finished wheel spin (what the user sees in the banner). */
+data class GamePrize(
+    val label: String,
+    val code: String,
+    val pct: Int? = null,
+    val freeDelivery: Boolean = false,
+)
+
+/** Discount that has been applied to the cart until the game cycle resets. */
+data class GameDeal(
+    val code: String,
+    val pct: Int? = null,
+    val freeDelivery: Boolean = false,
+    val label: String,
+)
+
+/** A mystery card as configured by the admin panel. */
+data class MysteryCardDef(
+    val tag: String,
+    val name: String,
+    val prize: String,
+    val enabled: Boolean = true,
+)
+
+fun defaultMysteryCards(): List<MysteryCardDef> = listOf(
+    MysteryCardDef("A", "Μυστική κάρτα 1", "10% έκπτωση"),
+    MysteryCardDef("B", "Μυστική κάρτα 2", "Δωρεάν παράδοση"),
+    MysteryCardDef("C", "Μυστική κάρτα 3", "15% έκπτωση"),
+)
+
+/** One message in the customer's live support chat channel (live_chat_messages). */
+@Serializable
+data class LiveChatMessageRow(
+    val id: String = "",
+    val customer_id: String? = null,
+    val order_id: String? = null,
+    val sender_id: String? = null,
+    val sender_role: String? = null,
+    val message: String? = null,
+    val created_at: String? = null,
+)
