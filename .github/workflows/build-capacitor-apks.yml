@@ -64,9 +64,13 @@ jobs:
         run: |
           set -euo pipefail
           for flavor in customer driver; do
-            if [ -d "android-$flavor" ]; then
-              echo "==> android-$flavor already exists"
+            if [ -f "android-$flavor/build.gradle" ] && [ -f "android-$flavor/app/build.gradle" ]; then
+              echo "==> android-$flavor already scaffolded"
               continue
+            fi
+            if [ -d "android-$flavor" ]; then
+              echo "==> android-$flavor exists but incomplete — removing"
+              rm -rf "android-$flavor"
             fi
             echo "==> cap add android ($flavor)"
             cp -f capacitor.config.ts capacitor.config.ts.bak
