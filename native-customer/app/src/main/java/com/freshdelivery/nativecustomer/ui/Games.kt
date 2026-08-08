@@ -58,8 +58,8 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.graphicsLayer
-import androidx.compose.ui.graphics.solidColor
 import androidx.compose.ui.text.AnnotatedString
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -594,7 +594,7 @@ private fun AdminGameChip(
             .clip(RoundedCornerShape(16.dp))
             .background(
                 if (active) Brush.horizontalGradient(listOf(Color(0xFF0B8F5F), FreshTeal))
-                else solidColor(Color.White),
+                else SolidColor(Color.White),
             )
             .border(
                 width = if (active) 0.dp else 1.5.dp,
