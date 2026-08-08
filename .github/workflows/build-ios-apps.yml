@@ -114,18 +114,18 @@ jobs:
       - name: Stage artifacts
         run: |
           set -euo pipefail
-          mkdir -p dist
-          cp -f fresh-customer-ios.ipa fresh-driver-ios.ipa dist/
-          cp -f store-bundles/fresh-customer-ios-xcode.zip store-bundles/fresh-driver-ios-xcode.zip dist/
-          cp -f ios-customer/build/ios-customer.xcarchive dist/fresh-customer-ios.xcarchive 2>/dev/null || true
-          cp -f ios-driver/build/ios-driver.xcarchive dist/fresh-driver-ios.xcarchive 2>/dev/null || true
-          ls -lah dist/
+          mkdir -p release-dist
+          cp -f fresh-customer-ios.ipa fresh-driver-ios.ipa release-dist/
+          cp -f store-bundles/fresh-customer-ios-xcode.zip store-bundles/fresh-driver-ios-xcode.zip release-dist/
+          cp -f ios-customer/build/ios-customer.xcarchive release-dist/fresh-customer-ios.xcarchive 2>/dev/null || true
+          cp -f ios-driver/build/ios-driver.xcarchive release-dist/fresh-driver-ios.xcarchive 2>/dev/null || true
+          ls -lah release-dist/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
           name: ios-apps
-          path: dist/*
+          path: release-dist/*
           if-no-files-found: error
           retention-days: 14
 
@@ -136,6 +136,6 @@ jobs:
         run: |
           gh release view ios-xcode-projects-v1 >/dev/null 2>&1 || \
             gh release create ios-xcode-projects-v1 --title "iOS apps (Capacitor, Xcode handoff)" --notes "Unsigned .ipa + Xcode project zips for customer & driver. Sign on a Mac with an Apple Developer team to install (see scripts/sync-ios-apps.sh)."
-          gh release upload ios-xcode-projects-v1 dist/* --clobber
+          gh release upload ios-xcode-projects-v1 release-dist/* --clobber
           echo "Published to GitHub release ios-xcode-projects-v1:"
-          ls dist/
+          ls release-dist/
