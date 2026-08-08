@@ -3,7 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, Loader as Loader2, RefreshCw, Wrench, Database, Zap, MapPin, Sparkles, Wifi, ShoppingBag, Bike } from 'lucide-react';
+import { CircleCheck as CheckCircle2, TriangleAlert as AlertTriangle, Circle as XCircle, Loader as Loader2, RefreshCw, Wrench, Database, Zap, MapPin, Wifi, ShoppingBag, Bike } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 type Status = 'ok' | 'warn' | 'error' | 'checking';
@@ -109,19 +109,6 @@ export default function SystemHealthPanel() {
       await res.text().catch(() => '');
       return { status: res.status, ms: Math.round(performance.now() - t0) };
     };
-
-    // 4. AI Gateway via support-ai ping (any HTTP response = reachable)
-    try {
-      const { status, ms, error } = await pingFn('support-ai', { action: 'health_check' });
-      const reachable = status > 0 && status < 500;
-      results.push({
-        id: 'ai', label: 'AI Gateway', icon: Sparkles,
-        status: reachable ? 'ok' : 'warn',
-        message: reachable ? `Απόκριση ${ms}ms` : (error ?? `HTTP ${status}`),
-      });
-    } catch (e: any) {
-      results.push({ id: 'ai', label: 'AI Gateway', icon: Sparkles, status: 'warn', message: e?.message ?? 'Άγνωστο' });
-    }
 
     // 5. Auto-dispatch edge function reachability (any HTTP response = reachable)
     try {

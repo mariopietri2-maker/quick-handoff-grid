@@ -15,7 +15,6 @@ interface Message {
   message: string | null;
   attachment_url?: string | null;
   attachment_type?: string | null;
-  is_ai?: boolean | null;
   created_at: string;
 }
 
@@ -122,8 +121,7 @@ export function DriverTicketChat({ ticketId }: { ticketId: string }) {
     return `${parts[0]} ${parts[1][0]}.`;
   };
 
-  const roleLabel = (role: string, isAi?: boolean | null) => {
-    if (isAi) return 'AI Υποστήριξη';
+  const roleLabel = (role: string) => {
     switch (role) {
       case 'support': return 'Υποστήριξη';
       case 'admin': return 'Admin';
@@ -211,7 +209,7 @@ export function DriverTicketChat({ ticketId }: { ticketId: string }) {
                     <div className="flex flex-col items-start max-w-[78%]">
                       {groupStart && (
                         <span className={`mb-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider ${roleBadgeClass(m.sender_role)}`}>
-                          {roleLabel(m.sender_role, m.is_ai)}
+                          {roleLabel(m.sender_role)}
                         </span>
                       )}
                       <div className="rounded-2xl rounded-bl-md px-4 py-2.5 bg-card border border-[hsl(var(--driver-border))] shadow-sm">

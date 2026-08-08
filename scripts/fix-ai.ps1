@@ -34,7 +34,6 @@ if ($env:AI_GATEWAY_API_KEY) {
 #    (current source checks AI_GATEWAY_API_KEY || LOVABLE_API_KEY, and health_check
 #     no longer requires the key — this fixes the stale "LOVABLE_API_KEY not configured" errors).
 $functions = @(
-  "support-ai",
   "generate-hero-card",
   "admin-setting-advisor",
   "parse-receipt",
@@ -47,6 +46,4 @@ foreach ($f in $functions) {
   if ($LASTEXITCODE -ne 0) { Write-Host "WARN: deploy of $f failed" -ForegroundColor Yellow }
 }
 
-Write-Host "`nDone. Verify: POST https://$REF.supabase.co/functions/v1/support-ai" -ForegroundColor Green
-Write-Host '  body: {"action":"health_check"}  ->  should return {"ok":true}' -ForegroundColor Green
-Write-Host "If the AI gateway key above was a Lovable-only key and is now dead, replace it in the project secrets with a working AI_GATEWAY_API_KEY." -ForegroundColor Yellow
+Write-Host "`nDone. If the AI gateway key above was a Lovable-only key and is now dead, replace it in the project secrets with a working AI_GATEWAY_API_KEY." -ForegroundColor Yellow
