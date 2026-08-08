@@ -24,8 +24,8 @@ class MapboxMapsPlugin : Plugin() {
         accessToken = token
         try {
             MapboxOptions.accessToken = token
-        } catch (t: Throwable) {
-            call.reject("Failed to set Mapbox token: ${t.message}", t)
+        } catch (e: Exception) {
+            call.reject("Failed to set Mapbox token: ${e.message}", e)
             return
         }
         call.resolve()
