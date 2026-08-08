@@ -60,6 +60,25 @@ jobs:
       - name: Install npm deps
         run: npm ci
 
+      - name: Scaffold Android projects (android-customer / android-driver)
+        run: |
+          set -euo pipefail
+          for flavor in customer driver; do
+            if [ -d "android-$flavor" ]; then
+              echo "==> android-$flavor already exists"
+              continue
+            fi
+            echo "==> cap add android ($flavor)"
+            cp -f capacitor.config.ts capacitor.config.ts.bak
+            cp -f "capacitor.$flavor.config.ts" capacitor.config.ts
+            npx cap add android || {
+              echo "::error::cap add android failed for $flavor"
+              exit 1
+            }
+            mv -f capacitor.config.ts.bak capacitor.config.ts
+          done
+          ls -d android-* 2>/dev/null || true
+
       - name: Build Capacitor APKs
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
