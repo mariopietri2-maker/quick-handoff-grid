@@ -30,7 +30,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.Gift
+import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.LocalOffer
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -118,7 +118,7 @@ fun LuckyWheelCard(
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Gift, contentDescription = null, tint = FreshGold, modifier = Modifier.size(16.dp))
+                Icon(Icons.Outlined.CardGiftcard, contentDescription = null, tint = FreshGold, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(7.dp))
                 Text(
                     "ΡΟΔΑ ΕΚΠΤΩΣΕΩΝ",
@@ -323,7 +323,7 @@ fun MysteryCardsSection(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(Icons.Outlined.Gift, contentDescription = null, tint = FreshTeal, modifier = Modifier.size(16.dp))
+                Icon(Icons.Outlined.CardGiftcard, contentDescription = null, tint = FreshTeal, modifier = Modifier.size(16.dp))
                 Spacer(Modifier.width(7.dp))
                 Text(
                     "ΜΥΣΤΙΚΕΣ ΚΑΡΤΕΣ",
@@ -415,7 +415,7 @@ private fun MysteryCard(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                Icons.Outlined.Gift,
+                Icons.Outlined.CardGiftcard,
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier
@@ -593,7 +593,7 @@ private fun AdminGameChip(
             .clip(RoundedCornerShape(16.dp))
             .background(
                 if (active) Brush.horizontalGradient(listOf(Color(0xFF0B8F5F), FreshTeal))
-                else Color.White,
+                else Brush.solidColor(Color.White),
             )
             .border(
                 width = if (active) 0.dp else 1.5.dp,
