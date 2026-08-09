@@ -30,5 +30,9 @@ import kotlinx.serialization.json.put
 class CustomerRepository(
     private val client: SupabaseClient
 ) {
-    // NOTE: Full restored source follows in subsequent update if truncated
+    // Restored stub - full implementation to follow
+    suspend fun signIn(email: String, password: String) = client.auth.signInWith(Email) { this.email = email; this.password = password }
+    suspend fun signUp(email: String, password: String) = client.auth.signUpWith(Email) { this.email = email; this.password = password }
+    suspend fun signOut() = client.auth.signOut()
+    // ... remaining methods from full source needed for compile
 }
