@@ -21,6 +21,7 @@ import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Payments
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -47,6 +48,7 @@ import com.freshdelivery.nativedriver.ui.money.MoneyScreen
 import com.freshdelivery.nativedriver.ui.ops.OpsScreen
 import com.freshdelivery.nativedriver.ui.profile.ProfileScreen
 import com.freshdelivery.nativedriver.ui.referral.ReferralScreen
+import com.freshdelivery.nativedriver.ui.settings.SettingsScreen
 import com.freshdelivery.nativedriver.ui.support.SupportCenter
 import com.freshdelivery.nativedriver.ui.support.TicketChatDialog
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
@@ -76,7 +78,6 @@ fun DriverShell(
     onRefresh: () -> Unit,
     onRefreshMoney: () -> Unit = onRefresh,
     onRefreshInbox: () -> Unit = onRefresh,
-    onWithdraw: (Double) -> Unit,
     onMarkRead: (String) -> Unit,
     onSaveProfile: (String, String, String, String, String) -> Unit,
     onSignOut: () -> Unit,
@@ -102,6 +103,7 @@ fun DriverShell(
         TabItem(DriverTab.Inbox, "Inbox", Icons.Filled.Mail, Icons.Outlined.Mail),
         TabItem(DriverTab.Referral, "Invite", Icons.Filled.CardGiftcard, Icons.Outlined.CardGiftcard),
         TabItem(DriverTab.Profile, "Λογαριασμός", Icons.Filled.AccountCircle, Icons.Outlined.AccountCircle),
+        TabItem(DriverTab.Settings, "Ρυθμίσεις", Icons.Outlined.Settings, Icons.Outlined.Settings),
     )
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -136,7 +138,6 @@ fun DriverShell(
                 when (state.tab) {
                     DriverTab.Money -> MoneyScreen(
                         state = state,
-                        onWithdraw = onWithdraw,
                         onRefresh = onRefreshMoney,
                     )
                     DriverTab.Inbox -> InboxScreen(
@@ -151,6 +152,10 @@ fun DriverShell(
                         state = state,
                         onSave = onSaveProfile,
                         onSignOut = onSignOut,
+                        onOpenSettings = { onTab(DriverTab.Settings) },
+                    )
+                    DriverTab.Settings -> SettingsScreen(
+                        state = state,
                         onUpdateSettings = onUpdateSettings,
                         onPreviewSound = onPreviewSound,
                     )

@@ -19,12 +19,14 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.produceState
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import coil.ImageLoader
+import coil.imageLoader
 import coil.request.ImageRequest
 import coil.request.SuccessResult
 import com.mapbox.geojson.Point
@@ -35,6 +37,8 @@ import com.mapbox.maps.extension.compose.annotation.generated.PolylineAnnotation
 import com.mapbox.maps.extension.compose.style.MapStyle
 import com.mapbox.maps.plugin.annotation.generated.PointAnnotationOptions
 import com.mapbox.maps.plugin.annotation.generated.PolylineAnnotationOptions
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class MapMarker(
     val lat: Double,
@@ -275,6 +279,36 @@ fun DriverMapView(
     val driverIcon = remember { createDriverArrowBitmap() }
     val destIcon = remember { createDestinationPinBitmap() }
 
+    // Store marker icons are built off the UI thread (photo fetch + canvas draw).
+    val context = LocalContext.current
+    val imageLoader = remember(context) { context.imageLoader }
+    val storeIcons by produceState<Map<String, Bitmap>>(initialValue = emptyMap(), storeMarkers) {
+        value = withContext(Dispatchers.IO) {
+            storeMarkers.associate { m ->
+                val photo = m.imageUrl?.let { url ->
+                    try {
+                        val req = ImageRequest.Builder(context).data(url).allowHardware(false).build()
+                        (imageLoader?.execute(req) as? SuccessResult)?.drawable?.toBitmapOrNull()
+                    } catch (_: Throwable) {
+                        null
+                    }
+                }
+                m.id to createStoreMarkerBitmap(photo, m.name, m.count)
+            }
+        }
+    }
+
+    val storeAnnotations = remember(storeMarkers, storeIcons) {
+        storeMarkers.mapNotNull { m ->
+            storeIcons[m.id]?.let { icon ->
+                PointAnnotationOptions()
+                    .withPoint(Point.fromLngLat(m.lng, m.lat))
+                    .withIconImage(icon)
+                    .withIconSize(0.85)
+            }
+        }
+    }
+
     // Static markers + destination only rebuild when their content changes,
     // not on every location tick.
     val staticAnnotations = remember(markers, destination) {
@@ -333,6 +367,9 @@ fun DriverMapView(
             logo = {},
             attribution = {},
         ) {
+            if (storeAnnotations.isNotEmpty()) {
+                PointAnnotationGroup(annotations = storeAnnotations)
+            }
             if (staticAnnotations.isNotEmpty()) {
                 PointAnnotationGroup(annotations = staticAnnotations)
             }

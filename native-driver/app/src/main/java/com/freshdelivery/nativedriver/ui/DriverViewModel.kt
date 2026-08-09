@@ -275,6 +275,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             DriverTab.Referral -> refreshReferral()
             DriverTab.Profile -> Unit
             DriverTab.Home -> refreshWork()
+            DriverTab.Settings -> Unit
         }
     }
 

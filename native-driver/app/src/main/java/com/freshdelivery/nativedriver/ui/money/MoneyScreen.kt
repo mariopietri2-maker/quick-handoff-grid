@@ -21,8 +21,6 @@ import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material.icons.outlined.Today
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -43,7 +41,6 @@ import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 @Composable
 fun MoneyScreen(
     state: DriverUiState,
-    onWithdraw: (Double) -> Unit,
     onRefresh: () -> Unit,
 ) {
     val money = state.money
@@ -125,22 +122,8 @@ fun MoneyScreen(
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
-                Spacer(Modifier.height(14.dp))
-                Button(
-                    onClick = { if (earningsBalance >= 10) onWithdraw(earningsBalance) },
-                    enabled = !state.busy && earningsBalance >= 10,
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color.White,
-                        contentColor = Color(0xFF007A3D),
-                        disabledContainerColor = Color.White.copy(alpha = 0.4f),
-                    ),
-                    shape = RoundedCornerShape(16.dp),
-                    modifier = Modifier.fillMaxWidth().height(50.dp),
-                ) {
-                    Text("Αίτημα ανάληψης", fontWeight = FontWeight.Bold)
-                }
                 if (earningsBalance < 10) {
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(14.dp))
                     Text(
                         "Ελάχιστο €10 για ανάληψη",
                         color = Color.White.copy(alpha = 0.7f),
@@ -320,10 +303,10 @@ fun MoneyScreen(
                 )
                 Spacer(Modifier.size(8.dp))
                 Text(
-                    if (state.cashCapped) {
-                        "Έφτασες το όριο μετρητών. Δεν θα λαμβάνεις νέες προσφορές μέχρι να παραδώσεις τα μετρητά (store / admin)."
+if (state.cashCapped) {
+                        "Έφτασες το όριο μετρητών στη βάρδια. Δεν θα λαμβάνεις νέες Cash προσφορές μέχρι να δηλώσεις στο app ότι τα μετρητά είναι πλέον δικά σου (τέλος βάρδιας)."
                     } else {
-                        "Αυτά είναι μετρητά που πλήρωσαν οι πελάτες στις παραδόσεις cash. Δεν μπαίνουν στο πορτοφόλι κερδών — τα παραδίδεις στο κατάστημα / admin."
+                        "Αυτά είναι μετρητά που πλήρωσαν οι πελάτες στις παραδόσεις Cash — τα κρατάς εσύ. Δεν μπαίνουν στον λογαριασμό των κερδών και δεν δίνεις τίποτα στο κατάστημα."
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = if (state.cashCapped) cs.error else cs.onSurface,
