@@ -1,0 +1,249 @@
+          from pathlib import Path
+
+          shell = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          s = shell.read_text()
+
+          # Fix favorite callback placeholder
+          s = s.replace(
+              'onToggleFavorite = { /* need callback */ }',
+              'onToggleFavorite = { onToggleFavorite(store.id) }',
+          )
+
+          # Add onToggleFavorite param to CustomerShell if missing
+          if 'onToggleFavorite:' not in s.split('fun CustomerShell')[1][:1200]:
+              s = s.replace(
+                  'onClearMessages: () -> Unit = {},\n) {',
+                  'onClearMessages: () -> Unit = {},\n    onToggleFavorite: (String) -> Unit = {},\n    onSetFilterTop: (Boolean) -> Unit = {},\n    onSetFilterFast: (Boolean) -> Unit = {},\n    onSetPromo: (String) -> Unit = {},\n) {',
+              )
+
+          # Pass callbacks into HomeTab
+          s = s.replace(
+              'CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, onTrack, browseMode = false)',
+              'CustomerTab.Home -> HomeTab(state, onRefresh, onOpenStore, onSearch, onTrack, onToggleFavorite, onSetFilterTop, onSetFilterFast, browseMode = false)',
+          )
+          s = s.replace(
+              'CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, onTrack, browseMode = true)',
+              'CustomerTab.Browse -> HomeTab(state, onRefresh, onOpenStore, onSearch, onTrack, onToggleFavorite, onSetFilterTop, onSetFilterFast, browseMode = true)',
+          )
+
+          # Expand HomeTab signature if needed
+          if 'onToggleFavorite: (String) -> Unit' not in s.split('fun HomeTab')[1][:500] if 'fun HomeTab' in s else '':
+              old = '''private fun HomeTab(
+    state: CustomerUiState,
+    onRefresh: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onSearch: (String) -> Unit,
+    onTrack: (OrderUi?) -> Unit,
+    browseMode: Boolean = false,
+)'''
+              new = '''private fun HomeTab(
+    state: CustomerUiState,
+    onRefresh: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onSearch: (String) -> Unit,
+    onTrack: (OrderUi?) -> Unit,
+    onToggleFavorite: (String) -> Unit = {},
+    onSetFilterTop: (Boolean) -> Unit = {},
+    onSetFilterFast: (Boolean) -> Unit = {},
+    browseMode: Boolean = false,
+)'''
+              if old in s:
+                  s = s.replace(old, new)
+              else:
+                  # try without onTrack (if v1 only)
+                  old2 = '''private fun HomeTab(
+    state: CustomerUiState,
+    onRefresh: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onSearch: (String) -> Unit,
+    browseMode: Boolean = false,
+)'''
+                  new2 = '''private fun HomeTab(
+    state: CustomerUiState,
+    onRefresh: () -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onSearch: (String) -> Unit,
+    onTrack: (OrderUi?) -> Unit = {},
+    onToggleFavorite: (String) -> Unit = {},
+    onSetFilterTop: (Boolean) -> Unit = {},
+    onSetFilterFast: (Boolean) -> Unit = {},
+    browseMode: Boolean = false,
+)'''
+                  if old2 in s:
+                      s = s.replace(old2, new2)
+
+          # Filter chips: wire Top / Fast
+          s = s.replace(
+              'UberFilterChip("Γρήγορα", selected = false) { }',
+              'UberFilterChip("Top ★", selected = state.filterTopRated) { onSetFilterTop(!state.filterTopRated) }
+                UberFilterChip("Γρήγορα", selected = state.filterFast) { onSetFilterFast(!state.filterFast) }',
+          )
+
+          # Order again row injection before "Κοντά σου"
+          if 'Παράγγειλε ξανά' not in s:
+              order_again = r'''
+        if (state.recentStores.isNotEmpty()) {
+            item {
+                Text(
+                    "Παράγγειλε ξανά",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+                Row(
+                    Modifier.horizontalScroll(rememberScrollState()).padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    state.recentStores.forEach { store ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier
+                                .width(72.dp)
+                                .clickable { onOpenStore(store) },
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(64.dp)
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(UberSurface),
+                                contentAlignment = Alignment.Center,
+                            ) {
+                                if (!store.image_url.isNullOrBlank()) {
+                                    AsyncImage(
+                                        model = store.image_url,
+                                        contentDescription = null,
+                                        contentScale = ContentScale.Crop,
+                                        modifier = Modifier.fillMaxSize(),
+                                    )
+                                } else {
+                                    Text("🍽️", fontSize = 28.sp)
+                                }
+                            }
+                            Text(
+                                store.name ?: "",
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis,
+                                modifier = Modifier.padding(top = 4.dp),
+                            )
+                        }
+                    }
+                }
+            }
+        }
+'''
+              if '"Κοντά σου"' in s:
+                  s = s.replace(
+                      'item {\n            Text(\n                "Κοντά σου",',
+                      order_again + '        item {\n            Text(\n                "Κοντά σου",',
+                      1,
+                  )
+
+          # Profile wallet card
+          if 'walletBalance' not in s.split('fun ProfileTab')[1][:2000] if 'fun ProfileTab' in s else '':
+              wallet_ui = r'''
+        if (state.walletBalance > 0 || state.walletLifetime > 0 || state.walletHistory.isNotEmpty()) {
+            Spacer(Modifier.height(20.dp))
+            Surface(
+                shape = RoundedCornerShape(16.dp),
+                color = UberSurface,
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(16.dp)) {
+                    Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                        Text("Κουπόνια / Πορτοφόλι", fontWeight = FontWeight.Bold)
+                        Text(
+                            "€" + "%.2f".format(state.walletBalance),
+                            fontWeight = FontWeight.Bold,
+                            color = UberGreen,
+                            style = MaterialTheme.typography.titleLarge,
+                        )
+                    }
+                    if (state.walletLifetime > 0) {
+                        Text("Συνολικά: €" + "%.2f".format(state.walletLifetime), color = UberMuted, style = MaterialTheme.typography.bodySmall)
+                    }
+                    state.walletHistory.take(5).forEach { h ->
+                        Spacer(Modifier.height(6.dp))
+                        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                            Text(h.description ?: h.type ?: "", color = UberMuted, style = MaterialTheme.typography.bodySmall, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                            Text(
+                                (if (h.amount >= 0) "+" else "") + "%.2f".format(h.amount) + "€",
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (h.amount >= 0) UberGreen else UberInk,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+'''
+              # Insert before "Παραγγελίες:"
+              if 'Text("Παραγγελίες: ${state.orders.size}"' in s:
+                  s = s.replace(
+                      'Text("Παραγγελίες: ${state.orders.size}"',
+                      wallet_ui + '        Text("Παραγγελίες: ${state.orders.size}"',
+                      1,
+                  )
+
+          # Promo code field in cart checkout before payment
+          if 'Κωδικός προσφοράς' not in s:
+              promo_field = r'''
+            item {
+                Spacer(Modifier.height(8.dp))
+                OutlinedTextField(
+                    value = state.promoCode,
+                    onValueChange = onSetPromo,
+                    label = { Text("Κωδικός προσφοράς") },
+                    singleLine = true,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = fieldColors,
+                )
+            }
+'''
+              if 'Text("Πληρωμή", fontWeight = FontWeight.Bold)' in s:
+                  s = s.replace(
+                      'item {\n                Spacer(Modifier.height(8.dp))\n                Text("Πληρωμή", fontWeight = FontWeight.Bold)',
+                      promo_field + '            item {\n                Spacer(Modifier.height(8.dp))\n                Text("Πληρωμή", fontWeight = FontWeight.Bold)',
+                      1,
+                  )
+
+          # CartCheckoutScreen needs onSetPromo param
+          if 'onSetPromo' not in s.split('fun CartCheckoutScreen')[1][:800] if 'fun CartCheckoutScreen' in s else '':
+              s = s.replace(
+                  'onPickSuggestion: (AddressSuggestion) -> Unit,\n) {',
+                  'onPickSuggestion: (AddressSuggestion) -> Unit,\n    onSetPromo: (String) -> Unit = {},\n) {',
+                  1,
+              )
+              # Call site in CustomerShell when showCart
+              s = s.replace(
+                  'CartCheckoutScreen(\n            state, snackbar, { onToggleCart(false) }, onUpdateQty, onSetDelivery,\n            onSetNotes, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,\n        )',
+                  'CartCheckoutScreen(\n            state, snackbar, { onToggleCart(false) }, onUpdateQty, onSetDelivery,\n            onSetNotes, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,\n            onSetPromo,\n        )',
+              )
+
+          shell.write_text(s)
+          print('CustomerShell UI wired')
+
+          # MainActivity — wire new callbacks
+          main = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/MainActivity.kt')
+          if main.exists():
+              mt = main.read_text()
+              if 'onToggleFavorite' not in mt:
+                  # Common pattern: CustomerShell( ... )
+                  if 'onClearMessages' in mt:
+                      mt = mt.replace(
+                          'onClearMessages = { viewModel.clearMessages() },',
+                          '''onClearMessages = { viewModel.clearMessages() },
+                            onToggleFavorite = { viewModel.toggleFavorite(it) },
+                            onSetFilterTop = { viewModel.setFilterTopRated(it) },
+                            onSetFilterFast = { viewModel.setFilterFast(it) },
+                            onSetPromo = { viewModel.setPromoCode(it) },''',
+                      )
+                      main.write_text(mt)
+                      print('MainActivity wired')
+                  else:
+                      print('MainActivity pattern not found — check manually')
+
+          print('DONE')

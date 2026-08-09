@@ -1,0 +1,543 @@
+          from pathlib import Path
+
+          # ═══════════════════════════════════════════
+          # 1) Customer Models — ratings, favorites, wallet
+          # ═══════════════════════════════════════════
+          models = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/Models.kt')
+          m = models.read_text()
+          if 'data class StoreRating' not in m:
+              extra = r'''
+
+@Serializable
+data class StoreRatingRow(
+    val store_id: String,
+    val avg_rating: Double? = 0.0,
+    val review_count: Int? = 0,
+)
+
+data class StoreRating(val avg: Double = 0.0, val count: Int = 0)
+
+@Serializable
+data class FavoriteRow(
+    val id: String,
+    val store_id: String? = null,
+    val menu_item_id: String? = null,
+)
+
+@Serializable
+data class CustomerWalletRow(
+    val balance: Double? = 0.0,
+    val lifetime_credit: Double? = 0.0,
+)
+
+@Serializable
+data class CustomerWalletLedgerRow(
+    val id: String,
+    val amount: Double,
+    val type: String? = null,
+    val description: String? = null,
+    val created_at: String? = null,
+)
+'''
+              m = m.rstrip() + '\n' + extra
+              # Add optional prep_buffer to StoreRow
+              m = m.replace(
+                  'val image_url: String? = null,\n)',
+                  'val image_url: String? = null,\n    val prep_buffer_minutes: Int? = 0,\n)',
+                  1,
+              )
+              models.write_text(m)
+              print('Models extended')
+
+          # ═══════════════════════════════════════════
+          # 2) CustomerRepository — fetch APIs
+          # ═══════════════════════════════════════════
+          repo = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/CustomerRepository.kt')
+          r = repo.read_text()
+          if 'suspend fun fetchStoreRatings' not in r:
+              api = r'''
+
+    suspend fun fetchStoreRatings(storeIds: List<String>): Map<String, StoreRating> {
+        if (storeIds.isEmpty()) return emptyMap()
+        val rows = runCatching {
+            client.from("store_ratings_public").select(
+                Columns.list("store_id", "avg_rating", "review_count"),
+            ) {
+                filter { isIn("store_id", storeIds) }
+            }.decodeList<StoreRatingRow>()
+        }.getOrElse { emptyList() }
+        return rows.associate { it.store_id to StoreRating(it.avg_rating ?: 0.0, it.review_count ?: 0) }
+    }
+
+    suspend fun fetchFavorites(userId: String): List<FavoriteRow> =
+        runCatching {
+            client.from("customer_favorites").select(
+                Columns.list("id", "store_id", "menu_item_id"),
+            ) {
+                filter { eq("user_id", userId) }
+            }.decodeList<FavoriteRow>()
+        }.getOrElse { emptyList() }
+
+    suspend fun toggleStoreFavorite(userId: String, storeId: String, existingId: String?): List<FavoriteRow> {
+        if (existingId != null) {
+            client.from("customer_favorites").delete { filter { eq("id", existingId) } }
+        } else {
+            client.from("customer_favorites").insert(
+                buildJsonObject {
+                    put("user_id", userId)
+                    put("store_id", storeId)
+                    put("menu_item_id", JsonNull)
+                },
+            )
+        }
+        return fetchFavorites(userId)
+    }
+
+    suspend fun fetchWallet(userId: String): Pair<CustomerWalletRow?, List<CustomerWalletLedgerRow>> {
+        val wallet = runCatching {
+            client.from("customer_wallets").select(
+                Columns.list("balance", "lifetime_credit"),
+            ) {
+                filter { eq("user_id", userId) }
+                limit(1L)
+            }.decodeList<CustomerWalletRow>().firstOrNull()
+        }.getOrNull()
+        val ledger = runCatching {
+            client.from("customer_wallet_ledger").select(Columns.ALL) {
+                filter { eq("user_id", userId) }
+                order("created_at", Order.DESCENDING)
+                limit(15L)
+            }.decodeList<CustomerWalletLedgerRow>()
+        }.getOrElse { emptyList() }
+        return wallet to ledger
+    }
+
+    suspend fun fetchRecentOrderStores(userId: String): List<StoreRow> {
+        val orders = client.from("orders").select(Columns.list("store_id", "created_at")) {
+            filter { eq("customer_id", userId) }
+            order("created_at", Order.DESCENDING)
+            limit(24L)
+        }.decodeList<OrderRow>()
+        val ids = orders.map { it.store_id }.distinct()
+        if (ids.isEmpty()) return emptyList()
+        val stores = client.from("stores").select(
+            Columns.list("id", "name", "address", "latitude", "longitude", "is_active", "image_url"),
+        ) {
+            filter {
+                isIn("id", ids)
+                eq("is_active", true)
+            }
+        }.decodeList<StoreRow>().associateBy { it.id }
+        val seen = linkedSetOf<String>()
+        val out = mutableListOf<StoreRow>()
+        for (id in ids) {
+            val s = stores[id] ?: continue
+            if (id in seen) continue
+            seen += id
+            out += s
+            if (out.size >= 8) break
+        }
+        return out
+    }
+'''
+              # insert before last closing brace of class
+              last = r.rfind('}')
+              r = r[:last] + api + '\n}\n'
+              # ensure imports for JsonNull if used - already has JsonNull
+              repo.write_text(r)
+              print('Repository extended')
+
+          # Expand fetchStores columns for prep_buffer if column exists - optional, safe decode
+          r2 = repo.read_text()
+          r2 = r2.replace(
+              'Columns.list("id", "name", "address", "latitude", "longitude", "is_active", "image_url"),',
+              'Columns.list("id", "name", "address", "latitude", "longitude", "is_active", "image_url", "prep_buffer_minutes"),',
+              1,
+          )
+          repo.write_text(r2)
+
+          # ═══════════════════════════════════════════
+          # 3) CustomerViewModel — state + methods
+          # ═══════════════════════════════════════════
+          vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
+          v = vm.read_text()
+          if 'favoriteStoreIds' not in v:
+              v = v.replace(
+                  'val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),',
+                  '''val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),
+    val storeRatings: Map<String, com.freshdelivery.nativecustomer.data.StoreRating> = emptyMap(),
+    val favoriteStoreIds: Set<String> = emptySet(),
+    val favoriteRows: List<com.freshdelivery.nativecustomer.data.FavoriteRow> = emptyList(),
+    val recentStores: List<StoreRow> = emptyList(),
+    val walletBalance: Double = 0.0,
+    val walletLifetime: Double = 0.0,
+    val walletHistory: List<com.freshdelivery.nativecustomer.data.CustomerWalletLedgerRow> = emptyList(),
+    val promoCode: String = "",
+    val filterTopRated: Boolean = false,
+    val filterFast: Boolean = false,''',
+              )
+              # visibleStores with filters
+              v = v.replace(
+                  '''val visibleStores: List<StoreRow>
+        get() = if (searchQuery.isBlank()) stores else stores.filter {
+            (it.name ?: "").contains(searchQuery, ignoreCase = true) ||
+                (it.address ?: "").contains(searchQuery, ignoreCase = true)
+        }''',
+                  '''val visibleStores: List<StoreRow>
+        get() {
+            var list = stores
+            if (searchQuery.isNotBlank()) {
+                list = list.filter {
+                    (it.name ?: "").contains(searchQuery, ignoreCase = true) ||
+                        (it.address ?: "").contains(searchQuery, ignoreCase = true)
+                }
+            }
+            if (filterTopRated) {
+                list = list.filter { (storeRatings[it.id]?.avg ?: 0.0) >= 4.5 }
+            }
+            if (filterFast) {
+                list = list.filter { (it.prep_buffer_minutes ?: 0) <= 5 }
+            }
+            return list
+        }''',
+              )
+              # load extras on sign in / refresh
+              v = v.replace(
+                  'fun refreshStores() {
+        viewModelScope.launch {
+            runCatching {
+                _state.value = _state.value.copy(stores = repo.fetchStores())
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }',
+                  '''fun refreshStores() {
+        viewModelScope.launch {
+            runCatching {
+                val stores = repo.fetchStores()
+                val ratings = repo.fetchStoreRatings(stores.map { it.id })
+                _state.value = _state.value.copy(stores = stores, storeRatings = ratings)
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }
+
+    fun toggleFavorite(storeId: String) {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                val existing = _state.value.favoriteRows.find { it.store_id == storeId }
+                val rows = repo.toggleStoreFavorite(uid, storeId, existing?.id)
+                _state.value = _state.value.copy(
+                    favoriteRows = rows,
+                    favoriteStoreIds = rows.mapNotNull { it.store_id }.toSet(),
+                    info = if (existing != null) "Αφαιρέθηκε από αγαπημένα" else "Προστέθηκε στα αγαπημένα ❤️",
+                )
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }
+
+    fun setFilterTopRated(on: Boolean) {
+        _state.value = _state.value.copy(filterTopRated = on)
+    }
+
+    fun setFilterFast(on: Boolean) {
+        _state.value = _state.value.copy(filterFast = on)
+    }
+
+    fun setPromoCode(code: String) {
+        _state.value = _state.value.copy(promoCode = code.trim())
+    }
+
+    fun refreshWalletAndRecent() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                val (wallet, ledger) = repo.fetchWallet(uid)
+                val recent = repo.fetchRecentOrderStores(uid)
+                val favs = repo.fetchFavorites(uid)
+                _state.value = _state.value.copy(
+                    walletBalance = wallet?.balance ?: 0.0,
+                    walletLifetime = wallet?.lifetime_credit ?: 0.0,
+                    walletHistory = ledger,
+                    recentStores = recent,
+                    favoriteRows = favs,
+                    favoriteStoreIds = favs.mapNotNull { it.store_id }.toSet(),
+                )
+            }
+        }
+    }''',
+              )
+              v = v.replace(
+                  'refreshAll()
+        startRealtime(userId)
+        startPolling()',
+                  'refreshAll()
+        refreshWalletAndRecent()
+        startRealtime(userId)
+        startPolling()',
+              )
+              # placeOrder pass promo if non-blank - keep as notes side for now; place_order already has p_promo_code JsonNull
+              # Wire promo into placeOrder repo call
+              v = v.replace(
+                  'distanceKm = distanceKm,
+                )',
+                  'distanceKm = distanceKm,
+                    promoCode = s.promoCode.ifBlank { null },
+                )',
+              )
+              vm.write_text(v)
+              print('ViewModel extended')
+
+          # Update placeOrder in repo to accept promoCode
+          r3 = repo.read_text()
+          if 'promoCode: String? = null' not in r3:
+              r3 = r3.replace(
+                  'distanceKm: Double?,
+    ): String {',
+                  'distanceKm: Double?,
+        promoCode: String? = null,
+    ): String {',
+              )
+              r3 = r3.replace(
+                  'put("p_promo_code", JsonNull)',
+                  'if (promoCode.isNullOrBlank()) put("p_promo_code", JsonNull) else put("p_promo_code", promoCode)',
+              )
+              repo.write_text(r3)
+              print('placeOrder promo wired')
+
+          # ═══════════════════════════════════════════
+          # 4) CustomerShell UI patches (surgical)
+          # ═══════════════════════════════════════════
+          shell = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          s = shell.read_text()
+
+          # UberStoreCard: use real rating + ETA
+          old_card_meta = '''        Text(
+            "★ 4.8 · 20–35 λεπτά · από €0.99",
+            style = MaterialTheme.typography.bodySmall,
+            color = UberMuted,
+        )'''
+          # may still be old string
+          for old_meta in [
+              old_card_meta,
+              '''        Text(
+            "★ 4.8 · 25–35 λεπτά · Παράδοση",
+            style = MaterialTheme.typography.bodySmall,
+            color = UberMuted,
+        )''',
+              '"★ 4.8 · 20–35 λεπτά · από €0.99"',
+              '"★ 4.8 · 25–35 λεπτά · Παράδοση"',
+          ]:
+              pass
+
+          # Replace UberStoreCard signature and body
+          if 'fun UberStoreCard(store: StoreRow, onClick: () -> Unit)' in s:
+              s = s.replace(
+                  'fun UberStoreCard(store: StoreRow, onClick: () -> Unit)',
+                  'fun UberStoreCard(store: StoreRow, rating: com.freshdelivery.nativecustomer.data.StoreRating?, isFavorite: Boolean, onToggleFavorite: () -> Unit, onClick: () -> Unit)',
+              )
+              # Update items call sites
+              s = s.replace(
+                  'UberStoreCard(store = store, onClick = { onOpenStore(store) })',
+                  'UberStoreCard(store = store, rating = state.storeRatings[store.id], isFavorite = store.id in state.favoriteStoreIds, onToggleFavorite = { /* need callback */ }, onClick = { onOpenStore(store) })',
+              )
+
+          # Better meta line inside card - replace hardcoded
+          if '★ 4.8' in s:
+              s = s.replace(
+                  '"★ 4.8 · 20–35 λεπτά · από €0.99"',
+                  'storeMetaLine(store, rating)',
+              )
+              s = s.replace(
+                  '"★ 4.8 · 25–35 λεπτά · Παράδοση"',
+                  'storeMetaLine(store, rating)',
+              )
+
+          if 'fun storeMetaLine' not in s:
+              helper = r'''
+private fun storeMetaLine(store: StoreRow, rating: com.freshdelivery.nativecustomer.data.StoreRating?): String {
+    val etaLow = 20 + (store.prep_buffer_minutes ?: 0)
+    val etaHigh = 35 + (store.prep_buffer_minutes ?: 0)
+    val stars = if (rating != null && rating.count > 0) {
+        "★ %.1f (%d)".format(rating.avg, rating.count)
+    } else "Νέο"
+    return "$stars · $etaLow–$etaHigh λεπτά · από €0.99"
+}
+
+'''
+              s = s.replace('@Composable\nprivate fun UberStoreCard', helper + '@Composable\nprivate fun UberStoreCard')
+
+          # Favorite heart overlay on hero - inject after StoreHeroImage in card
+          if 'onToggleFavorite()' not in s and 'isFavorite' in s:
+              s = s.replace(
+                  'StoreHeroImage(store.image_url, height = 168)\n        Spacer(Modifier.height(10.dp))',
+                  '''Box {
+            StoreHeroImage(store.image_url, height = 168)
+            Surface(
+                onClick = onToggleFavorite,
+                shape = CircleShape,
+                color = Color.White.copy(alpha = 0.92f),
+                modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
+            ) {
+                Text(
+                    if (isFavorite) "❤️" else "🤍",
+                    modifier = Modifier.padding(8.dp),
+                    fontSize = 16.sp,
+                )
+            }
+        }
+        Spacer(Modifier.height(10.dp))''',
+              )
+
+          shell.write_text(s)
+          print('CustomerShell base UI patched')
+
+          # ═══════════════════════════════════════════
+          # 5) Driver HomeScreen — earnings + cash banners
+          # ═══════════════════════════════════════════
+          home = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt')
+          h = home.read_text()
+
+          if 'CashCapBanner' not in h:
+              banners = r'''
+@Composable
+private fun CashCapBanner(cash: Double, cap: Double) {
+    if (cash < cap * 0.7) return
+    val capped = cash >= cap
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = if (capped) Color(0x33FF5252) else Color(0x33FFB020),
+    ) {
+        Text(
+            if (capped) "Όριο μετρητών · €%.0f / €%.0f — δεν δέχεσαι νέες προσφορές".format(cash, cap)
+            else "Μετρητά βάρδιας · €%.0f / €%.0f".format(cash, cap),
+            modifier = Modifier.padding(12.dp),
+            color = if (capped) Color(0xFFFF8A80) else FreshAmber,
+            style = MaterialTheme.typography.labelLarge,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+@Composable
+private fun TodayEarningsStrip(todayTotal: Double, todayTrips: Int) {
+    if (todayTotal <= 0 && todayTrips <= 0) return
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
+        shape = RoundedCornerShape(14.dp),
+        color = FreshGreen.copy(alpha = 0.15f),
+    ) {
+        Row(
+            Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Σήμερα", style = MaterialTheme.typography.labelLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text(
+                "€%.2f · %d παραδόσεις".format(todayTotal, todayTrips),
+                fontWeight = FontWeight.Bold,
+                color = FreshGreen,
+            )
+        }
+    }
+}
+
+@Composable
+private fun WaitBonusHint(status: String) {
+    if (status != "arrived") return
+    Surface(
+        modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+        shape = RoundedCornerShape(12.dp),
+        color = Color(0x33FF9800),
+    ) {
+        Text(
+            "⏱ Αναμονή στο κατάστημα — μπόνους μετά τα 10 λεπτά",
+            modifier = Modifier.padding(10.dp),
+            color = FreshAmber,
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.SemiBold,
+        )
+    }
+}
+
+'''
+              if 'private fun EmptySheet' in h:
+                  h = h.replace('private fun EmptySheet', banners + 'private fun EmptySheet', 1)
+              else:
+                  h = h + '\n' + banners
+
+          # Inject banners into bottom column before Card
+          if 'CashCapBanner(' not in h:
+              # After GoOnlineSlideBar or before Card
+              if 'GoOnlineSlideBar(' in h:
+                  h = h.replace(
+                      'Spacer(Modifier.height(10.dp))\n            Card(',
+                      '''Spacer(Modifier.height(10.dp))
+            CashCapBanner(cash = state.cashBalance, cap = state.maxCashCap)
+            TodayEarningsStrip(
+                todayTotal = state.money?.todayTotal ?: 0.0,
+                todayTrips = state.money?.todayTrips ?: 0,
+            )
+            Card('',
+                      1,
+                  )
+              else:
+                  marker = '.heightIn(max = 340.dp)'
+                  # find Card before heightIn
+                  idx = h.find(marker)
+                  if idx > 0:
+                      # walk back to Card(
+                      cstart = h.rfind('Card(', 0, idx)
+                      if cstart > 0:
+                          insert = '''CashCapBanner(cash = state.cashBalance, cap = state.maxCashCap)
+            TodayEarningsStrip(
+                todayTotal = state.money?.todayTotal ?: 0.0,
+                todayTrips = state.money?.todayTrips ?: 0,
+            )
+            '''
+                          h = h[:cstart] + insert + h[cstart:]
+
+          # Wait bonus under active trip card - after ActiveTripCard block
+          if 'WaitBonusHint(' not in h:
+              h = h.replace(
+                  'ActiveTripCard(\n                                    trip = trip,\n                                    busy = state.busy,\n                                    onAdvance = onAdvance,',
+                  'ActiveTripCard(
+                                    trip = trip,
+                                    busy = state.busy,
+                                    onAdvance = onAdvance,',
+              )
+              # After each ActiveTripCard closing, hard — add after Spacer following forEach trip
+              if 'state.activeTrips.forEach { trip ->' in h and 'WaitBonusHint' not in h:
+                  h = h.replace(
+                      'state.activeTrips.forEach { trip ->\n                                ActiveTripCard(',
+                      'state.activeTrips.forEach { trip ->\n                                ActiveTripCard(',
+                  )
+                  # Append WaitBonusHint after ActiveTripCard call ends - look for pattern after navigate lambda closing
+                  # Simpler: inject inside ActiveTripCard at end of Column
+                  h = h.replace(
+                      'else Text(nextLabel, fontWeight = FontWeight.Bold)\n            )\n        }\n    }\n}\n\nprivate fun statusLabel',
+                      'else Text(nextLabel, fontWeight = FontWeight.Bold)\n            )\n        }\n        WaitBonusHint(status = status)\n    }\n}\n\nprivate fun statusLabel',
+                  )
+
+          # Ensure money refreshed when online / home visible — ViewModel already has money on Money tab;
+          # force refreshMoney when online in refreshWork by patching ViewModel
+          dvm = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
+          dv = dvm.read_text()
+          if 'refreshMoney()' not in dv.split('fun refreshWork')[1][:800]:
+              dv = dv.replace(
+                  'maybeAlertOffers(offers + stacked)\n            }.onFailure { e ->',
+                  'maybeAlertOffers(offers + stacked)\n                // keep home earnings strip fresh\n                runCatching { _state.value = _state.value.copy(money = repo.fetchMoney(uid)) }\n            }.onFailure { e ->',
+              )
+              dvm.write_text(dv)
+              print('DriverViewModel money on home refresh')
+
+          home.write_text(h)
+          print('Driver HomeScreen banners patched')
+
+          print('=== NEXT WAVE COMPLETE ===')
