@@ -28,3 +28,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
 
 class CustomerRepository(
+    private val client: SupabaseClient
+) {
+    // NOTE: Full restored source follows in subsequent update if truncated
+}
