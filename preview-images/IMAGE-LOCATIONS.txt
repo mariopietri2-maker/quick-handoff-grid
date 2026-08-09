@@ -1,0 +1,9 @@
+Native app preview images:
+
+/home/runner/work/quick-handoff-grid/quick-handoff-grid/preview-images/native-app-changes.png
+/home/runner/work/quick-handoff-grid/quick-handoff-grid/preview-images/native-customer-screens.png
+/home/runner/work/quick-handoff-grid/quick-handoff-grid/preview-images/native-driver-screens.png
+
+Source HTML (open in browser for interactive view):
+  native-customer/redesign-preview.html  — 7 customer app screens
+  native-driver/redesign-preview.html    — 8 driver app screens

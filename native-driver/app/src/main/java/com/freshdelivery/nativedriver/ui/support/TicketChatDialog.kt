@@ -14,9 +14,9 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
 import androidx.compose.material.icons.filled.ArrowBack
@@ -26,11 +26,11 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,7 +43,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import com.freshdelivery.nativedriver.data.TicketMessageRow
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
-import kotlinx.coroutines.launch
+import androidx.compose.foundation.lazy.rememberLazyListState
 
 @Composable
 fun TicketChatDialog(
@@ -55,16 +55,34 @@ fun TicketChatDialog(
     onBack: () -> Unit,
     onSend: (String) -> Unit,
 ) {
-    var draft by remember { mutableStateOf("") }
-    val scope = rememberCoroutineScope()
+    var draft by rememberSaveable { mutableStateOf("") }
+    val normalizedDraft = draft.trim()
+    val listState = rememberLazyListState()
 
-    Dialog(onDismissRequest = onBack, properties = DialogProperties(usePlatformDefaultWidth = false)) {
+    LaunchedEffect(messages.size) {
+        if (messages.isNotEmpty()) {
+            val lastVisibleIndex = listState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -1
+            val nearBottom = lastVisibleIndex == -1 || lastVisibleIndex >= messages.lastIndex - 2
+            if (nearBottom) {
+                listState.animateScrollToItem(messages.lastIndex)
+            }
+        }
+    }
+
+    Dialog(
+        onDismissRequest = onBack,
+        properties = DialogProperties(
+            usePlatformDefaultWidth = false,
+            dismissOnBackPress = true,
+            dismissOnClickOutside = false,
+        ),
+    ) {
         Column(
             Modifier
                 .fillMaxSize()
                 .background(MaterialTheme.colorScheme.background)
-                .imePadding()
                 .navigationBarsPadding()
+                .imePadding()
                 .padding(horizontal = 16.dp),
         ) {
             // Header
@@ -104,26 +122,33 @@ fun TicketChatDialog(
                         CircularProgressIndicator(color = FreshGreen)
                     }
                 } else {
-                    Column(
+                    LazyColumn(
                         Modifier
                             .fillMaxSize()
-                            .verticalScroll(rememberScrollState())
                             .padding(horizontal = 12.dp, vertical = 6.dp),
+                        state = listState,
                         verticalArrangement = Arrangement.spacedBy(8.dp),
                     ) {
                         if (messages.isEmpty()) {
-                            Spacer(Modifier.height(8.dp))
-                            Text(
-                                "Στείλε ένα μήνυμα στην ομάδα για να ξεκινήσει η συζήτηση.",
-                                textAlign = TextAlign.Center,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontSize = 13.sp,
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 24.dp),
-                            )
+                            item {
+                                Column {
+                                    Spacer(Modifier.height(8.dp))
+                                    Text(
+                                        "Στείλε ένα μήνυμα στην ομάδα για να ξεκινήσει η συζήτηση.",
+                                        textAlign = TextAlign.Center,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 13.sp,
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .padding(vertical = 24.dp),
+                                    )
+                                }
+                            }
                         }
-                        messages.forEach { m ->
+                        items(
+                            items = messages,
+                            key = { messageKey(it) },
+                        ) { m ->
                             val mine = m.sender_role == "driver"
                             ChatBubble(
                                 message = m,
@@ -131,7 +156,7 @@ fun TicketChatDialog(
                                 senderName = agentDisplayName(m, agents),
                             )
                         }
-                        Spacer(Modifier.height(4.dp))
+                        item { Spacer(Modifier.height(4.dp)) }
                     }
                 }
             }
@@ -145,7 +170,7 @@ fun TicketChatDialog(
             ) {
                 OutlinedTextField(
                     value = draft,
-                    onValueChange = { draft = it },
+                    onValueChange = { draft = it.take(500) },
                     placeholder = { Text("Γράψε ένα μήνυμα…") },
                     modifier = Modifier.weight(1f),
                     shape = RoundedCornerShape(16.dp),
@@ -154,12 +179,12 @@ fun TicketChatDialog(
                 Spacer(Modifier.width(8.dp))
                 IconButton(
                     onClick = {
-                        if (draft.isNotBlank() && !busy) {
-                            onSend(draft)
+                        if (normalizedDraft.isNotBlank() && !busy) {
+                            onSend(normalizedDraft)
                             draft = ""
                         }
                     },
-                    enabled = draft.isNotBlank() && !busy,
+                    enabled = normalizedDraft.isNotBlank() && !busy,
                 ) {
                     Box(
                         Modifier
@@ -187,6 +212,9 @@ fun TicketChatDialog(
         }
     }
 }
+
+private fun messageKey(message: TicketMessageRow): String =
+    "${message.id}|${message.created_at.orEmpty()}"
 
 private fun agentDisplayName(m: TicketMessageRow, agents: Map<String, String>): String? {
     if (m.sender_role == "driver") return null

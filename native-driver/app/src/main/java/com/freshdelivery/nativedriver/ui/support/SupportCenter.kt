@@ -23,6 +23,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
@@ -38,7 +40,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -46,6 +48,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -75,8 +78,8 @@ fun SupportCenter(
 ) {
     val context = LocalContext.current
     val cs = MaterialTheme.colorScheme
-    var tab by remember { mutableStateOf("live") }
-    var showNewTicket by remember { mutableStateOf(false) }
+    var tab by rememberSaveable { mutableStateOf("live") }
+    var showNewTicket by rememberSaveable { mutableStateOf(false) }
 
     fun call(phone: String?) {
         if (!phone.isNullOrBlank()) {
@@ -88,8 +91,8 @@ fun SupportCenter(
         Modifier
             .fillMaxSize()
             .background(MaterialTheme.colorScheme.background)
-            .imePadding()
             .navigationBarsPadding()
+            .imePadding()
             .statusBarsPadding()
             .padding(horizontal = 16.dp),
     ) {
@@ -307,10 +310,12 @@ private fun CustomerContextCard(
 
 @Composable
 private fun LiveChatPanel(state: DriverUiState, onSend: (String) -> Unit) {
-    var draft by remember { mutableStateOf("") }
+    var draft by rememberSaveable { mutableStateOf("") }
+    val normalizedDraft = draft.trim()
     Column(Modifier.fillMaxWidth()) {
         ThreadBox(
             loading = state.liveChatLoading,
+            showEmpty = state.liveChatMessages.isEmpty(),
             emptyText = "Συνδέθηκες με την ομάδα. Στείλε το πρώτο μήνυμα.",
         ) {
             if (state.liveChatMessages.isEmpty()) {
@@ -324,7 +329,12 @@ private fun LiveChatPanel(state: DriverUiState, onSend: (String) -> Unit) {
             draft = draft,
             onDraft = { draft = it },
             busy = state.busy,
-            onSend = { onSend(draft); draft = "" },
+            onSend = {
+                if (normalizedDraft.isNotEmpty()) {
+                    onSend(normalizedDraft)
+                    draft = ""
+                }
+            },
         )
     }
 }
@@ -406,7 +416,8 @@ private fun TicketThreadPanel(
     onBack: () -> Unit,
     onSend: (String) -> Unit,
 ) {
-    var draft by remember { mutableStateOf("") }
+    var draft by rememberSaveable { mutableStateOf("") }
+    val normalizedDraft = draft.trim()
     Column(Modifier.fillMaxWidth()) {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text(
@@ -425,7 +436,11 @@ private fun TicketThreadPanel(
             )
         }
         Spacer(Modifier.height(4.dp))
-        ThreadBox(loading = loading, emptyText = "Στείλε ένα μήνυμα στην ομάδα.") {
+        ThreadBox(
+            loading = loading,
+            showEmpty = messages.isEmpty(),
+            emptyText = "Στείλε ένα μήνυμα στην ομάδα.",
+        ) {
             messages.forEach { m ->
                 TicketBubble(m, mine = m.sender_role == "driver", senderName = agentDisplayName(m, agents))
             }
@@ -434,7 +449,12 @@ private fun TicketThreadPanel(
             draft = draft,
             onDraft = { draft = it },
             busy = busy,
-            onSend = { onSend(draft); draft = "" },
+            onSend = {
+                if (normalizedDraft.isNotEmpty()) {
+                    onSend(normalizedDraft)
+                    draft = ""
+                }
+            },
         )
     }
 }
@@ -445,8 +465,9 @@ private fun NewTicketPanel(
     onSubmit: (String, String) -> Unit,
     onCancel: () -> Unit,
 ) {
-    var category by remember { mutableStateOf<String?>(null) }
-    var description by remember { mutableStateOf("") }
+    var category by rememberSaveable { mutableStateOf<String?>(null) }
+    var description by rememberSaveable { mutableStateOf("") }
+    val normalizedDescription = description.trim()
     val cs = MaterialTheme.colorScheme
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -474,7 +495,7 @@ private fun NewTicketPanel(
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
             value = description,
-            onValueChange = { description = it },
+            onValueChange = { description = it.take(600) },
             placeholder = { Text("Περιγράψτε το πρόβλημά σας…") },
             minLines = 3,
             maxLines = 5,
@@ -483,8 +504,8 @@ private fun NewTicketPanel(
         )
         Spacer(Modifier.height(12.dp))
         androidx.compose.material3.Button(
-            onClick = { category?.let { onSubmit(it, description.trim()) } },
-            enabled = category != null && description.isNotBlank() && !busy,
+            onClick = { category?.let { onSubmit(it, normalizedDescription) } },
+            enabled = category != null && normalizedDescription.isNotBlank() && !busy,
             modifier = Modifier.fillMaxWidth().height(50.dp),
             shape = RoundedCornerShape(16.dp),
         ) {
@@ -515,6 +536,7 @@ private fun CategoryChip(label: String, color: Color, selected: Boolean, onClick
 @Composable
 private fun ColumnScope.ThreadBox(
     loading: Boolean,
+    showEmpty: Boolean,
     emptyText: String,
     content: @Composable () -> Unit,
 ) {
@@ -538,7 +560,7 @@ private fun ColumnScope.ThreadBox(
                 verticalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 content()
-                if (emptyText.isNotBlank()) {
+                if (showEmpty && emptyText.isNotBlank()) {
                     Text(
                         emptyText,
                         textAlign = TextAlign.Center,
@@ -559,20 +581,23 @@ private fun Composer(
     busy: Boolean,
     onSend: () -> Unit,
 ) {
+    val canSend = draft.trim().isNotEmpty() && !busy
     Row(
         Modifier.fillMaxWidth().padding(vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         OutlinedTextField(
             value = draft,
-            onValueChange = onDraft,
+            onValueChange = { onDraft(it.take(500)) },
             placeholder = { Text("Γράψε ένα μήνυμα…") },
             modifier = Modifier.weight(1f),
             shape = RoundedCornerShape(16.dp),
             maxLines = 4,
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+            keyboardActions = KeyboardActions(onSend = { if (canSend) onSend() }),
         )
         Spacer(Modifier.width(8.dp))
-        IconButton(onClick = onSend, enabled = draft.isNotBlank() && !busy) {
+        IconButton(onClick = onSend, enabled = canSend) {
             Box(
                 Modifier.size(44.dp).background(FreshGreen, RoundedCornerShape(14.dp)),
                 contentAlignment = Alignment.Center,

@@ -44,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -70,14 +71,15 @@ fun LoginScreen(
     error: String?,
     onLogin: (email: String, password: String) -> Unit,
 ) {
-    var email by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
-    var rememberMe by remember { mutableStateOf(false) }
-    var showPassword by remember { mutableStateOf(false) }
+    var email by rememberSaveable { mutableStateOf("") }
+    var password by rememberSaveable { mutableStateOf("") }
+    var rememberMe by rememberSaveable { mutableStateOf(false) }
+    var showPassword by rememberSaveable { mutableStateOf(false) }
     val focus = LocalFocusManager.current
     val context = LocalContext.current
     val prefs = remember { DriverPreferences(context) }
     val cs = MaterialTheme.colorScheme
+    val normalizedEmail = email.trim()
 
     // Prefill saved credentials when "remember me" was enabled.
     LaunchedEffect(Unit) {
@@ -89,16 +91,16 @@ fun LoginScreen(
     }
 
     fun doLogin() {
-        if (email.isNotBlank() && password.isNotBlank() && !busy) {
+        if (normalizedEmail.isNotBlank() && password.isNotBlank() && !busy) {
             prefs.rememberMe = rememberMe
             if (rememberMe) {
-                prefs.savedEmail = email.trim()
+                prefs.savedEmail = normalizedEmail
                 prefs.savedPassword = password
             } else {
                 prefs.savedEmail = ""
                 prefs.savedPassword = ""
             }
-            onLogin(email.trim(), password)
+            onLogin(normalizedEmail, password)
         }
     }
 
@@ -263,7 +265,7 @@ fun LoginScreen(
 
             Button(
                 onClick = { doLogin() },
-                enabled = !busy && email.isNotBlank() && password.isNotBlank(),
+                enabled = !busy && normalizedEmail.isNotBlank() && password.isNotBlank(),
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
