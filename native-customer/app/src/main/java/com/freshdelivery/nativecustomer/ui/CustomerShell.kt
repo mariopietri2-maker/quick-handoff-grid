@@ -34,9 +34,11 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
 import androidx.compose.material.icons.outlined.Close
 import androidx.compose.material.icons.outlined.CreditCard
+import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.outlined.Delete
 import androidx.compose.material.icons.outlined.DirectionsBike
 import androidx.compose.material.icons.outlined.Favorite
+import androidx.compose.material.icons.outlined.FavoriteBorder
 import androidx.compose.material.icons.outlined.Headset
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.LocalOffer
@@ -48,6 +50,7 @@ import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Receipt
 import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Restaurant
+import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.outlined.Search
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.Star
@@ -450,7 +453,7 @@ private fun HomeTab(
     val stores = remember(filter, base, hasLocation, state.favoriteStoreIds) {
         val open = base.filter { isStoreOpenNow(it) }
         val near = if (hasLocation) {
-            base.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, store) }
+            base.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, it) }
         } else base
         when (filter) {
             HomeFilter.All -> base
@@ -1890,7 +1893,15 @@ private fun OrdersTab(
 @Composable
 private fun TrackTab(state: CustomerUiState) {
     val order = state.trackingOrder
+
+    // Live driver pin + store + delivery pin. Order in the list also picks
+    // the map center: store → delivery → driver.
     val markers = buildList {
+        order?.storeLat?.let { lat ->
+            order.storeLng?.let { lng ->
+                add(MapMarker(lat, lng, order.storeName ?: "Κατάστημα", "#F97316"))
+            }
+        }
         order?.order?.delivery_latitude?.let { lat ->
             order.order.delivery_longitude?.let { lng ->
                 add(MapMarker(lat, lng, "Παράδοση", "#10B981"))
