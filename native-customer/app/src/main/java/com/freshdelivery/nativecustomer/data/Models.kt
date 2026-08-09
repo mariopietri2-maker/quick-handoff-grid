@@ -87,6 +87,8 @@ data class PlatformFees(
 data class OrderUi(
     val order: OrderRow,
     val storeName: String?,
+    val storeLat: Double? = null,
+    val storeLng: Double? = null,
 )
 
 /** Mirrors web customer_app_config.published_config (Capacitor admin branding). */
