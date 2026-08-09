@@ -44,7 +44,6 @@ fun DriverNavGraph(
                 onRefresh = viewModel::refreshAll,
                 onRefreshMoney = viewModel::refreshMoney,
                 onRefreshInbox = viewModel::refreshInbox,
-                onWithdraw = viewModel::withdraw,
                 onMarkRead = viewModel::markRead,
                 onSaveProfile = viewModel::saveProfile,
                 onSignOut = viewModel::signOut,

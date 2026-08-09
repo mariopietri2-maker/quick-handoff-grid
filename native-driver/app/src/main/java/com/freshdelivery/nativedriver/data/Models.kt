@@ -2,7 +2,7 @@ package com.freshdelivery.nativedriver.data
 
 import kotlinx.serialization.Serializable
 
-enum class DriverTab { Home, Money, Inbox, Referral, Profile }
+enum class DriverTab { Home, Money, Inbox, Referral, Profile, Settings }
 
 @Serializable
 data class ProfileRow(

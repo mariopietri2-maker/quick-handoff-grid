@@ -223,6 +223,18 @@ fun HomeScreen(
             }
         }
     }
+    val storeMapMarkers = state.mapStores
+        .filter { it.latitude != null && it.longitude != null }
+        .map {
+            com.freshdelivery.nativedriver.ui.map.StoreMapMarker(
+                id = it.id,
+                lat = it.latitude!!,
+                lng = it.longitude!!,
+                name = it.name ?: "Store",
+                imageUrl = it.image_url,
+                count = state.storeCounts[it.id] ?: 0L,
+            )
+        }
     val centerLat = markers.firstOrNull()?.lat ?: primary?.storeLat ?: state.geo?.lat
     val centerLng = markers.firstOrNull()?.lng ?: primary?.storeLng ?: state.geo?.lng
     val err = friendlyError(state.error)
@@ -250,6 +262,7 @@ fun HomeScreen(
             route = navRoute,
             destination = navDest,
             recenterKey = recenterKey,
+            storeMarkers = storeMapMarkers,
         )
 
         // Top chrome — brand status pill centered between the global menu and the
