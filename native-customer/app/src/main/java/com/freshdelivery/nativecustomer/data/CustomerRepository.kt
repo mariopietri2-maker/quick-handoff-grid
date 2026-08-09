@@ -3,11 +3,26 @@ package com.freshdelivery.nativecustomer.data
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.postgrest
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
+import io.github.jan.supabase.postgrest.query.filter.FilterOperator
+import io.github.jan.supabase.realtime.PostgresAction
+import io.github.jan.supabase.realtime.channel
+import io.github.jan.supabase.realtime.postgresChangeFlow
+import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
+import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.buildJsonArray
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
- * Minimal compiling repository so customer assembleDebug succeeds.
+ * Customer repository. Ordering, tracking and driver-location are wired to
+ * Supabase (mirrors the web app); the rest are safe compile-only stubs.
  * Data classes live in Models.kt — do not redeclare them here.
  */
 class CustomerRepository(
@@ -36,10 +51,29 @@ class CustomerRepository(
     suspend fun platformFees(): PlatformFees = PlatformFees()
     suspend fun fetchAppConfig(): CustomerAppConfig = CustomerAppConfig()
     suspend fun canManageGames(): Boolean = false
-    fun subscribeOrders(userId: String): Flow<Unit> = emptyFlow()
-    fun subscribeDriverLocations(driverId: String): Flow<Unit> = emptyFlow()
-    suspend fun unsubscribeDriverLocations() {}
-    suspend fun unsubscribeAll() {}
+    suspend fun subscribeOrders(userId: String): Flow<Unit> {
+        val channel = client.channel("customer-orders-$userId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "orders"
+        }
+        channel.subscribe()
+        return flow.map { }
+    }
+    suspend fun subscribeDriverLocations(driverId: String): Flow<Unit> {
+        val channel = client.channel("customer-driver-loc-$driverId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "driver_locations"
+            filter("driver_id", FilterOperator.EQ, driverId)
+        }
+        channel.subscribe()
+        return flow.map { }
+    }
+    suspend fun unsubscribeDriverLocations() {
+        runCatching { client.realtime.removeAllChannels() }
+    }
+    suspend fun unsubscribeAll() {
+        runCatching { client.realtime.removeAllChannels() }
+    }
     suspend fun upsertPushToken(userId: String, token: String) {}
     suspend fun cancelOrder(orderId: String) {}
     suspend fun searchStores(query: String): List<StoreRow> = emptyList()
@@ -62,14 +96,79 @@ class CustomerRepository(
         notes: String?,
         distanceKm: Double?,
         promoCode: String? = null,
-    ): String = ""
+    ): String {
+        val raw = client.postgrest.rpc(
+            "place_order",
+            buildJsonObject {
+                put("p_store_id", storeId)
+                put(
+                    "p_items",
+                    buildJsonArray {
+                        items.forEach { add(
+                            buildJsonObject {
+                                put("menu_item_id", it.menuItemId)
+                                put("quantity", it.quantity)
+                            },
+                        ) }
+                    },
+                )
+                put("p_delivery_address", deliveryAddress)
+                put("p_delivery_latitude", deliveryLat)
+                put("p_delivery_longitude", deliveryLng)
+                put("p_payment_method", paymentMethod)
+                put("p_tip_amount", tipAmount)
+                put("p_delivery_fee", deliveryFee)
+                put("p_notes", notes)
+                put("p_scheduled_for", JsonNull)
+                put("p_distance_km", distanceKm)
+                put("p_promo_code", promoCode)
+            },
+        ).decodeSingle<String>()
+        return raw
+    }
     suspend fun fetchStores(): List<StoreRow> = emptyList()
     suspend fun fetchStoreRatings(): Map<String, StoreRating> = emptyMap()
     suspend fun fetchFavoriteStoreIds(userId: String): Set<String> = emptySet()
     suspend fun addFavoriteStore(userId: String, storeId: String) {}
     suspend fun removeFavoriteStore(userId: String, storeId: String) {}
-    suspend fun fetchOrders(userId: String): List<OrderUi> = emptyList()
-    suspend fun fetchDriverLocation(driverId: String): DriverLocationRow? = null
+    suspend fun fetchOrders(userId: String): List<OrderUi> {
+        val orders = client.from("orders")
+            .select(Columns.list(
+                "id", "store_id", "status", "customer_id", "driver_id",
+                "delivery_address", "delivery_latitude", "delivery_longitude",
+                "total_amount", "created_at", "store_order_number",
+            )) {
+                filter { eq("customer_id", userId) }
+                order("created_at", Order.DESCENDING)
+            }.decodeList<OrderRow>()
+        val storeById = storesByIds(orders.map { it.store_id })
+        return orders.map { o ->
+            val s = storeById[o.store_id]
+            OrderUi(
+                order = o,
+                storeName = s?.name,
+                storeLat = s?.latitude,
+                storeLng = s?.longitude,
+            )
+        }
+    }
+
+    private suspend fun storesByIds(ids: List<String>): Map<String, StoreRow> {
+        if (ids.isEmpty()) return emptyMap()
+        return client.from("stores")
+            .select(Columns.list("id", "name", "latitude", "longitude")) {
+                filter { isIn("id", ids) }
+            }.decodeList<StoreRow>().associateBy { it.id }
+    }
+
+    suspend fun fetchDriverLocation(driverId: String): DriverLocationRow? =
+        runCatching {
+            client.from("driver_locations")
+                .select(Columns.list("driver_id", "latitude", "longitude", "updated_at")) {
+                    filter { eq("driver_id", driverId) }
+                    limit(1L)
+                }.decodeList<DriverLocationRow>().firstOrNull()
+        }.getOrNull()
     suspend fun fetchMyTickets(userId: String): List<SupportTicketRow> = emptyList()
     suspend fun getMyLiveChatSession(): LiveChatSessionRow? = null
     suspend fun ensureMyLiveChatSession(topic: String?): String? = null

@@ -17,6 +17,7 @@ import com.freshdelivery.nativecustomer.data.GamePrize
 import com.freshdelivery.nativecustomer.data.LiveChatMessageRow
 import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.data.MysteryCardDef
+import com.freshdelivery.nativecustomer.data.OrderRow
 import com.freshdelivery.nativecustomer.data.OrderUi
 import com.freshdelivery.nativecustomer.data.ProfileRow
 import com.freshdelivery.nativecustomer.data.SavedAddressRow
@@ -376,7 +377,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun useCurrentLocation() {
-        val app = getApplication()
+        val app = getApplication<Application>()
         if (ContextCompat.checkSelfPermission(app, android.Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -720,9 +721,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
+            val store = s.stores.find { it.id == storeId } ?: s.selectedStore
             runCatching {
                 var distanceKm: Double? = null
-                val store = s.stores.find { it.id == storeId } ?: s.selectedStore
                 val dLat = s.deliveryLat
                 val dLng = s.deliveryLng
                 if (store?.latitude != null && store.longitude != null && dLat != null && dLng != null) {
@@ -741,9 +742,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     distanceKm = distanceKm,
                     promoCode = s.appliedDeal?.code,
                 )
-            }.onSuccess {
+            }.onSuccess { placedId ->
                 persistLastAddress()
                 saveAddress()
+                val placed = placedId?.takeIf { it.isNotBlank() }
                 _state.value = _state.value.copy(
                     busy = false,
                     cart = emptyList(),
@@ -754,10 +756,22 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     notes = "",
                     addressSuggestions = emptyList(),
                     info = "Η παραγγελία καταχωρήθηκε!",
-                    tab = CustomerTab.Orders,
                     appliedDeal = null,
                 )
-                refreshOrders()
+                // Auto-open the live tracking map for the freshly placed order
+                // (web parity: checkouts jump straight to /order-tracking/<id>).
+                if (placed != null) {
+                    autoOpenTrack(
+                        orderId = placed,
+                        storeId = storeId,
+                        storeName = s.cartStoreName ?: store?.name,
+                        storeLat = store?.latitude,
+                        storeLng = store?.longitude,
+                    )
+                } else {
+                    _state.value = _state.value.copy(tab = CustomerTab.Orders)
+                    refreshOrders()
+                }
             }.onFailure { e ->
                 _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
             }
@@ -767,6 +781,45 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun trackOrder(order: OrderUi?) {
         _state.value = _state.value.copy(trackingOrder = order, tab = CustomerTab.Track, showCart = false)
         refreshDriverLocation()
+    }
+
+    private fun autoOpenTrack(
+        orderId: String,
+        storeId: String,
+        storeName: String?,
+        storeLat: Double?,
+        storeLng: Double?,
+    ) {
+        // Optimistically show the new order's map right away; the next
+        // refreshOrders() replaces it with the authoritative server row.
+        val s = _state.value
+        val hint = OrderUi(
+            order = OrderRow(
+                id = orderId,
+                store_id = storeId,
+                status = "placed",
+                delivery_address = s.deliveryAddress,
+                delivery_latitude = s.deliveryLat,
+                delivery_longitude = s.deliveryLng,
+                total_amount = s.cart.sumOf { it.price * it.quantity },
+            ),
+            storeName = storeName,
+            storeLat = storeLat,
+            storeLng = storeLng,
+        )
+        _state.value = _state.value.copy(trackingOrder = hint, tab = CustomerTab.Track, showCart = false)
+        viewModelScope.launch {
+            runCatching { repo.fetchOrders(s.userId.orEmpty()) }
+                .onSuccess { orders ->
+                    val authoritative = orders.firstOrNull { it.order.id == orderId }
+                    val tracked = authoritative ?: _state.value.trackingOrder
+                    _state.value = _state.value.copy(
+                        orders = orders,
+                        trackingOrder = tracked,
+                    )
+                    refreshDriverLocation()
+                }
+        }
     }
 
     fun refreshAll() {
@@ -1263,7 +1316,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         liveChatSessionJob?.cancel()
         liveChatSessionJob = null
         viewModelScope.launch {
-            runCatching { repo.unsubscribeLiveChat() }
             _state.value = _state.value.copy(
                 liveChatMessages = emptyList(),
                 liveChatLoading = false,
