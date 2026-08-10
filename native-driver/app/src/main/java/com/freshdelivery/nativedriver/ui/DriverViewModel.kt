@@ -430,18 +430,36 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun acceptOffer(offerId: String, orderId: String? = null) {
+        val s = _state.value
+        val removed = s.offers.firstOrNull { it.offerId == offerId }
+            ?: s.stackedOffers.firstOrNull { it.offerId == offerId }
+        // Optimistically dismiss the offer sheet so the driver gets instant feedback.
+        _state.value = s.copy(
+            offers = s.offers.filterNot { it.offerId == offerId },
+            stackedOffers = s.stackedOffers.filterNot { it.offerId == offerId },
+            busy = true,
+            error = null,
+        )
+        stopOfferSound()
         viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, error = null)
             runCatching {
                 if (offerId.isNotBlank()) repo.acceptOffer(offerId)
                 else if (!orderId.isNullOrBlank()) repo.claimOrder(orderId)
                 else error("Missing offer")
             }.onSuccess {
-                stopOfferSound()
                 _state.value = _state.value.copy(busy = false, info = "Προσφορά αποδεκτή")
                 refreshWork()
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                _state.value = _state.value.copy(
+                    busy = false,
+                    error = friendlyError(e),
+                    offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
+                        (_state.value.offers + removed).sortedBy { it.expiresAt }
+                    } else _state.value.offers,
+                    stackedOffers = if (removed != null && _state.value.stackedOffers.none { it.offerId == removed.offerId }) {
+                        (_state.value.stackedOffers + removed)
+                    } else _state.value.stackedOffers,
+                )
                 refreshWork()
             }
         }
@@ -488,23 +506,55 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun declineOffer(offerId: String) {
+        val s = _state.value
+        val removed = s.offers.firstOrNull { it.offerId == offerId }
+            ?: s.stackedOffers.firstOrNull { it.offerId == offerId }
+        // Optimistically dismiss the offer sheet for instant feedback.
+        _state.value = s.copy(
+            offers = s.offers.filterNot { it.offerId == offerId },
+            stackedOffers = s.stackedOffers.filterNot { it.offerId == offerId },
+            busy = true,
+            error = null,
+        )
+        stopOfferSound()
         viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.declineOffer(offerId) }
                 .onSuccess {
-                    stopOfferSound()
                     _state.value = _state.value.copy(busy = false)
                     refreshWork()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        error = friendlyError(e),
+                        offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
+                            (_state.value.offers + removed).sortedBy { it.expiresAt }
+                        } else _state.value.offers,
+                        stackedOffers = if (removed != null && _state.value.stackedOffers.none { it.offerId == removed.offerId }) {
+                            (_state.value.stackedOffers + removed)
+                        } else _state.value.stackedOffers,
+                    )
+                    refreshWork()
                 }
         }
     }
 
     fun advanceTrip(orderId: String, nextStatus: String) {
+        val s = _state.value
+        // Optimistically advance the trip card so the button reacts instantly;
+        // roll back to the previous status if the server rejects the transition.
+        val before = s.activeTrips
+        val after = if (nextStatus == "delivered") {
+            s.activeTrips.filterNot { it.order.id == orderId }
+        } else {
+            s.activeTrips.map { trip ->
+                if (trip.order.id == orderId) {
+                    trip.copy(order = trip.order.copy(status = nextStatus))
+                } else trip
+            }
+        }
+        _state.value = s.copy(activeTrips = after, busy = true, error = null)
         viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.transitionStatus(orderId, nextStatus) }
                 .onSuccess {
                     _state.value = _state.value.copy(busy = false, info = "Status → $nextStatus")
@@ -512,7 +562,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     if (nextStatus == "delivered") refreshMoney()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(activeTrips = before, busy = false, error = friendlyError(e))
+                    refreshWork()
                 }
         }
     }
@@ -783,11 +834,15 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private fun startPolling() {
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
+            var tick = 0
             while (true) {
                 delay(4_000)
+                tick++
                 if (_state.value.signedIn) {
                     refreshWork()
                     if (_state.value.tab == DriverTab.Inbox) refreshInbox()
+                    // Keep store order badges fresh on the map even when offline.
+                    if (tick % 5 == 0) refreshStoreMap()
                 }
             }
         }

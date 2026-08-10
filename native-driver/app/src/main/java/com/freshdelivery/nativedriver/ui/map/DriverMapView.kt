@@ -129,11 +129,11 @@ private fun Drawable.toBitmapOrNull(): Bitmap? = when (this) {
  * The box anchors to the store's map position; the badge shows its order count.
  */
 private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): Bitmap {
-    val box = 84f
-    val radius = 18f
-    val badgeW = 48f
-    val badgeH = 30f
-    val gap = 6f
+    val box = 98f
+    val radius = 21f
+    val badgeW = 56f
+    val badgeH = 34f
+    val gap = 7f
     val w = box.toInt()
     val h = (box + gap + badgeH).toInt()
     val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -162,7 +162,7 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
         val letter = (name.firstOrNull()?.toString() ?: "S").uppercase()
         val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.WHITE
-            textSize = 34f
+            textSize = 40f
             textAlign = Paint.Align.CENTER
             typeface = Typeface.DEFAULT_BOLD
         }
@@ -177,7 +177,7 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
         radius,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 4f
+            strokeWidth = 5f
             color = if (hasOrders) android.graphics.Color.parseColor("#2FE795") else android.graphics.Color.parseColor("#3A443D")
         },
     )
@@ -195,7 +195,7 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
     )
     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
-        textSize = 16f
+        textSize = 19f
         textAlign = Paint.Align.CENTER
         typeface = Typeface.DEFAULT_BOLD
     }
@@ -304,7 +304,7 @@ fun DriverMapView(
                 PointAnnotationOptions()
                     .withPoint(Point.fromLngLat(m.lng, m.lat))
                     .withIconImage(icon)
-                    .withIconSize(0.85)
+                    .withIconSize(1.0)
             }
         }
     }

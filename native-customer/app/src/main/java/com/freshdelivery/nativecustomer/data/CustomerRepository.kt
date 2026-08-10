@@ -126,7 +126,17 @@ class CustomerRepository(
         ).decodeSingle<String>()
         return raw
     }
-    suspend fun fetchStores(): List<StoreRow> = emptyList()
+    suspend fun fetchStores(): List<StoreRow> {
+        return client.from("stores_public")
+            .select(Columns.list(
+                "id", "name", "address", "latitude", "longitude", "is_active",
+                "image_url", "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+            )) {
+                filter { eq("is_active", true) }
+                order("name", Order.ASCENDING)
+                limit(200L)
+            }.decodeList<StoreRow>()
+    }
     suspend fun fetchStoreRatings(): Map<String, StoreRating> = emptyMap()
     suspend fun fetchFavoriteStoreIds(userId: String): Set<String> = emptySet()
     suspend fun addFavoriteStore(userId: String, storeId: String) {}

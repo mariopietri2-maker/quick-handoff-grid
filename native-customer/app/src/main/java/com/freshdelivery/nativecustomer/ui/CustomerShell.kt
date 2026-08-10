@@ -1812,7 +1812,6 @@ private fun OrdersTab(
             }
         }
         items(state.orders, key = { it.order.id }) { item ->
-            val cancellable = item.order.status in listOf("placed", "pending")
             Column(
                 Modifier
                     .fillMaxWidth()
@@ -1872,17 +1871,6 @@ private fun OrdersTab(
                         Icon(Icons.Outlined.Map, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Παρακολούθηση", fontWeight = FontWeight.Bold)
-                    }
-                    if (cancellable) {
-                        Spacer(Modifier.width(8.dp))
-                        OutlinedButton(
-                            onClick = { onCancelOrder(item) },
-                            enabled = !state.busy,
-                            shape = RoundedCornerShape(14.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = FreshRose),
-                        ) {
-                            Text("Ακύρωση")
-                        }
                     }
                 }
             }
