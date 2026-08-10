@@ -218,6 +218,7 @@ fun DriverMapView(
     destination: MapMarker? = null,
     recenterKey: Int = 0,
     storeMarkers: List<StoreMapMarker> = emptyList(),
+    followUser: Boolean = false,
 ) {
     val lat = centerLat ?: userLat ?: DEFAULT_LAT
     val lng = centerLng ?: userLng ?: DEFAULT_LNG
@@ -256,14 +257,30 @@ fun DriverMapView(
         }
     }
 
+    // Turn-by-turn: follow the driver's live position with a pitched nav view
+    // so the upcoming maneuver stays visible while the driver moves.
+    LaunchedEffect(followUser, userLat, userLng) {
+        if (followUser && userLat != null && userLng != null) {
+            viewportState.setCameraOptions {
+                center(Point.fromLngLat(userLng, userLat))
+                zoom(15.2)
+                pitch(50.0)
+                bearing(0.0)
+            }
+        }
+    }
+
     // Re-center only on trip context changes (pin/trip/destination/route),
     // never on raw GPS updates.
-    LaunchedEffect(markers.size, destination, route.size) {
+    LaunchedEffect(markers.size, destination, route.size, followUser) {
         when {
+            followUser -> Unit
             destination != null -> {
                 viewportState.setCameraOptions {
                     center(Point.fromLngLat(destination.lng, destination.lat))
                     zoom(14.0)
+                    pitch(0.0)
+                    bearing(0.0)
                 }
             }
             markers.isNotEmpty() -> {
@@ -271,6 +288,8 @@ fun DriverMapView(
                 viewportState.setCameraOptions {
                     center(Point.fromLngLat(first.lng, first.lat))
                     zoom(13.2)
+                    pitch(0.0)
+                    bearing(0.0)
                 }
             }
         }
