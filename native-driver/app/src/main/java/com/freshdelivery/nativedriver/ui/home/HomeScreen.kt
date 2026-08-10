@@ -30,6 +30,7 @@ import androidx.compose.material.icons.outlined.Call
 import androidx.compose.material.icons.outlined.HeadsetMic
 import androidx.compose.material.icons.outlined.MyLocation
 import androidx.compose.material.icons.outlined.Navigation
+import androidx.compose.material.icons.outlined.Notes
 import androidx.compose.material.icons.outlined.Place
 import androidx.compose.material.icons.outlined.Storefront
 import androidx.compose.material3.Button
@@ -542,11 +543,6 @@ fun HomeScreen(
             }
 
             Spacer(Modifier.height(10.dp))
-            SlideToggle(
-                isOn = state.online,
-                enabled = state.driverActive && !state.busy,
-                onToggle = onToggleOnline,
-            )
         }
     }
 }
@@ -709,6 +705,8 @@ private fun OfferSheet(
             ) {
                 if (isCash) {
                     Chip("Μετρητά ${moneyPlain(cashAmount)}€", Color(0xFF3A2C10), FreshAmber)
+                } else {
+                    Chip("Πληρωμένο", Color(0xFF12291C), FreshGreenBright)
                 }
                 formatDistance(offer.order.distance_km)?.let {
                     Chip(it, TrackFill, TextMuted)
@@ -760,6 +758,22 @@ private fun OfferSheet(
                     Spacer(Modifier.width(8.dp))
                     Text(
                         offer.order.delivery_address!!,
+                        fontSize = 13.sp,
+                        color = TextDark,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f),
+                    )
+                }
+            }
+
+            if (!offer.order.notes.isNullOrBlank()) {
+                Spacer(Modifier.height(8.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Notes, null, tint = FreshAmber, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        offer.order.notes!!,
                         fontSize = 13.sp,
                         color = TextDark,
                         maxLines = 2,

@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
+import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CardGiftcard
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mail
@@ -22,12 +23,14 @@ import androidx.compose.material.icons.outlined.Mail
 import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -134,7 +137,7 @@ fun DriverShell(
                 Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .padding(top = 64.dp),
+                    .padding(top = 100.dp),
             ) {
                 when (state.tab) {
                     DriverTab.Money -> MoneyScreen(
@@ -172,6 +175,10 @@ fun DriverShell(
                 tabs = tabs,
                 current = state.tab,
                 unread = unread,
+                online = state.online,
+                onBreak = state.onBreak,
+                canToggleOnline = state.driverActive && !state.busy,
+                onToggleOnline = onToggleOnline,
                 onTab = onTab,
             )
         }
@@ -209,9 +216,14 @@ private fun GlobalMenuButton(
     tabs: List<TabItem>,
     current: DriverTab,
     unread: Int,
+    online: Boolean,
+    onBreak: Boolean,
+    canToggleOnline: Boolean,
+    onToggleOnline: (Boolean) -> Unit,
     onTab: (DriverTab) -> Unit,
 ) {
     var open by remember { mutableStateOf(false) }
+    var confirmToggle by remember { mutableStateOf(false) }
 
     Box(
         Modifier
@@ -223,7 +235,7 @@ private fun GlobalMenuButton(
         Box(Modifier.align(Alignment.TopStart)) {
             Box(
                 Modifier
-                    .size(54.dp)
+                    .size(42.dp)
                     .shadow(8.dp, CircleShape)
                     .clip(CircleShape)
                     .background(MenuSurface)
@@ -231,7 +243,7 @@ private fun GlobalMenuButton(
                     .clickable { open = true },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(28.dp))
+                Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
             }
 
             DropdownMenu(
@@ -268,6 +280,83 @@ private fun GlobalMenuButton(
                 }
             }
         }
+
+        // Availability toggle under the hamburger — go online/offline with a
+        // confirmation dialog (replaces the old slide control at the bottom).
+        Box(
+            Modifier
+                .align(Alignment.TopStart)
+                .padding(top = 50.dp),
+        ) {
+            Box(
+                Modifier
+                    .size(42.dp)
+                    .shadow(8.dp, CircleShape)
+                    .clip(CircleShape)
+                    .background(
+                        when {
+                            !canToggleOnline -> Color(0xFF1B211D)
+                            online -> FreshGreen
+                            else -> MenuSurface
+                        },
+                    )
+                    .border(
+                        1.dp,
+                        if (online) FreshGreenBright else MenuBorder,
+                        CircleShape,
+                    )
+                    .clickable(enabled = canToggleOnline) { confirmToggle = true },
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Filled.Bolt,
+                    null,
+                    tint = when {
+                        !canToggleOnline -> MenuIconMuted
+                        online -> Color.White
+                        else -> FreshGreenBright
+                    },
+                    modifier = Modifier.size(22.dp),
+                )
+            }
+        }
+    }
+
+    if (confirmToggle) {
+        AlertDialog(
+            onDismissRequest = { confirmToggle = false },
+            containerColor = MenuSurface,
+            title = {
+                Text(
+                    if (online) "Έξοδος από τις παραγγελίες" else "Διαθεσιμότητα",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                )
+            },
+            text = {
+                Text(
+                    if (onBreak) "Είσαι σε διάλειμμα. Θες να ξαναγίνεις διαθέσιμος για νέες παραγγελίες;"
+                    else if (online) "Θα σταματήσεις να λαμβάνεις νέες παραγγελίες. Συνέχεια;"
+                    else "Θα γίνεις διαθέσιμος και θα λαμβάνεις νέες παραγγελίες. Συνέχεια;",
+                    color = MenuTextMuted,
+                )
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        confirmToggle = false
+                        onToggleOnline(!online)
+                    },
+                ) {
+                    Text(if (online) "Έξοδος" else "Διαθέσιμος", color = FreshGreenBright)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmToggle = false }) {
+                    Text("Ακύρωση", color = MenuTextMuted)
+                }
+            },
+        )
     }
 }
 

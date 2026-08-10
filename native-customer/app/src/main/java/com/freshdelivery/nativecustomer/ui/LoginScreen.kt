@@ -1,9 +1,12 @@
 package com.freshdelivery.nativecustomer.ui
 
+import android.content.Intent
+import android.net.Uri
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -11,21 +14,28 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material.icons.outlined.Visibility
+import androidx.compose.material.icons.outlined.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -36,11 +46,14 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.freshdelivery.nativecustomer.data.CustomerPreferences
 import com.freshdelivery.nativecustomer.ui.theme.FreshBg
 import com.freshdelivery.nativecustomer.ui.theme.FreshGreen
 import com.freshdelivery.nativecustomer.ui.theme.FreshGreenDark
@@ -66,6 +79,17 @@ fun LoginScreen(
     var password by remember { mutableStateOf("") }
     var fullName by remember { mutableStateOf("") }
     var phone by remember { mutableStateOf("") }
+    var rememberMe by remember { mutableStateOf(false) }
+    var showPassword by remember { mutableStateOf(false) }
+    val context = LocalContext.current
+    val prefs = remember { CustomerPreferences(context) }
+    LaunchedEffect(Unit) {
+        rememberMe = prefs.rememberMe
+        if (rememberMe) {
+            email = prefs.savedEmail
+            password = prefs.savedPassword
+        }
+    }
     val fieldColors = OutlinedTextFieldDefaults.colors(
         focusedBorderColor = FreshGreen,
         focusedLabelColor = FreshGreen,
@@ -147,12 +171,51 @@ fun LoginScreen(
             onValueChange = { password = it },
             label = { Text("Κωδικός") },
             singleLine = true,
-            visualTransformation = PasswordVisualTransformation(),
+            trailingIcon = {
+                IconButton(onClick = { showPassword = !showPassword }) {
+                    Icon(
+                        if (showPassword) Icons.Outlined.VisibilityOff else Icons.Outlined.Visibility,
+                        contentDescription = if (showPassword) "Hide" else "Show",
+                    )
+                }
+            },
+            visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = fieldColors,
         )
+        Spacer(Modifier.height(8.dp))
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Checkbox(
+                    checked = rememberMe,
+                    onCheckedChange = { rememberMe = it },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = FreshGreen,
+                        checkmarkColor = Color.White,
+                    ),
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    "Να με θυμάσαι",
+                    color = FreshInk,
+                    style = MaterialTheme.typography.bodyMedium,
+                )
+            }
+            TextButton(
+                onClick = {
+                    val uri = Uri.parse("https://quick-handoff-grid-production.up.railway.app/auth?reset=1")
+                    context.startActivity(Intent(Intent.ACTION_VIEW, uri))
+                },
+            ) {
+                Text("Ξέχασες τον κωδικό;", color = FreshGreenDark, style = MaterialTheme.typography.labelLarge)
+            }
+        }
         if (!error.isNullOrBlank()) {
             Spacer(Modifier.height(12.dp))
             Box(
@@ -172,6 +235,14 @@ fun LoginScreen(
         Spacer(Modifier.height(24.dp))
         Button(
             onClick = {
+                prefs.rememberMe = rememberMe
+                if (rememberMe) {
+                    prefs.savedEmail = email.trim()
+                    prefs.savedPassword = password
+                } else {
+                    prefs.savedEmail = ""
+                    prefs.savedPassword = ""
+                }
                 if (signupMode) onSignUp(email, password, fullName, phone)
                 else onLogin(email, password)
             },
