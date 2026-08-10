@@ -133,7 +133,8 @@ fun DriverShell(
             else -> Box(
                 Modifier
                     .fillMaxSize()
-                    .statusBarsPadding(),
+                    .statusBarsPadding()
+                    .padding(top = 64.dp),
             ) {
                 when (state.tab) {
                     DriverTab.Money -> MoneyScreen(
@@ -222,15 +223,15 @@ private fun GlobalMenuButton(
         Box(Modifier.align(Alignment.TopStart)) {
             Box(
                 Modifier
-                    .size(42.dp)
-                    .shadow(6.dp, CircleShape)
+                    .size(54.dp)
+                    .shadow(8.dp, CircleShape)
                     .clip(CircleShape)
                     .background(MenuSurface)
                     .border(1.dp, MenuBorder, CircleShape)
                     .clickable { open = true },
                 contentAlignment = Alignment.Center,
             ) {
-                Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+                Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(28.dp))
             }
 
             DropdownMenu(
