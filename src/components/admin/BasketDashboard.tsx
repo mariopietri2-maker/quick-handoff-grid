@@ -32,8 +32,8 @@ export default function BasketDashboard() {
     if (!n || n <= 0) { toast.error('Δώσε ποσό > 0'); return; }
     setAdjBusy(true);
     const { error } = await (supabase as any).rpc('admin_adjust_basket', {
-      _amount: sign * n,
-      _note: adjNote || (sign > 0 ? 'Admin deposit' : 'Admin withdrawal'),
+      p_amount: sign * n,
+      p_note: adjNote || (sign > 0 ? 'Admin deposit' : 'Admin withdrawal'),
     });
     setAdjBusy(false);
     if (error) { toast.error(error.message); return; }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { ArrowRight, Zap, Shield, ChartBar as BarChart3, MapPin, Users, Search, ClipboardList, Bike, CircleCheck as CheckCircle, Headphones, Sparkles, Activity, TrendingUp, Star, Store, Car } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SEO } from '@/components/SEO';
 import { supabase } from '@/integrations/supabase/client';
@@ -316,13 +316,13 @@ const Index = () => {
             <span className="font-heading font-bold text-sm">Fresh Delivery</span>
           </div>
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
-            <a href="/legal/terms"   className="text-muted-foreground hover:text-primary transition-smooth">Όροι Χρήσης</a>
+            <Link to="/legal/terms"   className="text-muted-foreground hover:text-primary transition-smooth">Όροι Χρήσης</Link>
             <span className="text-border">·</span>
-            <a href="/legal/privacy" className="text-muted-foreground hover:text-primary transition-smooth">Απόρρητο</a>
+            <Link to="/legal/privacy" className="text-muted-foreground hover:text-primary transition-smooth">Απόρρητο</Link>
             <span className="text-border">·</span>
-            <a href="/legal/refunds" className="text-muted-foreground hover:text-primary transition-smooth">Επιστροφές</a>
+            <Link to="/legal/refunds" className="text-muted-foreground hover:text-primary transition-smooth">Επιστροφές</Link>
             <span className="text-border">·</span>
-            <a href="/presentation" className="text-muted-foreground hover:text-primary transition-smooth">Παρουσίαση</a>
+            <Link to="/presentation" className="text-muted-foreground hover:text-primary transition-smooth">Παρουσίαση</Link>
           </nav>
           <p className="text-xs text-muted-foreground">© 2026 Fresh Delivery. Με ❤️ για την Ελλάδα.</p>
         </div>

@@ -48,9 +48,17 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
   const eta = (item.store_prep_buffer_minutes ?? 0);
 
   return (
-    <button
+    <div
+      role="button"
+      tabIndex={0}
       onClick={() => navigate(`/restaurant/${item.store_id}`)}
-      className={`group relative text-left shrink-0 ${variant === 'wide' ? 'w-[230px]' : 'w-[180px]'} bg-[hsl(var(--c-surface))] rounded-2xl overflow-hidden border border-[hsl(var(--c-border))] shadow-[0_1px_2px_-1px_hsl(0_0%_0%/0.06),0_10px_24px_-14px_hsl(0_0%_0%/0.18)] hover:shadow-[0_4px_8px_-2px_hsl(0_0%_0%/0.08),0_18px_36px_-12px_hsl(0_0%_0%/0.22)] transition-shadow duration-300`}
+      onKeyDown={(e) => {
+        if (e.key === 'Enter' || e.key === ' ') {
+          e.preventDefault();
+          navigate(`/restaurant/${item.store_id}`);
+        }
+      }}
+      className={`group relative text-left shrink-0 cursor-pointer ${variant === 'wide' ? 'w-[230px]' : 'w-[180px]'} bg-[hsl(var(--c-surface))] rounded-2xl overflow-hidden border border-[hsl(var(--c-border))] shadow-[0_1px_2px_-1px_hsl(0_0%_0%/0.06),0_10px_24px_-14px_hsl(0_0%_0%/0.18)] hover:shadow-[0_4px_8px_-2px_hsl(0_0%_0%/0.08),0_18px_36px_-12px_hsl(0_0%_0%/0.22)] transition-shadow duration-300`}
     >
       {/* Image */}
       <div className={`relative ${variant === 'wide' ? 'aspect-[5/4]' : 'aspect-square'} bg-[hsl(var(--c-surface-muted))] overflow-hidden`}>
@@ -66,16 +74,15 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
         )}
 
         {/* + button (top-right) */}
-        <div
-          role="button"
-          tabIndex={0}
+        <button
+          type="button"
           aria-label={`Προσθήκη ${item.name} στο καλάθι`}
           onClick={handleAdd}
           onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') handleAdd(e as any); }}
           className="absolute top-2 right-2 h-9 w-9 rounded-xl bg-[hsl(var(--c-surface))] shadow-[0_2px_6px_-1px_hsl(0_0%_0%/0.18)] flex items-center justify-center active:scale-90 transition-transform hover:bg-[hsl(var(--c-surface-muted))]"
         >
           <Plus className="h-4 w-4 text-[hsl(var(--c-text))]" strokeWidth={2.8} />
-        </div>
+        </button>
 
         {/* Delivery chip (bottom-left) */}
         <div className="absolute bottom-2 left-2 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur rounded-full pl-1.5 pr-2 py-1 flex items-center gap-1 shadow-[0_1px_3px_hsl(0_0%_0%/0.12)]">
@@ -139,6 +146,6 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
           </p>
         )}
       </div>
-    </button>
+    </div>
   );
 }

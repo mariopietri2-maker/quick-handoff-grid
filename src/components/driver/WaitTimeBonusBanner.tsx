@@ -31,27 +31,15 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
   useEffect(() => {
     if (!user || status !== 'arrived') return;
     const checkOrCreate = async () => {
-      const { data } = await supabase
+      const { data, error } = await supabase
         .from('wait_time_bonuses')
+        .upsert({ driver_id: user.id, order_id: orderId }, { onConflict: 'order_id,driver_id' })
         .select('id, arrived_at')
-        .eq('driver_id', user.id)
-        .eq('order_id', orderId)
         .maybeSingle();
 
-      if (data) {
-        setArrivedAt(new Date(data.arrived_at));
-        setBonusRecordId(data.id);
-      } else {
-        const { data: newRecord } = await supabase
-          .from('wait_time_bonuses')
-          .insert({ driver_id: user.id, order_id: orderId })
-          .select('id, arrived_at')
-          .single();
-        if (newRecord) {
-          setArrivedAt(new Date(newRecord.arrived_at));
-          setBonusRecordId(newRecord.id);
-        }
-      }
+      if (error || !data) return;
+      setArrivedAt(new Date(data.arrived_at));
+      setBonusRecordId(data.id);
     };
     checkOrCreate();
   }, [user, orderId, status]);

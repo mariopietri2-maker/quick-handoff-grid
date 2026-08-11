@@ -98,6 +98,7 @@ export const ADMIN_SECTION_CAPABILITY: Record<string, AdminCapability> = {
   platform_cost: 'finances',
   ledger: 'finances',
   surge: 'finances',
+  refunds: 'finances',
   store_billing: 'finances',
   store_appearance: 'orders',
   store_photos: 'orders',

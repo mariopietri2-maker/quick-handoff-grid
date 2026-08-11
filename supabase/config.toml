@@ -19,6 +19,15 @@ verify_jwt = true
 [functions.send-push]
 verify_jwt = false
 
+[functions.process-refunds]
+verify_jwt = false
+
+[functions.send-alerts]
+verify_jwt = false
+
+[functions.delete-card]
+verify_jwt = false
+
 [functions.ai-dynamic-pricing]
 verify_jwt = false
 

@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
     const [{ data: items }, { data: store }, { data: profile }] = await Promise.all([
       supabase.from('order_items').select('name, quantity, unit_price').eq('order_id', order.id),
       supabase.from('stores').select('name').eq('id', order.store_id).maybeSingle(),
-      supabase.from('profiles').select('full_name').eq('user_id', userId).maybeSingle(),
+      supabase.from('profiles').select('full_name, stripe_customer_id').eq('user_id', userId).maybeSingle(),
     ]);
 
     const storeName = store?.name ?? 'Order';
@@ -112,12 +112,32 @@ Deno.serve(async (req) => {
     );
 
     const stripe = createStripeClient(body.environment);
+    const admin = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+
+    // One Stripe Customer per user enables native "saved payment methods" in
+    // Embedded Checkout (1-tap reorder). Create lazily and persist the id.
+    const customerId = await ensureStripeCustomer(
+      stripe,
+      admin,
+      userId,
+      profile?.stripe_customer_id ?? null,
+      claims.claims.email,
+      profile?.full_name,
+    );
+
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
       mode: 'payment',
       ui_mode: 'embedded_page',
       return_url: body.returnUrl,
       customer_email: claims.claims.email,
+      customer: customerId,
+      customer_creation: 'always',
+      // Show saved cards + let the customer save this card for next time.
+      payment_method_collection: 'always',
       // Stripe calculates and collects the correct VAT for the buyer's
       // location (user picked "calculation only" mode at setup time).
       automatic_tax: { enabled: true },
@@ -138,13 +158,10 @@ Deno.serve(async (req) => {
     });
 
     // Persist expected charge + session for webhook validation (service role)
-    const admin = createClient(
-      Deno.env.get('SUPABASE_URL')!,
-      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
-    );
     await admin.from('orders').update({
       expected_charge_cents: expectedCents,
       stripe_session_id: session.id,
+      stripe_environment: body.environment,
     }).eq('id', order.id);
 
     return new Response(
@@ -162,4 +179,22 @@ function jsonError(message: string, status: number) {
     status,
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
+}
+
+async function ensureStripeCustomer(
+  stripe: ReturnType<typeof createStripeClient>,
+  admin: ReturnType<typeof createClient>,
+  userId: string,
+  existingCustomerId: string | null,
+  email?: string | null,
+  name?: string | null,
+): Promise<string> {
+  if (existingCustomerId) return existingCustomerId;
+  const customer = await stripe.customers.create({
+    email: email ?? undefined,
+    name: name ?? undefined,
+    metadata: { userId },
+  });
+  await admin.from('profiles').update({ stripe_customer_id: customer.id }).eq('user_id', userId);
+  return customer.id;
 }

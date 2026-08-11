@@ -11,6 +11,7 @@ import {
   Mail, Phone, Save, Loader2, Shield, Car, Store,
   Headphones, ShoppingBag, LogOut, Languages, Palette, Pencil,
   FileText, RefreshCw, Ticket, MapPin, Heart, Receipt, ChevronRight,
+  CreditCard,
   Settings as SettingsIcon,
 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -18,6 +19,7 @@ import { LanguageToggle } from '@/components/LanguageToggle';
 import { ThemeToggle } from '@/components/ThemeToggle';
 import { SEO } from '@/components/SEO';
 import { SavedAddresses } from '@/components/SavedAddresses';
+import { SavedCards } from '@/components/SavedCards';
 import { CustomerReferralCard } from '@/components/customer/CustomerReferralCard';
 import { CustomerWalletCard } from '@/components/customer/CustomerWalletCard';
 import { CustomerSupportButton } from '@/components/customer/CustomerSupportButton';
@@ -37,7 +39,7 @@ export default function ProfilePage() {
   const [phone, setPhone] = useState('');
   const [saving, setSaving] = useState(false);
   const [editOpen, setEditOpen] = useState(false);
-  const [sheet, setSheet] = useState<null | 'addresses' | 'referral' | 'wallet'>(null);
+  const [sheet, setSheet] = useState<null | 'addresses' | 'referral' | 'wallet' | 'cards'>(null);
 
   useEffect(() => {
     if (!user) { navigate('/auth'); return; }
@@ -220,6 +222,7 @@ export default function ProfilePage() {
           <SectionTitle>Προτιμήσεις</SectionTitle>
           <Group>
             <RowAction onClick={() => setSheet('addresses')} icon={MapPin} iconTone="muted" label="Διευθύνσεις" trailing={<Chevron />} />
+            <RowAction onClick={() => setSheet('cards')} icon={CreditCard} iconTone="muted" label="Κάρτες" trailing={<Chevron />} />
             <RowInline icon={Languages} iconTone="muted" label="Γλώσσα" trailing={<LanguageToggle />} />
             <RowInline icon={Palette} iconTone="muted" label="Θέμα" trailing={<ThemeToggle />} />
           </Group>
@@ -256,6 +259,7 @@ export default function ProfilePage() {
               {sheet === 'wallet' && 'Κουπόνια'}
               {sheet === 'referral' && 'Κάλεσε φίλους'}
               {sheet === 'addresses' && 'Οι διευθύνσεις μου'}
+              {sheet === 'cards' && 'Οι κάρτες μου'}
             </SheetTitle>
           </SheetHeader>
           <div className="pt-4">
@@ -264,6 +268,7 @@ export default function ProfilePage() {
             {sheet === 'addresses' && (
               <SavedAddresses onSelect={() => setSheet(null)} />
             )}
+            {sheet === 'cards' && <SavedCards />}
           </div>
         </SheetContent>
       </Sheet>
