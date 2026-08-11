@@ -41,7 +41,7 @@ export default function ScheduledDeliveryPicker({ value, onChange }: Props) {
           <button
             onClick={() => onChange(null)}
             className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
-              !value ? 'bg-[hsl(0,0%,9%)] text-white' : 'bg-muted text-foreground'
+              !value ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))]' : 'bg-muted text-foreground'
             }`}
           >
             <Clock className="h-4 w-4 inline mr-1" /> Άμεσα
@@ -49,7 +49,7 @@ export default function ScheduledDeliveryPicker({ value, onChange }: Props) {
           <button
             onClick={() => setOpen(o => !o)}
             className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
-              value ? 'bg-[hsl(0,0%,9%)] text-white' : 'bg-muted text-foreground'
+              value ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))]' : 'bg-muted text-foreground'
             }`}
           >
             <CalendarClock className="h-4 w-4 inline mr-1" />

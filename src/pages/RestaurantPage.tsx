@@ -22,9 +22,20 @@ import { MenuItemBadges } from '@/components/customer/MenuItemBadges';
 import { SEO } from '@/components/SEO';
 import { customerAccentStyle } from '@/lib/customer-theme';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 type StoreRow = Database['public']['Tables']['stores']['Row'];
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
+
+const VISIBLE_ITEM_QUERY = (storeId: string) =>
+  supabase
+    .from('menu_items')
+    .select('*')
+    .eq('store_id', storeId)
+    .eq('is_available', true)
+    .eq('is_snoozed', false)
+    .order('category')
+    .order('name');
 
 export default function RestaurantPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,21 +54,33 @@ export default function RestaurantPage() {
 
   useEffect(() => {
     if (!id) return;
+    let cancelled = false;
+    const loadMenu = async () => {
+      const { data } = await VISIBLE_ITEM_QUERY(id);
+      if (!cancelled) setMenuItems(data ?? []);
+    };
     Promise.all([
       (supabase as any).from('stores_public').select('*').eq('id', id).single(),
-      supabase
-        .from('menu_items')
-        .select('*')
-        .eq('store_id', id)
-        .eq('is_available', true)
-        .eq('is_snoozed', false)
-        .order('category')
-        .order('name'),
-    ]).then(([storeRes, menuRes]) => {
+      loadMenu(),
+    ]).then(([storeRes]) => {
+      if (cancelled) return;
       setStore(storeRes.data);
-      setMenuItems(menuRes.data ?? []);
       setLoading(false);
     });
+
+    // Live menu: new/edited items from the store appear immediately.
+    const channel = openRealtimeChannel(`restaurant-menu-${id}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'menu_items', filter: `store_id=eq.${id}` },
+        loadMenu,
+      )
+      .subscribe();
+
+    return () => {
+      cancelled = true;
+      supabase.removeChannel(channel);
+    };
   }, [id]);
 
   const normalizedQuery = menuQuery.trim().toLowerCase();
@@ -242,7 +265,7 @@ export default function RestaurantPage() {
               className="w-full h-full object-cover"
             />
           ) : (
-            <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[hsl(0,0%,18%)] to-[hsl(0,0%,10%)]">
+            <div className="w-full h-full flex flex-col items-center justify-center gap-2 bg-gradient-to-br from-[hsl(24,30%,15%)] to-[hsl(24,35%,9%)]">
               <Utensils className="h-10 w-10 text-white/50" strokeWidth={1.5} />
               <span className="text-xs font-bold uppercase tracking-widest text-white/40">Μενού</span>
             </div>
@@ -295,7 +318,7 @@ export default function RestaurantPage() {
               <Clock className="h-3.5 w-3.5 c-soft" />
               {etaLow}–{etaHigh} λεπ
             </span>
-            <span>0,99€ παράδοση</span>
+            <span>0.99€ παράδοση</span>
           </div>
           {store.address && (
             <p className="text-[12px] c-muted flex items-start gap-1 mt-2 leading-snug">

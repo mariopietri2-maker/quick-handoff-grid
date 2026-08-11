@@ -122,7 +122,7 @@ function StackedOfferCardInner({
           aria-label="Απόρριψη"
           className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-[hsl(var(--driver-border-strong))] text-[hsl(var(--driver-text-muted))] active:scale-[0.96]"
         >
-          <X className="h-4.5 w-4.5" strokeWidth={2.5} />
+          <X className="h-[18px] w-[18px]" strokeWidth={2.5} />
         </button>
         <button
           type="button"

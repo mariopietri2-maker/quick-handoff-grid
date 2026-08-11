@@ -339,7 +339,7 @@ export default function CheckoutPage() {
           <ShoppingBag className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
           <p className="font-heading text-xl text-foreground">Το καλάθι σας είναι άδειο</p>
           <p className="text-sm text-muted-foreground mt-1">Περιηγηθείτε σε εστιατόρια και προσθέστε προϊόντα</p>
-          <Button onClick={() => navigate('/order')} className="mt-6 bg-[hsl(0,0%,9%)] text-white font-heading">
+          <Button onClick={() => navigate('/order')} className="mt-6 bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] font-heading">
             Περιήγηση Εστιατορίων
           </Button>
         </div>
@@ -391,10 +391,10 @@ export default function CheckoutPage() {
                   <span className="font-heading font-bold text-sm w-5 text-center text-foreground tabular-nums">{item.quantity}</span>
                   <button
                     onClick={() => updateQuantity(item.menuItemId, item.quantity + 1)}
-                    className="h-8 w-8 rounded-full bg-[hsl(0,0%,9%)] flex items-center justify-center"
+                    className="h-8 w-8 rounded-full bg-[hsl(var(--c-text))] flex items-center justify-center"
                     aria-label="Αύξηση"
                   >
-                    <Plus className="h-3.5 w-3.5 text-white" />
+                    <Plus className="h-3.5 w-3.5 text-[hsl(var(--c-bg))]" />
                   </button>
                   <span className="font-heading font-semibold text-sm text-foreground w-14 text-right tabular-nums">
                     {(item.price * item.quantity).toFixed(2)}€
@@ -467,7 +467,7 @@ export default function CheckoutPage() {
                     onClick={() => setTipOption(opt)}
                     className={`py-2.5 rounded-xl text-sm font-heading font-semibold transition-all ${
                       isSelected
-                        ? 'bg-[hsl(0,0%,9%)] text-white'
+                        ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))]'
                         : 'bg-muted text-foreground hover:bg-accent'
                     }`}
                   >
@@ -640,7 +640,7 @@ export default function CheckoutPage() {
           <Button
             onClick={handlePlaceOrder}
             disabled={submitting || !address.trim()}
-            className="w-full h-16 bg-[hsl(0,0%,9%)] text-white font-heading text-base rounded-2xl flex items-center justify-between px-6 active:scale-[0.99] transition-transform"
+            className="w-full h-16 bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] font-heading text-base rounded-2xl flex items-center justify-between px-6 active:scale-[0.99] transition-transform"
           >
             <span className="flex items-center gap-2">
               {paymentMethod === 'card' ? <CreditCard className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}

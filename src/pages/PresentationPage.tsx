@@ -201,7 +201,7 @@ export default function PresentationPage() {
   }, [go]);
 
   return (
-    <div className="min-h-[100dvh] bg-[#0b1f17] text-[#f3f7f4] relative overflow-hidden">
+    <div className="min-h-[100dvh] bg-[#1E1810] text-[#FBF3EA] relative overflow-hidden">
       <SEO
         title="Παρουσίαση — Fresh Delivery"
         description="Πώς δουλεύει η πλατφόρμα, κόστη και στατιστικά."
@@ -211,11 +211,11 @@ export default function PresentationPage() {
       <div aria-hidden className="pointer-events-none absolute inset-0">
         <div
           className="absolute -top-32 -left-24 h-[480px] w-[480px] rounded-full opacity-50 blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(6,193,103,.35), transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, hsl(24 100% 62% / 0.35), transparent 70%)' }}
         />
         <div
           className="absolute bottom-[-120px] right-[-80px] h-[420px] w-[420px] rounded-full opacity-40 blur-3xl"
-          style={{ background: 'radial-gradient(circle, rgba(34,197,94,.22), transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, hsl(343 100% 68% / 0.22), transparent 70%)' }}
         />
         <div
           className="absolute inset-0 opacity-[0.07]"
@@ -232,7 +232,7 @@ export default function PresentationPage() {
           <ArrowLeft className="h-4 w-4" />
           Αρχική
         </Link>
-        <p className="font-heading font-extrabold tracking-tight text-[#06C167]">Fresh Delivery</p>
+        <p className="font-heading font-extrabold tracking-tight text-[#FFB23D]">Fresh Delivery</p>
         <p className="text-xs tabular-nums text-white/55 font-mono">
           {i + 1}/{SLIDES.length}
         </p>
@@ -240,7 +240,7 @@ export default function PresentationPage() {
 
       <main className="relative z-10 max-w-5xl mx-auto px-5 sm:px-8 py-10 sm:py-14 min-h-[calc(100dvh-8rem)] flex flex-col justify-center">
         {slide.eyebrow && (
-          <p className="text-xs sm:text-sm font-heading font-bold uppercase tracking-[0.16em] text-[#06C167] mb-4">
+          <p className="text-xs sm:text-sm font-heading font-bold uppercase tracking-[0.16em] text-[#FFB23D] mb-4">
             {slide.eyebrow}
           </p>
         )}
@@ -255,7 +255,7 @@ export default function PresentationPage() {
           <ul className="mt-8 space-y-3 max-w-3xl">
             {slide.bullets.map((b) => (
               <li key={b} className="flex gap-3 text-sm sm:text-base text-white/85 leading-relaxed">
-                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#06C167] shrink-0" />
+                <span className="mt-2 h-1.5 w-1.5 rounded-full bg-[#FFB23D] shrink-0" />
                 <span>{b}</span>
               </li>
             ))}
@@ -287,7 +287,7 @@ export default function PresentationPage() {
                   <p className="text-sm font-medium text-white/90">{row.label}</p>
                   {row.note && <p className="text-[11px] text-white/45 mt-0.5">{row.note}</p>}
                 </div>
-                <p className="text-sm font-heading font-bold tabular-nums text-[#06C167] shrink-0">{row.value}</p>
+                <p className="text-sm font-heading font-bold tabular-nums text-[#FFB23D] shrink-0">{row.value}</p>
               </div>
             ))}
           </div>
@@ -310,7 +310,7 @@ export default function PresentationPage() {
                 key={t}
                 className="inline-flex items-center gap-1.5 rounded-full border border-white/15 bg-white/[0.04] px-3 py-1.5 text-xs text-white/80"
               >
-                <Icon className="h-3.5 w-3.5 text-[#06C167]" />
+                <Icon className="h-3.5 w-3.5 text-[#FFB23D]" />
                 {t}
               </span>
             ))}
@@ -342,7 +342,7 @@ export default function PresentationPage() {
               onClick={() => setI(idx)}
               className={cn(
                 'h-1.5 rounded-full transition-all',
-                idx === i ? 'w-6 bg-[#06C167]' : 'w-1.5 bg-white/25 hover:bg-white/40',
+                idx === i ? 'w-6 bg-[#FFB23D]' : 'w-1.5 bg-white/25 hover:bg-white/40',
               )}
             />
           ))}
@@ -352,7 +352,7 @@ export default function PresentationPage() {
           onClick={() => go(1)}
           disabled={i === SLIDES.length - 1}
           className={cn(
-            'inline-flex items-center gap-2 rounded-xl bg-[#06C167] text-[#042114] px-4 py-2.5 text-sm font-heading font-bold transition-opacity',
+            'inline-flex items-center gap-2 rounded-xl bg-[#FFB23D] text-[#2A1A0A] px-4 py-2.5 text-sm font-heading font-bold transition-opacity',
             i === SLIDES.length - 1 ? 'opacity-30 cursor-not-allowed' : 'hover:opacity-90',
           )}
         >

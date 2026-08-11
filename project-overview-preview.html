@@ -1,0 +1,496 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh Delivery — Πλήρης Επισκόπηση Πλατφόρμας</title>
+<style>
+  :root {
+    --bg: #0f0f13;
+    --surface: #17171e;
+    --surface2: #1d1d26;
+    --border: #2a2a35;
+    --text: #e5e5e5;
+    --muted: #9aa0aa;
+    --green: #22c55e;
+    --green-bright: #4ade80;
+    --blue: #3b82f6;
+    --blue-bright: #60a5fa;
+    --amber: #f59e0b;
+    --red: #ef4444;
+    --purple: #a78bfa;
+    --radius: 16px;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+    background: var(--bg); color: var(--text);
+    padding: 28px 20px 60px; line-height: 1.5;
+  }
+  .wrap { max-width: 1180px; margin: 0 auto; }
+  header.top { text-align: center; margin-bottom: 36px; }
+  .logo { display: inline-flex; align-items: center; gap: 10px; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+  .logo .dot { width: 14px; height: 14px; border-radius: 4px; background: linear-gradient(135deg, var(--green), var(--blue)); }
+  .subtitle { color: var(--muted); margin-top: 8px; font-size: 14px; }
+  .chips { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 16px; }
+  .chip { padding: 6px 14px; border-radius: 999px; font-size: 12px; font-weight: 600; border: 1px solid var(--border); background: var(--surface); color: var(--muted); }
+  .chip b { color: var(--text); }
+
+  h2.section {
+    font-size: 20px; font-weight: 800; margin: 44px 0 6px;
+    display: flex; align-items: center; gap: 10px;
+  }
+  h2.section .bar { width: 5px; height: 22px; border-radius: 3px; background: linear-gradient(180deg, var(--green), var(--blue)); }
+  p.lead { color: var(--muted); font-size: 13px; margin-bottom: 18px; }
+
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 14px; }
+  .card {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 16px; transition: transform .12s ease, border-color .12s ease;
+  }
+  .card:hover { transform: translateY(-2px); border-color: #3a3a4a; }
+  .card .icon { width: 40px; height: 40px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 20px; margin-bottom: 10px; }
+  .card h3 { font-size: 15px; font-weight: 700; margin-bottom: 4px; }
+  .card p { font-size: 12.5px; color: var(--muted); }
+  .card .tags { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .tag { font-size: 10.5px; font-weight: 700; padding: 3px 8px; border-radius: 6px; background: var(--surface2); border: 1px solid var(--border); color: var(--muted); }
+  .tag.green { color: var(--green-bright); border-color: #22c55e40; background: #22c55e18; }
+  .tag.blue { color: var(--blue-bright); border-color: #3b82f640; background: #3b82f618; }
+  .tag.amber { color: #fbbf24; border-color: #f59e0b40; background: #f59e0b18; }
+  .tag.purple { color: var(--purple); border-color: #a78bfa40; background: #a78bfa18; }
+  .tag.red { color: #f87171; border-color: #ef444440; background: #ef444418; }
+
+  .banner {
+    background: linear-gradient(135deg, #1b3a2a, #1c2b45);
+    border: 1px solid #2a3a35; border-radius: var(--radius); padding: 18px 20px;
+    display: flex; gap: 14px; align-items: flex-start; margin-top: 18px;
+  }
+  .banner .ic { font-size: 22px; flex-shrink: 0; margin-top: 2px; }
+  .banner b { color: var(--green-bright); }
+  .banner p { font-size: 13px; color: #c9d4ce; }
+  .banner code { background: #0b1a12; padding: 2px 6px; border-radius: 5px; font-size: 12px; color: #7fe0a8; }
+
+  /* Phone mockups */
+  .phones { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; margin-top: 22px; }
+  .phone-wrap { text-align: center; }
+  .phone-wrap .label { font-size: 13px; font-weight: 700; margin-bottom: 10px; color: var(--muted); }
+  .phone-wrap .label b { color: var(--text); }
+  .phone {
+    width: 280px; height: 560px; margin: 0 auto; border-radius: 26px; overflow: hidden;
+    background: #0b0e0c; border: 2px solid #2c2c38; position: relative; box-shadow: 0 20px 50px -20px rgba(0,0,0,.6);
+    display: flex; flex-direction: column;
+  }
+  .phone .screen { position: absolute; inset: 0; }
+  .phone .notch { position: absolute; top: 8px; left: 50%; transform: translateX(-50%); width: 90px; height: 18px; border-radius: 12px; background: #000; z-index: 50; }
+
+  .p-header { position: absolute; top: 0; left: 0; right: 0; z-index: 40; padding: 30px 14px 10px; display: flex; align-items: center; gap: 8px; }
+  .p-header .title { font-weight: 800; font-size: 14px; }
+  .p-status { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); z-index: 40; display: flex; gap: 8px; }
+
+  /* Driver home */
+  .map-dark { position: absolute; inset: 0; background: linear-gradient(135deg,#141c26,#0d141c 45%,#16222e); }
+  .map-light { position: absolute; inset: 0; background: linear-gradient(135deg,#eef1ee,#f7f8f6 45%,#e6ece7); }
+  .map-grid { position: absolute; inset: 0; opacity: .1; background-image: linear-gradient(rgba(255,255,255,.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,.5) 1px, transparent 1px); background-size: 34px 34px; }
+  .map-grid.light { background-image: linear-gradient(rgba(0,0,0,.25) 1px, transparent 1px), linear-gradient(90deg, rgba(0,0,0,.25) 1px, transparent 1px); }
+  .pin { position: absolute; width: 12px; height: 12px; border-radius: 50%; border: 2px solid #fff; box-shadow: 0 2px 8px rgba(0,0,0,.4); }
+  .pin.store { background: var(--blue); top: 30%; left: 32%; }
+  .pin.cust { background: var(--green); top: 55%; left: 58%; }
+  .pin.drv { background: var(--amber); top: 42%; left: 42%; }
+  .pin.drv::after { content: ''; position: absolute; inset: -7px; border-radius: 50%; border: 2px solid rgba(245,158,11,.35); }
+
+  .card-ui { position: absolute; left: 12px; right: 12px; z-index: 30; border-radius: 16px; padding: 12px 14px; font-size: 12px; }
+  .card-ui h4 { font-size: 13px; margin-bottom: 2px; }
+  .card-ui small { color: var(--muted); font-size: 11px; }
+  .card-ui .row { display: flex; justify-content: space-between; align-items: center; margin-top: 8px; }
+  .btn { padding: 7px 12px; border-radius: 10px; font-weight: 800; font-size: 12px; text-align: center; }
+  .btn.green { background: var(--green); color: #05270f; }
+  .btn.ghost { background: #ffffff22; color: #fff; border: 1px solid #ffffff30; }
+  .btn.darkghost { background: #00000014; color: #1a1a1a; border: 1px solid #00000022; }
+
+  .p-tabs { position: absolute; bottom: 6px; left: 10px; right: 10px; z-index: 40; background: #16161d; border: 1px solid #2a2a35; border-radius: 18px; display: flex; padding: 6px; gap: 4px; }
+  .p-tab { flex: 1; text-align: center; padding: 7px 0; border-radius: 12px; font-size: 9px; font-weight: 700; color: var(--muted); }
+  .p-tab.active { background: #22c55e22; color: var(--green-bright); }
+
+  /* Real driver app chrome */
+  .chip-btn { width: 42px; height: 42px; border-radius: 50%; background: #151A17; border: 1px solid #2A322C; box-shadow: 0 4px 12px rgba(0,0,0,.4); display: flex; align-items: center; justify-content: center; }
+  .status-pill { box-shadow: 0 4px 12px rgba(0,0,0,.4); border-radius: 24px; display: flex; align-items: center; gap: 8px; padding: 9px 14px; font-size: 13px; font-weight: 700; }
+  .offer-sheet { position: absolute; left: 10px; right: 10px; bottom: 10px; z-index: 30; background: #151A17; border: 1px solid #232a25; border-radius: 28px; box-shadow: 0 20px 50px -20px rgba(0,0,0,.8); padding: 12px 18px 16px; }
+  .handle { width: 40px; height: 4px; border-radius: 2px; background: #3A423C; margin: 2px auto 10px; }
+  .chip2 { font-size: 11px; font-weight: 600; padding: 5px 10px; border-radius: 20px; display: inline-flex; }
+  .prog { height: 4px; border-radius: 2px; background: #1F2521; overflow: hidden; }
+  .prog > i { display: block; height: 100%; background: #06C167; }
+
+  /* Store app screen */
+  .store-list { position: absolute; inset: 0; padding: 78px 14px 60px; display: flex; flex-direction: column; gap: 10px; }
+  .s-card { background: #1c1c24; border: 1px solid var(--border); border-radius: 14px; padding: 12px 14px; }
+  .s-card h4 { font-size: 13px; }
+  .s-card .meta { color: var(--muted); font-size: 11px; margin-top: 2px; }
+  .s-row { display: flex; align-items: center; gap: 8px; margin-top: 9px; }
+  .s-row .pill { font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 6px; }
+  .switch { width: 34px; height: 20px; border-radius: 12px; background: var(--green); position: relative; margin-left: auto; }
+  .switch::after { content: ''; position: absolute; top: 2px; right: 2px; width: 16px; height: 16px; border-radius: 50%; background: #fff; }
+  .switch.off { background: #3a3a45; }
+
+  /* Support app screen */
+  .chat { position: absolute; inset: 0; padding: 78px 14px 64px; display: flex; flex-direction: column; gap: 8px; }
+  .bub { max-width: 82%; padding: 9px 12px; border-radius: 14px; font-size: 12px; }
+  .bub.in { background: #25252e; align-self: flex-start; border-bottom-left-radius: 4px; }
+  .bub.out { background: var(--green); color: #05270f; align-self: flex-end; border-bottom-right-radius: 4px; font-weight: 600; }
+  .chat-bar { margin-top: auto; display: flex; gap: 8px; align-items: center; background: #1c1c24; border: 1px solid var(--border); border-radius: 14px; padding: 10px 12px; }
+  .chat-bar .dots { flex: 1; font-size: 12px; color: var(--muted); }
+  .chat-bar .send { width: 30px; height: 30px; border-radius: 10px; background: var(--green); display: flex; align-items: center; justify-content: center; color: #05270f; font-weight: 800; }
+
+  /* Customer app screen */
+  .customer { position: absolute; inset: 0; padding: 78px 14px 60px; display: flex; flex-direction: column; gap: 10px; }
+  .c-hero { height: 74px; border-radius: 16px; background: linear-gradient(135deg,#3b82f6,#1e3a8a); display: flex; align-items: center; justify-content: center; color: #fff; font-weight: 800; font-size: 13px; }
+  .c-chip-row { display: flex; gap: 6px; }
+  .c-chip { font-size: 10px; font-weight: 700; padding: 5px 10px; border-radius: 999px; background: #24242e; border: 1px solid var(--border); color: var(--muted); }
+  .c-chip.on { background: #22c55e22; color: var(--green-bright); border-color: #22c55e50; }
+  .c-store { display: flex; gap: 10px; background: #1c1c24; border: 1px solid var(--border); border-radius: 14px; padding: 10px; align-items: center; }
+  .c-store .th { width: 46px; height: 46px; border-radius: 12px; background: linear-gradient(135deg,#64748b,#334155); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+  .c-store h4 { font-size: 12.5px; }
+  .c-store .meta { color: var(--muted); font-size: 10.5px; }
+  .c-store .fav { margin-left: auto; color: var(--red); font-size: 14px; }
+
+  footer { margin-top: 46px; text-align: center; color: var(--muted); font-size: 12px; }
+  .legend { display: flex; gap: 18px; justify-content: center; flex-wrap: wrap; margin-top: 18px; }
+  .legend span { font-size: 11px; color: var(--muted); }
+  .legend b { color: var(--text); }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="top">
+    <div class="logo"><span class="dot"></span>Fresh Delivery</div>
+    <p class="subtitle">Πλήρης επισκόπηση της πλατφόρμας — Web SPA + 2 εγγενείς εφαρμογές Android (Kotlin/Compose)</p>
+    <div class="chips">
+      <span class="chip">Web <b>React + Vite</b></span>
+      <span class="chip">Database <b>Supabase (Postgres + RLS + Realtime)</b></span>
+      <span class="chip">Native <b>Kotlin / Jetpack Compose</b></span>
+      <span class="chip">Χάρτες <b>Mapbox</b></span>
+      <span class="chip">Push <b>Firebase</b></span>
+      <span class="chip">Πληρωμές <b>Stripe</b></span>
+      <span class="chip">Εκδοχές <b>Driver 2.6.0 / Customer 2.7.0</b></span>
+    </div>
+  </header>
+
+  <div class="banner">
+    <div class="ic">✨</div>
+    <div>
+      <b>Τι προστέθηκε σε αυτή τη συνεδρία</b>
+      <p>
+        1) Τα μενού των καταστημάτων ενημερώνονται <b>άμεσα</b> στο customer app (realtime στο <code>menu_items</code> + live εγγραφές στη σελίδα εστιατορίου και στην αρχική).
+        &nbsp;2) <b>Φωτογραφίες προϊόντων μόνο από admin</b> (bucket <code>item-images</code> + DB trigger που μπλοκάρει μη-admin αλλαγές στο <code>image_url</code>).
+        &nbsp;3) <b>Λευκός χάρτης Mapbox</b> στο native driver app με διακόπτη στις Ρυθμίσεις (Λευκός / Σκούρος).
+      </p>
+    </div>
+  </div>
+
+  <h2 class="section"><span class="bar"></span>Native Driver App (Android)</h2>
+  <p class="lead">Εφαρμογή διανομέα: χάρτης, προσφορές, αποστολές, κέρδη, εισερχόμενα, referral, προφίλ, ρυθμίσεις, υποστήριξη, ops για admin.</p>
+  <div class="grid">
+    <div class="card"><div class="icon" style="background:#22c55e22">🗺️</div><h3>Αρχική — Χάρτης</h3><p>Mapbox χάρτης (σκούρος ή λευκός), σημεία καταστημάτων με φωτογραφία + μετρητή ενεργών παραγγελιών, βέλος οδηγού live, προσφορές.</p><div class="tags"><span class="tag green">Turn-by-turn</span><span class="tag blue">Store markers</span><span class="tag amber">Λευκός χάρτης (νέο)</span></div></div>
+    <div class="card"><div class="icon" style="background:#3b82f622">🤑</div><h3>Κέρδη (Money)</h3><p>Υπόλοιπο βάρδιας, μετρητά, cap μετρητών, αποδείξεις πληρωμών, ιστορικό κερδών.</p><div class="tags"><span class="tag green">Cash collection</span></div></div>
+    <div class="card"><div class="icon" style="background:#a78bfa22">📬</div><h3>Εισερχόμενα (Inbox)</h3><p>Ειδοποιήσεις παραγγελιών και συστήματος με push Firebase.</p><div class="tags"><span class="tag purple">Push</span></div></div>
+    <div class="card"><div class="icon" style="background:#f59e0b22">🎁</div><h3>Referral</h3><p>Κωδικός πρόσκλησης, λίστα προσκλήσεων, ανταμοιβές.</p></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">⚙️</div><h3>Ρυθμίσεις (Settings)</h3><p>Ήχος/δόνηση προσφορών, οθόνη ανοιχτή, γλώσσα ΕΛ⇄EN, <b>Λευκός χάρτης</b>.</p><div class="tags"><span class="tag green">Λευκός χάρτης (νέο)</span></div></div>
+    <div class="card"><div class="icon" style="background:#3b82f622">🎧</div><h3>Υποστήριξη (Support)</h3><p>Live Chat 24/7, αιτήματα (tickets) με κατηγορίες, κλήση σε οδηγό/πελάτη, contextual cards.</p><div class="tags"><span class="tag green">Ανασχεδιασμός</span></div></div>
+    <div class="card"><div class="icon" style="background:#ef444422">🛡️</div><h3>Ops (admin/M)</h3><p>Πίνακας χειριστή: ανάληψη/διαχείριση παραγγελιών — ορατός μόνο σε elevated χρήστες.</p></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">👤</div><h3>Προφίλ / Login</h3><p>Login με "remember me", προφίλ οδηγού, όχημα & πινακίδα, κατάσταση online/διάλειμμα.</p></div>
+  </div>
+
+  <h2 class="section"><span class="bar"></span>Native Customer App (Android)</h2>
+  <p class="lead">Εφαρμογή πελάτη: κατάστημα, περιήγηση, παραγγελίες, προφίλ, παιχνίδια και υποστήριξη.</p>
+  <div class="grid">
+    <div class="card"><div class="icon" style="background:#3b82f622">🏠</div><h3>Αρχική / Περιήγηση</h3><p>Κατάστημα, κατηγορίες, προσφορές, αναζήτηση — ανανεώνεται live όταν το εστιατόριο αλλάζει το μενού.</p><div class="tags"><span class="tag green">Άμεσο μενού (νέο)</span></div></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">🧾</div><h3>Παραγγελίες</h3><p>Λίστα παραγγελιών, live tracking με χάρτη Mapbox, ακύρωση.</p><div class="tags"><span class="tag blue">Live tracking</span></div></div>
+    <div class="card"><div class="icon" style="background:#a78bfa22">👤</div><h3>Προφίλ</h3><p>Λογαριασμός, διευθύνσεις, loyalty points, remember-me login.</p></div>
+    <div class="card"><div class="icon" style="background:#f59e0b22">🎮</div><h3>Παιχνίδια (Games)</h3><p>Mini-games και προσφορές για την κοινότητα.</p></div>
+    <div class="card"><div class="icon" style="background:#3b82f622">🎧</div><h3>Υποστήριξη</h3><p>Live chat και αιτήματα προς την ομάδα.</p></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">💳</div><h3>Checkout</h3><p>Καλάθι, πληρωμή μετρητά/κάρτα, tip, κουπόνια.</p></div>
+  </div>
+
+  <h2 class="section"><span class="bar"></span>Web Apps (SPA)</h2>
+  <p class="lead">Ένα React SPA με ρόλους — customer, store, driver, admin, support, monitor.</p>
+  <div class="grid">
+    <div class="card"><div class="icon" style="background:#3b82f622">🛍️</div><h3>Customer App <span style="color:#60a5fa">/order</span></h3><p>Κατάστημα εστιατορίων, κατηγορίες, προσφορές, favorites, ratings, αναζήτηση.</p><div class="tags"><span class="tag green">Live menu</span></div></div>
+    <div class="card"><div class="icon" style="background:#3b82f622">📖</div><h3>Restaurant Page</h3><p>Μενού εστιατορίου live, καλάθι, κριτικές, badges (vegan/αλεργιογόνα/θερμίδες), SEO.</p></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">💳</div><h3>Checkout</h3><p>Σύνοψη παραγγελίας, μέθοδος πληρωμής, tip, παράδοση.</p></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">📍</div><h3>Order Tracking</h3><p>Live χάρτης διανομέα με push ενημερώσεις κατάστασης.</p></div>
+    <div class="card"><div class="icon" style="background:#a78bfa22">🏪</div><h3>Store App <span style="color:#a78bfa">/store</span></h3><p>Πίνακας εστιατορίου: μενού (προσθήκη/παύση/διαθεσιμότητα/μαζικές ενέργειες), modifiers, αποθέματα, <b>φωτογραφίες προϊόντων (admin μόνο)</b>.</p><div class="tags"><span class="tag green">Φωτό προϊόντων admin</span></div></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">🚗</div><h3>Driver App <span style="color:#22c55e">/driver</span></h3><p>Προσφορές σε realtime, αποδοχή/απόρριψη, ενημέρωση κατάστασης παράδοσης, admin-as-driver.</p></div>
+    <div class="card"><div class="icon" style="background:#ef444422">🛠️</div><h3>Admin App <span style="color:#f87171">/admin</span></h3><p>Χρήστες & ρόλοι, καταστήματα, φωτογραφίες καταστημάτων, pricing, τιμές AI, System Doctor, treasury, monitoring.</p><div class="tags"><span class="tag red">Admin</span><span class="tag amber">Pricing</span></div></div>
+    <div class="card"><div class="icon" style="background:#3b82f622">🎧</div><h3>Support App <span style="color:#60a5fa">/support</span></h3><p>Διαχείριση tickets, κανάλια, live chat, ρόλοι ομάδας.</p></div>
+    <div class="card"><div class="icon" style="background:#a78bfa22">📡</div><h3>Monitor App</h3><p>Live πίνακας διαθέσιμων οδηγών / καταστημάτων σε πραγματικό χρόνο.</p></div>
+    <div class="card"><div class="icon" style="background:#f59e0b22">🔐</div><h3>Auth</h3><p>Login/Signup με awareness ρόλου, role switcher, 2FA-ready, sync ρόλου για mobile.</p></div>
+  </div>
+
+  <h2 class="section"><span class="bar"></span>Live Preview — Εφαρμογές</h2>
+  <p class="lead">Μικρογραφίες οθονών που αποδίδονται σε HTML (mockups του πραγματικού UI).</p>
+
+  <div class="phones">
+    <!-- Driver home (dark) -->
+    <div class="phone-wrap">
+      <div class="label">Native Driver — <b>Αρχική (σκούρος χάρτης)</b></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="map-dark"><div class="map-grid"></div></div>
+          <div class="pin store"></div><div class="pin cust"></div><div class="pin drv"></div>
+
+          <div style="position:absolute;top:34px;left:12px;z-index:40;display:flex;flex-direction:column;gap:10px">
+            <div class="chip-btn" style="color:#4ade80;font-size:15px">☰</div>
+            <div class="chip-btn" style="background:#06C167;border-color:#4ade80;color:#fff;font-size:14px;font-weight:800">⚡</div>
+          </div>
+
+          <div style="position:absolute;top:34px;left:0;right:0;z-index:40;display:flex;justify-content:center">
+            <span class="status-pill" style="background:#06C167;color:#fff"><span style="width:8px;height:8px;border-radius:50%;background:#fff"></span>Διαθέσιμος</span>
+          </div>
+
+          <div style="position:absolute;top:34px;right:12px;z-index:40;display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div class="chip-btn" style="color:#4ade80;font-size:16px">🎧</div>
+            <div class="chip-btn" style="color:#fbbf24;font-size:16px">🏪</div>
+            <div class="chip-btn" style="color:#4ade80;font-size:16px">◎</div>
+          </div>
+
+          <div class="offer-sheet">
+            <div class="handle"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:#9AA6A0;letter-spacing:.3px">ΝΕΑ ΠΡΟΣΦΟΡΑ · #1234</div>
+                <div style="font-size:20px;font-weight:800;color:#F0F4F1">Πιτσαρία Ο Μύλος</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;color:#9AA6A0;font-weight:600">Κέρδος</div>
+                <div style="font-size:24px;font-weight:800;color:#4ade80">6,50€</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px;align-items:center">
+              <span class="chip2" style="background:#12291C;color:#4ade80">Πληρωμένο</span>
+              <span class="chip2" style="background:#1F2521;color:#9AA6A0">2,4 km</span>
+              <span class="chip2" style="background:#1F2521;color:#9AA6A0">2</span>
+              <span style="flex:1"></span>
+              <span class="chip2" style="background:#1F2521;color:#9AA6A0">0:47</span>
+            </div>
+            <div class="prog" style="margin-top:10px"><i style="width:62%"></i></div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:12px">
+              <span style="color:#fbbf24;font-size:13px">🏬</span>
+              <span style="font-size:12px;color:#F0F4F1">Ο Μύλος · Ελ. Βενιζέλου 12</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:6px">
+              <span style="color:#4ade80;font-size:13px">📍</span>
+              <span style="font-size:12px;color:#F0F4F1">Οδός Ειρήνης 5, Ιωάννινα</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
+              <div style="width:46px;height:46px;border-radius:50%;border:1.5px solid #3A423C;background:#1F2521;display:flex;align-items:center;justify-content:center;color:#9AA6A0;font-size:18px">✕</div>
+              <div style="flex:1;height:46px;border-radius:28px;background:#06C167;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:15px">✓ Αποδοχή · 6,50€</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Driver home (light) -->
+    <div class="phone-wrap">
+      <div class="label">Native Driver — <b>Αρχική (Λευκός χάρτης, νέο)</b></div>
+      <div class="phone">
+        <div class="screen">
+          <div class="map-light"><div class="map-grid light"></div></div>
+          <div class="pin store"></div><div class="pin cust"></div><div class="pin drv"></div>
+
+          <div style="position:absolute;top:34px;left:12px;z-index:40;display:flex;flex-direction:column;gap:10px">
+            <div class="chip-btn" style="background:#151A17;border-color:#2A322C;color:#4ade80;font-size:15px">☰</div>
+            <div class="chip-btn" style="background:#06C167;border-color:#4ade80;color:#fff;font-size:14px;font-weight:800">⚡</div>
+          </div>
+
+          <div style="position:absolute;top:34px;left:0;right:0;z-index:40;display:flex;justify-content:center">
+            <span class="status-pill" style="background:#06C167;color:#fff"><span style="width:8px;height:8px;border-radius:50%;background:#fff"></span>Διαθέσιμος</span>
+          </div>
+
+          <div style="position:absolute;top:34px;right:12px;z-index:40;display:flex;flex-direction:column;gap:10px;align-items:center">
+            <div class="chip-btn" style="background:#151A17;border-color:#2A322C;color:#4ade80;font-size:16px">🎧</div>
+            <div class="chip-btn" style="background:#151A17;border-color:#2A322C;color:#fbbf24;font-size:16px">🏪</div>
+            <div class="chip-btn" style="background:#151A17;border-color:#2A322C;color:#4ade80;font-size:16px">◎</div>
+          </div>
+
+          <div class="offer-sheet" style="background:#ffffff;border-color:#e3e6e3">
+            <div class="handle" style="background:#d6dad6"></div>
+            <div style="display:flex;justify-content:space-between;align-items:flex-start">
+              <div>
+                <div style="font-size:11px;font-weight:600;color:#6b7280;letter-spacing:.3px">ΝΕΑ ΠΡΟΣΦΟΡΑ · #1234</div>
+                <div style="font-size:20px;font-weight:800;color:#111827">Πιτσαρία Ο Μύλος</div>
+              </div>
+              <div style="text-align:right">
+                <div style="font-size:10px;color:#6b7280;font-weight:600">Κέρδος</div>
+                <div style="font-size:24px;font-weight:800;color:#059669">6,50€</div>
+              </div>
+            </div>
+            <div style="display:flex;gap:6px;margin-top:10px;align-items:center">
+              <span class="chip2" style="background:#ecfdf5;color:#059669">Πληρωμένο</span>
+              <span class="chip2" style="background:#f3f4f6;color:#374151">2,4 km</span>
+              <span class="chip2" style="background:#f3f4f6;color:#374151">2</span>
+              <span style="flex:1"></span>
+              <span class="chip2" style="background:#f3f4f6;color:#374151">0:47</span>
+            </div>
+            <div class="prog" style="margin-top:10px;background:#e5e7eb"><i style="width:62%"></i></div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:12px">
+              <span style="color:#d97706;font-size:13px">🏬</span>
+              <span style="font-size:12px;color:#111827">Ο Μύλος · Ελ. Βενιζέλου 12</span>
+            </div>
+            <div style="display:flex;align-items:center;gap:7px;margin-top:6px">
+              <span style="color:#059669;font-size:13px">📍</span>
+              <span style="font-size:12px;color:#111827">Οδός Ειρήνης 5, Ιωάννινα</span>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:14px;align-items:center">
+              <div style="width:46px;height:46px;border-radius:50%;border:1.5px solid #d6dad6;background:#f3f4f6;display:flex;align-items:center;justify-content:center;color:#6b7280;font-size:18px">✕</div>
+              <div style="flex:1;height:46px;border-radius:28px;background:#06C167;color:#fff;display:flex;align-items:center;justify-content:center;gap:8px;font-weight:800;font-size:15px">✓ Αποδοχή · 6,50€</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Store app -->
+    <div class="phone-wrap">
+      <div class="label">Web Store App — <b>Διαχείριση Μενού</b></div>
+      <div class="phone" style="background:#0f0f13">
+        <div class="screen">
+          <div class="p-header" style="color:#fff">
+            <span style="font-size:15px">←</span>
+            <span class="title" style="flex:1">Πίνακας Εστιατορίου</span>
+            <span style="font-size:15px">👤</span>
+          </div>
+          <div class="store-list">
+            <div class="s-card">
+              <h4>Μενού</h4>
+              <div class="meta">Ενεργό · 12 προϊόντα</div>
+              <div class="s-row"><span class="pill" style="background:#22c55e22;color:#4ade80">Πίτσα</span><span style="font-size:12px">Margherita — 8,90 €</span><span class="switch"></span></div>
+              <div class="s-row"><span class="pill" style="background:#f59e0b22;color:#fbbf24">Πίτσα</span><span style="font-size:12px">Pepperoni — 10,50 €</span><span class="switch"></span></div>
+              <div class="s-row"><span class="pill" style="background:#3b82f622;color:#60a5fa">Ποτά</span><span style="font-size:12px">Cola 1L — 3,00 €</span><span class="switch off"></span></div>
+            </div>
+            <div class="s-card">
+              <h4>Φωτογραφίες προϊόντων</h4>
+              <div class="meta">Μόνο για admin · bucket item-images</div>
+              <div class="s-row" style="font-size:11px;color:#4ade80">🖼️ Margherita — ✅ Προστέθηκε</div>
+            </div>
+            <div class="s-card">
+              <h4>Στατιστικά</h4>
+              <div class="meta">Παραγγελίες σήμερα: 24 · Έσοδα: 212,00 €</div>
+            </div>
+          </div>
+        </div>
+        <div class="p-tabs"><span class="p-tab active">Μενού</span><span class="p-tab">Παραγγελίες</span><span class="p-tab">Απόθεμα</span><span class="p-tab">Προφίλ</span></div>
+      </div>
+    </div>
+
+    <!-- Support center -->
+    <div class="phone-wrap">
+      <div class="label">Native Driver — <b>Κέντρο Υποστήριξης</b></div>
+      <div class="phone" style="background:#0f0f13">
+        <div class="screen">
+          <div style="position:absolute;top:30px;left:16px;right:16px;z-index:40;display:flex;align-items:center;gap:6px">
+            <span style="font-size:18px;color:#F0F4F1">←</span>
+            <div style="flex:1">
+              <div style="font-weight:800;font-size:15px;color:#F0F4F1">Υποστήριξη</div>
+              <div style="display:flex;align-items:center;gap:5px;margin-top:2px">
+                <span style="width:7px;height:7px;border-radius:50%;background:#06C167"></span>
+                <span style="color:#4ade80;font-size:10px">Ομάδα διαθέσιμη 24/7</span>
+              </div>
+            </div>
+          </div>
+          <div class="store-list">
+            <div class="s-card">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:40px;height:40px;border-radius:12px;background:#06c16726;display:flex;align-items:center;justify-content:center;color:#4ade80;font-weight:800;font-size:18px">Γ</div>
+                <div style="flex:1">
+                  <div style="font-weight:600;font-size:13px">Γιάννης Παπαδόπουλος</div>
+                  <div style="font-size:11px;color:#9AA6A0">Μηχανάκι · ΙΩ·3452 · 69xxxxxxx</div>
+                </div>
+                <div style="width:34px;height:34px;border-radius:10px;background:#06C167;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">📞</div>
+              </div>
+            </div>
+            <div class="s-card">
+              <div style="display:flex;align-items:center;gap:10px">
+                <div style="width:40px;height:40px;border-radius:12px;background:#3b82f626;display:flex;align-items:center;justify-content:center;color:#60a5fa;font-weight:800;font-size:16px">👤</div>
+                <div style="flex:1">
+                  <div style="font-weight:600;font-size:13px">Μαρία Δημητρίου</div>
+                  <div style="font-size:11px;color:#9AA6A0">Πελάτης · Οδός Ειρήνης 5</div>
+                </div>
+                <div style="width:34px;height:34px;border-radius:10px;background:#06C167;display:flex;align-items:center;justify-content:center;color:#fff;font-size:13px">📞</div>
+              </div>
+            </div>
+            <div style="font-size:12px;font-weight:700;color:#9AA6A0;padding:6px 2px">Τι χρειάζεσαι;</div>
+            <div class="s-card" style="display:flex;align-items:center;gap:12px">
+              <div style="width:40px;height:40px;border-radius:12px;background:#06c16726;display:flex;align-items:center;justify-content:center;color:#4ade80;font-size:17px">🎧</div>
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:13px">Live Chat</div>
+                <div style="font-size:11px;color:#9AA6A0">Μίλησε τώρα με την ομάδα υποστήριξης</div>
+              </div>
+              <span style="color:#9AA6A0;font-size:15px">→</span>
+            </div>
+            <div class="s-card" style="display:flex;align-items:center;gap:12px">
+              <div style="width:40px;height:40px;border-radius:12px;background:#3b82f626;display:flex;align-items:center;justify-content:center;color:#60a5fa;font-size:17px">💬</div>
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:13px">Τα αιτήματά μου</div>
+                <div style="font-size:11px;color:#9AA6A0">2 ανοιχτά αιτήματα</div>
+              </div>
+              <span style="color:#9AA6A0;font-size:15px">→</span>
+            </div>
+            <div class="s-card" style="display:flex;align-items:center;gap:12px">
+              <div style="width:40px;height:40px;border-radius:12px;background:#f59e0b26;display:flex;align-items:center;justify-content:center;color:#fbbf24;font-size:17px">＋</div>
+              <div style="flex:1">
+                <div style="font-weight:600;font-size:13px">Νέο αίτημα</div>
+                <div style="font-size:11px;color:#9AA6A0">Δημιούργησε αίτημα προς την ομάδα</div>
+              </div>
+              <span style="color:#9AA6A0;font-size:15px">→</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Customer app -->
+    <div class="phone-wrap">
+      <div class="label">Web Customer App — <b>Αρχική</b></div>
+      <div class="phone" style="background:#f6f7f9">
+        <div class="screen">
+          <div class="p-header" style="color:#111">
+            <span style="font-size:15px">☰</span>
+            <span class="title" style="flex:1">Fresh Delivery</span>
+            <span style="font-size:15px">📍</span>
+          </div>
+          <div class="customer">
+            <div class="c-hero">🔥 Προσφορές της εβδομάδας</div>
+            <div class="c-chip-row"><span class="c-chip on">Όλα</span><span class="c-chip">Πίτσες</span><span class="c-chip">Burgers</span><span class="c-chip">Σουβλάκια</span></div>
+            <div class="c-store"><span class="th">🍕</span><div><h4>Το Καλό Πιτσάδικο</h4><div class="meta">★ 4.8 · 25–35 λεπτά</div></div><span class="fav">♥</span></div>
+            <div class="c-store"><span class="th">🍔</span><div><h4>Burger House</h4><div class="meta">★ 4.6 · 20–30 λεπτά</div></div><span class="fav">♡</span></div>
+            <div class="c-store"><span class="th">🥙</span><div><h4>Γύρος της Γειτονιάς</h4><div class="meta">★ 4.9 · 15–25 λεπτά</div></div><span class="fav">♡</span></div>
+          </div>
+        </div>
+        <div class="p-tabs" style="background:#fff;border-color:#e3e6e3"><span class="p-tab active" style="color:#111">Αρχική</span><span class="p-tab" style="color:#888">Αναζ.</span><span class="p-tab" style="color:#888">Παραγγελίες</span><span class="p-tab" style="color:#888">Προφίλ</span></div>
+      </div>
+    </div>
+
+  </div>
+
+  <h2 class="section"><span class="bar"></span>Τεχνολογίες & Υποδομή</h2>
+  <div class="grid">
+    <div class="card"><div class="icon" style="background:#3b82f622">🗄️</div><h3>Supabase</h3><p>Postgres, Auth, RLS policies ανά ρόλο, Realtime (orders, stores, driver_locations, menu_items, live chat, wallets…), Edge Functions (accept-offer, sync_app_role), RPC (place_order, transition_order_status).</p><div class="tags"><span class="tag green">Realtime menu (νέο)</span></div></div>
+    <div class="card"><div class="icon" style="background:#f59e0b22">💾</div><h3>Storage</h3><p>Buckets: store-images (admin + ιδιοκτήτης), item-images (admin μόνο — νέο), chat-attachments, avatars. Πολιτικές ασφαλείας ανά bucket.</p><div class="tags"><span class="tag amber">item-images (νέο)</span></div></div>
+    <div class="card"><div class="icon" style="background:#22c55e22">📍</div><h3>Mapbox</h3><p>Χάρτες dark/light, Directions API για turn-by-turn, markers, follow mode, store pins με φωτογραφίες.</p><div class="tags"><span class="tag green">Λευκό στυλ (νέο)</span></div></div>
+    <div class="card"><div class="icon" style="background:#ef444422">🔔</div><h3>Push & Ειδοποιήσεις</h3><p>Firebase Cloud Messaging (Android), local notifications, ήχοι προσφορών, δόνηση, keep-screen-on.</p></div>
+    <div class="card"><div class="icon" style="background:#a78bfa22">💳</div><h3>Πληρωμές</h3><p>Stripe για κάρτες, μετρητά με επιβεβαίωση παραλαβής, treasury/πορτοφόλια, εκκαθαρίσεις οδηγών.</p></div>
+    <div class="card"><div class="icon" style="background:#3b82f622">📦</div><h3>Build & Release</h3><p>Android Gradle (Kotlin, Compose, supabase-kt, coil, mapbox), Capacitor web apps, APK/AAB signing, Railway deployment.</p></div>
+  </div>
+
+  <footer>
+    <div class="legend">
+      <span>Web <b>Fresh Delivery</b></span>
+      <span>Native <b>Driver + Customer</b></span>
+      <span>DB <b>Supabase</b></span>
+      <span>Generated: <b>11/08/2026</b></span>
+    </div>
+  </footer>
+</div>
+</body>
+</html>

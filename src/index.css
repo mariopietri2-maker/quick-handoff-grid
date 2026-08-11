@@ -14,7 +14,10 @@
   /* ───────────────────────────────────────────────
      RIVERSTONE FLOW — global design system
      Calm, dependable, layered. Light by default.
-     Brand: steel-blue. Accent: warm amber.
+     Shared base for the landing, auth, store & admin
+     surfaces. Each product shell re-maps the tokens:
+     `.customer-shell` = warm orange/cream,
+     `.driver-shell`   = warm off-white + green actions.
      Surfaces: warm white on soft neutral, hairline
      borders, soft elevation shadows, rounded-xl.
      ─────────────────────────────────────────────── */
@@ -29,7 +32,7 @@
     --popover: 0 0% 100%;
     --popover-foreground: 220 25% 12%;
 
-    /* Brand: steel-blue (calm, dependable) */
+    /* Base brand: steel-blue (calm, dependable) — overridden per shell */
     --primary: 210 70% 48%;
     --primary-foreground: 0 0% 100%;
 
@@ -444,6 +447,8 @@
     --c-text: 35 45% 94%;
     --c-text-muted: 30 20% 62%;
     --c-text-soft: 30 18% 56%;
+    --c-accent: 24 100% 66%;
+    --c-accent-dark: 24 100% 60%;
     --c-accent-soft: 24 100% 68% / 0.18;
     --c-elevated: 24 25% 15%;
     --primary: 24 100% 66%;

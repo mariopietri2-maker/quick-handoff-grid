@@ -352,7 +352,7 @@ export default function AuthPage() {
                   onClick={() => setMode('login')}
                   className={`h-10 rounded-md font-heading text-sm transition-colors ${
                     isLogin
-                      ? 'bg-[hsl(0,0%,9%)] text-white'
+                      ? 'bg-foreground text-background'
                       : 'text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)]'
                   }`}
                 >
@@ -363,7 +363,7 @@ export default function AuthPage() {
                   onClick={() => setMode('signup')}
                   className={`h-10 rounded-md font-heading text-sm transition-colors ${
                     isSignup
-                      ? 'bg-[hsl(0,0%,9%)] text-white'
+                      ? 'bg-foreground text-background'
                       : 'text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)]'
                   }`}
                 >
@@ -395,7 +395,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-[hsl(0,0%,9%)] text-white press-scale"
+                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -505,7 +505,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-[hsl(0,0%,9%)] text-white press-scale"
+                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -581,7 +581,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-[hsl(0,0%,9%)] text-white press-scale"
+                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -673,7 +673,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-[hsl(0,0%,9%)] text-white press-scale"
+                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (

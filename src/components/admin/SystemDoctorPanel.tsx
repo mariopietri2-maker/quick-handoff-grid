@@ -401,7 +401,7 @@ export default function SystemDoctorPanel() {
               <GIcon className="h-4 w-4 text-muted-foreground" />
               <h3 className="text-sm font-semibold">{GROUP_META[g].label}</h3>
               {groupIssues > 0 && (
-                <Badge variant="outline" className="text-[10px] h-4.5 text-warning border-warning/40">{groupIssues}</Badge>
+                <Badge variant="outline" className="text-[10px] h-[18px] text-warning border-warning/40">{groupIssues}</Badge>
               )}
             </div>
             <div className="grid gap-2 sm:grid-cols-2">
