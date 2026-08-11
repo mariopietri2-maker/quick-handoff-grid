@@ -144,12 +144,12 @@ export function TicketOrderContext({ orderId, className }: TicketOrderContextPro
   const doRefund = () => {
     const amt = Number(amount);
     if (!amt) return toast.error('Ποσό');
-    void call('admin_refund_order', { p_order_id: orderId, p_amount: amt, p_reason: reason || null }, `Επιστράφηκαν ${amt.toFixed(2)}€`);
+    void call('refund_order', { p_order_id: orderId, p_amount: amt, p_reason: reason || null, p_refund_type: 'wallet_credit', p_notes: null }, `Επιστράφηκαν ${amt.toFixed(2)}€`);
   };
   const doCredit = () => {
     const amt = Number(amount);
     if (!amt || !order.data?.customer_id) return toast.error('Ποσό');
-    void call('admin_credit_customer_wallet', { p_customer_id: order.data.customer_id, p_amount: amt, p_reason: reason || null }, `+${amt.toFixed(2)}€ στο wallet πελάτη`);
+    void call('credit_customer_wallet', { p_user_id: order.data.customer_id, p_amount: amt, p_type: 'support_credit', p_description: reason || 'Support credit' }, `+${amt.toFixed(2)}€ στο wallet πελάτη`);
   };
 
   if (order.isLoading) {

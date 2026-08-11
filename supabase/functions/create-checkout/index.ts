@@ -128,6 +128,27 @@ Deno.serve(async (req) => {
       profile?.full_name,
     );
 
+    // place_order already applied any promo discount to total_amount, but the
+    // line items above are built from full menu prices. Charge exactly the
+    // discounted total by adding a one-off coupon for the difference — this
+    // keeps the amount Stripe collects in sync with what the customer agreed
+    // to and with expected_charge_cents (webhook mismatch guard).
+    const lineTotalCents = lineItems.reduce(
+      (sum, it) => sum + it.price_data.unit_amount * (it.quantity ?? 1),
+      0,
+    );
+    const discountCents = lineTotalCents - expectedCents;
+    let discounts: { coupon: string }[] | undefined;
+    if (discountCents > 0) {
+      const coupon = await stripe.coupons.create({
+        amount_off: discountCents,
+        currency: 'eur',
+        duration: 'once',
+        name: `Promo ${order.id.slice(0, 8)}`,
+      });
+      discounts = [{ coupon: coupon.id }];
+    }
+
     const session = await stripe.checkout.sessions.create({
       line_items: lineItems,
       mode: 'payment',
@@ -136,6 +157,7 @@ Deno.serve(async (req) => {
       customer_email: claims.claims.email,
       customer: customerId,
       customer_creation: 'always',
+      ...(discounts ? { discounts } : {}),
       // Show saved cards + let the customer save this card for next time.
       payment_method_collection: 'always',
       // Stripe calculates and collects the correct VAT for the buyer's

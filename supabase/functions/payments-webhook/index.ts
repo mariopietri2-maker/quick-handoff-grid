@@ -63,6 +63,16 @@ async function markOrderPaid(
       })
       .eq("id", orderId)
       .eq("status", "pending");
+    // Surface to ops immediately — a mismatch means the customer paid a
+    // different amount than agreed and the order stays stuck in `pending`.
+    await enqueueAlert(getSupabase(), {
+      event_type: "payment_amount_mismatch",
+      severity: "critical",
+      title: "Card payment amount mismatch",
+      body: `Order ${orderId} charged ${paidCents}¢ but expected ${expected}¢ — order left pending, needs manual action.`,
+      data: { order_id: orderId, paid_cents: paidCents, expected_cents: expected },
+      dedupe_key: `payment_mismatch:${orderId}`,
+    });
     return;
   }
 
