@@ -195,7 +195,7 @@ export function ChatComposer({
           <Popover open={emojiOpen} onOpenChange={setEmojiOpen}>
             <PopoverTrigger asChild>
               <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-foreground" aria-label="Emoji">
-                <Smile className="h-4.5 w-4.5" />
+                <Smile className="h-[18px] w-[18px]" />
               </Button>
             </PopoverTrigger>
             <PopoverContent side="top" align="start" className="p-0 w-auto border-0 shadow-xl">
@@ -216,7 +216,7 @@ export function ChatComposer({
           <Popover open={gifOpen} onOpenChange={setGifOpen}>
             <PopoverTrigger asChild>
               <Button type="button" size="icon" variant="ghost" className="h-9 w-9 text-muted-foreground hover:text-foreground" aria-label="GIF">
-                <Sparkles className="h-4.5 w-4.5" />
+                <Sparkles className="h-[18px] w-[18px]" />
               </Button>
             </PopoverTrigger>
             <PopoverContent side="top" align="start" className="p-2 w-[340px]">
@@ -263,7 +263,7 @@ export function ChatComposer({
             onClick={() => fileRef.current?.click()}
             aria-label="Επισύναψη εικόνας"
           >
-            {uploading ? <Loader2 className="h-4.5 w-4.5 animate-spin" /> : <ImageIcon className="h-4.5 w-4.5" />}
+            {uploading ? <Loader2 className="h-[18px] w-[18px] animate-spin" /> : <ImageIcon className="h-[18px] w-[18px]" />}
           </Button>
           <input
             ref={fileRef}

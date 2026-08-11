@@ -43,11 +43,11 @@ function makeTinyScooterEl(): { wrap: HTMLDivElement; icon: HTMLDivElement } {
 
   const pulse = document.createElement('div');
   pulse.style.cssText =
-    'position:absolute;inset:-4px;border-radius:50%;background:rgba(6,167,103,.28);animation:scooterPulse 1.8s ease-out infinite;';
+    'position:absolute;inset:-4px;border-radius:50%;background:hsl(var(--c-accent) / 0.28);animation:scooterPulse 1.8s ease-out infinite;';
 
   const icon = document.createElement('div');
   icon.style.cssText =
-    'position:relative;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.28),0 0 0 2px #06a767;display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:transform .7s ease-out;';
+    'position:relative;width:26px;height:26px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.28),0 0 0 2px hsl(var(--c-accent));display:flex;align-items:center;justify-content:center;font-size:14px;line-height:1;transition:transform .7s ease-out;';
   icon.textContent = '🛵';
   icon.setAttribute('aria-label', 'Οδηγός');
 
@@ -287,7 +287,7 @@ export default function LiveTrackingMap({
         storeMarker.current.setLngLat([storeLng, storeLat]);
       } else {
         const elStore = document.createElement('div');
-        elStore.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:#2563eb;border:2px solid white;box-shadow:0 2px 10px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:15px">🏪</div>`;
+        elStore.innerHTML = `<div style="width:32px;height:32px;border-radius:50%;background:hsl(var(--c-accent));border:2px solid white;box-shadow:0 2px 10px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center;font-size:15px">🏪</div>`;
         storeMarker.current = new mapboxgl.Marker({ element: elStore, anchor: 'center' })
           .setLngLat([storeLng, storeLat])
           .addTo(map);
@@ -299,7 +299,7 @@ export default function LiveTrackingMap({
         homeMarker.current.setLngLat([deliveryLng, deliveryLat]);
       } else {
         const elHome = document.createElement('div');
-        elHome.innerHTML = `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:#0f172a;border:2px solid white;box-shadow:0 2px 10px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:12px">🏠</span></div>`;
+        elHome.innerHTML = `<div style="width:28px;height:28px;border-radius:50% 50% 50% 0;transform:rotate(-45deg);background:hsl(var(--c-text));border:2px solid white;box-shadow:0 2px 10px rgba(0,0,0,.28);display:flex;align-items:center;justify-content:center"><span style="transform:rotate(45deg);font-size:12px">🏠</span></div>`;
         homeMarker.current = new mapboxgl.Marker({ element: elHome, anchor: 'bottom' })
           .setLngLat([deliveryLng, deliveryLat])
           .addTo(map);

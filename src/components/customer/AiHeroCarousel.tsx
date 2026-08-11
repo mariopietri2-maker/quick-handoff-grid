@@ -76,7 +76,7 @@ export function AiHeroCarousel() {
                 });
               }}
               className={`h-1.5 rounded-full transition-all duration-300 ${
-                i === active ? 'w-6 c-bg-accent' : 'w-1.5 bg-[hsl(0,0%,85%)] hover:bg-[hsl(0,0%,75%)]'
+                i === active ? 'w-6 c-bg-accent' : 'w-1.5 bg-[hsl(var(--c-border))] hover:bg-[hsl(var(--c-text-soft))]'
               }`}
             />
           ))}

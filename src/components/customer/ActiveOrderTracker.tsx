@@ -12,6 +12,7 @@ interface ActiveOrder {
 }
 
 const STATUS_LABEL: Record<string, string> = {
+  pending: 'Εκκρεμεί',
   placed: 'Σε αναμονή επιβεβαίωσης',
   accepted: 'Έγινε δεκτή',
   preparing: 'Ετοιμάζεται',
@@ -20,7 +21,7 @@ const STATUS_LABEL: Record<string, string> = {
   arrived: 'Ο οδηγός παρέλαβε',
 };
 
-const ACTIVE_STATUSES = ['placed', 'accepted', 'preparing', 'ready', 'picked_up', 'arrived'];
+const ACTIVE_STATUSES = ['pending', 'placed', 'accepted', 'preparing', 'ready', 'picked_up', 'arrived'];
 
 /**
  * Persistent banner shown to the customer while they have an in-flight order.

@@ -396,7 +396,7 @@ export default function PricingSettings() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <Field label="Βασική Χρέωση (€)" value={pricing.customer_base_fee} onChange={v => setPricing(p => ({ ...p, customer_base_fee: v }))} hint="Πληρώνει ο πελάτης" />
                 <Field label="Χρέωση ανά χλμ (€)" value={pricing.customer_per_km_fee} onChange={v => setPricing(p => ({ ...p, customer_per_km_fee: v }))} hint="Επιπλέον €/km" icon={MapPin} />
-                <Field label="Service Fee Πλατφόρμας (€)" value={pricing.platform_service_fee} onChange={v => setPricing(p => ({ ...p, platform_service_fee: v }))} hint="Σταθερό fee ανά παραγγελία (πρώην 0,99€)" step="0.01" icon={Shield} />
+                <Field label="Service Fee Πλατφόρμας (€)" value={pricing.platform_service_fee} onChange={v => setPricing(p => ({ ...p, platform_service_fee: v }))} hint="Σταθερό fee ανά παραγγελία (πρώην 0.99€)" step="0.01" icon={Shield} />
               </div>
               <Preview label={`Παράδοση ${previewKm} χλμ`} amount={customerFee + pricing.platform_service_fee} note={`€${pricing.customer_base_fee.toFixed(2)} + ${previewKm} × €${pricing.customer_per_km_fee.toFixed(2)} + €${pricing.platform_service_fee.toFixed(2)} service`} />
             </CardContent>

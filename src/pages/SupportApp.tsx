@@ -456,9 +456,9 @@ function TicketRow({ ticket, active, subject, onOpen }: { ticket: any; active: b
           pri === 'sos' ? 'bg-destructive' : pri === 'high' ? 'bg-orange-500' : pri === 'low' ? 'bg-info' : 'bg-primary',
         )}
       />
-      <div className={cn('h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0', cat.color)}>
-        <CatIcon className="h-4.5 w-4.5" />
-      </div>
+                <div className={cn('h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0', cat.color)}>
+                  <CatIcon className="h-[18px] w-[18px]" />
+                </div>
       <div className="flex-1 min-w-0">
         <div className="flex items-center justify-between gap-2">
           <p className="font-heading font-semibold text-[13px] truncate flex items-center gap-1.5">
@@ -537,10 +537,10 @@ function Workspace({
       <div className="shrink-0 border-b bg-card/70 backdrop-blur-sm">
         <div className="px-3 pt-2.5 pb-2 flex items-center gap-2.5">
           <Button variant="ghost" size="icon" className="h-8 w-8 shrink-0" onClick={onBack} title="Πίσω στην ουρά">
-            <ArrowLeft className="h-4.5 w-4.5" />
+            <ArrowLeft className="h-[18px] w-[18px]" />
           </Button>
           <div className={cn('h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0', cat.color)}>
-            <CatIcon className="h-4.5 w-4.5" />
+                  <CatIcon className="h-[18px] w-[18px]" />
           </div>
           <div className="flex-1 min-w-0">
             <p className="font-heading font-bold text-sm truncate leading-tight">{subject.name}</p>
@@ -603,7 +603,7 @@ function Workspace({
             <div className="rounded-xl border bg-card p-3 shadow-sm">
               <div className="flex items-start gap-2.5">
                 <div className={cn('h-9 w-9 rounded-lg bg-muted flex items-center justify-center shrink-0', cat.color)}>
-                  <CatIcon className="h-4.5 w-4.5" />
+        <CatIcon className="h-[18px] w-[18px]" />
                 </div>
                 <div className="flex-1 min-w-0">
                   <p className="font-heading font-semibold text-sm">{cat.label}</p>

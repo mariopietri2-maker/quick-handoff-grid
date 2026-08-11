@@ -141,7 +141,7 @@ export default function StoreApp() {
             </Button>
           ) : (
             <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary to-primary/60 flex items-center justify-center shrink-0 shadow-primary/40">
-              <Store className="h-4.5 w-4.5 text-primary-foreground" />
+              <Store className="h-[18px] w-[18px] text-primary-foreground" />
             </div>
           )}
           <div className="min-w-0">

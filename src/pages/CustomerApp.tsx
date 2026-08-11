@@ -260,6 +260,7 @@ export default function CustomerApp() {
     };
     const channel = openRealtimeChannel('customer-stores-feed')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'stores' }, scheduleReload)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'menu_items' }, scheduleReload)
       .subscribe();
 
     return () => {
@@ -726,7 +727,7 @@ export default function CustomerApp() {
                               </span>
                             )}
                             {fee === 0 && (
-                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-[hsl(var(--c-accent-dark))] bg-white/95 px-2 py-0.5 rounded-md shadow">
+                              <span className="text-[10px] font-extrabold uppercase tracking-wide text-[hsl(var(--c-accent-dark))] bg-[hsl(var(--c-surface)/0.95)] px-2 py-0.5 rounded-md shadow">
                                 0€ {t('customer.delivery')}
                               </span>
                             )}
@@ -806,7 +807,7 @@ export default function CustomerApp() {
                 type="button"
                 onClick={() => saveAddress(pendingAddress, pendingCoords)}
                 disabled={!pendingAddress.trim()}
-                className="bg-[hsl(0,0%,9%)] text-white rounded-full px-5 py-2 text-sm font-extrabold disabled:opacity-50"
+                className="bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] rounded-full px-5 py-2 text-sm font-extrabold disabled:opacity-50"
               >
                 Αποθήκευση
               </button>

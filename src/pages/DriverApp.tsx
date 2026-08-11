@@ -697,7 +697,7 @@ export default function DriverApp() {
                 className="h-9 w-9 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-md active:scale-90"
                 aria-label="Υποστήριξη"
               >
-                <Headphones className="h-4.5 w-4.5 text-[hsl(var(--driver-text))]" />
+                <Headphones className="h-[18px] w-[18px] text-[hsl(var(--driver-text))]" />
               </button>
             </div>
             )}

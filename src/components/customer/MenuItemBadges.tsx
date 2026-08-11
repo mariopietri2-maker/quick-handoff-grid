@@ -46,12 +46,12 @@ export function MenuItemBadges({
   return (
     <div className="flex flex-wrap items-center gap-1 mt-1.5">
       {isVegan && (
-        <span className={`inline-flex items-center gap-0.5 ${pad} ${text} rounded-full bg-emerald-100 text-emerald-800 font-medium`}>
+        <span className={`inline-flex items-center gap-0.5 ${pad} ${text} rounded-full bg-[hsl(var(--c-surface-muted))] text-[hsl(var(--c-accent-dark))] font-medium`}>
           <Leaf className={icon} /> Vegan
         </span>
       )}
       {!isVegan && isVegetarian && (
-        <span className={`inline-flex items-center gap-0.5 ${pad} ${text} rounded-full bg-emerald-50 text-emerald-700 font-medium`}>
+        <span className={`inline-flex items-center gap-0.5 ${pad} ${text} rounded-full bg-[hsl(var(--c-surface-muted))] text-[hsl(var(--c-text-soft))] font-medium`}>
           <Leaf className={icon} /> Χορτοφαγικό
         </span>
       )}

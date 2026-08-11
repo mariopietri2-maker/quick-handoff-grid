@@ -62,7 +62,7 @@ export function OrderAgainRow() {
               onClick={() => navigate(`/restaurant/${s.id}`)}
               className="w-[64px] shrink-0 text-center group active:scale-95 transition-transform"
             >
-              <div className="h-[64px] w-[64px] rounded-xl overflow-hidden bg-[hsl(0,0%,96%)] ring-1 ring-black/[0.04] shadow-[0_4px_10px_-6px_hsl(0_0%_0%/0.2)]">
+              <div className="h-[64px] w-[64px] rounded-xl overflow-hidden bg-[hsl(var(--c-surface-muted))] ring-1 ring-black/[0.04] shadow-[0_4px_10px_-6px_hsl(0_0%_0%/0.2)]">
                 {s.image_url ? (
                   <img src={s.image_url} alt={s.name} loading="lazy" className="h-full w-full object-cover" />
                 ) : (
