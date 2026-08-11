@@ -26,9 +26,16 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Call
+import androidx.compose.material.icons.outlined.HeadsetMic
+import androidx.compose.material.icons.outlined.Message
+import androidx.compose.material.icons.outlined.ReceiptLong
 import androidx.compose.material.icons.outlined.Storefront
+import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material3.Button
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -44,11 +51,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.freshdelivery.nativedriver.data.ActiveTripUi
 import com.freshdelivery.nativedriver.data.LiveChatMessageRow
 import com.freshdelivery.nativedriver.data.SupportTicketRow
 import com.freshdelivery.nativedriver.data.TicketMessageRow
@@ -75,8 +85,7 @@ fun SupportCenter(
 ) {
     val context = LocalContext.current
     val cs = MaterialTheme.colorScheme
-    var tab by remember { mutableStateOf("live") }
-    var showNewTicket by remember { mutableStateOf(false) }
+    var screen by remember { mutableStateOf("menu") }
 
     fun call(phone: String?) {
         if (!phone.isNullOrBlank()) {
@@ -99,7 +108,13 @@ fun SupportCenter(
                 Modifier.fillMaxWidth().padding(top = 8.dp, bottom = 6.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                IconButton(onClick = onBack) {
+                IconButton(onClick = {
+                    when {
+                        screen != "menu" -> screen = "menu"
+                        state.chatTicketId != null -> onCloseTicket()
+                        else -> onBack()
+                    }
+                }) {
                     Icon(Icons.Filled.ArrowBack, contentDescription = "Πίσω", tint = cs.onBackground)
                 }
                 Column(Modifier.weight(1f)) {
@@ -110,48 +125,153 @@ fun SupportCenter(
                         Text("Ομάδα διαθέσιμη 24/7", style = MaterialTheme.typography.bodySmall, color = FreshGreenBright)
                     }
                 }
-                SupportTabs(tab = tab, onTab = { tab = it })
             }
 
-            // ── Driver / customer context cards ──
-            Column(Modifier.fillMaxWidth()) {
-                DriverContextCard(state = state, onCall = ::call)
+            // ── Menu: driver / customer context cards ──
+            if (screen == "menu") {
+                Column(Modifier.fillMaxWidth()) {
+                    DriverContextCard(state = state, onCall = ::call)
 
-                val trip = state.primaryTrip
-                if (trip != null) {
-                    Spacer(Modifier.height(8.dp))
-                    CustomerContextCard(trip = trip, onCall = ::call)
+                    val trip = state.primaryTrip
+                    if (trip != null) {
+                        Spacer(Modifier.height(8.dp))
+                        CustomerContextCard(trip = trip, onCall = ::call)
+                    }
                 }
-            }
 
-            Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(12.dp))
+            }
 
             Box(Modifier.fillMaxWidth().weight(1f)) {
-                when {
-                    tab == "live" -> LiveChatPanel(
+                when (screen) {
+                    "live" -> LiveChatPanel(
                         state = state,
                         onSend = onSendLiveChat,
                     )
-                    showNewTicket -> NewTicketPanel(
+                    "tickets" -> TicketListPanel(
+                        tickets = state.tickets,
+                        onOpen = onOpenTicket,
+                        onNew = { screen = "new-ticket" },
+                        onBack = { screen = "menu" },
+                    )
+                    "new-ticket" -> NewTicketPanel(
                         busy = state.busy,
                         onSubmit = { cat, desc ->
                             onSubmitTicket(cat, desc)
-                            showNewTicket = false
+                            screen = "menu"
                         },
-                        onCancel = { showNewTicket = false },
+                        onCancel = { screen = "menu" },
                     )
-                    state.chatTicketId != null -> TicketThreadPanel(
-                        messages = state.chatMessages,
-                        agents = state.chatAgents,
-                        loading = state.chatLoading,
-                        busy = state.busy,
-                        onBack = onCloseTicket,
-                        onSend = onSendTicketChat,
-                    )
-                    else -> TicketListPanel(
+                    else -> MenuPanel(
                         tickets = state.tickets,
+                        onLiveChat = { screen = "live" },
+                        onTickets = { screen = "tickets" },
+                        onNewTicket = { screen = "new-ticket" },
                         onOpen = onOpenTicket,
-                        onNew = { showNewTicket = true },
+                    )
+                }
+            }
+        }
+
+        state.chatTicketId?.let {
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .background(MaterialTheme.colorScheme.background)
+                    .padding(vertical = 8.dp),
+            ) {
+                TicketThreadPanel(
+                    messages = state.chatMessages,
+                    agents = state.chatAgents,
+                    loading = state.chatLoading,
+                    busy = state.busy,
+                    onBack = onCloseTicket,
+                    onSend = onSendTicketChat,
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuPanel(
+    tickets: List<SupportTicketRow>,
+    onLiveChat: () -> Unit,
+    onTickets: () -> Unit,
+    onNewTicket: () -> Unit,
+    onOpen: (SupportTicketRow) -> Unit,
+) {
+    Column(
+        Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
+        horizontalAlignment = Alignment.Start,
+    ) {
+        Text(
+            "Τι χρειάζεσαι;",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(8.dp))
+        ActionCard(
+            title = "Live Chat",
+            subtitle = "Μίλησε τώρα με την ομάδα υποστήριξης",
+            icon = Icons.Outlined.HeadsetMic,
+            color = FreshGreen,
+            onClick = onLiveChat,
+        )
+        Spacer(Modifier.height(8.dp))
+        ActionCard(
+            title = "Τα αιτήματά μου",
+            subtitle = if (tickets.isEmpty()) "Δεν έχεις ανοιχτά αιτήματα" else "${tickets.size} ανοιχτά αιτήματα",
+            icon = Icons.Outlined.Message,
+            color = FreshBlue,
+            onClick = onTickets,
+        )
+        Spacer(Modifier.height(8.dp))
+        ActionCard(
+            title = "Νέο αίτημα",
+            subtitle = "Δημιούργησε αίτημα προς την ομάδα",
+            icon = Icons.Filled.Add,
+            color = FreshAmber,
+            onClick = onNewTicket,
+        )
+        if (tickets.isNotEmpty()) {
+            Spacer(Modifier.height(18.dp))
+            Text(
+                "Πρόσφατα αιτήματα",
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(6.dp))
+            tickets.take(3).forEach { t ->
+                val status = t.status?.lowercase()
+                val color = when (status) {
+                    "resolved", "closed" -> FreshGreen
+                    "pending" -> FreshAmber
+                    else -> MaterialTheme.colorScheme.primary
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 4.dp)
+                        .clip(RoundedCornerShape(16.dp))
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                        .clickable { onOpen(t) }
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(t.description?.take(40) ?: "Αίτημα", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, modifier = Modifier.weight(1f))
+                    Text(
+                        when (status) {
+                            "resolved", "closed" -> "Λύθηκε"
+                            "pending" -> "Εκκρεμεί"
+                            else -> t.status ?: "Ανοιχτό"
+                        },
+                        fontSize = 11.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = color,
                     )
                 }
             }
@@ -160,34 +280,49 @@ fun SupportCenter(
 }
 
 @Composable
-private fun SupportTabs(tab: String, onTab: (String) -> Unit) {
+private fun ActionCard(
+    title: String,
+    subtitle: String,
+    icon: ImageVector,
+    color: Color,
+    onClick: () -> Unit,
+) {
     Row(
         Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
-            .padding(3.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp),
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(18.dp))
+            .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(18.dp))
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        SupportTab("live", "Live Chat", tab, onTab)
-        SupportTab("tickets", "Αιτήματα", tab, onTab)
+        Box(
+            Modifier
+                .size(44.dp)
+                .background(color.copy(alpha = 0.15f), RoundedCornerShape(14.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
+            Text(
+                subtitle,
+                fontSize = 12.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Icon(
+            Icons.AutoMirrored.Outlined.ArrowForward,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(18.dp),
+        )
     }
-}
-
-@Composable
-private fun SupportTab(label: String, text: String, current: String, onTab: (String) -> Unit) {
-    val selected = current == label
-    Text(
-        text,
-        fontSize = 11.sp,
-        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-        color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-        textAlign = TextAlign.Center,
-        modifier = Modifier
-            .clip(RoundedCornerShape(9.dp))
-            .background(if (selected) FreshGreen else Color.Transparent)
-            .clickable { onTab(label) }
-            .padding(horizontal = 10.dp, vertical = 6.dp),
-    )
 }
 
 @Composable
@@ -246,7 +381,7 @@ private fun DriverContextCard(state: DriverUiState, onCall: (String?) -> Unit) {
 
 @Composable
 private fun CustomerContextCard(
-    trip: com.freshdelivery.nativedriver.data.ActiveTripUi,
+    trip: ActiveTripUi,
     onCall: (String?) -> Unit,
 ) {
     val cs = MaterialTheme.colorScheme
@@ -334,6 +469,7 @@ private fun TicketListPanel(
     tickets: List<SupportTicketRow>,
     onOpen: (SupportTicketRow) -> Unit,
     onNew: () -> Unit,
+    onBack: () -> Unit,
 ) {
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
@@ -344,7 +480,17 @@ private fun TicketListPanel(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Τα αιτήματά σου", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                IconButton(onClick = onBack, modifier = Modifier.size(28.dp)) {
+                    Icon(
+                        Icons.Filled.ArrowBack,
+                        contentDescription = "Πίσω",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.size(18.dp),
+                    )
+                }
+                Text("Τα αιτήματά σου", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
             Text(
                 "Νέο αίτημα",
                 fontSize = 12.sp,
@@ -466,10 +612,10 @@ private fun NewTicketPanel(
         Text("Κατηγορία", fontSize = 11.sp, color = cs.onSurfaceVariant, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(6.dp))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-            CategoryChip("Παραγγελία", FreshAmber, category == "order", { category = "order" }, Modifier.weight(1f))
-            CategoryChip("Πληρωμές", FreshGreen, category == "payment", { category = "payment" }, Modifier.weight(1f))
-            CategoryChip("Έκτακτο", FreshError, category == "emergency", { category = "emergency" }, Modifier.weight(1f))
-            CategoryChip("Άλλο", FreshBlue, category == "other", { category = "other" }, Modifier.weight(1f))
+            CategoryChip("Παραγγελία", FreshAmber, Icons.Outlined.Storefront, category == "order", { category = "order" }, Modifier.weight(1f))
+            CategoryChip("Πληρωμές", FreshGreen, Icons.Outlined.ReceiptLong, category == "payment", { category = "payment" }, Modifier.weight(1f))
+            CategoryChip("Έκτακτο", FreshError, Icons.Outlined.WarningAmber, category == "emergency", { category = "emergency" }, Modifier.weight(1f))
+            CategoryChip("Άλλο", FreshBlue, Icons.Outlined.Message, category == "other", { category = "other" }, Modifier.weight(1f))
         }
         Spacer(Modifier.height(10.dp))
         OutlinedTextField(
@@ -482,7 +628,7 @@ private fun NewTicketPanel(
             shape = RoundedCornerShape(14.dp),
         )
         Spacer(Modifier.height(12.dp))
-        androidx.compose.material3.Button(
+        Button(
             onClick = { category?.let { onSubmit(it, description.trim()) } },
             enabled = category != null && description.isNotBlank() && !busy,
             modifier = Modifier.fillMaxWidth().height(50.dp),
@@ -498,7 +644,7 @@ private fun NewTicketPanel(
 }
 
 @Composable
-private fun CategoryChip(label: String, color: Color, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
+private fun CategoryChip(label: String, color: Color, icon: ImageVector, selected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
     Box(
         modifier
             .clip(RoundedCornerShape(12.dp))
@@ -508,7 +654,11 @@ private fun CategoryChip(label: String, color: Color, selected: Boolean, onClick
             .padding(vertical = 10.dp),
         contentAlignment = Alignment.Center,
     ) {
-        Text(label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant)
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Icon(icon, contentDescription = null, tint = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant, modifier = Modifier.size(18.dp))
+            Spacer(Modifier.height(3.dp))
+            Text(label, fontSize = 11.sp, fontWeight = FontWeight.SemiBold, color = if (selected) color else MaterialTheme.colorScheme.onSurfaceVariant)
+        }
     }
 }
 

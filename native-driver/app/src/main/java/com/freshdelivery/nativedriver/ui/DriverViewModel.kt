@@ -53,6 +53,7 @@ data class DriverSettings(
     val keepScreenOn: Boolean = true,
     val notifyOffers: Boolean = true,
     val soundId: String = OfferSoundId.CLASSIC.id,
+    val mapStyleLight: Boolean = false,
 )
 
 data class DriverUiState(
@@ -121,6 +122,25 @@ private fun friendlyError(t: Throwable?): String {
     }
 }
 
+/** Classifies an exception as a technical failure (network/server) vs a validation message. */
+private fun isTechnicalError(t: Throwable?): Boolean {
+    val lower = t?.message?.lowercase() ?: return false
+    return "unable to resolve host" in lower ||
+        "no address associated" in lower ||
+        "unknownhost" in lower ||
+        "timeout" in lower ||
+        "timed out" in lower ||
+        "failed to connect" in lower ||
+        "connection refused" in lower ||
+        "server error (5" in lower ||
+        "http status" in lower ||
+        "relation does not exist" in lower ||
+        "permission denied" in lower ||
+        "row-level security" in lower ||
+        "violates row-level" in lower ||
+        "database error" in lower
+}
+
 class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private val repo = DriverRepository()
     private val opsHelper = OpsHelper()
@@ -134,10 +154,22 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 keepScreenOn = prefs.keepScreenOnOffers,
                 notifyOffers = prefs.notifyNewOffers,
                 soundId = prefs.offerSoundId,
+                mapStyleLight = prefs.mapStyleLight,
             ),
         ),
     )
     val state: StateFlow<DriverUiState> = _state.asStateFlow()
+
+    /**
+     * Technical failures are logged to app_errors for the admin panel and hidden
+     * from the driver (returns null). User-facing validation messages still show.
+     */
+    private fun handleError(context: String, e: Throwable?): String? {
+        if (!isTechnicalError(e)) return friendlyError(e)
+        val message = e?.message ?: friendlyError(e)
+        viewModelScope.launch { runCatching { repo.logAppError(context, message) } }
+        return null
+    }
 
     private var pollJob: Job? = null
     private var chatJob: Job? = null
@@ -199,6 +231,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         prefs.keepScreenOnOffers = s.keepScreenOn
         prefs.notifyNewOffers = s.notifyOffers
         prefs.offerSoundId = s.soundId
+        prefs.mapStyleLight = s.mapStyleLight
         _state.value = _state.value.copy(settingsLocal = s)
         if (!s.offerSound) stopOfferSound()
     }
@@ -231,7 +264,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 startPresenceHeartbeat()
             }
         }.onFailure { e ->
-            _state.value = _state.value.copy(error = friendlyError(e))
+            _state.value = _state.value.copy(error = handleError("loadOnSignedIn", e))
         }
         registerFcm(userId)
         refreshAll()
@@ -253,7 +286,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signIn(email, password) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(busy = false, error = handleError("signIn", e))
                 }
                 .onSuccess { _state.value = _state.value.copy(busy = false) }
         }
@@ -305,7 +338,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 if (!online) stopPresenceHeartbeat()
                 _state.value = _state.value.copy(
                     online = !online,
-                    error = friendlyError(e),
+                    error = handleError("setOnline", e),
                 )
             }
             if (online) refreshWork()
@@ -329,7 +362,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     DriverLocationService.updateBreak(getApplication(), onBreak = dState.on_break == true)
                 }
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = friendlyError(e))
+                _state.value = _state.value.copy(error = handleError("toggleBreak", e))
             }
         }
     }

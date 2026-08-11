@@ -219,9 +219,14 @@ fun DriverMapView(
     recenterKey: Int = 0,
     storeMarkers: List<StoreMapMarker> = emptyList(),
     followUser: Boolean = false,
+    lightStyle: Boolean = false,
 ) {
     val lat = centerLat ?: userLat ?: DEFAULT_LAT
     val lng = centerLng ?: userLng ?: DEFAULT_LNG
+
+    // Light style uses dark text on a white halo; dark style uses white on dark.
+    val textColor = if (lightStyle) "#1A1F1C" else "#FFFFFF"
+    val haloColor = if (lightStyle) "#FFFFFF" else "#0B0E0C"
 
     val viewportState = rememberMapViewportState {
         setCameraOptions {
@@ -330,7 +335,7 @@ fun DriverMapView(
 
     // Static markers + destination only rebuild when their content changes,
     // not on every location tick.
-    val staticAnnotations = remember(markers, destination) {
+    val staticAnnotations = remember(markers, destination, lightStyle) {
         buildList {
             markers.forEach { m ->
                 add(
@@ -340,8 +345,8 @@ fun DriverMapView(
                         .withTextField(m.label.take(18))
                         .withTextSize(11.0)
                         .withTextOffset(listOf(0.0, 1.5))
-                        .withTextColor("#FFFFFF")
-                        .withTextHaloColor("#0B0E0C")
+                        .withTextColor(textColor)
+                        .withTextHaloColor(haloColor)
                         .withTextHaloWidth(1.6),
                 )
             }
@@ -355,7 +360,7 @@ fun DriverMapView(
                         .withTextSize(11.0)
                         .withTextOffset(listOf(0.0, 2.2))
                         .withTextColor("#2FE795")
-                        .withTextHaloColor("#0B0E0C")
+                        .withTextHaloColor(haloColor)
                         .withTextHaloWidth(1.6),
                 )
             }
@@ -376,11 +381,13 @@ fun DriverMapView(
         emptyList()
     }
 
-    Box(modifier = modifier.background(Color(0xFF0B0E0C))) {
+    Box(modifier = modifier.background(if (lightStyle) Color(0xFFF4F6F4) else Color(0xFF0B0E0C))) {
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
             mapViewportState = viewportState,
-            style = { MapStyle(style = "mapbox://styles/mapbox/dark-v11") },
+            style = {
+                MapStyle(style = if (lightStyle) "mapbox://styles/mapbox/light-v11" else "mapbox://styles/mapbox/dark-v11")
+            },
             compass = {},
             scaleBar = {},
             logo = {},
