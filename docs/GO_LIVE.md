@@ -25,6 +25,16 @@ https://ojkesspghyqmjmupybva.supabase.co/functions/v1/payments-webhook?env=live
 cards the customer chose to save, and stores `stripe_payment_intent_id` on the
 order (which automated card refunds depend on).
 
+**Stripe Tax — required setup (calculation only).** Prices are VAT-inclusive
+(menus show final amounts; the order totals are discounted in `place_order`).
+`create-checkout` uses `automatic_tax: { enabled: true }` with
+`tax_behavior: 'exclusive'`, so Stripe Tax must be in **calculation-only** mode
+(Stripe Dashboard → Tax → not enabled to collect/remit). Otherwise Stripe would
+add VAT on top of VAT-inclusive prices and the charged amount would mismatch the
+order's `expected_charge_cents`, leaving orders stuck in `pending`. A one-off
+coupon is created per order so the final charge always equals the discounted
+total.
+
 ### B. Supabase Dashboard → project `ojkesspghyqmjmupybva` → Project Settings → Edge Functions → Secrets
 ```
 STRIPE_LIVE_API_KEY=sk_live_…
@@ -104,10 +114,17 @@ push on both outcomes («Επιστροφή χρημάτων» / «Η επιστ
 Οικονομικά → **Επιστροφές** shows every refund (status/amount/method), and a
 **Retry** button on failed card refunds calls `retry_failed_card_refund`.
 
+Customers who self-cancel a paid card order from the app (placed, no driver,
+<15 min old) now automatically enqueue the same card refund — no manual step.
+Support refunds from a ticket use the support-allowed `refund_order`
+(defaults to wallet credit); support wallet top-ups use `credit_customer_wallet`.
+
 ### D. Alerting
 Ops webhook (Slack) receives alerts for: stuck orders (watchdog every 5 min),
-card-refund failures, and Stripe webhook errors. Data is visible in
-`alert_outbox`.
+card-refund failures, Stripe webhook errors, and **card payment amount
+mismatches** (charged amount ≠ `expected_charge_cents`, which fires a critical
+alert so ops can refund/retry instead of the order silently sitting in `pending`).
+Data is visible in `alert_outbox`.
 
 ### E. Verify
 Run the read-only diagnostic in `supabase/scripts/verify_refunds_alerts_cards.sql`
