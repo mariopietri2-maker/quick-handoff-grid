@@ -46,6 +46,20 @@ class DriverRepository(
 ) {
     fun currentUserId(): String? = client.auth.currentUserOrNull()?.id
 
+    /** Records a technical failure for the admin panel instead of showing it on screen. */
+    suspend fun logAppError(context: String, message: String) {
+        runCatching {
+            client.from("app_errors").insert(
+                buildJsonObject {
+                    put("app", "driver")
+                    currentUserId()?.let { put("user_id", it) }
+                    put("context", context)
+                    put("message", message)
+                },
+            )
+        }
+    }
+
     suspend fun signIn(email: String, password: String) {
         client.auth.signInWith(Email) {
             this.email = email.trim()

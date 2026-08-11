@@ -42,6 +42,11 @@ class DriverPreferences(context: Context) {
         get() = prefs.getString(KEY_SOUND_ID, OfferSoundId.CLASSIC.id) ?: OfferSoundId.CLASSIC.id
         set(value) = prefs.edit().putString(KEY_SOUND_ID, value).apply()
 
+    /** Use the light/white Mapbox style instead of the default dark style. */
+    var mapStyleLight: Boolean
+        get() = prefs.getBoolean(KEY_MAP_STYLE_LIGHT, false)
+        set(value) = prefs.edit().putBoolean(KEY_MAP_STYLE_LIGHT, value).apply()
+
     /** "Remember me" — persist the email (and password when enabled) across launches. */
     var rememberMe: Boolean
         get() = prefs.getBoolean(KEY_REMEMBER_ME, false)
@@ -62,6 +67,7 @@ class DriverPreferences(context: Context) {
         private const val KEY_KEEP_SCREEN = "keep_screen_on"
         private const val KEY_NOTIFY_OFFERS = "notify_offers"
         private const val KEY_SOUND_ID = "offer_sound_id"
+        private const val KEY_MAP_STYLE_LIGHT = "map_style_light"
         private const val KEY_REMEMBER_ME = "remember_me"
         private const val KEY_SAVED_EMAIL = "saved_email"
         private const val KEY_SAVED_PASSWORD = "saved_password"

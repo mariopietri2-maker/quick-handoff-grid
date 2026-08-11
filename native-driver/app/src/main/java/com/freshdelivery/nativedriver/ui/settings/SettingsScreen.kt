@@ -19,6 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Notifications
+import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.PhonelinkRing
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.ScreenLockPortrait
@@ -104,6 +105,25 @@ fun SettingsScreen(
                 subtitle = "Κρατά την οθόνη ενεργή όσο μετράει ο χρόνος",
                 checked = settings.keepScreenOn,
                 onCheckedChange = { onUpdateSettings(settings.copy(keepScreenOn = it)) },
+            )
+        }
+
+        Spacer(Modifier.height(18.dp))
+        SectionHeader("Χάρτης")
+        Column(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(22.dp))
+                .background(cs.surface)
+                .border(1.dp, cs.outline.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
+                .padding(horizontal = 8.dp, vertical = 4.dp),
+        ) {
+            SettingRow(
+                icon = Icons.Outlined.Map,
+                title = "Λευκός χάρτης",
+                subtitle = "Φωτεινό στυλ χάρτη αντί για σκούρο",
+                checked = settings.mapStyleLight,
+                onCheckedChange = { onUpdateSettings(settings.copy(mapStyleLight = it)) },
             )
         }
 

@@ -335,7 +335,7 @@ fun HomeScreen(
         }
     }
 
-    Box(Modifier.fillMaxSize().background(Color(0xFF0B0E0C))) {
+    Box(Modifier.fillMaxSize().background(if (state.settingsLocal.mapStyleLight) Color(0xFFF4F6F4) else Color(0xFF0B0E0C))) {
         DriverMapView(
             modifier = Modifier.fillMaxSize(),
             centerLat = centerLat,
@@ -349,6 +349,7 @@ fun HomeScreen(
             recenterKey = recenterKey,
             storeMarkers = storeMapMarkers,
             followUser = navDest != null && navSteps.isNotEmpty(),
+            lightStyle = state.settingsLocal.mapStyleLight,
         )
 
         // Top chrome — brand status pill centered between the global menu and the
