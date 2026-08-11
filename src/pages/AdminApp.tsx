@@ -62,6 +62,7 @@ const BufferDistributor      = lazy(() => import('@/components/admin/BufferDistr
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
+const RefundsPanel           = lazy(() => import('@/components/admin/RefundsPanel'));
 const DeliveryControlCenter  = lazy(() => import('@/components/admin/DeliveryControlCenter'));
 const CapacityPanel          = lazy(() => import('@/components/admin/CapacityPanel'));
 import { Link, useSearchParams } from 'react-router-dom';
@@ -451,6 +452,8 @@ export default function AdminApp() {
         return <DriverPayablesPanel />;
       case 'buffer':
         return <BufferDistributor />;
+      case 'refunds':
+        return <RefundsPanel />;
       case 'platform_cost':
         return <PlatformCostPanel onNavigate={setActiveSection} />;
       case 'system_doctor':

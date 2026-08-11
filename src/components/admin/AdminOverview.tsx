@@ -458,6 +458,7 @@ function RecentOrdersTable({ orders, profiles }: { orders: any[]; profiles: any[
 function CancelOrderButton({ order }: { order: any }) {
   const invalidate = useAdminInvalidate();
   const [busy, setBusy] = useState(false);
+  const [refundMethod, setRefundMethod] = useState<'wallet_credit' | 'original_payment'>('wallet_credit');
 
   const refundable = Number(order.total_amount ?? 0) - Number(order.refunded_amount ?? 0);
   const isPaidCard = order.payment_method !== 'cash' && order.status !== 'pending';
@@ -468,13 +469,13 @@ function CancelOrderButton({ order }: { order: any }) {
     try {
       // Refund first (so we never leave money owed if status update succeeds
       // but refund fails). Uses the existing SECURITY DEFINER RPC which handles
-      // wallet credit + audit log atomically.
+      // wallet credit OR queues an automated card refund + audit log atomically.
       if (willRefund) {
         const { error: refundErr } = await (supabase.rpc as any)('refund_order', {
           p_order_id: order.id,
           p_amount: refundable,
           p_reason: 'Order cancelled by admin',
-          p_refund_type: 'wallet_credit',
+          p_refund_type: refundMethod,
           p_notes: null,
         });
         if (refundErr) {
@@ -498,9 +499,9 @@ function CancelOrderButton({ order }: { order: any }) {
         p_target_type: 'order',
         p_target_id: order.id,
         p_description: willRefund
-          ? `Cancelled & refunded €${refundable.toFixed(2)} to wallet`
+          ? `Cancelled & refunded €${refundable.toFixed(2)} via ${refundMethod === 'original_payment' ? 'card' : 'wallet'}`
           : 'Cancelled order',
-        p_metadata: { refunded: willRefund, amount: willRefund ? refundable : 0 },
+        p_metadata: { refunded: willRefund, amount: willRefund ? refundable : 0, method: willRefund ? refundMethod : null },
       }).catch(() => {});
 
       // Notify driver if assigned
@@ -537,7 +538,36 @@ function CancelOrderButton({ order }: { order: any }) {
             <span>Η παραγγελία θα μαρκαριστεί ως ακυρωμένη.</span>
             {willRefund && (
               <span className="block rounded-md border border-border bg-muted/40 p-2 text-xs text-foreground">
-                💰 Θα επιστραφούν αυτόματα <strong>€{refundable.toFixed(2)}</strong> στο πορτοφόλι του πελάτη.
+                💰 Θα επιστραφούν <strong>€{refundable.toFixed(2)}</strong>.
+              </span>
+            )}
+            {willRefund && (
+              <div className="grid grid-cols-2 gap-1 rounded-lg border border-border bg-card p-1">
+                <button
+                  type="button"
+                  onClick={() => setRefundMethod('wallet_credit')}
+                  className={cn(
+                    'rounded-md px-2 py-1.5 text-xs font-semibold transition',
+                    refundMethod === 'wallet_credit' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  Στο πορτοφόλι
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setRefundMethod('original_payment')}
+                  className={cn(
+                    'rounded-md px-2 py-1.5 text-xs font-semibold transition',
+                    refundMethod === 'original_payment' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:text-foreground',
+                  )}
+                >
+                  Στην κάρτα
+                </button>
+              </div>
+            )}
+            {willRefund && refundMethod === 'original_payment' && (
+              <span className="block text-[11px] text-muted-foreground italic">
+                Η επιστροφή γίνεται αυτόματα στην κάρτα του πελάτη εντός λεπτών (μέσω Stripe).
               </span>
             )}
             {!willRefund && order.payment_method === 'cash' && (

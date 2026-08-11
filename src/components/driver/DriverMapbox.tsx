@@ -117,6 +117,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   // In-memory cache of recent route responses so we don't re-hit the
   // Mapbox Directions API on every refresh / re-render. Keyed by routeKey.
   const routeCacheRef = useRef<Map<string, { at: number; data: any }>>(new Map());
+  const routeCoordsRef = useRef<[number, number][]>([]);
   const ROUTE_CACHE_TTL_MS = 25_000;
 
   const followModeRef = useRef(followMode);
@@ -634,6 +635,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     const map = mapRef.current;
     if (!map || !token || !pos || !navigatingTo) {
       // Clear route
+      routeCoordsRef.current = [];
       if (map?.getSource('route')) {
         (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
           type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {},
@@ -689,6 +691,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       const coords = route.geometry.coordinates;
       const congestion: string[] = route.legs?.[0]?.annotation?.congestion || [];
 
+      routeCoordsRef.current = coords;
 
       if (map.getSource('route')) {
         (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
@@ -774,6 +777,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   useEffect(() => {
     if (!navigatingTo) {
       const map = mapRef.current;
+      routeCoordsRef.current = [];
       if (map?.getSource('route')) {
         (map.getSource('route') as mapboxgl.GeoJSONSource).setData({
           type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {},
@@ -842,19 +846,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     (nearbyStores ?? []).forEach((s) => add(s.longitude, s.latitude));
 
     // Include current route geometry if present
-    try {
-      const src = map.getSource('route') as mapboxgl.GeoJSONSource | undefined;
-      const data: any = (src as any)?._data;
-      const coords: [number, number][] | undefined = data?.geometry?.coordinates;
-      if (Array.isArray(coords)) {
-        coords.forEach((c) => {
-          if (Array.isArray(c) && c.length >= 2) {
-            bounds.extend([c[0], c[1]]);
-            hasPoint = true;
-          }
-        });
-      }
-    } catch { /* noop */ }
+    const routeCoords = routeCoordsRef.current;
+    if (routeCoords.length) {
+      routeCoords.forEach((c) => {
+        if (Array.isArray(c) && c.length >= 2) {
+          bounds.extend([c[0], c[1]]);
+          hasPoint = true;
+        }
+      });
+    }
 
     if (!hasPoint) return;
     map.resize();

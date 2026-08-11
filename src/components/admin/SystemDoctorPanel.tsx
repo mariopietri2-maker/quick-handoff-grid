@@ -118,13 +118,14 @@ export default function SystemDoctorPanel() {
     }
 
     try {
-      const { data } = await supabase.from('orders').select('id, total_km').is('total_km', null)
+      const { data } = await supabase.from('orders').select('id, distance_km').is('distance_km', null)
         .gte('created_at', ago(7 * 24 * 3600_000));
       r.push({ id: 'missing_km', group: 'orders', label: 'Παραγγελίες χωρίς km (7d)', icon: MapPin,
         status: !data?.length ? 'ok' : 'warn',
         message: !data?.length ? 'OK' : `${data.length} χωρίς υπολογισμένα χλμ`,
         fix: data?.length ? async () => {
-          await (supabase as any).rpc('backfill_orders_km');
+          const { error } = await (supabase as any).rpc('backfill_orders_km');
+          if (error) throw error;
         } : undefined, fixLabel: 'Backfill' });
     } catch (e: any) {
       r.push({ id: 'missing_km', group: 'orders', label: 'Παραγγελίες χωρίς km', icon: MapPin, status: 'warn', message: e?.message ?? '?' });
@@ -152,8 +153,8 @@ export default function SystemDoctorPanel() {
     }
 
     try {
-      const { data } = await (supabase as any).from('driver_state').select('driver_id, on_break, last_break_at')
-        .eq('on_break', true).lt('last_break_at', ago(60 * 60_000));
+      const { data } = await (supabase as any).from('driver_state').select('driver_id, on_break, break_until')
+        .eq('on_break', true).lt('break_until', new Date().toISOString());
       r.push({ id: 'long_breaks', group: 'drivers', label: 'Οδηγοί σε διάλειμμα >1h', icon: Clock,
         status: !data?.length ? 'ok' : 'warn',
         message: !data?.length ? 'Καμία' : `${data.length} σε παρατεταμένο break`,
@@ -220,7 +221,10 @@ export default function SystemDoctorPanel() {
         status: ids.length === 0 ? 'ok' : 'warn',
         message: ids.length === 0 ? 'Όλες τακτοποιημένες' : `${ids.length} εκκρεμούν >1h`,
         fix: ids.length > 0 ? async () => {
-          for (const id of ids) await (supabase as any).rpc('settle_order_now', { _order_id: id }).catch(() => {});
+          for (const id of ids) {
+            const { error } = await (supabase as any).rpc('settle_order_now', { p_order_id: id });
+            if (error) throw error;
+          }
         } : undefined, fixLabel: 'Settle' });
     } catch (e: any) {
       r.push({ id: 'unsettled', group: 'money', label: 'Settlements', icon: Receipt, status: 'warn', message: e?.message ?? '?' });
@@ -265,13 +269,13 @@ export default function SystemDoctorPanel() {
     }
 
     try {
-      const { count } = await (supabase as any).from('audit_log').select('id', { count: 'exact', head: true })
+      const { count } = await (supabase as any).from('admin_audit_log').select('id', { count: 'exact', head: true })
         .lt('created_at', ago(90 * 24 * 3600_000));
       r.push({ id: 'old_audit', group: 'data', label: 'Audit log >90d', icon: FileWarning,
         status: !count ? 'ok' : 'ok',
         message: !count ? 'Καθαρό' : `${count} παλιές εγγραφές`,
         fix: count ? async () => {
-          const { error } = await (supabase as any).from('audit_log').delete().lt('created_at', ago(90 * 24 * 3600_000));
+          const { error } = await (supabase as any).from('admin_audit_log').delete().lt('created_at', ago(90 * 24 * 3600_000));
           if (error) throw error;
         } : undefined, fixLabel: 'Purge' });
     } catch (e: any) {

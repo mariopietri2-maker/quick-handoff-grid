@@ -2,14 +2,15 @@ import { useState } from 'react';
 import { Clock, CalendarClock } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
+import { useT } from '@/lib/i18n';
 
 interface Props {
   value: string | null; // ISO string or null = ASAP
   onChange: (iso: string | null) => void;
 }
 
-function buildSlots(): { label: string; iso: string }[] {
-  const out: { label: string; iso: string }[] = [];
+function buildSlots(): { isToday: boolean; time: string; iso: string }[] {
+  const out: { isToday: boolean; time: string; iso: string }[] = [];
   const now = new Date();
   const start = new Date(now.getTime() + 30 * 60_000);
   // Round to next 15 min
@@ -18,7 +19,8 @@ function buildSlots(): { label: string; iso: string }[] {
     const d = new Date(start.getTime() + i * 30 * 60_000);
     const isToday = d.getDate() === now.getDate();
     out.push({
-      label: `${isToday ? 'Σήμερα' : 'Αύριο'} ${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`,
+      isToday,
+      time: `${d.getHours().toString().padStart(2, '0')}:${d.getMinutes().toString().padStart(2, '0')}`,
       iso: d.toISOString(),
     });
   }
@@ -26,6 +28,7 @@ function buildSlots(): { label: string; iso: string }[] {
 }
 
 export default function ScheduledDeliveryPicker({ value, onChange }: Props) {
+  const t = useT();
   const [open, setOpen] = useState(false);
   const slots = buildSlots();
 
@@ -34,7 +37,7 @@ export default function ScheduledDeliveryPicker({ value, onChange }: Props) {
       <CardContent className="p-4 space-y-3">
         <div className="flex items-center gap-2">
           <CalendarClock className="h-5 w-5 text-primary" />
-          <h2 className="font-heading font-semibold text-foreground">Χρόνος Παράδοσης</h2>
+          <h2 className="font-heading font-semibold text-foreground">{t('customer.delivery_time')}</h2>
         </div>
 
         <div className="grid grid-cols-2 gap-2">
@@ -44,7 +47,7 @@ export default function ScheduledDeliveryPicker({ value, onChange }: Props) {
               !value ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))]' : 'bg-muted text-foreground'
             }`}
           >
-            <Clock className="h-4 w-4 inline mr-1" /> Άμεσα
+            <Clock className="h-4 w-4 inline mr-1" /> {t('customer.asap')}
           </button>
           <button
             onClick={() => setOpen(o => !o)}
@@ -53,7 +56,7 @@ export default function ScheduledDeliveryPicker({ value, onChange }: Props) {
             }`}
           >
             <CalendarClock className="h-4 w-4 inline mr-1" />
-            {value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : 'Προγραμματισμός'}
+            {value ? new Date(value).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : t('customer.schedule')}
           </button>
         </div>
 
@@ -67,7 +70,7 @@ export default function ScheduledDeliveryPicker({ value, onChange }: Props) {
                 onClick={() => { onChange(s.iso); setOpen(false); }}
                 className="text-xs"
               >
-                {s.label}
+                {`${s.isToday ? t('customer.today') : t('customer.tomorrow')} ${s.time}`}
               </Button>
             ))}
           </div>

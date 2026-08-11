@@ -1,8 +1,11 @@
 // Stripe webhook: flips paid food orders from `pending` → `placed`,
-// so the existing dispatch trigger picks them up. Refund events also
-// credit the customer wallet.
+// so the existing dispatch trigger picks them up. Also:
+//   - stores stripe_payment_intent_id on the order (needed for card refunds)
+//   - mirrors cards the customer chose to save (saved-payment-methods)
+//   - alerts the ops webhook when the webhook itself errors out
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { type StripeEnv, verifyWebhook } from "../_shared/stripe.ts";
+import { type StripeEnv, verifyWebhook, createStripeClient } from "../_shared/stripe.ts";
+import { enqueueAlert } from "../_shared/alerts.ts";
 
 let _supabase: ReturnType<typeof createClient> | null = null;
 function getSupabase() {
@@ -25,7 +28,12 @@ function extractPaidCents(obj: any): number | null {
   return typeof n === "number" ? n : null;
 }
 
-async function markOrderPaid(orderId: string, paidCents: number | null, sessionId: string | null) {
+async function markOrderPaid(
+  orderId: string,
+  paidCents: number | null,
+  sessionId: string | null,
+  paymentIntentId: string | null,
+) {
   if (!orderId) return;
 
   const { data: order, error: loadErr } = await getSupabase()
@@ -68,6 +76,7 @@ async function markOrderPaid(orderId: string, paidCents: number | null, sessionI
     .update({
       status: "placed",
       paid_amount_cents: paidCents ?? expected,
+      ...(paymentIntentId ? { stripe_payment_intent_id: paymentIntentId } : {}),
     })
     .eq("id", orderId)
     .eq("status", "pending");
@@ -84,20 +93,69 @@ async function markOrderFailed(orderId: string) {
   if (error) console.error("markOrderFailed failed:", error);
 }
 
+/**
+ * Mirror a card the customer chose to save during checkout. Stripe only
+ * attaches the payment method to the customer when the customer opts in, so
+ * we only persist rows where the PM is actually attached to the session's
+ * customer. The webhook event is not expanded, so we retrieve the PM once.
+ */
+async function persistSavedCard(env: StripeEnv, pi: any) {
+  const pmRaw = pi?.payment_method;
+  const customerId = pi?.customer;
+  const userId = pi?.metadata?.userId;
+  const pmId = typeof pmRaw === "string" ? pmRaw : (pmRaw?.id ?? null);
+  if (!pmId || !customerId || !userId) return;
+
+  try {
+    const stripe = createStripeClient(env);
+    const pm = await stripe.paymentMethods.retrieve(pmId);
+    // Only cards the customer explicitly saved are attached to the customer.
+    if (pm.customer !== customerId || pm.type !== "card" || !pm.card) return;
+
+    const { error } = await getSupabase()
+      .from("customer_payment_methods")
+      .upsert(
+        {
+          user_id: userId,
+          stripe_customer_id: customerId,
+          stripe_payment_method_id: pm.id,
+          stripe_env: env,
+          brand: pm.card.brand ?? null,
+          last4: pm.card.last4 ?? null,
+          exp_month: pm.card.exp_month ?? null,
+          exp_year: pm.card.exp_year ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: "stripe_payment_method_id" },
+      );
+    if (error) console.error("persistSavedCard failed:", error);
+  } catch (e) {
+    console.warn("persistSavedCard error:", e instanceof Error ? e.message : e);
+  }
+}
+
 async function handleWebhook(req: Request, env: StripeEnv) {
   const event = await verifyWebhook(req, env);
 
   switch (event.type) {
-    case "checkout.session.completed":
-    case "payment_intent.succeeded":
-    case "transaction.completed": {
+    case "checkout.session.completed": {
       const obj = event.data.object;
       const orderId = extractOrderId(obj);
       const paidCents = extractPaidCents(obj);
       const sessionId = typeof obj?.id === "string" && String(obj.id).startsWith("cs_")
         ? String(obj.id)
         : null;
-      if (orderId) await markOrderPaid(String(orderId), paidCents, sessionId);
+      const paymentIntentId = typeof obj?.payment_intent === "string" ? obj.payment_intent : null;
+      if (orderId) await markOrderPaid(orderId, paidCents, sessionId, paymentIntentId);
+      break;
+    }
+    case "payment_intent.succeeded":
+    case "transaction.completed": {
+      const obj = event.data.object;
+      const orderId = extractOrderId(obj);
+      const paidCents = extractPaidCents(obj);
+      if (orderId) await markOrderPaid(orderId, paidCents, null, typeof obj?.id === "string" ? obj.id : null);
+      if (event.type === "payment_intent.succeeded") await persistSavedCard(env, obj);
       break;
     }
     case "payment_intent.payment_failed":
@@ -128,7 +186,18 @@ Deno.serve(async (req) => {
       headers: { "Content-Type": "application/json" },
     });
   } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
     console.error("Webhook error:", e);
+    // Alert ops so a broken webhook (bad secret, signature, etc.) is not silent.
+    // Dedupe by env + truncated message so Stripe's retries don't flood the queue.
+    await enqueueAlert(getSupabase(), {
+      event_type: "webhook_error",
+      severity: "error",
+      title: "Stripe webhook failed",
+      body: `${rawEnv}: ${msg.slice(0, 300)}`,
+      data: { env: rawEnv },
+      dedupe_key: `webhook_error:${rawEnv}:${msg.slice(0, 80)}`,
+    });
     return new Response("Webhook error", { status: 400 });
   }
 });

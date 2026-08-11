@@ -43,6 +43,11 @@ const translations: Record<string, Record<Lang, string>> = {
   'customer.filter_top': { el: 'Κορυφαία', en: 'Top rated' },
   'customer.clear_filters': { el: 'Καθαρισμός', en: 'Clear' },
   'customer.categories': { el: 'Κατηγορίες', en: 'Categories' },
+  'customer.delivery_time': { el: 'Χρόνος Παράδοσης', en: 'Delivery time' },
+  'customer.asap': { el: 'Άμεσα', en: 'ASAP' },
+  'customer.schedule': { el: 'Προγραμματισμός', en: 'Schedule' },
+  'customer.today': { el: 'Σήμερα', en: 'Today' },
+  'customer.tomorrow': { el: 'Αύριο', en: 'Tomorrow' },
 
   // Categories
   'cat.all': { el: 'Όλα', en: 'All' },

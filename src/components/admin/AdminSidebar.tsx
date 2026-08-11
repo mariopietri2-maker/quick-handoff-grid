@@ -94,6 +94,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'buffer', label: 'Buffer' },
       { id: 'surge', label: 'Surge' },
+      { id: 'refunds', label: '↩️ Επιστροφές' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
       { id: 'pricing', label: 'Τιμολόγηση' },

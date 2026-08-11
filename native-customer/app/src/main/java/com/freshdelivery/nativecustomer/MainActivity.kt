@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
                             onTab = vm::selectTab,
                             onOpenStore = vm::openStore,
                             onCloseStore = vm::closeStore,
+                            onToggleFavorite = vm::toggleFavorite,
                             onAddToCart = vm::addToCart,
                             onUpdateQty = vm::updateQty,
                             onToggleCart = vm::toggleCart,

@@ -34,7 +34,7 @@ function asCoord(v: number | string | null | undefined): number | null {
 }
 
 /** Follow camera once the driver is heading to the customer. */
-const FOLLOW_STATUSES = new Set(['arrived', 'picked_up', 'ready']);
+const FOLLOW_STATUSES = new Set(['accepted', 'preparing', 'arrived', 'ready', 'picked_up']);
 
 function makeTinyScooterEl(): { wrap: HTMLDivElement; icon: HTMLDivElement } {
   const wrap = document.createElement('div');

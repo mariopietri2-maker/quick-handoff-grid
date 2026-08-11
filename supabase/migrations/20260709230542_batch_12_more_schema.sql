@@ -1232,10 +1232,10 @@ BEGIN
   END IF;
 
   PERFORM net.http_post(
-    url := 'https://ajkefntritjjynzofprq.supabase.co/functions/v1/aade-submit-delivery',
+    url := 'https://ojkesspghyqmjmupybva.supabase.co/functions/v1/aade-submit-delivery',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'apikey', 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqa2VmbnRyaXRqanluem9mcHJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzI2MTEsImV4cCI6MjA5MDc0ODYxMX0.Iyf-emE5fzsomvpiHxqxyRu5fybO4b8DRj00QvqTcjk'
+      'X-Cron-Secret', coalesce(current_setting('app.settings.cron_secret', true), '')
     ),
     body := jsonb_build_object('order_id', NEW.id)
   );
@@ -1373,8 +1373,11 @@ SELECT cron.schedule(
   'auto-dispatch-30s-0',
   '* * * * *',
   $$SELECT net.http_post(
-      url:='https://ajkefntritjjynzofprq.supabase.co/functions/v1/auto-dispatch',
-      headers:='{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqa2VmbnRyaXRqanluem9mcHJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzI2MTEsImV4cCI6MjA5MDc0ODYxMX0.Iyf-emE5fzsomvpiHxqxyRu5fybO4b8DRj00QvqTcjk"}'::jsonb,
+      url:='https://ojkesspghyqmjmupybva.supabase.co/functions/v1/auto-dispatch',
+      headers:=jsonb_build_object(
+        'Content-Type','application/json',
+        'X-Cron-Secret', coalesce(current_setting('app.settings.cron_secret', true), '')
+      ),
       body:='{"source":"cron"}'::jsonb
    ) AS request_id;$$
 );
@@ -1383,8 +1386,11 @@ SELECT cron.schedule(
   'auto-dispatch-30s-30',
   '* * * * *',
   $$SELECT pg_sleep(30); SELECT net.http_post(
-      url:='https://ajkefntritjjynzofprq.supabase.co/functions/v1/auto-dispatch',
-      headers:='{"Content-Type":"application/json","Authorization":"Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImFqa2VmbnRyaXRqanluem9mcHJxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzUxNzI2MTEsImV4cCI6MjA5MDc0ODYxMX0.Iyf-emE5fzsomvpiHxqxyRu5fybO4b8DRj00QvqTcjk"}'::jsonb,
+      url:='https://ojkesspghyqmjmupybva.supabase.co/functions/v1/auto-dispatch',
+      headers:=jsonb_build_object(
+        'Content-Type','application/json',
+        'X-Cron-Secret', coalesce(current_setting('app.settings.cron_secret', true), '')
+      ),
       body:='{"source":"cron"}'::jsonb
    ) AS request_id;$$
 );
