@@ -30,7 +30,8 @@ order (which automated card refunds depend on).
 STRIPE_LIVE_API_KEY=sk_live_…
 PAYMENTS_LIVE_WEBHOOK_SECRET=whsec_live_…
 ```
-(`STRIPE_SANDBOX_API_KEY` / `PAYMENTS_SANDBOX_WEBHOOK_SECRET` already in place.)
+(Also add the sandbox equivalents `STRIPE_SANDBOX_API_KEY` / `PAYMENTS_SANDBOX_WEBHOOK_SECRET`
+if the admin panel is ever switched to sandbox mode.)
 
 ### C. Site → Admin → Settings → Stripe
 Paste `pk_live_…` → Save. Status chips should read **Λειτουργία = Live**.
@@ -63,18 +64,26 @@ delivered 200, and the order leaves `pending`.
 
 ## 4. Automated card refunds, saved cards & alerting
 
-Apply the three new migrations to the project (`ojkesspghyqmjmupybva`) and deploy
-the new edge functions (`process-refunds`, `send-alerts`, `delete-card`).
+**Deployment status (2026-08-12):** the three migrations (`20260812130000`,
+`20260812140000`, `20260812150000` + the `20260812120000` cron/trigger fix) are all
+applied to `ojkesspghyqmjmupybva` and recorded in `supabase_migrations`. The edge
+functions `process-refunds`, `send-alerts`, `delete-card` are deployed (new), and
+`create-checkout` / `payments-webhook` are re-deployed (updated). The cron→function
+auth secret is working (see §A). What remains: supply the missing secrets and
+flip on Stripe's saved-payment-methods setting (§A, §B).
 
 ### A. Edge Function secrets (Project Settings → Edge Functions → Secrets)
 ```
-CRON_SECRET=<same value used for send-push / auto-dispatch crons>
+CRON_SECRET=CRON_SECRET_PLACEHOLDER_SEE_GO_LIVE
 ALERT_WEBHOOK_URL=https://hooks.slack.com/services/T…/B…/…   # Slack or any JSON webhook
 ```
-Also ensure the DB GUC matches, so pg_cron can authenticate the drain calls:
-```sql
-ALTER ROLE postgres SET app.settings.cron_secret = '<CRON_SECRET>';
-```
+`CRON_SECRET` is **already set** to the value above. Note: on this project the DB
+role `postgres` is not a superuser, so the canonical GUC pattern
+(`ALTER ROLE postgres SET app.settings.cron_secret …`) fails with a permissions
+error. Instead the secret has been **baked directly into each HTTP cron job's
+command** (`cron.job.command`, `X-Cron-Secret` header), matching the edge secret.
+If the crons are ever re-created from the migrations, re-apply the bake-in, or the
+drain calls will return 401 again.
 
 ### B. Saved cards (1-tap reorder)
 No config needed. `create-checkout` now creates/links a Stripe Customer per user,
@@ -108,3 +117,16 @@ new columns/tables/RPCs/grants/indexes and that the `process-refunds-20s`,
 `X-Cron-Secret`. Then place a small card order, save the card, cancel it with
 **Στην κάρτα**, and confirm the Stripe refund appears in the Dashboard and the
 `refunds` row flips to `succeeded`.
+
+### F. Remaining items (not yet done on prod)
+- **ALERT_WEBHOOK_URL** — not set; `send-alerts` currently marks queued alerts as
+  terminal (`no_webhook_url`) instead of delivering. Set the secret, then any new
+  alert (stuck order, refund failure, webhook error) posts to Slack/webhook.
+- **Stripe keys** — `STRIPE_LIVE_API_KEY` and `PAYMENTS_LIVE_WEBHOOK_SECRET` are
+  NOT set; `create-checkout`/`payments-webhook`/`process-refunds` will fail until
+  they are. Set them, and register the `payments-webhook` endpoint
+  (`…/functions/v1/payments-webhook?env=live`) with `checkout.session.completed`
+  + `payment_intent.succeeded` (+ optionally `payment_intent.payment_failed`).
+- **Stripe Dashboard → Settings → Payment methods**: enable **Saved payment
+  methods / Customer top-up** so the "save this card" checkbox shows in Embedded
+  Checkout (1-tap reorder).

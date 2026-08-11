@@ -199,11 +199,16 @@ FROM cron.job
 WHERE jobname IN ('process-refunds-20s', 'send-alerts-30s', 'watchdog-stuck-orders-5m')
 ORDER BY jobname;
 
--- 9) app.settings.cron_secret GUC ----------------------------------------------
+-- 9) Cron→function auth secret -------------------------------------------------
+-- This project's DB role cannot ALTER ROLE (postgres is NOT superuser), so the
+-- canonical GUC pattern can't be used. Instead each HTTP cron job bakes the
+-- CRON_SECRET literal into its command (matches the edge-function secret).
 SELECT
   CASE
-    WHEN current_setting('app.settings.cron_secret', true) IS NOT NULL
-      AND current_setting('app.settings.cron_secret', true) <> ''
-    THEN 'OK (SET)'
-    ELSE 'FAIL (NOT SET — run: ALTER ROLE postgres SET app.settings.cron_secret = ''<CRON_SECRET>'';)'
+    WHEN EXISTS (
+      SELECT 1 FROM cron.job
+      WHERE command ~ 'X-Cron-Secret''.*[0-9a-f]{64}'
+        AND command NOT LIKE '%current_setting%'
+    ) THEN 'OK (secret baked into cron.job.command)'
+    ELSE 'FAIL (no X-Cron-Secret with a literal value in cron.job.command)'
   END AS cron_secret_guc;
