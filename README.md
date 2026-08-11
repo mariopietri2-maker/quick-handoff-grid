@@ -26,10 +26,12 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 - 📍 Built for **Ioannina**, Greece
 - ⚡ **Real-time** order dispatch, live tracking, and kitchen board
+- 🚚 **Auto-dispatch** to nearby drivers with AI dynamic pricing & ETA prediction
 - 🏷️ **Multi-store** portal — one account, many restaurants
-- 💸 **Stripe** payments with wallet-based refunds
+- 💳 **Stripe** payments — wallet **and** automated card refunds, saved cards
+- 🧾 **AADE myDATA** (Ν.5073/2023) e-invoicing on every delivered order
 - 🗺️ **Mapbox** navigation for drivers
-- 📱 **Capacitor** native apps for Customer & Driver (Play/App Store)
+- 📱 **Native** Customer & Driver apps (Kotlin + Jetpack Compose), store PWA
 - 🖥️ **PWA** store manager — installable, works offline
 
 ---
@@ -38,11 +40,16 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 | App | Route | Who |
 |---|---|---|
-| 🛒 Customer | `/order` | Browse, checkout, live tracking |
+| 🛒 Customer | `/order` | Browse, cart, checkout (card/cash), live tracking |
+| 🛒 My orders | `/orders` | Order history, reorder, saved cards |
 | 🏪 Store portal | `/store` | Multi-store owner hub (**installable PWA**) |
 | 🚚 Driver | `/driver` | Offers, navigation, handoff |
+| 📍 Driver monitor | `/m` | Role **M** — watch-only live driver map (no money) |
 | 🛠️ Admin | `/admin` | Dispatch, finance, users, settings |
-| 🎧 Support | `/support` | Tickets |
+| 🎧 Support | `/support` | Tickets, live order editing, card refunds |
+| 📄 Public | `/legal/:doc` · `/download` · `/presentation` | Legal/refund pages, APK downloads, product deck |
+
+Sub-routes: `/auth` · `/restaurant/:id` · `/checkout` · `/order-tracking/:id` · `/driver/profile` · `/store/profile`
 
 ---
 
@@ -54,8 +61,10 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 | **Backend** | Supabase — Postgres, Auth, Realtime, Edge Functions, RLS |
 | **Maps** | Mapbox |
 | **Payments** | Stripe (set **live** keys in Railway + Supabase secrets for prod) |
-| **Mobile** | Capacitor 8 (Customer + Driver native shells); Store = web PWA |
-| **Tests** | Vitest (unit) · Playwright (e2e) |
+| **Mobile** | Native Kotlin + Jetpack Compose (Customer/Driver) · Capacitor 8 shells · Store = web PWA |
+| **Tax compliance** | AADE myDATA (Greek e-invoicing) — auto-submits every delivery |
+| **CI/CD** | GitHub Actions — lint, unit, build on PR/push; native APK/AAB releases |
+| **Tests** | Vitest (unit) · Playwright (e2e) · smoke/stress scripts |
 | **Hosting** | Railway (Nixpacks SPA) |
 
 > 📦 **Package manager:** npm (`package-lock.json`) · 🟢 **Node** 20+ (22 recommended)
@@ -66,13 +75,17 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 ```
 src/                     React SPA (pages, components, hooks)
-supabase/migrations/     Canonical DB schema & RPCs
-supabase/functions/      Edge functions (dispatch, checkout, webhooks, …)
+supabase/migrations/     Canonical DB schema, triggers & RPCs
+supabase/functions/      Edge functions (dispatch, checkout, refunds, myDATA, …)
+native-customer/         Native customer app (Kotlin + Jetpack Compose)
+native-driver/           Native driver app (Kotlin + Jetpack Compose)
+android/ android-driver/ Capacitor Android shells (Customer / Driver)
+plugins/                 Local Capacitor plugins (Mapbox maps, …)
+docs/                    Go-live, store publishing, push & presentation guides
 e2e/                     Playwright flows
-scripts/build-apks.sh    Rebuild customer/store debug APKs
-public/manifest-store.json   Store PWA manifest
-public/sw.js             Service worker (web PWA installability)
-android/                 Capacitor Android shell
+scripts/                 APK builds, live deploy, seed, smoke & stress tools
+.github/workflows/       CI + native APK/AAB release builds
+public/                  PWA manifests, service worker, sitemap/robots
 ```
 
 > 🚧 Schema changes belong **only** in `supabase/migrations/`. Old root `batch_*.sql` scratch files are removed and gitignored.
@@ -102,6 +115,8 @@ Vite **bakes** `VITE_*` into the client bundle at build time. The repo keeps `.e
 | `VITE_PAYMENTS_CLIENT_TOKEN` | Stripe **publishable** key (`pk_live_…` in prod) |
 | `VITE_MAPBOX_TOKEN` | Optional client fallback; prefer edge `get-mapbox-token` |
 
+📚 **Guides:** [`docs/GO_LIVE.md`](docs/GO_LIVE.md) (launch checklist) · [`docs/PRESENTATION.md`](docs/PRESENTATION.md) (product deck) · [`docs/STORE_PUBLISHING.md`](docs/STORE_PUBLISHING.md)
+
 ### 🔐 Supabase Auth
 
 - Site URL: `https://quick-handoff-grid-production.up.railway.app`
@@ -117,7 +132,7 @@ See [`docs/FIREBASE_PUSH.md`](docs/FIREBASE_PUSH.md) — place `google-services.
 
 ### 🔑 Edge secrets (Supabase Dashboard → Edge Functions)
 
-`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, Stripe live/test keys + webhook secrets, `MAPBOX_PUBLIC_TOKEN`, etc.
+`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, Stripe live/test keys + webhook secrets, `MAPBOX_PUBLIC_TOKEN`, `ALERT_WEBHOOK_URL`, AADE myDATA credentials — see [`docs/GO_LIVE.md`](docs/GO_LIVE.md).
 
 ```bash
 npm run dev      # http://localhost:5173
@@ -136,16 +151,28 @@ npm run lint
 
 ---
 
-## 📱 Mobile (Customer / Store)
+## 🚚 Dispatch & driver lead monitor
 
-Customer and store production apps use **Capacitor** shells for Play / App Store. They are **not** marketed as sideload APKs on the public site.
+- **Auto-dispatch** offers each order to nearby / fair-earnings drivers (`auto-dispatch` edge function + `accept-offer` / `decline-offer`).
+- AI helpers: dynamic pricing (`ai-dynamic-pricing`), ETA prediction (`predict-dispatch-time`), route optimization (`optimize-route`).
+- Role **M** (driver lead) watches the live driver map at `/m` — read-only, no wallet/money access.
+
+---
+
+## 📱 Mobile (Customer / Driver)
+
+Native **Kotlin + Jetpack Compose** apps live in [`native-customer/`](native-customer/) and [`native-driver/`](native-driver/). Capacitor shells remain in `android/` (Customer) and `android-driver/`. Store owners use the **PWA** at `/store` (Install / Add to Home Screen).
 
 ```bash
 ./scripts/build-apks.sh             # debug APKs (dev sideload only)
-./scripts/setup-play-signing.sh    # once: create Play upload keystores
-./scripts/build-store-aabs.sh      # signed .aab for Google Play
-./scripts/sync-ios-apps.sh         # scaffold ios-customer + ios-driver (archive on a Mac)
+./scripts/setup-play-signing.sh     # once: create Play upload keystores
+./scripts/build-store-aabs.sh       # signed .aab for Google Play
+./scripts/sync-ios-apps.sh          # scaffold ios-customer + ios-driver (archive on a Mac)
+cd native-customer && ./gradlew :app:assembleDebug   # native customer (com.freshdelivery.customer)
+cd native-driver  && ./gradlew :app:assembleDebug   # native driver  (com.freshdelivery.driver)
 ```
+
+GitHub Actions (`build-native-apks.yml`) rebuilds native debug APKs/AABs and publishes them to the [`mobile-apks-v1`](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1) release.
 
 ### 📲 Download the native Customer app (Android)
 
@@ -157,13 +184,6 @@ Scan with your phone to download the latest **Fresh Delivery Customer** APK.
   <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=customerNative">Fresh Delivery Customer download page</a> (chooses the newest APK from the <a href="https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1">mobile-apks-v1</a> release). The URL is stable, so this QR always reflects the newest build.</sub>
 </div>
 
-**True native customer (Kotlin + Jetpack Compose)** — Capacitor-parity app in [`native-customer/`](native-customer/):
-
-```bash
-cd native-customer && ./gradlew :app:assembleDebug
-# app id: com.freshdelivery.customer (replaces Capacitor customer APK)
-```
-
 ### 📲 Download the native Driver app (Android)
 
 Scan with your phone to download the latest **Fresh Delivery Driver** APK.
@@ -174,13 +194,6 @@ Scan with your phone to download the latest **Fresh Delivery Driver** APK.
   <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=driverNative">Fresh Delivery Driver download page</a> (chooses the newest APK from the <a href="https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1">mobile-apks-v1</a> release). The URL is stable, so this QR always reflects the newest build.</sub>
 </div>
 
-**True native driver (Kotlin + Jetpack Compose)** — Capacitor-parity app in [`native-driver/`](native-driver/):
-
-```bash
-cd native-driver && ./gradlew :app:assembleDebug
-# app id: com.freshdelivery.driver (replaces Capacitor driver APK)
-```
-
 **Store owners:** use the **PWA** at `/store` (Install / Add to Home Screen). Old `/download` URLs redirect there.
 
 **Play Store / App Store:** see [`docs/STORE_PUBLISHING.md`](docs/STORE_PUBLISHING.md).  
@@ -190,28 +203,43 @@ Release Android builds: do **not** set `CAPACITOR_DEV=1`. Store AABs omit WebVie
 
 ---
 
-## 💳 Payments note
+## 💳 Payments
 
-> ⚠️ **Launch checklist:** Uber green branding is live; test stores are hidden via migration. Before public launch set Stripe **live** `pk_live_…` in Railway (override `.env.production` test key) + matching live edge secrets + webhook endpoint on Supabase.
+Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with **live** keys on Railway and matching live secrets + webhook endpoint on Supabase.
 
-Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with **live** keys on Railway and matching live secrets + webhook endpoint on Supabase. In-app refunds credit the **customer wallet** (see `/legal/refunds`); original-card Stripe refunds are manual/support only today.
+- **Wallet refunds** credit the customer wallet (see `/legal/refunds`).
+- **Card refunds** are automated: canceling a paid card order enqueues a refund that the `process-refunds` cron executes idempotently (retries, then alerts on failure).
+- **Saved cards** are mirrored by the `payments-webhook` for 1-tap reorder at checkout.
+
+> ⚠️ **Launch checklist:** set Stripe **live** `pk_live_…` + matching edge secrets + webhook, then enable myDATA and FCM secrets — see [`docs/GO_LIVE.md`](docs/GO_LIVE.md).
+
+---
+
+## 🧾 Greek tax compliance (AADE myDATA)
+
+Per-delivery e-invoices (`aade-submit-delivery` edge function). The DB trigger `orders_aade_autosubmit` auto-submits each **delivered** order to myDATA; results land in `aade_delivery_reports` (idempotent, admin-retryable).
 
 ---
 
 ## 🧪 Testing
 
 ```bash
-npm test                 # unit
+npm test                 # unit (Vitest)
 npx playwright install chromium
 # configure .env.e2e — see e2e/README.md
 npm run test:e2e
+
+# smoke & stress (optional)
+python3 scripts/smoke-order-lifecycle.py    # full order flow against a project
+node scripts/stress-order-burst.mjs          # order burst load
+node scripts/stress-read-probe.mjs           # read-path probe
 ```
 
 ---
 
 ## 🤝 Contributing
 
-Open a PR against `main`. Railway auto-deploys from `main`.
+Open a PR against `main`. GitHub Actions runs lint + unit tests + build; Railway auto-deploys from `main`.
 
 ---
 
