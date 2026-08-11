@@ -769,6 +769,59 @@ export type Database = {
         }
         Relationships: []
       }
+      customer_payment_methods: {
+        Row: {
+          brand: string | null
+          created_at: string
+          exp_month: number | null
+          exp_year: number | null
+          id: string
+          is_default: boolean
+          last4: string | null
+          stripe_customer_id: string
+          stripe_env: string
+          stripe_payment_method_id: string
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          stripe_customer_id: string
+          stripe_env?: string
+          stripe_payment_method_id: string
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          brand?: string | null
+          created_at?: string
+          exp_month?: number | null
+          exp_year?: number | null
+          id?: string
+          is_default?: boolean
+          last4?: string | null
+          stripe_customer_id?: string
+          stripe_env?: string
+          stripe_payment_method_id?: string
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "customer_payment_methods_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["user_id"]
+          },
+        ]
+      }
       customer_referrals: {
         Row: {
           completed_at: string | null
@@ -4185,6 +4238,10 @@ export type Database = {
       }
       run_basket_distribution: { Args: { _rule_id: string }; Returns: Json }
       run_due_basket_distributions: { Args: never; Returns: number }
+      set_default_payment_method: {
+        Args: { p_id: string }
+        Returns: boolean
+      }
       set_order_dispatch: {
         Args: {
           p_dispatch_at: string
@@ -4242,7 +4299,7 @@ export type Database = {
       }
     }
     Enums: {
-      app_role: "driver" | "store" | "customer" | "admin" | "support"
+      app_role: "m" | "driver" | "store" | "customer" | "admin" | "support"
       discount_type: "percentage" | "fixed"
       order_status:
         | "pending"
@@ -4381,7 +4438,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      app_role: ["driver", "store", "customer", "admin", "support"],
+      app_role: ["m", "driver", "store", "customer", "admin", "support"],
       discount_type: ["percentage", "fixed"],
       order_status: [
         "pending",
