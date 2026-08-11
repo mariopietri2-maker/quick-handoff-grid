@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { Moon, X, Search, Plus, CheckSquare, Square } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Moon, X, Search, Plus, CheckSquare, Square, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -9,19 +9,71 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { useMenuItems } from '@/hooks/useMenuItems';
+import { useAuth } from '@/hooks/useAuth';
+import { supabase } from '@/integrations/supabase/client';
+import { toast } from 'sonner';
 import ItemModifiersEditor from './ItemModifiersEditor';
 
 interface MenuControlProps {
   storeId: string;
 }
 
+const ACCEPT = 'image/png,image/jpeg,image/webp';
+const MAX_BYTES = 4 * 1024 * 1024;
+
+function extFromFile(file: File): string {
+  const fromName = file.name.split('.').pop()?.toLowerCase();
+  if (fromName && ['png', 'jpg', 'jpeg', 'webp'].includes(fromName)) {
+    return fromName === 'jpeg' ? 'jpg' : fromName;
+  }
+  if (file.type === 'image/png') return 'png';
+  if (file.type === 'image/webp') return 'webp';
+  return 'jpg';
+}
+
 export function MenuControl({ storeId }: MenuControlProps) {
-  const { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem } = useMenuItems(storeId);
+  const { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem, updateItemImage } = useMenuItems(storeId);
+  const { isAdmin } = useAuth();
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newItem, setNewItem] = useState({ name: '', price: '', category: '', description: '' });
+  const [imageBusyId, setImageBusyId] = useState<string | null>(null);
+  const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
+
+  const uploadItemImage = async (itemId: string, file: File) => {
+    if (!ACCEPT.split(',').includes(file.type)) {
+      toast.error('Επιτρέπονται μόνο PNG / JPEG / WebP');
+      return;
+    }
+    if (file.size > MAX_BYTES) {
+      toast.error('Μέγιστο μέγεθος 4 MB');
+      return;
+    }
+    setImageBusyId(itemId);
+    const ext = extFromFile(file);
+    const path = `${storeId}/${itemId}-${Date.now()}.${ext}`;
+    const { error: upErr } = await supabase.storage
+      .from('item-images')
+      .upload(path, file, { cacheControl: '3600', upsert: false, contentType: file.type });
+    if (upErr) {
+      setImageBusyId(null);
+      toast.error('Αποτυχία upload: ' + upErr.message);
+      return;
+    }
+    const { data: pub } = supabase.storage.from('item-images').getPublicUrl(path);
+    const ok = await updateItemImage(itemId, pub.publicUrl);
+    setImageBusyId(null);
+    if (ok) toast.success('Η φωτογραφία προϊόντος αποθηκεύτηκε');
+  };
+
+  const clearItemImage = async (itemId: string) => {
+    setImageBusyId(itemId);
+    const ok = await updateItemImage(itemId, null);
+    setImageBusyId(null);
+    if (ok) toast.success('Η φωτογραφία αφαιρέθηκε');
+  };
 
   const toggleSelected = (id: string) => {
     setSelectedIds(prev => {
@@ -217,6 +269,49 @@ export function MenuControl({ storeId }: MenuControlProps) {
                         </button>
                       )}
                       <ItemModifiersEditor menuItemId={item.id} itemName={item.name} />
+                      {isAdmin && (
+                        <>
+                          <input
+                            ref={(el) => {
+                              fileRefs.current[`${item.id}:image`] = el;
+                            }}
+                            type="file"
+                            accept={ACCEPT}
+                            className="hidden"
+                            onChange={(e) => {
+                              const file = e.target.files?.[0];
+                              e.target.value = '';
+                              if (file) void uploadItemImage(item.id, file);
+                            }}
+                          />
+                          <button
+                            onClick={() => fileRefs.current[`${item.id}:image`]?.click()}
+                            className={`h-9 w-9 rounded-lg flex items-center justify-center transition-colors ${
+                              item.image_url
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-muted text-muted-foreground hover:text-primary'
+                            }`}
+                            title={item.image_url ? 'Αλλαγή φωτογραφίας προϊόντος' : 'Προσθήκη φωτογραφίας προϊόντος'}
+                            aria-label="Φωτογραφία προϊόντος"
+                          >
+                            {imageBusyId === item.id ? (
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                            ) : (
+                              <ImageIcon className="h-4 w-4" />
+                            )}
+                          </button>
+                          {item.image_url && (
+                            <button
+                              onClick={() => void clearItemImage(item.id)}
+                              className="h-9 w-9 rounded-lg flex items-center justify-center bg-muted text-muted-foreground hover:text-destructive transition-colors"
+                              title="Αφαίρεση φωτογραφίας"
+                              aria-label="Αφαίρεση φωτογραφίας"
+                            >
+                              <Trash2 className="h-4 w-4" />
+                            </button>
+                          )}
+                        </>
+                      )}
                       <Switch
                         checked={item.is_available ?? true}
                         onCheckedChange={() => toggleAvailable(item.id)}

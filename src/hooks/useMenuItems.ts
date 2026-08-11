@@ -97,5 +97,18 @@ export function useMenuItems(storeId: string | null) {
     }
   };
 
-  return { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem, refetch: fetchItems };
+  const updateItemImage = async (id: string, imageUrl: string | null) => {
+    const { error } = await supabase
+      .from('menu_items')
+      .update({ image_url: imageUrl })
+      .eq('id', id);
+    if (error) {
+      toast.error(error.message || 'Failed to update image');
+      return false;
+    }
+    setItems(prev => prev.map(i => i.id === id ? { ...i, image_url: imageUrl } : i));
+    return true;
+  };
+
+  return { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem, updateItemImage, refetch: fetchItems };
 }
