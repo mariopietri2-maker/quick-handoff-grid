@@ -428,7 +428,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 )
                 maybeAlertOffers(offers + stacked)
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = friendlyError(e))
+                _state.value = _state.value.copy(error = handleError("refreshWork", e))
             }
         }
     }
@@ -485,7 +485,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             }.onFailure { e ->
                 _state.value = _state.value.copy(
                     busy = false,
-                    error = friendlyError(e),
+                    error = handleError("acceptOffer", e),
                     offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
                         (_state.value.offers + removed).sortedBy { it.expiresAt }
                     } else _state.value.offers,
@@ -516,7 +516,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 val orders = opsHelper.fetchOpsOpenOrders()
                 _state.value = _state.value.copy(opsOrders = orders)
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = friendlyError(e))
+                _state.value = _state.value.copy(error = handleError("refreshOps", e))
             }
         }
     }
@@ -532,7 +532,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     refreshOps()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(busy = false, error = handleError("claimOpsOrder", e))
                     refreshOps()
                 }
         }
@@ -559,7 +559,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         busy = false,
-                        error = friendlyError(e),
+                        error = handleError("declineOffer", e),
                         offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
                             (_state.value.offers + removed).sortedBy { it.expiresAt }
                         } else _state.value.offers,
@@ -595,7 +595,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     if (nextStatus == "delivered") refreshMoney()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(activeTrips = before, busy = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(activeTrips = before, busy = false, error = handleError("advanceTrip", e))
                     refreshWork()
                 }
         }
@@ -611,7 +611,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     refreshMoney()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(busy = false, error = handleError("withdraw", e))
                 }
         }
     }
@@ -634,7 +634,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     if (!newId.isNullOrBlank()) openChat(newId, submitFirst = true)
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(busy = false, error = handleError("submitSupportTicket", e))
                 }
         }
     }
@@ -656,7 +656,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     )
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(chatLoading = false, error = friendlyError(e))
+                    _state.value = _state.value.copy(chatLoading = false, error = handleError("openChat", e))
                 }
             startChatSubscription(ticketId)
         }
@@ -701,7 +701,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             runCatching { repo.sendTicketMessage(ticketId, uid, trimmed) }
                 .onSuccess { refreshChatMessages(ticketId) }
-                .onFailure { e -> _state.value = _state.value.copy(error = friendlyError(e)) }
+                .onFailure { e -> _state.value = _state.value.copy(error = handleError("sendChatMessage", e)) }
         }
     }
 
@@ -736,7 +736,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         liveChatLoading = false,
-                        liveChatError = friendlyError(e),
+                        liveChatError = handleError("openLiveChat", e),
                     )
                 }
             startLiveChatSubscription(uid)
@@ -759,7 +759,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 .onSuccess { refreshLiveChat(uid) }
                 .onFailure { e ->
                     _state.value = _state.value.copy(
-                        liveChatError = friendlyError(e),
+                        liveChatError = handleError("sendLiveChatMessage", e),
                     )
                 }
         }
@@ -824,7 +824,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     driverProfile = repo.loadDriverProfile(uid),
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = friendlyError(e))
+                _state.value = _state.value.copy(busy = false, error = handleError("saveProfile", e))
             }
         }
     }
