@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -15,7 +15,7 @@ import {
 import { useDriverWallet } from '@/hooks/useDriverWallet';
 import { useEarnings } from '@/hooks/useEarnings';
 import { useDriverState } from '@/hooks/useDriverState';
-import { supabase } from '@/integrations/supabase/client';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import {
   CompletedOrderDetailSheet,
   type CompletedOrderRef,
@@ -26,20 +26,12 @@ export function DriverMoneyPanel() {
   const { wallet, transactions, loading } = useDriverWallet();
   const { today, week, recentEarnings } = useEarnings();
   const { state } = useDriverState();
-  const [cap, setCap] = useState(200);
+  const { settings: platformSettings } = usePlatformSettings();
+  const cap = platformSettings.max_cash_cap;
   const [detailRef, setDetailRef] = useState<CompletedOrderRef>(null);
   const [ackResetAt, setAckResetAt] = useState<string | null>(() =>
     typeof window !== 'undefined' ? localStorage.getItem('driver_cash_reset_ack') : null,
   );
-
-  useEffect(() => {
-    (supabase as any)
-      .rpc('get_platform_settings_public')
-      .then(({ data }: any) => {
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row?.max_cash_cap != null) setCap(Number(row.max_cash_cap));
-      });
-  }, []);
 
   if (loading) {
     return (
@@ -53,7 +45,6 @@ export function DriverMoneyPanel() {
   const balance = Number(wallet?.available_balance ?? 0);
   const pending = Number(wallet?.pending_balance ?? 0);
   const withdrawn = Number(wallet?.total_withdrawn ?? 0);
-  // Delivery payouts live in Παραδόσεις — keep Κινήσεις for non-delivery wallet activity only
   const recent = transactions
     .filter((tx) => tx.type !== 'earning_credit')
     .slice(0, 12);
@@ -79,7 +70,6 @@ export function DriverMoneyPanel() {
 
   return (
     <div className="space-y-4 animate-fade-in">
-      {/* Hero balance */}
       <section className="relative overflow-hidden rounded-[22px] driver-gradient-earn shadow-[0_16px_40px_-18px_hsl(162_58%_28%/0.55)]">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
@@ -124,7 +114,6 @@ export function DriverMoneyPanel() {
           </div>
         </div>
 
-        {/* Today strip */}
         <div className="relative mx-3 mb-3 rounded-2xl bg-white/12 border border-white/15 backdrop-blur-sm px-3.5 py-3">
           <div className="flex items-center justify-between mb-2.5">
             <p className="text-[10px] font-heading font-bold uppercase tracking-[0.12em] text-white/70">Σήμερα</p>
@@ -144,7 +133,6 @@ export function DriverMoneyPanel() {
         </div>
       </section>
 
-      {/* Shift cash */}
       <section
         className={`rounded-[20px] driver-glass overflow-hidden ${
           cashCapped
@@ -252,7 +240,6 @@ export function DriverMoneyPanel() {
         </div>
       </section>
 
-      {/* Recent deliveries — tap for pay / tip / extras / km */}
       <section className="rounded-[20px] driver-glass overflow-hidden">
         <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
           <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Παραδόσεις</p>
@@ -319,7 +306,6 @@ export function DriverMoneyPanel() {
         )}
       </section>
 
-      {/* Other wallet activity — only when there are non-delivery txs */}
       {recent.length > 0 && (
       <section className="rounded-[20px] driver-glass overflow-hidden">
         <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
