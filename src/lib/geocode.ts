@@ -19,9 +19,6 @@ function writeLS(key: string, val: GeocodeResult | null) {
   try { localStorage.setItem(LS_PREFIX + key, JSON.stringify(val)); } catch { /* quota */ }
 }
 
-/** No-op kept for backwards compat with old DriverApp boot warmup. */
-export function warmMapboxToken(): void { /* Google API is invoked on demand */ }
-
 function normalizeKey(address: string): string {
   return address.trim().toLowerCase().replace(/\s+/g, ' ');
 }
