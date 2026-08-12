@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 export interface NearbyStore {
   id: string;
@@ -18,37 +19,16 @@ const COUNT_POLL_MS = 12_000;
  * assigned to other drivers.
  */
 export function useNearbyStoresForDriver() {
-  const [enabled, setEnabled] = useState<boolean | null>(null);
+  const { settings } = usePlatformSettings();
+  const enabled = settings.show_stores_on_driver_map;
   const [stores, setStores] = useState<NearbyStore[]>([]);
-
-  // Load admin toggle + subscribe to changes
-  useEffect(() => {
-    let mounted = true;
-    const load = async () => {
-      const { data } = await (supabase as any).rpc('get_platform_settings_public');
-      const row = Array.isArray(data) ? data[0] : data;
-      if (mounted) {
-        setEnabled(Boolean(row?.show_stores_on_driver_map ?? true));
-      }
-    };
-    load();
-    const ch = supabase
-      .channel('platform-settings-driver-map')
-      .on('postgres_changes',
-        { event: 'UPDATE', schema: 'public', table: 'platform_settings', filter: 'id=eq.1' },
-        (payload) => {
-          const v = (payload.new as { show_stores_on_driver_map?: boolean }).show_stores_on_driver_map;
-          setEnabled(Boolean(v ?? true));
-        }
-      )
-      .subscribe();
-    return () => { mounted = false; supabase.removeChannel(ch); };
-  }, []);
 
   // Fetch stores + their active order counts
   useEffect(() => {
-    if (enabled === false) { setStores([]); return; }
-    if (enabled === null) return;
+    if (!enabled) {
+      setStores([]);
+      return;
+    }
 
     let mounted = true;
     let validStoreIds: string[] = [];
@@ -159,5 +139,5 @@ export function useNearbyStoresForDriver() {
     };
   }, [enabled]);
 
-  return { stores, enabled: enabled ?? true };
+  return { stores, enabled };
 }
