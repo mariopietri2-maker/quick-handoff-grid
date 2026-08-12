@@ -34,6 +34,20 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 ---
 
+## 📊 Tech Composition
+
+| Language | Percentage |
+|----------|-----------|
+| TypeScript | 55.6% |
+| PLpgSQL | 27.9% |
+| Kotlin | 11.5% |
+| HTML | 3.2% |
+| Shell | 0.7% |
+| CSS | 0.5% |
+| Other | 0.6% |
+
+---
+
 ## 🧩 Apps & routes
 
 | App | Route | Who |
@@ -154,7 +168,7 @@ Scan with your phone to download the latest **Fresh Delivery Customer** APK.
 <div align="center">
   <img src="docs/qr-customer-apk.png" width="220" height="220" alt="QR code — Fresh Delivery Customer APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=customerNative">Fresh Delivery Customer download page</a> (chooses the newest APK from the <a href="https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1">mobile-apks-v1</a> release). The URL is stable, so this QR always reflects the newest build.</sub>
+  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=customerNative">Fresh Delivery Customer download page</a> (chooses the newest APK from the <a href=[...]
 </div>
 
 **True native customer (Kotlin + Jetpack Compose)** — Capacitor-parity app in [`native-customer/`](native-customer/):
@@ -171,7 +185,7 @@ Scan with your phone to download the latest **Fresh Delivery Driver** APK.
 <div align="center">
   <img src="docs/qr-driver-apk.png" width="220" height="220" alt="QR code — Fresh Delivery Driver APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=driverNative">Fresh Delivery Driver download page</a> (chooses the newest APK from the <a href="https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1">mobile-apks-v1</a> release). The URL is stable, so this QR always reflects the newest build.</sub>
+  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=driverNative">Fresh Delivery Driver download page</a> (chooses the newest APK from the <a href="htt[...]
 </div>
 
 **True native driver (Kotlin + Jetpack Compose)** — Capacitor-parity app in [`native-driver/`](native-driver/):
@@ -192,9 +206,9 @@ Release Android builds: do **not** set `CAPACITOR_DEV=1`. Store AABs omit WebVie
 
 ## 💳 Payments note
 
-> ⚠️ **Launch checklist:** Uber green branding is live; test stores are hidden via migration. Before public launch set Stripe **live** `pk_live_…` in Railway (override `.env.production` test key) + matching live edge secrets + webhook endpoint on Supabase.
+> ⚠️ **Launch checklist:** Uber green branding is live; test stores are hidden via migration. Before public launch set Stripe **live** `pk_live_…` in Railway (override `.env.production` tes[...]
 
-Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with **live** keys on Railway and matching live secrets + webhook endpoint on Supabase. In-app refunds credit the **customer wallet** (see `/legal/refunds`); original-card Stripe refunds are manual/support only today.
+Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with **live** keys on Railway and matching live secrets + webhook endpoint on Supabase. In-app refunds cre[...]
 
 ---
 
