@@ -62,13 +62,17 @@ export default function StoreApp() {
     return 'orders';
   });
 
-  // Auto-enter manage mode when a store is already selected
+  // Restore selected store from session after reload
   useEffect(() => {
-    if (store && view === 'portal') {
-      // keep portal if multiple stores so owner can switch; auto-manage if only one
-      if (stores.length <= 1) setView('manage');
+    if (storeLoading) return;
+    if (selectedStoreId && stores.some((s) => s.id === selectedStoreId)) {
+      setView('manage');
+    } else if (stores.length === 0) {
+      setView('create');
+    } else {
+      setView('portal');
     }
-  }, [store, stores.length, view]);
+  }, [storeLoading, stores, selectedStoreId]);
 
   const handleCreate = async () => {
     if (!newStore.name.trim()) return;
@@ -81,8 +85,18 @@ export default function StoreApp() {
     }
   };
 
+  const openStore = (id: string) => {
+    selectStore(id);
+    setView('manage');
+  };
+
+  const backToPortal = () => {
+    setView('portal');
+  };
+
   const loading = storeLoading || ordersLoading;
   const placedCount = orders.filter((o) => o.status === 'placed').length;
+  const tabsListRef = useRef<HTMLDivElement>(null);
 
   if (storeLoading) {
     return (
@@ -92,145 +106,137 @@ export default function StoreApp() {
     );
   }
 
-  // Multi-store portal
-  if (view === 'portal' && stores.length > 0) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 glass-strong border-b border-border/40">
-          <div className="container max-w-5xl mx-auto px-4 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-2.5">
-              <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-                <LayoutGrid className="h-4 w-4 text-primary" />
-              </div>
-              <h1 className="font-heading font-bold text-foreground">Τα καταστήματά μου</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button size="sm" variant="outline" className="font-heading gap-1.5" onClick={() => setView('create')}>
-                <Plus className="h-4 w-4" /> Νέο
-              </Button>
-              <UserMenu />
-            </div>
-          </div>
-        </header>
-        <div className="container max-w-5xl mx-auto px-4 py-6">
-          <OwnerStoresPortal
-            stores={stores}
-            selectedStoreId={selectedStoreId}
-            onSelect={(id) => {
-              selectStore(id);
-              setView('manage');
-            }}
-          />
-        </div>
-      </div>
-    );
-  }
-
-  // Create store form
-  if (view === 'create' || (!store && stores.length === 0)) {
-    return (
-      <div className="min-h-screen bg-background">
-        <header className="sticky top-0 z-40 glass-strong border-b border-border/40">
-          <div className="container max-w-lg mx-auto px-4 h-14 flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              {stores.length > 0 && (
-                <Button size="icon" variant="ghost" onClick={() => setView('portal')}>
-                  <ArrowLeft className="h-4 w-4" />
-                </Button>
-              )}
-              <h1 className="font-heading font-bold">Νέο κατάστημα</h1>
-            </div>
-            <UserMenu />
-          </div>
-        </header>
-        <div className="container max-w-lg mx-auto px-4 py-8">
-          <Card>
-            <CardContent className="p-6 space-y-4">
-              <div className="space-y-2">
-                <Label className="font-heading">Όνομα</Label>
-                <Input
-                  value={newStore.name}
-                  onChange={(e) => setNewStore((s) => ({ ...s, name: e.target.value }))}
-                  placeholder="π.χ. Pizza Napoli"
-                  className="font-heading"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-heading">Διεύθυνση</Label>
-                <Input
-                  value={newStore.address}
-                  onChange={(e) => setNewStore((s) => ({ ...s, address: e.target.value }))}
-                  placeholder="Οδός, αριθμός, πόλη"
-                  className="font-heading"
-                />
-              </div>
-              <div className="space-y-2">
-                <Label className="font-heading">Τηλέφωνο</Label>
-                <Input
-                  value={newStore.phone}
-                  onChange={(e) => setNewStore((s) => ({ ...s, phone: e.target.value }))}
-                  placeholder="69xxxxxxxx"
-                  className="font-heading"
-                />
-              </div>
-              <Button className="w-full font-heading" onClick={handleCreate} disabled={creating || !newStore.name.trim()}>
-                {creating ? 'Δημιουργία…' : 'Δημιουργία καταστήματος'}
-              </Button>
-            </CardContent>
-          </Card>
-        </div>
-      </div>
-    );
-  }
-
-  if (!store) {
-    return (
-      <div className="min-h-screen bg-background flex items-center justify-center p-4">
-        <p className="text-muted-foreground font-heading">Δεν βρέθηκε κατάστημα.</p>
-      </div>
-    );
-  }
-
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 glass-strong border-b border-border/40">
         <div className="container max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
           <div className="flex items-center gap-2.5 min-w-0">
-            {stores.length > 1 && (
-              <Button size="icon" variant="ghost" className="shrink-0" onClick={() => setView('portal')}>
+            {view === 'manage' && stores.length > 1 && (
+              <Button size="icon" variant="ghost" className="shrink-0" onClick={backToPortal}>
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
             <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
-              <Store className="h-4 w-4 text-primary" />
+              {view === 'portal' ? (
+                <LayoutGrid className="h-4 w-4 text-primary" />
+              ) : (
+                <Store className="h-4 w-4 text-primary" />
+              )}
             </div>
             <div className="min-w-0">
-              <h1 className="font-heading font-bold text-foreground truncate leading-tight">{store.name}</h1>
-              {placedCount > 0 && (
+              <h1 className="font-heading font-bold text-foreground truncate leading-tight">
+                {view === 'portal'
+                  ? 'Τα καταστήματά μου'
+                  : view === 'create'
+                    ? 'Νέο κατάστημα'
+                    : store?.name ?? 'Κατάστημα'}
+              </h1>
+              {view === 'manage' && placedCount > 0 && (
                 <p className="text-[11px] text-primary font-heading font-semibold">{placedCount} νέες</p>
               )}
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {notifPermission !== 'granted' && (
+            {view === 'manage' && notifPermission !== 'granted' && (
               <Button size="sm" variant="outline" className="font-heading gap-1 hidden sm:flex" onClick={handleEnableNotifications}>
                 <Bell className="h-3.5 w-3.5" /> Ειδοποιήσεις
               </Button>
             )}
-            <StoreSupportButton storeId={store.id} />
+            {view === 'manage' && store && <StoreSupportButton storeId={store.id} />}
+            {view === 'portal' && (
+              <Button size="sm" variant="outline" className="font-heading gap-1.5" onClick={() => setView('create')}>
+                <Plus className="h-4 w-4" /> Νέο
+              </Button>
+            )}
             <UserMenu />
           </div>
         </div>
       </header>
 
-      <div className="container max-w-5xl mx-auto px-4 py-4 space-y-4">
+      <div className="container max-w-5xl mx-auto px-4 py-4">
         <StorePwaInstallBanner />
-        <AnnouncementsBanner audience="store" />
 
-        {store && (
+        {view === 'create' ? (
+          <div className="max-w-lg mx-auto py-4">
+            <Card>
+              <CardContent className="p-6 space-y-4">
+                <div className="space-y-2">
+                  <Label className="font-heading">Όνομα</Label>
+                  <Input
+                    value={newStore.name}
+                    onChange={(e) => setNewStore((s) => ({ ...s, name: e.target.value }))}
+                    placeholder="π.χ. Pizza Napoli"
+                    className="font-heading"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-heading">Διεύθυνση</Label>
+                  <Input
+                    value={newStore.address}
+                    onChange={(e) => setNewStore((s) => ({ ...s, address: e.target.value }))}
+                    placeholder="Οδός, αριθμός, πόλη"
+                    className="font-heading"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label className="font-heading">Τηλέφωνο</Label>
+                  <Input
+                    value={newStore.phone}
+                    onChange={(e) => setNewStore((s) => ({ ...s, phone: e.target.value }))}
+                    placeholder="69xxxxxxxx"
+                    className="font-heading"
+                  />
+                </div>
+                <Button
+                  className="w-full font-heading"
+                  onClick={handleCreate}
+                  disabled={creating || !newStore.name.trim()}
+                >
+                  {creating ? 'Δημιουργία...' : 'Δημιουργία Καταστήματος'}
+                </Button>
+                {stores.length > 0 && (
+                  <Button variant="ghost" className="w-full font-heading" onClick={backToPortal}>
+                    Πίσω
+                  </Button>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        ) : view === 'portal' ? (
+          <OwnerStoresPortal
+            stores={stores}
+            onSelect={openStore}
+            onCreateClick={() => setView('create')}
+          />
+        ) : !store ? (
+          <div className="text-center py-16">
+            <p className="text-muted-foreground font-heading mb-3">Δεν βρέθηκε κατάστημα</p>
+            <Button onClick={backToPortal}>Πίσω στο portal</Button>
+          </div>
+        ) : (
           <>
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-              <TabsList className="w-full h-auto flex flex-wrap gap-1 p-1 bg-muted/50 rounded-xl">
+            {notifPermission === 'default' && (
+              <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
+                <Bell className="h-5 w-5 text-info shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-heading font-semibold text-foreground">Ειδοποιήσεις</p>
+                  <p className="text-xs text-muted-foreground">Ενεργοποίησε για νέες παραγγελίες</p>
+                </div>
+                <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading">
+                  Ενεργοποίηση
+                </Button>
+              </div>
+            )}
+            <AnnouncementsBanner audience="store_owners" />
+            <Button
+              onClick={() => setActiveTab('external')}
+              className="w-full mb-4 h-12 gradient-primary text-primary-foreground font-heading gap-2 sm:hidden"
+            >
+              <PackagePlus className="h-4 w-4" />
+              Νέα Custom Order (eFood / Wolt / Box)
+            </Button>
+            <Tabs value={activeTab} onValueChange={setActiveTab}>
+              <TabsList ref={tabsListRef} className={`w-full h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin rounded-xl border border-border bg-muted/40 p-1 ${activeTab === 'orders' ? 'mb-2' : 'mb-4'}`}>
                 <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading rounded-lg relative">
                   <ClipboardList className="h-4 w-4 mr-1.5" />
                   Παραγγελίες
