@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Timer, Coins } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 interface WaitTimeBonusBannerProps {
   orderId: string;
@@ -13,20 +14,10 @@ export function WaitTimeBonusBanner({ orderId, status }: WaitTimeBonusBannerProp
   const [arrivedAt, setArrivedAt] = useState<Date | null>(null);
   const [waitMinutes, setWaitMinutes] = useState(0);
   const [bonusRecordId, setBonusRecordId] = useState<string | null>(null);
-  const [ratePerMin, setRatePerMin] = useState(0.10);
-  const [graceMinutes, setGraceMinutes] = useState(10);
-  const [capAmount, setCapAmount] = useState(10);
-
-  useEffect(() => {
-    (supabase as any).rpc('get_platform_settings_public')
-      .then(({ data }: any) => {
-        const row = Array.isArray(data) ? data[0] : data;
-        if (!row) return;
-        if (row.wait_bonus_rate_per_min != null) setRatePerMin(Number(row.wait_bonus_rate_per_min));
-        if (row.wait_bonus_grace_minutes != null) setGraceMinutes(Number(row.wait_bonus_grace_minutes));
-        if (row.wait_bonus_cap != null) setCapAmount(Number(row.wait_bonus_cap));
-      });
-  }, []);
+  const { settings: platformSettings } = usePlatformSettings();
+  const ratePerMin = platformSettings.wait_bonus_rate_per_min;
+  const graceMinutes = platformSettings.wait_bonus_grace_minutes;
+  const capAmount = platformSettings.wait_bonus_cap;
 
   useEffect(() => {
     if (!user || status !== 'arrived') return;
