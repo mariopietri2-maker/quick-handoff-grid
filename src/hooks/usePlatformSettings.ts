@@ -15,6 +15,13 @@ export interface PlatformSettings {
   platform_service_fee: number;
   show_stores_on_driver_map: boolean;
   stacking_enabled: boolean;
+  /** Wait-time bonus knobs (driver app). */
+  wait_bonus_rate_per_min: number;
+  wait_bonus_grace_minutes: number;
+  wait_bonus_cap: number;
+  /** Checkout / payments. */
+  card_payments_enabled: boolean;
+  stripe_publishable_key: string | null;
 }
 
 function normalizeSettings(row: any): PlatformSettings {
@@ -30,6 +37,11 @@ function normalizeSettings(row: any): PlatformSettings {
     platform_service_fee: Number(row?.platform_service_fee) || 0,
     show_stores_on_driver_map: row?.show_stores_on_driver_map !== false,
     stacking_enabled: Boolean(row?.stacking_enabled),
+    wait_bonus_rate_per_min: Number(row?.wait_bonus_rate_per_min) || 0.1,
+    wait_bonus_grace_minutes: Number(row?.wait_bonus_grace_minutes) || 10,
+    wait_bonus_cap: Number(row?.wait_bonus_cap) || 10,
+    card_payments_enabled: row?.card_payments_enabled !== false,
+    stripe_publishable_key: row?.stripe_publishable_key ?? null,
   };
 }
 
@@ -46,6 +58,11 @@ function getDefaultSettings(): PlatformSettings {
     platform_service_fee: 0,
     show_stores_on_driver_map: true,
     stacking_enabled: false,
+    wait_bonus_rate_per_min: 0.1,
+    wait_bonus_grace_minutes: 10,
+    wait_bonus_cap: 10,
+    card_payments_enabled: true,
+    stripe_publishable_key: null,
   };
 }
 
