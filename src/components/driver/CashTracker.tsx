@@ -1,22 +1,14 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Banknote, Lock, AlertTriangle, CheckCircle2, X } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { useDriverState } from '@/hooks/useDriverState';
-import { supabase } from '@/integrations/supabase/client';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 
 export default function CashTracker() {
   const { state } = useDriverState();
-  const [cap, setCap] = useState<number>(200);
-
-  useEffect(() => {
-    (supabase as any)
-      .rpc('get_platform_settings_public')
-      .then(({ data }: any) => {
-        const row = Array.isArray(data) ? data[0] : data;
-        if (row?.max_cash_cap != null) setCap(Number(row.max_cash_cap));
-      });
-  }, []);
+  const { settings } = usePlatformSettings();
+  const cap = settings.max_cash_cap;
 
   const [ackResetAt, setAckResetAt] = useState<string | null>(() =>
     typeof window !== 'undefined' ? localStorage.getItem('driver_cash_reset_ack') : null
