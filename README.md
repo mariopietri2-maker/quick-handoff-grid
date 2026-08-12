@@ -36,6 +36,20 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 ---
 
+## 📊 Tech Composition
+
+| Language | Percentage |
+|----------|-----------|
+| TypeScript | 55.6% |
+| PLpgSQL | 27.9% |
+| Kotlin | 11.5% |
+| HTML | 3.2% |
+| Shell | 0.7% |
+| CSS | 0.5% |
+| Other | 0.6% |
+
+---
+
 ## 🧩 Apps & routes
 
 | App | Route | Who |
@@ -181,7 +195,7 @@ Scan with your phone to download the latest **Fresh Delivery Customer** APK.
 <div align="center">
   <img src="docs/qr-customer-apk.png" width="220" height="220" alt="QR code — Fresh Delivery Customer APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=customerNative">Fresh Delivery Customer download page</a> (chooses the newest APK from the <a href="https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1">mobile-apks-v1</a> release). The URL is stable, so this QR always reflects the newest build.</sub>
+  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=customerNative">Fresh Delivery Customer download page</a> (chooses the newest APK from the <a href=[...]
 </div>
 
 ### 📲 Download the native Driver app (Android)
@@ -191,7 +205,7 @@ Scan with your phone to download the latest **Fresh Delivery Driver** APK.
 <div align="center">
   <img src="docs/qr-driver-apk.png" width="220" height="220" alt="QR code — Fresh Delivery Driver APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=driverNative">Fresh Delivery Driver download page</a> (chooses the newest APK from the <a href="https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1">mobile-apks-v1</a> release). The URL is stable, so this QR always reflects the newest build.</sub>
+  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=driverNative">Fresh Delivery Driver download page</a> (chooses the newest APK from the <a href="htt[...]
 </div>
 
 **Store owners:** use the **PWA** at `/store` (Install / Add to Home Screen). Old `/download` URLs redirect there.
