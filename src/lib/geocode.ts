@@ -4,6 +4,9 @@ export interface GeocodeResult {
   formatted: string;
 }
 
+/** @deprecated No-op stub kept until DriverApp drops the import. */
+export function warmMapboxToken(): void {}
+
 /** In-memory cache for the current session (shared across calls). */
 const memCache = new Map<string, GeocodeResult | null>();
 const LS_PREFIX = 'geo:v3:';
