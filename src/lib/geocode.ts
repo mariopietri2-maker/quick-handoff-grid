@@ -124,6 +124,108 @@ export async function rememberMyDeliveryAddress(
   }
 }
 
+function normalizeKey(address: string): string {
+  return address.trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+/** Persist resolved coords into shared DB cache (other customers reuse). */
+export async function rememberGeocode(
+  query: string,
+  result: GeocodeResult,
+  _source = 'client',
+): Promise<void> {
+  const q = query?.trim();
+  if (!q || !result) return;
+  const key = normalizeKey(q);
+  memCache.set(key, result);
+  writeLS(key, result);
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    await (supabase as any).rpc('remember_address_geocode', {
+      p_q: q,
+      p_display: result.formatted || q,
+      p_lat: result.latitude,
+      p_lng: result.longitude,
+      p_source: _source,
+    });
+  } catch { /* local cache still helps */ }
+}
+
+/** Shared DB autocomplete suggestions — no Mapbox cost. */
+export async function suggestCachedAddresses(query: string, limit = 8): Promise<GeocodeResult[]> {
+  const q = query?.trim();
+  if (!q || q.length < 3) return [];
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await (supabase as any).rpc('suggest_cached_addresses', {
+      p_q: q,
+      p_limit: limit,
+    });
+    if (error || !data) return [];
+    return (data as Array<{ display_address: string; latitude: number; longitude: number }>).map((row) => ({
+      formatted: row.display_address,
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
+    }));
+  } catch {
+    return [];
+  }
+}
+
+/** Nearby cache hit for reverse-geocode (~40 m). */
+export async function lookupGeocodeNearby(
+  lat: number,
+  lng: number,
+  radiusM = 40,
+): Promise<GeocodeResult | null> {
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    const { data, error } = await (supabase as any).rpc('lookup_address_geocode_nearby', {
+      p_lat: lat,
+      p_lng: lng,
+      p_radius_m: radiusM,
+    });
+    if (error || !data?.length) return null;
+    const row = data[0];
+    return {
+      formatted: row.display_address,
+      latitude: Number(row.latitude),
+      longitude: Number(row.longitude),
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Save on signed-in customer + shared cache. */
+export async function rememberMyDeliveryAddress(
+  address: string,
+  lat?: number | null,
+  lng?: number | null,
+  label = 'Σπίτι',
+): Promise<void> {
+  const q = address?.trim();
+  if (!q || q.length < 5) return;
+  try {
+    localStorage.setItem('customer_delivery_address', q);
+    if (lat != null && lng != null) {
+      localStorage.setItem('customer_delivery_coords', JSON.stringify({ lat, lon: lng }));
+    }
+  } catch { /* ignore */ }
+  try {
+    const { supabase } = await import('@/integrations/supabase/client');
+    await (supabase as any).rpc('remember_my_delivery_address', {
+      p_address: q,
+      p_lat: lat ?? null,
+      p_lng: lng ?? null,
+      p_label: label,
+    });
+  } catch { /* guest */ }
+  if (lat != null && lng != null) {
+    void rememberGeocode(q, { latitude: lat, longitude: lng, formatted: q }, 'saved_address');
+  }
+}
+
 /**
  * Forward-geocode: memory → localStorage → shared DB → google-geocode edge.
  */
