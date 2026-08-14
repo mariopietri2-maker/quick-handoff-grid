@@ -44,7 +44,7 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
         ],
       } as any,
       storeName,
-      { driverCode: 'DRV 7', customerName: 'Πελάτης δοκιμής', customerPhone: '69xxxxxxx' },
+      { driverCode: 'DRV 7', customerName: 'Πελάτης δοκιμής' },
     );
     toast.success('Εστάλη δοκιμαστική εκτύπωση');
   };
