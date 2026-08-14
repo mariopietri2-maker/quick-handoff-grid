@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Los Andreas Creperie — Tablet Ad Display (Preview)</title>
+<style>
+  :root {
+    --bg: #0d0d12;
+    --bg-2: #16161e;
+    --panel: #1c1c26;
+    --ink: #f7f1e5;
+    --muted: #b9b1a0;
+    --accent: #ff9a1f;
+    --accent-2: #ffd166;
+    --red: #ff5136;
+    --green: #38d97b;
+    --line: rgba(255,255,255,.08);
+    --shadow: 0 24px 60px rgba(0,0,0,.55);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: "Segoe UI", "Arial", system-ui, sans-serif;
+    background:
+      radial-gradient(1200px 600px at 80% -10%, rgba(255,154,31,.14), transparent 60%),
+      radial-gradient(900px 500px at 0% 110%, rgba(216,62,36,.12), transparent 55%),
+      var(--bg);
+    color: var(--ink);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+    padding: 16px;
+  }
+
+  /* ------------- Stage / canvas -------------
+     Kiosk-style: fills the viewport, no fixed aspect ratio dependency,
+     so it can never collapse to zero height on any browser/tablet. */
+  .canvas {
+    width: 100%;
+    height: calc(100vh - 32px);
+    min-height: 320px;
+    max-width: 1400px;
+    display: flex;
+    flex-direction: column;
+    border: 1px solid var(--line);
+    border-radius: 22px;
+    overflow: hidden;
+    background: var(--bg-2);
+    box-shadow: var(--shadow), inset 0 0 0 1px rgba(255,255,255,.04);
+  }
+
+  /* ------------- Header bar ------------- */
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 12px 22px;
+    background: rgba(255,255,255,.02);
+    border-bottom: 1px solid var(--line);
+  }
+
+  .brand { display: flex; align-items: center; gap: 14px; }
+
+  .brand-mark {
+    width: 46px; height: 46px;
+    border-radius: 13px;
+    flex: none;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent) 55%, var(--red));
+    display: grid;
+    place-items: center;
+    color: #10101a;
+    font-weight: 900;
+    font-size: 22px;
+    letter-spacing: -1px;
+  }
+
+  .brand-name {
+    font-size: 21px;
+    font-weight: 900;
+    letter-spacing: .5px;
+    text-transform: uppercase;
+    line-height: 1.05;
+  }
+  .brand-name small {
+    display: block;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 3px;
+    color: var(--accent);
+    margin-top: 3px;
+  }
+
+  .tagline {
+    font-size: 13px;
+    color: var(--muted);
+    text-align: center;
+    font-weight: 600;
+  }
+
+  .contact {
+    display: flex;
+    gap: 18px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--ink);
+    white-space: nowrap;
+  }
+  .contact span { display: flex; align-items: center; gap: 7px; }
+  .contact svg { width: 15px; height: 15px; stroke: var(--accent); }
+
+  /* ------------- Main stage ------------- */
+  .stage-wrapper { flex: 1; position: relative; overflow: hidden; }
+
+  .stage {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    transition: transform .6s cubic-bezier(.7, 0, .2, 1);
+    height: 100%;
+  }
+
+  .slide {
+    width: 100%;
+    flex: none;
+    height: 100%;
+    display: grid;
+    grid-template-columns: 58% 42%;
+    position: relative;
+    background:
+      radial-gradient(60% 80% at 15% 20%, rgba(255,154,31,.22), transparent 60%),
+      radial-gradient(50% 70% at 85% 85%, rgba(216,62,36,.16), transparent 60%),
+      linear-gradient(150deg, #1b1b26, #101018);
+  }
+
+  .bg-image { position: absolute; inset: 0; }
+
+  .bg-image img {
+    width: 100%; height: 100%; object-fit: cover;
+    display: block;
+    background:
+      linear-gradient(135deg, #2a2a3a, #161620);
+  }
+
+  .bg-image .fallback {
+    position: absolute; inset: 0;
+    display: none;
+    place-items: center;
+    font-size: 17px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    color: rgba(255,255,255,.35);
+    text-transform: uppercase;
+    background:
+      radial-gradient(500px 380px at 20% 20%, rgba(255,154,31,.25), transparent 60%),
+      radial-gradient(450px 350px at 90% 80%, rgba(216,62,36,.22), transparent 60%),
+      var(--panel);
+  }
+
+  .gradient {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(13,13,18,.96) 0%, rgba(13,13,18,.55) 40%, rgba(13,13,18,.15) 68%, rgba(13,13,18,.3) 100%);
+  }
+
+  .copy {
+    position: relative;
+    z-index: 2;
+    align-self: center;
+    padding: 8% 7%;
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+  }
+
+  .kicker {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 4px;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: inline-flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .kicker::before { content: ""; width: 26px; height: 3px; background: var(--accent); border-radius: 2px; }
+
+  h2 {
+    font-size: clamp(30px, 4.6vw, 62px);
+    font-weight: 900;
+    line-height: .95;
+    letter-spacing: -.5px;
+    text-transform: uppercase;
+  }
+
+  .desc { font-size: clamp(14px, 1.6vw, 19px); color: var(--muted); max-width: 44ch; line-height: 1.45; }
+
+  .meta { display: flex; align-items: center; gap: 16px; margin-top: 6px; flex-wrap: wrap; }
+
+  .price {
+    font-size: clamp(26px, 3.4vw, 44px);
+    font-weight: 900;
+    color: var(--accent-2);
+    letter-spacing: -1px;
+    background: rgba(255, 154, 31, .12);
+    border: 1px solid rgba(255, 209, 102, .35);
+    padding: 6px 18px;
+    border-radius: 14px;
+  }
+  .price small { font-size: .5em; font-weight: 700; color: var(--muted); margin-right: 6px; text-decoration: line-through; }
+  .price sup { font-size: .45em; font-weight: 700; color: var(--red); margin-left: 4px; }
+
+  .badge {
+    font-size: 12px;
+    font-weight: 800;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    padding: 7px 14px;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.18);
+    background: rgba(255,255,255,.06);
+  }
+  .badge.hot { color: #10101a; background: linear-gradient(90deg, var(--accent), var(--red)); border: none; }
+
+  .pillrow { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 4px; }
+  .pill { font-size: 12px; font-weight: 700; color: var(--muted); }
+
+  /* === Animated ad spot (motion graphics — no raw video) === */
+  .slide.spot { grid-template-columns: 1fr; }
+
+  .glow {
+    position: absolute;
+    border-radius: 50%;
+    filter: blur(90px);
+    opacity: .5;
+    animation: drift 16s ease-in-out infinite alternate;
+  }
+  @keyframes drift {
+    from { transform: translate(-10%, -8%) scale(1); }
+    to { transform: translate(12%, 10%) scale(1.35); }
+  }
+
+  .spot-scene {
+    position: absolute; inset: 0;
+    display: grid;
+    place-items: center;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity .9s ease, visibility .9s;
+  }
+  .spot-scene.on { opacity: 1; visibility: visible; z-index: 3; }
+
+  .spot-watermark {
+    position: absolute; top: 3.5%; left: 3.5%; z-index: 7;
+    display: flex; align-items: center; gap: 10px;
+    font-size: 13px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+    color: #fff; text-shadow: 0 1px 8px rgba(0,0,0,.7);
+  }
+  .spot-watermark .mark {
+    width: 36px; height: 36px; border-radius: 11px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent) 55%, var(--red));
+    display: grid; place-items: center;
+    color: #10101a; font-weight: 900; font-size: 17px;
+    box-shadow: 0 8px 24px rgba(255,154,31,.35);
+  }
+  .spot-corner {
+    position: absolute; right: 3.5%; bottom: 4.5%; z-index: 7;
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    color: rgba(255,255,255,.55);
+  }
+
+  /* Scene 1 — Logo intro */
+  .biglogo { display: flex; flex-direction: column; align-items: center; gap: 20px; text-align: center; z-index: 4; }
+  .biglogo .emblem {
+    width: 116px; height: 116px; border-radius: 34px;
+    background: linear-gradient(135deg, var(--accent-2), var(--accent) 55%, var(--red));
+    display: grid; place-items: center;
+    color: #10101a; font-size: 56px; font-weight: 900;
+    box-shadow: 0 26px 70px rgba(255,154,31,.4), 0 0 0 20px rgba(255,154,31,.09);
+  }
+  .biglogo h1 {
+    font-size: clamp(40px, 5.2vw, 78px); font-weight: 900; text-transform: uppercase;
+    letter-spacing: 1px; line-height: 1; margin-top: 6px;
+  }
+  .biglogo h1 span { color: var(--accent); }
+  .biglogo .sub { font-size: clamp(13px, 1.4vw, 18px); letter-spacing: 6px; text-transform: uppercase; color: var(--accent); font-weight: 800; }
+  .biglogo .line { width: min(46%, 420px); height: 3px; border-radius: 3px; background: linear-gradient(90deg, transparent, var(--accent), transparent); }
+
+  .spot-scene[data-scene="1"] .emblem { animation: pop 1s cubic-bezier(.2,.9,.25,1.4) both; }
+  .spot-scene[data-scene="1"] h1 { animation: rise .95s .18s cubic-bezier(.2,.9,.25,1) both; }
+  .spot-scene[data-scene="1"] .sub { animation: rise .9s .42s both; }
+  .spot-scene[data-scene="1"] .line { animation: grow 1.2s .55s both; transform-origin: center; }
+  @keyframes pop { 0% { transform: scale(.15); opacity: 0; } 60% { transform: scale(1.1); } 100% { transform: scale(1); opacity: 1; } }
+  @keyframes rise { 0% { transform: translateY(46px); opacity: 0; } 100% { transform: translateY(0); opacity: 1; } }
+  @keyframes grow { 0% { transform: scaleX(0); opacity: 0; } 100% { transform: scaleX(1); opacity: 1; } }
+
+  /* Food scenes */
+  .dish-img {
+    position: absolute; inset: 0;
+    background-size: cover; background-position: center;
+  }
+  .dish-img.kb { animation: kb 9s ease-out forwards; transform-origin: center; }
+  @keyframes kb { from { transform: scale(1.03); } to { transform: scale(1.2); } }
+  .dish-tint {
+    position: absolute; inset: 0;
+    background: linear-gradient(90deg, rgba(10,10,16,.94) 0%, rgba(10,10,16,.55) 44%, rgba(10,10,16,.1) 72%);
+  }
+  .dish-copy {
+    position: absolute; left: 5%; bottom: 15%; max-width: 58%; z-index: 4;
+    display: flex; flex-direction: column; gap: 13px;
+  }
+  .dish-copy .k {
+    font-size: 12px; font-weight: 800; letter-spacing: 4px; text-transform: uppercase; color: var(--accent);
+    display: inline-flex; align-items: center; gap: 10px;
+  }
+  .dish-copy .k::before { content: ""; width: 26px; height: 3px; background: var(--accent); border-radius: 3px; }
+  .dish-copy h2 { font-size: clamp(34px, 4.6vw, 66px); font-weight: 900; text-transform: uppercase; line-height: .96; }
+  .dish-copy p { font-size: clamp(14px, 1.5vw, 19px); color: var(--muted); max-width: 44ch; line-height: 1.45; }
+  .dish-copy .row { display: flex; align-items: center; gap: 16px; margin-top: 4px; flex-wrap: wrap; }
+  .price-chip {
+    font-size: clamp(28px, 3.4vw, 46px); font-weight: 900; color: var(--accent-2); letter-spacing: -1px;
+    background: rgba(255,154,31,.14); border: 1px solid rgba(255,209,102,.4);
+    padding: 6px 18px; border-radius: 14px;
+  }
+  .price-chip small { font-size: .5em; color: var(--muted); margin-right: 7px; text-decoration: line-through; }
+  .badge-chip {
+    font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    color: #10101a; background: linear-gradient(90deg, var(--accent), var(--red));
+    padding: 8px 16px; border-radius: 999px;
+    animation: pulse 1.7s infinite;
+  }
+  @keyframes pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(255,81,54,.5); } 50% { box-shadow: 0 0 0 14px rgba(255,81,54,0); } }
+
+  .spot-scene[data-scene="2"] .k, .spot-scene[data-scene="3"] .k { animation: rise .8s .15s both; }
+  .spot-scene[data-scene="2"] h2, .spot-scene[data-scene="3"] h2 { animation: rise .8s .35s both; }
+  .spot-scene[data-scene="2"] p, .spot-scene[data-scene="3"] p { animation: rise .8s .5s both; }
+  .spot-scene[data-scene="2"] .row, .spot-scene[data-scene="3"] .row { animation: rise .8s .65s both; }
+
+  /* Scene 4 — Call to action */
+  .cta-wrap { text-align: center; display: flex; flex-direction: column; align-items: center; gap: 16px; z-index: 4; }
+  .cta-wrap .k { font-size: 12px; font-weight: 800; letter-spacing: 5px; text-transform: uppercase; color: var(--accent); }
+  .cta-wrap h2 { font-size: clamp(34px, 4.6vw, 66px); font-weight: 900; text-transform: uppercase; line-height: 1; }
+  .cta-phone {
+    display: inline-flex; align-items: center; gap: 10px;
+    font-size: clamp(24px, 2.8vw, 40px); font-weight: 900; color: var(--accent-2);
+    background: rgba(255,154,31,.12); border: 1px solid rgba(255,209,102,.4);
+    padding: 10px 24px; border-radius: 18px;
+    animation: pulse 1.9s infinite;
+  }
+  .cta-meta { font-size: clamp(14px, 1.6vw, 19px); color: var(--muted); line-height: 1.7; }
+  .cta-chips { display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; }
+  .cta-chip {
+    font-size: 12px; font-weight: 800; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--ink); background: var(--panel); border: 1px solid var(--line);
+    padding: 9px 16px; border-radius: 999px;
+  }
+  .cta-chip.wolt { color: #10101a; background: var(--ink); border: none; }
+
+  .spot-scene[data-scene="4"] .k { animation: rise .8s both; }
+  .spot-scene[data-scene="4"] h2 { animation: rise .8s .2s both; }
+  .spot-scene[data-scene="4"] .cta-phone { animation: rise .8s .4s both, pulse 1.9s 1.2s infinite; }
+  .spot-scene[data-scene="4"] .cta-meta { animation: rise .8s .55s both; }
+  .spot-scene[data-scene="4"] .cta-chips { animation: rise .8s .7s both; }
+
+  /* --- Promo / build-your-own slide --- */
+  .slide.promo { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; text-align: center; }
+  .slide.promo .copy { align-self: auto; align-items: center; padding: 4% 6%; }
+  .slide.promo .desc { margin-inline: auto; }
+
+  /* ------------- Thumbnail strip ------------- */
+  .strip {
+    display: flex;
+    gap: 10px;
+    padding: 14px 18px;
+    background: rgba(255,255,255,.02);
+    border-top: 1px solid var(--line);
+    align-items: center;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .strip::-webkit-scrollbar { display: none; }
+
+  .thumb {
+    position: relative;
+    width: 118px;
+    height: 66px;
+    flex: none;
+    border-radius: 10px;
+    overflow: hidden;
+    border: 2px solid transparent;
+    cursor: pointer;
+    background: var(--panel);
+    opacity: .55;
+    transition: opacity .2s, border-color .2s, transform .2s;
+  }
+  .thumb.active { opacity: 1; border-color: var(--accent); transform: translateY(-2px); }
+  .thumb:hover { opacity: .9; }
+
+  .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+
+  .thumb .label {
+    position: absolute;
+    inset: auto 0 0 0;
+    font-size: 9.5px;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #fff;
+    background: linear-gradient(transparent, rgba(0,0,0,.85));
+    padding: 12px 7px 5px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .thumb .tv {
+    position: absolute; inset: 0;
+    display: grid; place-items: center;
+    color: var(--accent);
+  }
+  .thumb .tv svg { width: 22px; height: 22px; fill: var(--accent); }
+
+  .th-progress {
+    position: absolute;
+    left: 0; bottom: 0;
+    height: 3px;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 3px;
+  }
+
+  /* ------------- Controls ------------- */
+  .controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+  .btn {
+    width: 38px; height: 38px;
+    border-radius: 11px;
+    border: 1px solid var(--line);
+    background: var(--panel);
+    color: var(--ink);
+    cursor: pointer;
+    display: grid; place-items: center;
+    transition: background .15s;
+  }
+  .btn:hover { background: rgba(255,154,31,.18); }
+  .btn svg { width: 17px; height: 17px; stroke: currentColor; fill: none; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+
+  .autoplay-pill {
+    font-size: 12px; font-weight: 800; letter-spacing: 1.5px; text-transform: uppercase;
+    color: var(--muted);
+    background: var(--panel);
+    border: 1px solid var(--line);
+    padding: 9px 13px;
+    border-radius: 999px;
+    cursor: pointer;
+  }
+  .autoplay-pill.on { color: var(--green); border-color: rgba(56,217,123,.4); }
+
+  /* ------------ not-a-build banner ------------ */
+  .preview-stamp {
+    position: fixed;
+    top: 16px; left: 50%;
+    transform: translateX(-50%);
+    font-size: 11px;
+    font-weight: 800;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--accent);
+    border: 1px solid rgba(255,154,31,.4);
+    background: rgba(13,13,18,.8);
+    padding: 7px 16px;
+    border-radius: 999px;
+    z-index: 50;
+    backdrop-filter: blur(6px);
+    pointer-events: none;
+  }
+
+  @media (max-width: 860px) {
+    body { padding: 10px; }
+    .canvas { border-radius: 16px; aspect-ratio: auto; height: calc(100vh - 20px); max-height: none; }
+    .tagline { display: none; }
+    .contact span:nth-child(2) { display: none; }
+    .slide { grid-template-columns: 1fr; }
+    .bg-image { display: none; }
+    .copy { padding: 8%; }
+    .thumb { width: 92px; height: 56px; }
+  }
+
+  /* Full-bleed when recording the ad as video */
+  body.only-ad { padding: 0; }
+  body.only-ad .canvas { border: none; border-radius: 0; height: 100vh; max-width: none; box-shadow: none; }
+  body.only-ad .slide { background: #0b0b10; }
+</style>
+</head>
+<body>
+
+  <div class="preview-stamp">Preview — mockup, not live build</div>
+
+  <div class="canvas">
+
+    <!-- Header -->
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">LA</div>
+        <div>
+          <div class="brand-name">Los Andreas <small>Creperie · Ιωάννινα</small></div>
+        </div>
+      </div>
+      <div class="tagline">Το γλυκό &amp; αλμυρό σύμπαν της κρέπας — My Crepa · Pancakes · Waffles</div>
+      <div class="contact">
+        <span>
+          <svg viewBox="0 0 24 24"><path d="M22 16.9v3a2 2 0 0 1-2.2 2 19.8 19.8 0 0 1-8.6-3.1 19.5 19.5 0 0 1-6-6A19.8 19.8 0 0 1 2.1 4.2 2 2 0 0 1 4.1 2h3a2 2 0 0 1 2 1.7c.1 1 .4 2 .7 2.9a2 2 0 0 1-.4 2.1L8.1 10a16 16 0 0 0 6 6l1.3-1.3a2 2 0 0 1 2.1-.4c.9.3 1.9.6 2.9.7a2 2 0 0 1 1.6 2z"/></svg>
+          26510 78421
+        </span>
+        <span>
+          <svg viewBox="0 0 24 24"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0z"/><circle cx="12" cy="10" r="3"/></svg>
+          Ανεξαρτησίας 39, Ιωάννινα
+        </span>
+      </div>
+    </header>
+
+    <!-- Stages -->
+    <div class="stage-wrapper">
+      <div class="stage" id="stage">
+
+        <!-- 0 · Hero -->
+        <section class="slide">
+          <div class="bg-image">
+            <img src="https://imageproxy.wolt.com/assets/69032909b6c62ee7dd114447" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <div class="fallback">Los Andreas</div>
+          </div>
+          <div class="gradient"></div>
+          <div class="copy">
+            <div class="kicker">Welcome · Καλώς ήρθατε</div>
+            <h2>Κρέπα, Πάνκεϊκ<br>&amp; Waffles</h2>
+            <p class="desc">Γλυκές &amp; αλμυρές κρέπες με τα αγαπημένα σου υλικά — από σοκολάτα και φρούτα μέχρι κοτόπουλο, μπέικον και φρέσκα λαχανικά. My Crepa, pancakes &amp; waffles!</p>
+            <div class="pillrow">
+              <span class="pill">🕘 Ανοιχτά 09:45 – 06:00</span>
+              <span class="pill">Delivery μέσω Wolt</span>
+              <span class="badge hot">Best Seller</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 1 · Του Γιαννιώτη -->
+        <section class="slide">
+          <div class="bg-image">
+            <img src="https://imageproxy.wolt.com/assets/691dcf1f1a740099d24a95b2" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <div class="fallback">Του Γιαννιώτη</div>
+          </div>
+          <div class="gradient"></div>
+          <div class="copy">
+            <div class="kicker">Αλμυρή Κρέπα · No.1</div>
+            <h2>Κρέπα<br>Του Γιαννιώτη</h2>
+            <p class="desc">Με κοτομπουκιές, μπέικον, gouda, πατάτες τηγανητές και ουγγαρέζα.</p>
+            <div class="meta">
+              <div class="price"><small>6,80€</small>5,90€</div>
+              <span class="badge hot">Πιο δημοφιλής</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 2 · Triple Chocolate -->
+        <section class="slide">
+          <div class="bg-image">
+            <img src="https://imageproxy.wolt.com/assets/697ceda6ee003e28d1cdd432" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <div class="fallback">Triple Chocolate</div>
+          </div>
+          <div class="gradient"></div>
+          <div class="copy">
+            <div class="kicker">Γλυκιά Κρέπα</div>
+            <h2>Triple<br>Chocolate</h2>
+            <p class="desc">Με σοκολάτα, patisserie, cake σοκολάτας, σιρόπι σοκολάτας και τρούφα σοκολάτας.</p>
+            <div class="meta">
+              <div class="price">5,60€</div>
+              <span class="badge hot">Signature</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 3 · Dubai -->
+        <section class="slide">
+          <div class="bg-image">
+            <img src="https://imageproxy.wolt.com/assets/690326091c0a709b441498c2" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <div class="fallback">Κρέπα Dubai</div>
+          </div>
+          <div class="gradient"></div>
+          <div class="copy">
+            <div class="kicker">Trending · Viral</div>
+            <h2>Κρέπα<br>Dubai</h2>
+            <p class="desc">Με Ίον Dubai πραλίνα φυστικιού με κανταΐφι, σοκολάτα και λευκή σοκολάτα.</p>
+            <div class="meta">
+              <div class="price">5,50€</div>
+              <span class="badge hot">Πρέπει να τη δοκιμάσεις!</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 4 · Του Καίσαρα -->
+        <section class="slide">
+          <div class="bg-image">
+            <img src="https://imageproxy.wolt.com/assets/691dcf450caefe55a963cbec" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <div class="fallback">Του Καίσαρα</div>
+          </div>
+          <div class="gradient"></div>
+          <div class="copy">
+            <div class="kicker">Αλμυρή Κρέπα</div>
+            <h2>Κρέπα<br>Του Καίσαρα</h2>
+            <p class="desc">Με κοτόπουλο, μπέικον, gouda, παρμεζάνα, μαρούλι, καλαμπόκι και Caesar's sauce.</p>
+            <div class="meta">
+              <div class="price">7,90€</div>
+              <span class="badge">Signature</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 5 · Build your own -->
+        <section class="slide promo">
+          <div class="copy">
+            <div class="kicker">Φτιάξε Τη Δική Σου</div>
+            <h2>Η Κρέπα<br>Με Τη Δική Σου<br>Υπογραφή</h2>
+            <p class="desc">Διάλεξε τα αγαπημένα σου υλικά — αλμυρή ή γλυκιά, εσύ αποφασίζεις. Η τιμή διαμορφώνεται από τις επιλογές σου.</p>
+            <div class="meta" style="justify-content:center">
+              <div class="price">Από 2,50€</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 6 · Glub Sandwich -->
+        <section class="slide">
+          <div class="bg-image">
+            <img src="https://imageproxy.wolt.com/assets/691dcf980caefe55a963cc01" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <div class="fallback">Glub Sandwich</div>
+          </div>
+          <div class="gradient"></div>
+          <div class="copy">
+            <div class="kicker">FreakingGlub Sandwiches</div>
+            <h2>Glub Sandwich<br>Los Andreas</h2>
+            <p class="desc">Με φιλέτο κοτόπουλο, μπέικον, cheddar, φέτα, ντομάτα, μαρούλι και cocktail sauce. Με πατάτες &amp; ροζ dip.</p>
+            <div class="meta">
+              <div class="price">8,00€</div>
+              <span class="badge hot">Νέο</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- 7 · Cheesecake -->
+        <section class="slide">
+          <div class="bg-image">
+            <img src="https://imageproxy.wolt.com/assets/6903260d1c0a709b441498c5" alt="" onerror="this.style.display='none'; this.nextElementSibling.style.display='grid';">
+            <div class="fallback">Κρέπα Cheesecake</div>
+          </div>
+          <div class="gradient"></div>
+          <div class="copy">
+            <div class="kicker">Γλυκιά Κρέπα</div>
+            <h2>Κρέπα<br>Cheesecake</h2>
+            <p class="desc">Με philadelphia, μαρμελάδα φράουλα και μπισκότο Digestive.</p>
+            <div class="meta">
+              <div class="price">4,60€</div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 8 · Animated ad (motion graphics, no raw video) -->
+        <section class="slide spot">
+          <div class="glow" style="width:55%;height:55%;left:-12%;top:-14%;background:var(--accent);opacity:.5"></div>
+          <div class="glow" style="width:46%;height:46%;right:-10%;bottom:-12%;background:var(--red);opacity:.42;animation-delay:3s"></div>
+          <div class="glow" style="width:34%;height:34%;left:42%;bottom:-22%;background:var(--accent-2);opacity:.34;animation-delay:6.5s"></div>
+
+          <div class="spot-watermark">
+            <span class="mark">LA</span>
+            <span>Los Andreas Creperie</span>
+          </div>
+          <div class="spot-corner">LOS ANDREAS · ΙΩΑΝΝΙΝΑ</div>
+
+          <!-- Scene 1 · Logo intro -->
+          <div class="spot-scene" data-scene="1">
+            <div class="biglogo">
+              <div class="emblem">LA</div>
+              <h1>Los Andreas</h1>
+              <div class="sub">Creperie · Ιωάννινα</div>
+              <div class="line"></div>
+              <p style="font-size:clamp(15px,1.7vw,22px);color:var(--muted);max-width:52ch;line-height:1.5">Το γλυκό &amp; αλμυρό σύμπαν της κρέπας — My Crepa · Pancakes · Waffles</p>
+            </div>
+          </div>
+
+          <!-- Scene 2 · Dish showcase: Του Γιαννιώτη -->
+          <div class="spot-scene" data-scene="2">
+            <div class="dish-img kb" style="background-image:url('https://imageproxy.wolt.com/assets/691dcf1f1a740099d24a95b2')"></div>
+            <div class="dish-tint"></div>
+            <div class="dish-copy">
+              <div class="k">Αλμυρή Κρέπα · Το Νο.1</div>
+              <h2>Κρέπα<br>Του Γιαννιώτη</h2>
+              <p>Κοτομπουκιές, μπέικον, gouda, πατάτες τηγανητές &amp; ουγγαρέζα.</p>
+              <div class="row">
+                <span class="price-chip"><small>6,80€</small>5,90€</span>
+                <span class="badge-chip">Πιο δημοφιλής</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scene 3 · Dish showcase: Dubai -->
+          <div class="spot-scene" data-scene="3">
+            <div class="dish-img kb" style="background-image:url('https://imageproxy.wolt.com/assets/690326091c0a709b441498c2')"></div>
+            <div class="dish-tint"></div>
+            <div class="dish-copy">
+              <div class="k">Trending · Viral</div>
+              <h2>Κρέπα<br>Dubai</h2>
+              <p>Πραλίνα φυστικιού με κανταΐφι, σοκολάτα &amp; λευκή σοκολάτα.</p>
+              <div class="row">
+                <span class="price-chip">5,50€</span>
+                <span class="badge-chip">Signature</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- Scene 4 · Call to action -->
+          <div class="spot-scene" data-scene="4">
+            <div class="cta-wrap">
+              <div class="k">Los Andreas Creperie</div>
+              <h2>Πέρασε Να Μας Γνωρίσεις</h2>
+              <div class="cta-phone">☎ 26510 78421</div>
+              <div class="cta-meta">Ανεξαρτησίας 39 · Ιωάννινα<br>Καθημερινά 09:45 – 06:00</div>
+              <div class="cta-chips">
+                <span class="cta-chip">Φτιάξε τη δική σου κρέπα</span>
+                <span class="cta-chip wolt">Delivery · Wolt</span>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- 9 · Info / Hours -->
+        <section class="slide promo">
+          <div class="copy">
+            <div class="kicker">Ελάτε Κοντά Μας</div>
+            <h2>Ανεξαρτησίας 39<br>Ιωάννινα</h2>
+            <p class="desc">Ανοιχτά καθημερινά 09:45 έως 06:00 · Κυριακή έως 24:00 · Delivery &amp; take-away μέσω Wolt.</p>
+            <div class="meta" style="justify-content:center">
+              <span class="badge hot">26510 78421</span>
+              <span class="badge">losandreas.gr</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+    </div>
+
+    <!-- Thumbnails + controls -->
+    <nav class="strip" id="strip" aria-label="Slides"></nav>
+
+  </div>
+
+<script>
+  // ?adonly → μόνο η διαφήμιση, για εγγραφή βίντεο
+  const ONLY_AD = new URLSearchParams(location.search).has("adonly");
+  let slides = Array.from(document.querySelectorAll(".slide"));
+  if (ONLY_AD) {
+    slides.forEach(s => { if (!s.classList.contains("spot")) s.remove(); });
+    slides = Array.from(document.querySelectorAll(".slide"));
+    document.querySelector(".topbar").style.display = "none";
+    document.querySelector(".preview-stamp").style.display = "none";
+    document.body.classList.add("only-ad");
+  }
+  const stage = document.getElementById("stage");
+  const strip = document.getElementById("strip");
+  const INTERVAL = 5500;
+  let index = 0, timer = null;
+  let autoplay = true;
+
+  const SHORT = ["Καλώς ήρθατε", "Του Γιαννιώτη", "Triple Chocolate", "Dubai", "Του Καίσαρα", "Δική σου κρέπα", "Glub Sandwich", "Cheesecake", "Διαφήμιση", "Ωράριο & Info"];
+
+  const spotSlide = document.querySelector(".slide.spot");
+  const spotScenes = spotSlide ? [...spotSlide.querySelectorAll(".spot-scene")] : [];
+  let spotTimers = [];
+  let spotAdvance = null;
+
+  // --------- Animated ad spot timeline (motion graphics) ---------
+  const SPOT_PLAN = [0, 4500, 9000, 13500]; // έναρξη κάθε σκηνής (ms)
+  const SPOT_DURATION = 19000;              // συνολική διάρκεια διαφήμισης πριν προχωρήσουμε
+
+  function spotGo(scene) {
+    spotScenes.forEach((s, j) => s.classList.toggle("on", j === scene));
+    const img = spotScenes[scene]?.querySelector(".dish-img");
+    if (img) {
+      img.classList.remove("kb");
+      void img.offsetWidth;
+      img.classList.add("kb");
+    }
+  }
+
+  function stopSpot() {
+    spotTimers.forEach(clearTimeout);
+    spotTimers = [];
+    if (spotAdvance) { clearTimeout(spotAdvance); spotAdvance = null; }
+    spotScenes.forEach(s => s.classList.remove("on"));
+  }
+
+  function startSpot() {
+    stopSpot();
+    SPOT_PLAN.forEach((ms, scene) => {
+      spotTimers.push(setTimeout(() => spotGo(scene), ms));
+    });
+    spotAdvance = setTimeout(() => { goTo(index + 1); scheduleNext(); }, SPOT_DURATION);
+  }
+
+  function buildStrip() {
+    slides.forEach((s, i) => {
+      const t = document.createElement("button");
+      t.className = "thumb" + (i === 0 ? " active" : "");
+      const img = s.querySelector(".bg-image img");
+      const isSpot = s.classList.contains("spot");
+      const isPromo = s.classList.contains("promo");
+      if (isSpot) {
+        t.innerHTML = '<img src="https://imageproxy.wolt.com/assets/690326091c0a709b441498c2" alt="" loading="lazy"><span class="label">' + SHORT[i] + "</span>";
+        t.querySelector("img").onerror = function () { this.style.display = "none"; };
+      } else if (isPromo) {
+        t.innerHTML = '<span class="label" style="inset:auto;top:0;display:grid;place-items:center;background:none;color:var(--accent);padding:0">▶ ' + SHORT[i] + '</span>';
+      } else if (img) {
+        t.innerHTML = '<img src="' + img.src + '" alt="" loading="lazy"><span class="label">' + SHORT[i] + "</span>";
+        t.querySelector("img").onerror = function () { this.style.display = "none"; };
+      }
+      t.addEventListener("click", () => { goTo(i); scheduleNext(); });
+      strip.appendChild(t);
+    });
+  }
+
+  function goTo(i) {
+    index = (i + slides.length) % slides.length;
+    stage.style.transform = "translateX(-" + index * 100 + "%)";
+    strip.querySelectorAll(".thumb").forEach((t, j) => t.classList.toggle("active", j === index));
+    if (slides[index] !== spotSlide) stopSpot();
+  }
+
+  function next() { goTo(index + 1); }
+
+  function tick() {
+    document.querySelectorAll(".th-progress").forEach(p => (p.style.width = "0%"));
+    const bar = strip.querySelectorAll(".thumb")[index]?.querySelector(".th-progress");
+    if (bar) { bar.style.width = "100%"; bar.style.transition = "width " + INTERVAL + "ms linear"; }
+  }
+
+  function scheduleNext() {
+    if (timer) clearInterval(timer);
+
+    if (slides[index] === spotSlide) {
+      startSpot();
+      return;
+    }
+    tick();
+    if (!autoplay) return;
+    timer = setInterval(() => { goTo(index + 1); scheduleNext(); }, INTERVAL);
+  }
+
+  buildStrip();
+  goTo(0);
+  scheduleNext();
+
+  // Safety net: αν κάποια φωτογραφία δεν φόρτωσε (offline/ad-block), δείξε το label της.
+  window.addEventListener("load", () => {
+    document.querySelectorAll(".bg-image img").forEach(img => {
+      if (!img.complete || img.naturalWidth === 0) {
+        img.style.display = "none";
+        const fb = img.parentElement.querySelector(".fallback");
+        if (fb) fb.style.display = "grid";
+      }
+    });
+  });
+</script>
+</body>
+</html>
