@@ -80,6 +80,7 @@ export const NAV_SECTIONS = [
       { id: 'driver_approvals', label: 'Έγκριση οδηγών' },
       { id: 'driver_messages', label: '✉️ Μηνύματα' },
       { id: 'drivers_live_map', label: '📍 Live χάρτης' },
+      { id: 'drivers_ioannina_map', label: '🏍️ Χάρτης Ιωαννίνων' },
       { id: 'driver_map_editor', label: 'Χάρτης οδηγών' },
       { id: 'service_zones', label: 'Ζώνες παράδοσης' },
     ],

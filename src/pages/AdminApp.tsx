@@ -33,6 +33,7 @@ const SupportRoleManager     = lazy(() => import('@/components/admin/SupportRole
 const DriverMapSettings      = lazy(() => import('@/components/admin/DriverMapSettings'));
 const AdminLiveDriversMap    = lazy(() => import('@/components/admin/AdminLiveDriversMap'));
 const ServiceZonesEditor     = lazy(() => import('@/components/admin/ServiceZonesEditor'));
+const AdminIoanninaMap       = lazy(() => import('@/components/admin/AdminIoanninaMap'));
 const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
 const StripePaymentsSettings = lazy(() => import('@/components/admin/StripePaymentsSettings'));
@@ -478,6 +479,8 @@ export default function AdminApp() {
         return <AdminLiveDriversMap />;
       case 'drivers_live_map':
         return <AdminLiveDriversMap />;
+      case 'drivers_ioannina_map':
+        return <AdminIoanninaMap />;
       case 'service_zones':
         return <ServiceZonesEditor />;
       case 'reviews':
