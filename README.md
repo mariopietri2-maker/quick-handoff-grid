@@ -14,7 +14,8 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 ---
 
-🚀 **Live:** [fresh-delivery-rho.vercel.app](https://fresh-delivery-rho.vercel.app)  
+🚀 **Live (primary):** [fresh-delivery-rho.vercel.app](https://fresh-delivery-rho.vercel.app)  
+🛣️ **Mirror (Railway):** [quick-handoff-grid-production.up.railway.app](https://quick-handoff-grid-production.up.railway.app)  
 📊 **Product deck:** [fresh-delivery-rho.vercel.app/presentation](https://fresh-delivery-rho.vercel.app/presentation)  
 📲 **Store PWA:** open `/store` in Chrome/Safari → *Install / Add to Home Screen*
 
@@ -79,7 +80,7 @@ Sub-routes: `/auth` · `/restaurant/:id` · `/checkout` · `/order-tracking/:id`
 | **Tax compliance** | AADE myDATA (Greek e-invoicing) — auto-submits every delivery |
 | **CI/CD** | GitHub Actions — lint, unit, build on PR/push; native APK/AAB releases |
 | **Tests** | Vitest (unit) · Playwright (e2e) · smoke/stress scripts |
-| **Hosting** | Vercel (SPA static, auto-deploy from `main`) |
+| **Hosting** | Vercel (primary, SPA static) · Railway (mirror, auto-deploy from `main`) |
 
 > 📦 **Package manager:** npm (`package-lock.json`) · 🟢 **Node** 20+ (22 recommended)
 
@@ -133,8 +134,8 @@ Vite **bakes** `VITE_*` into the client bundle at build time. The repo keeps `.e
 
 ### 🔐 Supabase Auth
 
-- Site URL: `https://fresh-delivery-rho.vercel.app`
-- Redirects: Vercel `/**` + `http://localhost:5173/**` (+ Capacitor localhost)
+- Site URL: `https://fresh-delivery-rho.vercel.app` (Railway mirror also allowed: `https://quick-handoff-grid-production.up.railway.app`)
+- Redirects: Vercel + Railway `/**` + `http://localhost:5173/**` (+ Capacitor localhost)
 - Password reset: `/auth` → *«Ξέχασα τον κωδικό»* → email link → `/auth?reset=1` set new password
 - `mailer_autoconfirm` is on (signup without email confirm). For reliable reset emails in production, configure **custom SMTP** in Supabase Auth settings.
 
@@ -254,7 +255,7 @@ node scripts/stress-live-market.mjs          # 10 drivers + 10 orders/min for 30
 
 ## 🤝 Contributing
 
-Open a PR against `main`. GitHub Actions runs lint + unit tests + build; Vercel auto-deploys from `main`.
+Open a PR against `main`. GitHub Actions runs lint + unit tests + build; Vercel + Railway deploy from `main`.
 
 ---
 
