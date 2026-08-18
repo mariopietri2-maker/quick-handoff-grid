@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, Activity, Clock, CheckCircle2, Star, Wallet, Zap, LayoutGrid, MapPin } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useCountUp } from '@/hooks/useCountUp';
 import DriverSupplyPanel from './DriverSupplyPanel';
 import { Button } from '@/components/ui/button';
 import { subDays, startOfDay } from 'date-fns';
@@ -48,10 +49,25 @@ function Sparkline({ values, tone = 'good' }: { values: number[]; tone?: KpiProp
   );
 }
 
+function AnimatedValue({ raw }: { raw: string }) {
+  const m = raw.match(/^([^\d]*)([\d.eE-]+)([^\d]*)$/);
+  const num = useCountUp(m ? parseFloat(m[2]) : 0, 500);
+  if (!m) return <p className="text-xl font-bold tabular-nums leading-none">{raw}</p>;
+  const isPercent = m[3] === '%';
+  const val = isPercent
+    ? `${num.toFixed(0)}%`
+    : m[3] === "'"
+      ? `${num.toFixed(0)}'`
+      : /\./.test(m[2]) && m[2].split('.')[1]?.length > 0
+        ? `${m[1]}${num.toFixed(Math.min(2, m[2].split('.')[1].length))}${m[3]}`
+        : `${m[1]}${Math.round(num).toLocaleString('el-GR')}${m[3]}`;
+  return <p className="text-xl font-bold tabular-nums leading-none">{val}</p>;
+}
+
 function KpiCard({ label, value, target, trend, values, tone = 'neutral', icon: Icon }: KpiProps) {
   const trendIsGood = (trend ?? 0) >= 0;
   return (
-    <div className="rounded-xl border border-border bg-card p-3 hover:shadow-sm transition-shadow">
+    <div className="rounded-xl border border-border bg-card p-3 hover:shadow-sm transition-shadow animate-fade-in">
       <div className="flex items-center justify-between mb-1">
         <div className="flex items-center gap-1.5">
           <Icon className="h-3.5 w-3.5 text-muted-foreground" />
@@ -69,7 +85,7 @@ function KpiCard({ label, value, target, trend, values, tone = 'neutral', icon: 
       </div>
       <div className="flex items-end justify-between gap-2">
         <div>
-          <p className="text-xl font-bold tabular-nums leading-none">{value}</p>
+          <AnimatedValue raw={value} />
           {target && <p className="text-[10px] text-muted-foreground mt-1">target {target}</p>}
         </div>
         <Sparkline values={values} tone={tone} />

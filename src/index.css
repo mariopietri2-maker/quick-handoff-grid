@@ -727,3 +727,28 @@
   100% { box-shadow: 0 0 0 0 hsl(var(--driver-accent) / 0); }
 }
 
+/* Live KPI tiles — soft sweep + breathing glow while there is real activity */
+.kpi-live-tile {
+  position: relative;
+  isolation: isolate;
+  animation: kpi-glow 2.6s ease-in-out infinite;
+}
+.kpi-live-tile::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(105deg, transparent 30%, hsl(var(--primary) / 0.10) 46%, hsl(var(--primary) / 0.18) 50%, hsl(var(--primary) / 0.10) 54%, transparent 70%);
+  background-size: 250% 100%;
+  animation: kpi-shimmer 3.2s linear infinite;
+  pointer-events: none;
+}
+@keyframes kpi-shimmer {
+  0%   { background-position: 130% 0; }
+  100% { background-position: -130% 0; }
+}
+@keyframes kpi-glow {
+  0%, 100% { box-shadow: 0 0 0 0 hsl(var(--primary) / 0.12); }
+  50%      { box-shadow: 0 0 14px 1px hsl(var(--primary) / 0.22); }
+}
+

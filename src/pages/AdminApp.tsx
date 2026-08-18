@@ -16,6 +16,7 @@ import AdminDashboard from '@/components/admin/AdminDashboard';
 import AdminCommandPalette from '@/components/admin/AdminCommandPalette';
 import { cn } from '@/lib/utils';
 import { isDriverPresenceOnline } from '@/lib/driver-presence';
+import { useCountUp } from '@/hooks/useCountUp';
 import { formatDriverCode } from '@/lib/driver-code';
 import { lazyWithRetry as lazy } from '@/lib/lazyWithRetry';
 // Eagerly load only the default landing tab — everything else is lazy.
@@ -628,11 +629,11 @@ export default function AdminApp() {
             return (
               <div className="px-3 lg:px-4 py-2 border-t border-border/40 bg-gradient-to-b from-muted/10 to-transparent overflow-x-auto">
                 <div className="flex gap-2 min-w-max">
-                  <KpiTile icon={Activity} label="Live παραγγελίες" value={String(live)} accent="primary" pulse={live > 0} />
-                  <KpiTile icon={ShoppingBag} label="Σήμερα" value={String(todays.length)} accent="info" delta={orderDelta} />
-                  <KpiTile icon={TrendingUp} label="Τζίρος σήμερα" value={`€${revenueToday.toFixed(0)}`} accent="foreground" delta={revDelta} />
-                  <KpiTile icon={Wallet} label="Admin κερδίζει" value={`€${adminToday.toFixed(2)}`} accent="success" />
-                  <KpiTile icon={Bike} label="Ενεργοί οδηγοί" value={String(activeDrivers)} accent="warning" />
+<KpiTile icon={Activity} label="Live παραγγελίες" value={String(live)} accent="primary" pulse={live > 0} />
+                    <KpiTile icon={ShoppingBag} label="Σήμερα" value={String(todays.length)} accent="info" delta={orderDelta} />
+                    <KpiTile icon={TrendingUp} label="Τζίρος σήμερα" value={`€${revenueToday.toFixed(0)}`} accent="foreground" delta={revDelta} />
+                    <KpiTile icon={Wallet} label="Admin κερδίζει" value={`€${adminToday.toFixed(2)}`} accent="success" />
+                    <KpiTile icon={Bike} label="Ενεργοί οδηγοί" value={String(activeDrivers)} accent="warning" pulse={activeDrivers > 0} />
                 </div>
               </div>
             );
@@ -1161,17 +1162,21 @@ function KpiTile({
   const a = accentMap[accent];
   const showDelta = typeof delta === 'number' && isFinite(delta);
   const deltaUp = showDelta && delta! >= 0;
+  const num = parseFloat(value.replace(/[^\d.-]/g, ''));
+  const animatedNum = useCountUp(Number.isFinite(num) ? num : 0);
+  const prefix = value.replace(/[\d.,-]+.*/g, '');
+  const displayed = Number.isFinite(num) ? `${prefix}${(accent === 'success' ? animatedNum.toFixed(2) : Math.round(animatedNum).toLocaleString('el-GR'))}` : value;
   return (
-    <div className="relative flex items-center gap-2.5 pl-3 pr-3.5 h-11 rounded-xl bg-card border border-border/70 shadow-sm hover:border-border hover:shadow-md transition-all shrink-0 overflow-hidden">
+    <div className={`relative flex items-center gap-2.5 pl-3 pr-3.5 h-11 rounded-xl bg-card border border-border/70 shadow-sm hover:border-border hover:shadow-md transition-all shrink-0 overflow-hidden ${pulse ? 'kpi-live-tile' : ''}`}>
       <span className={cn('absolute left-0 top-0 bottom-0 w-[2px]', a.bar)} />
-      <span className={cn('relative flex items-center justify-center h-6 w-6 rounded-lg', a.bg, a.text)}>
+      <span key={value} className={cn('relative flex items-center justify-center h-6 w-6 rounded-lg animate-pop', a.bg, a.text)}>
         <Icon className="h-3.5 w-3.5" />
         {pulse && <span className="absolute -top-0.5 -right-0.5 h-1.5 w-1.5 rounded-full bg-primary animate-pulse ring-2 ring-card" />}
       </span>
       <div className="flex flex-col leading-tight">
         <span className="text-[9.5px] uppercase tracking-[0.1em] text-muted-foreground font-semibold">{label}</span>
         <div className="flex items-baseline gap-1.5">
-          <span className={cn('text-[14px] font-bold tabular-nums', a.text)}>{value}</span>
+          <span className={cn('text-[14px] font-bold tabular-nums', a.text)}>{displayed}</span>
           {showDelta && (
             <span className={cn(
               'text-[10px] font-semibold tabular-nums',
