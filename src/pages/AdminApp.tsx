@@ -53,6 +53,7 @@ const AdminStoreAppearance = lazy(() => import('@/components/admin/AdminStoreApp
 const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 const AdminSettingsHub = lazy(() => import('@/components/admin/SettingsHub'));
+const AdminAlertsPanel  = lazy(() => import('@/components/admin/AdminAlertsPanel'));
 
 const StorePayablesPanel     = lazy(() => import('@/components/admin/StorePayablesPanel'));
 const DriverPayablesPanel    = lazy(() => import('@/components/admin/DriverPayablesPanel'));
@@ -72,6 +73,7 @@ import { format } from 'date-fns';
 import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
 import { useAdminPermissions, ADMIN_SECTION_CAPABILITY } from '@/hooks/useAdminPermissions';
+import { useAlertAlerts } from '@/hooks/useAlertAlerts';
 
 const ALL_ADMIN_TAB_IDS = new Set([
   ...NAV_SECTIONS.flatMap((s) => s.tabs.map((t) => t.id)),
@@ -80,6 +82,7 @@ const ALL_ADMIN_TAB_IDS = new Set([
   'driver_map_editor',
   'live_ops',
   'overview_legacy',
+  'alerts',
 ]);
 
 function resolveSectionParam(raw: string | null): string | null {
@@ -112,6 +115,7 @@ export default function AdminApp() {
   const perms = useAdminPermissions();
   const { orders, stores, profiles, reviews, userRoles, driverProfiles, driverStates, driverLocations, driverWallets, storeWallets } = useAdminData();
   const queryClient = useQueryClient();
+  const { serious: seriousAlerts, loading: alertsLoading } = useAlertAlerts();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeSection, setActiveSectionState] = useState(() => {
     return resolveSectionParam(new URLSearchParams(window.location.search).get('section')) ?? 'overview';
@@ -517,6 +521,8 @@ export default function AdminApp() {
         return <AiHeroCardsAdmin />;
       case 'aade_compliance':
         return <AadeCompliance />;
+      case 'alerts':
+        return <AdminAlertsPanel />;
       default:
         return null;
     }
@@ -582,12 +588,14 @@ export default function AdminApp() {
                 variant="ghost"
                 size="icon"
                 className="h-8 w-8 relative rounded-full hover:bg-muted"
-                title="Live παραγγελίες"
-                onClick={() => setActiveSection('delivery_control')}
+                title={seriousAlerts.length > 0 ? `Σοβαρά προβλήματα (${seriousAlerts.length})` : 'Σοβαρά προβλήματα'}
+                onClick={() => setActiveSection('alerts')}
               >
                 <Bell className="h-3.5 w-3.5" />
-                {(orders.data ?? []).some((o: any) => !['delivered', 'cancelled'].includes(o.status)) && (
-                  <span className="absolute top-1.5 right-1.5 h-1.5 w-1.5 rounded-full bg-destructive" />
+                {!alertsLoading && seriousAlerts.length > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white shadow">
+                    {seriousAlerts.length > 9 ? '9+' : seriousAlerts.length}
+                  </span>
                 )}
               </Button>
               <div className="h-5 w-px bg-border mx-0.5" />

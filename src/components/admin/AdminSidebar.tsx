@@ -36,6 +36,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'overview', label: 'Live Ops' },
       { id: 'analytics', label: 'Αναλυτικά' },
+      { id: 'alerts', label: '🔔 Προβλήματα' },
     ],
   },
   {
