@@ -117,7 +117,7 @@ function Ring(props: { pct: number; value: string; label: string; sub: string; c
 
 export default function AdminDashboard(props: Props) {
   const { orders, profiles, driverStates = [], driverLocations = [], driverWallets = [], storeWallets = [] } = props;
-  const [span, setSpan] = useState<'today' | '7d' | '30d'>('7d');
+  const [span, setSpan] = useState<'today' | '7d' | '30d'>('today');
 
   const { data: treasuryBal } = useQuery({
     queryKey: ['admin-dashboard-treasury'],
