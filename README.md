@@ -6,7 +6,7 @@
 
 Customers browse & order · Multi-store owners manage everything · Drivers deliver · One admin & support hub.
 
-[![Status](https://img.shields.io/badge/status-live-success)](https://quick-handoff-grid-production.up.railway.app)
+[![Status](https://img.shields.io/badge/status-live-success)](https://fresh-delivery-rho.vercel.app)
 [![Platform](https://img.shields.io/badge/Platform-Web%20%26%20Mobile-blue)](#-mobile-customer--store)
 [![Stack](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)](#-stack)
 [![Stack](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)](#-stack)
@@ -14,8 +14,8 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 ---
 
-🚀 **Live:** [quick-handoff-grid-production.up.railway.app](https://quick-handoff-grid-production.up.railway.app)  
-📊 **Product deck:** [quick-handoff-grid-production.up.railway.app/presentation](https://quick-handoff-grid-production.up.railway.app/presentation)  
+🚀 **Live:** [fresh-delivery-rho.vercel.app](https://fresh-delivery-rho.vercel.app)  
+📊 **Product deck:** [fresh-delivery-rho.vercel.app/presentation](https://fresh-delivery-rho.vercel.app/presentation)  
 📲 **Store PWA:** open `/store` in Chrome/Safari → *Install / Add to Home Screen*
 
 </div>
@@ -74,12 +74,12 @@ Sub-routes: `/auth` · `/restaurant/:id` · `/checkout` · `/order-tracking/:id`
 | **Frontend** | React 18 · Vite 5 · TypeScript · Tailwind · shadcn/ui |
 | **Backend** | Supabase — Postgres, Auth, Realtime, Edge Functions, RLS |
 | **Maps** | Mapbox |
-| **Payments** | Stripe (set **live** keys in Railway + Supabase secrets for prod) |
+| **Payments** | Stripe (set **live** keys in Vercel + Supabase secrets for prod) |
 | **Mobile** | Native Kotlin + Jetpack Compose (Customer/Driver) · Capacitor 8 shells · Store = web PWA |
 | **Tax compliance** | AADE myDATA (Greek e-invoicing) — auto-submits every delivery |
 | **CI/CD** | GitHub Actions — lint, unit, build on PR/push; native APK/AAB releases |
 | **Tests** | Vitest (unit) · Playwright (e2e) · smoke/stress scripts |
-| **Hosting** | Railway (Nixpacks SPA) |
+| **Hosting** | Vercel (SPA static, auto-deploy from `main`) |
 
 > 📦 **Package manager:** npm (`package-lock.json`) · 🟢 **Node** 20+ (22 recommended)
 
@@ -121,7 +121,7 @@ cp .env.example .env.local
 # …or rely on committed .env.development / .env.production (public client keys only)
 ```
 
-Vite **bakes** `VITE_*` into the client bundle at build time. The repo keeps `.env.production` with public anon/publishable keys so Railway deploys work without dashboard env.
+Vite **bakes** `VITE_*` into the client bundle at build time. The repo keeps `.env.production` with public anon/publishable keys so Vercel deploys work without dashboard env.
 
 | Variable | Notes |
 |---|---|
@@ -133,12 +133,12 @@ Vite **bakes** `VITE_*` into the client bundle at build time. The repo keeps `.e
 
 ### 🔐 Supabase Auth
 
-- Site URL: `https://quick-handoff-grid-production.up.railway.app`
-- Redirects: Railway `/**` + `http://localhost:5173/**` (+ Capacitor localhost)
+- Site URL: `https://fresh-delivery-rho.vercel.app`
+- Redirects: Vercel `/**` + `http://localhost:5173/**` (+ Capacitor localhost)
 - Password reset: `/auth` → *«Ξέχασα τον κωδικό»* → email link → `/auth?reset=1` set new password
 - `mailer_autoconfirm` is on (signup without email confirm). For reliable reset emails in production, configure **custom SMTP** in Supabase Auth settings.
 
-> 🛡️ `npm run build` forces Supabase keys from `.env.production`, so a stale Railway dashboard `VITE_SUPABASE_*` value can't point at another database.
+> 🛡️ `npm run build` forces Supabase keys from `.env.production`, so a stale host `VITE_SUPABASE_*` value can't point at another database.
 
 ### 🔔 Push notifications (FCM)
 
@@ -195,7 +195,7 @@ Scan with your phone to download the latest **Fresh Delivery Customer** APK.
 <div align="center">
   <img src="docs/qr-customer-apk.png" width="220" height="220" alt="QR code — Fresh Delivery Customer APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=customerNative">Fresh Delivery Customer download page</a> (chooses the newest APK from the <a href=[...]
+  <sub>→ opens the <a href="https://fresh-delivery-rho.vercel.app/download?app=customerNative">Fresh Delivery Customer download page</a> (chooses the newest APK from the <a href=[...]
 </div>
 
 ### 📲 Download the native Driver app (Android)
@@ -205,7 +205,7 @@ Scan with your phone to download the latest **Fresh Delivery Driver** APK.
 <div align="center">
   <img src="docs/qr-driver-apk.png" width="220" height="220" alt="QR code — Fresh Delivery Driver APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://quick-handoff-grid-production.up.railway.app/download?app=driverNative">Fresh Delivery Driver download page</a> (chooses the newest APK from the <a href="htt[...]
+  <sub>→ opens the <a href="https://fresh-delivery-rho.vercel.app/download?app=driverNative">Fresh Delivery Driver download page</a> (chooses the newest APK from the <a href="htt[...]
 </div>
 
 **Store owners:** use the **PWA** at `/store` (Install / Add to Home Screen). Old `/download` URLs redirect there.
@@ -219,7 +219,7 @@ Release Android builds: do **not** set `CAPACITOR_DEV=1`. Store AABs omit WebVie
 
 ## 💳 Payments
 
-Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with **live** keys on Railway and matching live secrets + webhook endpoint on Supabase.
+Repo/client defaults may use Stripe **test** publishable keys. For real orders, override with **live** keys on Vercel and matching live secrets + webhook endpoint on Supabase.
 
 - **Wallet refunds** credit the customer wallet (see `/legal/refunds`).
 - **Card refunds** are automated: canceling a paid card order enqueues a refund that the `process-refunds` cron executes idempotently (retries, then alerts on failure).
@@ -247,13 +247,14 @@ npm run test:e2e
 python3 scripts/smoke-order-lifecycle.py    # full order flow against a project
 node scripts/stress-order-burst.mjs          # order burst load
 node scripts/stress-read-probe.mjs           # read-path probe
+node scripts/stress-live-market.mjs          # 10 drivers + 10 orders/min for 30 min (live map)
 ```
 
 ---
 
 ## 🤝 Contributing
 
-Open a PR against `main`. GitHub Actions runs lint + unit tests + build; Railway auto-deploys from `main`.
+Open a PR against `main`. GitHub Actions runs lint + unit tests + build; Vercel auto-deploys from `main`.
 
 ---
 

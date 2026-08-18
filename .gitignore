@@ -74,6 +74,9 @@ scripts/load-sim-*.mjs
 .lovable/
 new.github
 
-# Local Vercel CLI leftovers (project is Railway-only)
+# Local Vercel CLI leftovers (project serves from Vercel)
 .vercel/
 !plugins/*/dist/
+.vercel
+.env.local
+.env.*.local
