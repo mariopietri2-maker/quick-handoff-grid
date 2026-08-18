@@ -4,6 +4,7 @@ import { Download, Smartphone, Bike, ArrowLeft, ShieldAlert, Cpu } from 'lucide-
 import { Link, useSearchParams } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
 import { SEO } from '@/components/SEO';
+import { Logo } from '@/components/brand/Logo';
 import {
   APK_BUILD_VERSION,
   APK_DOWNLOADS,
@@ -134,7 +135,7 @@ export default function DownloadAppPage() {
             <ArrowLeft className="h-4 w-4" />
             Αρχική
           </Link>
-          <span className="font-heading font-extrabold tracking-tight">Fresh Delivery</span>
+          <Logo withWordmark size={22} />
           <span className="w-16" />
         </div>
       </header>

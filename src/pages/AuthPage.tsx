@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Mail, Lock, User, Loader as Loader2, Eye, EyeOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { SEO } from '@/components/SEO';
+import { Logo } from '@/components/brand/Logo';
 import { mobileHomePath, useMobileFlavor, type MobileAppFlavor } from '@/lib/mobileApp';
 
 type AuthMode = 'login' | 'signup' | 'forgot' | 'otp' | 'reset';
@@ -334,9 +335,12 @@ export default function AuthPage() {
         ) : (
           <span className="w-14" aria-hidden />
         )}
-        <span className="font-heading font-extrabold text-xl text-primary">
-          {isDriverShell ? 'Fresh Driver' : isCustomerShell ? 'Fresh Customer' : 'Fresh Delivery'}
-        </span>
+        <Logo
+          variant={isDriverShell ? 'driver' : isCustomerShell ? 'core' : 'ink'}
+          withWordmark
+          size={26}
+          className="text-[hsl(220,14%,96%)]"
+        />
         <span className="w-14" aria-hidden />
       </header>
 

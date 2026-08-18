@@ -5,6 +5,62 @@ import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { escapeHtml, safeHttpsUrl } from '@/lib/escape-html';
 import { readyEtaShortTag } from '@/lib/driver-ready-eta';
 
+// Real road traffic-light signals (highway=traffic_signals) come from
+// OpenStreetMap via the Overpass API. Multiple mirrors are tried in order.
+const OVERPASS_ENDPOINTS = [
+  'https://overpass-api.de/api/interpreter',
+  'https://overpass.kumi.systems/api/interpreter',
+  'https://maps.mail.ru/osm/tools/overpass/api/interpreter',
+];
+// Only draw signal icons once the driver zooms into navigation level.
+const TRAFFIC_LIGHT_MINZOOM = 14;
+const TRAFFIC_LIGHT_ICON = 'traffic-light-symbol';
+
+const TRAFFIC_LIGHT_SVG = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(
+  `<svg xmlns="http://www.w3.org/2000/svg" width="22" height="44" viewBox="0 0 22 44">
+    <rect x="3.5" y="1" width="15" height="42" rx="4.5" fill="#14181f" stroke="#ffffff" stroke-width="1.8"/>
+    <circle cx="11" cy="9.5" r="4.3" fill="#ef4444"/>
+    <circle cx="11" cy="22" r="4.3" fill="#f59e0b"/>
+    <circle cx="11" cy="34.5" r="4.3" fill="#22c55e"/>
+  </svg>`,
+)}`;
+
+const expandBounds = (b: mapboxgl.LngLatBounds, meters: number) => {
+  const lat = (b.getNorth() + b.getSouth()) / 2;
+  const dLat = meters / 111320;
+  const dLng = meters / (111320 * Math.max(Math.cos((lat * Math.PI) / 180), 0.2));
+  return new mapboxgl.LngLatBounds(
+    [b.getWest() - dLng, b.getSouth() - dLat],
+    [b.getEast() + dLng, b.getNorth() + dLat],
+  );
+};
+
+const queryTrafficSignals = async (
+  west: number, south: number, east: number, north: number, signal: AbortSignal,
+): Promise<[number, number][]> => {
+  if (west >= east || south >= north) return [];
+  const query = `[out:json][timeout:8];node["highway"="traffic_signals"](${south},${west},${north},${east});out;`;
+  for (const endpoint of OVERPASS_ENDPOINTS) {
+    try {
+      const res = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: `data=${encodeURIComponent(query)}`,
+        signal,
+      });
+      if (!res.ok) continue;
+      const json = await res.json();
+      const els: any[] = Array.isArray(json.elements) ? json.elements : [];
+      return els
+        .filter((e) => typeof e.lat === 'number' && typeof e.lon === 'number')
+        .map((e) => [e.lon, e.lat] as [number, number]);
+    } catch {
+      // try next mirror (abort aborts the loop too)
+    }
+  }
+  return [];
+};
+
 export interface DriverMapboxHandle {
   recenter: () => void;
   focusOn: (target: 'store' | 'customer') => void;
@@ -119,6 +175,10 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   const routeCacheRef = useRef<Map<string, { at: number; data: any }>>(new Map());
   const routeCoordsRef = useRef<[number, number][]>([]);
   const ROUTE_CACHE_TTL_MS = 25_000;
+  const trafficAbortRef = useRef<AbortController | null>(null);
+  const lastTrafficKeyRef = useRef('');
+  const lastRouteCoordsKeyRef = useRef('');
+  const hasRouteRef = useRef(false);
 
   const followModeRef = useRef(followMode);
   useEffect(() => { followModeRef.current = followMode; }, [followMode]);
@@ -152,6 +212,34 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
   }, [interactionLocked]);
 
   const getPadding = useCallback(() => ({ ...paddingRef.current }), []);
+
+  // Traffic-signal layer helpers — fetch real highway=traffic_signals nodes from
+  // OSM (Overpass) and push them into the map as small traffic-light icons.
+  const setTrafficSignals = useCallback((coords: [number, number][]) => {
+    const map = mapRef.current;
+    if (!map?.isStyleLoaded()) return;
+    try {
+      (map.getSource('traffic-signals') as mapboxgl.GeoJSONSource | undefined)?.setData({
+        type: 'FeatureCollection',
+        features: coords.map((c) => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: c },
+          properties: {},
+        })),
+      });
+    } catch {/* layer may not be ready yet */}
+  }, []);
+
+  const refreshTrafficSignals = useCallback((bounds: mapboxgl.LngLatBounds, key: string) => {
+    if (!key || key === lastTrafficKeyRef.current) return;
+    lastTrafficKeyRef.current = key;
+    trafficAbortRef.current?.abort();
+    const ctrl = new AbortController();
+    trafficAbortRef.current = ctrl;
+    queryTrafficSignals(bounds.getWest(), bounds.getSouth(), bounds.getEast(), bounds.getNorth(), ctrl.signal)
+      .then((coords) => { if (!ctrl.signal.aborted) setTrafficSignals(coords); })
+      .catch(() => {/* aborted or Overpass unavailable */});
+  }, [setTrafficSignals]);
 
   // Compute bearing between two coords (fallback when GPS heading unavailable, e.g. desktop)
   const bearingBetween = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
@@ -306,6 +394,31 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       });
     };
 
+    const setupTrafficSignals = () => {
+      if (map.getSource('traffic-signals')) return;
+      map.addSource('traffic-signals', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+      });
+      map.loadImage(TRAFFIC_LIGHT_SVG, (err, image) => {
+        if (err || !image || !map.getSource('traffic-signals')) return;
+        if (!map.hasImage(TRAFFIC_LIGHT_ICON)) map.addImage(TRAFFIC_LIGHT_ICON, image);
+        if (map.getLayer('traffic-signal-layer')) return;
+        map.addLayer({
+          id: 'traffic-signal-layer',
+          type: 'symbol',
+          source: 'traffic-signals',
+          minzoom: TRAFFIC_LIGHT_MINZOOM,
+          layout: {
+            'icon-image': TRAFFIC_LIGHT_ICON,
+            'icon-size': 0.85,
+            'icon-allow-overlap': false,
+            'icon-ignore-placement': false,
+          },
+        });
+      });
+    };
+
     const add3DBuildings = () => {
       // Find first symbol layer to insert buildings beneath labels
       const layers = map.getStyle().layers || [];
@@ -343,6 +456,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
 
     map.on('load', () => {
       addRouteLayers();
+      setupTrafficSignals();
       // Ensure the GL canvas matches the full-bleed container (esp. after Capacitor / lazy mount).
       map.resize();
       requestAnimationFrame(() => {
@@ -363,6 +477,19 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
     map.on('pitchstart', onUserMove);
     map.on('zoomstart', onUserMove);
 
+    // When zoomed into nav level with no active route, show nearby traffic
+    // signals for the current viewport.
+    const onMoveEnd = () => {
+      if (hasRouteRef.current) return;
+      if (map.getZoom() < TRAFFIC_LIGHT_MINZOOM) return;
+      const b = map.getBounds();
+      refreshTrafficSignals(
+        b,
+        `vp:${b.getWest().toFixed(3)}:${b.getSouth().toFixed(3)}:${b.getEast().toFixed(3)}:${b.getNorth().toFixed(3)}`,
+      );
+    };
+    map.on('moveend', onMoveEnd);
+
     mapRef.current = map;
 
     // Keep canvas sized when the viewport / sheet changes (orientation, keyboard, etc.)
@@ -380,12 +507,15 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       window.removeEventListener('resize', onWinResize);
       ro?.disconnect();
       bootTimers.forEach((id) => window.clearTimeout(id));
+      map.off('moveend', onMoveEnd);
+      trafficAbortRef.current?.abort();
       map.remove();
       mapRef.current = null;
       setMapReady(false);
       driverMarkerRef.current = null;
     };
-  }, [token]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [token, refreshTrafficSignals]);
 
 
   // Update driver marker (arrow that rotates with heading when in followMode)
@@ -641,6 +771,7 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
           type: 'Feature', geometry: { type: 'LineString', coordinates: [] }, properties: {},
         });
       }
+      hasRouteRef.current = false;
       onRouteUpdate?.(null);
       return;
     }
@@ -699,6 +830,28 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
           geometry: { type: 'LineString', coordinates: coords },
           properties: { congestion },
         });
+
+        // Fetch real traffic-light signals around the route so the driver can
+        // spot regulated intersections ahead during navigation.
+        hasRouteRef.current = coords.length > 0;
+        if (coords.length > 1) {
+          const ckey = `${coords[0].join(',')}|${coords[coords.length - 1].join(',')}|${coords.length}`;
+          if (ckey !== lastRouteCoordsKeyRef.current) {
+            lastRouteCoordsKeyRef.current = ckey;
+            const rb = new mapboxgl.LngLatBounds();
+            coords.forEach((c: [number, number]) => { try { rb.extend(c); } catch { /* invalid coord */ } });
+            rb.extend([pos.lng, pos.lat]);
+            const exp = expandBounds(rb, 220);
+            window.setTimeout(() => {
+              refreshTrafficSignals(
+                exp,
+                `rt:${exp.getWest().toFixed(3)}:${exp.getSouth().toFixed(3)}:${exp.getEast().toFixed(3)}:${exp.getNorth().toFixed(3)}`,
+              );
+            }, 350);
+          }
+        } else {
+          lastRouteCoordsKeyRef.current = '';
+        }
 
         // Build a gradient along line-progress from congestion buckets
         if (congestion.length && coords.length > 1) {
@@ -785,6 +938,8 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       }
       onRouteUpdate?.(null);
       lastRouteKey.current = '';
+      hasRouteRef.current = false;
+      lastRouteCoordsKeyRef.current = '';
     }
   }, [navigatingTo]);
 

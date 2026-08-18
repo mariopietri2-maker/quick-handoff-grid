@@ -583,7 +583,7 @@ export default function AdminApp() {
                 size="icon"
                 className="h-8 w-8 relative rounded-full hover:bg-muted"
                 title="Live παραγγελίες"
-                onClick={() => setActiveSection('live_ops')}
+                onClick={() => setActiveSection('delivery_control')}
               >
                 <Bell className="h-3.5 w-3.5" />
                 {(orders.data ?? []).some((o: any) => !['delivered', 'cancelled'].includes(o.status)) && (

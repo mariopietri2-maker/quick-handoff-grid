@@ -124,6 +124,37 @@ private fun Drawable.toBitmapOrNull(): Bitmap? = when (this) {
     else -> null
 }
 
+/** Red/yellow/green traffic-light icon shown at real signalized intersections. */
+private fun createTrafficLightBitmap(size: Int = 44): Bitmap {
+    val bmp = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888)
+    val c = Canvas(bmp)
+    val boxW = size * 0.62f
+    val boxH = size * 0.9f
+    val left = (size - boxW) / 2f
+    val top = (size - boxH) / 2f
+    val box = RectF(left, top, left + boxW, top + boxH)
+    val radius = boxW * 0.25f
+    c.drawRoundRect(box, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.parseColor("#14181F")
+        style = Paint.Style.FILL
+    })
+    c.drawRoundRect(box, radius, radius, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.STROKE
+        strokeWidth = size * 0.04f
+    })
+    val lampR = boxW * 0.19f
+    val cx = box.centerX()
+    val lampColors = listOf("#EF4444", "#F59E0B", "#22C55E")
+    val lampT = listOf(0.24f, 0.5f, 0.76f)
+    lampT.forEachIndexed { i, t ->
+        c.drawCircle(cx, box.top + boxH * t, lampR, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor(lampColors[i])
+        })
+    }
+    return bmp
+}
+
 /**
  * Square store photo box with the active-order count badge below it.
  * The box anchors to the store's map position; the badge shows its order count.
@@ -220,6 +251,7 @@ fun DriverMapView(
     storeMarkers: List<StoreMapMarker> = emptyList(),
     followUser: Boolean = false,
     lightStyle: Boolean = false,
+    trafficSignals: List<Point> = emptyList(),
 ) {
     val lat = centerLat ?: userLat ?: DEFAULT_LAT
     val lng = centerLng ?: userLng ?: DEFAULT_LNG
@@ -302,6 +334,7 @@ fun DriverMapView(
 
     val driverIcon = remember { createDriverArrowBitmap() }
     val destIcon = remember { createDestinationPinBitmap() }
+    val trafficLightIcon = remember { createTrafficLightBitmap() }
 
     // Store marker icons are built off the UI thread (photo fetch + canvas draw).
     val context = LocalContext.current
@@ -381,6 +414,16 @@ fun DriverMapView(
         emptyList()
     }
 
+    // Real traffic-light signals along the navigation route.
+    val trafficSignalAnnotations = remember(trafficSignals) {
+        trafficSignals.map { p ->
+            PointAnnotationOptions()
+                .withPoint(p)
+                .withIconImage(trafficLightIcon)
+                .withIconSize(0.6)
+        }
+    }
+
     Box(modifier = modifier.background(if (lightStyle) Color(0xFFF4F6F4) else Color(0xFF0B0E0C))) {
         MapboxMap(
             modifier = Modifier.fillMaxSize(),
@@ -393,6 +436,9 @@ fun DriverMapView(
             logo = {},
             attribution = {},
         ) {
+            if (trafficSignalAnnotations.isNotEmpty()) {
+                PointAnnotationGroup(annotations = trafficSignalAnnotations)
+            }
             if (storeAnnotations.isNotEmpty()) {
                 PointAnnotationGroup(annotations = storeAnnotations)
             }

@@ -84,16 +84,19 @@ flip on Stripe's saved-payment-methods setting (§A, §B).
 
 ### A. Edge Function secrets (Project Settings → Edge Functions → Secrets)
 ```
-CRON_SECRET=CRON_SECRET_PLACEHOLDER_SEE_GO_LIVE
+CRON_SECRET=<replace-with-a-random-64-hex-value>   # e.g. openssl rand -hex 32
 ALERT_WEBHOOK_URL=https://hooks.slack.com/services/T…/B…/…   # Slack or any JSON webhook
 ```
-`CRON_SECRET` is **already set** to the value above. Note: on this project the DB
-role `postgres` is not a superuser, so the canonical GUC pattern
-(`ALTER ROLE postgres SET app.settings.cron_secret …`) fails with a permissions
-error. Instead the secret has been **baked directly into each HTTP cron job's
-command** (`cron.job.command`, `X-Cron-Secret` header), matching the edge secret.
-If the crons are ever re-created from the migrations, re-apply the bake-in, or the
-drain calls will return 401 again.
+> ⚠️ **Security:** the previous `CRON_SECRET` value was committed to this repo and
+> is compromised — **rotate it now**. Generate a new value (`openssl rand -hex 32`),
+> set it as the `CRON_SECRET` edge-function secret in Supabase, then update every
+> `cron.job.command` that bakes the old value into its `X-Cron-Secret` header.
+> Note: on this project the DB role `postgres` is not a superuser, so the canonical
+> GUC pattern (`ALTER ROLE postgres SET app.settings.cron_secret …`) fails with a
+> permissions error. So the secret is **baked directly into each HTTP cron job's
+> command** (`cron.job.command`, `X-Cron-Secret` header), matching the edge secret.
+> If the crons are ever re-created from the migrations, re-apply the bake-in, or the
+> drain calls will return 401 again.
 
 ### B. Saved cards (1-tap reorder)
 No config needed. `create-checkout` now creates/links a Stripe Customer per user,

@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Zap, Shield, ChartBar as BarChart3, MapPin, Users, Search, ClipboardList, Bike, CircleCheck as CheckCircle, Headphones, Sparkles, Activity, TrendingUp, Star, Store, Car } from 'lucide-react';
+import { ArrowRight, Zap, Shield, ChartBar as BarChart3, MapPin, Users, Search, ClipboardList, Bike, CircleCheck as CheckCircle, Headphones, Activity, TrendingUp, Star, Store, Car } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
@@ -97,10 +98,7 @@ const Index = () => {
       <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <div className="h-8 w-8 rounded-xl gradient-primary flex items-center justify-center shadow-primary">
-              <Sparkles className="h-4 w-4 text-primary-foreground" />
-            </div>
-            <span className="font-heading font-extrabold text-lg tracking-tight">Fresh Delivery</span>
+            <Logo withWordmark size={28} />
           </div>
           <div className="flex items-center gap-2">
             <Button
@@ -310,10 +308,7 @@ const Index = () => {
       <footer className="border-t border-border py-10 bg-card/30">
         <div className="max-w-6xl mx-auto px-4 text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
-            <div className="h-6 w-6 rounded-md gradient-primary flex items-center justify-center">
-              <Sparkles className="h-3 w-3 text-primary-foreground" />
-            </div>
-            <span className="font-heading font-bold text-sm">Fresh Delivery</span>
+            <Logo withWordmark size={20} />
           </div>
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
             <Link to="/legal/terms"   className="text-muted-foreground hover:text-primary transition-smooth">Όροι Χρήσης</Link>
