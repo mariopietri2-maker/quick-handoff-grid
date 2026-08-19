@@ -2,15 +2,18 @@
 FROM node:20-alpine AS build
 WORKDIR /app
 
-# Copy the full context first so file: dependencies (the local Capacitor
-# Mapbox plugin under plugins/) resolve during install. Copying only
-# package.json + lockfile breaks npm ci for file: specs.
-COPY . .
+# Copy manifests + the local file: dependency first so the install layer is
+# cached and only rebuilt when these change.
+COPY package.json package-lock.json* ./
+COPY plugins ./plugins
 
 # `npm install` (not `npm ci`): the repo tracks the local
 # @freshdelivery/capacitor-mapbox-maps plugin as a file: dependency, and
 # npm ci rejects drift in the generated lockfile for file: specs.
 RUN npm install --legacy-peer-deps
+
+# Copy the rest of the source after deps are installed.
+COPY . .
 
 # Use the repo's build script so the canonical Supabase project (and all
 # VITE_* keys) are always forced from .env.production, regardless of any

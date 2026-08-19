@@ -322,21 +322,12 @@ Reply with JSON only:
 
         if (cfg.menu_pricing_enabled && sd.menu_price_multiplier != null) {
           const mult = clamp(Number(sd.menu_price_multiplier), guardrails.menu_price_multiplier[0], guardrails.menu_price_multiplier[1]);
-          const { data: items } = await admin
-            .from("menu_items")
-            .select("id, price, base_price")
-            .eq("store_id", store.id)
-            .limit(300);
-          let changed = 0;
-          for (const it of items ?? []) {
-            const base = Number(it.base_price ?? it.price ?? 0);
-            if (!base) continue;
-            const next = round2(base * mult);
-            if (next === Number(it.price)) continue;
-            await admin.from("menu_items").update({ base_price: base, price: next }).eq("id", it.id);
-            changed += 1;
-          }
-          if (changed > 0) {
+          const { data: changed, error: menuErr } = await admin.rpc(
+            "apply_store_menu_price_multiplier",
+            { p_store_id: store.id, p_mult: mult },
+          );
+          if (menuErr) console.error("menu pricing rpc error", store.id, menuErr.message);
+          if ((changed ?? 0) > 0) {
             adjustments.push({
               run_id: runId,
               scope: "store_menu",
