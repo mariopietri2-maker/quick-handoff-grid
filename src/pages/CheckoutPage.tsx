@@ -1,4 +1,4 @@
-import { useState, useEffect, Suspense, lazy } from 'react';
+import { useState, useEffect, useCallback, Suspense, lazy } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { ArrowLeft, Minus, Plus, Trash2, MapPin, ShoppingBag, Tag, CheckCircle2, X, Banknote, CreditCard } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,7 @@ import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
 import { mapboxDrivingKmWithCache } from '@/lib/addressCache';
+import { getWonDeal } from '@/lib/customer-games';
 
 const AddressAutocomplete = lazy(() =>
   import('@/components/AddressAutocomplete').then((m) => ({ default: m.AddressAutocomplete })),
@@ -163,57 +164,70 @@ export default function CheckoutPage() {
   const netAmount = vatableGross / (1 + VAT_RATE);
   const vatAmount = vatableGross - netAmount;
 
-  const handleApplyPromo = async () => {
-    const code = promoCode.trim();
-    if (!code) return;
-    setPromoLoading(true);
+  const applyPromoCode = useCallback(
+    async (code: string) => {
+      const trimmed = code.trim();
+      if (!trimmed) return;
+      setPromoLoading(true);
 
-    const { data, error } = await supabase
-      .from('promo_codes')
-      .select('*')
-      .ilike('code', code)
-      .eq('is_active', true)
-      .maybeSingle();
+      const { data, error } = await supabase
+        .from('promo_codes')
+        .select('*')
+        .ilike('code', trimmed)
+        .eq('is_active', true)
+        .maybeSingle();
 
-    if (error || !data) {
-      toast.error('Μη έγκυρος κωδικός προσφοράς');
+      if (error || !data) {
+        toast.error('Μη έγκυρος κωδικός προσφοράς');
+        setPromoLoading(false);
+        return;
+      }
+
+      if (data.expires_at && new Date(data.expires_at) < new Date()) {
+        toast.error('Αυτός ο κωδικός έχει λήξει');
+        setPromoLoading(false);
+        return;
+      }
+
+      if (data.max_uses !== null && data.current_uses >= data.max_uses) {
+        toast.error('Αυτός ο κωδικός έχει εξαντληθεί');
+        setPromoLoading(false);
+        return;
+      }
+
+      if (total < Number(data.min_order_amount)) {
+        toast.error(`Ελάχιστη παραγγελία ${Number(data.min_order_amount).toFixed(2)}€`);
+        setPromoLoading(false);
+        return;
+      }
+
+      if (data.store_id && data.store_id !== storeId) {
+        toast.error('Αυτός ο κωδικός δεν ισχύει για αυτό το εστιατόριο');
+        setPromoLoading(false);
+        return;
+      }
+
+      setAppliedPromo({
+        id: data.id,
+        code: data.code,
+        discount_type: data.discount_type as 'percentage' | 'fixed',
+        discount_value: Number(data.discount_value),
+      });
+      toast.success('Ο κωδικός εφαρμόστηκε! 🎉');
       setPromoLoading(false);
-      return;
-    }
+    },
+    [total, storeId],
+  );
 
-    if (data.expires_at && new Date(data.expires_at) < new Date()) {
-      toast.error('Αυτός ο κωδικός έχει λήξει');
-      setPromoLoading(false);
-      return;
-    }
+  const handleApplyPromo = () => applyPromoCode(promoCode);
 
-    if (data.max_uses !== null && data.current_uses >= data.max_uses) {
-      toast.error('Αυτός ο κωδικός έχει εξαντληθεί');
-      setPromoLoading(false);
-      return;
+  useEffect(() => {
+    if (appliedPromo || total <= 0) return;
+    const deal = getWonDeal();
+    if (deal && deal.code) {
+      void applyPromoCode(deal.code);
     }
-
-    if (total < Number(data.min_order_amount)) {
-      toast.error(`Ελάχιστη παραγγελία ${Number(data.min_order_amount).toFixed(2)}€`);
-      setPromoLoading(false);
-      return;
-    }
-
-    if (data.store_id && data.store_id !== storeId) {
-      toast.error('Αυτός ο κωδικός δεν ισχύει για αυτό το εστιατόριο');
-      setPromoLoading(false);
-      return;
-    }
-
-    setAppliedPromo({
-      id: data.id,
-      code: data.code,
-      discount_type: data.discount_type as 'percentage' | 'fixed',
-      discount_value: Number(data.discount_value),
-    });
-    toast.success('Ο κωδικός εφαρμόστηκε! 🎉');
-    setPromoLoading(false);
-  };
+  }, [appliedPromo, total, storeId, applyPromoCode]);
 
   const removePromo = () => {
     setAppliedPromo(null);

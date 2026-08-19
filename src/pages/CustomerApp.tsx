@@ -28,6 +28,7 @@ import { OfferRow } from '@/components/customer/OfferRow';
 import type { OfferItem } from '@/components/customer/OfferCard';
 import { AiHeroCarousel } from '@/components/customer/AiHeroCarousel';
 import { AiSpotlightCard, AiCardStrip } from '@/components/customer/AiSpotlightCard';
+import CustomerGames from '@/components/customer/CustomerGames';
 import { storeMatchesCategory } from '@/lib/category-match';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
 
@@ -510,6 +511,8 @@ export default function CustomerApp() {
         {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_spotlight && (
           <AiSpotlightCard />
         )}
+
+        {!isSearching && selectedCategory === 'all' && cfg.games.enabled && <CustomerGames />}
 
         {/* Featured stores */}
         {cfg.sections.show_promoted &&

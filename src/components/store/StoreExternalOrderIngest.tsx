@@ -16,7 +16,8 @@ import {
 import { AddressAutocomplete } from '@/components/AddressAutocomplete';
 import { cn } from '@/lib/utils';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
-import { haversineKm, mapboxDrivingKm } from '@/lib/geocode';
+import { haversineKm } from '@/lib/geocode';
+import { mapboxDrivingKmWithCache } from '@/lib/addressCache';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 
 type Source = 'manual' | 'efood' | 'wolt' | 'box' | 'other';
@@ -119,12 +120,12 @@ export default function StoreExternalOrderIngest({ storeId }: Props) {
     const straight = Math.round(haversineKm(from, to) * 100) / 100;
     setKm(straight);
     void (async () => {
-      const road = await mapboxDrivingKm(from, to, mapboxToken);
+      const road = await mapboxDrivingKmWithCache(from, form.delivery_address ?? '', to, mapboxToken, supabase);
       if (cancelled || road == null) return;
       setKm(road);
     })();
     return () => { cancelled = true; };
-  }, [store, form.delivery_lat, form.delivery_lng, mapboxToken]);
+  }, [store, form.delivery_address, form.delivery_lat, form.delivery_lng, mapboxToken]);
 
   const totalAmount = Number(form.total_amount) || 0;
 
