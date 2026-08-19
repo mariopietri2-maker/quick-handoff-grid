@@ -63,7 +63,7 @@ Deno.serve(async (req) => {
   const redirectTo =
     typeof body.redirectTo === "string" && body.redirectTo.startsWith("http")
       ? body.redirectTo
-      : "https://quick-handoff-grid-production.up.railway.app/auth?reset=1";
+      : "https://fresh-delivery-rho.vercel.app/auth?reset=1";
 
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "recovery",

@@ -1,5 +1,5 @@
-/** Canonical public production origin (Railway only). */
-export const SITE_ORIGIN = 'https://quick-handoff-grid-production.up.railway.app';
+/** Canonical public production origin (Vercel — primary hosting). */
+export const SITE_ORIGIN = 'https://fresh-delivery-rho.vercel.app';
 
 /** Extra hosts still allowed for Capacitor navigation & deep links. */
 export const SITE_FALLBACK_ORIGINS = [

@@ -1,4 +1,5 @@
--- Slow the backup send-push drain from 5s to 15s.
+-- Slow the backup send-push drain from 5s to 15s (superseded by the 30s job
+-- in 20260819130000_slow_edge_crons.sql).
 --
 -- Customer order-status pushes are already drained immediately by
 -- enqueue_customer_status_push -> request_send_push_drain (see
