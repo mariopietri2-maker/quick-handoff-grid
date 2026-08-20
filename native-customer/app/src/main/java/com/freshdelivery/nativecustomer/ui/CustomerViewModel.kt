@@ -778,6 +778,26 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    fun openOrderFromDeepLink(orderId: String) {
+        viewModelScope.launch {
+            runCatching {
+                refreshAll()
+                val order = _state.value.orders.firstOrNull { it.order.id == orderId }
+                    ?: _state.value.activeOrders.firstOrNull { it.order.id == orderId }
+                    ?: _state.value.trackingOrder?.takeIf { it.order.id == orderId }
+                if (order != null) {
+                    trackOrder(order)
+                } else {
+                    _state.value = _state.value.copy(info = "Άνοιγμα παραγγελίας…")
+                    refreshAll()
+                    val again = _state.value.orders.firstOrNull { it.order.id == orderId }
+                        ?: _state.value.activeOrders.firstOrNull { it.order.id == orderId }
+                    again?.let { trackOrder(it) }
+                }
+            }
+        }
+    }
+
     fun trackOrder(order: OrderUi?) {
         _state.value = _state.value.copy(trackingOrder = order, tab = CustomerTab.Track, showCart = false)
         refreshDriverLocation()

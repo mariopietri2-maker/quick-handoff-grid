@@ -82,6 +82,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.data.ActiveTripUi
+import com.freshdelivery.nativedriver.ui.home.NavBanner
+import com.freshdelivery.nativedriver.ui.home.SurgeBanner
 import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.map.DriverMapView
@@ -556,6 +558,10 @@ fun HomeScreen(
                             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(18.dp),
                         ) {
                             Handle()
+                            // In-app nav shortcut for primary trip
+                            primary?.let { trip ->
+                                NavBanner(trip = trip, modifier = Modifier.padding(bottom = 12.dp))
+                            }
                             state.activeTrips.forEach { trip ->
                                 ActiveTripCard(
                                     trip = trip,
