@@ -189,6 +189,9 @@ data class PlatformSettingsRow(
     val dist_offer_timeout_seconds: Int? = 60,
     val max_stacked_orders: Int? = 3,
     val assignment_mode: String? = "auto",
+    val ai_driver_pay_multiplier: Double? = 1.0,
+    val ai_delivery_fee_multiplier: Double? = 1.0,
+    val wait_bonus_euros: Double? = null,
 )
 
 data class OfferUi(

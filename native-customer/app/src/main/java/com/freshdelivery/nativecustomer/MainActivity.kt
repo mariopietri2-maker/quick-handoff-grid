@@ -94,6 +94,8 @@ class MainActivity : ComponentActivity() {
                             onDeleteSaved = vm::deleteSavedAddress,
                             onSaveProfile = vm::saveProfile,
                             onCancelOrder = vm::cancelOrder,
+                            onOpenRating = vm::openRating,
+                            onSubmitRating = { order, stars, comment -> vm.submitRating(order, stars, comment) },
                             onClearMessages = vm::clearMessages,
                             onSpinWheel = vm::spinWheel,
                             onOpenCard = vm::openMysteryCard,

@@ -137,10 +137,71 @@ class CustomerRepository(
                 limit(200L)
             }.decodeList<StoreRow>()
     }
-    suspend fun fetchStoreRatings(): Map<String, StoreRating> = emptyMap()
-    suspend fun fetchFavoriteStoreIds(userId: String): Set<String> = emptySet()
-    suspend fun addFavoriteStore(userId: String, storeId: String) {}
-    suspend fun removeFavoriteStore(userId: String, storeId: String) {}
+    suspend fun fetchStoreRatings(): Map<String, StoreRating> {
+        return runCatching {
+            client.from("store_ratings_public")
+                .select(Columns.list("store_id", "avg_rating", "review_count")) {
+                    limit(500L)
+                }.decodeList<StoreRatingRow>()
+                .associate { row ->
+                    row.store_id to StoreRating(
+                        avg = row.avg_rating ?: 0.0,
+                        count = row.review_count ?: 0,
+                    )
+                }
+        }.getOrElse { emptyMap() }
+    }
+
+    suspend fun fetchFavoriteStoreIds(userId: String): Set<String> {
+        return runCatching {
+            client.from("customer_favorites")
+                .select(Columns.list("store_id")) {
+                    filter { eq("customer_id", userId) }
+                    limit(200L)
+                }.decodeList<FavoriteRow>()
+                .mapNotNull { it.store_id }
+                .toSet()
+        }.getOrElse { emptySet() }
+    }
+
+    suspend fun addFavoriteStore(userId: String, storeId: String) {
+        runCatching {
+            client.from("customer_favorites").insert(
+                buildJsonObject {
+                    put("customer_id", userId)
+                    put("store_id", storeId)
+                },
+            )
+        }
+    }
+
+    suspend fun removeFavoriteStore(userId: String, storeId: String) {
+        runCatching {
+            client.from("customer_favorites").delete {
+                filter {
+                    eq("customer_id", userId)
+                    eq("store_id", storeId)
+                }
+            }
+        }
+    }
+
+    /** Submit post-delivery store review (1–5 stars + optional comment). */
+    suspend fun submitReview(
+        storeId: String,
+        orderId: String?,
+        rating: Int,
+        comment: String?,
+    ) {
+        client.from("reviews").insert(
+            buildJsonObject {
+                put("store_id", storeId)
+                put("rating", rating.coerceIn(1, 5))
+                if (orderId != null) put("order_id", orderId)
+                if (!comment.isNullOrBlank()) put("comment", comment)
+            },
+        )
+    }
     suspend fun fetchOrders(userId: String): List<OrderUi> {
         val orders = client.from("orders")
             .select(Columns.list(

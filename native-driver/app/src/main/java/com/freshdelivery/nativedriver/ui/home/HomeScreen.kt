@@ -558,7 +558,11 @@ fun HomeScreen(
                             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(18.dp),
                         ) {
                             Handle()
-                            // In-app nav shortcut for primary trip
+                            SurgeBanner(
+                                multiplier = state.settings?.ai_driver_pay_multiplier,
+                                waitBonusEuro = state.settings?.wait_bonus_euros,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
                             primary?.let { trip ->
                                 NavBanner(trip = trip, modifier = Modifier.padding(bottom = 12.dp))
                             }
