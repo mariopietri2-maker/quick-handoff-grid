@@ -38,3 +38,5 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 ```
 
 APK: `app/build/outputs/apk/debug/app-debug.apk` → publish as `fresh-customer-native-debug.apk` on release `mobile-apks-v1`.
+
+See also: [docs/NATIVE_IMPROVEMENTS_ROADMAP.md](../docs/NATIVE_IMPROVEMENTS_ROADMAP.md)

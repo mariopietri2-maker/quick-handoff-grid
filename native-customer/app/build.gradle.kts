@@ -4,6 +4,7 @@ plugins {
     id("org.jetbrains.kotlin.plugin.compose")
     id("org.jetbrains.kotlin.plugin.serialization")
     id("com.google.gms.google-services")
+    id("com.google.firebase.crashlytics")
 }
 
 android {
@@ -14,8 +15,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 252
-        versionName = "2.7.0-native"
+        versionCode = 260
+        versionName = "2.8.0-native"
 
         buildConfigField(
             "String",
@@ -36,11 +37,15 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+        debug {
+            isMinifyEnabled = false
         }
     }
 
@@ -89,6 +94,8 @@ dependencies {
     implementation("com.google.android.gms:play-services-location:21.3.0")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging")
+    implementation("com.google.firebase:firebase-crashlytics")
+    implementation("com.google.firebase:firebase-analytics")
 
     implementation("io.coil-kt:coil-compose:2.7.0")
 

@@ -426,6 +426,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     stackedOffers = stacked,
                     error = null,
                 )
+                locationTracker.setActiveTrip(trips.isNotEmpty())
                 maybeAlertOffers(offers + stacked)
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = handleError("refreshWork", e))
@@ -587,6 +588,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         _state.value = s.copy(activeTrips = after, busy = true, error = null)
+        locationTracker.setActiveTrip(after.isNotEmpty())
         viewModelScope.launch {
             runCatching { repo.transitionStatus(orderId, nextStatus) }
                 .onSuccess {

@@ -19,21 +19,24 @@ import kotlinx.coroutines.flow.asStateFlow
 data class DriverGeo(
     val lat: Double,
     val lng: Double,
-    /** Degrees clockwise from north; null if unknown. */
     val bearing: Float? = null,
     val accuracyM: Float? = null,
 )
 
 /**
- * Continuous fused location + bearing for the driver map pin.
+ * Battery-aware fused location:
+ * - ONLINE: balanced ~15s/25m (presence)
+ * - ACTIVE: high accuracy ~2.5s/3m (trip tracking)
  */
 class DriverLocationTracker(context: Context) {
     private val app = context.applicationContext
     private val client = LocationServices.getFusedLocationProviderClient(app)
     private val _geo = MutableStateFlow<DriverGeo?>(null)
     val geo: StateFlow<DriverGeo?> = _geo.asStateFlow()
-
     private var running = false
+    private var currentMode: Mode = Mode.ONLINE
+    enum class Mode { ONLINE, ACTIVE }
+
     private val callback = object : LocationCallback() {
         override fun onLocationResult(result: LocationResult) {
             val loc = result.lastLocation ?: return
@@ -48,20 +51,35 @@ class DriverLocationTracker(context: Context) {
     }
 
     @SuppressLint("MissingPermission")
-    fun start() {
-        if (running || !hasPermission()) return
+    fun start(mode: Mode = Mode.ONLINE) {
+        if (!hasPermission()) return
+        if (running && currentMode == mode) return
+        if (running) runCatching { client.removeLocationUpdates(callback) }
         running = true
-        val request = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2_500L)
-            .setMinUpdateIntervalMillis(1_500L)
-            .setMinUpdateDistanceMeters(3f)
-            .setWaitForAccurateLocation(false)
-            .build()
+        currentMode = mode
+        val request = when (mode) {
+            Mode.ACTIVE -> LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 2_500L)
+                .setMinUpdateIntervalMillis(1_500L)
+                .setMinUpdateDistanceMeters(3f)
+                .setWaitForAccurateLocation(false)
+                .setMaxUpdateDelayMillis(5_000L)
+                .build()
+            Mode.ONLINE -> LocationRequest.Builder(Priority.PRIORITY_BALANCED_POWER_ACCURACY, 15_000L)
+                .setMinUpdateIntervalMillis(10_000L)
+                .setMinUpdateDistanceMeters(25f)
+                .setWaitForAccurateLocation(false)
+                .setMaxUpdateDelayMillis(30_000L)
+                .build()
+        }
         runCatching {
             client.requestLocationUpdates(request, callback, Looper.getMainLooper())
-            client.lastLocation.addOnSuccessListener { loc ->
-                if (loc != null) publish(loc)
-            }
+            client.lastLocation.addOnSuccessListener { loc -> if (loc != null) publish(loc) }
         }.onFailure { running = false }
+    }
+
+    fun setActiveTrip(active: Boolean) {
+        val desired = if (active) Mode.ACTIVE else Mode.ONLINE
+        if (running) start(desired) else if (active) start(Mode.ACTIVE)
     }
 
     fun stop() {
@@ -71,14 +89,11 @@ class DriverLocationTracker(context: Context) {
     }
 
     private fun publish(loc: Location) {
-        val bearing = if (loc.hasBearing() && loc.bearingAccuracyDegrees < 45f || loc.hasBearing()) {
-            loc.bearing
-        } else null
-        _geo.value = DriverGeo(
-            lat = loc.latitude,
-            lng = loc.longitude,
-            bearing = bearing,
-            accuracyM = if (loc.hasAccuracy()) loc.accuracy else null,
-        )
+        val bearing = when {
+            loc.hasBearing() && loc.hasBearingAccuracy() && loc.bearingAccuracyDegrees < 45f -> loc.bearing
+            loc.hasBearing() -> loc.bearing
+            else -> null
+        }
+        _geo.value = DriverGeo(loc.latitude, loc.longitude, bearing, if (loc.hasAccuracy()) loc.accuracy else null)
     }
 }
