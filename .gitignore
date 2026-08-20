@@ -15,7 +15,7 @@ lerna-debug.log*
 
 # Environment — keep secrets out of git.
 # Public Vite client keys ARE committed in .env.production / .env.development
-# because Railway/Vite builds embed them at compile time (no dashboard env required).
+# because Vercel builds embed them at compile time (no dashboard env required).
 # Never commit Stripe secret keys (sk_/whsec_) or the Supabase service role.
 .env
 .env.local

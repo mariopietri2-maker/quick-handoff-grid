@@ -6,6 +6,7 @@ import { cn } from '@/lib/utils';
 
 const ALLOWED_HOSTS = [
   'freshdelivery.app',
+  'fresh-delivery-rho.vercel.app',
   'quick-handoff-grid-production.up.railway.app',
 ];
 

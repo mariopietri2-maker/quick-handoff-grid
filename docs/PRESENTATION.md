@@ -1,13 +1,13 @@
 # Fresh Delivery — Product presentation
 
-**Live:** https://quick-handoff-grid-production.up.railway.app/presentation  
+**Live:** https://fresh-delivery-rho.vercel.app/presentation  
 **As of:** 2026-07-23 (production Supabase `ojkesspghyqmjmupybva`)
 
 ---
 
 ## 1. What it is
 
-Fresh Delivery is a real-time food-delivery marketplace for **Ιωάννινα**: customers, multi-store restaurants, drivers, admin ops, and support — one Supabase backend, Railway SPA host, Capacitor mobile shells.
+Fresh Delivery is a real-time food-delivery marketplace for **Ιωάννινα**: customers, multi-store restaurants, drivers, admin ops, and support — one Supabase backend, Vercel SPA host, Capacitor mobile shells.
 
 ## 2. How it works
 
@@ -50,7 +50,6 @@ From `platform_settings`:
 
 | Item | Soft launch | Notes |
 |---|---|---|
-| Railway | €5–20 | SPA hosting |
 | Supabase | €0–25 | Free → Pro |
 | Mapbox | €0–40 | Free tier then usage |
 | Firebase FCM | €0–10 | Early volume ~free |

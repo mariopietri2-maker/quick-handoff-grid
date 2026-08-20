@@ -81,7 +81,7 @@ const SLIDES: Slide[] = [
       'Frontend: React 18 · Vite · TypeScript · Tailwind · Capacitor 8',
       'Backend: Supabase (Postgres, Auth, Realtime, Edge Functions, RLS)',
       'Maps: Mapbox · Push: Firebase FCM · Payments: Stripe',
-      'Host: Railway (SPA) · Mobile: Android AAB + iOS Xcode projects',
+      'Host: Vercel (SPA) · Mobile: Android AAB + iOS Xcode projects',
       'Service area: κλειδωμένη ζώνη Ιωαννίνων',
     ],
   },
@@ -117,7 +117,7 @@ const SLIDES: Slide[] = [
     eyebrow: 'Μηνιακό κόστος υποδομής',
     title: 'Εκτίμηση fixed costs σε soft-launch / early scale.',
     table: [
-      { label: 'Railway (SPA host)', value: '€5–20', note: 'Hobby → Pro ανά traffic' },
+      { label: 'Vercel (SPA host)', value: '€0–20', note: 'Free → Hobby ανά traffic' },
       { label: 'Supabase', value: '€0–25', note: 'Free → Pro ($25) όταν ξεπεράσεις limits' },
       { label: 'Mapbox', value: '€0–40', note: 'Free tier · μετά pay-as-you-go' },
       { label: 'Firebase / FCM', value: '€0–10', note: 'σχεδόν δωρεάν σε early volume' },
@@ -174,7 +174,7 @@ const SLIDES: Slide[] = [
       'Περισσότερα καταστήματα Ιωαννίνων + driver onboarding',
       'Privacy policy / Data safety / screenshots για review',
     ],
-    footer: 'freshdelivery · quick-handoff-grid-production.up.railway.app',
+    footer: 'freshdelivery · fresh-delivery-rho.vercel.app',
   },
 ];
 

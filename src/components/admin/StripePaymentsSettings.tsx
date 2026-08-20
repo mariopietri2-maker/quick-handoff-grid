@@ -175,7 +175,7 @@ export default function StripePaymentsSettings() {
               spellCheck={false}
             />
             <p className="text-[11px] text-muted-foreground leading-relaxed">
-              Προαιρετικό. Αν μείνει κενό, χρησιμοποιείται το <code className="text-[10px]">VITE_PAYMENTS_CLIENT_TOKEN</code> από Railway.
+              Προαιρετικό. Αν μείνει κενό, χρησιμοποιείται το <code className="text-[10px]">VITE_PAYMENTS_CLIENT_TOKEN</code> από Vercel.
               Μην αποθηκεύετε <code className="text-[10px]">sk_</code> ή <code className="text-[10px]">whsec_</code> εδώ.
             </p>
           </div>
@@ -195,7 +195,7 @@ export default function StripePaymentsSettings() {
             <StatusChip
               ok={Boolean(envKey) || Boolean(publishableKey.trim())}
               label="Πηγή key"
-              detail={publishableKey.trim() ? 'Admin (DB)' : envKey ? 'Railway env' : 'Καμία'}
+              detail={publishableKey.trim() ? 'Admin (DB)' : envKey ? 'Vercel env' : 'Καμία'}
             />
           </div>
 

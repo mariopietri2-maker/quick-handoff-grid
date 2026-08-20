@@ -77,6 +77,7 @@ write_cap_config() {
       "https://ojkesspghyqmjmupybva.supabase.co/*",
       "https://*.supabase.co/*",
       "https://quick-handoff-grid-production.up.railway.app/*",
+      "https://fresh-delivery-rho.vercel.app/*",
       "https://api.mapbox.com/*"
     ]
   },
@@ -197,7 +198,9 @@ PY
   bump_version "$app_dir"
 
   echo "==> gradle assembleDebug ($flavor)"
-  (cd "$app_dir" && ./gradlew clean assembleDebug)
+  local gradle_cmd="./gradlew"
+  [ -f "$app_dir/gradlew.bat" ] && gradle_cmd="./gradlew.bat"
+  (cd "$app_dir" && "$gradle_cmd" clean assembleDebug)
 
   mkdir -p mobile-apks
   cp -f "$app_dir/app/build/outputs/apk/debug/app-debug.apk" "mobile-apks/fresh-${flavor}-debug.apk"

@@ -51,7 +51,7 @@ APK_VERSION_CODE=7231500 APK_VERSION_NAME=1.0.7231500 ./scripts/build-store-aabs
 - [ ] Content rating questionnaire
 - [ ] Target API / Data safety form
 - [ ] Customer + Driver: declare location (incl. background) use
-- [ ] Stripe **live** keys on Railway + Supabase edge secrets
+- [ ] Stripe **live** keys on Vercel + Supabase edge secrets
 - [ ] Turn off debug WebView (`build-store-aabs.sh` already omits `webContentsDebuggingEnabled`)
 
 ### What ships in the AAB (parity with debug APKs)

@@ -14,8 +14,7 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 
 ---
 
-🚀 **Live (primary):** [fresh-delivery-rho.vercel.app](https://fresh-delivery-rho.vercel.app)  
-🛣️ **Mirror (Railway):** [quick-handoff-grid-production.up.railway.app](https://quick-handoff-grid-production.up.railway.app)  
+🚀 **Live:** [fresh-delivery-rho.vercel.app](https://fresh-delivery-rho.vercel.app) · 🛣️ **Mirror:** [quick-handoff-grid-production.up.railway.app](https://quick-handoff-grid-production.up.railway.app)
 📊 **Product deck:** [fresh-delivery-rho.vercel.app/presentation](https://fresh-delivery-rho.vercel.app/presentation)  
 📲 **Store PWA:** open `/store` in Chrome/Safari → *Install / Add to Home Screen*
 

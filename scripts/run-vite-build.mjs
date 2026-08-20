@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Production SPA builds must always target the canonical Supabase project from
- * `.env.production`, even when a host (e.g. Railway) still has stale VITE_*
+ * `.env.production`, even when a host (e.g. Vercel) still has stale VITE_*
  * dashboard overrides pointing at an older project.
  *
  * Vite prefers process.env over `.env` files, so we re-apply the file values

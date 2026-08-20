@@ -4,7 +4,7 @@
  * Build-time: set VITE_MOBILE_APP=customer|driver when bundling offline APKs.
  * Runtime: Capacitor App.getInfo().id is com.freshdelivery.customer|driver.
  *
- * Production APKs may load the shared Railway URL, so VITE_MOBILE_APP is often unset —
+ * Production APKs may load the shared Vercel URL, so VITE_MOBILE_APP is often unset —
  * always resolve via Capacitor appId on native.
  */
 

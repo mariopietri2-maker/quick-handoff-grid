@@ -47,7 +47,7 @@ if the admin panel is ever switched to sandbox mode.)
 Paste `pk_live_…` → Save. Status chips should read **Λειτουργία = Live**.
 Source of the key: Admin (DB) — no redeploy needed.
 
-### D. Railway → env
+### D. Deploy env
 `VITE_PAYMENTS_CLIENT_TOKEN=pk_live_…` (for future builds).
 Do **not** put live keys in `.env.production` — never commit real secrets.
 

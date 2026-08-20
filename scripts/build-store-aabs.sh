@@ -157,6 +157,7 @@ write_release_cap_config() {
       "https://ojkesspghyqmjmupybva.supabase.co/*",
       "https://*.supabase.co/*",
       "https://quick-handoff-grid-production.up.railway.app/*",
+      "https://fresh-delivery-rho.vercel.app/*",
       "https://api.mapbox.com/*"
     ]
   },
@@ -247,7 +248,9 @@ sync_aab() {
   inject_signing "$flavor" "$app_dir"
 
   echo "==> gradle bundleRelease ($flavor)"
-  (cd "$app_dir" && ./gradlew clean bundleRelease)
+  local gradle_cmd="./gradlew"
+  [ -f "$app_dir/gradlew.bat" ] && gradle_cmd="./gradlew.bat"
+  (cd "$app_dir" && "$gradle_cmd" clean bundleRelease)
 
   mkdir -p store-bundles
   local out="$app_dir/app/build/outputs/bundle/release/app-release.aab"

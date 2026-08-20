@@ -470,7 +470,7 @@ export default function CloudUsagePanel() {
           <p>• Crons: push drain κάθε 15s, email queue κάθε 30s — λιγότερες edge invocations.</p>
           <p>• Mapbox: address geocode cache + directions κάθε 20s στο driver map.</p>
           <p>• AI Support: φθηνό flash-lite model· άνοιξε Auto-reply μόνο αν χρειάζεται (Feature flags).</p>
-          <p>• Δες <strong>Κόστος πλατφόρμας</strong> για εκτίμηση Railway / Supabase / Mapbox / Stripe.</p>
+          <p>• Δες <strong>Κόστος πλατφόρμας</strong> για εκτίμηση Vercel / Supabase / Mapbox / Stripe.</p>
         </CardContent>
       </Card>
     </div>

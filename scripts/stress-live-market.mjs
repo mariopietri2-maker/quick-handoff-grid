@@ -198,10 +198,10 @@ async function updateGps(sb, d) {
 
 function moveDriver(d, dtSec) {
   if (!d.target) {
-    // gentle idle drift keeps GPS fresh + visible
+    // gentle idle drift keeps GPS fresh + visible (faster than before: ~8-12 km/h)
     d.heading = d.heading + (Math.random() - 0.5) * 30;
-    d.speed = 1 + Math.random() * 2;
-    d.pos = destination(d.pos, d.heading, d.speed * dtSec * (1 / 3600) * 0.35);
+    d.speed = 8 + Math.random() * 4;
+    d.pos = destination(d.pos, d.heading, d.speed * dtSec * (1 / 3600));
     if (haversine(d.pos, { lat: CENTER_LAT, lng: CENTER_LNG }) > 2.2) {
       d.heading = bearing(d.pos, { lat: CENTER_LAT, lng: CENTER_LNG });
     }
@@ -235,18 +235,21 @@ async function ensureCustomer(sb) {
     email_confirm: true,
     user_metadata: { full_name: 'Stress Customer' },
   });
-  if (error) throw error;
-  const uid = data.user.id;
+  if (error && error.status !== 409 && !/already registered/i.test(error.message)) throw error;
+  // sign in to obtain a real JWT — the admin API only returns a UUID
+  const { data: { user } = {}, data: signInData, error: signInErr } = await sb.auth.signInWithPassword({ email, password: PASS });
+  if (signInErr || !signInData?.session) throw signInErr ?? new Error('no session');
+  const uid = signInData.user.id;
   await sb.from('profiles').upsert({ user_id: uid, full_name: 'Stress Customer', role: 'customer' }, { onConflict: 'user_id' });
   await sb.from('user_roles').upsert({ user_id: uid, role: 'customer' }, { onConflict: 'user_id,role' });
-  return uid;
+  return { id: uid, token: signInData.session.access_token };
 }
 
-async function placeOrder(sb, customerId, seq) {
+async function placeOrder(sb, customerToken, seq) {
   const store = STORES[seq % STORES.length];
   const lat = CENTER_LAT + ((seq % 7) - 3) * 0.0009 + (Math.random() - 0.5) * 0.001;
   const lng = CENTER_LNG + (Math.floor(seq / 7) % 7 - 3) * 0.0011 + (Math.random() - 0.5) * 0.001;
-  const cust = authedClient(customerId);
+  const cust = authedClient(customerToken);
   const { data: orderId, error } = await cust.rpc('place_order', {
     p_store_id: store.id,
     p_items: [{ menu_item_id: store.items[seq % store.items.length], quantity: 1 + (seq % 2) }],
@@ -258,7 +261,7 @@ async function placeOrder(sb, customerId, seq) {
     p_delivery_fee: 1.5,
     p_notes: `LIVE${RUN_ID}#${String(seq).padStart(3, '0')}`,
     p_scheduled_for: null,
-    p_distance_km: 0.8 + ((seq % 5) + (Math.random() * 1.2)).toFixed(1),
+    p_distance_km: Number((0.8 + (seq % 5) + Math.random() * 1.2).toFixed(1)),
     p_promo_code: null,
   });
   if (error || !orderId) {
@@ -274,10 +277,10 @@ async function placeOrder(sb, customerId, seq) {
 
 async function driveLifecycle(sb, orderId, store, seq, drivers) {
   const oOrder = sb.from('orders');
-  await sleep(2000 + Math.random() * 2500); // store preparation gap
+  await sleep(1500 + Math.random() * 1500); // store preparation gap
   await oOrder.update({ status: 'accepted' }).eq('id', orderId);
   stats.accepted++;
-  await sleep(3000 + Math.random() * 3000);
+  await sleep(2000 + Math.random() * 2000);
   await oOrder.update({ status: 'ready' }).eq('id', orderId);
   stats.ready++;
 
@@ -341,7 +344,8 @@ async function main() {
   const tStart = Date.now();
 
   const sb = admin();
-  const customerId = await ensureCustomer(sb);
+  const customer = await ensureCustomer(sb);
+  const customerId = customer.id;
   log(`run ${RUN_ID} customer ${customerId.slice(0, 8)} drivers=${DRIVER_COUNT} orders/min=${ORDERS_PER_MIN} runtime=${RUNTIME_MIN}min`);
   log(`customer auth ok — placing order every ~${intervalMs}ms`);
 
@@ -399,7 +403,7 @@ async function main() {
     try {
       if (Date.now() - tStart >= runtimeMs) return;
       seq++;
-      const orderId = await placeOrder(sb, customerId, seq);
+      const orderId = await placeOrder(sb, customer.token, seq);
       if (!orderId) return;
       const store = STORES[seq % STORES.length];
       driveLifecycle(sb, orderId, store, seq, drivers).catch((e) => log(`! lifecycle ${seq} ${e.message}`));

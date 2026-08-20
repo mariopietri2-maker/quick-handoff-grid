@@ -15,6 +15,7 @@ import {
   startApkDownload,
   type ApkFlavor,
 } from '@/lib/apk-downloads';
+import { effectiveOrigin } from '@/lib/site';
 import { cn } from '@/lib/utils';
 
 function useQrDataUrl(text: string) {
@@ -45,7 +46,7 @@ function flavorIcon(flavor: ApkFlavor) {
 function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: boolean }) {
   const apk = APK_DOWNLOADS[flavor];
   const landing = useMemo(
-    () => apkLandingUrl(flavor, typeof window !== 'undefined' ? window.location.origin : undefined),
+    () => apkLandingUrl(flavor, effectiveOrigin()),
     [flavor],
   );
   const qr = useQrDataUrl(landing);
