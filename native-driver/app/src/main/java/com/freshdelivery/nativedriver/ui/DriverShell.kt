@@ -253,16 +253,33 @@ private fun GlobalMenuButton(
                     .fillMaxHeight()
                     .fillMaxWidth(0.5f)
                     .background(MenuSurface)
-                    .border(1.dp, MenuBorder)
-                    .statusBarsPadding(),
+                    .border(1.dp, MenuBorder),
             ) {
-                // Header zone — reserved for the floating ✕ / ⚡ buttons above.
-                Spacer(Modifier.height(128.dp))
+                // Header — the ✕ / ⚡ buttons live INSIDE the drawer layout, so the
+                // item list always flows below them (no overlap at any font scale).
+                Column(
+                    Modifier
+                        .statusBarsPadding()
+                        .padding(start = 12.dp, top = 10.dp),
+                ) {
+                    MenuCircleButton(
+                        icon = Icons.Filled.Close,
+                        contentDesc = "Κλείσιμο μενού",
+                        container = Color(0xFF1F2521),
+                        borderCol = Color(0xFF3A423C),
+                    ) { open = false }
+                    Spacer(Modifier.height(10.dp))
+                    AvailabilityBolt(
+                        online = online,
+                        canToggleOnline = canToggleOnline,
+                        onClick = { confirmToggle = true },
+                    )
+                }
                 Column(
                     Modifier
                         .weight(1f)
                         .verticalScroll(rememberScrollState())
-                        .padding(horizontal = 8.dp),
+                        .padding(top = 12.dp, start = 8.dp, end = 8.dp),
                 ) {
                     tabs.forEach { item ->
                         val selected = current == item.tab
@@ -326,69 +343,27 @@ private fun GlobalMenuButton(
             }
         }
 
-        // Floating controls — hamburger/close on top, availability toggle below it.
-        // Drawn after the drawer so they sit inside its header zone without colliding
-        // with the item list (the list starts below them).
-        Box(
-            Modifier
-                .matchParentSize()
-                .statusBarsPadding()
-                .padding(start = 12.dp, top = 10.dp),
-        ) {
+        // Floating controls — only while the drawer is closed. When it opens, the
+        // same buttons render inside the drawer header instead (identical position).
+        if (!open) {
             Box(
                 Modifier
-                    .size(52.dp)
-                    .shadow(8.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(if (open) Color(0xFF1F2521) else MenuSurface)
-                    .border(1.dp, if (open) Color(0xFF3A423C) else MenuBorder, CircleShape)
-                    .clickable { open = !open },
-                contentAlignment = Alignment.Center,
+                    .matchParentSize()
+                    .statusBarsPadding()
+                    .padding(start = 12.dp, top = 10.dp),
             ) {
-                Icon(
-                    if (open) Icons.Filled.Close else Icons.Outlined.Menu,
-                    null,
-                    tint = FreshGreenBright,
-                    modifier = Modifier.size(26.dp),
-                )
-            }
-
-            // Availability toggle under the hamburger — go online/offline with a
-            // confirmation dialog (replaces the old slide control at the bottom).
-            Box(
-                Modifier
-                    .align(Alignment.TopStart)
-                    .padding(top = 62.dp),
-            ) {
-                Box(
-                    Modifier
-                        .size(52.dp)
-                        .shadow(8.dp, CircleShape)
-                        .clip(CircleShape)
-                        .background(
-                            when {
-                                !canToggleOnline -> Color(0xFF1B211D)
-                                online -> FreshGreen
-                                else -> MenuSurface
-                            },
-                        )
-                        .border(
-                            1.dp,
-                            if (online) FreshGreenBright else MenuBorder,
-                            CircleShape,
-                        )
-                        .clickable(enabled = canToggleOnline) { confirmToggle = true },
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(
-                        Icons.Filled.Bolt,
-                        null,
-                        tint = when {
-                            !canToggleOnline -> MenuIconMuted
-                            online -> Color.White
-                            else -> FreshGreenBright
-                        },
-                        modifier = Modifier.size(26.dp),
+                Column {
+                    MenuCircleButton(
+                        icon = Icons.Outlined.Menu,
+                        contentDesc = "Άνοιγμα μενού",
+                        container = MenuSurface,
+                        borderCol = MenuBorder,
+                    ) { open = true }
+                    Spacer(Modifier.height(10.dp))
+                    AvailabilityBolt(
+                        online = online,
+                        canToggleOnline = canToggleOnline,
+                        onClick = { confirmToggle = true },
                     )
                 }
             }
@@ -429,6 +404,65 @@ private fun GlobalMenuButton(
                     Text("Ακύρωση", color = MenuTextMuted)
                 }
             },
+        )
+    }
+}
+
+/** Round 52dp menu button — used floating (burger) and inside the drawer header (close). */
+@Composable
+private fun MenuCircleButton(
+    icon: ImageVector,
+    contentDesc: String,
+    container: Color,
+    borderCol: Color,
+    onClick: () -> Unit,
+) {
+    Box(
+        Modifier
+            .size(52.dp)
+            .shadow(8.dp, CircleShape)
+            .clip(CircleShape)
+            .background(container)
+            .border(1.dp, borderCol, CircleShape)
+            .clickable(onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(icon, contentDesc, tint = FreshGreenBright, modifier = Modifier.size(26.dp))
+    }
+}
+
+/** Round 52dp availability toggle (⚡) — green when online, dark when offline. */
+@Composable
+private fun AvailabilityBolt(
+    online: Boolean,
+    canToggleOnline: Boolean,
+    onClick: () -> Unit,
+) {
+    Box(
+        Modifier
+            .size(52.dp)
+            .shadow(8.dp, CircleShape)
+            .clip(CircleShape)
+            .background(
+                when {
+                    !canToggleOnline -> Color(0xFF1B211D)
+                    online -> FreshGreen
+                    else -> MenuSurface
+                },
+            )
+            .border(1.dp, if (online) FreshGreenBright else MenuBorder, CircleShape)
+            .clickable(enabled = canToggleOnline, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            Icons.Filled.Bolt,
+            null,
+            tint = when {
+                !canToggleOnline -> MenuIconMuted
+                online -> Color.White
+                else -> FreshGreenBright
+            },
+            modifier = Modifier.size(26.dp),
         )
     }
 }
