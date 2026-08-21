@@ -58,6 +58,7 @@ import androidx.compose.material.icons.outlined.Store
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Wallet
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -183,6 +184,18 @@ fun CustomerShell(
     onSubmitTicket: (String) -> Unit = {},
     onSendTicket: (String) -> Unit = {},
 ) {
+    val ratingTarget = state.ratingOrderId?.let { id ->
+        state.orders.firstOrNull { it.order.id == id }
+            ?: state.activeOrders.firstOrNull { it.order.id == id }
+    }
+    if (ratingTarget != null) {
+        RatingDialog(
+            storeName = ratingTarget.storeName ?: "Κατάστημα",
+            onDismiss = { onOpenRating(null) },
+            onSubmit = { stars, comment -> onSubmitRating(ratingTarget, stars, comment) },
+        )
+    }
+
     val snackbar = remember { SnackbarHostState() }
     var addressOpen by remember { mutableStateOf(false) }
     LaunchedEffect(state.info, state.error) {
@@ -291,10 +304,15 @@ fun CustomerShell(
                         ),
                 ) {
                     tabs.forEach { (tab, label, icon) ->
-                        val selected = state.tab == tab
+                        // Track is not a bottom-tab page — highlight Παραγγελίες instead
+                        val selected = state.tab == tab ||
+                            (state.tab == CustomerTab.Track && tab == CustomerTab.Orders)
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { onTab(tab) },
+                            onClick = {
+                                // Explicit tab only — never leave action buttons as wrong pages
+                                onTab(tab)
+                            },
                             icon = {
                                 Icon(
                                     icon as ImageVector,
@@ -342,7 +360,7 @@ fun CustomerShell(
                     onEditAddress = { addressOpen = true; onClearSuggestions() },
                     onUseLocation = onUseLocation,
                 )
-                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onCancelOrder)
+                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onCancelOrder, onRate = { onOpenRating(it.order.id) })
                 CustomerTab.Track -> TrackTab(state)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport)
             }
@@ -571,7 +589,7 @@ private fun HomeTab(
         }
 
         // Phase1: admin appConfig brand / promo / tiles
-        state.appConfig.promos.firstOrNull()?.let { promo ->
+        if (!browseMode) state.appConfig.promos.firstOrNull()?.let { promo ->
             item {
                 Box(
                     Modifier
@@ -671,7 +689,7 @@ private fun HomeTab(
                 }
             }
         }
-        if (state.gameShow) {
+        if (state.gameShow && !browseMode) {
             item {
                 when (state.gameActive) {
                     "wheel" -> LuckyWheelCard(state = state, onSpin = onSpinWheel)
@@ -1765,6 +1783,8 @@ private fun OrdersTab(
     onTrack: (OrderUi?) -> Unit,
     onRefresh: () -> Unit,
     onCancelOrder: (OrderUi) -> Unit,
+    onOpenRating: (String?) -> Unit = {},
+    onSubmitRating: (OrderUi, Int, String?) -> Unit = { _, _, _ -> },
 ) {
     LazyColumn(
         Modifier
@@ -1861,7 +1881,7 @@ private fun OrdersTab(
                     }
                 }
                 HorizontalDivider(Modifier.padding(vertical = 12.dp), color = FreshDivider)
-                Row {
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(
                         onClick = { onTrack(item) },
                         colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
@@ -1871,6 +1891,15 @@ private fun OrdersTab(
                         Icon(Icons.Outlined.Map, contentDescription = null, modifier = Modifier.size(16.dp))
                         Spacer(Modifier.width(6.dp))
                         Text("Παρακολούθηση", fontWeight = FontWeight.Bold)
+                    }
+                    if (item.order.status == "delivered") {
+                        OutlinedButton(
+                            onClick = { onRate(item) },
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Text("Αξιολόγηση", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
@@ -2134,4 +2163,48 @@ private fun ProfileTab(
         }
         Spacer(Modifier.height(12.dp))
     }
+}
+
+@Composable
+private fun RatingDialog(
+    storeName: String,
+    onDismiss: () -> Unit,
+    onSubmit: (Int, String?) -> Unit,
+) {
+    var stars by remember { mutableStateOf(5) }
+    var comment by remember { mutableStateOf("") }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Αξιολόγηση · $storeName") },
+        text = {
+            Column {
+                Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                    (1..5).forEach { n ->
+                        Text(
+                            if (n <= stars) "★" else "☆",
+                            fontSize = 28.sp,
+                            color = if (n <= stars) FreshAmber else FreshMuted,
+                            modifier = Modifier.clickable { stars = n },
+                        )
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                OutlinedTextField(
+                    value = comment,
+                    onValueChange = { comment = it },
+                    label = { Text("Σχόλιο (προαιρετικό)") },
+                    modifier = Modifier.fillMaxWidth(),
+                    maxLines = 3,
+                )
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = { onSubmit(stars, comment.ifBlank { null }) }) {
+                Text("Υποβολή", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Κλείσιμο") }
+        },
+    )
 }

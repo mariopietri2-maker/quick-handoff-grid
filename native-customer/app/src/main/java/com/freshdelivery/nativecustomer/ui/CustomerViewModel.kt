@@ -88,6 +88,7 @@ data class CustomerUiState(
     val paymentMethod: String = "cash",
     val orders: List<OrderUi> = emptyList(),
     val trackingOrder: OrderUi? = null,
+    val ratingOrderId: String? = null,
     val driverLocation: DriverLocationRow? = null,
     val busy: Boolean = false,
     val locating: Boolean = false,
@@ -776,6 +777,52 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
             }
         }
+    }
+
+    fun openOrderFromDeepLink(orderId: String) {
+        viewModelScope.launch {
+            runCatching {
+                refreshAll()
+                val order = _state.value.orders.firstOrNull { it.order.id == orderId }
+                    ?: _state.value.activeOrders.firstOrNull { it.order.id == orderId }
+                    ?: _state.value.trackingOrder?.takeIf { it.order.id == orderId }
+                if (order != null) {
+                    trackOrder(order)
+                } else {
+                    _state.value = _state.value.copy(info = "Άνοιγμα παραγγελίας…")
+                    refreshAll()
+                    val again = _state.value.orders.firstOrNull { it.order.id == orderId }
+                        ?: _state.value.activeOrders.firstOrNull { it.order.id == orderId }
+                    again?.let { trackOrder(it) }
+                }
+            }
+        }
+    }
+
+    fun submitRating(order: OrderUi, stars: Int, comment: String?) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(busy = true, error = null)
+            runCatching {
+                repo.submitReview(
+                    storeId = order.order.store_id,
+                    orderId = order.order.id,
+                    rating = stars,
+                    comment = comment,
+                )
+            }.onSuccess {
+                _state.value = _state.value.copy(
+                    busy = false,
+                    info = "Ευχαριστούμε για την αξιολόγηση!",
+                    ratingOrderId = null,
+                )
+            }.onFailure { e ->
+                _state.value = _state.value.copy(busy = false, error = e.message ?: "Σφάλμα αξιολόγησης")
+            }
+        }
+    }
+
+    fun openRating(orderId: String?) {
+        _state.value = _state.value.copy(ratingOrderId = orderId)
     }
 
     fun trackOrder(order: OrderUi?) {

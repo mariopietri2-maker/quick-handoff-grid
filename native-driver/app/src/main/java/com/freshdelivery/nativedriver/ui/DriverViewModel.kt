@@ -17,6 +17,7 @@ import com.freshdelivery.nativedriver.data.DriverNotificationRow
 import com.freshdelivery.nativedriver.data.DriverPreferences
 import com.freshdelivery.nativedriver.data.DriverProfileRow
 import com.freshdelivery.nativedriver.data.DriverRepository
+import com.freshdelivery.nativedriver.data.OfflineActionQueue
 import com.freshdelivery.nativedriver.data.OpsHelper
 import com.freshdelivery.nativedriver.data.DriverStateRow
 import com.freshdelivery.nativedriver.data.DriverTab
@@ -146,6 +147,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private val opsHelper = OpsHelper()
     private val prefs = DriverPreferences(app)
     private val locationTracker = DriverLocationTracker(app)
+    private val offlineQueue = OfflineActionQueue(app)
     private val _state = MutableStateFlow(
         DriverUiState(
             settingsLocal = DriverSettings(
@@ -426,6 +428,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     stackedOffers = stacked,
                     error = null,
                 )
+                locationTracker.setActiveTrip(trips.isNotEmpty())
+                if (_state.value.online) flushOfflineQueue()
                 maybeAlertOffers(offers + stacked)
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = handleError("refreshWork", e))
@@ -483,21 +487,54 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 _state.value = _state.value.copy(busy = false, info = "Προσφορά αποδεκτή")
                 refreshWork()
             }.onFailure { e ->
-                _state.value = _state.value.copy(
-                    busy = false,
-                    error = handleError("acceptOffer", e),
-                    offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
-                        (_state.value.offers + removed).sortedBy { it.expiresAt }
-                    } else _state.value.offers,
-                    stackedOffers = if (removed != null && _state.value.stackedOffers.none { it.offerId == removed.offerId }) {
-                        (_state.value.stackedOffers + removed)
-                    } else _state.value.stackedOffers,
-                )
+                val msg = e.message.orEmpty()
+                val offline = msg.contains("Unable to resolve host", true) ||
+                    msg.contains("timeout", true) ||
+                    msg.contains("Failed to connect", true) ||
+                    msg.contains("Network", true)
+                if (offline && offerId.isNotBlank()) {
+                    offlineQueue.enqueue(
+                        OfflineActionQueue.Action(type = "accept", offerId = offerId, orderId = orderId),
+                    )
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        info = "Χωρίς δίκτυο — η αποδοχή θα σταλεί όταν επανέλθει",
+                    )
+                } else {
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        error = handleError("acceptOffer", e),
+                        offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
+                            (_state.value.offers + removed).sortedBy { it.expiresAt }
+                        } else _state.value.offers,
+                        stackedOffers = if (removed != null && _state.value.stackedOffers.none { it.offerId == removed.offerId }) {
+                            (_state.value.stackedOffers + removed)
+                        } else _state.value.stackedOffers,
+                    )
+                }
                 refreshWork()
             }
         }
     }
 
+    /** Flush queued accept/decline when connectivity returns. */
+    fun flushOfflineQueue() {
+        viewModelScope.launch {
+            val actions = offlineQueue.drain()
+            for (a in actions) {
+                runCatching {
+                    when (a.type) {
+                        "accept" -> {
+                            if (a.offerId.isNotBlank()) repo.acceptOffer(a.offerId)
+                            else if (!a.orderId.isNullOrBlank()) repo.claimOrder(a.orderId)
+                        }
+                        "decline" -> repo.declineOffer(a.offerId)
+                    }
+                }
+            }
+            if (actions.isNotEmpty()) refreshWork()
+        }
+    }
 
     fun openOps() {
         if (!_state.value.isOps) return
@@ -557,16 +594,29 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     refreshWork()
                 }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(
-                        busy = false,
-                        error = handleError("declineOffer", e),
-                        offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
-                            (_state.value.offers + removed).sortedBy { it.expiresAt }
-                        } else _state.value.offers,
-                        stackedOffers = if (removed != null && _state.value.stackedOffers.none { it.offerId == removed.offerId }) {
-                            (_state.value.stackedOffers + removed)
-                        } else _state.value.stackedOffers,
-                    )
+                    val msg = e.message.orEmpty()
+                    val offline = msg.contains("Unable to resolve host", true) ||
+                        msg.contains("timeout", true) ||
+                        msg.contains("Failed to connect", true) ||
+                        msg.contains("Network", true)
+                    if (offline) {
+                        offlineQueue.enqueue(OfflineActionQueue.Action(type = "decline", offerId = offerId))
+                        _state.value = _state.value.copy(
+                            busy = false,
+                            info = "Χωρίς δίκτυο — η απόρριψη θα σταλεί όταν επανέλθει",
+                        )
+                    } else {
+                        _state.value = _state.value.copy(
+                            busy = false,
+                            error = handleError("declineOffer", e),
+                            offers = if (removed != null && _state.value.offers.none { it.offerId == removed.offerId }) {
+                                (_state.value.offers + removed).sortedBy { it.expiresAt }
+                            } else _state.value.offers,
+                            stackedOffers = if (removed != null && _state.value.stackedOffers.none { it.offerId == removed.offerId }) {
+                                (_state.value.stackedOffers + removed)
+                            } else _state.value.stackedOffers,
+                        )
+                    }
                     refreshWork()
                 }
         }
@@ -587,6 +637,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
         _state.value = s.copy(activeTrips = after, busy = true, error = null)
+        locationTracker.setActiveTrip(after.isNotEmpty())
         viewModelScope.launch {
             runCatching { repo.transitionStatus(orderId, nextStatus) }
                 .onSuccess {

@@ -4,11 +4,19 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bolt
@@ -20,15 +28,15 @@ import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.CardGiftcard
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Mail
-import androidx.compose.material.icons.outlined.Menu
 import androidx.compose.material.icons.outlined.Payments
-import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.NavigationBar
+import androidx.compose.material3.NavigationBarItem
+import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -42,8 +50,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.data.DriverTab
 import com.freshdelivery.nativedriver.ui.home.HomeScreen
 import com.freshdelivery.nativedriver.ui.inbox.InboxScreen
@@ -57,10 +68,9 @@ import com.freshdelivery.nativedriver.ui.support.TicketChatDialog
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 import com.freshdelivery.nativedriver.ui.theme.FreshGreenBright
 
-private val MenuSurface = Color(0xFF151A17)
-private val MenuTextMuted = Color(0xFF9AA6A0)
-private val MenuIconMuted = Color(0xFF67716B)
-private val MenuBorder = Color(0xFF2A322C)
+private val NavSurface = Color(0xFF121714)
+private val NavMuted = Color(0xFF8B968F)
+private val NavBorder = Color(0xFF2A322C)
 
 private data class TabItem(
     val tab: DriverTab,
@@ -100,13 +110,13 @@ fun DriverShell(
     onSendLiveChat: (String) -> Unit = {},
 ) {
     val unread = state.notifications.count { it.read_at == null }
+    // 5 primary tabs — Settings lives under Profile (less cramped than 6).
     val tabs = listOf(
         TabItem(DriverTab.Home, "Αρχική", Icons.Filled.Home, Icons.Outlined.Home),
         TabItem(DriverTab.Money, "Κέρδη", Icons.Filled.Payments, Icons.Outlined.Payments),
         TabItem(DriverTab.Inbox, "Inbox", Icons.Filled.Mail, Icons.Outlined.Mail),
         TabItem(DriverTab.Referral, "Invite", Icons.Filled.CardGiftcard, Icons.Outlined.CardGiftcard),
-        TabItem(DriverTab.Profile, "Λογαριασμός", Icons.Filled.AccountCircle, Icons.Outlined.AccountCircle),
-        TabItem(DriverTab.Settings, "Ρυθμίσεις", Icons.Outlined.Settings, Icons.Outlined.Settings),
+        TabItem(DriverTab.Profile, "Προφίλ", Icons.Filled.AccountCircle, Icons.Outlined.AccountCircle),
     )
 
     Box(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
@@ -120,67 +130,83 @@ fun DriverShell(
                     onClose = onCloseOps,
                 )
             }
-        } else when (state.tab) {
-            DriverTab.Home -> HomeScreen(
-                state = state,
-                onToggleOnline = onToggleOnline,
-                onToggleBreak = onToggleBreak,
-                onAccept = onAccept,
-                onDecline = onDecline,
-                onAdvance = onAdvance,
-                onRefresh = onRefresh,
-                onClearMessages = onClearMessages,
-                onOpenOps = onOpenOps,
-                onOpenSupport = onOpenSupport,
-            )
-            else -> Box(
-                Modifier
-                    .fillMaxSize()
-                    .statusBarsPadding()
-                    .padding(top = 100.dp),
-            ) {
-                when (state.tab) {
-                    DriverTab.Money -> MoneyScreen(
-                        state = state,
-                        onRefresh = onRefreshMoney,
+        } else {
+            Column(Modifier.fillMaxSize()) {
+                // Main content
+                Box(
+                    Modifier
+                        .weight(1f)
+                        .fillMaxWidth(),
+                ) {
+                    when (state.tab) {
+                        DriverTab.Home -> HomeScreen(
+                            state = state,
+                            onToggleOnline = onToggleOnline,
+                            onToggleBreak = onToggleBreak,
+                            onAccept = onAccept,
+                            onDecline = onDecline,
+                            onAdvance = onAdvance,
+                            onRefresh = onRefresh,
+                            onClearMessages = onClearMessages,
+                            onOpenOps = onOpenOps,
+                            onOpenSupport = onOpenSupport,
+                        )
+                        DriverTab.Money -> Box(
+                            Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp),
+                        ) {
+                            MoneyScreen(state = state, onRefresh = onRefreshMoney)
+                        }
+                        DriverTab.Inbox -> Box(
+                            Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp),
+                        ) {
+                            InboxScreen(
+                                state = state,
+                                onMarkRead = onMarkRead,
+                                onRefresh = onRefreshInbox,
+                                onOpenSupport = onOpenSupport,
+                                onOpenTicket = { t -> onSupportOpenTicket(t.id) },
+                            )
+                        }
+                        DriverTab.Referral -> Box(
+                            Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp),
+                        ) {
+                            ReferralScreen(state = state)
+                        }
+                        DriverTab.Profile -> Box(
+                            Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp),
+                        ) {
+                            ProfileScreen(
+                                state = state,
+                                onSave = onSaveProfile,
+                                onSignOut = onSignOut,
+                                onOpenSettings = { onTab(DriverTab.Settings) },
+                            )
+                        }
+                        DriverTab.Settings -> Box(
+                            Modifier.fillMaxSize().statusBarsPadding().padding(top = 8.dp),
+                        ) {
+                            SettingsScreen(
+                                state = state,
+                                onUpdateSettings = onUpdateSettings,
+                                onPreviewSound = onPreviewSound,
+                                onBack = { onTab(DriverTab.Profile) },
+                            )
+                        }
+                    }
+
+                }
+
+                // Settings is a sub-screen of Profile — no bottom bar so it doesn't
+                // look like another top-level page. Back returns to Profile.
+                if (state.tab != DriverTab.Settings) {
+                    DriverBottomBar(
+                        tabs = tabs,
+                        current = state.tab,
+                        unread = unread,
+                        onTab = onTab,
                     )
-                    DriverTab.Inbox -> InboxScreen(
-                        state = state,
-                        onMarkRead = onMarkRead,
-                        onRefresh = onRefreshInbox,
-                        onOpenSupport = onOpenSupport,
-                        onOpenTicket = { t -> onSupportOpenTicket(t.id) },
-                    )
-                    DriverTab.Referral -> ReferralScreen(state = state)
-                    DriverTab.Profile -> ProfileScreen(
-                        state = state,
-                        onSave = onSaveProfile,
-                        onSignOut = onSignOut,
-                        onOpenSettings = { onTab(DriverTab.Settings) },
-                    )
-                    DriverTab.Settings -> SettingsScreen(
-                        state = state,
-                        onUpdateSettings = onUpdateSettings,
-                        onPreviewSound = onPreviewSound,
-                    )
-                    else -> {}
                 }
             }
-        }
-
-        // Global floating menu button overlays every screen; opens the tab list.
-        // Hidden while the Ops screen is open so it does not overlap it.
-        if (!state.opsOpen) {
-            GlobalMenuButton(
-                tabs = tabs,
-                current = state.tab,
-                unread = unread,
-                online = state.online,
-                onBreak = state.onBreak,
-                canToggleOnline = state.driverActive && !state.busy,
-                onToggleOnline = onToggleOnline,
-                onTab = onTab,
-            )
         }
 
         if (state.supportOpen) {
@@ -212,120 +238,123 @@ fun DriverShell(
 }
 
 @Composable
-private fun GlobalMenuButton(
+private fun DriverBottomBar(
     tabs: List<TabItem>,
     current: DriverTab,
     unread: Int,
-    online: Boolean,
-    onBreak: Boolean,
-    canToggleOnline: Boolean,
-    onToggleOnline: (Boolean) -> Unit,
     onTab: (DriverTab) -> Unit,
 ) {
-    var open by remember { mutableStateOf(false) }
-    var confirmToggle by remember { mutableStateOf(false) }
-
-    Box(
-        Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(start = 12.dp, top = 10.dp),
+    NavigationBar(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding(),
+        containerColor = NavSurface,
+        tonalElevation = 0.dp,
+        contentColor = FreshGreenBright,
     ) {
-        // Anchor box sized to the button so the dropdown opens directly below it.
-        Box(Modifier.align(Alignment.TopStart)) {
-            Box(
-                Modifier
-                    .size(42.dp)
-                    .shadow(8.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(MenuSurface)
-                    .border(1.dp, MenuBorder, CircleShape)
-                    .clickable { open = true },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
-            }
-
-            DropdownMenu(
-                expanded = open,
-                onDismissRequest = { open = false },
-                containerColor = MenuSurface,
-            ) {
-                tabs.forEach { item ->
-                    val selected = current == item.tab
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                item.label,
-                                fontWeight = if (selected) FontWeight.Bold else null,
-                                color = if (selected) FreshGreenBright else MenuTextMuted,
+        tabs.forEach { item ->
+            val selected = current == item.tab
+            NavigationBarItem(
+                selected = selected,
+                onClick = { onTab(item.tab) },
+                icon = {
+                    if (item.tab == DriverTab.Inbox && unread > 0) {
+                        BadgedBox(
+                            badge = {
+                                Badge(containerColor = FreshGreen, contentColor = Color.White) {
+                                    Text(if (unread > 9) "9+" else "$unread", fontSize = 10.sp)
+                                }
+                            },
+                        ) {
+                            Icon(
+                                if (selected) item.selectedIcon else item.unselectedIcon,
+                                contentDescription = item.label,
                             )
-                        },
-                        leadingIcon = {
-                            if (item.tab == DriverTab.Inbox && unread > 0) {
-                                BadgedIcon(icon = item.unselectedIcon, count = unread)
-                            } else {
-                                Icon(
-                                    if (selected) item.selectedIcon else item.unselectedIcon,
-                                    contentDescription = item.label,
-                                    tint = if (selected) FreshGreenBright else MenuIconMuted,
-                                )
-                            }
-                        },
-                        onClick = {
-                            open = false
-                            onTab(item.tab)
-                        },
+                        }
+                    } else {
+                        Icon(
+                            if (selected) item.selectedIcon else item.unselectedIcon,
+                            contentDescription = item.label,
+                        )
+                    }
+                },
+                label = {
+                    Text(
+                        item.label,
+                        fontSize = 11.sp,
+                        fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
+                        maxLines = 1,
                     )
-                }
-            }
+                },
+                colors = NavigationBarItemDefaults.colors(
+                    selectedIconColor = FreshGreenBright,
+                    selectedTextColor = FreshGreenBright,
+                    unselectedIconColor = NavMuted,
+                    unselectedTextColor = NavMuted,
+                    indicatorColor = FreshGreen.copy(alpha = 0.18f),
+                ),
+            )
         }
+    }
+}
 
-        // Availability toggle under the hamburger — go online/offline with a
-        // confirmation dialog (replaces the old slide control at the bottom).
+@Composable
+private fun OnlineStatusChip(
+    online: Boolean,
+    onBreak: Boolean,
+    canToggle: Boolean,
+    onToggleOnline: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    var confirmToggle by remember { mutableStateOf(false) }
+    val label = when {
+        onBreak -> "Διάλειμμα"
+        online -> "Διαθέσιμος"
+        else -> "Εκτός"
+    }
+    val bg = when {
+        onBreak -> Color(0xFF3A2C10)
+        online -> Color(0xFF0F3D2A)
+        else -> NavSurface
+    }
+    val fg = when {
+        onBreak -> Color(0xFFFBBF24)
+        online -> FreshGreenBright
+        else -> NavMuted
+    }
+
+    Row(
+        modifier
+            .shadow(8.dp, RoundedCornerShape(24.dp))
+            .clip(RoundedCornerShape(24.dp))
+            .background(bg)
+            .border(1.dp, NavBorder, RoundedCornerShape(24.dp))
+            .clickable(enabled = canToggle) { confirmToggle = true }
+            .padding(start = 12.dp, end = 10.dp, top = 8.dp, bottom = 8.dp)
+            .semantics { contentDescription = "Κατάσταση: $label. Πάτα για αλλαγή." },
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Box(
             Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 50.dp),
-        ) {
-            Box(
-                Modifier
-                    .size(42.dp)
-                    .shadow(8.dp, CircleShape)
-                    .clip(CircleShape)
-                    .background(
-                        when {
-                            !canToggleOnline -> Color(0xFF1B211D)
-                            online -> FreshGreen
-                            else -> MenuSurface
-                        },
-                    )
-                    .border(
-                        1.dp,
-                        if (online) FreshGreenBright else MenuBorder,
-                        CircleShape,
-                    )
-                    .clickable(enabled = canToggleOnline) { confirmToggle = true },
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    Icons.Filled.Bolt,
-                    null,
-                    tint = when {
-                        !canToggleOnline -> MenuIconMuted
-                        online -> Color.White
-                        else -> FreshGreenBright
-                    },
-                    modifier = Modifier.size(22.dp),
-                )
-            }
-        }
+                .size(8.dp)
+                .clip(CircleShape)
+                .background(fg),
+        )
+        Spacer(Modifier.width(8.dp))
+        Text(label, color = fg, fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+        Spacer(Modifier.width(8.dp))
+        Icon(
+            Icons.Filled.Bolt,
+            contentDescription = null,
+            tint = fg,
+            modifier = Modifier.size(18.dp),
+        )
     }
 
     if (confirmToggle) {
         AlertDialog(
             onDismissRequest = { confirmToggle = false },
-            containerColor = MenuSurface,
+            containerColor = NavSurface,
             title = {
                 Text(
                     if (online) "Έξοδος από τις παραγγελίες" else "Διαθεσιμότητα",
@@ -335,10 +364,12 @@ private fun GlobalMenuButton(
             },
             text = {
                 Text(
-                    if (onBreak) "Είσαι σε διάλειμμα. Θες να ξαναγίνεις διαθέσιμος για νέες παραγγελίες;"
-                    else if (online) "Θα σταματήσεις να λαμβάνεις νέες παραγγελίες. Συνέχεια;"
-                    else "Θα γίνεις διαθέσιμος και θα λαμβάνεις νέες παραγγελίες. Συνέχεια;",
-                    color = MenuTextMuted,
+                    when {
+                        onBreak -> "Είσαι σε διάλειμμα. Θες να ξαναγίνεις διαθέσιμος για νέες παραγγελίες;"
+                        online -> "Θα σταματήσεις να λαμβάνεις νέες παραγγελίες. Συνέχεια;"
+                        else -> "Θα γίνεις διαθέσιμος και θα λαμβάνεις νέες παραγγελίες. Συνέχεια;"
+                    },
+                    color = NavMuted,
                 )
             },
             confirmButton = {
@@ -353,31 +384,9 @@ private fun GlobalMenuButton(
             },
             dismissButton = {
                 TextButton(onClick = { confirmToggle = false }) {
-                    Text("Ακύρωση", color = MenuTextMuted)
+                    Text("Ακύρωση", color = NavMuted)
                 }
             },
-        )
-    }
-}
-
-@Composable
-private fun BadgedIcon(icon: ImageVector, count: Int) {
-    androidx.compose.material3.BadgedBox(
-        badge = {
-            if (count > 0) {
-                Badge(
-                    containerColor = FreshGreen,
-                    contentColor = Color.White,
-                ) {
-                    Text(if (count > 9) "9+" else "$count")
-                }
-            }
-        },
-    ) {
-        Icon(
-            icon,
-            contentDescription = "Inbox",
-            tint = MenuIconMuted,
         )
     }
 }

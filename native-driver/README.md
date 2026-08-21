@@ -45,3 +45,5 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 APK: `app/build/outputs/apk/debug/app-debug.apk` → published as `fresh-driver-native-debug.apk` on release `mobile-apks-v1` (beta download page).
 
 Install **replaces** the Capacitor Fresh Driver debug build (same app id). Uninstall the old APK first if signatures differ.
+
+See also: [docs/NATIVE_IMPROVEMENTS_ROADMAP.md](../docs/NATIVE_IMPROVEMENTS_ROADMAP.md)

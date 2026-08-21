@@ -1,5 +1,6 @@
 package com.freshdelivery.nativecustomer
 
+import android.content.Intent
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
@@ -27,6 +28,7 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        handleDeepLink(intent)
         setContent {
             FreshCustomerTheme {
                 val state by vm.state.collectAsState()
@@ -92,6 +94,8 @@ class MainActivity : ComponentActivity() {
                             onDeleteSaved = vm::deleteSavedAddress,
                             onSaveProfile = vm::saveProfile,
                             onCancelOrder = vm::cancelOrder,
+                            onOpenRating = vm::openRating,
+                            onSubmitRating = { order, stars, comment -> vm.submitRating(order, stars, comment) },
                             onClearMessages = vm::clearMessages,
                             onSpinWheel = vm::spinWheel,
                             onOpenCard = vm::openMysteryCard,
@@ -113,5 +117,25 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        handleDeepLink(intent)
+    }
+
+    /** freshdelivery://order/{id} or https://.../orders/{id} */
+    private fun handleDeepLink(intent: Intent?) {
+        val data = intent?.data ?: return
+        val orderId = when {
+            data.scheme == "freshdelivery" && data.host == "order" ->
+                data.lastPathSegment?.takeIf { it.isNotBlank() }
+            data.scheme == "https" && data.path?.startsWith("/orders") == true ->
+                data.lastPathSegment?.takeIf { it.isNotBlank() && it != "orders" }
+            else -> null
+        } ?: return
+        // Defer until signed-in state is ready
+        vm.openOrderFromDeepLink(orderId)
     }
 }

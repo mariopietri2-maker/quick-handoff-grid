@@ -12,15 +12,19 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccountBalanceWallet
-import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material.icons.outlined.LocalAtm
 import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material.icons.outlined.Schedule
 import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
@@ -32,23 +36,38 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.freshdelivery.nativedriver.data.EarningRow
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.theme.FreshAmber
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
+import com.freshdelivery.nativedriver.ui.theme.FreshGreenBright
 
+/**
+ * Simple driver money overview:
+ * 1) Available balance (hero)
+ * 2) Today / Week / Pending
+ * 3) Customer cash you are holding (cap progress)
+ * 4) Recent trips
+ */
 @Composable
 fun MoneyScreen(
     state: DriverUiState,
     onRefresh: () -> Unit,
 ) {
     val money = state.money
-    val earningsBalance = money?.wallet?.available_balance ?: 0.0
+    val available = money?.wallet?.available_balance ?: 0.0
     val pending = money?.wallet?.pending_balance ?: 0.0
-    val customerCash = state.cashBalance
-    val cashCap = state.maxCashCap
-    val cashPct = ((customerCash / cashCap.coerceAtLeast(1.0))).toFloat().coerceIn(0f, 1f)
+    val today = money?.todayTotal ?: 0.0
+    val week = money?.weekTotal ?: 0.0
+    val todayTrips = money?.todayTrips ?: 0
+    val cashHeld = state.cashBalance
+    val cashCap = state.maxCashCap.coerceAtLeast(1.0)
+    val cashPct = (cashHeld / cashCap).toFloat().coerceIn(0f, 1f)
+    val recent = (money?.earnings ?: emptyList()).take(12)
     val cs = MaterialTheme.colorScheme
 
     Column(
@@ -56,42 +75,38 @@ fun MoneyScreen(
             .fillMaxSize()
             .background(cs.background)
             .verticalScroll(rememberScrollState())
-            .padding(16.dp),
+            .padding(horizontal = 16.dp, vertical = 12.dp),
     ) {
+        // Header
         Row(
             Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text("Χρήματα", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+            Column {
+                Text("Κέρδη", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+                Text(
+                    "Τι έχεις βγάλει και τι κρατάς σε μετρητά",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cs.onSurfaceVariant,
+                )
+            }
             IconButton(onClick = onRefresh) {
                 Icon(Icons.Outlined.Refresh, contentDescription = "Ανανέωση")
             }
         }
 
-        Spacer(Modifier.height(6.dp))
-        Text(
-            "Δύο ξεχωριστά ποσά: τα κέρδη σου και τα μετρητά που εισέπραξες από πελάτες.",
-            style = MaterialTheme.typography.bodySmall,
-            color = cs.onSurfaceVariant,
-        )
-
-        // ═══════════════════════════════════════════════════════════
-        // 1) DRIVER EARNINGS (wallet — yours to withdraw)
-        // ═══════════════════════════════════════════════════════════
         Spacer(Modifier.height(16.dp))
-        SectionLabel("Κέρδη οδηγού", "Δικά σου — μπορείς να κάνεις ανάληψη")
 
+        // Hero: available
         Box(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(28.dp))
+                .clip(RoundedCornerShape(24.dp))
                 .background(
-                    Brush.linearGradient(
-                        listOf(Color(0xFF00A854), Color(0xFF007A3D)),
-                    ),
+                    Brush.linearGradient(listOf(Color(0xFF059669), Color(0xFF047857))),
                 )
-                .padding(22.dp),
+                .padding(20.dp),
         ) {
             Column {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -99,218 +114,200 @@ fun MoneyScreen(
                         Icons.Outlined.AccountBalanceWallet,
                         contentDescription = null,
                         tint = Color.White.copy(alpha = 0.9f),
-                        modifier = Modifier.size(22.dp),
+                        modifier = Modifier.size(20.dp),
                     )
-                    Spacer(Modifier.size(8.dp))
+                    Spacer(Modifier.width(8.dp))
                     Text(
                         "Διαθέσιμο για ανάληψη",
-                        color = Color.White.copy(alpha = 0.85f),
-                        style = MaterialTheme.typography.labelLarge,
+                        color = Color.White.copy(alpha = 0.9f),
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.Medium,
                     )
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "€${"%.2f".format(earningsBalance)}",
-                    style = MaterialTheme.typography.displaySmall,
+                    "€${"%.2f".format(available)}",
                     color = Color.White,
-                    fontWeight = FontWeight.Bold,
+                    fontSize = 36.sp,
+                    fontWeight = FontWeight.ExtraBold,
                 )
-                if (pending > 0) {
+                if (pending > 0.009) {
+                    Spacer(Modifier.height(4.dp))
                     Text(
-                        "+€${"%.2f".format(pending)} εκκρεμεί (δεν είναι ακόμα διαθέσιμο)",
+                        "€${"%.2f".format(pending)} σε εκκρεμότητα",
+                        color = Color.White.copy(alpha = 0.8f),
+                        fontSize = 13.sp,
+                    )
+                } else {
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        if (available >= 10) "Μπορείς να ζητήσεις ανάληψη"
+                        else "Ελάχιστο ανάληψης €10",
                         color = Color.White.copy(alpha = 0.75f),
-                        style = MaterialTheme.typography.bodySmall,
-                    )
-                }
-                if (earningsBalance < 10) {
-                    Spacer(Modifier.height(14.dp))
-                    Text(
-                        "Ελάχιστο €10 για ανάληψη",
-                        color = Color.White.copy(alpha = 0.7f),
-                        style = MaterialTheme.typography.labelSmall,
-                    )
-                }
-            }
-        }
-
-        Spacer(Modifier.height(12.dp))
-        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            StatMini(
-                icon = { Icon(Icons.Outlined.Today, null, tint = FreshGreen, modifier = Modifier.size(20.dp)) },
-                label = "Σήμερα",
-                value = "€${"%.2f".format(money?.todayTotal ?: 0.0)}",
-                sub = "${money?.todayTrips ?: 0} παραδόσεις",
-                modifier = Modifier.weight(1f),
-            )
-            StatMini(
-                icon = { Icon(Icons.Outlined.Payments, null, tint = FreshAmber, modifier = Modifier.size(20.dp)) },
-                label = "Εβδομάδα",
-                value = "€${"%.2f".format(money?.weekTotal ?: 0.0)}",
-                sub = "συνολικά κέρδη",
-                modifier = Modifier.weight(1f),
-            )
-        }
-
-        Spacer(Modifier.height(16.dp))
-        Text("Ιστορικό κερδών", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(8.dp))
-        val earnings = money?.earnings.orEmpty()
-        if (earnings.isEmpty()) {
-            EmptyHint("Δεν υπάρχουν ακόμα κέρδη από παραδόσεις.")
-        } else {
-            earnings.take(20).forEach { e ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clip(RoundedCornerShape(14.dp))
-                        .background(cs.surface)
-                        .border(1.dp, cs.outline.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
-                        .padding(horizontal = 14.dp, vertical = 12.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(
-                            e.created_at?.take(16)?.replace('T', ' ') ?: e.id.take(8),
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        val parts = buildList {
-                            e.base_pay?.takeIf { it > 0 }?.let { add("βάση €${"%.2f".format(it)}") }
-                            e.tip?.takeIf { it > 0 }?.let { add("tip €${"%.2f".format(it)}") }
-                            e.bonus?.takeIf { it > 0 }?.let { add("bonus €${"%.2f".format(it)}") }
-                        }
-                        if (parts.isNotEmpty()) {
-                            Text(
-                                parts.joinToString(" · "),
-                                style = MaterialTheme.typography.labelSmall,
-                                color = cs.onSurfaceVariant,
-                            )
-                        }
-                    }
-                    Text(
-                        "+€${"%.2f".format(e.total ?: 0.0)}",
-                        color = FreshGreen,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.titleMedium,
+                        fontSize = 12.sp,
                     )
                 }
             }
         }
 
         Spacer(Modifier.height(14.dp))
-        Text("Κινήσεις πορτοφολιού", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.SemiBold)
-        Spacer(Modifier.height(6.dp))
-        val txs = money?.transactions.orEmpty()
-        if (txs.isEmpty()) {
-            EmptyHint("Καμία κίνηση πορτοφολιού.")
-        } else {
-            txs.take(15).forEach { tx ->
-                Row(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 3.dp)
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(cs.surface)
-                        .padding(horizontal = 12.dp, vertical = 10.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Column(Modifier.weight(1f)) {
-                        Text(tx.description ?: tx.type, style = MaterialTheme.typography.bodyMedium)
-                        Text(
-                            listOfNotNull(tx.status, tx.created_at?.take(10)).joinToString(" · "),
-                            style = MaterialTheme.typography.labelSmall,
-                            color = cs.onSurfaceVariant,
-                        )
-                    }
-                    Text(
-                        "€${"%.2f".format(tx.amount)}",
-                        fontWeight = FontWeight.SemiBold,
-                        color = if (tx.amount >= 0) FreshGreen else cs.error,
-                    )
-                }
-            }
+
+        // Stats row
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+        ) {
+            StatCard(
+                icon = Icons.Outlined.Today,
+                label = "Σήμερα",
+                value = "€${"%.2f".format(today)}",
+                hint = "$todayTrips παραδόσεις",
+                accent = FreshGreen,
+                modifier = Modifier.weight(1f),
+            )
+            StatCard(
+                icon = Icons.Outlined.Payments,
+                label = "Εβδομάδα",
+                value = "€${"%.2f".format(week)}",
+                hint = "σύνολο 7 ημερών",
+                accent = FreshAmber,
+                modifier = Modifier.weight(1f),
+            )
         }
 
-        // ═══════════════════════════════════════════════════════════
-        // 2) CUSTOMER CASH (held — not yours)
-        // ═══════════════════════════════════════════════════════════
-        Spacer(Modifier.height(28.dp))
-        SectionLabel("Μετρητά πελατών", "Είσπραξη — δεν είναι δικά σου κέρδη")
+        Spacer(Modifier.height(18.dp))
 
+        // Cash held
+        Text("Μετρητά που κρατάς", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+        Spacer(Modifier.height(4.dp))
+        Text(
+            "Από παραδόσεις με πληρωμή μετρητά — μένουν σε εσένα, δεν μπαίνουν στα κέρδη.",
+            style = MaterialTheme.typography.bodySmall,
+            color = cs.onSurfaceVariant,
+        )
+        Spacer(Modifier.height(10.dp))
         Column(
             Modifier
                 .fillMaxWidth()
-                .clip(RoundedCornerShape(24.dp))
+                .clip(RoundedCornerShape(18.dp))
                 .background(cs.surface)
                 .border(
-                    width = 1.5.dp,
-                    color = if (state.cashCapped) cs.error.copy(alpha = 0.55f) else FreshAmber.copy(alpha = 0.45f),
-                    shape = RoundedCornerShape(24.dp),
+                    1.dp,
+                    if (state.cashCapped) cs.error.copy(alpha = 0.5f) else cs.outline.copy(alpha = 0.25f),
+                    RoundedCornerShape(18.dp),
                 )
-                .padding(18.dp),
+                .padding(16.dp),
         ) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Icon(
-                    Icons.Outlined.Payments,
-                    contentDescription = null,
-                    tint = if (state.cashCapped) cs.error else FreshAmber,
-                    modifier = Modifier.size(22.dp),
-                )
-                Spacer(Modifier.size(8.dp))
-                Text(
-                    "Μετρητά στη βάρδια",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.SemiBold,
-                )
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .clip(CircleShape)
+                        .background(
+                            if (state.cashCapped) cs.error.copy(alpha = 0.15f)
+                            else FreshAmber.copy(alpha = 0.15f),
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Outlined.LocalAtm,
+                        contentDescription = null,
+                        tint = if (state.cashCapped) cs.error else FreshAmber,
+                        modifier = Modifier.size(22.dp),
+                    )
+                }
+                Spacer(Modifier.width(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        "€${"%.2f".format(cashHeld)}",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 20.sp,
+                    )
+                    Text(
+                        "όριο €${"%.0f".format(cashCap)}",
+                        style = MaterialTheme.typography.labelMedium,
+                        color = cs.onSurfaceVariant,
+                    )
+                }
+                if (state.cashCapped) {
+                    Text(
+                        "ΟΡΙΟ",
+                        color = cs.error,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 12.sp,
+                    )
+                }
             }
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "€${"%.2f".format(customerCash)}",
-                style = MaterialTheme.typography.headlineLarge,
-                fontWeight = FontWeight.Bold,
-                color = if (state.cashCapped) cs.error else cs.onSurface,
-            )
-            Text(
-                "Όριο €${"%.0f".format(cashCap)}",
-                style = MaterialTheme.typography.bodySmall,
-                color = cs.onSurfaceVariant,
-            )
             Spacer(Modifier.height(12.dp))
             LinearProgressIndicator(
                 progress = { cashPct },
-                modifier = Modifier.fillMaxWidth().height(10.dp).clip(RoundedCornerShape(5.dp)),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
                 color = if (state.cashCapped) cs.error else FreshAmber,
-                trackColor = cs.outline.copy(alpha = 0.25f),
+                trackColor = cs.outline.copy(alpha = 0.2f),
             )
-            Spacer(Modifier.height(12.dp))
-            Row(
+            if (state.cashCapped) {
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "Έφτασες το όριο — δεν θα λάβεις νέες παραγγελίες μετρητών μέχρι το τέλος βάρδιας.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = cs.error,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(20.dp))
+
+        // Recent trips
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Τελευταίες παραδόσεις", fontWeight = FontWeight.Bold, fontSize = 17.sp)
+            Text(
+                "${recent.size}",
+                style = MaterialTheme.typography.labelMedium,
+                color = cs.onSurfaceVariant,
+            )
+        }
+        Spacer(Modifier.height(10.dp))
+
+        if (recent.isEmpty()) {
+            Box(
                 Modifier
                     .fillMaxWidth()
-                    .clip(RoundedCornerShape(14.dp))
-                    .background(
-                        if (state.cashCapped) cs.error.copy(alpha = 0.12f)
-                        else FreshAmber.copy(alpha = 0.12f),
-                    )
-                    .padding(12.dp),
-                verticalAlignment = Alignment.Top,
+                    .clip(RoundedCornerShape(16.dp))
+                    .background(cs.surface)
+                    .border(1.dp, cs.outline.copy(alpha = 0.2f), RoundedCornerShape(16.dp))
+                    .padding(20.dp),
+                contentAlignment = Alignment.Center,
             ) {
-                Icon(
-                    Icons.Outlined.Info,
-                    contentDescription = null,
-                    tint = if (state.cashCapped) cs.error else FreshAmber,
-                    modifier = Modifier.size(18.dp),
-                )
-                Spacer(Modifier.size(8.dp))
                 Text(
-if (state.cashCapped) {
-                        "Έφτασες το όριο μετρητών στη βάρδια. Δεν θα λαμβάνεις νέες Cash προσφορές μέχρι να δηλώσεις στο app ότι τα μετρητά είναι πλέον δικά σου (τέλος βάρδιας)."
-                    } else {
-                        "Αυτά είναι μετρητά που πλήρωσαν οι πελάτες στις παραδόσεις Cash — τα κρατάς εσύ. Δεν μπαίνουν στον λογαριασμό των κερδών και δεν δίνεις τίποτα στο κατάστημα."
-                    },
-                    style = MaterialTheme.typography.bodySmall,
-                    color = if (state.cashCapped) cs.error else cs.onSurface,
+                    "Δεν υπάρχουν ακόμα παραδόσεις.",
+                    color = cs.onSurfaceVariant,
+                    style = MaterialTheme.typography.bodyMedium,
                 )
+            }
+        } else {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .clip(RoundedCornerShape(18.dp))
+                    .background(cs.surface)
+                    .border(1.dp, cs.outline.copy(alpha = 0.2f), RoundedCornerShape(18.dp)),
+            ) {
+                recent.forEachIndexed { index, row ->
+                    EarningLine(row)
+                    if (index < recent.lastIndex) {
+                        HorizontalDivider(
+                            color = cs.outline.copy(alpha = 0.15f),
+                            modifier = Modifier.padding(horizontal = 14.dp),
+                        )
+                    }
+                }
             }
         }
 
@@ -319,46 +316,82 @@ if (state.cashCapped) {
 }
 
 @Composable
-private fun SectionLabel(title: String, subtitle: String) {
-    Text(title, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-    Text(
-        subtitle,
-        style = MaterialTheme.typography.bodySmall,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(bottom = 10.dp, top = 2.dp),
-    )
-}
-
-@Composable
-private fun StatMini(
-    icon: @Composable () -> Unit,
+private fun StatCard(
+    icon: ImageVector,
     label: String,
     value: String,
-    sub: String,
+    hint: String,
+    accent: Color,
     modifier: Modifier = Modifier,
 ) {
     val cs = MaterialTheme.colorScheme
     Column(
         modifier
-            .clip(RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(18.dp))
             .background(cs.surface)
-            .border(1.dp, cs.outline.copy(alpha = 0.3f), RoundedCornerShape(20.dp))
+            .border(1.dp, cs.outline.copy(alpha = 0.22f), RoundedCornerShape(18.dp))
             .padding(14.dp),
     ) {
-        icon()
+        Icon(icon, contentDescription = null, tint = accent, modifier = Modifier.size(20.dp))
         Spacer(Modifier.height(8.dp))
         Text(label, style = MaterialTheme.typography.labelMedium, color = cs.onSurfaceVariant)
-        Text(value, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
-        Text(sub, style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
+        Text(value, fontWeight = FontWeight.Bold, fontSize = 20.sp)
+        Text(hint, style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
     }
 }
 
 @Composable
-private fun EmptyHint(text: String) {
-    Text(
-        text,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        style = MaterialTheme.typography.bodyMedium,
-        modifier = Modifier.padding(vertical = 8.dp),
-    )
+private fun EarningLine(row: EarningRow) {
+    val cs = MaterialTheme.colorScheme
+    val total = row.total ?: 0.0
+    val tip = row.tip ?: 0.0
+    val base = row.base_pay ?: 0.0
+    val whenText = row.created_at?.replace("T", " ")?.take(16) ?: "—"
+
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 14.dp, vertical = 12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(
+            Modifier
+                .size(36.dp)
+                .clip(CircleShape)
+                .background(FreshGreen.copy(alpha = 0.12f)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                Icons.Outlined.Schedule,
+                contentDescription = null,
+                tint = FreshGreenBright,
+                modifier = Modifier.size(18.dp),
+            )
+        }
+        Spacer(Modifier.width(12.dp))
+        Column(Modifier.weight(1f)) {
+            Text(
+                whenText,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 14.sp,
+            )
+            val parts = buildList {
+                if (base > 0) add("βάση €${"%.2f".format(base)}")
+                if (tip > 0) add("φιλοδώρημα €${"%.2f".format(tip)}")
+            }
+            if (parts.isNotEmpty()) {
+                Text(
+                    parts.joinToString(" · "),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = cs.onSurfaceVariant,
+                )
+            }
+        }
+        Text(
+            "+€${"%.2f".format(total)}",
+            fontWeight = FontWeight.Bold,
+            color = FreshGreenBright,
+            fontSize = 15.sp,
+        )
+    }
 }

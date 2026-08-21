@@ -461,3 +461,14 @@ fun DriverMapView(
         }
     }
 }
+
+/**
+ * Best-effort traffic-signal points along a route.
+ * Mapbox Directions does not always expose signalized intersections in free tiers;
+ * return empty when unavailable so navigation still works.
+ */
+fun fetchTrafficSignals(points: List<Point>): List<Point> {
+    // Placeholder: sample every Nth point as a soft visual cue is intentionally avoided.
+    // Real signal data would come from a traffic/annotations API.
+    return emptyList()
+}

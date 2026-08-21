@@ -82,6 +82,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.data.ActiveTripUi
+import com.freshdelivery.nativedriver.ui.home.NavBanner
+import com.freshdelivery.nativedriver.ui.home.SurgeBanner
 import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.map.DriverMapView
@@ -439,7 +441,7 @@ fun HomeScreen(
                             .clickable(onClick = onOpenSupport),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Outlined.HeadsetMic, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Outlined.HeadsetMic, contentDescription = "Υποστήριξη", tint = FreshGreenBright, modifier = Modifier.size(22.dp))
                     }
                     if (state.isOps) {
                         Box(
@@ -472,13 +474,14 @@ fun HomeScreen(
         }
 
         // Bottom dock — status card + slide-to-go-available control
+        // Sit above the app bottom NavigationBar (~64dp) so Accept/Decline/trip
+        // CTAs stay on Home and remain tappable (not under another "page" chrome).
         Column(
             Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .padding(horizontal = 10.dp, vertical = 8.dp)
-                .padding(bottom = 12.dp),
+                .padding(bottom = 72.dp),
         ) {
             err?.let { msg ->
                 Row(
@@ -556,6 +559,14 @@ fun HomeScreen(
                             Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(18.dp),
                         ) {
                             Handle()
+                            SurgeBanner(
+                                multiplier = state.settings?.ai_driver_pay_multiplier,
+                                waitBonusEuro = state.settings?.wait_bonus_euros,
+                                modifier = Modifier.padding(bottom = 8.dp),
+                            )
+                            primary?.let { trip ->
+                                NavBanner(trip = trip, modifier = Modifier.padding(bottom = 12.dp))
+                            }
                             state.activeTrips.forEach { trip ->
                                 ActiveTripCard(
                                     trip = trip,
@@ -988,8 +999,15 @@ private fun OfferSheet(
         ?.count { it.isNotBlank() }
         ?.takeIf { it > 0 }
 
+    val urgent = secondsLeft <= 10
     Card(
-        Modifier.fillMaxWidth().shadow(20.dp, RoundedCornerShape(28.dp)),
+        Modifier
+            .fillMaxWidth()
+            .shadow(20.dp, RoundedCornerShape(28.dp))
+            .then(
+                if (urgent) Modifier.border(2.dp, Color(0xFFFF6B6B), RoundedCornerShape(28.dp))
+                else Modifier
+            ),
         shape = RoundedCornerShape(28.dp),
         colors = CardDefaults.cardColors(containerColor = SurfaceCard),
         elevation = CardDefaults.cardElevation(0.dp),
@@ -1004,7 +1022,7 @@ private fun OfferSheet(
             ) {
                 Column(Modifier.weight(1f).padding(end = 8.dp)) {
                     Text(
-                        "ΝΕΑ ΠΡΟΣΦΟΡΑ · #$orderCode",
+                        if (urgent) "ΛΗΓΕΙ · #$orderCode" else "ΝΕΑ ΠΡΟΣΦΟΡΑ · #$orderCode",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = TextMuted,
@@ -1022,7 +1040,7 @@ private fun OfferSheet(
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("Κέρδος", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
-                    Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 28.sp, color = FreshGreenBright)
+                    Text(eur(payout), fontWeight = FontWeight.ExtraBold, fontSize = 32.sp, color = FreshGreenBright)
                 }
             }
 
@@ -1044,17 +1062,27 @@ private fun OfferSheet(
                     Chip("$it", TrackFill, TextMuted)
                 }
                 Spacer(Modifier.weight(1f))
-                Chip(
-                    formatTimer(secondsLeft),
-                    TrackFill,
-                    if (secondsLeft <= 10) Color(0xFFFF6B6B) else TextMuted,
-                )
+                Box(
+                    Modifier
+                        .background(
+                            if (secondsLeft <= 10) Color(0xFF3F1212) else TrackFill,
+                            RoundedCornerShape(20.dp),
+                        )
+                        .padding(horizontal = 12.dp, vertical = 6.dp),
+                ) {
+                    Text(
+                        formatTimer(secondsLeft),
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = if (secondsLeft <= 10) Color(0xFFFF6B6B) else TextMuted,
+                    )
+                }
             }
 
             Spacer(Modifier.height(10.dp))
             LinearProgressIndicator(
                 progress = { progress.coerceIn(0f, 1f) },
-                modifier = Modifier.fillMaxWidth().height(4.dp).clip(RoundedCornerShape(2.dp)),
+                modifier = Modifier.fillMaxWidth().height(6.dp).clip(RoundedCornerShape(3.dp)),
                 color = if (secondsLeft <= 10) Color(0xFFFF6B6B) else GreenBtn,
                 trackColor = TrackFill,
             )
@@ -1112,37 +1140,66 @@ private fun OfferSheet(
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(18.dp))
 
+            // Primary action is intentionally large for one-thumb use while driving.
             Row(
                 Modifier.fillMaxWidth(),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                Box(
-                    Modifier
-                        .size(52.dp)
-                        .clip(CircleShape)
-                        .border(1.5.dp, Color(0xFF3A423C), CircleShape)
-                        .background(TrackFill)
-                        .clickable(enabled = !busy && offer.offerId.isNotBlank(), onClick = onDecline),
-                    contentAlignment = Alignment.Center,
-                ) {
-                    Icon(Icons.Filled.Close, null, tint = TextMuted, modifier = Modifier.size(22.dp))
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Box(
+                        Modifier
+                            .size(56.dp)
+                            .clip(CircleShape)
+                            .border(1.5.dp, Color(0xFF4A524C), CircleShape)
+                            .background(TrackFill)
+                            .clickable(
+                                enabled = !busy && offer.offerId.isNotBlank(),
+                                onClick = onDecline,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(
+                            Icons.Filled.Close,
+                            contentDescription = "Απόρριψη προσφοράς",
+                            tint = TextMuted,
+                            modifier = Modifier.size(24.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text("Όχι", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.Medium)
                 }
                 Button(
                     onClick = onAccept,
                     enabled = !busy,
-                    modifier = Modifier.weight(1f).height(52.dp),
-                    shape = RoundedCornerShape(28.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = GreenBtn, contentColor = Color.White),
+                    modifier = Modifier
+                        .weight(1f)
+                        .height(58.dp)
+                        .shadow(10.dp, RoundedCornerShape(29.dp)),
+                    shape = RoundedCornerShape(29.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (secondsLeft <= 10) Color(0xFF059669) else GreenBtn,
+                        contentColor = Color.White,
+                    ),
                 ) {
                     if (busy) {
-                        CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                        CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
                     } else {
-                        Icon(Icons.Filled.Check, null, modifier = Modifier.size(20.dp))
-                        Spacer(Modifier.width(8.dp))
-                        Text("Αποδοχή · ${eur(payout)}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(
+                                "ΑΠΟΔΟΧΗ",
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 15.sp,
+                                letterSpacing = 0.5.sp,
+                            )
+                            Text(
+                                eur(payout),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 18.sp,
+                            )
+                        }
                     }
                 }
             }
@@ -1268,46 +1325,64 @@ private fun ActiveTripCard(
         TripProgress(currentStep)
 
         Spacer(Modifier.height(14.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
             val storeLat = trip.storeLat
             val storeLng = trip.storeLng
             if (storeLat != null && storeLng != null && status in listOf("accepted", "preparing", "ready", "arrived")) {
-                OutlinedButton(onClick = { onNavigate(storeLat, storeLng, trip.storeName ?: "Store") }, shape = RoundedCornerShape(14.dp)) {
-                    Icon(Icons.Outlined.Navigation, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Πλοήγηση")
+                OutlinedButton(
+                    onClick = { onNavigate(storeLat, storeLng, trip.storeName ?: "Store") },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
+                ) {
+                    Icon(Icons.Outlined.Navigation, contentDescription = "Πλοήγηση στο κατάστημα", Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Πλοήγηση", fontWeight = FontWeight.SemiBold)
                 }
             }
             val dLat = trip.order.delivery_latitude
             val dLng = trip.order.delivery_longitude
             if (dLat != null && dLng != null && status in listOf("picked_up", "arrived")) {
-                OutlinedButton(onClick = { onNavigate(dLat, dLng, "Παράδοση") }, shape = RoundedCornerShape(14.dp)) {
-                    Icon(Icons.Outlined.Navigation, null, Modifier.size(16.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Πελάτης")
+                OutlinedButton(
+                    onClick = { onNavigate(dLat, dLng, "Παράδοση") },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.weight(1f).height(48.dp),
+                ) {
+                    Icon(Icons.Outlined.Navigation, contentDescription = "Πλοήγηση στον πελάτη", Modifier.size(18.dp))
+                    Spacer(Modifier.width(6.dp))
+                    Text("Πελάτης", fontWeight = FontWeight.SemiBold)
                 }
             }
             val phone = trip.order.customer_phone ?: trip.storePhone
             if (!phone.isNullOrBlank()) {
-                OutlinedButton(onClick = { onCall(phone) }, shape = RoundedCornerShape(14.dp)) {
-                    Icon(Icons.Outlined.Call, null, Modifier.size(16.dp))
+                OutlinedButton(
+                    onClick = { onCall(phone) },
+                    shape = RoundedCornerShape(16.dp),
+                    modifier = Modifier.height(48.dp),
+                ) {
+                    Icon(Icons.Outlined.Call, contentDescription = "Κλήση", Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
-                    Text("Κλήση")
+                    Text("Κλήση", fontWeight = FontWeight.SemiBold)
                 }
             }
         }
 
         if (next != null && nextLabel != null) {
-            Spacer(Modifier.height(14.dp))
+            Spacer(Modifier.height(16.dp))
             Button(
                 onClick = { onAdvance(trip.order.id, next) },
                 enabled = !busy,
-                modifier = Modifier.fillMaxWidth().height(54.dp),
-                shape = RoundedCornerShape(28.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(58.dp)
+                    .shadow(8.dp, RoundedCornerShape(29.dp)),
+                shape = RoundedCornerShape(29.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = GreenBtn, contentColor = Color.White),
             ) {
-                if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
-                else Text(nextLabel, fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                if (busy) CircularProgressIndicator(Modifier.size(22.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text(nextLabel, fontWeight = FontWeight.ExtraBold, fontSize = 17.sp)
             }
         }
     }

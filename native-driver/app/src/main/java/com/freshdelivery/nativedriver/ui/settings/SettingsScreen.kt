@@ -17,12 +17,14 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
 import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material.icons.outlined.PhonelinkRing
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.ScreenLockPortrait
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -52,6 +54,7 @@ fun SettingsScreen(
     state: DriverUiState,
     onUpdateSettings: (DriverSettings) -> Unit,
     onPreviewSound: (String) -> Unit,
+    onBack: () -> Unit = {},
 ) {
     val settings = state.settingsLocal
     val cs = MaterialTheme.colorScheme
@@ -63,7 +66,12 @@ fun SettingsScreen(
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
     ) {
-        Text("Ρυθμίσεις", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) {
+                Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Πίσω στο προφίλ")
+            }
+            Text("Ρυθμίσεις", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        }
 
         Spacer(Modifier.height(14.dp))
         SectionHeader("Ειδοποιήσεις")
