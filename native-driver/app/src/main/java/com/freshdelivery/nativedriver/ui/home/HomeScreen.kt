@@ -431,7 +431,7 @@ fun HomeScreen(
                 ) {
                     Box(
                         Modifier
-                            .size(42.dp)
+                            .size(52.dp)
                             .shadow(6.dp, CircleShape)
                             .clip(CircleShape)
                             .background(SurfaceCard)
@@ -439,12 +439,12 @@ fun HomeScreen(
                             .clickable(onClick = onOpenSupport),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Outlined.HeadsetMic, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Outlined.HeadsetMic, null, tint = FreshGreenBright, modifier = Modifier.size(26.dp))
                     }
                     if (state.isOps) {
                         Box(
                             Modifier
-                                .size(42.dp)
+                                .size(52.dp)
                                 .shadow(6.dp, CircleShape)
                                 .clip(CircleShape)
                                 .background(SurfaceCard)
@@ -452,12 +452,12 @@ fun HomeScreen(
                                 .clickable(onClick = onOpenOps),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(Icons.Outlined.Storefront, null, tint = FreshAmber, modifier = Modifier.size(22.dp))
+                            Icon(Icons.Outlined.Storefront, null, tint = FreshAmber, modifier = Modifier.size(26.dp))
                         }
                     }
                     Box(
                         Modifier
-                            .size(42.dp)
+                            .size(52.dp)
                             .shadow(6.dp, CircleShape)
                             .clip(CircleShape)
                             .background(SurfaceCard)
@@ -465,7 +465,7 @@ fun HomeScreen(
                             .clickable { recenterKey++ },
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Outlined.MyLocation, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Outlined.MyLocation, null, tint = FreshGreenBright, modifier = Modifier.size(26.dp))
                     }
                 }
             }
@@ -536,7 +536,7 @@ fun HomeScreen(
                             Text("Εκτός υπηρεσίας", fontWeight = FontWeight.Bold, fontSize = 17.sp, color = TextDark)
                             Spacer(Modifier.height(4.dp))
                             Text(
-                                "Δεν λαμβάνεις νέες προσφορές. Σύρε δεξιά για να γίνεις διαθέσιμος.",
+                                "Δεν λαμβάνεις νέες προσφορές. Πάτα το ⚡ πάνω αριστερά για να γίνεις διαθέσιμος.",
                                 fontSize = 13.sp,
                                 color = TextMuted,
                                 textAlign = TextAlign.Center,

@@ -4,15 +4,27 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountCircle
 import androidx.compose.material.icons.filled.Bolt
 import androidx.compose.material.icons.filled.CardGiftcard
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.Payments
@@ -25,8 +37,6 @@ import androidx.compose.material.icons.outlined.Payments
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
-import androidx.compose.material3.DropdownMenu
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -40,10 +50,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.data.DriverTab
 import com.freshdelivery.nativedriver.ui.home.HomeScreen
 import com.freshdelivery.nativedriver.ui.inbox.InboxScreen
@@ -137,7 +150,7 @@ fun DriverShell(
                 Modifier
                     .fillMaxSize()
                     .statusBarsPadding()
-                    .padding(top = 100.dp),
+                    .padding(top = 140.dp),
             ) {
                 when (state.tab) {
                     DriverTab.Money -> MoneyScreen(
@@ -225,43 +238,46 @@ private fun GlobalMenuButton(
     var open by remember { mutableStateOf(false) }
     var confirmToggle by remember { mutableStateOf(false) }
 
-    Box(
-        Modifier
-            .fillMaxSize()
-            .statusBarsPadding()
-            .padding(start = 12.dp, top = 10.dp),
-    ) {
-        // Anchor box sized to the button so the dropdown opens directly below it.
-        Box(Modifier.align(Alignment.TopStart)) {
+    Box(Modifier.fillMaxSize()) {
+        // Side drawer — left half of the screen, full height, map dimmed behind.
+        if (open) {
             Box(
                 Modifier
-                    .size(42.dp)
-                    .shadow(8.dp, CircleShape)
-                    .clip(CircleShape)
+                    .matchParentSize()
+                    .background(Color(0xFF050806).copy(alpha = 0.45f))
+                    .clickable(enabled = true) { open = false },
+            )
+            Column(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .fillMaxHeight()
+                    .fillMaxWidth(0.5f)
                     .background(MenuSurface)
-                    .border(1.dp, MenuBorder, CircleShape)
-                    .clickable { open = true },
-                contentAlignment = Alignment.Center,
+                    .border(1.dp, MenuBorder)
+                    .statusBarsPadding(),
             ) {
-                Icon(Icons.Outlined.Menu, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
-            }
-
-            DropdownMenu(
-                expanded = open,
-                onDismissRequest = { open = false },
-                containerColor = MenuSurface,
-            ) {
-                tabs.forEach { item ->
-                    val selected = current == item.tab
-                    DropdownMenuItem(
-                        text = {
-                            Text(
-                                item.label,
-                                fontWeight = if (selected) FontWeight.Bold else null,
-                                color = if (selected) FreshGreenBright else MenuTextMuted,
-                            )
-                        },
-                        leadingIcon = {
+                // Header zone — reserved for the floating ✕ / ⚡ buttons above.
+                Spacer(Modifier.height(128.dp))
+                Column(
+                    Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 8.dp),
+                ) {
+                    tabs.forEach { item ->
+                        val selected = current == item.tab
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(if (selected) FreshGreen.copy(alpha = 0.08f) else Color.Transparent)
+                                .clickable {
+                                    open = false
+                                    onTab(item.tab)
+                                }
+                                .padding(horizontal = 12.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
                             if (item.tab == DriverTab.Inbox && unread > 0) {
                                 BadgedIcon(icon = item.unselectedIcon, count = unread)
                             } else {
@@ -269,55 +285,112 @@ private fun GlobalMenuButton(
                                     if (selected) item.selectedIcon else item.unselectedIcon,
                                     contentDescription = item.label,
                                     tint = if (selected) FreshGreenBright else MenuIconMuted,
+                                    modifier = Modifier.size(22.dp),
                                 )
                             }
-                        },
-                        onClick = {
-                            open = false
-                            onTab(item.tab)
-                        },
-                    )
+                            Spacer(Modifier.width(12.dp))
+                            Text(
+                                item.label,
+                                fontSize = 15.sp,
+                                fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal,
+                                color = if (selected) FreshGreenBright else MenuTextMuted,
+                            )
+                        }
+                    }
+                }
+
+                // Footer — app branding pinned to the bottom of the drawer.
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(Color(0xFF111512))
+                        .navigationBarsPadding()
+                        .padding(horizontal = 14.dp, vertical = 12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Box(
+                        Modifier
+                            .size(28.dp)
+                            .clip(CircleShape)
+                            .background(Brush.linearGradient(listOf(FreshGreen, FreshGreenBright))),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Filled.Bolt, null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    }
+                    Spacer(Modifier.width(9.dp))
+                    Column {
+                        Text("Fresh Delivery", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("Driver · ${BuildConfig.VERSION_NAME}", color = MenuIconMuted, fontSize = 10.sp)
+                    }
                 }
             }
         }
 
-        // Availability toggle under the hamburger — go online/offline with a
-        // confirmation dialog (replaces the old slide control at the bottom).
+        // Floating controls — hamburger/close on top, availability toggle below it.
+        // Drawn after the drawer so they sit inside its header zone without colliding
+        // with the item list (the list starts below them).
         Box(
             Modifier
-                .align(Alignment.TopStart)
-                .padding(top = 50.dp),
+                .matchParentSize()
+                .statusBarsPadding()
+                .padding(start = 12.dp, top = 10.dp),
         ) {
             Box(
                 Modifier
-                    .size(42.dp)
+                    .size(52.dp)
                     .shadow(8.dp, CircleShape)
                     .clip(CircleShape)
-                    .background(
-                        when {
-                            !canToggleOnline -> Color(0xFF1B211D)
-                            online -> FreshGreen
-                            else -> MenuSurface
-                        },
-                    )
-                    .border(
-                        1.dp,
-                        if (online) FreshGreenBright else MenuBorder,
-                        CircleShape,
-                    )
-                    .clickable(enabled = canToggleOnline) { confirmToggle = true },
+                    .background(if (open) Color(0xFF1F2521) else MenuSurface)
+                    .border(1.dp, if (open) Color(0xFF3A423C) else MenuBorder, CircleShape)
+                    .clickable { open = !open },
                 contentAlignment = Alignment.Center,
             ) {
                 Icon(
-                    Icons.Filled.Bolt,
+                    if (open) Icons.Filled.Close else Icons.Outlined.Menu,
                     null,
-                    tint = when {
-                        !canToggleOnline -> MenuIconMuted
-                        online -> Color.White
-                        else -> FreshGreenBright
-                    },
-                    modifier = Modifier.size(22.dp),
+                    tint = FreshGreenBright,
+                    modifier = Modifier.size(26.dp),
                 )
+            }
+
+            // Availability toggle under the hamburger — go online/offline with a
+            // confirmation dialog (replaces the old slide control at the bottom).
+            Box(
+                Modifier
+                    .align(Alignment.TopStart)
+                    .padding(top = 62.dp),
+            ) {
+                Box(
+                    Modifier
+                        .size(52.dp)
+                        .shadow(8.dp, CircleShape)
+                        .clip(CircleShape)
+                        .background(
+                            when {
+                                !canToggleOnline -> Color(0xFF1B211D)
+                                online -> FreshGreen
+                                else -> MenuSurface
+                            },
+                        )
+                        .border(
+                            1.dp,
+                            if (online) FreshGreenBright else MenuBorder,
+                            CircleShape,
+                        )
+                        .clickable(enabled = canToggleOnline) { confirmToggle = true },
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(
+                        Icons.Filled.Bolt,
+                        null,
+                        tint = when {
+                            !canToggleOnline -> MenuIconMuted
+                            online -> Color.White
+                            else -> FreshGreenBright
+                        },
+                        modifier = Modifier.size(26.dp),
+                    )
+                }
             }
         }
     }
