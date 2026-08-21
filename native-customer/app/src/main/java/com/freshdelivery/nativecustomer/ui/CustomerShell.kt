@@ -304,10 +304,15 @@ fun CustomerShell(
                         ),
                 ) {
                     tabs.forEach { (tab, label, icon) ->
-                        val selected = state.tab == tab
+                        // Track is not a bottom-tab page — highlight Παραγγελίες instead
+                        val selected = state.tab == tab ||
+                            (state.tab == CustomerTab.Track && tab == CustomerTab.Orders)
                         NavigationBarItem(
                             selected = selected,
-                            onClick = { onTab(tab) },
+                            onClick = {
+                                // Explicit tab only — never leave action buttons as wrong pages
+                                onTab(tab)
+                            },
                             icon = {
                                 Icon(
                                     icon as ImageVector,
@@ -584,7 +589,7 @@ private fun HomeTab(
         }
 
         // Phase1: admin appConfig brand / promo / tiles
-        state.appConfig.promos.firstOrNull()?.let { promo ->
+        if (!browseMode) state.appConfig.promos.firstOrNull()?.let { promo ->
             item {
                 Box(
                     Modifier
@@ -684,7 +689,7 @@ private fun HomeTab(
                 }
             }
         }
-        if (state.gameShow) {
+        if (state.gameShow && !browseMode) {
             item {
                 when (state.gameActive) {
                     "wheel" -> LuckyWheelCard(state = state, onSpin = onSpinWheel)

@@ -441,7 +441,7 @@ fun HomeScreen(
                             .clickable(onClick = onOpenSupport),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(Icons.Outlined.HeadsetMic, null, tint = FreshGreenBright, modifier = Modifier.size(22.dp))
+                        Icon(Icons.Outlined.HeadsetMic, contentDescription = "Υποστήριξη", tint = FreshGreenBright, modifier = Modifier.size(22.dp))
                     }
                     if (state.isOps) {
                         Box(
