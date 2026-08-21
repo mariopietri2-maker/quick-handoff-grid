@@ -240,6 +240,7 @@ private fun GlobalMenuButton(
 
     Box(Modifier.fillMaxSize()) {
         // Side drawer — left half of the screen, full height, map dimmed behind.
+        // No buttons while open: tapping the map (scrim) closes it.
         if (open) {
             Box(
                 Modifier
@@ -247,6 +248,7 @@ private fun GlobalMenuButton(
                     .background(Color(0xFF050806).copy(alpha = 0.45f))
                     .clickable(enabled = true) { open = false },
             )
+            // No buttons while the drawer is open — tap the map (scrim) to go back.
             Column(
                 Modifier
                     .align(Alignment.TopStart)
@@ -255,31 +257,12 @@ private fun GlobalMenuButton(
                     .background(MenuSurface)
                     .border(1.dp, MenuBorder),
             ) {
-                // Header — the ✕ / ⚡ buttons live INSIDE the drawer layout, so the
-                // item list always flows below them (no overlap at any font scale).
-                Column(
-                    Modifier
-                        .statusBarsPadding()
-                        .padding(start = 12.dp, top = 10.dp),
-                ) {
-                    MenuCircleButton(
-                        icon = Icons.Filled.Close,
-                        contentDesc = "Κλείσιμο μενού",
-                        container = Color(0xFF1F2521),
-                        borderCol = Color(0xFF3A423C),
-                    ) { open = false }
-                    Spacer(Modifier.height(10.dp))
-                    AvailabilityBolt(
-                        online = online,
-                        canToggleOnline = canToggleOnline,
-                        onClick = { confirmToggle = true },
-                    )
-                }
                 Column(
                     Modifier
                         .weight(1f)
+                        .statusBarsPadding()
                         .verticalScroll(rememberScrollState())
-                        .padding(top = 12.dp, start = 8.dp, end = 8.dp),
+                        .padding(top = 14.dp, start = 8.dp, end = 8.dp),
                 ) {
                     tabs.forEach { item ->
                         val selected = current == item.tab
