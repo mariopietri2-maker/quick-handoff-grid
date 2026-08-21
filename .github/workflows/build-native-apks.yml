@@ -71,28 +71,78 @@ jobs:
           echo "sdk.dir=$ANDROID_HOME" > local.properties
           ./gradlew :app:assembleDebug :app:bundleDebug --no-daemon --stacktrace
 
-      - name: Stage APKs and AABs
+      - name: Stage APKs and AABs (versioned filenames)
+        id: stage
         run: |
           mkdir -p dist
-          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
+          SHORT_SHA=$(echo "${GITHUB_SHA}" | cut -c1-7)
+          BRANCH="${GITHUB_REF_NAME}"
+          # Read versionCode / versionName from each app
+          D_CODE=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | grep -oE '[0-9]+' | head -1)
+          D_NAME=$(grep -E 'versionName\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          C_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | grep -oE '[0-9]+' | head -1)
+          C_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          D_CODE=${D_CODE:-0}
+          C_CODE=${C_CODE:-0}
+          D_NAME=${D_NAME:-unknown}
+          C_NAME=${C_NAME:-unknown}
+
+          DRIVER_APK="fresh-driver-v${D_CODE}-${D_NAME}-${SHORT_SHA}.apk"
+          CUSTOMER_APK="fresh-customer-v${C_CODE}-${C_NAME}-${SHORT_SHA}.apk"
+
+          cp native-driver/app/build/outputs/apk/debug/app-debug.apk "dist/${DRIVER_APK}"
+          # Stable alias for scripts
+          cp "dist/${DRIVER_APK}" dist/fresh-driver-native-debug.apk
+
           if [ -f native-driver/app/build/outputs/bundle/debug/app-debug.aab ]; then
-            cp native-driver/app/build/outputs/bundle/debug/app-debug.aab dist/fresh-driver-native-debug.aab
+            cp native-driver/app/build/outputs/bundle/debug/app-debug.aab "dist/fresh-driver-v${D_CODE}-${SHORT_SHA}.aab"
           fi
           if [ -f native-customer/app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh-customer-native-debug.apk
+            cp native-customer/app/build/outputs/apk/debug/app-debug.apk "dist/${CUSTOMER_APK}"
+            cp "dist/${CUSTOMER_APK}" dist/fresh-customer-native-debug.apk
           fi
           if [ -f native-customer/app/build/outputs/bundle/debug/app-debug.aab ]; then
-            cp native-customer/app/build/outputs/bundle/debug/app-debug.aab dist/fresh-customer-native-debug.aab
+            cp native-customer/app/build/outputs/bundle/debug/app-debug.aab "dist/fresh-customer-v${C_CODE}-${SHORT_SHA}.aab"
           fi
+
+          # Human-readable build card — open this BEFORE installing
+          cat > dist/BUILD_INFO.txt << EOF
+========================================
+  Fresh Delivery — Native APK build card
+========================================
+Built at (UTC):  $(date -u +%Y-%m-%dT%H:%M:%SZ)
+GitHub branch:   ${BRANCH}
+Git commit:      ${GITHUB_SHA}
+Short SHA:       ${SHORT_SHA}
+Workflow run:    ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}
+
+DRIVER
+  versionName:   ${D_NAME}
+  versionCode:   ${D_CODE}
+  file:          ${DRIVER_APK}
+
+CUSTOMER
+  versionName:   ${C_NAME}
+  versionCode:   ${C_CODE}
+  file:          ${CUSTOMER_APK}
+
+How to know you have the NEW app:
+  Android Settings → Apps → Fresh Driver → version should show ${D_NAME} (${D_CODE})
+
+NOTE: GitHub release "mobile-apks-v1" only updates from main.
+      Branch builds are Actions Artifacts only.
+========================================
+EOF
+          cat dist/BUILD_INFO.txt
           ls -lah dist/
+          echo "artifact_name=native-apks-v${D_CODE}-${SHORT_SHA}" >> "$GITHUB_OUTPUT"
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: native-apks-aabs
+          name: ${{ steps.stage.outputs.artifact_name }}
           path: |
-            dist/*.apk
-            dist/*.aab
+            dist/*
           if-no-files-found: error
           retention-days: 14
 
