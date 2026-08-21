@@ -189,32 +189,23 @@ fun DriverShell(
                                 state = state,
                                 onUpdateSettings = onUpdateSettings,
                                 onPreviewSound = onPreviewSound,
+                                onBack = { onTab(DriverTab.Profile) },
                             )
                         }
                     }
 
-                    // Online status chip + bolt toggle (top-right), not a cramped menu.
-                    if (state.tab == DriverTab.Home) {
-                        OnlineStatusChip(
-                            online = state.online,
-                            onBreak = state.onBreak,
-                            canToggle = state.driverActive && !state.busy,
-                            onToggleOnline = onToggleOnline,
-                            modifier = Modifier
-                                .align(Alignment.TopEnd)
-                                .statusBarsPadding()
-                                .padding(top = 10.dp, end = 12.dp),
-                        )
-                    }
                 }
 
-                // Full-width bottom navigation — standard app pattern.
-                DriverBottomBar(
-                    tabs = tabs,
-                    current = if (state.tab == DriverTab.Settings) DriverTab.Profile else state.tab,
-                    unread = unread,
-                    onTab = onTab,
-                )
+                // Settings is a sub-screen of Profile — no bottom bar so it doesn't
+                // look like another top-level page. Back returns to Profile.
+                if (state.tab != DriverTab.Settings) {
+                    DriverBottomBar(
+                        tabs = tabs,
+                        current = state.tab,
+                        unread = unread,
+                        onTab = onTab,
+                    )
+                }
             }
         }
 

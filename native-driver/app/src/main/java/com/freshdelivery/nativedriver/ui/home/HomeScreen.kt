@@ -474,13 +474,14 @@ fun HomeScreen(
         }
 
         // Bottom dock — status card + slide-to-go-available control
+        // Sit above the app bottom NavigationBar (~64dp) so Accept/Decline/trip
+        // CTAs stay on Home and remain tappable (not under another "page" chrome).
         Column(
             Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
-                .navigationBarsPadding()
                 .padding(horizontal = 10.dp, vertical = 8.dp)
-                .padding(bottom = 12.dp),
+                .padding(bottom = 72.dp),
         ) {
             err?.let { msg ->
                 Row(
