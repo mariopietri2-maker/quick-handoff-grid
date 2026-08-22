@@ -62,6 +62,7 @@ fun DriverNavGraph(
                 onCloseChat = viewModel::closeChat,
                 onSendLiveChat = viewModel::sendLiveChatMessage,
                 onAcceptStoreCall = viewModel::acceptStoreCall,
+                onCompleteStoreCall = viewModel::completeActiveCall,
             )
         }
     }

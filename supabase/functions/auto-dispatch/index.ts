@@ -402,6 +402,7 @@ async function loadAvailableOnlineDrivers(
     .from("driver_profiles")
     .select("user_id")
     .eq("is_active", true)
+    .neq("call_role", "K")
     .is("suspended_at", null)
     .limit(200);
   if (profErr || !profiles?.length) return [];

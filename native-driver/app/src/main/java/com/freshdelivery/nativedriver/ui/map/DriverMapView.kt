@@ -1,4 +1,4 @@
-package com.freshdelivery.nativedriver.ui.map
+﻿package com.freshdelivery.nativedriver.ui.map
 
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
@@ -158,12 +158,12 @@ private fun createTrafficLightBitmap(size: Int = 44): Bitmap {
  * Draws a bright letter placeholder immediately so pins appear before photos load.
  */
 private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): Bitmap {
-    val box = 128f
-    val radius = 28f
-    val badgeW = 68f
-    val badgeH = 40f
-    val gap = 8f
-    val pad = 6f
+    val box = 78f
+    val radius = 18f
+    val badgeW = 44f
+    val badgeH = 25f
+    val gap = 5f
+    val pad = 4f
     val w = (box + pad * 2).toInt()
     val h = (pad + box + gap + badgeH + pad).toInt()
     val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
@@ -173,9 +173,9 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
     val hasOrders = count > 0
 
     canvas.drawRoundRect(
-        RectF(rect.left - 3f, rect.top - 3f, rect.right + 3f, rect.bottom + 3f),
-        radius + 2f,
-        radius + 2f,
+        RectF(rect.left - 2f, rect.top - 2f, rect.right + 2f, rect.bottom + 2f),
+        radius + 1.5f,
+        radius + 1.5f,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.argb(if (hasOrders) 110 else 70, 6, 193, 103)
             style = Paint.Style.FILL
@@ -204,7 +204,7 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
         val letter = (name.firstOrNull()?.toString() ?: "S").uppercase()
         val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.parseColor("#2FE795")
-            textSize = 52f
+            textSize = 32f
             textAlign = Paint.Align.CENTER
             typeface = Typeface.DEFAULT_BOLD
         }
@@ -219,7 +219,7 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
         radius,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 7f
+            strokeWidth = 4.5f
             color = android.graphics.Color.WHITE
         },
     )
@@ -229,7 +229,7 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
         radius,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 3.5f
+            strokeWidth = 2.5f
             color = if (hasOrders) android.graphics.Color.parseColor("#2FE795")
             else android.graphics.Color.parseColor("#06C167")
         },
@@ -244,7 +244,7 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
         badgeH / 2f,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = if (hasOrders) android.graphics.Color.parseColor("#06C167")
-            else android.graphics.Color.parseColor("#1A2420")
+            else android.graphics.Color.parseColor("#33413A")
         },
     )
     canvas.drawRoundRect(
@@ -253,13 +253,13 @@ private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): 
         badgeH / 2f,
         Paint(Paint.ANTI_ALIAS_FLAG).apply {
             style = Paint.Style.STROKE
-            strokeWidth = 2.5f
+            strokeWidth = 1.8f
             color = android.graphics.Color.WHITE
         },
     )
     val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
         color = android.graphics.Color.WHITE
-        textSize = 22f
+        textSize = 15f
         textAlign = Paint.Align.CENTER
         typeface = Typeface.DEFAULT_BOLD
     }
@@ -395,13 +395,13 @@ fun DriverMapView(
             PointAnnotationOptions()
                 .withPoint(Point.fromLngLat(m.lng, m.lat))
                 .withIconImage(icon)
-                .withIconSize(1.4)
-                .withTextField(m.name.take(18))
-                .withTextSize(12.5)
-                .withTextOffset(listOf(0.0, 2.4))
+                .withIconSize(0.9)
+                .withTextField(m.name.take(16))
+                .withTextSize(10.0)
+                .withTextOffset(listOf(0.0, 2.1))
                 .withTextColor(textColor)
                 .withTextHaloColor(haloColor)
-                .withTextHaloWidth(2.0)
+                .withTextHaloWidth(1.4)
         }
     }
 

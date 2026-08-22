@@ -82,6 +82,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.data.ActiveTripUi
+import com.freshdelivery.nativedriver.data.ActiveStoreCallRow
 import com.freshdelivery.nativedriver.data.OfferUi
 import com.freshdelivery.nativedriver.data.StoreCallRow
 import com.freshdelivery.nativedriver.ui.DriverUiState
@@ -259,6 +260,7 @@ fun HomeScreen(
     onOpenOps: () -> Unit = {},
     onOpenSupport: () -> Unit = {},
     onAcceptStoreCall: (String) -> Unit = {},
+    onCompleteStoreCall: () -> Unit = {},
 ) {
     val context = LocalContext.current
     val primary = state.primaryTrip
@@ -524,6 +526,15 @@ fun HomeScreen(
             }
 
             when {
+                state.activeStoreCall != null -> {
+                    // Persistent active job card — stays until driver completes the call
+                    ActiveJobCard(
+                        active = state.activeStoreCall!!,
+                        busy = state.busy,
+                        onComplete = onCompleteStoreCall,
+                    )
+                }
+
                 !state.online -> {
                     Card(
                         Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(24.dp)),
@@ -1346,6 +1357,39 @@ private fun nextActionLabel(status: String): String? = when (status) {
     "arrived" -> "Παρέλαβα"
     "picked_up" -> "Παρέδωσα"
     else -> null
+}
+
+@Composable
+private fun ActiveJobCard(
+    active: ActiveStoreCallRow,
+    busy: Boolean,
+    onComplete: () -> Unit,
+) {
+    Card(
+        Modifier.fillMaxWidth().shadow(16.dp, RoundedCornerShape(28.dp)),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF122B1D)),
+        elevation = CardDefaults.cardElevation(0.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("📞 Ενεργή κλήση", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = FreshGreenBright)
+            Spacer(Modifier.height(6.dp))
+            Text(active.store_name, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = Color.White)
+            Spacer(Modifier.height(4.dp))
+            Text("Πήγαινε στο κατάστημα και ολοκλήρωσε", fontSize = 12.sp, color = Color(0xFF9FD8B4))
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onComplete,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreenBright, contentColor = Color.White),
+            ) {
+                if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("ΟΛΟΚΛΗΡΩΣΗ", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+    }
 }
 
 @Composable

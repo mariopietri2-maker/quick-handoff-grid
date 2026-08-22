@@ -211,6 +211,20 @@ class DriverRepository(
         return response
     }
 
+    /** The driver's accepted, not-yet-completed store call (if any). */
+    suspend fun fetchMyActiveStoreCall(): ActiveStoreCallRow? =
+        client.postgrest.rpc("my_active_store_driver_call")
+            .decodeList<ActiveStoreCallRow>()
+            .firstOrNull()
+
+    /** Finish the active store call (K-role driver only). */
+    suspend fun completeStoreCall(callId: String) {
+        client.postgrest.rpc(
+            "complete_store_driver_call",
+            buildJsonObject { put("p_call_id", callId) }
+        ).decodeAs<String>()
+    }
+
     suspend fun fetchStackedOffers(userId: String, activeStoreId: String, excludeOrderIds: Set<String>, limit: Int): List<OfferUi> {
         if (limit <= 0) return emptyList()
         val pending = fetchPendingOffers(userId)

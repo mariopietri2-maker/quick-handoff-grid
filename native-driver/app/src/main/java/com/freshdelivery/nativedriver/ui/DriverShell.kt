@@ -108,6 +108,7 @@ fun DriverShell(
     onOpenSupport: () -> Unit = {},
     onCloseSupport: () -> Unit = {},
     onAcceptStoreCall: (String) -> Unit = {},
+    onCompleteStoreCall: () -> Unit = {},
     onSupportOpenTicket: (String) -> Unit = {},
     onSendChat: (String) -> Unit = {},
     onCloseChat: () -> Unit = {},
@@ -147,6 +148,7 @@ fun DriverShell(
                 onOpenOps = onOpenOps,
                 onOpenSupport = onOpenSupport,
                 onAcceptStoreCall = onAcceptStoreCall,
+                onCompleteStoreCall = onCompleteStoreCall,
             )
             else -> Box(
                 Modifier

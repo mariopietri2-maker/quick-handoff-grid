@@ -31,6 +31,7 @@ import com.freshdelivery.nativedriver.data.SupabaseProvider
 import com.freshdelivery.nativedriver.data.SupportTicketRow
 import com.freshdelivery.nativedriver.data.TicketMessageRow
 import com.freshdelivery.nativedriver.data.StoreCallRow
+import com.freshdelivery.nativedriver.data.ActiveStoreCallRow
 import com.freshdelivery.nativedriver.data.StoreRow
 import io.github.jan.supabase.realtime.PostgresAction
 import com.freshdelivery.nativedriver.location.DriverGeo
@@ -99,6 +100,7 @@ data class DriverUiState(
     val opsOpen: Boolean = false,
     val opsOrders: List<OfferUi> = emptyList(),
     val storeCalls: List<StoreCallRow> = emptyList(),
+    val activeStoreCall: ActiveStoreCallRow? = null,
 ) {
     val driverActive: Boolean get() = driverProfile?.is_active != false
     val onBreak: Boolean get() = driverState?.on_break == true
@@ -322,6 +324,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setOnline(online: Boolean) {
         val uid = _state.value.userId ?: return
+        if (!online && _state.value.activeStoreCall != null) {
+            _state.value = _state.value.copy(error = "Ολοκλήρωσε την ενεργή κλήση πρώτα")
+            return
+        }
         if (online && !_state.value.driverActive) {
             _state.value = _state.value.copy(error = "Ο λογαριασμός περιμένει έγκριση")
             return
@@ -406,6 +412,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val trips = repo.fetchActiveTrips(uid)
                 val maxStack = settings.max_stacked_orders ?: 3
+                val isK = driver?.call_role == "K"
                 val offers: List<OfferUi>
                 val stacked: List<OfferUi>
                 val blocked = dState.on_break == true ||
@@ -413,7 +420,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 if (trips.isNotEmpty()) {
                     offers = emptyList()
                     val remaining = (maxStack - trips.size).coerceAtLeast(0)
-                    stacked = if (!blocked && remaining > 0) {
+                    stacked = if (!blocked && !isK && remaining > 0) {
                         repo.fetchStackedOffers(
                             userId = uid,
                             activeStoreId = trips.first().order.store_id,
@@ -423,12 +430,16 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     } else emptyList()
                 } else {
                     stacked = emptyList()
-                    offers = if (!blocked && _state.value.online) repo.fetchPendingOffers(uid) else emptyList()
+                    // K-role drivers work ONLY store calls — never main-project orders
+                    offers = if (!blocked && _state.value.online && !isK) repo.fetchPendingOffers(uid) else emptyList()
                 }
 
                 // Fetch store calls for K-role drivers
-                val storeCalls = if (!blocked && _state.value.online && driver?.call_role == "K")
+                val storeCalls = if (!blocked && _state.value.online && isK)
                     repo.fetchOpenStoreCalls() else emptyList()
+                // Persistent active job card
+                val activeStoreCall = if (_state.value.online && isK)
+                    repo.fetchMyActiveStoreCall() else null
 
                 _state.value = _state.value.copy(
                     settings = settings,
@@ -438,9 +449,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     offers = offers,
                     stackedOffers = stacked,
                     storeCalls = storeCalls,
+                    activeStoreCall = activeStoreCall,
                     error = null,
                 )
-                maybeAlertOffers(offers + stacked)
+                if (!isK) maybeAlertOffers(offers + stacked)
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = handleError("refreshWork", e))
             }
@@ -525,7 +537,11 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             runCatching {
                 val storeName = repo.acceptStoreCall(callId)
-                _state.value = _state.value.copy(busy = false, info = "Αποδεκτή κλήση: $storeName")
+                _state.value = _state.value.copy(
+                    busy = false,
+                    info = "Αποδεκτή κλήση: $storeName",
+                    activeStoreCall = ActiveStoreCallRow(call_id = callId, store_name = storeName),
+                )
                 refreshWork()
             }.onFailure { e ->
                 _state.value = _state.value.copy(
@@ -534,6 +550,29 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     storeCalls = if (removed != null && _state.value.storeCalls.none { it.id == removed.id }) {
                         (_state.value.storeCalls + removed)
                     } else _state.value.storeCalls,
+                )
+                refreshWork()
+            }
+        }
+    }
+
+    /** Finish the active store call (K-role driver). */
+    fun completeActiveCall() {
+        val call = _state.value.activeStoreCall ?: return
+        _state.value = _state.value.copy(busy = true, error = null)
+        viewModelScope.launch {
+            runCatching {
+                repo.completeStoreCall(call.call_id)
+                _state.value = _state.value.copy(
+                    busy = false,
+                    info = "Η κλήση ολοκληρώθηκε",
+                    activeStoreCall = null,
+                )
+                refreshWork()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(
+                    busy = false,
+                    error = handleError("completeStoreCall", e),
                 )
                 refreshWork()
             }

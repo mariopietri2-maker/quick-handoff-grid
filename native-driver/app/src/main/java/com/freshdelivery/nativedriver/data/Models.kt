@@ -48,6 +48,13 @@ data class StoreCallRow(
 )
 
 @Serializable
+data class ActiveStoreCallRow(
+    val call_id: String,
+    val store_name: String,
+    val accepted_at: String? = null,
+)
+
+@Serializable
 data class OrderItemRow(
     val id: String? = null,
     val order_id: String? = null,
