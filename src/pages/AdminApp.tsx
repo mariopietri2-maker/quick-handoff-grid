@@ -81,7 +81,6 @@ const ALL_ADMIN_TAB_IDS = new Set([
   ...NAV_SECTIONS.flatMap((s) => s.tabs.map((t) => t.id)),
   'dispatch_debug',
   'system_health',
-  'driver_map_editor',
   'live_ops',
   'overview_legacy',
   'alerts',
@@ -140,7 +139,7 @@ export default function AdminApp() {
     }, { replace: true });
   };
 
-  // Honor deep links like /admin?section=drivers_live_map
+  // Honor deep links like /admin?section=live_ops
   useEffect(() => {
     const fromUrl = resolveSectionParam(searchParams.get('section'));
     if (fromUrl && fromUrl !== activeSection) setActiveSectionState(fromUrl);
@@ -483,10 +482,6 @@ export default function AdminApp() {
         return <SupportTicketsManager />;
       case 'driver_map_settings':
         return <DriverMapSettings />;
-      case 'driver_map_editor':
-        return <AdminLiveDriversMap />;
-      case 'drivers_live_map':
-        return <AdminLiveDriversMap />;
       case 'drivers_ioannina_map':
         return <AdminIoanninaMap />;
       case 'service_zones':
@@ -960,9 +955,6 @@ function DriversSection({ drivers, allDrivers, driverProfiles, driverStates, dri
             <span className="mx-1 opacity-40">·</span>
             <span className="inline-flex h-2 w-2 rounded-full bg-warning" /> {breakCount} σε διάλειμμα
           </span>
-          <Link to="/admin?section=drivers_live_map">
-            <Button size="sm" variant="outline" className="h-7 text-[11px]">Live χάρτης</Button>
-          </Link>
           <div className="flex gap-1 p-0.5 bg-muted rounded-md">
             {(['all', 'active', 'inactive'] as const).map(f => (
               <button
