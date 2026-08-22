@@ -31,7 +31,9 @@ DECLARE
   v_store TEXT;
 BEGIN
   -- Verify caller owns the store and it's role 'N'
-  SELECT store_role INTO v_store FROM stores WHERE id = p_store_id AND owner_id = auth.uid();
+  -- (qualify columns: RETURNS TABLE(id ...) makes bare "id" ambiguous)
+  SELECT s.store_role INTO v_store FROM stores s
+  WHERE s.id = p_store_id AND s.owner_id = auth.uid();
   IF NOT FOUND OR v_store <> 'N' THEN
     RAISE EXCEPTION 'Store not found or not a call store';
   END IF;
