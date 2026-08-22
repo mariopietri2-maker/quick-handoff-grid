@@ -47,6 +47,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import com.freshdelivery.nativedriver.push.StoreCallSignal
 
 data class DriverSettings(
     val offerSound: Boolean = true,
@@ -199,6 +200,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             if (uid != null) {
                 viewModelScope.launch { runCatching { repo.upsertPushToken(uid, token) } }
             }
+        }
+        // Instant store-call refresh: FCM data message (type=store_call) → refresh now.
+        StoreCallSignal.listener = {
+            viewModelScope.launch { runCatching { refreshWork() } }
         }
         viewModelScope.launch {
             SupabaseProvider.client.auth.sessionStatus.collect { status ->

@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh Delivery — Κατάστημα ρόλου N (side project)</title>
+<style>
+  :root{
+    --bg:#0B0E0C; --card:#12171400; --surface:#141A16; --border:#243029; --border2:#313f36;
+    --green:#10B981; --green2:#06C167; --amber:#F59E0B; --red:#F43F5E;
+    --text:#E8EFEA; --muted:#93A29A; --chip:#1B231E;
+  }
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{background:radial-gradient(1200px 600px at 50% -100px,#12241c 0%,var(--bg) 55%);color:var(--text);font-family:'Segoe UI',Roboto,system-ui,sans-serif;min-height:100vh;padding:28px 18px}
+  .wrap{max-width:1180px;margin:0 auto}
+  h1{font-size:26px;display:flex;align-items:center;gap:10px}
+  h1 .badge{font-size:11px;font-weight:700;background:rgba(16,185,129,.15);color:#34D399;border:1px solid rgba(16,185,129,.35);padding:3px 10px;border-radius:999px}
+  p.sub{color:var(--muted);margin-top:6px;font-size:14px;line-height:1.5}
+  .grid{display:flex;gap:22px;flex-wrap:wrap;margin-top:26px;justify-content:center}
+
+  /* phone */
+  .phone{width:300px;background:linear-gradient(180deg,#101512,#0d120f);border:1px solid var(--border);border-radius:30px;padding:12px;box-shadow:0 20px 50px rgba(0,0,0,.5)}
+  .screen{background:#0B100D;border-radius:22px;overflow:hidden;height:600px;display:flex;flex-direction:column;position:relative}
+  .statusbar{display:flex;justify-content:space-between;font-size:10px;color:#7d8b83;padding:8px 14px}
+  .appbar{padding:10px 14px;font-weight:700;font-size:15px;border-bottom:1px solid var(--border)}
+  .appbar small{display:block;color:var(--muted);font-weight:400;font-size:11px;margin-top:2px}
+  .content{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:20px;text-align:center;gap:8px}
+
+  /* state panels */
+  .icon-big{width:64px;height:64px;border-radius:20px;display:flex;align-items:center;justify-content:center;font-size:32px}
+  .idle .icon-big{background:rgba(16,185,129,.12)}
+  h3.state{font-size:19px;margin-top:6px}
+  .desc{color:var(--muted);font-size:12.5px;line-height:1.55}
+  .btn-call{margin-top:16px;width:100%;height:52px;border-radius:16px;border:none;background:linear-gradient(135deg,#10B981,#059669);color:#fff;font-size:16.5px;font-weight:800;cursor:pointer;box-shadow:0 8px 24px rgba(16,185,129,.35)}
+  .btn-outline{margin-top:12px;width:100%;height:42px;border-radius:14px;background:transparent;border:1.5px solid var(--border2);color:var(--text);font-size:13.5px;font-weight:600;cursor:pointer}
+  .pulse{position:relative;width:110px;height:110px;margin:6px 0}
+  .pulse .ring{position:absolute;inset:0;border-radius:50%;border:2.5px solid rgba(245,158,11,.65);animation:ping 1.6s cubic-bezier(0,0,.2,1) infinite}
+  .pulse .ring:nth-child(2){animation-delay:.55s}
+  .pulse .core{position:absolute;inset:26px;border-radius:50%;background:rgba(245,158,11,.15);display:flex;align-items:center;justify-content:center;font-size:30px}
+  @keyframes ping{75%,100%{transform:scale(1.9);opacity:0}}
+  .found .icon-big{background:rgba(6,195,103,.14)}
+
+  /* driver phone */
+  .driver .content{justify-content:flex-start;padding:14px;text-align:left}
+  .callcard{background:linear-gradient(160deg,rgba(16,185,129,.16),rgba(6,195,103,.07));border:1.5px solid rgba(16,185,129,.45);border-radius:18px;width:100%;padding:16px;animation:drop .45s ease both}
+  @keyframes drop{from{transform:translateY(-14px);opacity:0}}
+  .callcard .t{font-weight:800;font-size:15px;display:flex;align-items:center;gap:8px}
+  .live-dot{width:7px;height:7px;border-radius:50%;background:var(--green2);box-shadow:0 0 0 4px rgba(6,195,103,.18)}
+  .storename{font-size:21px;font-weight:900;margin:10px 0 2px;color:#fff}
+  .onlynote{font-size:11px;color:var(--muted)}
+  .accept{margin-top:14px;width:100%;height:46px;border-radius:14px;border:none;background:var(--green2);color:#04170e;font-weight:900;font-size:15px;cursor:pointer}
+  .offers-note{margin-top:auto;font-size:11px;color:#6d7a72;border-top:1px dashed var(--border);padding-top:10px}
+
+  /* dialog mock */
+  .dialog-backdrop{position:absolute;inset:0;background:rgba(0,0,0,.62);display:flex;align-items:center;justify-content:center;padding:22px;z-index:5}
+  .dialog{background:var(--surface);border:1px solid var(--border2);border-radius:20px;padding:20px;width:100%;animation:pop .25s ease both}
+  @keyframes pop{from{transform:scale(.94);opacity:0}}
+  .dialog b.store{color:#34D399}
+  .dialog-actions{display:flex;gap:10px;margin-top:18px}
+  .dialog-actions button{flex:1;height:40px;border-radius:12px;font-weight:700;font-size:13px;cursor:pointer;border:none}
+  .cancel{background:transparent;border:1.5px solid var(--border2)!important;color:var(--text)}
+  .confirm{background:var(--green);color:#03150d}
+
+  /* steps strip */
+  .steps{display:flex;flex-direction:column;gap:10px;margin-top:14px}
+  .step{display:flex;gap:10px;align-items:flex-start;background:rgba(255,255,255,.02);border:1px solid var(--border);border-radius:12px;padding:10px 12px;font-size:12px;color:var(--muted)}
+  .step .n{min-width:22px;height:22px;border-radius:50%;background:rgba(16,185,129,.14);color:#34D399;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:11px}
+  .step b{color:var(--text)}
+  .instant{color:#FBBF24;font-weight:700}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>📞 Κατάστημα ρόλου <span class="badge">N · side project</span></h1>
+  <p class="sub">Όταν ο admin δίνει ρόλο <b>N</b> σε κατάστημα, το app του καταστήματος κρύβει όλα τα tabs και δείχνει <b>μόνο ένα κουμπί</b>: «Κάλεσε τώρα τον οδηγό». Η κλήση στέλνεται <span class="instant">ακαριαία</span> (FCM push) σε όλους τους <b>online οδηγούς K</b> — ο πρώτος που πατά Αποδοχή τον παίρνει.</p>
+
+  <div class="grid">
+    <!-- STEP 1: idle -->
+    <div class="phone" id="phone1"><div class="screen idle">
+      <div class="statusbar"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+      <div class="appbar">Fresh Delivery<small>Sidebar Project Test Store · Ρόλος N</small></div>
+      <div class="content">
+        <div class="icon-big">🛵</div>
+        <h3 class="state">Κάλεσε οδηγό</h3>
+        <div class="desc">Πατώντας θα ειδοποιηθούν όλοι οι διαθέσιμοι<br>οδηγοί με ρόλο <b style="color:#34D399">K</b>.<br>Θα δουν μόνο το όνομά σας.</div>
+        <button class="btn-call" onclick="goStep(2)">📞 Κάλεσε τώρα τον οδηγό</button>
+        <div class="steps" style="width:100%;margin-top:22px">
+          <div class="step"><span class="n">€</span><div><b>Χωρίς πληρωμές</b> — καμία χρέωση, κανένα earning</div></div>
+          <div class="step"><span class="n">24h</span><div><b>Ιστορικό σβήνει</b> αυτόματα μετά από 24 ώρες</div></div>
+        </div>
+      </div>
+
+      <!-- STEP 2: dialog -->
+      <div class="dialog-backdrop" id="dlg" style="display:none">
+        <div class="dialog">
+          <b style="font-size:15px">Επιβεβαίωση κλήσης οδηγού</b>
+          <p class="desc" style="margin-top:8px">Θα σταλεί <b>άμεση ειδοποίηση</b> σε όλους τους online οδηγούς <b>K</b>. Θα βλέπουν μόνο το όνομα: <b class="store">Side Project Test Store</b>. Συνεχίζουμε;</p>
+          <div class="dialog-actions">
+            <button class="cancel" onclick="goStep(1)">Ακύρωση</button>
+            <button class="confirm" onclick="goStep(3)">Επιβεβαίωση</button>
+          </div>
+        </div>
+      </div>
+    </div></div>
+
+    <!-- STEP 3: searching -->
+    <div class="phone" id="phone2"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+      <div class="appbar">Fresh Delivery<small>Ενεργή κλήση</small></div>
+      <div class="content">
+        <div class="pulse"><div class="ring"></div><div class="ring"></div><div class="core">📡</div></div>
+        <h3 class="state">Αναζήτηση οδηγού…</h3>
+        <div class="desc">Η κλήση εστάλη <span class="instant">ακαριαία</span> στους online οδηγούς K.<br>Πρώτος που θα αποδεχτεί κερδίζει.</div>
+        <button class="btn-outline" onclick="goStep(4)">Ακύρωση κλήσης</button>
+      </div>
+    </div></div>
+
+    <!-- STEP 4: found -->
+    <div class="phone" id="phone3"><div class="screen found">
+      <div class="statusbar"><span>9:41</span><span>▮▮▮ ⌁</span></div>
+      <div class="appbar">Fresh Delivery<small>Οδηγός βρέθηκε</small></div>
+      <div class="content">
+        <div class="icon-big">✅</div>
+        <h3 class="state">Οδηγός βρέθηκε!</h3>
+        <div class="desc"><b style="color:#fff">Νίκος Π.</b> αποδέχτηκε την κλήση.<br><span style="font-size:11px">Αποδεκτή στις 09:41</span></div>
+        <button class="btn-call" style="margin-top:18px">✅ Ολοκλήρωση &amp; Νέα κλήση</button>
+      </div>
+    </div></div>
+
+    <!-- DRIVER side -->
+    <div class="phone driver" style="border-color:rgba(16,185,129,.4)"><div class="screen">
+      <div class="statusbar"><span>9:41</span><span>🟢 Online · K</span></div>
+      <div class="appbar">Οδηγός · Home<small>Ρόλος Κ — λαμβάνει κλήσεις καταστημάτων</small></div>
+      <div class="content driver-content">
+        <div style="display:flex;align-items:center;gap:8px;font-size:11px;color:#34D399;margin-bottom:10px">
+          <span class="live-dot"></span> ΝΕΑ ΚΛΗΣΗ — έφτασε ακαριαία (push, &lt;2s)
+        </div>
+        <div class="callcard">
+          <div class="t">📞 Κλήση καταστήματος <span class="live-dot" style="margin-left:auto"></span></div>
+          <div class="storename">Side Project Test Store</div>
+          <div class="onlynote">Βλέπεις ΜΟΝΟ το όνομα — όχι διεύθυνση, όχι άλλα στοιχεία.</div>
+          <button class="accept">ΑΠΟΔΟΧΗ</button>
+        </div>
+        <div class="offers-note">Οι κανονικές προσφορές παραδίδων συνεχίζονται όπως πάντα — οι κλήσεις είναι επιπλέον, χωρίς πληρωμή μέσω platform.</div>
+      </div>
+    </div></div>
+  </div>
+
+  <script>
+    function goStep(n){
+      document.getElementById('dlg').style.display = n===2 ? 'flex' : 'none';
+      // simple visual flow: after confirm, jump to searching, then to found
+      if(n===3){
+        setTimeout(()=>goStep(4), 2200);
+      }
+      ['phone1','phone2','phone3'].forEach((id,i)=>{
+        const el=document.getElementById(id);
+        el.style.outline = (n===i+1) ? '2px solid rgba(16,185,129,.7)' : 'none';
+        el.style.borderRadius='30px';
+      });
+    }
+  </script>
+</div>
+</body>
+</html>

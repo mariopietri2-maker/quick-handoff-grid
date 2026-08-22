@@ -19,6 +19,9 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
+        if (message.data["type"] == "store_call") {
+            StoreCallSignal.fire()
+        }
         val title = message.notification?.title
             ?: message.data["title"]
             ?: "New delivery offer"
