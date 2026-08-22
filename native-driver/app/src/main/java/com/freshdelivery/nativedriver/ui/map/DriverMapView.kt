@@ -1,4 +1,4 @@
-﻿package com.freshdelivery.nativedriver.ui.map
+package com.freshdelivery.nativedriver.ui.map
 
 import android.graphics.Bitmap
 import android.graphics.BitmapShader
@@ -45,7 +45,7 @@ data class MapMarker(
     val color: String,
 )
 
-/** A store on the driver map: square photo box + active-order count badge. */
+/** A store on the driver map: compact circular pin + optional order-count badge. */
 data class StoreMapMarker(
     val id: String,
     val lat: Double,
@@ -154,117 +154,95 @@ private fun createTrafficLightBitmap(size: Int = 44): Bitmap {
 }
 
 /**
- * Large store photo tile + order-count badge for map readability.
- * Draws a bright letter placeholder immediately so pins appear before photos load.
+ * Compact store pin for the map: small circular photo (or letter) + optional order badge.
+ * No name label — keeps the map clean and readable.
  */
 private fun createStoreMarkerBitmap(photo: Bitmap?, name: String, count: Long): Bitmap {
-    val box = 78f
-    val radius = 18f
-    val badgeW = 44f
-    val badgeH = 25f
-    val gap = 5f
-    val pad = 4f
-    val w = (box + pad * 2).toInt()
-    val h = (pad + box + gap + badgeH + pad).toInt()
+    val hasOrders = count > 0
+    val size = 44f
+    val badge = if (hasOrders) 16f else 0f
+    val pad = 2f
+    val w = (size + pad * 2 + badge * 0.35f).toInt().coerceAtLeast((size + pad * 2).toInt())
+    val h = (size + pad * 2 + badge * 0.35f).toInt().coerceAtLeast((size + pad * 2).toInt())
     val bmp = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
     val canvas = Canvas(bmp)
 
-    val rect = RectF(pad, pad, pad + box, pad + box)
-    val hasOrders = count > 0
+    val cx = pad + size / 2f
+    val cy = pad + size / 2f
+    val r = size / 2f
 
-    canvas.drawRoundRect(
-        RectF(rect.left - 2f, rect.top - 2f, rect.right + 2f, rect.bottom + 2f),
-        radius + 1.5f,
-        radius + 1.5f,
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = android.graphics.Color.argb(if (hasOrders) 110 else 70, 6, 193, 103)
+    // Soft green glow when store has active orders
+    if (hasOrders) {
+        canvas.drawCircle(cx, cy, r + 2.5f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.argb(90, 6, 193, 103)
             style = Paint.Style.FILL
-        },
-    )
+        })
+    }
 
-    val clip = Path().apply { addRoundRect(rect, radius, radius, Path.Direction.CW) }
+    // White ring
+    canvas.drawCircle(cx, cy, r, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        color = android.graphics.Color.WHITE
+        style = Paint.Style.FILL
+    })
+
+    val inner = r - 2.2f
+    val clip = Path().apply { addCircle(cx, cy, inner, Path.Direction.CW) }
     canvas.save()
     canvas.clipPath(clip)
     if (photo != null) {
         val shader = BitmapShader(photo, Shader.TileMode.CLAMP, Shader.TileMode.CLAMP)
-        val scale = maxOf(rect.width() / photo.width, rect.height() / photo.height)
+        val scale = maxOf((inner * 2f) / photo.width, (inner * 2f) / photo.height)
         val matrix = Matrix().apply {
             setScale(scale, scale)
-            postTranslate(
-                rect.centerX() - photo.width * scale / 2f,
-                rect.centerY() - photo.height * scale / 2f,
-            )
+            postTranslate(cx - photo.width * scale / 2f, cy - photo.height * scale / 2f)
         }
         shader.setLocalMatrix(matrix)
-        canvas.drawRect(rect, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.shader = shader })
+        canvas.drawCircle(cx, cy, inner, Paint(Paint.ANTI_ALIAS_FLAG).apply { this.shader = shader })
     } else {
-        canvas.drawRect(rect, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        canvas.drawCircle(cx, cy, inner, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.parseColor("#0F3D2A")
         })
         val letter = (name.firstOrNull()?.toString() ?: "S").uppercase()
         val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.parseColor("#2FE795")
-            textSize = 32f
+            textSize = 18f
             textAlign = Paint.Align.CENTER
             typeface = Typeface.DEFAULT_BOLD
         }
-        val baseline = rect.centerY() - (tp.descent() + tp.ascent()) / 2f
-        canvas.drawText(letter, rect.centerX(), baseline, tp)
+        val baseline = cy - (tp.descent() + tp.ascent()) / 2f
+        canvas.drawText(letter, cx, baseline, tp)
     }
     canvas.restore()
 
-    canvas.drawRoundRect(
-        rect,
-        radius,
-        radius,
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 4.5f
-            color = android.graphics.Color.WHITE
-        },
-    )
-    canvas.drawRoundRect(
-        rect,
-        radius,
-        radius,
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 2.5f
-            color = if (hasOrders) android.graphics.Color.parseColor("#2FE795")
-            else android.graphics.Color.parseColor("#06C167")
-        },
-    )
+    // Thin green border
+    canvas.drawCircle(cx, cy, r - 1.1f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        style = Paint.Style.STROKE
+        strokeWidth = 2f
+        color = if (hasOrders) android.graphics.Color.parseColor("#2FE795")
+        else android.graphics.Color.parseColor("#06C167")
+    })
 
-    val badgeLeft = w / 2f - badgeW / 2f
-    val badgeTop = pad + box + gap
-    val badgeRect = RectF(badgeLeft, badgeTop, badgeLeft + badgeW, badgeTop + badgeH)
-    canvas.drawRoundRect(
-        badgeRect,
-        badgeH / 2f,
-        badgeH / 2f,
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            color = if (hasOrders) android.graphics.Color.parseColor("#06C167")
-            else android.graphics.Color.parseColor("#33413A")
-        },
-    )
-    canvas.drawRoundRect(
-        badgeRect,
-        badgeH / 2f,
-        badgeH / 2f,
-        Paint(Paint.ANTI_ALIAS_FLAG).apply {
-            style = Paint.Style.STROKE
-            strokeWidth = 1.8f
+    // Corner count badge only when there are active orders
+    if (hasOrders) {
+        val br = 9f
+        val bx = w - pad - br
+        val by = pad + br
+        canvas.drawCircle(bx, by, br + 1.2f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             color = android.graphics.Color.WHITE
-        },
-    )
-    val textPaint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
-        color = android.graphics.Color.WHITE
-        textSize = 15f
-        textAlign = Paint.Align.CENTER
-        typeface = Typeface.DEFAULT_BOLD
+        })
+        canvas.drawCircle(bx, by, br, Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.parseColor("#06C167")
+        })
+        val label = if (count > 9) "9+" else count.toString()
+        val tp = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+            color = android.graphics.Color.WHITE
+            textSize = if (label.length > 1) 10f else 11f
+            textAlign = Paint.Align.CENTER
+            typeface = Typeface.DEFAULT_BOLD
+        }
+        val baseline = by - (tp.descent() + tp.ascent()) / 2f
+        canvas.drawText(label, bx, baseline, tp)
     }
-    val textBaseline = badgeRect.centerY() - (textPaint.descent() + textPaint.ascent()) / 2f
-    canvas.drawText(count.toString(), badgeRect.centerX(), textBaseline, textPaint)
 
     return bmp
 }
@@ -389,19 +367,14 @@ fun DriverMapView(
         }
     }
 
-    val storeAnnotations = remember(storeMarkers, storeIcons, textColor, haloColor) {
+    val storeAnnotations = remember(storeMarkers, storeIcons) {
         storeMarkers.mapNotNull { m ->
             val icon = storeIcons[m.id] ?: return@mapNotNull null
             PointAnnotationOptions()
                 .withPoint(Point.fromLngLat(m.lng, m.lat))
                 .withIconImage(icon)
-                .withIconSize(0.9)
-                .withTextField(m.name.take(16))
-                .withTextSize(10.0)
-                .withTextOffset(listOf(0.0, 2.1))
-                .withTextColor(textColor)
-                .withTextHaloColor(haloColor)
-                .withTextHaloWidth(1.4)
+                .withIconSize(1.0)
+                // No store name text — keeps map clean; pin + optional count is enough
         }
     }
 
