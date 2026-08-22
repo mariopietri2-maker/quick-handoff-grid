@@ -78,6 +78,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'drivers',
     tabs: [
       { id: 'drivers', label: 'Οδηγοί' },
+      { id: 'driver_registry', label: '📋 Μητρώο' },
       { id: 'driver_approvals', label: 'Έγκριση οδηγών' },
       { id: 'driver_messages', label: '✉️ Μηνύματα' },
       { id: 'drivers_ioannina_map', label: '🏍️ Χάρτης Ιωαννίνων' },
