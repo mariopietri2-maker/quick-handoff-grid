@@ -418,7 +418,7 @@ DECLARE
   r record;
 BEGIN
   FOR r IN
-    SELECT order_id, driver_id, min(id) AS keep_id
+    SELECT order_id, driver_id, min(id::text)::uuid AS keep_id
       FROM public.wait_time_bonuses
      GROUP BY order_id, driver_id
     HAVING count(*) > 1

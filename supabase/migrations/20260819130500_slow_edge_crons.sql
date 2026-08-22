@@ -36,7 +36,7 @@ BEGIN
     END;
     PERFORM cron.schedule(
       'process-refunds-60s',
-      '60 seconds',
+      '* * * * *',
       $cron$
       SELECT net.http_post(
         url := 'https://ojkesspghyqmjmupybva.supabase.co/functions/v1/process-refunds',
@@ -66,7 +66,7 @@ BEGIN
     END;
     PERFORM cron.schedule(
       'send-alerts-60s',
-      '60 seconds',
+      '* * * * *',
       $cron$
       SELECT net.http_post(
         url := 'https://ojkesspghyqmjmupybva.supabase.co/functions/v1/send-alerts',
@@ -86,7 +86,7 @@ END $$;
 DO $$
 BEGIN
   IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'process-email-queue') THEN
-    UPDATE cron.job SET schedule = '60 seconds' WHERE jobname = 'process-email-queue';
+    UPDATE cron.job SET schedule = '* * * * *' WHERE jobname = 'process-email-queue';
   END IF;
 EXCEPTION WHEN undefined_table THEN
   NULL;

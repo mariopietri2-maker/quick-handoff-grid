@@ -13,10 +13,6 @@
 --   header: x-webhook-secret: {webhook_secret}
 -- =============================================================================
 
--- Link orders back to the API connection that created them (for outgoing pushes)
-ALTER TABLE public.orders
-  ADD COLUMN IF NOT EXISTS api_connection_id uuid REFERENCES public.api_connections(id) ON DELETE SET NULL;
-
 -- Allow 'api' as an order source (kept alongside efood/wolt/box/manual/other)
 CREATE OR REPLACE FUNCTION public.validate_order_source()
 RETURNS trigger
@@ -64,6 +60,10 @@ CREATE TABLE IF NOT EXISTS public.api_connections (
 );
 
 ALTER TABLE public.api_connections ENABLE ROW LEVEL SECURITY;
+
+-- Link orders back to the API connection that created them (for outgoing pushes)
+ALTER TABLE public.orders
+  ADD COLUMN IF NOT EXISTS api_connection_id uuid REFERENCES public.api_connections(id) ON DELETE SET NULL;
 
 DROP POLICY IF EXISTS "Admins manage api_connections" ON public.api_connections;
 CREATE POLICY "Admins manage api_connections" ON public.api_connections

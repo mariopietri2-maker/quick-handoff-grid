@@ -110,7 +110,7 @@ REVOKE ALL ON FUNCTION public.prune_old_terminal_orders(integer) FROM PUBLIC, an
 GRANT EXECUTE ON FUNCTION public.prune_old_terminal_orders(integer) TO service_role;
 
 -- Replace any prior schedule so we don't double-schedule.
-DO $$
+DO $do$
 BEGIN
   IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'pg_cron') THEN
     BEGIN
@@ -124,4 +124,4 @@ BEGIN
       $$ SELECT public.prune_old_terminal_orders(30); $$
     );
   END IF;
-END $$;
+END $do$;

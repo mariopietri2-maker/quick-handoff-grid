@@ -31,6 +31,9 @@ verify_jwt = false
 [functions.ai-dynamic-pricing]
 verify_jwt = false
 
+# Called by the DB trigger (pg_net) with only X-Cron-Secret — no JWT — so the
+# gateway must not require one. The function validates cron/service/admin
+# credentials itself.
 [functions.aade-submit-delivery]
 verify_jwt = false
 
@@ -47,10 +50,4 @@ verify_jwt = false
 verify_jwt = false
 
 [functions.api-poll]
-verify_jwt = false
-
-# Called by the DB trigger (pg_net) with only X-Cron-Secret — no JWT — so the
-# gateway must not require one. The function validates cron/service/admin
-# credentials itself.
-[functions.aade-submit-delivery]
 verify_jwt = false
