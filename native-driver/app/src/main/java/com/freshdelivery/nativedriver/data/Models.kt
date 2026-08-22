@@ -83,6 +83,7 @@ data class OrderRow(
     val customer_name: String? = null,
     val notes: String? = null,
     val created_at: String? = null,
+    val predicted_ready_at: String? = null,
 )
 
 @Serializable

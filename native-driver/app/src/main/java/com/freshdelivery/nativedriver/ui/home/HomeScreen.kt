@@ -137,6 +137,41 @@ private fun formatTimer(seconds: Int): String {
     return "%d:%02d".format(m, s)
 }
 
+/** Hourly rate considered a good deal for drivers (matches web driver-offer-math). */
+private const val GOOD_EUR_PER_HOUR = 12
+
+/** City average incl. lights, stops and parking walks. */
+private const val AVG_CITY_KMH = 26.0
+
+/** Minutes until predicted_ready_at (ceiling), or null when unknown. */
+private fun minutesUntilReady(iso: String?): Int? {
+    if (iso.isNullOrBlank()) return null
+    val t = runCatching { Instant.parse(iso) }.getOrNull() ?: return null
+    val secs = Duration.between(Instant.now(), t).seconds
+    return if (secs <= 0) 0 else (((secs + 59) / 60)).toInt()
+}
+
+/**
+ * Estimated minutes an offer occupies the driver:
+ * remaining prep wait + drive legs (~city average).
+ */
+private fun estimateOfferMinutes(km: Double?, predictedReadyAt: String?, status: String?): Int {
+    val driveMin = maxOf(3, Math.round(((km ?: 0.0).coerceAtLeast(0.0) / AVG_CITY_KMH) * 60).toInt())
+    if (status == "ready") return driveMin
+    return (minutesUntilReady(predictedReadyAt) ?: 10) + driveMin
+}
+
+/** Effective hourly rate (€/h), or null when unknown. */
+private fun eurosPerHour(payoutEur: Double, totalMinutes: Int): Double? =
+    if (totalMinutes <= 0) null else payoutEur / totalMinutes * 60.0
+
+/** Short ready-ETA chip: text + whether food is already ready. */
+private fun readyEtaTag(predictedReadyAt: String?, status: String?): Pair<String, Boolean>? {
+    if (status == "ready") return Pair("Έτοιμη", true)
+    val mins = minutesUntilReady(predictedReadyAt) ?: return null
+    return if (mins <= 0) Pair("Έτοιμη όπου να ναι", true) else Pair("Έτοιμη σε ~$mins′", false)
+}
+
 private fun formatMeters(m: Double): String =
     if (m < 1000) "${m.toInt()} μ" else "%.1f km".format(m / 1000)
 
@@ -615,6 +650,26 @@ fun HomeScreen(
                                     },
                                 )
                             }
+
+                            if (state.stackedOffers.isNotEmpty()) {
+                                Spacer(Modifier.height(14.dp))
+                                Text(
+                                    "+ Πρόσθεσε στο δρομολόγιο",
+                                    color = FreshGreenBright,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    fontSize = 13.sp,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                state.stackedOffers.forEach { so ->
+                                    StackedOfferCard(
+                                        offer = so,
+                                        busy = state.busy,
+                                        onAccept = { onAccept(so.offerId, so.order.id) },
+                                        onDecline = { onDecline(so.offerId) },
+                                    )
+                                    Spacer(Modifier.height(10.dp))
+                                }
+                            }
                         }
                     }
                 }
@@ -1002,6 +1057,14 @@ private fun OfferSheet(
     val payout = (offer.order.driver_payout ?: 0.0) +
         (offer.order.tip_amount ?: 0.0) +
         (offer.order.driver_pool_bonus ?: 0.0)
+
+    // €/h + ready ETA — same math as the web offer cards.
+    val totalMin = estimateOfferMinutes(offer.order.distance_km, offer.order.predicted_ready_at, offer.order.status)
+    val eurHour = eurosPerHour(payout, totalMin)
+    val rateGood = eurHour != null && eurHour >= GOOD_EUR_PER_HOUR
+    val perKm = offer.order.distance_km?.takeIf { it > 0 }?.let { payout / it }
+    val readyTag = readyEtaTag(offer.order.predicted_ready_at, offer.order.status)
+
     val progress = if (timeoutSec > 0) secondsLeft.toFloat() / timeoutSec else 0f
     val isCash = offer.order.payment_method?.equals("cash", ignoreCase = true) == true
     val cashAmount = offer.order.total_amount ?: 0.0
@@ -1047,6 +1110,21 @@ private fun OfferSheet(
                 Column(horizontalAlignment = Alignment.End) {
                     Text("Κέρδος", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)
                     Text(eur(payout), fontWeight = FontWeight.Bold, fontSize = 28.sp, color = FreshGreenBright)
+                    eurHour?.let { rate ->
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            "≈${rate.toInt()}€/ώρα",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (rateGood) FreshGreenBright else TextMuted,
+                            modifier = Modifier
+                                .background(
+                                    if (rateGood) GreenBtn.copy(alpha = 0.15f) else TrackFill,
+                                    RoundedCornerShape(20.dp),
+                                )
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
                 }
             }
 
@@ -1136,6 +1214,24 @@ private fun OfferSheet(
                 }
             }
 
+            if (readyTag != null || perKm != null) {
+                Spacer(Modifier.height(10.dp))
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    readyTag?.let { (label, isReady) ->
+                        Chip(
+                            label,
+                            if (isReady) Color(0xFF12291C) else Color(0xFF3A2C10),
+                            if (isReady) FreshGreenBright else FreshAmber,
+                        )
+                    }
+                    Chip("~$totalMin′", TrackFill, TextMuted)
+                    perKm?.let { Chip("%.2f€/χλμ".format(it), TrackFill, TextMuted) }
+                }
+            }
+
             Spacer(Modifier.height(16.dp))
 
             Row(
@@ -1167,6 +1263,125 @@ private fun OfferSheet(
                         Icon(Icons.Filled.Check, null, modifier = Modifier.size(20.dp))
                         Spacer(Modifier.width(8.dp))
                         Text("Αποδοχή · ${eur(payout)}", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun StackedOfferCard(
+    offer: OfferUi,
+    busy: Boolean,
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
+) {
+    val payout = (offer.order.driver_payout ?: 0.0) +
+        (offer.order.tip_amount ?: 0.0) +
+        (offer.order.driver_pool_bonus ?: 0.0)
+
+    // Same math as the web StackedOfferCard — €/h for this add-on job.
+    val totalMin = estimateOfferMinutes(offer.order.distance_km, offer.order.predicted_ready_at, offer.order.status)
+    val eurHour = eurosPerHour(payout, totalMin)
+    val rateGood = eurHour != null && eurHour >= GOOD_EUR_PER_HOUR
+    val readyTag = readyEtaTag(offer.order.predicted_ready_at, offer.order.status)
+    val hasPendingOffer = offer.offerId.isNotBlank()
+
+    Card(
+        Modifier.fillMaxWidth().shadow(12.dp, RoundedCornerShape(22.dp)),
+        shape = RoundedCornerShape(22.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF101512)),
+        elevation = CardDefaults.cardElevation(0.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(horizontal = 14.dp, vertical = 12.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top,
+            ) {
+                Column(Modifier.weight(1f).padding(end = 8.dp)) {
+                    Text(
+                        "+ ΠΡΟΣΘΕΣΕ ΣΤΟ ΔΡΟΜΟΛΟΓΙΟ",
+                        fontSize = 10.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = FreshGreenBright,
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    Text(
+                        offer.storeName ?: "Κατάστημα",
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 16.sp,
+                        color = TextDark,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
+                        formatDistance(offer.order.distance_km)?.let { Chip(it, TrackFill, TextMuted) }
+                        Chip("~$totalMin′", TrackFill, TextMuted)
+                        readyTag?.let { (label, isReady) ->
+                            Chip(
+                                label,
+                                if (isReady) Color(0xFF12291C) else Color(0xFF3A2C10),
+                                if (isReady) FreshGreenBright else FreshAmber,
+                            )
+                        }
+                    }
+                }
+                Column(horizontalAlignment = Alignment.End) {
+                    Text("+${eur(payout)}", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = FreshGreenBright)
+                    eurHour?.let { rate ->
+                        Spacer(Modifier.height(3.dp))
+                        Text(
+                            "≈${rate.toInt()}€/ώρα",
+                            fontSize = 10.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (rateGood) FreshGreenBright else TextMuted,
+                            modifier = Modifier
+                                .background(
+                                    if (rateGood) GreenBtn.copy(alpha = 0.15f) else TrackFill,
+                                    RoundedCornerShape(20.dp),
+                                )
+                                .padding(horizontal = 8.dp, vertical = 2.dp),
+                        )
+                    }
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            Row(
+                Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+            ) {
+                if (hasPendingOffer) {
+                    Box(
+                        Modifier
+                            .size(44.dp)
+                            .clip(CircleShape)
+                            .border(1.5.dp, Color(0xFF3A423C), CircleShape)
+                            .background(TrackFill)
+                            .clickable(enabled = !busy, onClick = onDecline),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Icon(Icons.Filled.Close, null, tint = TextMuted, modifier = Modifier.size(18.dp))
+                    }
+                }
+                Button(
+                    onClick = onAccept,
+                    enabled = !busy,
+                    modifier = Modifier.weight(1f).height(46.dp),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenBtn, contentColor = Color.White),
+                ) {
+                    if (busy) {
+                        CircularProgressIndicator(Modifier.size(18.dp), color = Color.White, strokeWidth = 2.dp)
+                    } else {
+                        Icon(Icons.Filled.Check, null, modifier = Modifier.size(17.dp))
+                        Spacer(Modifier.width(6.dp))
+                        Text("Προσθήκη · ${eur(payout)}", fontWeight = FontWeight.Bold, fontSize = 14.sp)
                     }
                 }
             }
