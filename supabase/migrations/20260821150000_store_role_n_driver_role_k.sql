@@ -46,9 +46,10 @@ BEGIN
   LIMIT 1;
 
   IF NOT FOUND THEN
+    RETURN QUERY
     INSERT INTO store_driver_calls (store_id, status)
     VALUES (p_store_id, 'open')
-    RETURNING id, status, created_at;
+    RETURNING store_driver_calls.id, store_driver_calls.status, store_driver_calls.created_at;
   END IF;
 END $$;
 
