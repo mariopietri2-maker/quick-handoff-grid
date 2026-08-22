@@ -10,9 +10,35 @@ type ProfileRow = Database['public']['Tables']['profiles']['Row'];
 type EarningsRow = Database['public']['Tables']['earnings']['Row'];
 type ReviewRow = Database['public']['Tables']['reviews']['Row'];
 type UserRoleRow = Pick<Database['public']['Tables']['user_roles']['Row'], 'user_id' | 'role'>;
-type DriverProfileRow = Pick<
+/** Full driver profile fields for registry / approvals / ops */
+export type DriverProfileRow = Pick<
   Database['public']['Tables']['driver_profiles']['Row'],
-  'user_id' | 'driver_code' | 'is_active' | 'suspended_at' | 'created_at'
+  | 'user_id'
+  | 'driver_code'
+  | 'is_active'
+  | 'suspended_at'
+  | 'suspension_reason'
+  | 'created_at'
+  | 'updated_at'
+  | 'vehicle_type'
+  | 'vehicle_make'
+  | 'vehicle_model'
+  | 'vehicle_year'
+  | 'vehicle_color'
+  | 'license_plate'
+  | 'license_number'
+  | 'license_expiry'
+  | 'license_document_url'
+  | 'id_document_url'
+  | 'iban'
+  | 'bank_name'
+  | 'account_holder'
+  | 'home_address'
+  | 'date_of_birth'
+  | 'emergency_contact_name'
+  | 'emergency_contact_phone'
+  | 'secondary_phone'
+  | 'call_role'
 >;
 type DriverStateRow = Pick<
   Database['public']['Tables']['driver_state']['Row'],
@@ -44,6 +70,13 @@ function useVisibleRefetchInterval(ms: number): number | false {
   }, []);
   return visible ? ms : false;
 }
+
+const DRIVER_PROFILE_SELECT =
+  'user_id, driver_code, is_active, suspended_at, suspension_reason, created_at, updated_at, ' +
+  'vehicle_type, vehicle_make, vehicle_model, vehicle_year, vehicle_color, license_plate, ' +
+  'license_number, license_expiry, license_document_url, id_document_url, ' +
+  'iban, bank_name, account_holder, home_address, date_of_birth, ' +
+  'emergency_contact_name, emergency_contact_phone, secondary_phone, call_role';
 
 export function useAdminData() {
   const poll = useVisibleRefetchInterval(30_000);
@@ -132,7 +165,7 @@ export function useAdminData() {
     queryFn: async () => {
       const { data, error } = await supabase
         .from('driver_profiles')
-        .select('user_id, driver_code, is_active, suspended_at, created_at')
+        .select(DRIVER_PROFILE_SELECT)
         .order('created_at', { ascending: false });
       if (error) throw error;
       return (data ?? []) as DriverProfileRow[];
