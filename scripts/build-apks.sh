@@ -199,7 +199,10 @@ PY
 
   echo "==> gradle assembleDebug ($flavor)"
   local gradle_cmd="./gradlew"
-  [ -f "$app_dir/gradlew.bat" ] && gradle_cmd="./gradlew.bat"
+  if [ ! -f "$app_dir/gradlew" ] && [ -f "$app_dir/gradlew.bat" ]; then
+    gradle_cmd="./gradlew.bat"
+  fi
+  chmod +x "$app_dir/gradlew" 2>/dev/null || true
   (cd "$app_dir" && "$gradle_cmd" clean assembleDebug)
 
   mkdir -p mobile-apks
