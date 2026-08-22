@@ -35,7 +35,7 @@ BEGIN
          ),
          'store-call:' || NEW.id::text || ':' || dp.user_id::text
   FROM public.driver_profiles dp
-  JOIN public.driver_states ds ON ds.user_id = dp.user_id
+  JOIN public.driver_state ds ON ds.driver_id = dp.user_id
   WHERE dp.call_role = 'K'
     AND ds.shift_started_at IS NOT NULL;
 
