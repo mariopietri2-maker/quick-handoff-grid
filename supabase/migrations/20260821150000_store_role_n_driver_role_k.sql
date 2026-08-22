@@ -28,7 +28,7 @@ CREATE OR REPLACE FUNCTION public.create_store_driver_call(p_store_id UUID)
 RETURNS TABLE(id UUID, status TEXT, created_at TIMESTAMPTZ)
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_store store_role;
+  v_store TEXT;
 BEGIN
   -- Verify caller owns the store and it's role 'N'
   SELECT store_role INTO v_store FROM stores WHERE id = p_store_id AND owner_id = auth.uid();
@@ -55,7 +55,7 @@ CREATE OR REPLACE FUNCTION public.accept_store_driver_call(p_call_id UUID)
 RETURNS TEXT  -- store name
 LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
 DECLARE
-  v_store_name TEXT;
+  v_store_id UUID;
 BEGIN
   -- Verify caller is active driver with call_role='K'
   IF NOT EXISTS (
@@ -70,10 +70,10 @@ BEGIN
   UPDATE store_driver_calls
   SET status = 'accepted', accepted_by = auth.uid(), accepted_at = now(), updated_at = now()
   WHERE id = p_call_id AND status = 'open'
-  RETURNING store_id INTO STRICT v_store_name; -- will fail if no row updated
+  RETURNING store_id INTO STRICT v_store_id;
 
   -- Return store name
-  RETURN (SELECT name FROM stores WHERE id = v_store_name);
+  RETURN (SELECT name FROM stores WHERE id = v_store_id);
 END $$;
 
 -- 3. Owner closes their call
