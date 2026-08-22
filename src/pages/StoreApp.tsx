@@ -309,7 +309,7 @@ export default function StoreApp() {
               </TabsContent>
               <TabsContent value="inventory">
                 <InventoryControl storeId={store.id} />
-              </TabsContent
+              </TabsContent>
               <TabsContent value="hours">
                 <StoreHoursManager storeId={store.id} />
               </TabsContent>

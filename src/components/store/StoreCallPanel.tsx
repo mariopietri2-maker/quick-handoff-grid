@@ -30,6 +30,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
     error: null,
   });
   const [loading, setLoading] = useState(false);
+  const [confirmOpen, setConfirmOpen] = useState(false);
   const { toast } = useToast();
 
   // Fetch current call state on mount and poll
@@ -72,7 +73,8 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
       const call = data?.[0];
       if (call) {
         setState({ status: 'open', callId: call.id, driverName: null, acceptedAt: null, error: null });
-        toast({ title: 'Κλήση δημιουργήθηκε', description: 'Οι διαθέσιμοι οδηγοί Κ έχουν ειδοποιηθεί.', variant: 'success' });
+        toast({ title: 'Κλήση δημιουργήθηκε', description: 'Οι διαθέσιμοι οδηγοί Κ έχουν ειδοποιηθεί.' });
+        setConfirmOpen(false);
       }
     } catch (e: any) {
       setState(s => ({ ...s, error: e?.message || 'Αποτυχία δημιουργίας κλήσης' }));
@@ -91,7 +93,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
       });
       if (error) throw error;
       setState({ status: 'idle', callId: null, driverName: null, acceptedAt: null, error: null });
-      toast({ title: 'Κλήση κλείστηκε', variant: 'success' });
+      toast({ title: 'Κλήση κλείστηκε' });
     } catch (e: any) {
       toast({ title: 'Σφάλμα', description: e?.message, variant: 'destructive' });
     } finally {
@@ -109,11 +111,10 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
             Πατώντας θα ειδοποιηθούν όλοι οι διαθέσιμοι οδηγοί με ρόλο <b>K</b>.
             Θα δουν μόνο το όνομά σας: <b>{storeName}</b>.
           </p>
-          <AlertDialog>
+          <AlertDialog open={confirmOpen} onOpenChange={setConfirmOpen}>
             <AlertDialogTrigger asChild>
               <Button
                 className="mt-6 w-full h-14 text-lg bg-emerald-600 hover:bg-emerald-700"
-                onClick={handleCreateCall}
                 disabled={loading}
               >
                 {loading ? (
@@ -136,7 +137,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
-                <Button variant="outline" onClick={() => {}}>Ακύρωση</Button>
+                <Button variant="outline" onClick={() => setConfirmOpen(false)}>Ακύρωση</Button>
                 <Button onClick={handleCreateCall} disabled={loading}>
                   {loading ? 'Δημιουργία…' : 'Επιβεβαίωση'}
                 </Button>

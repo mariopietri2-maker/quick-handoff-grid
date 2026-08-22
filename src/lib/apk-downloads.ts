@@ -64,7 +64,7 @@ export const APK_DOWNLOADS = {
 export type ApkFlavor = keyof typeof APK_DOWNLOADS;
 
 /** Landing URL encoded into QR codes (opens chooser page, does not start a download). */
-export function apkLandingUrl(flavor: ApkFlavor, origin = SITE_ORIGIN): string {
+export function apkLandingUrl(flavor: ApkFlavor, origin: string = SITE_ORIGIN): string {
   return `${origin.replace(/\/$/, '')}/download?app=${flavor}`;
 }
 

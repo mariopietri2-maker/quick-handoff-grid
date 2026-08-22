@@ -116,6 +116,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'settings_home', label: 'Όλες οι ρυθμίσεις' },
       { id: 'users', label: 'Χρήστες' },
+      { id: 'call_roles', label: '📞 Call roles (N/K)' },
       { id: 'admin_perms', label: 'Δικαιώματα' },
       { id: 'support_roles', label: 'Support agents' },
       { id: 'customer_app_config', label: '🎨 Customer app' },

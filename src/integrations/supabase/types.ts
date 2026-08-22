@@ -4328,6 +4328,73 @@ store_wallets: {
         Args: { p_order_id: string }
         Returns: undefined
       }
+      accept_store_driver_call: {
+        Args: {
+          p_call_id: string
+        }
+        Returns: string
+      }
+      admin_list_call_roles: {
+        Args: Record<string, never>
+        Returns: {
+          call_role: string
+          id: string
+          kind: string
+          label: string
+          sublabel: string
+        }[]
+      }
+      admin_set_driver_call_role: {
+        Args: {
+          p_role: string
+          p_user_id: string
+        }
+        Returns: undefined
+      }
+      admin_set_store_call_role: {
+        Args: {
+          p_role: string
+          p_store_id: string
+        }
+        Returns: undefined
+      }
+      close_store_driver_call: {
+        Args: {
+          p_call_id: string
+        }
+        Returns: undefined
+      }
+      create_store_driver_call: {
+        Args: {
+          p_store_id: string
+        }
+        Returns: {
+          created_at: string
+          id: string
+          status: string
+        }[]
+      }
+      fetch_open_store_calls: {
+        Args: Record<string, never>
+        Returns: {
+          created_at: string
+          id: string
+          store_name: string
+        }[]
+      }
+      my_store_driver_call: {
+        Args: {
+          p_store_id: string
+        }
+        Returns: {
+          accepted_at: string | null
+          accepted_by: string | null
+          created_at: string
+          driver_name: string | null
+          id: string
+          status: string
+        }[]
+      }
       tx_append: {
         Args: {
           _amount: number

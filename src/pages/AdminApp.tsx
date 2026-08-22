@@ -38,6 +38,7 @@ const AdminIoanninaMap       = lazy(() => import('@/components/admin/AdminIoanni
 const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
 const StripePaymentsSettings = lazy(() => import('@/components/admin/StripePaymentsSettings'));
+const CallRolesPanel = lazy(() => import('@/components/admin/CallRolesPanel'));
 const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
 const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserActions'));
 const DriverMessagesPanel    = lazy(() => import('@/components/admin/DriverMessagesPanel'));
@@ -447,6 +448,8 @@ export default function AdminApp() {
         );
       case 'users':
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
+      case 'call_roles':
+        return <CallRolesPanel />;
       case 'settings_home':
         return <AdminSettingsHub onNavigate={setActiveSection} />;
       case 'financials':
