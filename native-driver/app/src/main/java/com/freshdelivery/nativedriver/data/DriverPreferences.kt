@@ -7,7 +7,11 @@ enum class OfferSoundId(val id: String, val labelEl: String) {
     CLASSIC("classic", "Κλασικό"),
     CHIME("chime", "Chime"),
     ALERT("alert", "Alert"),
-    PING("ping", "Ping");
+    PING("ping", "Ping"),
+    BELL("bell", "Καμπάνα"),
+    DOUBLE("double", "Διπλό"),
+    URGENT("urgent", "Επείγον"),
+    SOFT("soft", "Ήπιο");
 
     companion object {
         fun fromId(raw: String?): OfferSoundId =
