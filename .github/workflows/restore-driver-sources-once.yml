@@ -1,0 +1,48 @@
+name: Restore Driver Sources Once
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-driver-sources-once.yml"
+      - "native-driver/_restore_payload.json"
+
+permissions:
+  contents: write
+
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Decode driver sources from gzip+base64 payload
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          import gzip, base64, json
+          from pathlib import Path
+          payload = json.loads(Path('native-driver/_restore_payload.json').read_text())
+          for path, b64 in payload.items():
+              data = gzip.decompress(base64.b64decode(b64))
+              p = Path(path)
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_bytes(data)
+              print('wrote', path, 'bytes', len(data))
+              assert len(data) > 5000, (path, len(data))
+              assert data.startswith(b'package '), data[:40]
+          PY
+
+      - name: Commit and push restored sources
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add \
+            native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt \
+            native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/map/DriverMapView.kt
+          if git diff --staged --quiet; then
+            echo "No changes"
+            exit 0
+          fi
+          git commit -m "fix(native-driver): restore full DriverViewModel + DriverMapView (sounds, vibrate, map counts)"
+          git push
