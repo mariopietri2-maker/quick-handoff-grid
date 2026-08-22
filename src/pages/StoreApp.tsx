@@ -24,6 +24,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { StoreCallPanel } from '@/components/store/StoreCallPanel';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission } from '@/lib/notifications';
@@ -213,6 +214,11 @@ export default function StoreApp() {
             <p className="text-muted-foreground font-heading mb-3">Δεν βρέθηκε κατάστημα</p>
             <Button onClick={backToPortal}>Πίσω στο portal</Button>
           </div>
+        ) : store.store_role === 'N' ? (
+          // Role N store: minimal call-driver UI only
+          <div className="py-8">
+            <StoreCallPanel storeId={store.id} storeName={store.name} />
+          </div>
         ) : (
           <>
             {notifPermission === 'default' && (
@@ -303,7 +309,7 @@ export default function StoreApp() {
               </TabsContent>
               <TabsContent value="inventory">
                 <InventoryControl storeId={store.id} />
-              </TabsContent>
+              </TabsContent
               <TabsContent value="hours">
                 <StoreHoursManager storeId={store.id} />
               </TabsContent>

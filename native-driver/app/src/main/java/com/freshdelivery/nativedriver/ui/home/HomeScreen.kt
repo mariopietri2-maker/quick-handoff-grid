@@ -83,6 +83,7 @@ import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.data.ActiveTripUi
 import com.freshdelivery.nativedriver.data.OfferUi
+import com.freshdelivery.nativedriver.data.StoreCallRow
 import com.freshdelivery.nativedriver.ui.DriverUiState
 import com.freshdelivery.nativedriver.ui.map.DriverMapView
 import com.freshdelivery.nativedriver.ui.map.MapMarker
@@ -257,6 +258,7 @@ fun HomeScreen(
     onClearMessages: () -> Unit,
     onOpenOps: () -> Unit = {},
     onOpenSupport: () -> Unit = {},
+    onAcceptStoreCall: (String) -> Unit = {},
 ) {
     val context = LocalContext.current
     val primary = state.primaryTrip
@@ -607,14 +609,25 @@ fun HomeScreen(
                 }
 
                 hasOffer -> {
-                    state.offers.take(1).forEach { offer ->
-                        OfferSheet(
-                            offer = offer,
-                            busy = state.busy,
-                            timeoutSec = state.settings.dist_offer_timeout_seconds ?: 60,
-                            onAccept = { onAccept(offer.offerId, null) },
-                            onDecline = { onDecline(offer.offerId) },
-                        )
+                    // Store call card for K-role drivers (shown above regular offers)
+                    if (state.isCallDriver && state.storeCalls.isNotEmpty()) {
+                        state.storeCalls.take(1).forEach { call ->
+                            StoreCallSheet(
+                                call = call,
+                                busy = state.busy,
+                                onAccept = { onAcceptStoreCall(call.id) },
+                            )
+                        }
+                    } else {
+                        state.offers.take(1).forEach { offer ->
+                            OfferSheet(
+                                offer = offer,
+                                busy = state.busy,
+                                timeoutSec = state.settings.dist_offer_timeout_seconds ?: 60,
+                                onAccept = { onAccept(offer.offerId, null) },
+                                onDecline = { onDecline(offer.offerId) },
+                            )
+                        }
                     }
                 }
 
@@ -1333,4 +1346,45 @@ private fun nextActionLabel(status: String): String? = when (status) {
     "arrived" -> "Παρέλαβα"
     "picked_up" -> "Παρέδωσα"
     else -> null
+}
+
+@Composable
+private fun StoreCallSheet(
+    call: StoreCallRow,
+    busy: Boolean,
+    onAccept: () -> Unit,
+) {
+    Card(
+        Modifier.fillMaxWidth().shadow(16.dp, RoundedCornerShape(28.dp)),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF1F2521)),
+        elevation = CardDefaults.cardElevation(0.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(24.dp)) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column {
+                    Text("📞 Κλήση καταστήματος", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = FreshGreenBright)
+                    Spacer(Modifier.height(4.dp))
+                    Text(call.store_name, fontWeight = FontWeight.Bold, fontSize = 22.sp, color = TextDark)
+                    Spacer(Modifier.height(4.dp))
+                    Text("Μόνο το όνομα του καταστήματος είναι ορατό", fontSize = 12.sp, color = TextMuted)
+                }
+            }
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onAccept,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreenBright, contentColor = Color.White),
+            ) {
+                if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("ΑΠΟΔΟΧΗ ΚΛΗΣΗΣ", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+    }
 }

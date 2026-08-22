@@ -196,6 +196,21 @@ class DriverRepository(
         }.sortedBy { it.expiresAt }
     }
 
+    /** Fetch open store calls for K-role drivers (minimal: id + store name). */
+    suspend fun fetchOpenStoreCalls(): List<StoreCallRow> {
+        val response = client.postgrest.rpc("fetch_open_store_calls").decodeList<StoreCallRow>()
+        return response
+    }
+
+    /** Accept a store call (K-role driver only). Returns store name on success. */
+    suspend fun acceptStoreCall(callId: String): String {
+        val response = client.postgrest.rpc(
+            "accept_store_driver_call",
+            buildJsonObject { put("p_call_id", callId) }
+        ).decodeAs<String>()
+        return response
+    }
+
     suspend fun fetchStackedOffers(userId: String, activeStoreId: String, excludeOrderIds: Set<String>, limit: Int): List<OfferUi> {
         if (limit <= 0) return emptyList()
         val pending = fetchPendingOffers(userId)

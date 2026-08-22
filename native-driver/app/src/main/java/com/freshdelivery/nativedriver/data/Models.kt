@@ -28,6 +28,7 @@ data class DriverProfileRow(
     val iban: String? = null,
     val bank_name: String? = null,
     val emergency_contact: String? = null,
+    val call_role: String? = null,
 )
 
 @Serializable
@@ -37,6 +38,13 @@ data class PendingOfferRow(
     val driver_id: String,
     val status: String,
     val expires_at: String? = null,
+)
+
+@Serializable
+data class StoreCallRow(
+    val id: String,
+    val store_name: String,
+    val created_at: String? = null,
 )
 
 @Serializable

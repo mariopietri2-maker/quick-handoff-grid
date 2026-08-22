@@ -1239,6 +1239,7 @@ export type Database = {
           account_holder: string | null
           availability: Json | null
           bank_name: string | null
+          call_role: string
           created_at: string
           date_of_birth: string | null
           driver_code: string | null
@@ -1270,6 +1271,7 @@ export type Database = {
           account_holder?: string | null
           availability?: Json | null
           bank_name?: string | null
+          call_role?: string
           created_at?: string
           date_of_birth?: string | null
           driver_code?: string | null
@@ -1301,6 +1303,7 @@ export type Database = {
           account_holder?: string | null
           availability?: Json | null
           bank_name?: string | null
+          call_role?: string
           created_at?: string
           date_of_birth?: string | null
           driver_code?: string | null
@@ -2921,7 +2924,7 @@ export type Database = {
         }
         Relationships: []
       }
-      store_wallets: {
+store_wallets: {
         Row: {
           available_balance: number
           created_at: string
@@ -2951,112 +2954,153 @@ export type Database = {
         }
         Relationships: []
       }
-      stores: {
+      store_driver_calls: {
         Row: {
-          address: string
-          afm: string | null
-          busy_mode: boolean | null
-          commission_pct: number | null
-          covers_delivery_fee: boolean
-          created_at: string
-          doy: string | null
-          ext_billing_mode: string
-          ext_commission_pct: number
-          ext_flat_fee: number
-          ext_margin_pct: number
-          holiday_dates: string[] | null
           id: string
-          image_url: string | null
-          is_active: boolean | null
-          kad: string | null
-          latitude: number | null
-          legal_name: string | null
-          longitude: number | null
-          name: string
-          opening_hours: Json | null
-          owner_id: string
-          phone: string | null
-          prep_buffer_minutes: number | null
-          promotion_amount_paid: number
-          promotion_approved_by: string | null
-          promotion_ends_at: string | null
-          promotion_requested_at: string | null
-          promotion_starts_at: string | null
-          promotion_status: string
-          suspended_at: string | null
-          suspension_reason: string | null
+          store_id: string
+          status: string
+          accepted_by: string | null
+          accepted_at: string | null
+          created_at: string
           updated_at: string
         }
         Insert: {
-          address: string
-          afm?: string | null
-          busy_mode?: boolean | null
-          commission_pct?: number | null
-          covers_delivery_fee?: boolean
-          created_at?: string
-          doy?: string | null
-          ext_billing_mode?: string
-          ext_commission_pct?: number
-          ext_flat_fee?: number
-          ext_margin_pct?: number
-          holiday_dates?: string[] | null
           id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          kad?: string | null
-          latitude?: number | null
-          legal_name?: string | null
-          longitude?: number | null
-          name: string
-          opening_hours?: Json | null
-          owner_id: string
-          phone?: string | null
-          prep_buffer_minutes?: number | null
-          promotion_amount_paid?: number
-          promotion_approved_by?: string | null
-          promotion_ends_at?: string | null
-          promotion_requested_at?: string | null
-          promotion_starts_at?: string | null
-          promotion_status?: string
-          suspended_at?: string | null
-          suspension_reason?: string | null
+          store_id: string
+          status?: string
+          accepted_by?: string | null
+          accepted_at?: string | null
+          created_at?: string
           updated_at?: string
         }
         Update: {
-          address?: string
-          afm?: string | null
-          busy_mode?: boolean | null
-          commission_pct?: number | null
-          covers_delivery_fee?: boolean
-          created_at?: string
-          doy?: string | null
-          ext_billing_mode?: string
-          ext_commission_pct?: number
-          ext_flat_fee?: number
-          ext_margin_pct?: number
-          holiday_dates?: string[] | null
           id?: string
-          image_url?: string | null
-          is_active?: boolean | null
-          kad?: string | null
-          latitude?: number | null
-          legal_name?: string | null
-          longitude?: number | null
-          name?: string
-          opening_hours?: Json | null
-          owner_id?: string
-          phone?: string | null
-          prep_buffer_minutes?: number | null
-          promotion_amount_paid?: number
-          promotion_approved_by?: string | null
-          promotion_ends_at?: string | null
-          promotion_requested_at?: string | null
-          promotion_starts_at?: string | null
-          promotion_status?: string
-          suspended_at?: string | null
-          suspension_reason?: string | null
+          store_id?: string
+          status?: string
+          accepted_by?: string | null
+          accepted_at?: string | null
+          created_at?: string
           updated_at?: string
         }
+        Relationships: [
+          {
+            foreignKeyName: "store_driver_calls_store_id_fkey"
+            columns: ["store_id"]
+            isOneToOne: false
+            referencedRelation: "stores"
+            referencedColumns: ["id"]
+          }
+        ]
+      }
+      stores: {
+            Row: {
+              address: string
+              afm: string | null
+              busy_mode: boolean | null
+              commission_pct: number | null
+              covers_delivery_fee: boolean
+              created_at: string
+              doy: string | null
+              ext_billing_mode: string
+              ext_commission_pct: number
+              ext_flat_fee: number
+              ext_margin_pct: number
+              holiday_dates: string[] | null
+              id: string
+              image_url: string | null
+              is_active: boolean | null
+              kad: string | null
+              latitude: number | null
+              legal_name: string | null
+              longitude: number | null
+              name: string
+              opening_hours: Json | null
+              owner_id: string
+              phone: string | null
+              prep_buffer_minutes: number | null
+              promotion_amount_paid: number
+              promotion_approved_by: string | null
+              promotion_ends_at: string | null
+              promotion_requested_at: string | null
+              promotion_starts_at: string | null
+              promotion_status: string
+              store_role: string
+              suspended_at: string | null
+              suspension_reason: string | null
+              updated_at: string
+            }
+            Insert: {
+              address: string
+              afm?: string | null
+              busy_mode?: boolean | null
+              commission_pct?: number | null
+              covers_delivery_fee?: boolean
+              created_at?: string
+              doy?: string | null
+              ext_billing_mode?: string
+              ext_commission_pct?: number
+              ext_flat_fee?: number
+              ext_margin_pct?: number
+              holiday_dates?: string[] | null
+              id?: string
+              image_url?: string | null
+              is_active?: boolean | null
+              kad?: string | null
+              latitude?: number | null
+              legal_name?: string | null
+              longitude?: number | null
+              name: string
+              opening_hours?: Json | null
+              owner_id: string
+              phone?: string | null
+              prep_buffer_minutes?: number | null
+              promotion_amount_paid?: number
+              promotion_approved_by?: string | null
+              promotion_ends_at?: string | null
+              promotion_requested_at?: string | null
+              promotion_starts_at?: string | null
+              promotion_status?: string
+              store_role?: string
+              suspended_at?: string | null
+              suspension_reason?: string | null
+              updated_at?: string
+            }
+            Update: {
+              address?: string
+              afm?: string | null
+              busy_mode?: boolean | null
+              commission_pct?: number | null
+              covers_delivery_fee?: boolean
+              created_at?: string
+              doy?: string | null
+              ext_billing_mode?: string
+              ext_commission_pct?: number
+              ext_flat_fee?: number
+              ext_margin_pct?: number
+              holiday_dates?: string[] | null
+              id?: string
+              image_url?: string | null
+              is_active?: boolean | null
+              kad?: string | null
+              latitude?: number | null
+              legal_name?: string | null
+              longitude?: number | null
+              name?: string
+              opening_hours?: Json | null
+              owner_id?: string
+              phone?: string | null
+              prep_buffer_minutes?: number | null
+              promotion_amount_paid?: number
+              promotion_approved_by?: string | null
+              promotion_ends_at?: string | null
+              promotion_requested_at?: string | null
+              promotion_starts_at?: string | null
+              promotion_status?: string
+              store_role?: string
+              suspended_at?: string | null
+              suspension_reason?: string | null
+              updated_at?: string
+            }
         Relationships: []
       }
       streak_bonuses: {
