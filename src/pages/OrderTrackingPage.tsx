@@ -166,11 +166,13 @@ export default function OrderTrackingPage() {
   const isCancelled = status === 'cancelled';
   const currentIdx = STATUS_STEPS.findIndex((s) => s.key === status);
 
-  // ETA
+  // ETA — for scheduled orders the promise is the chosen slot, so the timeline
+  // is anchored to scheduled_for instead of placement time.
+  const scheduledTs = order.scheduled_for ? new Date(order.scheduled_for).getTime() : null;
   const prepMin = order.estimated_prep_time ?? 30;
   const totalMin = prepMin + DELIVERY_BUFFER_MIN;
-  const startTs = new Date(order.created_at).getTime();
-  const endTs = startTs + totalMin * 60_000;
+  const startTs = scheduledTs ? scheduledTs - totalMin * 60_000 : new Date(order.created_at).getTime();
+  const endTs = scheduledTs ?? startTs + totalMin * 60_000;
   const remainingMin = Math.max(0, Math.ceil((endTs - now) / 60_000));
 
   const showMap = !isCancelled && !isDelivered;
@@ -278,9 +280,15 @@ export default function OrderTrackingPage() {
               </div>
               {!isCancelled && !isDelivered && (
                 <div className="text-right shrink-0 gradient-primary rounded-2xl px-4 py-2.5 shadow-primary">
-                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary-foreground/80">ETA</p>
+                  <p className="text-[10px] font-extrabold uppercase tracking-wider text-primary-foreground/80">
+                    {scheduledTs ? 'Παράδοση στις' : 'ETA'}
+                  </p>
                   <p className="font-heading font-extrabold text-2xl text-primary-foreground tabular-nums leading-none mt-0.5">
-                    {remainingMin}<span className="text-xs font-bold ml-0.5 opacity-80">λεπ</span>
+                    {scheduledTs ? (
+                      new Date(order.scheduled_for).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                    ) : (
+                      <>{remainingMin}<span className="text-xs font-bold ml-0.5 opacity-80">λεπ</span></>
+                    )}
                   </p>
                 </div>
               )}

@@ -157,12 +157,16 @@ export default function CheckoutPage() {
     : 0;
   const grandTotal = subtotalAfterDiscount + deliveryFee + tipAmount;
 
-  // VAT (ΦΠΑ) breakdown — Greek food delivery VAT 24%. Prices are inclusive.
-  const VAT_RATE = 0.24;
+  // VAT (ΦΠΑ) breakdown — Greek restaurant food is 13%, the delivery service
+  // is 24%. Prices are inclusive (Greek consumer law). The split is display-only
+  // and must stay in sync with aade_platform_config / the Stripe line items.
+  const FOOD_VAT_RATE = 0.13;
+  const DELIVERY_VAT_RATE = 0.24;
   // Tip is excluded from VAT (paid directly to driver)
-  const vatableGross = subtotalAfterDiscount + deliveryFee;
-  const netAmount = vatableGross / (1 + VAT_RATE);
-  const vatAmount = vatableGross - netAmount;
+  const foodNet = subtotalAfterDiscount / (1 + FOOD_VAT_RATE);
+  const deliveryNet = deliveryFee / (1 + DELIVERY_VAT_RATE);
+  const netAmount = foodNet + deliveryNet;
+  const vatAmount = subtotalAfterDiscount - foodNet + (deliveryFee - deliveryNet);
 
   const applyPromoCode = useCallback(
     async (code: string) => {
@@ -633,7 +637,7 @@ export default function CheckoutPage() {
                 <span className="text-muted-foreground tabular-nums">{netAmount.toFixed(2)}€</span>
               </div>
               <div className="flex justify-between text-xs">
-                <span className="text-muted-foreground">ΦΠΑ {(VAT_RATE * 100).toFixed(0)}% (συμπεριλαμβάνεται)</span>
+                <span className="text-muted-foreground">ΦΠΑ {(FOOD_VAT_RATE * 100).toFixed(0)}% / {(DELIVERY_VAT_RATE * 100).toFixed(0)}% (συμπεριλαμβάνεται)</span>
                 <span className="text-muted-foreground tabular-nums">{vatAmount.toFixed(2)}€</span>
               </div>
             </div>

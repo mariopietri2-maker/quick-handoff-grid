@@ -33,6 +33,7 @@ async function markOrderPaid(
   paidCents: number | null,
   sessionId: string | null,
   paymentIntentId: string | null,
+  taxCents?: number | null,
 ) {
   if (!orderId) return;
 
@@ -53,13 +54,29 @@ async function markOrderPaid(
       (Number(order.total_amount) + Number(order.delivery_fee || 0) + Number(order.tip_amount || 0)) * 100,
     );
 
+  // `expected` is the tax-EXCLUSIVE total the app agreed to. Stripe's
+  // automatic_tax adds VAT on top (tax_behavior: 'exclusive'), so the actual
+  // charge is tax-inclusive. Compare against expected + final tax when we have
+  // the completed session's tax figure (checkout.session.completed). For
+  // payment_intent events (no tax breakdown) only fail if the customer paid
+  // less than the pre-tax minimum — a taxed charge is always >= that, so this
+  // cannot false-positive while still catching underpriced/tampered orders.
+  let mismatch = false;
+  if (paidCents != null) {
+    if (taxCents != null) {
+      mismatch = Math.abs(paidCents - (expected + taxCents)) > 5;
+    } else {
+      mismatch = paidCents < expected - 5;
+    }
+  }
+
   // Allow small rounding drift (±5¢). Prefer expected_charge_cents from checkout.
-  if (paidCents != null && Math.abs(paidCents - expected) > 5) {
-    console.error("markOrderPaid amount mismatch", { orderId, paidCents, expected });
+  if (mismatch) {
+    console.error("markOrderPaid amount mismatch", { orderId, paidCents, expected, taxCents });
     await getSupabase()
       .from("orders")
       .update({
-        refund_reason: `Payment amount mismatch: paid=${paidCents} expected=${expected}`,
+        refund_reason: `Payment amount mismatch: paid=${paidCents} expected=${expected + (taxCents ?? 0)}`,
       })
       .eq("id", orderId)
       .eq("status", "pending");
@@ -69,8 +86,8 @@ async function markOrderPaid(
       event_type: "payment_amount_mismatch",
       severity: "critical",
       title: "Card payment amount mismatch",
-      body: `Order ${orderId} charged ${paidCents}¢ but expected ${expected}¢ — order left pending, needs manual action.`,
-      data: { order_id: orderId, paid_cents: paidCents, expected_cents: expected },
+      body: `Order ${orderId} charged ${paidCents}¢ but expected ${expected + (taxCents ?? 0)}¢ — order left pending, needs manual action.`,
+      data: { order_id: orderId, paid_cents: paidCents, expected_cents: expected, tax_cents: taxCents ?? null },
       dedupe_key: `payment_mismatch:${orderId}`,
     });
     return;
@@ -156,7 +173,11 @@ async function handleWebhook(req: Request, env: StripeEnv) {
         ? String(obj.id)
         : null;
       const paymentIntentId = typeof obj?.payment_intent === "string" ? obj.payment_intent : null;
-      if (orderId) await markOrderPaid(orderId, paidCents, sessionId, paymentIntentId);
+      // Final tax figure for the completed session (automatic_tax adds VAT).
+      const taxCents = typeof obj?.total_details?.amount_tax === "number"
+        ? obj.total_details.amount_tax
+        : null;
+      if (orderId) await markOrderPaid(orderId, paidCents, sessionId, paymentIntentId, taxCents);
       break;
     }
     case "payment_intent.succeeded":

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, useCallback, forwardRef, useImperativeHand
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
-import { escapeHtml, safeHttpsUrl } from '@/lib/escape-html';
+import { escapeHtml } from '@/lib/escape-html';
 import { readyEtaShortTag } from '@/lib/driver-ready-eta';
 
 // Real road traffic-light signals (highway=traffic_signals) come from
@@ -719,26 +719,18 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       }
 
       const safeName = escapeHtml(s.name);
-      const initials = String(s.name).split(/\s+/).map(w => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase() || '🏪';
-      const safeInitials = escapeHtml(initials);
       const hasOrders = s.pendingOrders > 0;
-      const ringColor = hasOrders ? '#f97316' : '#cbd5e1';
+
+      // Minimal Uber-style dot — small enough to never fight the active route.
+      // Gray when idle, orange when orders are waiting, tiny count badge on top.
+      const dotSize = hasOrders ? 16 : 13;
       const badge = hasOrders
-        ? `<div style="position:absolute;top:-4px;right:-4px;min-width:18px;height:18px;padding:0 5px;background:#ef4444;color:#fff;border-radius:9px;border:2px solid #fff;font-size:10px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 6px rgba(239,68,68,0.5);">${s.pendingOrders}</div>`
+        ? `<div style="position:absolute;top:-8px;right:-8px;min-width:17px;height:17px;padding:0 4px;background:#ef4444;color:#fff;border-radius:9px;border:1.5px solid #fff;box-sizing:border-box;font-size:9.5px;font-weight:800;line-height:1;display:flex;align-items:center;justify-content:center;font-family:system-ui,sans-serif;box-shadow:0 2px 5px rgba(239,68,68,0.55);">${s.pendingOrders}</div>`
         : '';
-      const safeImg = safeHttpsUrl(s.image_url);
-      const imgInner = safeImg
-        ? `<img src="${safeImg}" alt="" loading="lazy" decoding="async" style="width:100%;height:100%;object-fit:cover;border-radius:50%;" onerror="this.style.display='none'" />`
-        : `<div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;font-weight:800;color:#fff;font-size:12px;background:linear-gradient(135deg,#f97316,#ea580c);border-radius:50%;font-family:system-ui,sans-serif;">${safeInitials}</div>`;
 
       const html = `
-        <div style="position:relative;cursor:pointer;width:44px;height:52px;">
-          <div style="position:absolute;top:0;left:0;width:44px;height:44px;border-radius:50%;padding:2.5px;background:${ringColor};box-shadow:0 4px 12px rgba(0,0,0,0.25);">
-            <div style="width:100%;height:100%;border-radius:50%;background:#fff;padding:1.5px;box-sizing:border-box;">
-              <div style="width:100%;height:100%;border-radius:50%;overflow:hidden;background:#1f2937;">${imgInner}</div>
-            </div>
-          </div>
-          <div style="position:absolute;left:50%;top:40px;transform:translateX(-50%);width:0;height:0;border-left:6px solid transparent;border-right:6px solid transparent;border-top:9px solid ${ringColor};filter:drop-shadow(0 2px 2px rgba(0,0,0,0.2));"></div>
+        <div style="position:relative;width:${dotSize}px;height:${dotSize}px;">
+          <div style="position:absolute;inset:0;border-radius:50%;background:${hasOrders ? '#f97316' : '#94a3b8'};border:2px solid rgba(255,255,255,0.95);box-shadow:0 1px 5px rgba(0,0,0,0.35);"></div>
           ${badge}
         </div>`;
 
@@ -751,9 +743,9 @@ const DriverMapbox = forwardRef<DriverMapboxHandle, DriverMapboxProps>(function 
       } else {
         const el = document.createElement('div');
         el.innerHTML = html;
-        const marker = new mapboxgl.Marker({ element: el, anchor: 'bottom' })
+        const marker = new mapboxgl.Marker({ element: el, anchor: 'center' })
           .setLngLat([s.longitude, s.latitude])
-          .setPopup(new mapboxgl.Popup({ offset: 8 }).setHTML(popupContent))
+          .setPopup(new mapboxgl.Popup({ offset: 10 }).setHTML(popupContent))
           .addTo(map);
         nearbyMarkersRef.current.set(s.id, marker);
       }

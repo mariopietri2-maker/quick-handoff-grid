@@ -15,6 +15,28 @@ export function getConnectionApiKey(env: StripeEnv): string {
     : getEnv('STRIPE_LIVE_API_KEY');
 }
 
+/**
+ * Resolve which Stripe environment to use for a request. The client sends the
+ * env it loaded its publishable key for, but we only proceed when the matching
+ * SECRET key is actually configured server-side — so a client can never force
+ * the server to charge through an account it isn't set up for (the old code
+ * trusted the client-supplied `environment` body field outright).
+ */
+export function resolveStripeEnv(requested: StripeEnv): StripeEnv {
+  const hasLive = Boolean(Deno.env.get('STRIPE_LIVE_API_KEY'));
+  const hasSandbox = Boolean(Deno.env.get('STRIPE_SANDBOX_API_KEY'));
+  if (hasLive && hasSandbox) return requested;
+  if (hasLive) {
+    if (requested !== 'live') throw new Error('Sandbox Stripe is not configured on the server');
+    return 'live';
+  }
+  if (hasSandbox) {
+    if (requested !== 'sandbox') throw new Error('Live Stripe is not configured on the server');
+    return 'sandbox';
+  }
+  throw new Error('No Stripe API key configured on the server');
+}
+
 /** Direct Stripe API — no third-party payment gateway. */
 export function createStripeClient(env: StripeEnv): Stripe {
   return new Stripe(getConnectionApiKey(env), {

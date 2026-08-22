@@ -3,7 +3,7 @@
 // Stripe collects payment, and the `payments-webhook` flips it to `placed`
 // which kicks off the existing dispatch flow.
 import { createClient } from "npm:@supabase/supabase-js@2";
-import { type StripeEnv, createStripeClient } from "../_shared/stripe.ts";
+import { type StripeEnv, createStripeClient, resolveStripeEnv } from "../_shared/stripe.ts";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -47,6 +47,9 @@ Deno.serve(async (req) => {
     if (body.environment !== 'sandbox' && body.environment !== 'live') {
       return jsonError('Invalid environment', 400);
     }
+    // Never trust the client for which Stripe account to use: resolve the
+    // environment from the SECRET keys actually configured server-side.
+    const environment = resolveStripeEnv(body.environment);
 
     // Load the order through RLS — guarantees the caller owns it.
     const { data: order, error: orderErr } = await supabase
@@ -111,7 +114,7 @@ Deno.serve(async (req) => {
       (Number(order.total_amount) + Number(order.delivery_fee || 0) + Number(order.tip_amount || 0)) * 100,
     );
 
-    const stripe = createStripeClient(body.environment);
+    const stripe = createStripeClient(environment);
     const admin = createClient(
       Deno.env.get('SUPABASE_URL')!,
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
@@ -131,8 +134,8 @@ Deno.serve(async (req) => {
     // place_order already applied any promo discount to total_amount, but the
     // line items above are built from full menu prices. Charge exactly the
     // discounted total by adding a one-off coupon for the difference — this
-    // keeps the amount Stripe collects in sync with what the customer agreed
-    // to and with expected_charge_cents (webhook mismatch guard).
+    // keeps the pre-tax amount Stripe collects in sync with expectedCents
+    // (the webhook compares tax-inclusively: expected + session amount_tax).
     const lineTotalCents = lineItems.reduce(
       (sum, it) => sum + it.price_data.unit_amount * (it.quantity ?? 1),
       0,
@@ -183,7 +186,7 @@ Deno.serve(async (req) => {
     await admin.from('orders').update({
       expected_charge_cents: expectedCents,
       stripe_session_id: session.id,
-      stripe_environment: body.environment,
+      stripe_environment: environment,
     }).eq('id', order.id);
 
     return new Response(

@@ -84,19 +84,24 @@ flip on Stripe's saved-payment-methods setting (§A, §B).
 
 ### A. Edge Function secrets (Project Settings → Edge Functions → Secrets)
 ```
-CRON_SECRET=<replace-with-a-random-64-hex-value>   # e.g. openssl rand -hex 32
+CRON_SECRET=<random 64-hex value>          # generate with: openssl rand -hex 32
 ALERT_WEBHOOK_URL=https://hooks.slack.com/services/T…/B…/…   # Slack or any JSON webhook
 ```
-> ⚠️ **Security:** the previous `CRON_SECRET` value was committed to this repo and
-> is compromised — **rotate it now**. Generate a new value (`openssl rand -hex 32`),
-> set it as the `CRON_SECRET` edge-function secret in Supabase, then update every
-> `cron.job.command` that bakes the old value into its `X-Cron-Secret` header.
-> Note: on this project the DB role `postgres` is not a superuser, so the canonical
-> GUC pattern (`ALTER ROLE postgres SET app.settings.cron_secret …`) fails with a
-> permissions error. So the secret is **baked directly into each HTTP cron job's
-> command** (`cron.job.command`, `X-Cron-Secret` header), matching the edge secret.
-> If the crons are ever re-created from the migrations, re-apply the bake-in, or the
-> drain calls will return 401 again.
+> ⚠️ **Security note (2026-08-16):** the previous `CRON_SECRET` value was
+> committed in this doc, so it must be treated as **compromised and rotated**.
+> One-shot tooling makes both halves a single step:
+> 1. `supabase/scripts/setup-production-secrets.sh` — sets `CRON_SECRET` (plus the
+>    live Stripe/alert secrets) as edge-function secrets via the CLI,
+> 2. `supabase/scripts/rotate_cron_secret.sql` — paste the **same** value into the
+>    SQL Editor; it rewrites every pg_cron job's `X-Cron-Secret` header.
+> And never write the real value into the repo again.
+
+Note: on this project the DB role `postgres` is not a superuser, so the canonical
+GUC pattern (`ALTER ROLE postgres SET app.settings.cron_secret …`) fails with a
+permissions error. Instead the secret is **baked directly into each HTTP cron
+job's command** (`cron.job.command`, `X-Cron-Secret` header), matching the edge
+secret. If the crons are ever re-created from the migrations, re-apply the
+bake-in, or the drain calls will return 401 again.
 
 ### B. Saved cards (1-tap reorder)
 No config needed. `create-checkout` now creates/links a Stripe Customer per user,
@@ -140,7 +145,8 @@ new columns/tables/RPCs/grants/indexes and that the `process-refunds-20s`,
 
 ### F. Remaining items (not yet done on prod)
 - **ALERT_WEBHOOK_URL** — not set; `send-alerts` currently marks queued alerts as
-  terminal (`no_webhook_url`) instead of delivering. Set the secret, then any new
+  terminal (`no_webhook_url`) instead of delivering. Set the secret (see
+  `supabase/scripts/setup-production-secrets.sh`), then any new
   alert (stuck order, refund failure, webhook error) posts to Slack/webhook.
 - **Stripe keys** — `STRIPE_LIVE_API_KEY` and `PAYMENTS_LIVE_WEBHOOK_SECRET` are
   NOT set; `create-checkout`/`payments-webhook`/`process-refunds` will fail until
@@ -150,3 +156,24 @@ new columns/tables/RPCs/grants/indexes and that the `process-refunds-20s`,
 - **Stripe Dashboard → Settings → Payment methods**: enable **Saved payment
   methods / Customer top-up** so the "save this card" checkbox shows in Embedded
   Checkout (1-tap reorder).
+
+### G. Scheduled delivery (2026-08-16)
+Previously `scheduled_for` was stored at checkout but ignored end-to-end
+(orders were dispatched immediately at placement). Now honored:
+
+- `auto-dispatch` holds scheduled orders until **45 min before the slot**
+  (`SCHEDULED_HOLD_MINUTES`), so the meal is cooked fresh and lands near the
+  chosen time instead of being delivered immediately.
+- `place_order` (migration `20260816140000_scheduled_delivery_validation.sql`)
+  validates the slot is in the future and ≤ 6 h out (matches the checkout
+  picker's +30 min–~4 h grid).
+- `watchdog_check_stuck_orders()` ignores scheduled orders still inside the
+  hold window (otherwise every held order would alarm as "stuck/critical").
+- Store queue shows a **Προγρ. HH:MM** badge + countdown; customer tracking
+  shows **Παράδοση στις HH:MM** instead of an ETA countdown.
+
+**Tradeoff:** a scheduled meal can arrive slightly early or late around the
+slot (driver accepts within the 45-min window, then prep + travel ≈ 30–45 min).
+Exact-on-the-minute delivery would need a driver-side "wait until slot" step
+(not implemented). **Deploy:** apply the migration, redeploy `auto-dispatch`
+and `predict-dispatch-time`, rebuild the web/mobile apps.

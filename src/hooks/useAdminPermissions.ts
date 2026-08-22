@@ -110,5 +110,6 @@ export const ADMIN_SECTION_CAPABILITY: Record<string, AdminCapability> = {
   operational_overrides: 'settings',
   customer_app: 'settings',
   customer_app_config: 'settings',
+  api_connections: 'settings',
   audit: 'audit',
 };

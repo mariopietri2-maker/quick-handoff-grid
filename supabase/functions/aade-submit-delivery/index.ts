@@ -1,7 +1,7 @@
 // Submits a delivery to ΑΑΔΕ myDATA and updates aade_delivery_reports.
 // Idempotent: skips if report already 'sent'. Called by trigger via pg_net or manually by admin.
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { getAuthedUser, hasCronSecret, unauthorized } from "../_shared/auth.ts";
 
 Deno.serve(async (req) => {
@@ -75,9 +75,19 @@ Deno.serve(async (req) => {
       });
     }
 
-    const gross = Number(order.total_amount ?? 0);
-    const vatRate = 0.24;
-    const net = +(gross / (1 + vatRate)).toFixed(2);
+    // The platform collects both the food amount (store revenue, forwarded) and
+    // the delivery fee (the platform's own service), so the reported gross must
+    // include the delivery fee. Tips go straight to the driver and are excluded.
+    const foodGross = Number(order.total_amount ?? 0);
+    const deliveryFee = Number(order.delivery_fee ?? 0);
+    const gross = +(foodGross + deliveryFee).toFixed(2);
+
+    // Greek VAT: 13% for restaurant food, 24% for the delivery service. Rates
+    // are configurable in aade_platform_config so the operator can match the
+    // store/product mix or future rate changes.
+    const foodVatRate = Number(cfg.vat_rate_food ?? 0.13);
+    const deliveryVatRate = Number(cfg.vat_rate_delivery ?? 0.24);
+    const net = +(foodGross / (1 + foodVatRate) + deliveryFee / (1 + deliveryVatRate)).toFixed(2);
     const vat = +(gross - net).toFixed(2);
     const orderNumber = String(order.id).slice(0, 8).toUpperCase();
 
@@ -93,6 +103,8 @@ Deno.serve(async (req) => {
         gross_amount: gross,
         net_amount: net,
         vat_amount: vat,
+        delivery_fee: deliveryFee,
+        vat_rates: { food: foodVatRate, delivery: deliveryVatRate },
         payment_method: order.payment_method,
         dropoff_address: order.delivery_address,
         pickup_address: store?.address ?? null,
@@ -168,7 +180,7 @@ Deno.serve(async (req) => {
     await admin
       .from("aade_delivery_reports")
       .update({
-        status: sentOk ? "sent" : "failed",
+        status: sentOk ? "sent" : "error",
         sent_at: sentOk ? new Date().toISOString() : null,
         mydata_mark: mydataMark,
         mydata_uid: mydataUid,

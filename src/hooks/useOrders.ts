@@ -319,10 +319,16 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           if (relevant) {
             void fetchOrders();
             if (payload.eventType === 'INSERT' && row.status === 'placed') {
-              try {
-                playOfferAlert();
-                if (!isAppActive()) notifyDriverOfferLocal();
-              } catch {}
+              // Don't buzz drivers for scheduled orders that are still hours out —
+              // the offer only lands once auto-dispatch opens the 45-min window.
+              const sched = row.scheduled_for ? new Date(row.scheduled_for).getTime() : null;
+              const withinHold = !sched || sched <= Date.now() + 45 * 60_000;
+              if (withinHold) {
+                try {
+                  playOfferAlert();
+                  if (!isAppActive()) notifyDriverOfferLocal();
+                } catch {}
+              }
             }
           }
         },
@@ -345,27 +351,30 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const acceptOrder = async (orderId: string) => {
     if (!user) return;
     const offerId = offerIds[orderId];
-    if (assignmentMode === 'auto' && offerId) {
-      const { error } = await supabase.rpc('accept_driver_offer' as never, {
-        p_offer_id: offerId,
-      } as never);
-      if (error) {
-        toast.error(error.message ?? 'Αποτυχία αποδοχής');
-        return;
-      }
-    } else {
-      const { error } = await supabase.rpc('claim_order' as never, {
-        p_order_id: orderId,
-        p_driver_id: user.id,
-      } as never);
-      if (error) {
-        toast.error(error.message ?? 'Αποτυχία αποδοχής');
-        return;
-      }
-    }
+
+    // Optimistic accept: the card vanishes instantly; the RPC runs in the
+    // background and we restore + toast only if the server rejects.
     stopOfferAlert();
+    const snapshot = offers.find((o) => o.id === orderId) ?? null;
+    const stackedSnapshot = stackedOffers.find((o) => o.id === orderId) ?? null;
     setOffers((prev) => prev.filter((o) => o.id !== orderId));
     setStackedOffers((prev) => prev.filter((o) => o.id !== orderId));
+
+    const { error } =
+      assignmentMode === 'auto' && offerId
+        ? await supabase.rpc('accept_driver_offer' as never, { p_offer_id: offerId } as never)
+        : await supabase.rpc('claim_order' as never, {
+            p_order_id: orderId,
+            p_driver_id: user.id,
+          } as never);
+
+    if (error) {
+      toast.error(error.message ?? 'Αποτυχία αποδοχής');
+      if (snapshot) setOffers((prev) => (prev.some((o) => o.id === orderId) ? prev : [snapshot, ...prev]));
+      if (stackedSnapshot)
+        setStackedOffers((prev) => (prev.some((o) => o.id === orderId) ? prev : [stackedSnapshot, ...prev]));
+      return;
+    }
     void fetchOrders();
   };
 

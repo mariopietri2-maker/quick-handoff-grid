@@ -40,7 +40,7 @@ Deno.serve(async (req) => {
     // Load order
     const { data: order, error: oErr } = await supabase
       .from("orders")
-      .select("id, store_id, total_amount, distance_km, estimated_prep_time, created_at, status, customer_id")
+      .select("id, store_id, total_amount, distance_km, estimated_prep_time, created_at, status, customer_id, scheduled_for")
       .eq("id", order_id)
       .maybeSingle();
     if (oErr || !order) throw new Error("Order not found");
@@ -154,7 +154,13 @@ Deno.serve(async (req) => {
     const travelMin = Math.max(3, Math.round((km / AVG_DRIVER_SPEED_KMH) * 60));
 
     // Dispatch should happen at: ready_time - travelMin - buffer
-    const readyTime = new Date(order.created_at).getTime() + predictedPrep * 60_000;
+    // For a scheduled order, back the timeline out of the slot: food is ready
+    // just before the driver collects, and the driver is offered early enough
+    // to travel to the store and then to the customer by the requested time.
+    const scheduledMs = order.scheduled_for ? new Date(order.scheduled_for).getTime() : null;
+    const readyTime = scheduledMs
+      ? scheduledMs - travelMin * 60_000
+      : new Date(order.created_at).getTime() + predictedPrep * 60_000;
     const dispatchMs = readyTime - travelMin * 60_000 - ARRIVAL_BUFFER_MIN * 60_000;
     const dispatchAt = new Date(Math.max(Date.now(), dispatchMs)).toISOString();
 

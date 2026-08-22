@@ -54,6 +54,7 @@ const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'
 const AdminStoreAppearance = lazy(() => import('@/components/admin/AdminStoreAppearance'));
 const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
+const ApiConnectionsPanel = lazy(() => import('@/components/admin/ApiConnectionsPanel'));
 const AdminSettingsHub = lazy(() => import('@/components/admin/SettingsHub'));
 const AdminAlertsPanel  = lazy(() => import('@/components/admin/AdminAlertsPanel'));
 
@@ -522,6 +523,8 @@ export default function AdminApp() {
         return <AadeCompliance />;
       case 'alerts':
         return <AdminAlertsPanel />;
+      case 'api_connections':
+        return <ApiConnectionsPanel />;
       default:
         return null;
     }

@@ -120,6 +120,7 @@ export const NAV_SECTIONS = [
       { id: 'customer_app_config', label: '🎨 Customer app' },
       { id: 'ai_hero_cards', label: '✨ AI Cards & Motion' },
       { id: 'aade_compliance', label: '🇬🇷 ΑΑΔΕ / myDATA' },
+      { id: 'api_connections', label: '🔗 API Συνδέσεις' },
       { id: 'feature_flags', label: 'Feature flags' },
       { id: 'overrides', label: 'Operational overrides' },
       { id: 'mission_control', label: '🛡️ Mission Control' },

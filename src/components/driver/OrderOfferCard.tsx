@@ -1,12 +1,13 @@
 import { memo, useEffect, useMemo, useState } from 'react';
 import {
   Package, Navigation, Clock, Timer, Store, MapPin, Banknote, CreditCard,
-  MessageSquare, ChevronDown, ChevronUp, Check, X,
+  MessageSquare, ChevronDown, ChevronUp, Check, X, Zap,
 } from 'lucide-react';
 import { stopOfferAlert } from '@/lib/driver-sound-prefs';
 import { useDriverAppPrefs } from '@/hooks/useDriverAppPrefs';
 import { formatDriverDistance } from '@/lib/driver-nav';
 import { minutesUntilReady, readyEtaLabel } from '@/lib/driver-ready-eta';
+import { estimateOfferMinutes, eurosPerHour, GOOD_EUR_PER_HOUR } from '@/lib/driver-offer-math';
 import { shortenAddress } from '@/lib/address-utils';
 
 export interface OfferLineItem {
@@ -57,6 +58,13 @@ function computeSecondsLeft(expiresAt?: string | null, fallback = 60): number {
   return fallback;
 }
 
+/** Short vibration for touch confirmation — no-op where unsupported (iOS Safari). */
+export function buzzOffer(pattern: number | number[]) {
+  try {
+    if (typeof navigator !== 'undefined' && 'vibrate' in navigator) navigator.vibrate(pattern);
+  } catch {}
+}
+
 function OrderOfferCardInner({
   offer,
   onAccept,
@@ -73,18 +81,26 @@ function OrderOfferCardInner({
   const [secondsLeft, setSecondsLeft] = useState(() => computeSecondsLeft(expiresAt, timeoutSec));
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [readyMins, setReadyMins] = useState(() => minutesUntilReady(offer.predictedReadyAt));
-
-  const distanceLabel = offer.totalDistance
-    ? formatDriverDistance(offer.totalDistance * 1000, prefs.distanceUnit)
-    : '—';
-
-  const payout = useMemo(
-    () => ((offer.basePay ?? 0) + (offer.tipAmount ?? 0) + (offer.poolBonus ?? 0)) || offer.estimatedPayout,
-    [offer.basePay, offer.tipAmount, offer.poolBonus, offer.estimatedPayout],
-  );
+  /** Guards against double-tap firing accept/decline twice before the sheet unmounts. */
+  const [acted, setActed] = useState<null | 'accept' | 'decline'>(null);
 
   // Do NOT stopOfferAlert on unmount — React remounts / Strict Mode would kill
   // the ring started by useOrders. Accept / decline / empty-offer cleanup stop it.
+  const handleAccept = () => {
+    if (acted) return;
+    setActed('accept');
+    stopOfferAlert();
+    buzzOffer(15);
+    onAccept(offer.id);
+  };
+
+  const handleDecline = () => {
+    if (acted) return;
+    setActed('decline');
+    stopOfferAlert();
+    buzzOffer([20, 40, 20]);
+    onDecline(offer.id);
+  };
 
   // Single interval driven by wall-clock expiry — avoids cascading 1s setTimeout re-renders stacking.
   useEffect(() => {
@@ -112,6 +128,30 @@ function OrderOfferCardInner({
     const id = window.setInterval(tick, 30_000);
     return () => window.clearInterval(id);
   }, [offer.predictedReadyAt]);
+
+  const distanceLabel = offer.totalDistance
+    ? formatDriverDistance(offer.totalDistance * 1000, prefs.distanceUnit)
+    : '—';
+
+  const payout = useMemo(
+    () => ((offer.basePay ?? 0) + (offer.tipAmount ?? 0) + (offer.poolBonus ?? 0)) || offer.estimatedPayout,
+    [offer.basePay, offer.tipAmount, offer.poolBonus, offer.estimatedPayout],
+  );
+
+  /** Rough occupancy + effective hourly rate — the numbers drivers decide with. */
+  const totalMin = useMemo(
+    () =>
+      estimateOfferMinutes({
+        distanceKm: offer.totalDistance,
+        predictedReadyAt: offer.predictedReadyAt,
+        orderStatus: offer.orderStatus,
+        estimatedPrepMin: offer.estimatedTime,
+      }),
+    [offer.totalDistance, offer.predictedReadyAt, offer.orderStatus, offer.estimatedTime],
+  );
+  const eurHour = useMemo(() => eurosPerHour(payout, totalMin), [payout, totalMin]);
+  const rateGood = eurHour != null && eurHour >= GOOD_EUR_PER_HOUR;
+  const perKm = offer.totalDistance > 0 ? payout / offer.totalDistance : null;
 
   const progress = Math.max(0, Math.min(100, (secondsLeft / totalWindow) * 100));
   const isUrgent = secondsLeft <= 15;
@@ -161,7 +201,18 @@ function OrderOfferCardInner({
             {payout.toFixed(2)}
             <span className="ml-0.5 text-[14px] font-bold text-[hsl(var(--driver-text-muted))]">€</span>
           </p>
-          <div className={`mt-1.5 inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-mono font-bold tabular-nums ${
+          {eurHour != null && (
+            <span
+              className="mt-1 inline-flex h-[18px] items-center gap-1 rounded-full px-2 text-[10px] font-heading font-extrabold tabular-nums"
+              style={rateGood
+                ? { background: 'hsl(var(--driver-accent) / 0.15)', color: 'hsl(var(--driver-accent))' }
+                : { background: 'hsl(var(--driver-surface-muted))', color: 'hsl(var(--driver-text-muted))' }}
+            >
+              <Zap className="h-2.5 w-2.5" strokeWidth={2.75} />
+              ≈{Math.round(eurHour)}€/ώρα
+            </span>
+          )}
+          <div className={`mt-1 inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-mono font-bold tabular-nums ${
             isUrgent
               ? 'border-destructive/25 bg-destructive/10 text-destructive'
               : 'border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text))]'
@@ -179,23 +230,34 @@ function OrderOfferCardInner({
         />
       </div>
 
-      {/* Route — truncated, one line each */}
-      <div className="space-y-1.5 px-1 py-2.5">
-        <div className="flex min-w-0 items-center gap-2">
-          <Store className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--driver-warm))]" />
+      {/* Route — dashed connector between pickup and drop-off */}
+      <div className="relative space-y-1.5 px-1 py-2.5">
+        <div aria-hidden className="pointer-events-none absolute bottom-[24px] left-[13px] top-[14px] w-px border-l border-dashed border-[hsl(var(--driver-border-strong))]/50" />
+        <div className="relative flex min-w-0 items-center gap-2">
+          <span
+            className="z-10 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full"
+            style={{ background: 'hsl(var(--driver-warm) / 0.15)' }}
+          >
+            <Store className="h-3 w-3 shrink-0 text-[hsl(var(--driver-warm))]" />
+          </span>
           <span className="truncate text-[12.5px] text-[hsl(var(--driver-text))]">
             <span className="font-heading font-bold">{offer.storeName}</span>
             <span className="text-[hsl(var(--driver-text-muted))]"> · {shortenAddress(offer.storeAddress)}</span>
           </span>
         </div>
-        <div className="flex min-w-0 items-center gap-2">
-          <MapPin className="h-3.5 w-3.5 shrink-0 text-[hsl(var(--driver-accent))]" />
+        <div className="relative flex min-w-0 items-center gap-2">
+          <span
+            className="z-10 flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-full"
+            style={{ background: 'hsl(var(--driver-accent) / 0.15)' }}
+          >
+            <MapPin className="h-3 w-3 shrink-0 text-[hsl(var(--driver-accent))]" />
+          </span>
           <span className="truncate text-[12.5px] text-[hsl(var(--driver-text))]">
             {shortenAddress(offer.deliveryAddress) || offer.deliveryAddress}
           </span>
         </div>
         {readyLabel && (
-          <p className={`flex items-center gap-1 pl-5 text-[11px] font-heading font-semibold ${
+          <p className={`flex items-center gap-1 pl-[26px] text-[11px] font-heading font-semibold ${
             storeReady ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-warm))]'
           }`}>
             <Clock className="h-3 w-3" />
@@ -233,7 +295,7 @@ function OrderOfferCardInner({
               ))}
             </ul>
           )}
-          {(offer.basePay !== undefined || offer.poolBonus) && (
+          {(offer.basePay !== undefined || offer.poolBonus || perKm != null) && (
             <div className="grid grid-cols-2 gap-y-1 border-t border-[hsl(var(--driver-border))] pt-2 text-[11px]">
               <span className="text-[hsl(var(--driver-text-muted))]">Βασική</span>
               <span className="text-right font-semibold tabular-nums">{(offer.basePay ?? 0).toFixed(2)}€</span>
@@ -247,6 +309,14 @@ function OrderOfferCardInner({
               )}
               <span className="text-[hsl(var(--driver-text-muted))]">Tip</span>
               <span className="text-right font-semibold tabular-nums">{(offer.tipAmount ?? 0).toFixed(2)}€</span>
+              <span className="text-[hsl(var(--driver-text-muted))]">Εκτίμηση χρόνου</span>
+              <span className="text-right font-semibold tabular-nums">~{totalMin}′</span>
+              {perKm != null && (
+                <>
+                  <span className="text-[hsl(var(--driver-text-muted))]">Ανά χιλιόμετρο</span>
+                  <span className="text-right font-semibold tabular-nums">{perKm.toFixed(2)}€/χλμ</span>
+                </>
+              )}
             </div>
           )}
           {offer.customerNotes?.trim() && (
@@ -265,19 +335,21 @@ function OrderOfferCardInner({
       >
         <button
           type="button"
-          onClick={() => { stopOfferAlert(); onDecline(offer.id); }}
+          onClick={handleDecline}
+          disabled={!!acted}
           aria-label="Απόρριψη"
-          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[hsl(var(--driver-border-strong))] bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] active:scale-[0.96]"
+          className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full border border-[hsl(var(--driver-border-strong))] bg-[hsl(var(--driver-surface))] text-[hsl(var(--driver-text-muted))] active:scale-[0.96] disabled:opacity-50"
         >
           <X className="h-5 w-5" strokeWidth={2.5} />
         </button>
         <button
           type="button"
-          onClick={() => { stopOfferAlert(); onAccept(offer.id); }}
-          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-full bg-[hsl(var(--driver-accent))] text-[15px] font-heading font-extrabold text-white active:scale-[0.98]"
+          onClick={handleAccept}
+          disabled={!!acted}
+          className="flex h-12 flex-1 items-center justify-center gap-1.5 rounded-full bg-[hsl(var(--driver-accent))] text-[15px] font-heading font-extrabold text-white active:scale-[0.98] disabled:opacity-70"
         >
           <Check className="h-4 w-4" strokeWidth={3} />
-          Αποδοχή · {payout.toFixed(2)}€
+          {acted === 'accept' ? 'Γίνεται αποδοχή…' : `Αποδοχή · ${payout.toFixed(2)}€`}
         </button>
       </div>
     </div>

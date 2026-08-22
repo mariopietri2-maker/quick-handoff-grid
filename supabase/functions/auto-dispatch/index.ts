@@ -16,6 +16,11 @@ const corsHeaders = {
 const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
 const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
+// Scheduled deliveries: hold the offer until this close to the requested slot so
+// the meal is cooked fresh. Matches the checkout picker's 30-min grid; the store
+// gets a full prep window while the meal still lands near the chosen time.
+const SCHEDULED_HOLD_MINUTES = 45;
+
 interface Settings {
   assignment_mode: string;
   dist_offer_timeout_seconds: number;
@@ -30,6 +35,7 @@ interface OrderRow {
   total_amount: number;
   status: string;
   dispatch_at: string | null;
+  scheduled_for: string | null;
 }
 
 interface StoreLoc {
@@ -167,16 +173,22 @@ Deno.serve(async (req) => {
     // 4) Find orders needing dispatch — offer ASAP, no waiting on predicted
     //    ready time. Any unassigned order in an active pre-pickup status is
     //    eligible immediately so drivers can be assigned without delay.
+    //    Scheduled orders (scheduled_for) are held until within
+    //    SCHEDULED_HOLD_MINUTES of their slot so they aren't delivered early.
     const { data: candidates } = await admin
       .from("orders")
-      .select("id, store_id, driver_id, total_amount, status, dispatch_at, predicted_ready_at")
+      .select("id, store_id, driver_id, total_amount, status, dispatch_at, scheduled_for, predicted_ready_at")
       .is("driver_id", null)
       .in("status", ["placed", "accepted", "preparing", "ready"])
       .order("created_at", { ascending: true })
       .limit(50);
 
 
-    const orders = (candidates ?? []) as OrderRow[];
+    const nowMs = Date.now();
+    const holdCutoff = nowMs + SCHEDULED_HOLD_MINUTES * 60_000;
+    const orders = ((candidates ?? []) as OrderRow[]).filter(
+      (o) => !o.scheduled_for || new Date(o.scheduled_for).getTime() <= holdCutoff,
+    );
     if (orders.length === 0) {
       drainPush();
       const payload = { ok: true, mode: "auto", dispatched: 0, expired: expired?.length ?? 0 };

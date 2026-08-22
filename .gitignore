@@ -58,6 +58,7 @@ mobile-signing/firebase/google-services*.json
 mobile-signing/firebase/firebase-service-account.json
 mobile-signing/firebase/fcm-server-key.txt
 android*/app/google-services.json
+native-*/app/google-services.json
 
 # Scratch / one-off SQL (canonical schema lives in supabase/migrations/)
 batch_*.sql

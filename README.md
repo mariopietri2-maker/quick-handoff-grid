@@ -91,6 +91,7 @@ Sub-routes: `/auth` · `/restaurant/:id` · `/checkout` · `/order-tracking/:id`
 src/                     React SPA (pages, components, hooks)
 supabase/migrations/     Canonical DB schema, triggers & RPCs
 supabase/functions/      Edge functions (dispatch, checkout, refunds, myDATA, …)
+supabase/scripts/        Production secrets, cron rotation & verification SQL
 native-customer/         Native customer app (Kotlin + Jetpack Compose)
 native-driver/           Native driver app (Kotlin + Jetpack Compose)
 android/ android-driver/ Capacitor Android shells (Customer / Driver)
@@ -146,7 +147,7 @@ See [`docs/FIREBASE_PUSH.md`](docs/FIREBASE_PUSH.md) — place `google-services.
 
 ### 🔑 Edge secrets (Supabase Dashboard → Edge Functions)
 
-`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, Stripe live/test keys + webhook secrets, `MAPBOX_PUBLIC_TOKEN`, `ALERT_WEBHOOK_URL`, AADE myDATA credentials — see [`docs/GO_LIVE.md`](docs/GO_LIVE.md).
+`SUPABASE_SERVICE_ROLE_KEY`, `CRON_SECRET`, Stripe live/test keys + webhook secrets, `MAPBOX_PUBLIC_TOKEN`, `ALERT_WEBHOOK_URL`, AADE myDATA credentials — see [`docs/GO_LIVE.md`](docs/GO_LIVE.md). Seed with `supabase/scripts/setup-production-secrets.sh`, rotate with `supabase/scripts/rotate_cron_secret.sql`, and verify with `supabase/scripts/verify_cron_and_aade.sql`.
 
 ```bash
 npm run dev      # http://localhost:5173
@@ -224,6 +225,7 @@ Repo/client defaults may use Stripe **test** publishable keys. For real orders, 
 - **Wallet refunds** credit the customer wallet (see `/legal/refunds`).
 - **Card refunds** are automated: canceling a paid card order enqueues a refund that the `process-refunds` cron executes idempotently (retries, then alerts on failure).
 - **Saved cards** are mirrored by the `payments-webhook` for 1-tap reorder at checkout.
+- **Cash orders** are reconciled per delivery: the driver's collected cash is tracked in `driver_cash_debts`, and admins acknowledge receipts via `settle_driver_cash` (moves each share into the correct treasury/store bags). Driver withdrawals net outstanding debts — `request_wallet_withdrawal` caps payouts at `available_balance − unsettled cash debts`.
 
 > ⚠️ **Launch checklist:** set Stripe **live** `pk_live_…` + matching edge secrets + webhook, then enable myDATA and FCM secrets — see [`docs/GO_LIVE.md`](docs/GO_LIVE.md).
 

@@ -2,7 +2,7 @@
 // Body: { prompt, title?, style?, placement?, source_image_url? }
 // Returns: { b64_json: string }
 import { getAiGatewayApiKey, AI_GATEWAY_BASE } from "../_shared/ai-gateway.ts";
-import { corsHeaders } from "npm:@supabase/supabase-js@2/cors";
+import { corsHeaders } from "https://esm.sh/@supabase/supabase-js@2/cors";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.45.0";
 
 const STYLE_DIRECTION: Record<string, string> = {

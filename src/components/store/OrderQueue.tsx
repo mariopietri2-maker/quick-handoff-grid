@@ -81,6 +81,13 @@ function getTimeSince(dateStr: string, now: number) {
   return `${Math.floor(diff / 60)}ω`;
 }
 
+function getTimeUntil(dateStr: string, now: number) {
+  const diff = Math.ceil((new Date(dateStr).getTime() - now) / 60000);
+  if (diff < 1) return 'τώρα';
+  if (diff < 60) return `σε ${diff}λ`;
+  return `σε ${Math.floor(diff / 60)}ω`;
+}
+
 function getNextAction(status: string) {
   switch (status) {
     case 'placed':
@@ -233,8 +240,12 @@ export function OrderQueue({
     const currentPrep = getPrep(order);
     const busy = isBusy(order.id);
     const age = getTimeSince(order.created_at, now);
+    const scheduledMs = order.scheduled_for ? new Date(order.scheduled_for).getTime() : null;
+    const upcomingScheduled = scheduledMs !== null && scheduledMs > now;
     const urgent =
-      order.status === 'placed' && Date.now() - new Date(order.created_at).getTime() > 5 * 60_000;
+      order.status === 'placed' &&
+      !upcomingScheduled &&
+      Date.now() - new Date(order.created_at).getTime() > 5 * 60_000;
     const nItems = itemCount(order);
 
     return (
@@ -263,13 +274,19 @@ export function OrderQueue({
                 {order.source}
               </span>
             )}
+            {order.scheduled_for && (
+              <span className="text-[10px] font-heading font-bold tracking-wide px-1 py-0.5 rounded bg-warning/15 text-warning border border-warning/30 shrink-0">
+                <Clock className="h-3 w-3 inline mr-0.5" />
+                Προγρ. {new Date(order.scheduled_for).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+              </span>
+            )}
             <span
               className={cn(
                 'text-[12px] font-heading font-semibold tabular-nums shrink-0',
                 urgent ? 'text-destructive' : 'text-muted-foreground',
               )}
             >
-              {age}
+              {upcomingScheduled ? getTimeUntil(order.scheduled_for, now) : age}
             </span>
             <span className="text-[12px] text-muted-foreground truncate hidden min-[380px]:inline">
               {nItems}×
