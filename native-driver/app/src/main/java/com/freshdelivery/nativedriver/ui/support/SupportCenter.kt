@@ -26,7 +26,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.Send
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.outlined.Call
@@ -50,6 +49,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -70,8 +70,8 @@ import com.freshdelivery.nativedriver.ui.theme.FreshGreen
 import com.freshdelivery.nativedriver.ui.theme.FreshGreenBright
 
 /**
- * Unified Support Center — full-screen hub that combines Live Chat with support
- * and the ticket (Αιτήματα) system, plus quick driver/customer context actions.
+ * Unified Support Center — Design 1: Live Chat first hero CTA + 2-tile grid
+ * for tickets / new ticket, plus driver/customer context and recent tickets.
  */
 @Composable
 fun SupportCenter(
@@ -193,6 +193,7 @@ fun SupportCenter(
     }
 }
 
+/** Design 1 — Live Chat hero + 2-tile grid + recent tickets */
 @Composable
 private fun MenuPanel(
     tickets: List<SupportTicketRow>,
@@ -201,74 +202,122 @@ private fun MenuPanel(
     onNewTicket: () -> Unit,
     onOpen: (SupportTicketRow) -> Unit,
 ) {
+    val cs = MaterialTheme.colorScheme
+    val openCount = tickets.count {
+        val s = it.status?.lowercase()
+        s != "resolved" && s != "closed"
+    }
+
     Column(
         Modifier.fillMaxWidth().verticalScroll(rememberScrollState()),
         horizontalAlignment = Alignment.Start,
     ) {
-        Text(
-            "Τι χρειάζεσαι;",
-            fontSize = 13.sp,
-            fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        Spacer(Modifier.height(8.dp))
-        ActionCard(
-            title = "Live Chat",
-            subtitle = "Μίλησε τώρα με την ομάδα υποστήριξης",
-            icon = Icons.Outlined.HeadsetMic,
-            color = FreshGreen,
-            onClick = onLiveChat,
-        )
-        Spacer(Modifier.height(8.dp))
-        ActionCard(
-            title = "Τα αιτήματά μου",
-            subtitle = if (tickets.isEmpty()) "Δεν έχεις ανοιχτά αιτήματα" else "${tickets.size} ανοιχτά αιτήματα",
-            icon = Icons.Outlined.Message,
-            color = FreshBlue,
-            onClick = onTickets,
-        )
-        Spacer(Modifier.height(8.dp))
-        ActionCard(
-            title = "Νέο αίτημα",
-            subtitle = "Δημιούργησε αίτημα προς την ομάδα",
-            icon = Icons.Filled.Add,
-            color = FreshAmber,
-            onClick = onNewTicket,
-        )
+        // ── Big Live Chat CTA ──
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .clip(RoundedCornerShape(20.dp))
+                .background(
+                    Brush.linearGradient(
+                        listOf(Color(0xFF00A854), Color(0xFF007A3D)),
+                    ),
+                )
+                .clickable(onClick = onLiveChat)
+                .padding(18.dp),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                Modifier
+                    .size(52.dp)
+                    .background(Color.White.copy(alpha = 0.2f), RoundedCornerShape(16.dp)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.HeadsetMic,
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(28.dp),
+                )
+            }
+            Spacer(Modifier.width(14.dp))
+            Column(Modifier.weight(1f)) {
+                Text(
+                    "Live Chat",
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 18.sp,
+                )
+                Text(
+                    "Μίλησε τώρα με την ομάδα",
+                    color = Color.White.copy(alpha = 0.85f),
+                    fontSize = 13.sp,
+                )
+            }
+        }
+
+        Spacer(Modifier.height(10.dp))
+
+        // ── 2-tile grid ──
+        Row(
+            Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+        ) {
+            GridTile(
+                title = "Αιτήματά μου",
+                subtitle = if (openCount == 0) "Κανένα ανοιχτό" else "$openCount ανοιχτά",
+                icon = Icons.Outlined.Message,
+                iconTint = FreshBlue,
+                onClick = onTickets,
+                modifier = Modifier.weight(1f),
+            )
+            GridTile(
+                title = "Νέο αίτημα",
+                subtitle = "Παραγγελία / Πληρωμές",
+                icon = Icons.Filled.Add,
+                iconTint = FreshAmber,
+                onClick = onNewTicket,
+                modifier = Modifier.weight(1f),
+            )
+        }
+
         if (tickets.isNotEmpty()) {
             Spacer(Modifier.height(18.dp))
             Text(
-                "Πρόσφατα αιτήματα",
-                fontSize = 13.sp,
+                "Πρόσφατα",
+                fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                color = cs.onSurfaceVariant,
+                letterSpacing = 0.6.sp,
             )
-            Spacer(Modifier.height(6.dp))
-            tickets.take(3).forEach { t ->
+            Spacer(Modifier.height(8.dp))
+            tickets.take(4).forEach { t ->
                 val status = t.status?.lowercase()
-                val color = when (status) {
-                    "resolved", "closed" -> FreshGreen
-                    "pending" -> FreshAmber
-                    else -> MaterialTheme.colorScheme.primary
+                val (label, color) = when (status) {
+                    "resolved", "closed" -> "Λύθηκε" to FreshGreen
+                    "pending" -> "Εκκρεμεί" to FreshAmber
+                    else -> (t.status ?: "Ανοιχτό") to FreshBlue
                 }
                 Row(
                     Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 4.dp)
-                        .clip(RoundedCornerShape(16.dp))
-                        .background(MaterialTheme.colorScheme.surface)
-                        .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
+                        .padding(vertical = 3.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(cs.surface)
+                        .border(1.dp, cs.outline.copy(alpha = 0.25f), RoundedCornerShape(14.dp))
                         .clickable { onOpen(t) }
-                        .padding(12.dp),
+                        .padding(horizontal = 12.dp, vertical = 11.dp),
                     verticalAlignment = Alignment.CenterVertically,
                 ) {
-                    Text(t.description?.take(40) ?: "Αίτημα", fontWeight = FontWeight.SemiBold, fontSize = 13.sp, modifier = Modifier.weight(1f))
                     Text(
-                        when (status) {
-                            "resolved", "closed" -> "Λύθηκε"
-                            "pending" -> "Εκκρεμεί"
-                            else -> t.status ?: "Ανοιχτό"
-                        },
+                        t.description?.take(40) ?: "Αίτημα",
+                        fontWeight = FontWeight.SemiBold,
+                        fontSize = 13.sp,
+                        modifier = Modifier.weight(1f),
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
+                    Text(
+                        label,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
                         color = color,
@@ -276,51 +325,47 @@ private fun MenuPanel(
                 }
             }
         }
+
+        Spacer(Modifier.height(16.dp))
     }
 }
 
 @Composable
-private fun ActionCard(
+private fun GridTile(
     title: String,
     subtitle: String,
     icon: ImageVector,
-    color: Color,
+    iconTint: Color,
     onClick: () -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    Row(
-        Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(18.dp))
-            .background(MaterialTheme.colorScheme.surface)
-            .border(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.25f), RoundedCornerShape(18.dp))
+    val cs = MaterialTheme.colorScheme
+    Column(
+        modifier
+            .clip(RoundedCornerShape(16.dp))
+            .background(cs.surface)
+            .border(1.dp, cs.outline.copy(alpha = 0.25f), RoundedCornerShape(16.dp))
             .clickable(onClick = onClick)
-            .padding(12.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .padding(vertical = 14.dp, horizontal = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Box(
             Modifier
-                .size(44.dp)
-                .background(color.copy(alpha = 0.15f), RoundedCornerShape(14.dp)),
+                .size(40.dp)
+                .background(iconTint.copy(alpha = 0.15f), RoundedCornerShape(12.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(icon, contentDescription = null, tint = color, modifier = Modifier.size(22.dp))
+            Icon(icon, contentDescription = null, tint = iconTint, modifier = Modifier.size(22.dp))
         }
-        Spacer(Modifier.width(12.dp))
-        Column(Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold, fontSize = 14.sp)
-            Text(
-                subtitle,
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-        Icon(
-            Icons.AutoMirrored.Outlined.ArrowForward,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(18.dp),
+        Spacer(Modifier.height(8.dp))
+        Text(title, fontWeight = FontWeight.SemiBold, fontSize = 13.sp, textAlign = TextAlign.Center)
+        Text(
+            subtitle,
+            fontSize = 11.sp,
+            color = cs.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
         )
     }
 }
