@@ -27,7 +27,7 @@ END;
 $$;
 
 -- Hourly at :05 (avoids colliding with the nightly 03:17 order prune).
-DO $$
+DO $do$
 BEGIN
   IF EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'store-calls-24h-cleanup') THEN
     PERFORM cron.unschedule('store-calls-24h-cleanup');
@@ -35,10 +35,10 @@ BEGIN
   PERFORM cron.schedule(
     'store-calls-24h-cleanup',
     '5 * * * *',
-    $$SELECT public.prune_old_store_calls()$$
+    $cmd$SELECT public.prune_old_store_calls()$cmd$
   );
 END
-$$;
+$do$;
 
 COMMENT ON FUNCTION public.prune_old_store_calls() IS
 'Deletes store_driver_calls older than 24h (role N/K side project). Calls never create orders, earnings or wallet transactions - drivers are not paid through the platform for them.';
