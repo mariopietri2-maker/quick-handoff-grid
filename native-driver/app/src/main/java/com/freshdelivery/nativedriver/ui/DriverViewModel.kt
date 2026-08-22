@@ -1,1 +1,1 @@
-PLACEHOLDER
+RESTORE_FROM_ARTIFACTS_DriverViewModel.kt_43415_chars_with_BELL_DOUBLE_URGENT_SOFT_and_stronger_vibrate
