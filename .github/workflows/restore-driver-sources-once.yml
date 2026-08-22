@@ -37,12 +37,10 @@ jobs:
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add \
-            native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt \
-            native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/map/DriverMapView.kt
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
           if git diff --staged --quiet; then
             echo "No changes"
             exit 0
           fi
-          git commit -m "fix(native-driver): restore full DriverViewModel + DriverMapView (sounds, vibrate, map counts)"
+          git commit -m "fix(native-driver): restore full DriverViewModel (sounds, vibrate)"
           git push
