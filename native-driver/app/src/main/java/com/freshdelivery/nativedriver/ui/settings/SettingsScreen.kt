@@ -3,6 +3,7 @@ package com.freshdelivery.nativedriver.ui.settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
@@ -18,11 +19,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.VolumeUp
-import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material.icons.outlined.PhonelinkRing
 import androidx.compose.material.icons.outlined.PlayArrow
 import androidx.compose.material.icons.outlined.ScreenLockPortrait
+import androidx.compose.material.icons.outlined.Translate
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
@@ -40,6 +42,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.freshdelivery.nativedriver.data.OfferSoundId
 import com.freshdelivery.nativedriver.ui.DriverSettings
 import com.freshdelivery.nativedriver.ui.DriverUiState
@@ -64,80 +67,61 @@ fun SettingsScreen(
             .padding(16.dp),
     ) {
         Text("Ρυθμίσεις", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
+        Text(
+            "Ήχος, ειδοποιήσεις και εμφάνιση",
+            style = MaterialTheme.typography.bodyMedium,
+            color = cs.onSurfaceVariant,
+        )
 
-        Spacer(Modifier.height(14.dp))
-        SectionHeader("Ειδοποιήσεις")
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(cs.surface)
-                .border(1.dp, cs.outline.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-        ) {
+        Spacer(Modifier.height(18.dp))
+
+        // ── Notifications ──
+        SectionHeader("Ειδοποιήσεις προσφορών")
+        SettingsCard {
             SettingRow(
                 icon = Icons.Outlined.Notifications,
-                title = "Ειδοποιήσεις προσφορών",
-                subtitle = "Push / local όταν είσαι online",
+                title = "Push ειδοποιήσεις",
+                subtitle = "Όταν είσαι online και έρχεται παραγγελία",
                 checked = settings.notifyOffers,
                 onCheckedChange = { onUpdateSettings(settings.copy(notifyOffers = it)) },
             )
-            HorizontalDivider(color = cs.outline.copy(alpha = 0.2f))
+            CardDivider()
             SettingRow(
                 icon = Icons.AutoMirrored.Outlined.VolumeUp,
-                title = "Ήχος νέας προσφοράς",
-                subtitle = "Παίζει ήχο όταν έρθει παραγγελία",
+                title = "Ήχος",
+                subtitle = "Παίζει όταν έρθει νέα προσφορά",
                 checked = settings.offerSound,
                 onCheckedChange = { onUpdateSettings(settings.copy(offerSound = it)) },
             )
-            HorizontalDivider(color = cs.outline.copy(alpha = 0.2f))
+            CardDivider()
             SettingRow(
                 icon = Icons.Outlined.PhonelinkRing,
                 title = "Δόνηση",
-                subtitle = "Δόνηση μαζί με τον ήχο προσφοράς",
+                subtitle = "Δόνηση μαζί με τον ήχο",
                 checked = settings.vibration,
                 onCheckedChange = { onUpdateSettings(settings.copy(vibration = it)) },
             )
-            HorizontalDivider(color = cs.outline.copy(alpha = 0.2f))
+            CardDivider()
             SettingRow(
                 icon = Icons.Outlined.ScreenLockPortrait,
-                title = "Οθόνη ανοιχτή σε προσφορά",
-                subtitle = "Κρατά την οθόνη ενεργή όσο μετράει ο χρόνος",
+                title = "Οθόνη ανοιχτή",
+                subtitle = "Κρατά την οθόνη ενεργή στον χρονομετρητή",
                 checked = settings.keepScreenOn,
                 onCheckedChange = { onUpdateSettings(settings.copy(keepScreenOn = it)) },
             )
         }
 
         Spacer(Modifier.height(18.dp))
-        SectionHeader("Χάρτης")
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(cs.surface)
-                .border(1.dp, cs.outline.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
-                .padding(horizontal = 8.dp, vertical = 4.dp),
-        ) {
-            SettingRow(
-                icon = Icons.Outlined.Map,
-                title = "Λευκός χάρτης",
-                subtitle = "Φωτεινό στυλ χάρτη αντί για σκούρο",
-                checked = settings.mapStyleLight,
-                onCheckedChange = { onUpdateSettings(settings.copy(mapStyleLight = it)) },
-            )
-        }
 
-        Spacer(Modifier.height(18.dp))
+        // ── Sound picker ──
         SectionHeader("Ήχος ειδοποίησης")
-        Spacer(Modifier.height(6.dp))
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(cs.surface)
-                .border(1.dp, cs.outline.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
-                .padding(14.dp),
-        ) {
+        SettingsCard(padded = true) {
+            Text(
+                "Επίλεξε ήχο · πάτα για δοκιμή",
+                style = MaterialTheme.typography.bodySmall,
+                color = cs.onSurfaceVariant,
+            )
+            Spacer(Modifier.height(10.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
                 verticalArrangement = Arrangement.spacedBy(8.dp),
@@ -157,16 +141,11 @@ fun SettingsScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(10.dp))
-            Text(
-                "Πάτα για προεπισκόπηση — ο ήχος παίζει και όταν έρχεται προσφορά.",
-                style = MaterialTheme.typography.bodySmall,
-                color = cs.onSurfaceVariant,
-            )
-            Spacer(Modifier.height(10.dp))
+            Spacer(Modifier.height(12.dp))
             OutlinedButton(
                 onClick = { onPreviewSound(settings.soundId) },
                 shape = RoundedCornerShape(14.dp),
+                modifier = Modifier.fillMaxWidth(),
             ) {
                 Icon(Icons.Outlined.PlayArrow, null, Modifier.size(18.dp))
                 Spacer(Modifier.size(6.dp))
@@ -175,25 +154,75 @@ fun SettingsScreen(
         }
 
         Spacer(Modifier.height(18.dp))
-        SectionHeader("Γλώσσα εφαρμογής")
-        Column(
-            Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(22.dp))
-                .background(cs.surface)
-                .border(1.dp, cs.outline.copy(alpha = 0.3f), RoundedCornerShape(22.dp))
-                .padding(horizontal = 0.dp, vertical = 4.dp),
-        ) {
-            SimpleRow(
-                left = "🌐 Γλώσσα εφαρμογής",
-                subtitle = "Η διεπαφή αλλάζει μεταξύ ΕΛ και EN.",
-                value = "ΕΛ ⇄ EN",
-                valueColor = FreshGreenBright,
+
+        // ── Map ──
+        SectionHeader("Χάρτης")
+        SettingsCard {
+            SettingRow(
+                icon = Icons.Outlined.Map,
+                title = "Λευκός χάρτης",
+                subtitle = "Φωτεινό στυλ αντί για σκούρο",
+                checked = settings.mapStyleLight,
+                onCheckedChange = { onUpdateSettings(settings.copy(mapStyleLight = it)) },
             )
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(18.dp))
+
+        // ── Language ──
+        SectionHeader("Γλώσσα")
+        SettingsCard {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 12.dp, vertical = 14.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Box(
+                    Modifier
+                        .size(40.dp)
+                        .background(FreshGreen.copy(alpha = 0.12f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Icon(Icons.Outlined.Translate, null, tint = FreshGreen, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.size(12.dp))
+                Column(Modifier.weight(1f)) {
+                    Text("Γλώσσα εφαρμογής", style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
+                    Text("Η διεπαφή αλλάζει μεταξύ ΕΛ και EN", style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
+                }
+                Text("ΕΛ ⇄ EN", fontWeight = FontWeight.SemiBold, color = FreshGreenBright, fontSize = 14.sp)
+            }
+        }
+
+        Spacer(Modifier.height(28.dp))
     }
+}
+
+@Composable
+private fun SettingsCard(
+    padded: Boolean = false,
+    content: @Composable () -> Unit,
+) {
+    val cs = MaterialTheme.colorScheme
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(cs.surface)
+            .border(1.dp, cs.outline.copy(alpha = 0.25f), RoundedCornerShape(20.dp))
+            .then(if (padded) Modifier.padding(14.dp) else Modifier.padding(horizontal = 4.dp, vertical = 2.dp)),
+    ) {
+        content()
+    }
+}
+
+@Composable
+private fun CardDivider() {
+    HorizontalDivider(
+        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+        modifier = Modifier.padding(horizontal = 12.dp),
+    )
 }
 
 @Composable
@@ -206,10 +235,17 @@ private fun SettingRow(
 ) {
     val cs = MaterialTheme.colorScheme
     Row(
-        Modifier.fillMaxWidth().padding(horizontal = 8.dp, vertical = 12.dp),
+        Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        Icon(icon, contentDescription = null, tint = cs.onSurfaceVariant, modifier = Modifier.size(22.dp))
+        Box(
+            Modifier
+                .size(40.dp)
+                .background(cs.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(12.dp)),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(icon, contentDescription = null, tint = cs.onSurfaceVariant, modifier = Modifier.size(20.dp))
+        }
         Spacer(Modifier.size(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
@@ -224,26 +260,12 @@ private fun SettingRow(
 }
 
 @Composable
-private fun SimpleRow(
-    left: String,
-    subtitle: String,
-    value: String,
-    valueColor: Color,
-) {
-    val cs = MaterialTheme.colorScheme
-    Row(
-        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 12.dp),
-        verticalAlignment = Alignment.CenterVertically,
-    ) {
-        Column(Modifier.weight(1f)) {
-            Text(left, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.Medium)
-            Text(subtitle, style = MaterialTheme.typography.bodySmall, color = cs.onSurfaceVariant)
-        }
-        Text(value, style = MaterialTheme.typography.bodyMedium, color = valueColor, fontWeight = FontWeight.SemiBold)
-    }
-}
-
-@Composable
 private fun SectionHeader(title: String) {
-    Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Text(
+        title,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.Bold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(bottom = 8.dp),
+    )
 }
