@@ -27,8 +27,8 @@ type Slide = {
   footer?: string;
 };
 
-/** Snapshot from production Supabase (2026-07-23). Recalc before investor meetings. */
-const STATS_AS_OF = '23 Ιουλ 2026';
+/** Snapshot from production Supabase (2026-08-23). Recalc before investor meetings. */
+const STATS_AS_OF = '23 Αυγ 2026';
 
 const SLIDES: Slide[] = [
   {
@@ -68,7 +68,7 @@ const SLIDES: Slide[] = [
     bullets: [
       'Πελάτης — browse, checkout, tracking, wallet',
       'Κατάστημα — multi-store portal, μενού, ώρες, wallet',
-      'Οδηγός — online, offers, χάρτης, Χρήματα',
+      'Οδηγός — online, offers, χάρτης, Χρήματα, κλήσεις καταστημάτων (K ρόλος)',
       'Admin — dispatch, οικονομικά, photos, capacity, cost',
       'Support — tickets, τροποποίηση/ακύρωση, unassign',
     ],
@@ -90,14 +90,14 @@ const SLIDES: Slide[] = [
     eyebrow: `Live snapshot · ${STATS_AS_OF}`,
     title: 'Τι τρέχει σήμερα στην παραγωγή.',
     kpis: [
-      { label: 'Παραγγελίες (σύνολο)', value: '806', hint: '201 παραδομένες' },
-      { label: 'GMV παραδομένων', value: '€3.942', hint: 'μέσο καλάθι ~€19,60' },
-      { label: 'Delivery fees', value: '€544', hint: 'tips €67' },
-      { label: 'Live καταστήματα', value: '5', hint: 'με φωτογραφίες' },
-      { label: 'Οδηγοί', value: '11', hint: 'profiles' },
-      { label: 'Profiles', value: '29', hint: 'όλοι οι ρόλοι' },
+      { label: 'Παραγγελίες (σύνολο)', value: '37', hint: '25 παραδομένες' },
+      { label: 'GMV παραδομένων', value: '€497', hint: 'μέσο καλάθι ~€19,90' },
+      { label: 'Delivery fees', value: '€0', hint: 'tips €1 · fees προσωρινά 0' },
+      { label: 'Live καταστήματα', value: '6', hint: 'ενεργά με μενού' },
+      { label: 'Οδηγοί', value: '25', hint: 'profiles' },
+      { label: 'Profiles', value: '58', hint: 'όλοι οι ρόλοι' },
     ],
-    footer: 'Δεδομένα από Supabase production · Ιούλιος 2026 (κυρίως cash)',
+    footer: 'Δεδομένα από Supabase production · Αύγουστος 2026 (κυρίως cash) · reset δοκιμικών δεδομένων μετά το Ιούλιο',
   },
   {
     id: 'economics',
@@ -157,10 +157,12 @@ const SLIDES: Slide[] = [
     title: 'Έτοιμο για Play / App Store.',
     bullets: [
       'Android signed AAB: com.freshdelivery.customer / .driver',
+      'Native driver app v2.6.8 (Kotlin + Compose · Mapbox · FCM)',
+      'Instant push κλήσεις καταστημάτων → K οδηγοί (FCM + polling fallback)',
+      'Active-job card: αποδοχή / ολοκλήρωση κλήσης μέσα από την εφαρμογή',
       'iOS Xcode projects για Archive σε Mac',
-      'BG location + custom notify sounds',
       'Store portal ως PWA (/store) — χωρίς ξεχωριστό APK',
-      '5 live καταστήματα με logo + cover photos',
+      '6 live καταστήματα με logo + cover photos',
     ],
   },
   {
