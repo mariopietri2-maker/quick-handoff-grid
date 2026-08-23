@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+﻿import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
@@ -37,7 +37,7 @@ function pct(n: number, d: number) {
 }
 
 function euro(n: number) {
-  return `${Number(n || 0).toFixed(2)}€`;
+  return `${Number(n || 0).toFixed(2)}â‚¬`;
 }
 
 function CapCard({
@@ -186,7 +186,7 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
       toast.error(error.message);
       return;
     }
-    toast.success(next ? 'Surge ενεργό' : 'Surge κλειστό');
+    toast.success(next ? 'Surge ÎµÎ½ÎµÏÎ³ÏŒ' : 'Surge ÎºÎ»ÎµÎ¹ÏƒÏ„ÏŒ');
     qc.invalidateQueries({ queryKey: ['admin-capacity'] });
   };
 
@@ -298,7 +298,7 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
   if (isLoading || !model) {
     return (
       <div className="py-16 text-center text-sm text-muted-foreground animate-pulse">
-        Υπολογισμός χωρητικότητας…
+        Î¥Ï€Î¿Î»Î¿Î³Î¹ÏƒÎ¼ÏŒÏ‚ Ï‡Ï‰ÏÎ·Ï„Î¹ÎºÏŒÏ„Î·Ï„Î±Ï‚â€¦
       </div>
     );
   }
@@ -309,18 +309,18 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
     <div className="space-y-4 animate-fade-in">
       <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 className="font-heading font-extrabold text-lg text-foreground">Χωρητικότητα πλατφόρμας</h2>
+          <h2 className="font-heading font-extrabold text-lg text-foreground">Î§Ï‰ÏÎ·Ï„Î¹ÎºÏŒÏ„Î·Ï„Î± Ï€Î»Î±Ï„Ï†ÏŒÏÎ¼Î±Ï‚</h2>
           <p className="text-[12.5px] text-muted-foreground mt-0.5 max-w-2xl">
-            Πόσο μπορεί να αντέξει το σύστημα τώρα — βάσει online οδηγών, ρυθμίσεων stacking/dispatch
-            και μετρημένων ορίων από stress test ({BM.measuredAt}).
+            Î ÏŒÏƒÎ¿ Î¼Ï€Î¿ÏÎµÎ¯ Î½Î± Î±Î½Ï„Î­Î¾ÎµÎ¹ Ï„Î¿ ÏƒÏÏƒÏ„Î·Î¼Î± Ï„ÏŽÏÎ± â€” Î²Î¬ÏƒÎµÎ¹ online Î¿Î´Î·Î³ÏŽÎ½, ÏÏ…Î¸Î¼Î¯ÏƒÎµÏ‰Î½ stacking/dispatch
+            ÎºÎ±Î¹ Î¼ÎµÏ„ÏÎ·Î¼Î­Î½Ï‰Î½ Î¿ÏÎ¯Ï‰Î½ Î±Ï€ÏŒ stress test ({BM.measuredAt}).
           </p>
         </div>
         <div className="flex items-center gap-2">
           <Badge variant="outline" className="tabular-nums text-[10px]">
-            {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString('el-GR') : '—'}
+            {dataUpdatedAt ? new Date(dataUpdatedAt).toLocaleTimeString('el-GR') : 'â€”'}
           </Badge>
           <Button variant="outline" size="sm" disabled={isFetching} onClick={() => void refetch()}>
-            Ανανέωση
+            Î‘Î½Î±Î½Î­Ï‰ÏƒÎ·
           </Button>
         </div>
       </div>
@@ -329,33 +329,33 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-2.5">
         <CapCard
           icon={Gauge}
-          label="Θεωρητικά / ώρα"
+          label="Î˜ÎµÏ‰ÏÎ·Ï„Î¹ÎºÎ¬ / ÏŽÏÎ±"
           value={`${model.theoreticalOph}`}
-          hint={`${model.online} οδηγοί × ${model.effectiveStack} slot × ${Math.round(60 / model.cycleMin)} κύκλοι/ώρα`}
+          hint={`${model.online} Î¿Î´Î·Î³Î¿Î¯ Ã— ${model.effectiveStack} slot Ã— ${Math.round(60 / model.cycleMin)} ÎºÏÎºÎ»Î¿Î¹/ÏŽÏÎ±`}
           tone={model.theoreticalOph > 0 ? 'good' : 'warn'}
         />
         <CapCard
           icon={Package}
-          label="Ανοιχτές τώρα"
+          label="Î‘Î½Î¿Î¹Ï‡Ï„Î­Ï‚ Ï„ÏŽÏÎ±"
           value={`${model.openTotal}`}
-          hint={`${model.assigned} ανατεθειμένες · ${model.unassigned} χωρίς οδηγό`}
+          hint={`${model.assigned} Î±Î½Î±Ï„ÎµÎ¸ÎµÎ¹Î¼Î­Î½ÎµÏ‚ Â· ${model.unassigned} Ï‡Ï‰ÏÎ¯Ï‚ Î¿Î´Î·Î³ÏŒ`}
           tone={model.loadTone}
         />
         <CapCard
           icon={Bike}
-          label="Slots οδηγών"
+          label="Slots Î¿Î´Î·Î³ÏŽÎ½"
           value={`${model.concurrentSlots}`}
           hint={`Utilization ${pct(model.openTotal, Math.max(model.concurrentSlots, 1))}%`}
           tone={model.utilization >= 0.95 ? 'bad' : model.utilization >= 0.75 ? 'warn' : 'good'}
         />
         <CapCard
           icon={Activity}
-          label="Τελευταία ώρα"
+          label="Î¤ÎµÎ»ÎµÏ…Ï„Î±Î¯Î± ÏŽÏÎ±"
           value={`${model.ordersLastHour}`}
           hint={
             model.theoreticalOph > 0
-              ? `Headroom ~${model.headroomOph}/ώρα vs θεωρητικό`
-              : 'Χρειάζονται online οδηγοί'
+              ? `Headroom ~${model.headroomOph}/ÏŽÏÎ± vs Î¸ÎµÏ‰ÏÎ·Ï„Î¹ÎºÏŒ`
+              : 'Î§ÏÎµÎ¹Î¬Î¶Î¿Î½Ï„Î±Î¹ online Î¿Î´Î·Î³Î¿Î¯'
           }
           tone={
             model.theoreticalOph > 0 && model.ordersLastHour > model.theoreticalOph * 0.9
@@ -367,7 +367,7 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
           icon={Radio}
           label="Pending offers"
           value={`${model.pendingOffers}`}
-          hint={`Max wave offers ≈ ${model.maxConcurrentOffers}`}
+          hint={`Max wave offers â‰ˆ ${model.maxConcurrentOffers}`}
           tone={model.pendingOffers > model.maxConcurrentOffers ? 'warn' : 'neutral'}
         />
       </div>
@@ -376,14 +376,14 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
         <div className="flex items-start gap-2 rounded-xl border border-warning/30 bg-warning/10 px-3.5 py-3 text-[13px]">
           <AlertTriangle className="h-4 w-4 text-warning shrink-0 mt-0.5" />
           <p>
-            Κανένας οδηγός online — η θεωρητική χωρητικότητα είναι <strong>0</strong>. Άνοιξε βάρδιες ή
-            δες{' '}
+            ÎšÎ±Î½Î­Î½Î±Ï‚ Î¿Î´Î·Î³ÏŒÏ‚ online â€” Î· Î¸ÎµÏ‰ÏÎ·Ï„Î¹ÎºÎ® Ï‡Ï‰ÏÎ·Ï„Î¹ÎºÏŒÏ„Î·Ï„Î± ÎµÎ¯Î½Î±Î¹ <strong>0</strong>. Î†Î½Î¿Î¹Î¾Îµ Î²Î¬ÏÎ´Î¹ÎµÏ‚ Î®
+            Î´ÎµÏ‚{' '}
             <button
               type="button"
               className="underline font-semibold"
-              onClick={() => onNavigate?.('drivers_live_map')}
+              onClick={() => onNavigate?.('drivers_ioannina_map')}
             >
-              Live χάρτη
+              Live Ï‡Î¬ÏÏ„Î·
             </button>
             .
           </p>
@@ -415,10 +415,10 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
             })}
           </div>
           <p className="text-[11px] text-muted-foreground mt-3">
-            Κύκλος παράδοσης σήμερα: <strong className="text-foreground">{model.cycleMin} λεπτά</strong>
+            ÎšÏÎºÎ»Î¿Ï‚ Ï€Î±ÏÎ¬Î´Î¿ÏƒÎ·Ï‚ ÏƒÎ®Î¼ÎµÏÎ±: <strong className="text-foreground">{model.cycleMin} Î»ÎµÏ€Ï„Î¬</strong>
             {model.cycleSample > 0
-              ? ` (median από ${model.cycleSample} παραδόσεις)`
-              : ` (fallback ${BM.fallbackCycleMinutes}′ — λίγες παραδόσεις σήμερα)`}
+              ? ` (median Î±Ï€ÏŒ ${model.cycleSample} Ï€Î±ÏÎ±Î´ÏŒÏƒÎµÎ¹Ï‚)`
+              : ` (fallback ${BM.fallbackCycleMinutes}â€² â€” Î»Î¯Î³ÎµÏ‚ Ï€Î±ÏÎ±Î´ÏŒÏƒÎµÎ¹Ï‚ ÏƒÎ®Î¼ÎµÏÎ±)`}
           </p>
         </section>
 
@@ -426,36 +426,36 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Bike className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">Στόλος & καταστήματα</h3>
+            <h3 className="font-semibold text-sm">Î£Ï„ÏŒÎ»Î¿Ï‚ & ÎºÎ±Ï„Î±ÏƒÏ„Î®Î¼Î±Ï„Î±</h3>
           </div>
           <CapRow
-            label="Online οδηγοί"
+            label="Online Î¿Î´Î·Î³Î¿Î¯"
             value={`${model.online}`}
-            sub={`${model.onBreak} σε διάλειμμα · ${model.offlineActive} ενεργά προφίλ`}
+            sub={`${model.onBreak} ÏƒÎµ Î´Î¹Î¬Î»ÎµÎ¹Î¼Î¼Î± Â· ${model.offlineActive} ÎµÎ½ÎµÏÎ³Î¬ Ï€ÏÎ¿Ï†Î¯Î»`}
           />
           <CapRow
             label="Supply ratio"
             value={`${model.online} / ${model.supplyNeeded}`}
-            sub={`Κανόνας: 1 οδηγός ≈ ${BM.ordersPerDriverConcurrent} ανοιχτές παραγγελίες`}
+            sub={`ÎšÎ±Î½ÏŒÎ½Î±Ï‚: 1 Î¿Î´Î·Î³ÏŒÏ‚ â‰ˆ ${BM.ordersPerDriverConcurrent} Î±Î½Î¿Î¹Ï‡Ï„Î­Ï‚ Ï€Î±ÏÎ±Î³Î³ÎµÎ»Î¯ÎµÏ‚`}
           />
           <CapRow
-            label="Ενεργά καταστήματα"
+            label="Î•Î½ÎµÏÎ³Î¬ ÎºÎ±Ï„Î±ÏƒÏ„Î®Î¼Î±Ï„Î±"
             value={`${model.activeStores}`}
             sub={
               model.busyStores > 0
-                ? `${model.busyStores} σε busy mode · avg prep buffer ${model.avgPrep}′`
-                : `Avg prep buffer ${model.avgPrep}′`
+                ? `${model.busyStores} ÏƒÎµ busy mode Â· avg prep buffer ${model.avgPrep}â€²`
+                : `Avg prep buffer ${model.avgPrep}â€²`
             }
           />
           <CapRow
-            label="Ζώνες παράδοσης"
+            label="Î–ÏŽÎ½ÎµÏ‚ Ï€Î±ÏÎ¬Î´Î¿ÏƒÎ·Ï‚"
             value={`${model.zones.length}`}
-            sub={model.zones.map((z) => z.city || z.name || '—').slice(0, 3).join(' · ') || '—'}
+            sub={model.zones.map((z) => z.city || z.name || 'â€”').slice(0, 3).join(' Â· ') || 'â€”'}
           />
           <CapRow
-            label="Ταμείο κοντά στο όριο"
+            label="Î¤Î±Î¼ÎµÎ¯Î¿ ÎºÎ¿Î½Ï„Î¬ ÏƒÏ„Î¿ ÏŒÏÎ¹Î¿"
             value={`${model.nearCash} / ${model.atCash} capped`}
-            sub={`Όριο μετρητών ${euro(model.cashCap)} ανά βάρδια`}
+            sub={`ÎŒÏÎ¹Î¿ Î¼ÎµÏ„ÏÎ·Ï„ÏŽÎ½ ${euro(model.cashCap)} Î±Î½Î¬ Î²Î¬ÏÎ´Î¹Î±`}
           />
         </section>
       </div>
@@ -466,42 +466,42 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Settings2 className="h-4 w-4 text-primary" />
-              <h3 className="font-semibold text-sm">Ρυθμισμένα caps</h3>
+              <h3 className="font-semibold text-sm">Î¡Ï…Î¸Î¼Î¹ÏƒÎ¼Î­Î½Î± caps</h3>
             </div>
             <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => onNavigate?.('delivery_control')}>
-              Dispatch →
+              Dispatch â†’
             </Button>
           </div>
           <CapRow
             label="Stacking"
-            value={model.stackingOn ? `ON · max ${model.stack}` : `OFF · 1 / οδηγό`}
+            value={model.stackingOn ? `ON Â· max ${model.stack}` : `OFF Â· 1 / Î¿Î´Î·Î³ÏŒ`}
             sub={
               s?.stack_max_detour_minutes != null
-                ? `Max detour ${s.stack_max_detour_minutes}′`
+                ? `Max detour ${s.stack_max_detour_minutes}â€²`
                 : undefined
             }
           />
-          <CapRow label="Max cash / βάρδια" value={euro(model.cashCap)} />
+          <CapRow label="Max cash / Î²Î¬ÏÎ´Î¹Î±" value={euro(model.cashCap)} />
           <CapRow
             label="Auto-dispatch"
-            value={s?.auto_dispatch_enabled ? 'ΕΝΕΡΓΟ' : 'ΚΛΕΙΣΤΟ'}
-            sub={`Mode: ${s?.assignment_mode || '—'}`}
+            value={s?.auto_dispatch_enabled ? 'Î•ÎÎ•Î¡Î“ÎŸ' : 'ÎšÎ›Î•Î™Î£Î¤ÎŸ'}
+            sub={`Mode: ${s?.assignment_mode || 'â€”'}`}
           />
           <CapRow
             label="Dispatch lead"
-            value={`${s?.dispatch_lead_minutes ?? '—'}′`}
-            sub="Λεπτά πριν το ready"
+            value={`${s?.dispatch_lead_minutes ?? 'â€”'}â€²`}
+            sub="Î›ÎµÏ€Ï„Î¬ Ï€ÏÎ¹Î½ Ï„Î¿ ready"
           />
           <CapRow
             label="Offer waves"
-            value={`${model.waveSize} × ${model.maxWaves}`}
-            sub={`Timeout ${s?.dist_offer_timeout_seconds ?? '—'}s · radius ${s?.dist_search_radius_km ?? '—'} km`}
+            value={`${model.waveSize} Ã— ${model.maxWaves}`}
+            sub={`Timeout ${s?.dist_offer_timeout_seconds ?? 'â€”'}s Â· radius ${s?.dist_search_radius_km ?? 'â€”'} km`}
           />
           <div className="flex items-start justify-between gap-3 py-2 border-b border-border/60">
             <div className="min-w-0">
               <p className="text-[13px] font-medium text-foreground">Surge</p>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Peak / demand multipliers · off by default
+                Peak / demand multipliers Â· off by default
               </p>
             </div>
             <Switch
@@ -512,7 +512,7 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
           </div>
           <CapRow
             label="Maintenance"
-            value={s?.maintenance_mode ? 'ΝΑΙ' : 'Όχι'}
+            value={s?.maintenance_mode ? 'ÎÎ‘Î™' : 'ÎŒÏ‡Î¹'}
           />
         </section>
 
@@ -521,10 +521,10 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
           <div className="flex items-center justify-between mb-3">
             <div className="flex items-center gap-2">
               <Banknote className="h-4 w-4 text-primary" />
-              <h3 className="font-semibold text-sm">Τιμές / αμοιβές</h3>
+              <h3 className="font-semibold text-sm">Î¤Î¹Î¼Î­Ï‚ / Î±Î¼Î¿Î¹Î²Î­Ï‚</h3>
             </div>
             <Button variant="ghost" size="sm" className="h-7 text-[11px]" onClick={() => onNavigate?.('pricing')}>
-              Τιμολόγηση →
+              Î¤Î¹Î¼Î¿Î»ÏŒÎ³Î·ÏƒÎ· â†’
             </Button>
           </div>
           <CapRow label="Customer base fee" value={euro(Number(s?.customer_base_fee ?? 0))} />
@@ -533,8 +533,8 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
           <CapRow label="Driver base pay" value={euro(Number(s?.base_pay ?? 0))} />
           <CapRow label="Driver / km" value={euro(Number(s?.per_km_rate ?? 0))} />
           <CapRow
-            label="Driver min → max"
-            value={`${euro(Number(s?.min_pay ?? 0))} → ${euro(Number(s?.max_pay ?? 0))}`}
+            label="Driver min â†’ max"
+            value={`${euro(Number(s?.min_pay ?? 0))} â†’ ${euro(Number(s?.max_pay ?? 0))}`}
           />
         </section>
 
@@ -542,41 +542,41 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
         <section className="rounded-xl border border-border bg-card p-4">
           <div className="flex items-center gap-2 mb-3">
             <Server className="h-4 w-4 text-primary" />
-            <h3 className="font-semibold text-sm">Υποδομή (μετρημένα)</h3>
+            <h3 className="font-semibold text-sm">Î¥Ï€Î¿Î´Î¿Î¼Î® (Î¼ÎµÏ„ÏÎ·Î¼Î­Î½Î±)</h3>
           </div>
           <CapRow
             label="place_order burst"
             value={`~${BM.placeOrderBurstRps}/s`}
-            sub={`p50 ${BM.placeOrderP50Ms}ms · p95 ${BM.placeOrderP95Ms}ms · ${BM.placeOrderBurstConcurrency} concurrent`}
+            sub={`p50 ${BM.placeOrderP50Ms}ms Â· p95 ${BM.placeOrderP95Ms}ms Â· ${BM.placeOrderBurstConcurrency} concurrent`}
           />
           <CapRow
-            label="Ασφαλές ρυθμός ops"
-            value={`~${BM.safePlacePerMinute}/λεπτό`}
-            sub={`~${BM.safePlacePerHour.toLocaleString('el-GR')} / ώρα (load-sim target)`}
+            label="Î‘ÏƒÏ†Î±Î»Î­Ï‚ ÏÏ…Î¸Î¼ÏŒÏ‚ ops"
+            value={`~${BM.safePlacePerMinute}/Î»ÎµÏ€Ï„ÏŒ`}
+            sub={`~${BM.safePlacePerHour.toLocaleString('el-GR')} / ÏŽÏÎ± (load-sim target)`}
           />
           <CapRow
             label="Read mix (SPA+API)"
             value={`~${BM.readMixRps} rps`}
-            sub={`SPA p50 ~${BM.spaP50Ms}ms · PostgREST p95 ~${BM.postgrestP95Ms}ms`}
+            sub={`SPA p50 ~${BM.spaP50Ms}ms Â· PostgREST p95 ~${BM.postgrestP95Ms}ms`}
           />
           <CapRow
             label="Mapbox token edge"
-            value={`≲ ${BM.mapboxHealthyRps} rps`}
+            value={`â‰² ${BM.mapboxHealthyRps} rps`}
             sub={BM.mapboxNote}
           />
           <CapRow
-            label="GPS writes / λεπτό"
+            label="GPS writes / Î»ÎµÏ€Ï„ÏŒ"
             value={`${model.gpsWritesPerMin}`}
             sub={
               guardrails.realtimeLocationsEnabled
-                ? `Interval ${guardrails.driverLocationIntervalSec}s × ${model.online} online`
-                : 'Location realtime απενεργοποιημένο'
+                ? `Interval ${guardrails.driverLocationIntervalSec}s Ã— ${model.online} online`
+                : 'Location realtime Î±Ï€ÎµÎ½ÎµÏÎ³Î¿Ï€Î¿Î¹Î·Î¼Î­Î½Î¿'
             }
           />
           <CapRow
             label="AI daily cap"
             value={`${guardrails.aiDailyCallCap}`}
-            sub={`Budget ${guardrails.dailyBudgetCredits} credits/ημέρα · soft throttle @ ${guardrails.softThrottlePct}%`}
+            sub={`Budget ${guardrails.dailyBudgetCredits} credits/Î·Î¼Î­ÏÎ± Â· soft throttle @ ${guardrails.softThrottlePct}%`}
           />
         </section>
       </div>
@@ -585,28 +585,28 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
       <section className="rounded-xl border border-dashed border-border bg-muted/30 p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold text-sm">Πώς υπολογίζεται</h3>
+          <h3 className="font-semibold text-sm">Î ÏŽÏ‚ Ï…Ï€Î¿Î»Î¿Î³Î¯Î¶ÎµÏ„Î±Î¹</h3>
         </div>
         <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-          <strong className="text-foreground">Θεωρητικά παραγγελίες/ώρα</strong> = online οδηγοί ×
-          effective stack ({model.effectiveStack}) × (60 ÷ μέσος κύκλος {model.cycleMin}′).
-          Αυτό είναι το πρακτικό όριο παράδοσης με τον τρέχοντα στόλο — όχι το όριο της βάσης
-          (που άντεξε ~{BM.placeOrderBurstRps} place/s στο stress test).
+          <strong className="text-foreground">Î˜ÎµÏ‰ÏÎ·Ï„Î¹ÎºÎ¬ Ï€Î±ÏÎ±Î³Î³ÎµÎ»Î¯ÎµÏ‚/ÏŽÏÎ±</strong> = online Î¿Î´Î·Î³Î¿Î¯ Ã—
+          effective stack ({model.effectiveStack}) Ã— (60 Ã· Î¼Î­ÏƒÎ¿Ï‚ ÎºÏÎºÎ»Î¿Ï‚ {model.cycleMin}â€²).
+          Î‘Ï…Ï„ÏŒ ÎµÎ¯Î½Î±Î¹ Ï„Î¿ Ï€ÏÎ±ÎºÏ„Î¹ÎºÏŒ ÏŒÏÎ¹Î¿ Ï€Î±ÏÎ¬Î´Î¿ÏƒÎ·Ï‚ Î¼Îµ Ï„Î¿Î½ Ï„ÏÎ­Ï‡Î¿Î½Ï„Î± ÏƒÏ„ÏŒÎ»Î¿ â€” ÏŒÏ‡Î¹ Ï„Î¿ ÏŒÏÎ¹Î¿ Ï„Î·Ï‚ Î²Î¬ÏƒÎ·Ï‚
+          (Ï€Î¿Ï… Î¬Î½Ï„ÎµÎ¾Îµ ~{BM.placeOrderBurstRps} place/s ÏƒÏ„Î¿ stress test).
         </p>
         <p className="text-[12.5px] text-muted-foreground leading-relaxed">
-          Αν ανοίξουν περισσότεροι οδηγοί ή μειωθεί ο κύκλος (γρηγορότερα stores / μικρότερες
-          αποστάσεις), η χωρητικότητα ανεβαίνει γραμμικά. Το cash cap ({euro(model.cashCap)}) μπορεί
-          να κόψει οδηγούς από νέες παραγγελίες ακόμα κι αν υπάρχουν slots.
+          Î‘Î½ Î±Î½Î¿Î¯Î¾Î¿Ï…Î½ Ï€ÎµÏÎ¹ÏƒÏƒÏŒÏ„ÎµÏÎ¿Î¹ Î¿Î´Î·Î³Î¿Î¯ Î® Î¼ÎµÎ¹Ï‰Î¸ÎµÎ¯ Î¿ ÎºÏÎºÎ»Î¿Ï‚ (Î³ÏÎ·Î³Î¿ÏÏŒÏ„ÎµÏÎ± stores / Î¼Î¹ÎºÏÏŒÏ„ÎµÏÎµÏ‚
+          Î±Ï€Î¿ÏƒÏ„Î¬ÏƒÎµÎ¹Ï‚), Î· Ï‡Ï‰ÏÎ·Ï„Î¹ÎºÏŒÏ„Î·Ï„Î± Î±Î½ÎµÎ²Î±Î¯Î½ÎµÎ¹ Î³ÏÎ±Î¼Î¼Î¹ÎºÎ¬. Î¤Î¿ cash cap ({euro(model.cashCap)}) Î¼Ï€Î¿ÏÎµÎ¯
+          Î½Î± ÎºÏŒÏˆÎµÎ¹ Î¿Î´Î·Î³Î¿ÏÏ‚ Î±Ï€ÏŒ Î½Î­ÎµÏ‚ Ï€Î±ÏÎ±Î³Î³ÎµÎ»Î¯ÎµÏ‚ Î±ÎºÏŒÎ¼Î± ÎºÎ¹ Î±Î½ Ï…Ï€Î¬ÏÏ‡Î¿Ï…Î½ slots.
         </p>
         <div className="flex flex-wrap gap-2 pt-1">
           <Button size="sm" variant="outline" onClick={() => onNavigate?.('delivery_control')}>
             <Waves className="h-3.5 w-3.5 mr-1.5" /> Dispatch
           </Button>
-          <Button size="sm" variant="outline" onClick={() => onNavigate?.('drivers_live_map')}>
-            <MapPin className="h-3.5 w-3.5 mr-1.5" /> Live χάρτης
+          <Button size="sm" variant="outline" onClick={() => onNavigate?.('drivers_ioannina_map')}>
+            <MapPin className="h-3.5 w-3.5 mr-1.5" /> Live Ï‡Î¬ÏÏ„Î·Ï‚
           </Button>
           <Button size="sm" variant="outline" onClick={() => onNavigate?.('service_zones')}>
-            <Store className="h-3.5 w-3.5 mr-1.5" /> Ζώνες
+            <Store className="h-3.5 w-3.5 mr-1.5" /> Î–ÏŽÎ½ÎµÏ‚
           </Button>
           <Button size="sm" variant="outline" onClick={() => onNavigate?.('cloud_usage')}>
             <Clock className="h-3.5 w-3.5 mr-1.5" /> Cloud usage

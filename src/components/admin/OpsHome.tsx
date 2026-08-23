@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+﻿import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
 import { TrendingUp, TrendingDown, Activity, Clock, CheckCircle2, Star, Wallet, Zap, LayoutGrid, MapPin } from 'lucide-react';
@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/button';
 import { subDays, startOfDay } from 'date-fns';
 
 /**
- * Admin ops home — KPI strip + driver supply + shortcuts.
+ * Admin ops home â€” KPI strip + driver supply + shortcuts.
  * Kanban / live map live in their own tabs (no duplicates here).
  */
 
@@ -182,7 +182,7 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
     const onTimePrev = onTimeSeries[onTimeSeries.length - 2];
     const onTimeTrend = onTimePrev === 0 ? 0 : ((onTimeToday - onTimePrev) / onTimePrev) * 100;
 
-    // Avg delivery time (created → delivered)
+    // Avg delivery time (created â†’ delivered)
     const avgDeliverySeries = days.map(({ orders }) => {
       const delivered = orders.filter((o: any) => o.status === 'delivered');
       if (delivered.length === 0) return 0;
@@ -199,7 +199,7 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
     const revPrev = revSeries[revSeries.length - 2];
     const revTrend = revPrev === 0 ? 0 : ((revToday - revPrev) / revPrev) * 100;
 
-    // Driver utilization (online drivers vs orders/day) — proxy: live online %
+    // Driver utilization (online drivers vs orders/day) â€” proxy: live online %
     const onlineNow = data.states.filter((s: any) => !!s.shift_started_at && !s.on_break).length;
     const utilSeries = days.map(({ orders }) => Math.min(100, orders.length * 8)); // crude proxy
 
@@ -230,7 +230,7 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
         <KpiCard
           label="Acceptance rate"
           value={`${metrics.acceptance.value.toFixed(0)}%`}
-          target="≥ 90%"
+          target="â‰¥ 90%"
           trend={metrics.acceptance.trend}
           values={metrics.acceptance.series}
           tone={metrics.acceptance.value >= 90 ? 'good' : metrics.acceptance.value >= 75 ? 'warn' : 'bad'}
@@ -239,7 +239,7 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
         <KpiCard
           label="On-time delivery"
           value={`${metrics.onTime.value.toFixed(0)}%`}
-          target="≥ 95%"
+          target="â‰¥ 95%"
           trend={metrics.onTime.trend}
           values={metrics.onTime.series}
           tone={metrics.onTime.value >= 95 ? 'good' : metrics.onTime.value >= 85 ? 'warn' : 'bad'}
@@ -248,14 +248,14 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
         <KpiCard
           label="Avg delivery time"
           value={`${metrics.avgDelivery.value.toFixed(0)}'`}
-          target="≤ 30'"
+          target="â‰¤ 30'"
           values={metrics.avgDelivery.series}
           tone={metrics.avgDelivery.value <= 30 ? 'good' : metrics.avgDelivery.value <= 45 ? 'warn' : 'bad'}
           icon={Activity}
         />
         <KpiCard
-          label="Revenue σήμερα"
-          value={`€${metrics.revenue.value.toFixed(0)}`}
+          label="Revenue ÏƒÎ®Î¼ÎµÏÎ±"
+          value={`â‚¬${metrics.revenue.value.toFixed(0)}`}
           trend={metrics.revenue.trend}
           values={metrics.revenue.series}
           tone="neutral"
@@ -270,22 +270,22 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
         />
       </div>
 
-      {/* Shortcuts + supply — no duplicate Kanban here */}
+      {/* Shortcuts + supply â€” no duplicate Kanban here */}
       <div className="grid grid-cols-1 xl:grid-cols-[1fr_320px] gap-3.5">
         <div className="min-w-0 space-y-3">
           <div className="rounded-xl border border-border bg-card p-4 space-y-3">
             <div className="flex items-center justify-between gap-2 flex-wrap">
               <div>
-                <p className="font-heading font-bold text-sm">Γρήγορες ενέργειες</p>
+                <p className="font-heading font-bold text-sm">Î“ÏÎ®Î³Î¿ÏÎµÏ‚ ÎµÎ½Î­ÏÎ³ÎµÎ¹ÎµÏ‚</p>
                 <p className="text-xs text-muted-foreground">
                   {metrics.unassignedReady > 0
-                    ? `${metrics.unassignedReady} έτοιμες χωρίς οδηγό · ${metrics.pendingOffers} ενεργές προσφορές`
-                    : `${metrics.pendingOffers} ενεργές προσφορές`}
+                    ? `${metrics.unassignedReady} Î­Ï„Î¿Î¹Î¼ÎµÏ‚ Ï‡Ï‰ÏÎ¯Ï‚ Î¿Î´Î·Î³ÏŒ Â· ${metrics.pendingOffers} ÎµÎ½ÎµÏÎ³Î­Ï‚ Ï€ÏÎ¿ÏƒÏ†Î¿ÏÎ­Ï‚`
+                    : `${metrics.pendingOffers} ÎµÎ½ÎµÏÎ³Î­Ï‚ Ï€ÏÎ¿ÏƒÏ†Î¿ÏÎ­Ï‚`}
                 </p>
               </div>
               {metrics.unassignedReady > 0 && (
                 <span className="text-[11px] font-semibold text-amber-700 dark:text-amber-400 bg-amber-500/10 border border-amber-500/30 rounded-full px-2.5 py-1">
-                  Χρειάζεται dispatch
+                  Î§ÏÎµÎ¹Î¬Î¶ÎµÏ„Î±Î¹ dispatch
                 </span>
               )}
             </div>
@@ -294,13 +294,13 @@ export default function OpsHome({ onNavigate }: { onNavigate?: (tab: string) => 
                 <Zap className="h-3.5 w-3.5 mr-1.5" /> Dispatch
               </Button>
               <Button size="sm" variant="outline" onClick={() => onNavigate?.('capacity')}>
-                <Activity className="h-3.5 w-3.5 mr-1.5" /> Χωρητικότητα
+                <Activity className="h-3.5 w-3.5 mr-1.5" /> Î§Ï‰ÏÎ·Ï„Î¹ÎºÏŒÏ„Î·Ï„Î±
               </Button>
               <Button size="sm" variant="outline" onClick={() => onNavigate?.('orders')}>
                 <LayoutGrid className="h-3.5 w-3.5 mr-1.5" /> Pipeline
               </Button>
-              <Button size="sm" variant="outline" onClick={() => onNavigate?.('drivers_live_map')}>
-                <MapPin className="h-3.5 w-3.5 mr-1.5" /> Live χάρτης
+              <Button size="sm" variant="outline" onClick={() => onNavigate?.('drivers_ioannina_map')}>
+                <MapPin className="h-3.5 w-3.5 mr-1.5" /> Live Ï‡Î¬ÏÏ„Î·Ï‚
               </Button>
             </div>
           </div>
