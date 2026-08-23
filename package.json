@@ -22,7 +22,8 @@
     "mobile:fcm-secret": "./scripts/set-fcm-secret.sh",
     "mobile:play-setup": "./scripts/setup-play-signing.sh",
     "mobile:play-aab": "./scripts/build-store-aabs.sh",
-    "mobile:ios-sync": "./scripts/sync-ios-apps.sh"
+    "mobile:ios-sync": "./scripts/sync-ios-apps.sh",
+    "start": "node scripts/serve-dist.mjs"
   },
   "dependencies": {
     "@capacitor/android": "^8.3.1",
