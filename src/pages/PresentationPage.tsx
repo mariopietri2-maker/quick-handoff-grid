@@ -81,7 +81,7 @@ const SLIDES: Slide[] = [
       'Frontend: React 18 · Vite · TypeScript · Tailwind · Capacitor 8',
       'Backend: Supabase (Postgres, Auth, Realtime, Edge Functions, RLS)',
       'Maps: Mapbox · Push: Firebase FCM · Payments: Stripe',
-      'Host: Vercel (SPA) · Mobile: Android AAB + iOS Xcode projects',
+      'Host: Railway (SPA · usage-based containers) · Mobile: Android AAB + iOS Xcode projects',
       'Service area: κλειδωμένη ζώνη Ιωαννίνων',
     ],
   },
@@ -117,7 +117,7 @@ const SLIDES: Slide[] = [
     eyebrow: 'Μηνιακό κόστος υποδομής',
     title: 'Εκτίμηση fixed costs σε soft-launch / early scale.',
     table: [
-      { label: 'Vercel (SPA host)', value: '€0–20', note: 'Free → Hobby ανά traffic' },
+      { label: 'Railway (SPA host)', value: '€5–25', note: 'Hobby $5/μήνα με included usage · usage-based μετά' },
       { label: 'Supabase', value: '€0–25', note: 'Free → Pro ($25) όταν ξεπεράσεις limits' },
       { label: 'Mapbox', value: '€0–40', note: 'Free tier · μετά pay-as-you-go' },
       { label: 'Firebase / FCM', value: '€0–10', note: 'σχεδόν δωρεάν σε early volume' },
@@ -135,7 +135,7 @@ const SLIDES: Slide[] = [
     table: [
       { label: 'Έως 500 χρήστες', value: '€0–40', note: '~200 παραγγελίες/μήνα · όλα τα free tiers (Vercel, Supabase, Mapbox 25k loads)' },
       { label: '~1.000 χρήστες', value: '€25–75', note: '~500 παραγγελίες · πιθανό Supabase Pro ($25)' },
-      { label: '~5.000 χρήστες', value: '€65–160', note: '~2.500 παραγγελίες · + Vercel Pro $20, Mapbox pay-as-you-go' },
+      { label: '~5.000 χρήστες', value: '€65–160', note: '~2.500 παραγγελίες · + Railway usage-based, Mapbox pay-as-you-go' },
       { label: '~20.000 χρήστες', value: '€130–380', note: '~10.000 παραγγελίες · + compute add-on Supabase, egress overages' },
       { label: '~100.000 χρήστες', value: '€450–1.200', note: '~50.000 παραγγελίες · dedicated compute, CDN, support SLA' },
     ],
@@ -190,7 +190,7 @@ const SLIDES: Slide[] = [
       'Περισσότερα καταστήματα Ιωαννίνων + driver onboarding',
       'Privacy policy / Data safety / screenshots για review',
     ],
-    footer: 'freshdelivery · fresh-delivery-rho.vercel.app',
+    footer: 'freshdelivery · web στο Railway',
   },
 ];
 
