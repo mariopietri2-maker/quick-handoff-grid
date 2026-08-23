@@ -2,7 +2,7 @@
 nixPkgs = ["nodejs_20"]
 
 [phases.install]
-cmds = ["npm ci", "cd plugins/capacitor-mapbox-maps && npm ci"]
+cmds = ["npm ci", "cd plugins/capacitor-mapbox-maps && npm install"]
 
 [phases.build]
 cmds = ["npm run build"]
