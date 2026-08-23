@@ -168,7 +168,7 @@ export function useAdminData() {
         .select(DRIVER_PROFILE_SELECT)
         .order('created_at', { ascending: false });
       if (error) throw error;
-      return (data ?? []) as DriverProfileRow[];
+      return (data ?? []) as unknown as DriverProfileRow[];
     },
   });
 
