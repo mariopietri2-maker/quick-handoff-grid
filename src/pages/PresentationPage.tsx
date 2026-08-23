@@ -129,6 +129,20 @@ const SLIDES: Slide[] = [
     footer: 'Μεταβλητά: Stripe ~1,4% + €0,25 / card · SMS/email αν ενεργοποιηθούν',
   },
   {
+    id: 'scaling',
+    eyebrow: 'Κόστος ανά κλίμακα',
+    title: 'Πόσο κοστίζει η πλατφόρμα τον μήνα, με βάση τους χρήστες.',
+    table: [
+      { label: 'Έως 500 χρήστες', value: '€0–40', note: '~200 παραγγελίες/μήνα · όλα τα free tiers (Vercel, Supabase, Mapbox 25k loads)' },
+      { label: '~1.000 χρήστες', value: '€25–75', note: '~500 παραγγελίες · πιθανό Supabase Pro ($25)' },
+      { label: '~5.000 χρήστες', value: '€65–160', note: '~2.500 παραγγελίες · + Vercel Pro $20, Mapbox pay-as-you-go' },
+      { label: '~20.000 χρήστες', value: '€130–380', note: '~10.000 παραγγελίες · + compute add-on Supabase, egress overages' },
+      { label: '~100.000 χρήστες', value: '€450–1.200', note: '~50.000 παραγγελίες · dedicated compute, CDN, support SLA' },
+    ],
+    footer:
+      'Βάσεις: ~5 MB egress/παραγγελία · 1–2 map loads/παραγγελία · FCM push δωρεάν · Stripe 1,5% + €0,25 μόνο σε κάρτες (καλύπτεται από προμήθεια ~€8,5/παραγγελία στο μέσο καλάθι €19,90). Infra = €0,02–0,06 ανά παραγγελία.',
+  },
+  {
     id: 'unit',
     eyebrow: 'Unit economics (παράδειγμα)',
     title: 'Σε €20 καλάθι με delivery, το δίκτυο πληρώνει όλους.',
