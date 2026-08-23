@@ -1,10 +1,21 @@
 import { useMemo, useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { Switch } from '@/components/ui/switch';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import { supabase } from '@/integrations/supabase/client';
 import { formatDriverCode } from '@/lib/driver-code';
 import type { DriverProfileRow } from '@/hooks/useAdminData';
-import { ExternalLink, FileText, IdCard, Search, User } from 'lucide-react';
+import { ExternalLink, FileText, IdCard, Pencil, Search, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { el } from 'date-fns/locale';
 
@@ -22,13 +33,61 @@ type Props = {
   driverProfiles: DriverProfileRow[] | undefined;
 };
 
+type FormState = {
+  full_name: string;
+  phone: string;
+  secondary_phone: string;
+  home_address: string;
+  date_of_birth: string;
+  emergency_contact_name: string;
+  emergency_contact_phone: string;
+  vehicle_type: string;
+  vehicle_make: string;
+  vehicle_model: string;
+  vehicle_year: string;
+  vehicle_color: string;
+  license_plate: string;
+  license_number: string;
+  license_expiry: string;
+  iban: string;
+  bank_name: string;
+  account_holder: string;
+};
+
 function docStatus(url: string | null | undefined) {
   return url && url.trim().length > 0;
 }
 
+const emptyForm: FormState = {
+  full_name: '',
+  phone: '',
+  secondary_phone: '',
+  home_address: '',
+  date_of_birth: '',
+  emergency_contact_name: '',
+  emergency_contact_phone: '',
+  vehicle_type: '',
+  vehicle_make: '',
+  vehicle_model: '',
+  vehicle_year: '',
+  vehicle_color: '',
+  license_plate: '',
+  license_number: '',
+  license_expiry: '',
+  iban: '',
+  bank_name: '',
+  account_holder: '',
+};
+
 export default function DriverRegistryPanel({ profiles, driverProfiles }: Props) {
+  const queryClient = useQueryClient();
   const [q, setQ] = useState('');
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<FormState>(emptyForm);
+  const [isActive, setIsActive] = useState(true);
+  const [callRole, setCallRole] = useState<string>('standard');
+  const [saving, setSaving] = useState(false);
 
   const rows = useMemo(() => {
     const dpByUser = new Map((driverProfiles ?? []).map((d) => [d.user_id, d]));
@@ -60,6 +119,97 @@ export default function DriverRegistryPanel({ profiles, driverProfiles }: Props)
 
   const selected = rows.find((r) => r.profile.user_id === selectedId) ?? rows[0] ?? null;
 
+  function startEdit() {
+    if (!selected) return;
+    const d = selected.dp;
+    setForm({
+      full_name: selected.profile.full_name ?? '',
+      phone: selected.profile.phone ?? '',
+      secondary_phone: d?.secondary_phone ?? '',
+      home_address: d?.home_address ?? '',
+      date_of_birth: d?.date_of_birth ?? '',
+      emergency_contact_name: d?.emergency_contact_name ?? '',
+      emergency_contact_phone: d?.emergency_contact_phone ?? '',
+      vehicle_type: d?.vehicle_type ?? '',
+      vehicle_make: d?.vehicle_make ?? '',
+      vehicle_model: d?.vehicle_model ?? '',
+      vehicle_year: d?.vehicle_year != null ? String(d.vehicle_year) : '',
+      vehicle_color: d?.vehicle_color ?? '',
+      license_plate: d?.license_plate ?? '',
+      license_number: d?.license_number ?? '',
+      license_expiry: d?.license_expiry ?? '',
+      iban: d?.iban ?? '',
+      bank_name: d?.bank_name ?? '',
+      account_holder: d?.account_holder ?? '',
+    });
+    setIsActive(d?.is_active !== false);
+    setCallRole(d?.call_role || 'standard');
+    setEditing(true);
+  }
+
+  async function save() {
+    if (!selected) return;
+    const uid = selected.profile.user_id;
+    setSaving(true);
+    try {
+      const nameChanged =
+        form.full_name !== (selected.profile.full_name ?? '') ||
+        form.phone !== (selected.profile.phone ?? '');
+      if (nameChanged) {
+        const { error } = await supabase
+          .from('profiles')
+          .update({ full_name: form.full_name.trim() || null, phone: form.phone.trim() || null })
+          .eq('user_id', uid);
+        if (error) throw error;
+      }
+
+      const dpPatch: Record<string, unknown> = {};
+      const d = selected.dp;
+      const put = (k: keyof FormState, cur: unknown) => {
+        const v = form[k].trim();
+        if (v !== (cur == null ? '' : String(cur))) dpPatch[k] = v === '' ? null : v;
+      };
+      put('secondary_phone', d?.secondary_phone);
+      put('home_address', d?.home_address);
+      put('date_of_birth', d?.date_of_birth);
+      put('emergency_contact_name', d?.emergency_contact_name);
+      put('emergency_contact_phone', d?.emergency_contact_phone);
+      put('vehicle_type', d?.vehicle_type);
+      put('vehicle_make', d?.vehicle_make);
+      put('vehicle_model', d?.vehicle_model);
+      put('vehicle_year', d?.vehicle_year);
+      put('vehicle_color', d?.vehicle_color);
+      put('license_plate', d?.license_plate);
+      put('license_number', d?.license_number);
+      put('license_expiry', d?.license_expiry);
+      put('iban', d?.iban);
+      put('bank_name', d?.bank_name);
+      put('account_holder', d?.account_holder);
+
+      const activeChanged = isActive !== (d?.is_active !== false);
+      if (activeChanged) dpPatch.is_active = isActive;
+      const roleChanged = callRole !== (d?.call_role || 'standard');
+      if (roleChanged) dpPatch.call_role = callRole;
+
+      if (Object.keys(dpPatch).length) {
+        const { error } = await supabase
+          .from('driver_profiles')
+          .update(dpPatch)
+          .eq('user_id', uid);
+        if (error) throw error;
+      }
+
+      await queryClient.invalidateQueries({ queryKey: ['admin-profiles'] });
+      await queryClient.invalidateQueries({ queryKey: ['admin-driver-profiles'] });
+      toast.success('Το μητρώο ενημερώθηκε');
+      setEditing(false);
+    } catch (e) {
+      toast.error(e instanceof Error ? e.message : 'Αποτυχία αποθήκευσης');
+    } finally {
+      setSaving(false);
+    }
+  }
+
   return (
     <div className="space-y-3">
       <div className="admin-section-header">
@@ -68,7 +218,7 @@ export default function DriverRegistryPanel({ profiles, driverProfiles }: Props)
           <span className="text-[11px] tabular-nums text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
             {rows.length}
           </span>
-          <span className="admin-section-sub truncate">· ID · στοιχεία · έγγραφα</span>
+          <span className="admin-section-sub truncate">· ID · στοιχεία · έγγραφα · επεξεργασία</span>
         </div>
       </div>
 
@@ -102,7 +252,10 @@ export default function DriverRegistryPanel({ profiles, driverProfiles }: Props)
                   <tr
                     key={profile.user_id}
                     className={`cursor-pointer ${active ? 'bg-primary/10' : ''}`}
-                    onClick={() => setSelectedId(profile.user_id)}
+                    onClick={() => {
+                      setSelectedId(profile.user_id);
+                      setEditing(false);
+                    }}
                   >
                     <td>
                       <span className="font-mono text-[11px] text-muted-foreground">
@@ -191,65 +344,137 @@ export default function DriverRegistryPanel({ profiles, driverProfiles }: Props)
                     )}
                   </div>
                 </div>
+                {!editing ? (
+                  <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={startEdit}>
+                    <Pencil className="h-3.5 w-3.5" />
+                    Επεξεργασία
+                  </Button>
+                ) : (
+                  <div className="flex gap-1.5">
+                    <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditing(false)} disabled={saving}>
+                      Άκυρο
+                    </Button>
+                    <Button size="sm" className="h-8" onClick={save} disabled={saving}>
+                      {saving ? 'Αποθήκευση…' : 'Αποθήκευση'}
+                    </Button>
+                  </div>
+                )}
               </div>
 
-              <Section title="Επικοινωνία">
-                <Field label="Τηλέφωνο" value={selected.profile.phone} />
-                <Field label="Δεύτερο τηλ." value={selected.dp?.secondary_phone} />
-                <Field label="Διεύθυνση" value={selected.dp?.home_address} />
-                <Field label="Ημ. γέννησης" value={selected.dp?.date_of_birth} />
-                <Field
-                  label="Έκτακτη επαφή"
-                  value={
-                    [selected.dp?.emergency_contact_name, selected.dp?.emergency_contact_phone]
-                      .filter(Boolean)
-                      .join(' · ') || null
-                  }
-                />
-              </Section>
+              {editing && (
+                <div className="rounded-lg border border-primary/30 bg-primary/5 px-3 py-2 flex flex-wrap items-center gap-x-6 gap-y-2">
+                  <label className="flex items-center gap-2 text-[12.5px]">
+                    <Switch checked={isActive} onCheckedChange={setIsActive} />
+                    Ενεργός λογαριασμός
+                  </label>
+                  <label className="flex items-center gap-2 text-[12.5px]">
+                    Call ρόλος:
+                    <Select value={callRole} onValueChange={setCallRole}>
+                      <SelectTrigger className="h-8 w-[130px] text-[12px]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="standard">Κανονικός</SelectItem>
+                        <SelectItem value="K">K — κλήσεις καταστημάτων</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </label>
+                </div>
+              )}
 
-              <Section title="Όχημα">
-                <Field label="Τύπος" value={selected.dp?.vehicle_type} />
-                <Field
-                  label="Μάρκα / Μοντέλο"
-                  value={
-                    [selected.dp?.vehicle_make, selected.dp?.vehicle_model, selected.dp?.vehicle_year]
-                      .filter(Boolean)
-                      .join(' ') || null
-                  }
-                />
-                <Field label="Χρώμα" value={selected.dp?.vehicle_color} />
-                <Field label="Πινακίδα" value={selected.dp?.license_plate} mono />
-              </Section>
+              {editing ? (
+                <>
+                  <EditSection title="Επικοινωνία">
+                    <EditField label="Ονοματεπώνυμο" value={form.full_name} onChange={(v) => setForm((f) => ({ ...f, full_name: v }))} />
+                    <EditField label="Τηλέφωνο" value={form.phone} onChange={(v) => setForm((f) => ({ ...f, phone: v }))} />
+                    <EditField label="Δεύτερο τηλ." value={form.secondary_phone} onChange={(v) => setForm((f) => ({ ...f, secondary_phone: v }))} />
+                    <EditField label="Διεύθυνση" value={form.home_address} onChange={(v) => setForm((f) => ({ ...f, home_address: v }))} />
+                    <EditField label="Ημ. γέννησης" type="date" value={form.date_of_birth} onChange={(v) => setForm((f) => ({ ...f, date_of_birth: v }))} />
+                    <EditField label="Επικοινωνία έκτακτης ανάγκης" value={form.emergency_contact_name} onChange={(v) => setForm((f) => ({ ...f, emergency_contact_name: v }))} />
+                    <EditField label="Τηλ. έκτακτης ανάγκης" value={form.emergency_contact_phone} onChange={(v) => setForm((f) => ({ ...f, emergency_contact_phone: v }))} />
+                  </EditSection>
 
-              <Section title="Άδεια οδήγησης">
-                <Field label="Αριθμός άδειας" value={selected.dp?.license_number} mono />
-                <Field label="Λήξη" value={selected.dp?.license_expiry} />
-              </Section>
+                  <EditSection title="Όχημα">
+                    <EditField label="Τύπος" value={form.vehicle_type} onChange={(v) => setForm((f) => ({ ...f, vehicle_type: v }))} />
+                    <EditField label="Μάρκα" value={form.vehicle_make} onChange={(v) => setForm((f) => ({ ...f, vehicle_make: v }))} />
+                    <EditField label="Μοντέλο" value={form.vehicle_model} onChange={(v) => setForm((f) => ({ ...f, vehicle_model: v }))} />
+                    <EditField label="Έτος" value={form.vehicle_year} onChange={(v) => setForm((f) => ({ ...f, vehicle_year: v }))} />
+                    <EditField label="Χρώμα" value={form.vehicle_color} onChange={(v) => setForm((f) => ({ ...f, vehicle_color: v }))} />
+                    <EditField label="Πινακίδα" value={form.license_plate} onChange={(v) => setForm((f) => ({ ...f, license_plate: v }))} mono />
+                  </EditSection>
 
-              <Section title="Τραπεζικά">
-                <Field label="IBAN" value={selected.dp?.iban} mono />
-                <Field label="Τράπεζα" value={selected.dp?.bank_name} />
-                <Field label="Δικαιούχος" value={selected.dp?.account_holder} />
-              </Section>
+                  <EditSection title="Άδεια οδήγησης">
+                    <EditField label="Αριθμός άδειας" value={form.license_number} onChange={(v) => setForm((f) => ({ ...f, license_number: v }))} mono />
+                    <EditField label="Λήξη" type="date" value={form.license_expiry} onChange={(v) => setForm((f) => ({ ...f, license_expiry: v }))} />
+                  </EditSection>
 
-              <Section title="Έγγραφα">
-                <DocRow
-                  icon={<IdCard className="h-4 w-4" />}
-                  label="Ταυτότητα / διαβατήριο"
-                  url={selected.dp?.id_document_url}
-                />
-                <DocRow
-                  icon={<FileText className="h-4 w-4" />}
-                  label="Άδεια οδήγησης (αρχείο)"
-                  url={selected.dp?.license_document_url}
-                />
-                <p className="text-[11px] text-muted-foreground pt-1">
-                  Τα αρχεία ανεβαίνουν από τον οδηγό (ή admin) στο προφίλ · εμφανίζονται εδώ όταν υπάρχει URL.
-                </p>
-              </Section>
+                  <EditSection title="Τραπεζικά">
+                    <EditField label="IBAN" value={form.iban} onChange={(v) => setForm((f) => ({ ...f, iban: v }))} mono />
+                    <EditField label="Τράπεζα" value={form.bank_name} onChange={(v) => setForm((f) => ({ ...f, bank_name: v }))} />
+                    <EditField label="Δικαιούχος" value={form.account_holder} onChange={(v) => setForm((f) => ({ ...f, account_holder: v }))} />
+                  </EditSection>
+                </>
+              ) : (
+                <>
+                  <Section title="Επικοινωνία">
+                    <Field label="Τηλέφωνο" value={selected.profile.phone} />
+                    <Field label="Δεύτερο τηλ." value={selected.dp?.secondary_phone} />
+                    <Field label="Διεύθυνση" value={selected.dp?.home_address} />
+                    <Field label="Ημ. γέννησης" value={selected.dp?.date_of_birth} />
+                    <Field
+                      label="Έκτακτη επαφή"
+                      value={
+                        [selected.dp?.emergency_contact_name, selected.dp?.emergency_contact_phone]
+                          .filter(Boolean)
+                          .join(' · ') || null
+                      }
+                    />
+                  </Section>
 
-              {selected.dp?.suspension_reason && (
+                  <Section title="Όχημα">
+                    <Field label="Τύπος" value={selected.dp?.vehicle_type} />
+                    <Field
+                      label="Μάρκα / Μοντέλο"
+                      value={
+                        [selected.dp?.vehicle_make, selected.dp?.vehicle_model, selected.dp?.vehicle_year]
+                          .filter(Boolean)
+                          .join(' ') || null
+                      }
+                    />
+                    <Field label="Χρώμα" value={selected.dp?.vehicle_color} />
+                    <Field label="Πινακίδα" value={selected.dp?.license_plate} mono />
+                  </Section>
+
+                  <Section title="Άδεια οδήγησης">
+                    <Field label="Αριθμός άδειας" value={selected.dp?.license_number} mono />
+                    <Field label="Λήξη" value={selected.dp?.license_expiry} />
+                  </Section>
+
+                  <Section title="Τραπεζικά">
+                    <Field label="IBAN" value={selected.dp?.iban} mono />
+                    <Field label="Τράπεζα" value={selected.dp?.bank_name} />
+                    <Field label="Δικαιούχος" value={selected.dp?.account_holder} />
+                  </Section>
+
+                  <Section title="Έγγραφα">
+                    <DocRow
+                      icon={<IdCard className="h-4 w-4" />}
+                      label="Ταυτότητα / διαβατήριο"
+                      url={selected.dp?.id_document_url}
+                    />
+                    <DocRow
+                      icon={<FileText className="h-4 w-4" />}
+                      label="Άδεια οδήγησης (αρχείο)"
+                      url={selected.dp?.license_document_url}
+                    />
+                    <p className="text-[11px] text-muted-foreground pt-1">
+                      Τα αρχεία ανεβαίνουν από τον οδηγό (ή admin) στο προφίλ · εμφανίζονται εδώ όταν υπάρχει URL.
+                    </p>
+                  </Section>
+                </>
+              )}
+
+              {selected.dp?.suspension_reason && !editing && (
                 <Section title="Αναστολή">
                   <p className="text-[12.5px] text-destructive">{selected.dp.suspension_reason}</p>
                 </Section>
@@ -284,6 +509,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
   );
 }
 
+function EditSection({ title, children }: { title: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5">
+      <h4 className="text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">{title}</h4>
+      <div className="rounded-lg border border-border/60 bg-background px-3 py-2 space-y-2">{children}</div>
+    </div>
+  );
+}
+
 function Field({ label, value, mono }: { label: string; value?: string | null; mono?: boolean }) {
   return (
     <div className="flex gap-2 text-[12.5px]">
@@ -291,6 +525,32 @@ function Field({ label, value, mono }: { label: string; value?: string | null; m
       <span className={`min-w-0 break-all ${mono ? 'font-mono text-[11.5px]' : 'font-medium'}`}>
         {value?.trim() || '—'}
       </span>
+    </div>
+  );
+}
+
+function EditField({
+  label,
+  value,
+  onChange,
+  mono,
+  type = 'text',
+}: {
+  label: string;
+  value: string;
+  onChange: (v: string) => void;
+  mono?: boolean;
+  type?: string;
+}) {
+  return (
+    <div className="flex items-center gap-2">
+      <span className="text-muted-foreground text-[11.5px] w-[150px] shrink-0">{label}</span>
+      <Input
+        type={type}
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className={`h-8 text-[12.5px] ${mono ? 'font-mono' : ''}`}
+      />
     </div>
   );
 }
