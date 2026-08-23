@@ -10,8 +10,9 @@
 import { readFileSync, existsSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { resolve } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = resolve(import.meta.dirname, '..');
+const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
 const ENV_FILE = resolve(ROOT, '.env.production');
 const MAPBOX_PLUGIN = resolve(ROOT, 'plugins', 'capacitor-mapbox-maps');
 
