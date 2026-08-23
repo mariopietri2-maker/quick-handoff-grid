@@ -1,52 +1,62 @@
-#!/usr/bin/env node
-// Minimal static server for Railway/Railpack: serves dist/ with SPA fallback.
-import { createServer } from 'node:http';
-import { readFileSync, existsSync, statSync } from 'node:fs';
-import { join, extname, normalize } from 'node:path';
+import http from 'node:http';
+import { readFile } from 'node:fs/promises';
+import { extname, join, normalize, sep } from 'node:path';
+import { fileURLToPath } from 'node:url';
 
-const ROOT = join(process.cwd(), 'dist');
+const DIST = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'dist');
 const PORT = Number(process.env.PORT || 8080);
-
 const MIME = {
   '.html': 'text/html; charset=utf-8',
   '.js': 'text/javascript',
   '.mjs': 'text/javascript',
   '.css': 'text/css',
   '.json': 'application/json',
+  '.map': 'application/json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
   '.jpeg': 'image/jpeg',
+  '.gif': 'image/gif',
   '.webp': 'image/webp',
+  '.avif': 'image/avif',
   '.ico': 'image/x-icon',
-  '.woff2': 'font/woff2',
-  '.webmanifest': 'application/manifest+json',
   '.txt': 'text/plain',
+  '.xml': 'application/xml',
+  '.woff': 'font/woff',
+  '.woff2': 'font/woff2',
+  '.ttf': 'font/ttf',
+  '.webmanifest': 'application/manifest+json',
 };
 
-createServer((req, res) => {
+const server = http.createServer(async (req, res) => {
+  const sendIndex = async () => {
+    const body = await readFile(join(DIST, 'index.html'));
+    res.writeHead(200, { 'content-type': MIME['.html'], 'cache-control': 'no-cache' });
+    res.end(body);
+  };
   try {
-    let p = decodeURIComponent(new URL(req.url, 'http://x').pathname);
-    if (p.includes('..')) p = '/';
-    if (p.endsWith('/')) p += 'index.html';
-    let file = normalize(join(ROOT, p));
-    if (!file.startsWith(ROOT)) file = join(ROOT, 'index.html');
-    if (!existsSync(file) || statSync(file).isDirectory()) {
-      // SPA fallback — deep links like /order, /admin render index.html.
-      if (!p.startsWith('/assets/') && !/\.[\w]+$/.test(p)) {
-        file = join(ROOT, 'index.html');
-      } else {
-        res.statusCode = 404;
-        res.end('not found');
-        return;
-      }
-    }
-    const immutable = file.includes(`${join}assets`) || /[/\\]assets[/\\]/.test(file);
-    res.setHeader('Cache-Control', immutable ? 'public, max-age=31536000, immutable' : 'no-cache');
-    res.setHeader('Content-Type', MIME[extname(file).toLowerCase()] ?? 'application/octet-stream');
-    res.end(readFileSync(file));
+    const url = new URL(req.url ?? '/', 'http://internal');
+    let pathname = decodeURIComponent(url.pathname);
+    if (pathname.endsWith('/')) pathname += 'index.html';
+    const filePath = normalize(join(DIST, pathname));
+    if (!filePath.startsWith(normalize(DIST + sep))) throw new Error('escape');
+    const body = await readFile(filePath);
+    const immutable = pathname.startsWith('/assets/');
+    res.writeHead(200, {
+      'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
+      'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
+    });
+    res.end(body);
   } catch {
-    res.statusCode = 500;
-    res.end('server error');
+    try {
+      await sendIndex();
+    } catch {
+      res.writeHead(404, { 'content-type': 'text/plain' });
+      res.end('not found');
+    }
   }
-}).listen(PORT, () => console.log(`[serve-dist] listening on :${PORT}`));
+});
+
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`fresh-delivery web serving dist on :${PORT}`);
+});
