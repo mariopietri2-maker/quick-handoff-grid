@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
+import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
 import { Loader2, Truck, CheckCircle, AlertCircle } from 'lucide-react';
@@ -55,13 +55,20 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
-  const [holdOpenUntil, setHoldOpenUntil] = useState(0);
   const { toast } = useToast();
   const prevStatusRef = useRef<CallStatus>('idle');
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
+  /** Ignore stale closed/null polls after we create an open call. */
+  const holdOpenUntilRef = useRef(0);
+  const confirmOpenRef = useRef(false);
   const [, setTick] = useState(0);
 
+  confirmOpenRef.current = confirmOpen;
+
   const fetchCall = useCallback(async () => {
+    // Don't yank UI while the user is confirming a new call
+    if (confirmOpenRef.current) return;
+
     try {
       const { data, error } = await supabase.rpc('my_store_driver_call', {
         p_store_id: storeId,
@@ -70,24 +77,37 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
       const call = data?.[0];
 
       setState((prev) => {
-        if (Date.now() < holdOpenUntil && prev.status === 'open' && prev.callId) {
+        const hold = Date.now() < holdOpenUntilRef.current;
+
+        // Protect freshly created open call from stale null/closed polls
+        if (hold && prev.status === 'open' && prev.callId) {
           if (!call || call.id !== prev.callId || call.status === 'closed') {
             return prev;
           }
         }
 
         if (!call) {
-          if (Date.now() < holdOpenUntil && prev.status === 'open') return prev;
-          return idleState();
+          if (hold && prev.status === 'open') return prev;
+          // No active call → idle (ready to call again)
+          return prev.status === 'idle' ? prev : idleState();
         }
 
         const next = mapStatus(call.status);
-        if (prev.status === 'open' && next === 'closed' && call.id !== prev.callId) {
+
+        // Closed history must NOT force the "closed" screen over idle/confirm.
+        // Only open / accepted are live states the owner needs to see.
+        if (next === 'closed' || next === 'idle') {
+          if (hold && prev.status === 'open') return prev;
+          return prev.status === 'idle' ? prev : idleState();
+        }
+
+        // Ignore a different closed-era id while we still show open
+        if (prev.status === 'open' && call.id !== prev.callId && next !== 'open' && next !== 'accepted') {
           return prev;
         }
 
         return {
-          status: next === 'idle' ? 'closed' : next,
+          status: next,
           callId: call.id,
           driverName: call.driver_name ?? null,
           acceptedAt: call.accepted_at ?? null,
@@ -98,7 +118,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
     } catch (e: unknown) {
       console.error('fetch call error', e);
     }
-  }, [storeId, holdOpenUntil]);
+  }, [storeId]);
 
   useEffect(() => {
     fetchCall();
@@ -199,7 +219,8 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
       }
 
       const createdAt = call.created_at ?? new Date().toISOString();
-      setHoldOpenUntil(Date.now() + 8000);
+      holdOpenUntilRef.current = Date.now() + 15_000;
+      setConfirmOpen(false);
       setState({
         status: 'open',
         callId: call.id,
@@ -208,12 +229,11 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
         createdAt,
         error: null,
       });
-      setConfirmOpen(false);
       toast({
         title: 'Κλήση ενεργή',
         description: 'Οι οδηγοί K ειδοποιήθηκαν. Η κλήση μένει ανοιχτή έως 15 λεπτά.',
       });
-      setTimeout(() => fetchCall(), 1500);
+      setTimeout(() => fetchCall(), 2000);
     } catch (e: unknown) {
       const msg = e instanceof Error ? e.message : 'Αποτυχία δημιουργίας κλήσης';
       setState((s) => ({ ...s, error: msg }));
@@ -231,7 +251,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
         p_call_id: state.callId,
       });
       if (error) throw error;
-      setHoldOpenUntil(0);
+      holdOpenUntilRef.current = 0;
       setState(idleState());
       toast({ title: 'Κλήση κλείστηκε' });
     } catch (e: unknown) {
@@ -265,6 +285,22 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
             Θα δουν μόνο το όνομά σας: <b>{storeName}</b>.
             Η κλήση μένει ανοιχτή έως <b>15 λεπτά</b>.
           </p>
+          <Button
+            type="button"
+            className="mt-8 w-full h-16 text-xl font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md active:scale-[0.98] transition-transform"
+            disabled={loading}
+            onClick={() => setConfirmOpen(true)}
+          >
+            {loading ? (
+              <span className="flex items-center justify-center gap-2">
+                <Loader2 className="h-6 w-6 animate-spin" />
+                Δημιουργία…
+              </span>
+            ) : (
+              '📞 Κάλεσε τώρα τον οδηγό'
+            )}
+          </Button>
+
           <AlertDialog
             open={confirmOpen}
             onOpenChange={(open) => {
@@ -272,23 +308,14 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
               setConfirmOpen(open);
             }}
           >
-            <AlertDialogTrigger asChild>
-              <Button
-                type="button"
-                className="mt-8 w-full h-16 text-xl font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md active:scale-[0.98] transition-transform"
-                disabled={loading}
-              >
-                {loading ? (
-                  <span className="flex items-center justify-center gap-2">
-                    <Loader2 className="h-6 w-6 animate-spin" />
-                    Δημιουργία…
-                  </span>
-                ) : (
-                  '📞 Κάλεσε τώρα τον οδηγό'
-                )}
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
+            <AlertDialogContent
+              onPointerDownOutside={(e) => {
+                if (loading) e.preventDefault();
+              }}
+              onEscapeKeyDown={(e) => {
+                if (loading) e.preventDefault();
+              }}
+            >
               <AlertDialogHeader>
                 <AlertDialogTitle>Επιβεβαίωση κλήσης οδηγού</AlertDialogTitle>
                 <AlertDialogDescription>
@@ -416,6 +443,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
     );
   }
 
+  // Fallback (should rarely show — closed maps to idle)
   return (
     <Card className="w-full max-w-md mx-auto border-rose-500/30 shadow-lg">
       <CardContent className="pt-8 pb-10 px-6 text-center">
