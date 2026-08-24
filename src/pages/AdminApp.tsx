@@ -54,6 +54,7 @@ const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerA
 const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'));
 const AdminStoreAppearance = lazy(() => import('@/components/admin/AdminStoreAppearance'));
 const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));
+const AdminAdvertisingPanel = lazy(() => import('@/components/admin/AdminAdvertisingPanel'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 const AdminSettingsHub = lazy(() => import('@/components/admin/SettingsHub'));
 const AdminAlertsPanel  = lazy(() => import('@/components/admin/AdminAlertsPanel'));
@@ -521,6 +522,8 @@ export default function AdminApp() {
         return <CustomerAppCustomization />;
       case 'ai_hero_cards':
         return <AiHeroCardsAdmin />;
+      case 'advertising':
+        return <AdminAdvertisingPanel />;
       case 'aade_compliance':
         return <AadeCompliance />;
       case 'alerts':
