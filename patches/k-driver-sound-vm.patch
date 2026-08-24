@@ -1,0 +1,253 @@
+--- a/native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
++++ b/native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
+@@ -1,6 +1,7 @@
+ package com.freshdelivery.nativedriver.ui
+ 
+ import android.app.Application
++import android.media.AudioAttributes
+ import android.media.AudioManager
+ import android.media.MediaPlayer
+ import android.media.RingtoneManager
+@@ -184,6 +185,8 @@
+     private var heartbeatJob: Job? = null
+     private var mediaPlayer: MediaPlayer? = null
+     private var lastOfferAlertKey: String? = null
++    /** Repeats offer / store-call chime so drivers hear more than one shot. */
++    private var alertRepeatJob: Job? = null
+ 
+     init {
+         viewModelScope.launch {
+@@ -243,7 +246,7 @@
+         prefs.offerSoundId = s.soundId
+         prefs.mapStyleLight = s.mapStyleLight
+         _state.value = _state.value.copy(settingsLocal = s)
+-        if (!s.offerSound) stopOfferSound()
++        if (!s.offerSound) stopAlertBurst()
+     }
+ 
+     fun previewSound(soundId: String) {
+@@ -458,13 +461,16 @@
+                 )
+                 if (!isKOnly) maybeAlertOffers(offers + stacked)
+                 if (isCallDriverRole && storeCalls.isNotEmpty()) {
+-                    val key = storeCalls.joinToString(",") { it.id }
+-                    if (key != lastOfferAlertKey) {
+-                        lastOfferAlertKey = key
+-                        val local = _state.value.settingsLocal
+-                        if (local.offerSound) playSoundById(local.soundId)
+-                        if (local.vibration) vibrateOffer()
+-                    }
++                    // Prefix so offer keys and store-call keys do not collide.
++                    startAlertBurst(
++                        key = "sc:" + storeCalls.joinToString(",") { it.id },
++                        // Store calls are urgent — ring more times than normal offers.
++                        reps = 8,
++                        gapMs = 1100L,
++                    )
++                } else if (isCallDriverRole && lastOfferAlertKey?.startsWith("sc:") == true) {
++                    lastOfferAlertKey = null
++                    stopAlertBurst()
+                 }
+             }.onFailure { e ->
+                 _state.value = _state.value.copy(error = handleError("refreshWork", e))
+@@ -512,7 +518,7 @@
+             busy = true,
+             error = null,
+         )
+-        stopOfferSound()
++        stopAlertBurst()
+         viewModelScope.launch {
+             runCatching {
+                 if (offerId.isNotBlank()) repo.acceptOffer(offerId)
+@@ -547,6 +553,7 @@
+             busy = true,
+             error = null,
+         )
++        stopAlertBurst()
+         viewModelScope.launch {
+             runCatching {
+                 val storeName = repo.acceptStoreCall(callId)
+@@ -643,7 +650,7 @@
+             busy = true,
+             error = null,
+         )
+-        stopOfferSound()
++        stopAlertBurst()
+         viewModelScope.launch {
+             runCatching { repo.declineOffer(offerId) }
+                 .onSuccess {
+@@ -1002,86 +1009,129 @@
+     private fun maybeAlertOffers(offers: List<OfferUi>) {
+         val key = offers.joinToString(",") { it.offerId.ifBlank { it.order.id } }
+         if (key.isEmpty()) {
+-            lastOfferAlertKey = null
+-            stopOfferSound()
++            if (lastOfferAlertKey?.startsWith("of:") == true) {
++                lastOfferAlertKey = null
++                stopAlertBurst()
++            }
+             return
+         }
+-        if (key == lastOfferAlertKey) return
+-        lastOfferAlertKey = key
+-        val local = _state.value.settingsLocal
+-        if (local.offerSound) playSoundById(local.soundId)
+-        if (local.vibration) vibrateOffer()
++        startAlertBurst(key = "of:$key", reps = 6, gapMs = 900L)
+     }
+ 
+-    private fun playSoundById(soundId: String) {
+-        stopOfferSound()
++    /**
++     * Play the chime/vibrate repeatedly so K-role store calls and normal offers
++     * are heard more than once (matches web playOfferAlert repeat behaviour).
++     */
++    private fun startAlertBurst(key: String, reps: Int = 6, gapMs: Long = 900L) {
++        if (key == lastOfferAlertKey && alertRepeatJob?.isActive == true) return
++        lastOfferAlertKey = key
++        alertRepeatJob?.cancel()
++        val local = _state.value.settingsLocal
++        if (!local.offerSound && !local.vibration) return
++        val soundId = local.soundId
++        val doSound = local.offerSound
++        val doVibrate = local.vibration
++        alertRepeatJob = viewModelScope.launch {
++            repeat(reps.coerceIn(1, 12)) { i ->
++                if (doSound) playSoundOnce(soundId)
++                if (doVibrate) vibrateOffer()
++                if (i < reps - 1) delay(gapMs)
++            }
++        }
++    }
++
++    private fun stopAlertBurst() {
++        alertRepeatJob?.cancel()
++        alertRepeatJob = null
++        stopMediaPlayer()
++    }
++
++    /** Single playback — does not cancel the repeat job. */
++    private fun playSoundOnce(soundId: String) {
++        stopMediaPlayer()
+         val app = getApplication<Application>()
++        val notifAttrs = AudioAttributes.Builder()
++            .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
++            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
++            .build()
++        fun startMp(mp: MediaPlayer?) {
++            mp ?: return
++            runCatching {
++                mp.setAudioAttributes(notifAttrs)
++                mp.isLooping = false
++                mp.start()
++                mediaPlayer = mp
++            }.onFailure {
++                runCatching { mp.release() }
++            }
++        }
+         when (OfferSoundId.fromId(soundId)) {
+             OfferSoundId.CLASSIC -> runCatching {
+-                mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+-                    it.isLooping = false
+-                    it.start()
+-                }
++                startMp(MediaPlayer.create(app, R.raw.fresh_delivery))
+             }
+             OfferSoundId.CHIME -> runCatching {
+                 val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+-                mediaPlayer = MediaPlayer.create(app, uri)?.also {
+-                    it.isLooping = false
+-                    it.start()
+-                }
++                startMp(MediaPlayer.create(app, uri))
+             }
+             OfferSoundId.ALERT -> runCatching {
+                 val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+-                mediaPlayer = MediaPlayer.create(app, uri)?.also {
+-                    it.isLooping = false
+-                    it.start()
+-                    it.setOnCompletionListener { stopOfferSound() }
+-                    viewModelScope.launch {
+-                        delay(1200)
+-                        stopOfferSound()
+-                    }
+-                }
++                startMp(MediaPlayer.create(app, uri))
+             }
+             OfferSoundId.PING -> playToneSequence(
+                 listOf(
+                     ToneGenerator.TONE_PROP_BEEP2 to 180,
+                     ToneGenerator.TONE_PROP_ACK to 160,
+                 ),
+                 gapsMs = listOf(40),
+             )
+             OfferSoundId.BELL -> playToneSequence(
+                 listOf(
+                     ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD to 280,
+                     ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD to 280,
+                 ),
+                 gapsMs = listOf(120),
+             )
+             OfferSoundId.DOUBLE -> playToneSequence(
+                 listOf(
+                     ToneGenerator.TONE_PROP_BEEP to 140,
+                     ToneGenerator.TONE_PROP_BEEP to 140,
+                     ToneGenerator.TONE_PROP_ACK to 200,
+                 ),
+                 gapsMs = listOf(80, 80),
+             )
+             OfferSoundId.URGENT -> playToneSequence(
+                 listOf(
+                     ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK to 220,
+                     ToneGenerator.TONE_CDMA_EMERGENCY_RINGBACK to 220,
+                     ToneGenerator.TONE_CDMA_ALERT_CALL_GUARD to 300,
+                 ),
+                 gapsMs = listOf(60, 60),
+                 volume = 100,
+             )
+             OfferSoundId.SOFT -> playToneSequence(
+                 listOf(
+                     ToneGenerator.TONE_PROP_PROMPT to 220,
+                     ToneGenerator.TONE_PROP_ACK to 180,
+                 ),
+                 gapsMs = listOf(100),
+                 volume = 70,
+             )
+         }
+     }
+ 
++    /** Preview / settings test — plays one shot. */
++    private fun playSoundById(soundId: String) {
++        stopAlertBurst()
++        playSoundOnce(soundId)
++    }
++
+     /** Play a short sequence of DTMF/system tones (no asset files needed). */
+     private fun playToneSequence(
+         tones: List<Pair<Int, Int>>,
+@@ -1127,18 +1177,23 @@
+         }
+     }
+ 
+-    private fun stopOfferSound() {
++    private fun stopMediaPlayer() {
+         runCatching {
+             mediaPlayer?.stop()
+             mediaPlayer?.release()
+         }
+         mediaPlayer = null
+     }
+ 
++    /** Stops media + any active repeat burst (legacy name used by stopPolling). */
++    private fun stopOfferSound() {
++        stopAlertBurst()
++    }
++
+     override fun onCleared() {
+         DriverPushTokenHolder.listener = null
++        StoreCallSignal.listener = null
+         locationTracker.stop()
+         stopPolling()
+         super.onCleared()
+     }
+ }
