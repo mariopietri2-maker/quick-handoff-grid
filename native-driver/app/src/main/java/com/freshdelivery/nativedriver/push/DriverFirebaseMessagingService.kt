@@ -1,27 +1,31 @@
 package com.freshdelivery.nativedriver.push
 
+import android.app.Notification
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
 import android.media.AudioAttributes
-import android.media.RingtoneManager
+import android.net.Uri
 import android.os.Build
 import androidx.core.app.NotificationCompat
 import com.freshdelivery.nativedriver.MainActivity
+import com.freshdelivery.nativedriver.R
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
 
 /**
- * Push handler for delivery offers + store calls.
- * Uses a call-style high-priority channel so the phone rings when the app is
- * in the background, another app is open, or the screen is off (as long as
- * notifications are allowed and the device is not fully silent/DND).
+ * Handles FCM while the process is alive (foreground / background).
+ * Channel id + sound must match send-push (`driver-offers-v3` / `fresh_delivery`)
+ * so store-call and offer alerts actually ring on Android 8+.
  */
 class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
-    /** New channel id — forces OS to re-create with correct sound attributes. */
-    private val channelId = "driver-offers-v3"
+    companion object {
+        /** Must match supabase/functions/send-push resolveChannelId for driver offers. */
+        const val CHANNEL_ID = "driver-offers-v3"
+        private const val STORE_CALL_NOTIF_ID = 71001
+    }
 
     override fun onNewToken(token: String) {
         super.onNewToken(token)
@@ -31,105 +35,79 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-
         val type = message.data["type"].orEmpty()
         if (type == "store_call") {
             StoreCallSignal.fire()
         }
-
         val title = message.notification?.title
             ?: message.data["title"]
-            ?: when (type) {
-                "store_call" -> "Κλήση καταστήματος"
-                "offer", "new_offer", "delivery_offer" -> "Νέα προσφορά"
-                else -> "Νέα προσφορά παράδοσης"
-            }
-
+            ?: if (type == "store_call") "📞 Νέα κλήση καταστήματος" else "New delivery offer"
         val body = message.notification?.body
             ?: message.data["body"]
-            ?: when (type) {
-                "store_call" -> "Ένα κατάστημα σε καλεί — άνοιξε την εφαρμογή"
-                else -> "Νέα παραγγελία διαθέσιμη. Άνοιξε για αποδοχή."
-            }
-
-        showOfferNotification(title, body, type)
+            ?: ""
+        ensureChannel()
+        showNotification(title, body, isStoreCall = type == "store_call")
     }
 
-    private fun showOfferNotification(title: String, body: String, type: String) {
-        val manager = getSystemService(NotificationManager::class.java)
-        ensureChannel(manager)
+    private fun soundUri(): Uri =
+        Uri.parse("android.resource://$packageName/${R.raw.fresh_delivery}")
 
-        val openApp = PendingIntent.getActivity(
-            this,
-            0,
-            Intent(this, MainActivity::class.java).apply {
-                flags = Intent.FLAG_ACTIVITY_SINGLE_TOP or Intent.FLAG_ACTIVITY_CLEAR_TOP
-                putExtra("from_offer_push", true)
-                putExtra("push_type", type)
-            },
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
-        )
-
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-
-        val notification = NotificationCompat.Builder(this, channelId)
-            .setContentTitle(title)
-            .setContentText(body)
-            .setStyle(NotificationCompat.BigTextStyle().bigText(body))
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
-            .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_MAX)
-            .setCategory(NotificationCompat.CATEGORY_CALL)
-            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setSound(soundUri)
-            .setVibrate(longArrayOf(0, 400, 120, 400, 120, 400))
-            .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
-            .setContentIntent(openApp)
-            .setFullScreenIntent(openApp, false)
-            .setOnlyAlertOnce(false)
-            .build()
-
-        // Stable-ish id so rapid offers still alert; timestamp avoids permanent sticky
-        val id = (System.currentTimeMillis() % Int.MAX_VALUE).toInt().coerceAtLeast(1)
-        manager.notify(id, notification)
-    }
-
-    private fun ensureChannel(manager: NotificationManager) {
+    private fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
-
-        // Drop legacy silent-ish channel if present
-        runCatching { manager.deleteNotificationChannel("driver_offers_channel") }
-        runCatching { manager.deleteNotificationChannel("driver-offers-v2") }
-
-        val existing = manager.getNotificationChannel(channelId)
-        if (existing != null) return
-
-        val soundUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-            ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE)
-
+        val manager = getSystemService(NotificationManager::class.java) ?: return
         val attrs = AudioAttributes.Builder()
             .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
-
         val channel = NotificationChannel(
-            channelId,
-            "Προσφορές παραδόσεων",
+            CHANNEL_ID,
+            "Delivery offers",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Ήχος και δόνηση για νέες προσφορές και κλήσεις καταστημάτων"
+            description = "Incoming delivery offers and store calls"
             enableVibration(true)
-            vibrationPattern = longArrayOf(0, 400, 120, 400, 120, 400)
-            enableLights(true)
-            setShowBadge(true)
-            setSound(soundUri, attrs)
-            lockscreenVisibility = android.app.Notification.VISIBILITY_PUBLIC
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
-                setAllowBubbles(true)
-            }
+            vibrationPattern = longArrayOf(0, 350, 80, 350, 80, 220)
+            setSound(soundUri(), attrs)
+            lockscreenVisibility = Notification.VISIBILITY_PUBLIC
+            setBypassDnd(false)
         }
         manager.createNotificationChannel(channel)
+    }
+
+    private fun showNotification(title: String, body: String, isStoreCall: Boolean) {
+        ensureChannel()
+        val intent = Intent(this, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP or Intent.FLAG_ACTIVITY_SINGLE_TOP
+            if (isStoreCall) putExtra("open_store_calls", true)
+        }
+        val pi = PendingIntent.getActivity(
+            this,
+            if (isStoreCall) 1 else 2,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
+        )
+        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setSmallIcon(android.R.drawable.ic_dialog_info)
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(
+                if (isStoreCall) NotificationCompat.CATEGORY_CALL
+                else NotificationCompat.CATEGORY_MESSAGE,
+            )
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setSound(soundUri())
+            .setVibrate(longArrayOf(0, 350, 80, 350, 80, 220))
+            .setContentIntent(pi)
+            .setOnlyAlertOnce(false)
+            .build()
+        val id = if (isStoreCall) {
+            STORE_CALL_NOTIF_ID
+        } else {
+            (System.currentTimeMillis() and 0x7fffffff).toInt()
+        }
+        getSystemService(NotificationManager::class.java)?.notify(id, notification)
     }
 }
 
