@@ -1,0 +1,45 @@
+name: Label 2.6.10
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/label-261.yml'
+permissions:
+  contents: write
+jobs:
+  label:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump website + release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          sed -i "s/APK_NATIVE_DRIVER_VERSION = '2.6.9-native'/APK_NATIVE_DRIVER_VERSION = '2.6.10-native'/" src/lib/apk-downloads.ts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/apk-downloads.ts
+          git commit -m "chore(web): driver APK label 2.6.10-native" || true
+          git push || true
+          BODY=$(cat <<'EOF'
+          ## Fresh Delivery latest Android builds
+
+          **Latest first**
+
+          1. **Driver APK** — **2.6.10-native** (build 261)
+          - Confirm dialog before completing N-store call
+          - Store-call card without needing regular offer
+          - call_role K and both
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+
+          2. **Customer APK** — **2.7.0-native** (build 252)
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+
+          Only the latest build is kept on this release.
+          EOF
+          )
+          gh release edit mobile-apks-v1 \
+            --repo "${{ github.repository }}" \
+            --title "Driver 2.6.10-native (261) · Customer 2.7.0-native (252)" \
+            --notes "$BODY"
