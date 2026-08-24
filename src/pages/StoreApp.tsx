@@ -63,7 +63,6 @@ export default function StoreApp() {
     return 'orders';
   });
 
-  // Restore selected store from session after reload
   useEffect(() => {
     if (storeLoading) return;
     if (selectedStoreId && stores.some((s) => s.id === selectedStoreId)) {
@@ -215,9 +214,25 @@ export default function StoreApp() {
             <Button onClick={backToPortal}>Πίσω στο portal</Button>
           </div>
         ) : store.store_role === 'N' ? (
-          // Role N store: minimal call-driver UI only
-          <div className="py-8">
+          <div className="py-6 max-w-lg mx-auto space-y-4">
+            {notifPermission !== 'granted' && (
+              <div className="flex items-center gap-3 p-4 rounded-2xl bg-info/10 border border-info/25">
+                <Bell className="h-6 w-6 text-info shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-heading font-semibold text-foreground">Ειδοποιήσεις κλήσης</p>
+                  <p className="text-xs text-muted-foreground">
+                    Ενεργοποίησε για ήχο όταν ο οδηγός αποδεχτεί
+                  </p>
+                </div>
+                <Button size="sm" onClick={handleEnableNotifications} className="gradient-primary text-primary-foreground font-heading shrink-0">
+                  Ενεργοποίηση
+                </Button>
+              </div>
+            )}
             <StoreCallPanel storeId={store.id} storeName={store.name} />
+            <p className="text-center text-xs text-muted-foreground px-4">
+              Κράτα την οθόνη ανοιχτή ή εγκατέστησε την εφαρμογή για πιο αξιόπιστες ειδοποιήσεις.
+            </p>
           </div>
         ) : (
           <>
