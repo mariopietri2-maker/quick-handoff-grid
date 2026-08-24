@@ -7,7 +7,7 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 export const APK_BUILD_VERSION = '1.0.7232800';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
-export const APK_NATIVE_DRIVER_VERSION = '2.6.8-native';
+export const APK_NATIVE_DRIVER_VERSION = '2.6.9-native';
 
 /** Native Kotlin/Compose customer (Uber Eats–style UI). */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.7.0-native';
@@ -17,17 +17,17 @@ const RELEASE_BASE =
 
 export { SITE_ORIGIN };
 
+/** Latest native builds listed first. */
 export const APK_DOWNLOADS = {
-  customer: {
-    id: 'customer' as const,
-    title: 'Πελάτης',
-    subtitle: 'Capacitor · παραγγελίες & παρακολούθηση',
-    filename: 'fresh-customer-debug.apk',
-    /** Direct file URL — never put this in an <a href> on page load (Android auto-downloads). */
-    fileUrl: `${RELEASE_BASE}/fresh-customer-debug.apk`,
-    sizeLabel: '~8.5 MB',
-    versionLabel: APK_BUILD_VERSION,
-    badge: null as string | null,
+  driverNative: {
+    id: 'driverNative' as const,
+    title: 'Οδηγός Native',
+    subtitle: 'Kotlin + Compose · Mapbox · FCM',
+    filename: 'fresh-driver-native-debug.apk',
+    fileUrl: `${RELEASE_BASE}/fresh-driver-native-debug.apk`,
+    sizeLabel: '~87 MB',
+    versionLabel: APK_NATIVE_DRIVER_VERSION,
+    badge: 'Native',
   },
   customerNative: {
     id: 'customerNative' as const,
@@ -49,15 +49,16 @@ export const APK_DOWNLOADS = {
     versionLabel: APK_BUILD_VERSION,
     badge: null as string | null,
   },
-  driverNative: {
-    id: 'driverNative' as const,
-    title: 'Οδηγός Native',
-    subtitle: 'Kotlin + Compose · Mapbox · FCM',
-    filename: 'fresh-driver-native-debug.apk',
-    fileUrl: `${RELEASE_BASE}/fresh-driver-native-debug.apk`,
-    sizeLabel: '~87 MB',
-    versionLabel: APK_NATIVE_DRIVER_VERSION,
-    badge: 'Native',
+  customer: {
+    id: 'customer' as const,
+    title: 'Πελάτης',
+    subtitle: 'Capacitor · παραγγελίες & παρακολούθηση',
+    filename: 'fresh-customer-debug.apk',
+    /** Direct file URL — never put this in an <a href> on page load (Android auto-downloads). */
+    fileUrl: `${RELEASE_BASE}/fresh-customer-debug.apk`,
+    sizeLabel: '~8.5 MB',
+    versionLabel: APK_BUILD_VERSION,
+    badge: null as string | null,
   },
 } as const;
 
