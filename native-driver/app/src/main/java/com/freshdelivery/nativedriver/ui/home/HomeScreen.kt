@@ -1604,6 +1604,8 @@ private fun ActiveJobCard(
     busy: Boolean,
     onComplete: () -> Unit,
 ) {
+    var confirmOpen by remember { mutableStateOf(false) }
+
     Card(
         Modifier.fillMaxWidth().shadow(16.dp, RoundedCornerShape(28.dp)),
         shape = RoundedCornerShape(28.dp),
@@ -1618,7 +1620,7 @@ private fun ActiveJobCard(
             Text("Πήγαινε στο κατάστημα και ολοκλήρωσε", fontSize = 12.sp, color = Color(0xFF9FD8B4))
             Spacer(Modifier.height(16.dp))
             Button(
-                onClick = onComplete,
+                onClick = { confirmOpen = true },
                 enabled = !busy,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(28.dp),
@@ -1629,9 +1631,40 @@ private fun ActiveJobCard(
             }
         }
     }
+
+    if (confirmOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!busy) confirmOpen = false },
+            title = { Text("Ολοκλήρωση κλήσης;", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Επιβεβαιώνεις ότι ολοκλήρωσες την κλήση στο ${active.store_name};
+Μετά δεν θα μπορείς να την ανοίξεις ξανά.",
+                    fontSize = 14.sp,
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        confirmOpen = false
+                        onComplete()
+                    },
+                    enabled = !busy,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenBtn),
+                ) {
+                    Text("Ναι, ολοκληρώθηκε", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmOpen = false }, enabled = !busy) {
+                    Text("Όχι", color = TextMuted)
+                }
+            },
+        )
+    }
 }
 
-@Composable
 private fun StoreCallSheet(
     call: StoreCallRow,
     busy: Boolean,
