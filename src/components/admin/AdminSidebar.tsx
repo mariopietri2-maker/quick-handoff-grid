@@ -81,6 +81,7 @@ export const NAV_SECTIONS = [
       { id: 'driver_registry', label: '📋 Μητρώο' },
       { id: 'driver_approvals', label: 'Έγκριση οδηγών' },
       { id: 'driver_messages', label: '✉️ Μηνύματα' },
+      { id: 'driver_offer_sounds', label: '🔊 Ήχοι προσφοράς' },
       { id: 'drivers_ioannina_map', label: '🏍️ Χάρτης Ιωαννίνων' },
       { id: 'service_zones', label: 'Ζώνες παράδοσης' },
     ],
