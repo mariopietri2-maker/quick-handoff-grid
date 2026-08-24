@@ -1,0 +1,156 @@
+name: Store call TTL UI
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/store-call-ttl-ui.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch StoreCallPanel countdown + migration file
+        run: |
+          set -euo pipefail
+          mkdir -p supabase/migrations
+          cat > supabase/migrations/20260824150000_store_call_open_15_min.sql << 'SQL'
+          -- Keep N-store driver calls open for 15 minutes (was 3)
+          SELECT cron.unschedule('store-call-expiry')
+          WHERE EXISTS (SELECT 1 FROM cron.job WHERE jobname = 'store-call-expiry');
+
+          SELECT cron.schedule(
+            'store-call-expiry',
+            '30 seconds',
+            $$
+            UPDATE public.store_driver_calls
+               SET status = 'closed', updated_at = now()
+             WHERE status = 'open'
+               AND created_at < now() - interval '15 minutes'
+            $$
+          );
+
+          CREATE OR REPLACE FUNCTION public.my_store_driver_call(p_store_id uuid)
+          RETURNS TABLE(
+            id uuid,
+            status text,
+            created_at timestamptz,
+            accepted_by uuid,
+            accepted_at timestamptz,
+            driver_name text
+          )
+          LANGUAGE plpgsql
+          SECURITY DEFINER
+          SET search_path = public
+          AS $$
+          BEGIN
+            IF NOT EXISTS (
+              SELECT 1 FROM public.stores s
+              WHERE s.id = p_store_id AND s.owner_id = auth.uid()
+            ) THEN
+              RETURN;
+            END IF;
+
+            RETURN QUERY
+            SELECT c.id, c.status, c.created_at, c.accepted_by, c.accepted_at,
+                   CASE WHEN c.accepted_by IS NOT NULL THEN p.full_name ELSE NULL END
+            FROM public.store_driver_calls c
+            LEFT JOIN public.profiles p ON p.user_id = c.accepted_by
+            WHERE c.store_id = p_store_id
+            ORDER BY
+              CASE c.status WHEN 'open' THEN 0 WHEN 'accepted' THEN 1 ELSE 2 END,
+              c.created_at DESC
+            LIMIT 1;
+          END;
+          $$;
+
+          GRANT EXECUTE ON FUNCTION public.my_store_driver_call(uuid) TO authenticated;
+          SQL
+
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('src/components/store/StoreCallPanel.tsx')
+          t = p.read_text()
+
+          # Add OPEN_TTL_SEC constant after type CallStatus
+          if 'OPEN_TTL_SEC' not in t:
+              t = t.replace(
+                  "type CallStatus = 'idle' | 'open' | 'accepted' | 'closed';\n",
+                  "type CallStatus = 'idle' | 'open' | 'accepted' | 'closed';\n\n/** How long an unanswered store call stays open (matches DB cron). */\nconst OPEN_TTL_SEC = 15 * 60;\n",
+                  1,
+              )
+
+          # Track createdAt in state
+          old_iface = '''interface CallState {
+  status: CallStatus;
+  callId: string | null;
+  driverName: string | null;
+  acceptedAt: string | null;
+  error: string | null;
+}'''
+          new_iface = '''interface CallState {
+  status: CallStatus;
+  callId: string | null;
+  driverName: string | null;
+  acceptedAt: string | null;
+  createdAt: string | null;
+  error: string | null;
+}'''
+          if 'createdAt' not in t.split('interface CallState')[1][:300]:
+              t = t.replace(old_iface, new_iface)
+
+          t = t.replace(
+              "useState<CallState>({\n    status: 'idle',\n    callId: null,\n    driverName: null,\n    acceptedAt: null,\n    error: null,\n  })",
+              "useState<CallState>({\n    status: 'idle',\n    callId: null,\n    driverName: null,\n    acceptedAt: null,\n    createdAt: null,\n    error: null,\n  })",
+          )
+
+          # fetchCall setState includes created_at
+          t = t.replace(
+              "setState({\n          status: call.status === 'open' ? 'open' : call.status === 'accepted' ? 'accepted' : 'closed',\n          callId: call.id,\n          driverName: call.driver_name,\n          acceptedAt: call.accepted_at,\n          error: null,\n        });",
+              "setState({\n          status: call.status === 'open' ? 'open' : call.status === 'accepted' ? 'accepted' : 'closed',\n          callId: call.id,\n          driverName: call.driver_name,\n          acceptedAt: call.accepted_at,\n          createdAt: call.created_at ?? null,\n          error: null,\n        });",
+          )
+          t = t.replace(
+              "setState({ status: 'idle', callId: null, driverName: null, acceptedAt: null, error: null });",
+              "setState({ status: 'idle', callId: null, driverName: null, acceptedAt: null, createdAt: null, error: null });",
+          )
+
+          t = t.replace(
+              "setState({ status: 'open', callId: call.id, driverName: null, acceptedAt: null, error: null });",
+              "setState({ status: 'open', callId: call.id, driverName: null, acceptedAt: null, createdAt: call.created_at ?? new Date().toISOString(), error: null });",
+          )
+
+          # Add remaining seconds helper display in open UI
+          if 'Απομένουν' not in t:
+              old_open = '''          <p className="mt-2 text-muted-foreground">
+            Η κλήση είναι ενεργή. Οι οδηγοί K έχουν ειδοποιηθεί.
+          </p>'''
+              new_open = '''          <p className="mt-2 text-muted-foreground">
+            Η κλήση είναι ενεργή έως 15 λεπτά. Οι οδηγοί K έχουν ειδοποιηθεί.
+          </p>
+          {state.createdAt && (
+            <p className="mt-2 text-sm font-medium text-amber-600">
+              Απομένουν περίπου{' '}
+              {Math.max(
+                0,
+                Math.ceil(
+                  (OPEN_TTL_SEC * 1000 - (Date.now() - new Date(state.createdAt).getTime())) / 60000,
+                ),
+              )}{' '}
+              λεπτά
+            </p>
+          )}'''
+              if old_open in t:
+                  t = t.replace(old_open, new_open, 1)
+                  print('open countdown added')
+              else:
+                  print('WARN open text missing')
+
+          p.write_text(t)
+          print('StoreCallPanel patched')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(store): keep driver call open 15 minutes + show time left" || true
+          git push
