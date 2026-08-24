@@ -1,0 +1,21 @@
+name: Push support topic live
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patch and push
+        run: |
+          set -euo pipefail
+          cat patches/live-support-all.part* | tr -d '\n' | base64 -d > /tmp/p.patch
+          git apply --whitespace=nowarn /tmp/p.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git status
+          git commit -m "feat(support): topic before driver live chat; only support closes sessions" || true
+          git push
