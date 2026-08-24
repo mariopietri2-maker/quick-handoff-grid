@@ -1,0 +1,141 @@
+name: Store call complete confirm
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/store-call-complete-confirm.yml'
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch ActiveJobCard confirmation
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt')
+          t = p.read_text()
+
+          old = '''@Composable
+private fun ActiveJobCard(
+    active: ActiveStoreCallRow,
+    busy: Boolean,
+    onComplete: () -> Unit,
+) {
+    Card(
+        Modifier.fillMaxWidth().shadow(16.dp, RoundedCornerShape(28.dp)),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF122B1D)),
+        elevation = CardDefaults.cardElevation(0.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("📞 Ενεργή κλήση", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = FreshGreenBright)
+            Spacer(Modifier.height(6.dp))
+            Text(active.store_name, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = Color.White)
+            Spacer(Modifier.height(4.dp))
+            Text("Πήγαινε στο κατάστημα και ολοκλήρωσε", fontSize = 12.sp, color = Color(0xFF9FD8B4))
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = onComplete,
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreenBright, contentColor = Color.White),
+            ) {
+                if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("ΟΛΟΚΛΗΡΩΣΗ", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+    }
+}
+'''
+
+          new = '''@Composable
+private fun ActiveJobCard(
+    active: ActiveStoreCallRow,
+    busy: Boolean,
+    onComplete: () -> Unit,
+) {
+    var confirmOpen by remember { mutableStateOf(false) }
+
+    Card(
+        Modifier.fillMaxWidth().shadow(16.dp, RoundedCornerShape(28.dp)),
+        shape = RoundedCornerShape(28.dp),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF122B1D)),
+        elevation = CardDefaults.cardElevation(0.dp),
+    ) {
+        Column(Modifier.fillMaxWidth().padding(24.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("📞 Ενεργή κλήση", fontWeight = FontWeight.Bold, fontSize = 15.sp, color = FreshGreenBright)
+            Spacer(Modifier.height(6.dp))
+            Text(active.store_name, fontWeight = FontWeight.Bold, fontSize = 24.sp, color = Color.White)
+            Spacer(Modifier.height(4.dp))
+            Text("Πήγαινε στο κατάστημα και ολοκλήρωσε", fontSize = 12.sp, color = Color(0xFF9FD8B4))
+            Spacer(Modifier.height(16.dp))
+            Button(
+                onClick = { confirmOpen = true },
+                enabled = !busy,
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(28.dp),
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreenBright, contentColor = Color.White),
+            ) {
+                if (busy) CircularProgressIndicator(Modifier.size(20.dp), color = Color.White, strokeWidth = 2.dp)
+                else Text("ΟΛΟΚΛΗΡΩΣΗ", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+            }
+        }
+    }
+
+    if (confirmOpen) {
+        AlertDialog(
+            onDismissRequest = { if (!busy) confirmOpen = false },
+            title = { Text("Ολοκλήρωση κλήσης;", fontWeight = FontWeight.Bold) },
+            text = {
+                Text(
+                    "Επιβεβαιώνεις ότι ολοκλήρωσες την κλήση στο ${active.store_name};\nΜετά δεν θα μπορείς να την ανοίξεις ξανά.",
+                    fontSize = 14.sp,
+                )
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        confirmOpen = false
+                        onComplete()
+                    },
+                    enabled = !busy,
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = GreenBtn),
+                ) {
+                    Text("Ναι, ολοκληρώθηκε", fontWeight = FontWeight.Bold)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { confirmOpen = false }, enabled = !busy) {
+                    Text("Όχι", color = TextMuted)
+                }
+            },
+        )
+    }
+}
+'''
+
+          if 'Ολοκλήρωση κλήσης;' in t:
+              print('already has confirm dialog')
+          elif old not in t:
+              raise SystemExit('ActiveJobCard pattern missing')
+          else:
+              t = t.replace(old, new, 1)
+              p.write_text(t)
+              print('ActiveJobCard confirmation added')
+          PY
+          # bump version for new APK
+          f=native-driver/app/build.gradle.kts
+          sed -i 's/versionCode = 260/versionCode = 261/' "$f" || true
+          sed -i 's/versionName = "2.6.9-native"/versionName = "2.6.10-native"/' "$f" || true
+          grep -E 'versionCode|versionName' "$f" | head -4
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(driver): confirm before completing N-store call (2.6.10)" || true
+          git push
