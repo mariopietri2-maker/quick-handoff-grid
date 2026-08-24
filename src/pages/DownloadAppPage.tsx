@@ -154,15 +154,15 @@ export default function DownloadAppPage() {
             Η λήψη ξεκινά μόνο όταν πατήσεις το κουμπί.
           </p>
           <p className="mt-2 text-xs text-muted-foreground/80 font-mono">
-            Capacitor v{APK_BUILD_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Native driver v{APK_NATIVE_DRIVER_VERSION}
+            Native driver v{APK_NATIVE_DRIVER_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Capacitor v{APK_BUILD_VERSION}
           </p>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-          <ApkCard flavor="customer" highlighted={focus === 'customer'} />
+          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
           <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
           <ApkCard flavor="driver" highlighted={focus === 'driver'} />
-          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
+          <ApkCard flavor="customer" highlighted={focus === 'customer'} />
         </div>
 
         <div className="mt-8 rounded-xl border border-amber-500/25 bg-amber-500/5 px-4 py-3 flex gap-3 text-left max-w-2xl mx-auto">
