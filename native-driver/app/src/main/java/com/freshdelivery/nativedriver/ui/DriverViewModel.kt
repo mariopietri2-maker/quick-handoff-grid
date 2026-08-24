@@ -108,7 +108,7 @@ data class DriverUiState(
     val maxCashCap: Double get() = settings.max_cash_cap ?: 200.0
     val cashCapped: Boolean get() = cashBalance >= maxCashCap
     val primaryTrip: ActiveTripUi? get() = activeTrips.firstOrNull()
-    val isCallDriver: Boolean get() = driverProfile?.call_role == "K"
+    val isCallDriver: Boolean get() = driverProfile?.call_role == "K" || driverProfile?.call_role == "both"
 }
 
 private fun friendlyError(t: Throwable?): String {
@@ -412,16 +412,19 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 }
                 val trips = repo.fetchActiveTrips(uid)
                 val maxStack = settings.max_stacked_orders ?: 3
-                val isK = driver?.call_role == "K"
+                val callRole = driver?.call_role
+                // pure K = store calls only; both/admin = regular offers + store calls
+                val isKOnly = callRole == "K"
+                val isCallDriverRole = callRole == "K" || callRole == "both"
                 val offers: List<OfferUi>
                 val stacked: List<OfferUi>
-                // K-role drivers must not be blocked by cash cap — they only take N-store calls
                 val cashCappedNow = (dState.shift_cash_balance ?: 0.0) >= (settings.max_cash_cap ?: 200.0)
-                val blocked = dState.on_break == true || (!isK && cashCappedNow)
+                // cash cap still applies when receiving regular offers (not pure K)
+                val blocked = dState.on_break == true || (!isKOnly && cashCappedNow)
                 if (trips.isNotEmpty()) {
                     offers = emptyList()
                     val remaining = (maxStack - trips.size).coerceAtLeast(0)
-                    stacked = if (!blocked && !isK && remaining > 0) {
+                    stacked = if (!blocked && !isKOnly && remaining > 0) {
                         repo.fetchStackedOffers(
                             userId = uid,
                             activeStoreId = trips.first().order.store_id,
@@ -432,14 +435,14 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 } else {
                     stacked = emptyList()
                     // K-role drivers work ONLY store calls — never main-project orders
-                    offers = if (!blocked && _state.value.online && !isK) repo.fetchPendingOffers(uid) else emptyList()
+                    offers = if (!blocked && _state.value.online && !isKOnly) repo.fetchPendingOffers(uid) else emptyList()
                 }
 
                 // Fetch store calls for K-role drivers
-                val storeCalls = if (!blocked && _state.value.online && isK)
+                val storeCalls = if (!blocked && _state.value.online && isCallDriverRole)
                     repo.fetchOpenStoreCalls() else emptyList()
                 // Persistent active job card
-                val activeStoreCall = if (_state.value.online && isK)
+                val activeStoreCall = if (_state.value.online && isCallDriverRole)
                     repo.fetchMyActiveStoreCall() else null
 
                 _state.value = _state.value.copy(
@@ -453,8 +456,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     activeStoreCall = activeStoreCall,
                     error = null,
                 )
-                if (!isK) maybeAlertOffers(offers + stacked)
-                if (isK && storeCalls.isNotEmpty()) {
+                if (!isKOnly) maybeAlertOffers(offers + stacked)
+                if (isCallDriverRole && storeCalls.isNotEmpty()) {
                     val key = storeCalls.joinToString(",") { it.id }
                     if (key != lastOfferAlertKey) {
                         lastOfferAlertKey = key
