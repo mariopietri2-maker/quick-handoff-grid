@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { supabase } from '@/integrations/supabase/client';
+import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 /** Public platform settings returned by get_platform_settings_public RPC. */
 export interface PlatformSettings {
@@ -92,8 +93,7 @@ export function usePlatformSettings() {
   });
 
   useEffect(() => {
-    const channel = supabase
-      .channel('public:platform_settings')
+    const channel = openRealtimeChannel('platform-settings')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'platform_settings' },
