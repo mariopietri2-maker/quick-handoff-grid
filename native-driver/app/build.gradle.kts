@@ -15,8 +15,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 261
-        versionName = "2.6.10-native"
+        versionCode = 262
+        versionName = "2.6.11-native-soundfix"
 
         buildConfigField(
             "String",
