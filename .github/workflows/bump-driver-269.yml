@@ -1,0 +1,28 @@
+name: Bump driver 2.6.9 and build
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+  actions: write
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump versionName/versionCode
+        run: |
+          set -euo pipefail
+          f=native-driver/app/build.gradle.kts
+          sed -i 's/versionCode = 259/versionCode = 260/' "$f"
+          sed -i 's/versionName = "2.6.8-native"/versionName = "2.6.9-native"/' "$f"
+          grep -E 'versionCode|versionName' "$f" | head -5
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$f"
+          git commit -m "chore(driver): bump to 2.6.9-native (260) — store call card fix" || true
+          git push
+      - name: Trigger APK build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run build-native-apks.yml --ref main
