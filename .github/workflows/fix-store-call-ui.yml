@@ -1,0 +1,45 @@
+name: Fix store call UI
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch HomeScreen store call visibility
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt')
+          t = p.read_text()
+
+          old_has = '    val hasOffer = state.online && state.activeTrips.isEmpty() && state.offers.isNotEmpty()\n    val hasTrip = state.activeTrips.isNotEmpty()\n'
+          new_has = '    val hasStoreCall = state.online && state.activeTrips.isEmpty() && state.isCallDriver && state.storeCalls.isNotEmpty()\n    val hasOffer = state.online && state.activeTrips.isEmpty() && state.offers.isNotEmpty()\n    val hasTrip = state.activeTrips.isNotEmpty()\n'
+          if 'hasStoreCall' in t and 'val hasStoreCall' in t:
+              print('hasStoreCall already defined')
+          elif old_has not in t:
+              raise SystemExit('hasOffer pattern missing')
+          else:
+              t = t.replace(old_has, new_has, 1)
+              print('hasStoreCall defined')
+
+          old_branch = '''                hasOffer -> {\n                    // Store call card for K-role drivers (shown above regular offers)\n                    if (state.isCallDriver && state.storeCalls.isNotEmpty()) {\n                        state.storeCalls.take(1).forEach { call ->\n                            StoreCallSheet(\n                                call = call,\n                                busy = state.busy,\n                                onAccept = { onAcceptStoreCall(call.id) },\n                            )\n                        }\n                    } else {\n                        state.offers.take(1).forEach { offer ->\n                            OfferSheet(\n                                offer = offer,\n                                busy = state.busy,\n                                timeoutSec = state.settings.dist_offer_timeout_seconds ?: 60,\n                                onAccept = { onAccept(offer.offerId, null) },\n                                onDecline = { onDecline(offer.offerId) },\n                            )\n                        }\n                    }\n                }\n'''
+          new_branch = '''                hasStoreCall -> {\n                    state.storeCalls.take(1).forEach { call ->\n                        StoreCallSheet(\n                            call = call,\n                            busy = state.busy,\n                            onAccept = { onAcceptStoreCall(call.id) },\n                        )\n                    }\n                }\n\n                hasOffer -> {\n                    state.offers.take(1).forEach { offer ->\n                        OfferSheet(\n                            offer = offer,\n                            busy = state.busy,\n                            timeoutSec = state.settings.dist_offer_timeout_seconds ?: 60,\n                            onAccept = { onAccept(offer.offerId, null) },\n                            onDecline = { onDecline(offer.offerId) },\n                        )\n                    }\n                }\n'''
+          if 'hasStoreCall ->' in t:
+              print('branch already fixed')
+          elif old_branch not in t:
+              raise SystemExit('hasOffer branch pattern missing')
+          else:
+              t = t.replace(old_branch, new_branch, 1)
+              print('branch fixed')
+
+          p.write_text(t)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(driver): show N-store call card without regular offers" || true
+          git push
