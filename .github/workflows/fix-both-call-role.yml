@@ -1,0 +1,72 @@
+name: Fix both call role
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch ViewModel for call_role both
+        run: |
+          set -euo pipefail
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
+          t = p.read_text()
+
+          t2 = t.replace(
+            'val isCallDriver: Boolean get() = driverProfile?.call_role == "K"',
+            'val isCallDriver: Boolean get() = driverProfile?.call_role == "K" || driverProfile?.call_role == "both"',
+          )
+          if t2 == t:
+              if 'call_role == "both"' in t:
+                  print('isCallDriver already dual')
+              else:
+                  raise SystemExit('isCallDriver pattern missing')
+          else:
+              t = t2
+              print('isCallDriver patched')
+
+          old = '''                val isK = driver?.call_role == "K"\n                val offers: List<OfferUi>\n                val stacked: List<OfferUi>\n                // K-role drivers must not be blocked by cash cap — they only take N-store calls\n                val cashCappedNow = (dState.shift_cash_balance ?: 0.0) >= (settings.max_cash_cap ?: 200.0)\n                val blocked = dState.on_break == true || (!isK && cashCappedNow)\n'''
+          new = '''                val callRole = driver?.call_role\n                // pure K = store calls only; both/admin = regular offers + store calls\n                val isKOnly = callRole == "K"\n                val isCallDriverRole = callRole == "K" || callRole == "both"\n                val offers: List<OfferUi>\n                val stacked: List<OfferUi>\n                val cashCappedNow = (dState.shift_cash_balance ?: 0.0) >= (settings.max_cash_cap ?: 200.0)\n                // cash cap still applies when receiving regular offers (not pure K)\n                val blocked = dState.on_break == true || (!isKOnly && cashCappedNow)\n'''
+          if 'isCallDriverRole' in t:
+              print('role split already present')
+          elif old not in t:
+              # try without cash comment variant
+              old2 = '''                val isK = driver?.call_role == "K"\n                val offers: List<OfferUi>\n                val stacked: List<OfferUi>\n                val cashCappedNow = (dState.shift_cash_balance ?: 0.0) >= (settings.max_cash_cap ?: 200.0)\n                val blocked = dState.on_break == true || (!isK && cashCappedNow)\n'''
+              if old2 in t:
+                  t = t.replace(old2, new, 1)
+                  print('role split patched (variant)')
+              else:
+                  raise SystemExit('isK block missing')
+          else:
+              t = t.replace(old, new, 1)
+              print('role split patched')
+
+          # Replace uses of isK in refreshWork with correct flags
+          replacements = [
+            ('stacked = if (!blocked && !isK && remaining > 0)', 'stacked = if (!blocked && !isKOnly && remaining > 0)'),
+            ('offers = if (!blocked && _state.value.online && !isK)', 'offers = if (!blocked && _state.value.online && !isKOnly)'),
+            ('val storeCalls = if (!blocked && _state.value.online && isK)', 'val storeCalls = if (!blocked && _state.value.online && isCallDriverRole)'),
+            ('val activeStoreCall = if (_state.value.online && isK)', 'val activeStoreCall = if (_state.value.online && isCallDriverRole)'),
+            ('if (!isK) maybeAlertOffers(offers + stacked)', 'if (!isKOnly) maybeAlertOffers(offers + stacked)'),
+            ('if (isK && storeCalls.isNotEmpty())', 'if (isCallDriverRole && storeCalls.isNotEmpty())'),
+          ]
+          for a, b in replacements:
+              if b in t:
+                  print('already', b[:40])
+              elif a in t:
+                  t = t.replace(a, b)
+                  print('replaced', a[:40])
+              else:
+                  print('WARN missing', a[:50])
+
+          p.write_text(t)
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "fix(driver): call_role both = regular offers + store calls" || true
+          git push
