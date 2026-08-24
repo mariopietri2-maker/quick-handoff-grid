@@ -265,6 +265,7 @@ export function LiveChatConsole() {
                 <p className="text-[10px] text-muted-foreground truncate leading-tight">
                   {roleLabel[active.participant_role]}
                   {active.session_status === 'closed' ? ' · κλειστή συνομιλία' : ' · ζωντανή συνομιλία'}
+                  {active.session_topic ? ` · ${active.session_topic}` : ''}
                   {selectedProfile?.phone ? ` · ${selectedProfile.phone}` : ''}
                 </p>
               </div>
@@ -279,7 +280,7 @@ export function LiveChatConsole() {
               <button
                 type="button"
                 onClick={() => void closeChat()}
-                disabled={closing || active.session_status !== 'open'}
+                disabled={closing || active.session_status === 'closed'}
                 title="Κλείσιμο συνομιλίας (μόνο υποστήριξη)"
                 className="h-8 w-8 rounded-lg border flex items-center justify-center text-muted-foreground hover:text-destructive hover:bg-destructive/10 disabled:opacity-40 disabled:hover:text-muted-foreground disabled:hover:bg-transparent"
               >
