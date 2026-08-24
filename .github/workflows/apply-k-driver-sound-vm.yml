@@ -1,0 +1,98 @@
+name: Apply K-driver sound ViewModel + rebuild APK
+
+on:
+  workflow_dispatch:
+  push:
+    branches:
+      - fix/k-driver-sound-rebuild
+    paths:
+      - "patches/k-driver-sound-vm.patch"
+      - ".github/workflows/apply-k-driver-sound-vm.yml"
+
+jobs:
+  apply-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: fix/k-driver-sound-rebuild
+
+      - name: Apply ViewModel patch if needed
+        run: |
+          set -euo pipefail
+          TARGET=native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
+          if grep -q 'startAlertBurst' "$TARGET" 2>/dev/null; then
+            echo "ViewModel already patched"
+          else
+            patch -p1 < patches/k-driver-sound-vm.patch
+            echo "Patch applied"
+          fi
+          grep -q 'startAlertBurst' "$TARGET"
+          grep -q 'driver-offers-v3' native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/DriverFirebaseMessagingService.kt
+
+      - name: Commit patched ViewModel
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
+          if git diff --cached --quiet; then
+            echo "No ViewModel changes to commit"
+          else
+            git commit -m "fix(native-driver): repeat store-call/offer alert burst for K drivers"
+            git push origin HEAD:fix/k-driver-sound-rebuild
+          fi
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+
+      - name: Configure Mapbox + local.properties
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > native-driver/local.properties
+          if [ -n "${MAPBOX_DOWNLOADS_TOKEN:-}" ]; then
+            mkdir -p "$HOME/.gradle"
+            echo "MAPBOX_DOWNLOADS_TOKEN=$MAPBOX_DOWNLOADS_TOKEN" >> "$HOME/.gradle/gradle.properties"
+            echo "Mapbox token configured"
+          else
+            echo "WARN: MAPBOX_DOWNLOADS_TOKEN missing"
+          fi
+
+      - name: Build native driver debug APK
+        working-directory: native-driver
+        run: |
+          chmod +x gradlew || true
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+
+      - name: Upload driver APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: fresh-driver-native-debug
+          path: native-driver/app/build/outputs/apk/debug/*.apk
+          if-no-files-found: error
+
+      - name: Publish to mobile-apks-v1 release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p dist
+          APK=$(ls native-driver/app/build/outputs/apk/debug/*.apk | head -1)
+          cp "$APK" dist/fresh-driver-native-debug.apk
+          gh release view mobile-apks-v1 >/dev/null 2>&1 || \
+            gh release create mobile-apks-v1 --title "Mobile APKs" --notes "Native debug APKs"
+          gh release upload mobile-apks-v1 dist/fresh-driver-native-debug.apk --clobber
+          echo "Published: https://github.com/${{ github.repository }}/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk"
