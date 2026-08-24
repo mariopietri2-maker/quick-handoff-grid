@@ -1,0 +1,200 @@
+name: Native remote offer sound + wire admin
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/native-remote-offer-sound.yml"
+      - "native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/OfferSoundCache.kt"
+jobs:
+  patch-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch repository, ViewModel, AdminApp, version
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+
+          # --- DriverRepository: fetch default offer sound URL ---
+          repo = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt')
+          t = repo.read_text(encoding='utf-8')
+          if 'fetchDefaultOfferSoundUrl' not in t:
+              block = '''
+    /** Admin library default offer chime (public URL). Null if none configured. */
+    suspend fun fetchDefaultOfferSoundUrl(): String? {
+        val rows = runCatching {
+            client.postgrest.rpc("list_driver_offer_sounds_public")
+                .decodeList<OfferSoundPublicRow>()
+        }.getOrDefault(emptyList())
+        val def = rows.firstOrNull { it.is_default == true } ?: rows.firstOrNull()
+        return def?.public_url?.takeIf { it.isNotBlank() }
+    }
+'''
+              # insert before closing brace of class
+              idx = t.rfind('\n}')
+              t = t[:idx] + block + t[idx:]
+              # add serializable row near top after PushTokenUpsert
+              if 'OfferSoundPublicRow' not in t:
+                  t = t.replace(
+                      '@Serializable\ndata class PushTokenUpsert(',
+                      '''@Serializable
+data class OfferSoundPublicRow(
+    val id: String? = null,
+    val name: String? = null,
+    val public_url: String? = null,
+    val is_default: Boolean? = null,
+)
+
+@Serializable
+data class PushTokenUpsert(''',
+                      1,
+                  )
+              repo.write_text(t, encoding='utf-8')
+              print('DriverRepository patched')
+
+          # --- ViewModel: prefer admin remote for CLASSIC + refresh on sign-in ---
+          vm = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
+          t = vm.read_text(encoding='utf-8')
+          if 'OfferSoundCache' not in t:
+              t = t.replace(
+                  'import com.freshdelivery.nativedriver.data.DriverRepository\n',
+                  'import com.freshdelivery.nativedriver.data.DriverRepository\nimport com.freshdelivery.nativedriver.data.OfferSoundCache\n',
+              )
+              t = t.replace(
+                  'import android.media.AudioManager\n',
+                  'import android.media.AudioAttributes\nimport android.media.AudioManager\n',
+              )
+              # refresh remote on sign-in
+              t = t.replace(
+                  '        registerFcm(userId)\n        refreshAll()\n        startPolling()\n',
+                  '''        registerFcm(userId)
+        viewModelScope.launch {
+            runCatching {
+                val url = repo.fetchDefaultOfferSoundUrl()
+                OfferSoundCache.ensure(getApplication(), url)
+            }
+        }
+        refreshAll()
+        startPolling()
+''',
+              )
+              # replace CLASSIC branch to try remote file first
+              old_classic = '''            OfferSoundId.CLASSIC -> runCatching {
+                mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+                    it.isLooping = false
+                    it.start()
+                }
+            }'''
+              new_classic = '''            OfferSoundId.CLASSIC -> runCatching {
+                val remote = OfferSoundCache.localPathIfReady(app)
+                if (remote != null) {
+                    val mp = MediaPlayer()
+                    mp.setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build(),
+                    )
+                    mp.setDataSource(remote)
+                    mp.prepare()
+                    mp.isLooping = false
+                    mp.start()
+                    mediaPlayer = mp
+                } else {
+                    // Kick background download; play baked-in until ready
+                    viewModelScope.launch {
+                        runCatching {
+                            val url = repo.fetchDefaultOfferSoundUrl()
+                            OfferSoundCache.ensure(app, url)
+                        }
+                    }
+                    mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+                        it.isLooping = false
+                        it.start()
+                    }
+                }
+            }'''
+              if old_classic not in t:
+                  raise SystemExit('CLASSIC block not found')
+              t = t.replace(old_classic, new_classic, 1)
+              vm.write_text(t, encoding='utf-8')
+              print('DriverViewModel patched')
+
+          # --- AdminApp wire ---
+          admin = Path('src/pages/AdminApp.tsx')
+          t = admin.read_text(encoding='utf-8')
+          if 'DriverOfferSoundsPanel' not in t:
+              t = t.replace(
+                  "const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));",
+                  "const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));\nconst DriverOfferSoundsPanel = lazy(() => import('@/components/admin/DriverOfferSoundsPanel'));",
+              )
+              t = t.replace(
+                  "      case 'driver_messages':\n        return <DriverMessagesPanel />;",
+                  "      case 'driver_messages':\n        return <DriverMessagesPanel />;\n      case 'driver_offer_sounds':\n        return <DriverOfferSoundsPanel />;",
+              )
+              admin.write_text(t, encoding='utf-8')
+              print('AdminApp wired')
+
+          # --- version bump ---
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = gt.replace('versionCode = 263', 'versionCode = 264')
+          gt = gt.replace('versionCode = 262', 'versionCode = 264')
+          gt = gt.replace('versionName = "2.6.12-native-soundfix"', 'versionName = "2.6.13-remote-offer-sound"')
+          gt = gt.replace('versionName = "2.6.11-native-soundfix"', 'versionName = "2.6.13-remote-offer-sound"')
+          g.write_text(gt, encoding='utf-8')
+          print('version bumped')
+
+          # panel copy
+          panel = Path('src/components/admin/DriverOfferSoundsPanel.tsx')
+          if panel.exists():
+              pt = panel.read_text(encoding='utf-8')
+              pt = pt.replace(
+                  'από την web/PWA εφαρμογή οδηγού αμέσως (χωρίς rebuild). Το native APK συνεχίζει το\n          ενσωματωμένο classic μέχρι να ενημερωθεί να φορτώνει remote URL.',
+                  'από web/PWA και native (μετά το APK 2.6.13+) — αλλαγή προεπιλογής χωρίς νέο rebuild.',
+              )
+              panel.write_text(pt, encoding='utf-8')
+          PY
+      - name: Commit patches
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "feat(native): play admin remote offer sound + wire admin tab"; git push; fi
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+      - name: Install SDK packages
+        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+      - name: Mapbox token
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          TOKEN="${MAPBOX_DOWNLOADS_TOKEN:-}"
+          mkdir -p ~/.gradle
+          echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN" >> ~/.gradle/gradle.properties
+          echo "systemProp.mapboxDownloadsToken=$TOKEN" >> ~/.gradle/gradle.properties
+      - name: Build driver APK
+        working-directory: native-driver
+        env:
+          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          chmod +x gradlew
+          ./gradlew :app:assembleDebug --no-daemon --stacktrace
+      - name: Publish APK
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p dist
+          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
+          gh release view mobile-apks-v1 >/dev/null 2>&1 || gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs" --notes "Native debug APKs"
+          gh release upload mobile-apks-v1 dist/fresh-driver-native-debug.apk --clobber
+          ls -lah dist/
