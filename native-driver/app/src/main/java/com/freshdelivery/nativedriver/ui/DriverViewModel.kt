@@ -454,6 +454,15 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     error = null,
                 )
                 if (!isK) maybeAlertOffers(offers + stacked)
+                if (isK && storeCalls.isNotEmpty()) {
+                    val key = storeCalls.joinToString(",") { it.id }
+                    if (key != lastOfferAlertKey) {
+                        lastOfferAlertKey = key
+                        val local = _state.value.settingsLocal
+                        if (local.offerSound) playSoundById(local.soundId)
+                        if (local.vibration) vibrateOffer()
+                    }
+                }
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = handleError("refreshWork", e))
             }
@@ -967,7 +976,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         pollJob = viewModelScope.launch {
             var tick = 0
             while (true) {
-                delay(4_000)
+                val isKPoll = _state.value.driverProfile?.call_role == "K"
+                delay(if (isKPoll) 2_000 else 4_000)
                 tick++
                 if (_state.value.signedIn) {
                     refreshWork()
