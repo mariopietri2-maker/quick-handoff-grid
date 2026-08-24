@@ -1,0 +1,37 @@
+name: Fix livechat close button
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch LiveChatConsole close button
+        run: |
+          set -euo pipefail
+          f=src/components/support/LiveChatConsole.tsx
+          # Enable close when session is null or open (not only when status === open)
+          sed -i "s/disabled={closing || active.session_status !== 'open'}/disabled={closing || active.session_status === 'closed'}/" "$f"
+          # Show topic in header if present
+          if ! grep -q 'session_topic' "$f" | head -1; then true; fi
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/support/LiveChatConsole.tsx')
+          t = p.read_text()
+          old = "{active.session_status === 'closed' ? ' · κλειστή συνομιλία' : ' · ζωντανή συνομιλία'}\n                  {selectedProfile?.phone ? ` · ${selectedProfile.phone}` : ''}"
+          new = "{active.session_status === 'closed' ? ' · κλειστή συνομιλία' : ' · ζωντανή συνομιλία'}\n                  {active.session_topic ? ` · ${active.session_topic}` : ''}\n                  {selectedProfile?.phone ? ` · ${selectedProfile.phone}` : ''}"
+          if old in t:
+              t = t.replace(old, new, 1)
+              p.write_text(t)
+              print('topic header added')
+          else:
+              print('topic header pattern skipped')
+          PY
+          grep -n "session_status === 'closed'" "$f" | head -5
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "$f"
+          git commit -m "fix(support): allow closing live chat when session_status is null" || echo no change
+          git push
