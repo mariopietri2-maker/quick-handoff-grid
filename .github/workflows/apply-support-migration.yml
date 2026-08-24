@@ -1,0 +1,22 @@
+name: Apply support live-chat migration
+on:
+  workflow_dispatch:
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply SQL migration via DATABASE_URL
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+        run: |
+          set -euo pipefail
+          URL="${DATABASE_URL:-${SUPABASE_DB_URL:-}}"
+          if [ -z "$URL" ]; then
+            echo "::error::No DATABASE_URL or SUPABASE_DB_URL secret. Apply supabase/migrations/20260824140000_driver_live_chat_topic_and_close.sql in Supabase SQL Editor."
+            exit 1
+          fi
+          sudo apt-get update -qq && sudo apt-get install -y -qq postgresql-client
+          psql "$URL" -v ON_ERROR_STOP=1 -f supabase/migrations/20260824140000_driver_live_chat_topic_and_close.sql
+          echo "Migration applied successfully"
