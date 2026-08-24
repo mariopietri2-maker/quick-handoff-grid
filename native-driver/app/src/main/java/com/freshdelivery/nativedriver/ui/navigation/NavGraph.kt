@@ -60,6 +60,7 @@ fun DriverNavGraph(
                 onSupportOpenTicket = viewModel::openChat,
                 onSendChat = viewModel::sendChatMessage,
                 onCloseChat = viewModel::closeChat,
+                onStartLiveChat = { topic, msg -> viewModel.startLiveChat(topic, msg) },
                 onSendLiveChat = viewModel::sendLiveChatMessage,
                 onAcceptStoreCall = viewModel::acceptStoreCall,
                 onCompleteStoreCall = viewModel::completeActiveCall,
