@@ -1,7 +1,23 @@
-// Driver accepts a pending offer.
-// Atomically: claims the order, marks this offer accepted, cancels sibling offers.
+// Driver accepts a pending offer — one-at-a-time («μία-μία») edition.
+// Atomically: claims the order (stamping pickup code + locked payout), marks
+// this offer accepted, cancels sibling offers.
+//
+// Gates enforced here (server-side truth):
+//   · A driver with ANY order still before pickup cannot take a new one.
+//   · A second order is allowed only when ALL remaining work is already
+//     picked up, only from the SAME store, and only under increased demand
+//     (driver_demand_pressure RPC).
+//   · The second order always pays HALF of its own priced driver_payout; the
+//     first keeps its priced payout untouched.
 
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2.101.1";
+import {
+  ACTIVE_STATUSES,
+  PRE_PICKUP_STATUSES,
+  ONE_AT_A_TIME,
+  claimPayout,
+  generatePickupCode,
+} from "../_shared/one-at-a-time.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -46,30 +62,66 @@ Deno.serve(async (req) => {
       return json({ error: "offer expired" }, 410);
     }
 
-    // Capacity / stacking guard
-    const { data: settings } = await admin
-      .from("platform_settings")
-      .select("max_stacked_orders, stacking_enabled")
-      .eq("id", 1)
-      .maybeSingle();
-    const maxStack = Math.max(1, Number(settings?.max_stacked_orders ?? 1));
-    const { count: activeCount } = await admin
+    // Incoming order facts (store + priced payout) before any write.
+    const { data: incomingOrder } = await admin
       .from("orders")
-      .select("id", { count: "exact", head: true })
+      .select("id, store_id, driver_payout")
+      .eq("id", offer.order_id)
+      .single();
+    if (!incomingOrder) return json({ error: "order not found" }, 404);
+
+    // ── One-at-a-time gates ────────────────────────────────────────────────
+    const { data: actives } = await admin
+      .from("orders")
+      .select("id, status, store_id")
       .eq("driver_id", user.id)
-      .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"]);
-    if ((activeCount ?? 0) >= maxStack) {
-      return json({ error: "driver at capacity" }, 409);
+      .in("status", ACTIVE_STATUSES as unknown as string[]);
+
+    const rows = actives ?? [];
+    const prePickupCount = rows.filter((o) =>
+      (PRE_PICKUP_STATUSES as readonly string[]).includes(o.status),
+    ).length;
+    const postPickupCount = rows.filter((o) => o.status === "picked_up").length;
+
+    if (prePickupCount > 0) {
+      return json({ error: "complete your current pickup first", code: "pre_pickup_active" }, 409);
+    }
+    if (rows.length >= ONE_AT_A_TIME.maxActiveOrders) {
+      return json({ error: "driver at capacity", code: "at_capacity" }, 409);
     }
 
+    const isSecondOrder = postPickupCount > 0;
+    if (isSecondOrder) {
+      const { data: pressure, error: pressureErr } = await admin.rpc("driver_demand_pressure");
+      if (pressureErr) return json({ error: pressureErr.message }, 500);
+      if (pressure !== true) {
+        return json(
+          { error: "second order requires increased demand", code: "no_demand_pressure" },
+          409,
+        );
+      }
+      if (rows.some((o) => o.store_id !== incomingOrder.store_id)) {
+        return json(
+          { error: "second order must be from the same store", code: "different_store" },
+          409,
+        );
+      }
+    }
+
+    const payoutToLock = claimPayout(incomingOrder.driver_payout, isSecondOrder);
+
     // Atomic claim (soft reservation): only succeeds if order still unassigned.
-    // Physical pickup is gated elsewhere until the store flips status to 'ready'.
+    // Stamps the pickup code shown at the counter and locks the payout.
     const { data: claimed, error: claimErr } = await admin
       .from("orders")
-      .update({ driver_id: user.id })
+      .update({
+        driver_id: user.id,
+        driver_payout: payoutToLock,
+        pickup_code: generatePickupCode(),
+      })
       .eq("id", offer.order_id)
       .is("driver_id", null)
-      .select("id, status, store_id")
+      .select("id, status, store_id, driver_payout, pickup_code")
       .maybeSingle();
 
     if (claimErr) return json({ error: claimErr.message }, 500);
@@ -79,6 +131,26 @@ Deno.serve(async (req) => {
         .update({ status: "cancelled", responded_at: new Date().toISOString() })
         .eq("id", offerId);
       return json({ error: "order already taken" }, 409);
+    }
+
+    // Post-claim capacity re-check: races parallel accepts by the same driver.
+    const { count: activeAfterClaim } = await admin
+      .from("orders")
+      .select("id", { count: "exact", head: true })
+      .eq("driver_id", user.id)
+      .in("status", ACTIVE_STATUSES as unknown as string[]);
+    if ((activeAfterClaim ?? 0) > ONE_AT_A_TIME.maxActiveOrders) {
+      await admin
+        .from("orders")
+        .update({ driver_id: null })
+        .eq("id", offer.order_id)
+        .eq("driver_id", user.id);
+      await admin
+        .from("pending_offers")
+        .update({ status: "expired", responded_at: new Date().toISOString() })
+        .eq("id", offerId)
+        .neq("status", "accepted");
+      return json({ error: "driver at capacity", code: "at_capacity" }, 409);
     }
 
     // Nudge stale 'placed' → 'accepted' so dashboards reflect a courier is locked in.
@@ -109,44 +181,16 @@ Deno.serve(async (req) => {
       action: "accepted",
     });
 
-    // STACKING: only when enabled and driver already has other active orders
-    const stackingOn = settings?.stacking_enabled !== false && maxStack > 1;
-    const { data: otherActive } = stackingOn
-      ? await admin
-          .from("orders")
-          .select("id, batch_id")
-          .eq("driver_id", user.id)
-          .in("status", ["accepted", "preparing", "ready", "arrived", "picked_up"])
-          .neq("id", offer.order_id)
-      : { data: [] as { id: string; batch_id: string | null }[] };
+    // No batching / route optimizer: FIFO delivery order falls out of
+    // created_at ASC on the client («παλαιότερη πρώτα»).
 
-    if (stackingOn && otherActive && otherActive.length > 0) {
-      const existingBatch = otherActive.find((o) => o.batch_id)?.batch_id ?? crypto.randomUUID();
-      // Link this order to the batch; optimizer will recompute stop_sequence
-      await admin
-        .from("orders")
-        .update({ batch_id: existingBatch, stacked_with_order_id: otherActive[0].id })
-        .eq("id", offer.order_id);
-      // Backfill any siblings missing batch_id
-      const missing = otherActive.filter((o) => !o.batch_id).map((o) => o.id);
-      if (missing.length > 0) {
-        await admin.from("orders").update({ batch_id: existingBatch }).in("id", missing);
-      }
-      // Fire-and-forget optimize call (admin client → direct function call)
-      try {
-        await fetch(`${Deno.env.get("SUPABASE_URL")}/functions/v1/optimize-route`, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")}`,
-          },
-          body: JSON.stringify({ driver_id: user.id, batch_id: existingBatch }),
-        });
-      } catch { /* best effort */ }
-    }
-
-
-    return json({ ok: true, order_id: offer.order_id });
+    return json({
+      ok: true,
+      order_id: offer.order_id,
+      pickup_code: claimed.pickup_code,
+      payout: claimed.driver_payout,
+      is_second_order: isSecondOrder,
+    });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     return json({ error: msg }, 500);

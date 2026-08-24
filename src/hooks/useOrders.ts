@@ -15,6 +15,8 @@ export interface OrderWithItems extends OrderRow {
   order_items: OrderItemRow[];
   store_name?: string;
   store_address?: string | null;
+  customer_name?: string | null;
+  customer_phone?: string | null;
 }
 
 export function useStoreOrders(storeId: string | null) {
@@ -171,10 +173,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
   const { user } = useAuth();
   const adminOverride = !!opts.adminOverride;
   const [offers, setOffers] = useState<OrderWithItems[]>([]);
-  const [stackedOffers, setStackedOffers] = useState<OrderWithItems[]>([]);
   const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
   const [activeDeliveries, setActiveDeliveries] = useState<OrderWithItems[]>([]);
-  const [currentBatchId, setCurrentBatchId] = useState<string | null>(null);
+  const [recentCompleted, setRecentCompleted] = useState<{ id: string; label: string; earnEur: number }[]>([]);
   const [loading, setLoading] = useState(true);
   const [offerIds, setOfferIds] = useState<Record<string, string>>({});
   const [offerExpiresAt, setOfferExpiresAt] = useState<Record<string, string>>({});
@@ -192,21 +193,79 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     const tmo = Number(row?.dist_offer_timeout_seconds);
     if (Number.isFinite(tmo) && tmo > 0) setOfferTimeoutSec(tmo);
 
+    // One-at-a-time FIFO: oldest first («παλαιότερη πρώτα»).
     const { data: activeRows } = await supabase
       .from('orders')
       .select('*, order_items(*)')
       .eq('driver_id', user.id)
       .in('status', ['accepted', 'preparing', 'ready', 'arrived', 'picked_up'])
-      .order('stop_sequence', { ascending: true, nullsFirst: false })
       .order('created_at', { ascending: true })
-      .limit(3);
+      .limit(2);
 
     const activeList = (activeRows as OrderWithItems[] | null) ?? [];
-    const active = activeList[0] ?? null;
 
-    setActiveDeliveries(activeList);
-    setCurrentBatchId((active as any)?.batch_id ?? null);
+    // FIFO current: oldest order still before pickup, else the oldest overall.
+    const currentIdx = activeList.findIndex((o) =>
+      ['accepted', 'preparing', 'ready', 'arrived'].includes(o.status as string),
+    );
+    const active = (currentIdx >= 0 ? activeList[currentIdx] : activeList[0]) ?? null;
+
+    // Enrich rows for the homepage list: per-order store + customer info.
+    let enriched = activeList;
+    const aStoreIds = [...new Set(activeList.map((o) => o.store_id).filter(Boolean))];
+    const aCustIds = [
+      ...new Set(activeList.map((o) => o.customer_id).filter(Boolean) as string[]),
+    ];
+    if (aStoreIds.length > 0 || aCustIds.length > 0) {
+      const [{ data: aStores }, { data: aProfiles }] = await Promise.all([
+        aStoreIds.length > 0
+          ? supabase.from('stores').select('id, name, address').in('id', aStoreIds)
+          : Promise.resolve({ data: [] } as { data: { id: string; name: string; address: string | null }[] | null }),
+        aCustIds.length > 0
+          ? supabase.from('profiles').select('user_id, full_name, phone').in('user_id', aCustIds)
+          : Promise.resolve({ data: [] } as { data: { user_id: string; full_name: string | null; phone: string | null }[] | null }),
+      ]);
+      const sMap = new Map((aStores ?? []).map((s) => [s.id, s]));
+      const pMap = new Map((aProfiles ?? []).map((p) => [p.user_id, p]));
+      enriched = activeList.map((o) => {
+        const st = sMap.get(o.store_id);
+        const pr = pMap.get(o.customer_id ?? '');
+        return {
+          ...o,
+          store_name: o.store_name || st?.name,
+          store_address: o.store_address ?? st?.address ?? null,
+          customer_name: pr?.full_name ?? null,
+          customer_phone: pr?.phone ?? null,
+        } as OrderWithItems;
+      });
+    }
+
+    setActiveDeliveries(enriched);
     setActiveDelivery(active);
+
+    // Delivered since midnight — feeds the «done» rows on the homepage list.
+    const midnightIso = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
+    const { data: doneRows } = await supabase
+      .from('orders')
+      .select('id, driver_payout, store_order_number, updated_at')
+      .eq('driver_id', user.id)
+      .eq('status', 'delivered')
+      .gte('updated_at', midnightIso)
+      .order('updated_at', { ascending: false })
+      .limit(5);
+    setRecentCompleted(
+      (doneRows ?? []).map((o) => ({
+        id: o.id,
+        label: `#${o.store_order_number ?? o.id.slice(0, 8)}`,
+        earnEur: Number(o.driver_payout ?? 0),
+      })),
+    );
+
+    // Client-side mirror of the server gate: while ANY order is still before
+    // pickup, no new offer may be shown or accepted.
+    const prePickupActive = activeList.some((o) =>
+      ['accepted', 'preparing', 'ready', 'arrived'].includes(o.status as string),
+    );
 
     let availableOrders: OrderWithItems[] = [];
     const nextOfferIds: Record<string, string> = {};
@@ -220,14 +279,13 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
         .order('created_at', { ascending: false })
         .limit(50);
       availableOrders = ((all as OrderWithItems[]) ?? []).filter((o) => !declinedRef.current[o.id]);
-    } else if (mode === 'auto') {
+    } else if (mode === 'auto' && !prePickupActive) {
       const { data: myPending } = await supabase
-        .from('driver_offers' as never)
+        .from('pending_offers')
         .select('id, order_id, expires_at')
         .eq('driver_id', user.id)
         .eq('status', 'pending');
-      const orderIds = (myPending ?? []).map((p: any) => p.order_id).filter(Boolean);
-      let offered: OrderWithItems[] = [];
+      const orderIds = (myPending ?? []).map((p) => p.order_id).filter(Boolean);
       if (orderIds.length > 0) {
         const { data: ord } = await supabase
           .from('orders')
@@ -235,20 +293,19 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
           .in('id', orderIds)
           .is('driver_id', null)
           .in('status', ['placed', 'accepted', 'preparing', 'ready']);
-        offered = (ord as OrderWithItems[]) ?? [];
+        availableOrders = ((ord as OrderWithItems[]) ?? []).filter((o) => !declinedRef.current[o.id]);
         for (const p of myPending ?? []) {
-          nextOfferIds[(p as any).order_id] = (p as any).id;
-          if ((p as any).expires_at) nextExpires[(p as any).order_id] = (p as any).expires_at as string;
+          nextOfferIds[p.order_id] = p.id;
+          if (p.expires_at) nextExpires[p.order_id] = p.expires_at;
         }
       }
-      availableOrders = offered.filter((o) => !declinedRef.current[o.id]);
-    } else {
+    } else if (mode === 'manual' && !prePickupActive) {
       const { data: available } = await supabase
         .from('orders')
         .select('*, order_items(*)')
         .is('driver_id', null)
         .eq('status', 'ready')
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: true })
         .limit(10);
       availableOrders = available
         ? (available as OrderWithItems[]).filter((o) => !declinedRef.current[o.id])
@@ -270,29 +327,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
     setOfferIds(nextOfferIds);
     setOfferExpiresAt(nextExpires);
-
-    const MAX_STACK = Number(row?.max_stacked_orders ?? 3);
-    const remainingCapacity = Math.max(0, MAX_STACK - activeList.length);
-
-    if (active && remainingCapacity > 0) {
-      const activeStoreIds = new Set(
-        activeList
-          .filter((o) => ['accepted', 'preparing', 'ready', 'arrived'].includes(o.status as string))
-          .map((o) => o.store_id),
-      );
-      const activeIds = new Set(activeList.map((o) => o.id));
-      const sameStore = availableOrders
-        .filter((o) => activeStoreIds.has(o.store_id) && !activeIds.has(o.id) && o.status === 'ready')
-        .slice(0, remainingCapacity);
-      setStackedOffers(sameStore);
-      setOffers(availableOrders.filter((o) => !sameStore.some((s) => s.id === o.id)));
-    } else if (active) {
-      setStackedOffers([]);
-      setOffers([]);
-    } else {
-      setStackedOffers([]);
-      setOffers(availableOrders);
-    }
+    setOffers(prePickupActive ? [] : availableOrders);
 
     setLoading(false);
   }, [user, adminOverride]);
@@ -335,7 +370,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'driver_offers' },
+        { event: '*', schema: 'public', table: 'pending_offers', filter: `driver_id=eq.${user.id}` },
         () => {
           void fetchOrders();
         },
@@ -348,54 +383,53 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     };
   }, [user, fetchOrders]);
 
-  const acceptOrder = async (orderId: string) => {
-    if (!user) return;
+  const acceptOrder = async (orderId: string): Promise<boolean> => {
+    if (!user) return false;
     const offerId = offerIds[orderId];
 
-    // Optimistic accept: the card vanishes instantly; the RPC runs in the
-    // background and we restore + toast only if the server rejects.
+    // Optimistic accept: the card vanishes instantly; the server runs in the
+    // background and we restore + toast only if it rejects.
     stopOfferAlert();
     const snapshot = offers.find((o) => o.id === orderId) ?? null;
-    const stackedSnapshot = stackedOffers.find((o) => o.id === orderId) ?? null;
     setOffers((prev) => prev.filter((o) => o.id !== orderId));
-    setStackedOffers((prev) => prev.filter((o) => o.id !== orderId));
 
-    const { error } =
-      assignmentMode === 'auto' && offerId
-        ? await supabase.rpc('accept_driver_offer' as never, { p_offer_id: offerId } as never)
-        : await supabase.rpc('claim_order' as never, {
-            p_order_id: orderId,
-            p_driver_id: user.id,
-          } as never);
+    let error: { message?: string | null } | null = null;
+    if (assignmentMode === 'auto' && offerId) {
+      const res = await supabase.functions.invoke('accept-offer', {
+        body: { offer_id: offerId },
+      });
+      const fnErr = res.error as (Error & { context?: { body?: { error?: string } } }) | null;
+      // Surface the edge function's JSON error message when present.
+      const serverMsg =
+        (fnErr as unknown as { context?: { body?: { error?: string } } })?.context?.body?.error ??
+        fnErr?.message ??
+        null;
+      error = serverMsg ? { message: serverMsg } : null;
+    } else {
+      const { error: rpcErr } = await supabase.rpc('driver_claim_order' as never, {
+        p_order_id: orderId,
+      } as never);
+      error = rpcErr;
+    }
 
     if (error) {
       toast.error(error.message ?? 'Αποτυχία αποδοχής');
       if (snapshot) setOffers((prev) => (prev.some((o) => o.id === orderId) ? prev : [snapshot, ...prev]));
-      if (stackedSnapshot)
-        setStackedOffers((prev) => (prev.some((o) => o.id === orderId) ? prev : [stackedSnapshot, ...prev]));
-      return;
+      return false;
     }
     void fetchOrders();
+    return true;
   };
 
   const declineOrder = async (orderId: string) => {
     if (!user) return;
     const offerId = offerIds[orderId];
     if (assignmentMode === 'auto' && offerId) {
-      await supabase.rpc('decline_driver_offer' as never, { p_offer_id: offerId } as never).then(() => {});
+      supabase.functions.invoke('decline-offer', { body: { offer_id: offerId } }).catch(() => {});
     }
     declinedRef.current[orderId] = Date.now();
     saveDeclined(declinedRef.current);
-    void supabase
-      .from('driver_offer_actions' as never)
-      .insert({
-        driver_id: user.id,
-        order_id: orderId,
-        action: 'declined',
-      } as never)
-      .then(() => {});
     setOffers((prev) => prev.filter((o) => o.id !== orderId));
-    setStackedOffers((prev) => prev.filter((o) => o.id !== orderId));
   };
 
   const updateDeliveryStatus = async (orderId: string, newStatus: string) => {
@@ -409,12 +443,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       console.error('[updateDeliveryStatus]', { orderId, newStatus, error });
       toast.error(`Σφάλμα: ${error.message ?? 'Failed to update status'}`);
     } else {
-      if (['picked_up', 'delivered'].includes(newStatus) && currentBatchId) {
-        supabase.functions
-          .invoke('optimize-route', { body: { batch_id: currentBatchId } })
-          .catch(() => {});
-      }
       if (newStatus === 'delivered') {
+        toast.success('Παραδόθηκε ✓');
         setActiveDelivery((prev) => (prev?.id === orderId ? null : prev));
         setActiveDeliveries((prev) => prev.filter((o) => o.id !== orderId));
       }
@@ -424,10 +454,9 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
 
   return {
     offers,
-    stackedOffers,
     activeDelivery,
     activeDeliveries,
-    currentBatchId,
+    recentCompleted,
     loading,
     acceptOrder,
     declineOrder,

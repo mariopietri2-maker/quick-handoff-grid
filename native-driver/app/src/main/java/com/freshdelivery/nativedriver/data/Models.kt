@@ -78,6 +78,7 @@ data class OrderRow(
     val payment_method: String? = null,
     val total_amount: Double? = null,
     val store_order_number: Int? = null,
+    val pickup_code: String? = null,
     val driver_id: String? = null,
     val customer_phone: String? = null,
     val customer_name: String? = null,

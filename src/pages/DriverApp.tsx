@@ -13,10 +13,10 @@ import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
 import { UserMenu } from '@/components/UserMenu';
 import { Badge } from '@/components/ui/badge';
-import { OrderOfferCard } from '@/components/driver/OrderOfferCard';
-import { StackedOfferCard } from '@/components/driver/StackedOfferCard';
 import { ActiveDelivery } from '@/components/driver/ActiveDelivery';
-import { StackedOrderBanner } from '@/components/driver/StackedOrderBanner';
+import { OneAtATimeOfferCard } from '@/components/driver/OneAtATimeOfferCard';
+import { ActiveOrdersList } from '@/components/driver/ActiveOrdersList';
+import type { ActiveOrderItem } from '@/components/driver/ActiveOrdersList';
 import { DriverSupportButton } from '@/components/driver/DriverSupportButton';
 
 import { useDriverOrders } from '@/hooks/useOrders';
@@ -65,7 +65,7 @@ export default function DriverApp() {
       return next;
     });
   };
-  const { offers, stackedOffers, activeDelivery, loading, acceptOrder, declineOrder, updateDeliveryStatus, offerExpiresAt, offerTimeoutSec } = useDriverOrders({ adminOverride: isAdmin });
+  const { offers, activeDelivery, activeDeliveries, recentCompleted, loading, acceptOrder, declineOrder, updateDeliveryStatus, offerExpiresAt, offerTimeoutSec } = useDriverOrders({ adminOverride: isAdmin });
   const { state: driverState, update: updateDriverState } = useDriverState();
   const onBreak = !!driverState?.on_break;
   const [maxCashCap, setMaxCashCap] = useState<number>(200);
@@ -209,6 +209,12 @@ export default function DriverApp() {
   const [storeInfo, setStoreInfo] = useState<{ name: string; address: string; phone: string | null; latitude: number | null; longitude: number | null } | null>(null);
   const [customerInfo, setCustomerInfo] = useState<{ name: string; phone: string | null } | null>(null);
   const handleDecline = (id: string) => { declineOrder(id); };
+  const [busyStatusId, setBusyStatusId] = useState<string | null>(null);
+  const handleStatusUpdate = async (id: string, status: string) => {
+    setBusyStatusId(id);
+    await updateDeliveryStatus(id, status);
+    setBusyStatusId(null);
+  };
   const [routeInfo, setRouteInfo] = useState<RouteInfo | null>(null);
   const [navMode, setNavMode] = useState(false);
   const [sheetCollapsed, setSheetCollapsed] = useState(true);
@@ -233,6 +239,24 @@ export default function DriverApp() {
   // Auto-exit nav mode if delivery ends
   useEffect(() => { if (!activeDelivery) setNavMode(false); }, [activeDelivery]);
   const isNavActive = navMode && !!navigatingTo;
+
+  // One-at-a-time auto-start: once EVERY remaining order is picked up, start
+  // navigating to the oldest one (FIFO) without a tap.
+  const autoStartedRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (
+      activeDeliveries.length > 0 &&
+      activeDeliveries.every((o) => o.status === 'picked_up')
+    ) {
+      const first = activeDeliveries[0];
+      if (first && autoStartedRef.current !== first.id) {
+        autoStartedRef.current = first.id;
+        setNavMode(true);
+      }
+    } else {
+      autoStartedRef.current = null;
+    }
+  }, [activeDeliveries]);
 
   // Pick the upcoming maneuver step + live distance to it from the driver's GPS.
   // Mapbox steps include a maneuver location; we find the closest upcoming one
@@ -466,8 +490,42 @@ export default function DriverApp() {
   // Uber-style modes:
   // - idle → compact online/offline toggle (GO bar)
   // - offer / delivery / break / cash-cap → job UI only (no online toggle)
-  const hasIncomingOffers = !activeDelivery && offers.length > 0;
-  const showJobSheet = !!activeDelivery || hasIncomingOffers || onBreak || cashCapped;
+  // One-at-a-time modes:
+  // - while ANY order is before pickup → no offers at all
+  // - all remaining orders picked up → a second offer may arrive AND the list shows
+  const PRE_PICKUP_STATUSES = ['accepted', 'preparing', 'ready', 'arrived'];
+  const prePickupBusy = activeDeliveries.some((o) => PRE_PICKUP_STATUSES.includes(o.status ?? ''));
+  const hasIncomingOffers = offers.length > 0 && !prePickupBusy;
+  const showJobSheet = activeDeliveries.length > 0 || hasIncomingOffers || onBreak || cashCapped;
+
+  // Homepage hub data — one row per active order, FIFO.
+  const listItems: ActiveOrderItem[] = activeDeliveries.map((o) => {
+    const bd = getDriverPayoutBreakdown(o as any);
+    const pricedPayout = o.driver_payout != null ? Number(o.driver_payout) : bd.total;
+    return {
+      id: o.id,
+      storeName: o.store_name || storeInfo?.name || 'Κατάστημα',
+      storeAddress: o.store_address ?? storeInfo?.address ?? null,
+      customerName: o.customer_name ?? customerInfo?.name ?? null,
+      deliveryAddress: o.delivery_address || null,
+      status: o.status ?? 'accepted',
+      payoutEur: pricedPayout > 0 ? pricedPayout : bd.total,
+      cashToCollect: (o as any).payment_method === 'cash'
+        ? Number((o as any).cash_received ?? 0) || (Number((o as any).total_amount ?? 0) + Number((o as any).delivery_fee ?? 0) + Number((o as any).tip_amount ?? 0))
+        : null,
+      pickupCode: (o as any).pickup_code ?? null,
+      itemCount: o.order_items?.length ?? 0,
+    };
+  });
+
+  // Second-order offer context: only shown while carrying picked-up work under demand.
+  const secondPhase = activeDeliveries.some((o) => o.status === 'picked_up');
+  const topOffer = hasIncomingOffers && !loading ? offers[0] : null;
+  const topOfferPrice = (() => {
+    if (!topOffer) return 0;
+    const priced = Number((topOffer as any).driver_payout ?? 0) || getDriverPayoutBreakdown(topOffer as any).total;
+    return secondPhase ? Math.round(priced * 50) / 100 : priced;
+  })();
   /** Uber-style: job sheets are fixed docks — only the idle GO bar can collapse. */
   const sheetLocked = showJobSheet;
   const showCompactOnlineDock =
@@ -540,11 +598,21 @@ export default function DriverApp() {
               <div className="px-3 pt-3 pb-2 flex items-start gap-2">
                 <div className="shrink-0 pointer-events-auto flex items-center gap-1.5">
                   <div className="flex flex-col items-center gap-2">
-                    <UserMenu />
+                    <UserMenu
+                      blockSignOut={
+                        activeDeliveries.length > 0
+                          ? 'Σε ενεργή παραγγελία — η αποσύνδεση είναι απενεργοποιημένη'
+                          : null
+                      }
+                    />
                     <button
                       type="button"
                       onClick={() => {
                         if (driverActive !== true) return;
+                        if (isOnline && activeDeliveries.length > 0) {
+                          toast.error('Σε ενεργή παραγγελία — δεν μπορείς να βγεις offline');
+                          return;
+                        }
                         if (!isOnline) primeDriverAudio();
                         setIsOnline(!isOnline);
                       }}
@@ -777,71 +845,15 @@ export default function DriverApp() {
                       </>
                     )}
 
-                    {activeDelivery && (
-                      <>
-                        <StackedOrderBanner orderId={activeDelivery.id} />
-                        {stackedOffers.length > 0 && (
-                          <div className="space-y-2.5">
-                            {stackedOffers.map((offer, idx) => (
-                              <StackedOfferCard
-                                key={offer.id}
-                                index={idx + 2}
-                                offer={{
-                                  id: offer.id,
-                                  storeName: offer.store_name || storeInfo?.name || 'Ίδιο κατάστημα',
-                                  storeAddress: offer.store_address || storeInfo?.address || 'Παραλαβή',
-                                  deliveryAddress: offer.delivery_address || 'Πελάτης',
-                                  estimatedPayout: getDriverPayoutBreakdown(offer as any).total,
-                                  basePay: getDriverPayoutBreakdown(offer as any).basePay,
-                                  tipAmount: getDriverPayoutBreakdown(offer as any).tipAmount,
-                                  poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
-                                  paymentMethod: (offer as any).payment_method ?? null,
-                                  cashToCollect: (offer as any).payment_method === 'cash'
-                                    ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
-                                    : null,
-                                  totalDistance: Number((offer as any).distance_km ?? 0),
-                                  estimatedTime: offer.estimated_prep_time ?? 15,
-                                  itemCount: offer.order_items?.length ?? 0,
-                                  predictedReadyAt: (offer as any).predicted_ready_at ?? null,
-                                  orderStatus: offer.status ?? null,
-                                }}
-                                onAccept={acceptOrder}
-                                onDecline={handleDecline}
-                                onRemove={handleDecline}
-                                expiresAt={offerExpiresAt[offer.id] ?? null}
-                                timeoutSec={offerTimeoutSec}
-                              />
-                            ))}
-                          </div>
-                        )}
-                        <ActiveDelivery
-                          delivery={{
-                            id: activeDelivery.id,
-                            storeName: storeInfo?.name || 'Σημείο Παραλαβής',
-                            storeAddress: storeInfo?.address || 'Διεύθυνση',
-                            storePhone: storeInfo?.phone || null,
-                            storeLat: storeInfo?.latitude ?? null,
-                            storeLng: storeInfo?.longitude ?? null,
-                            deliveryAddress: activeDelivery.delivery_address || 'Πελάτης',
-                            deliveryLat: activeDelivery.delivery_latitude ?? deliveryCoords?.lat ?? null,
-                            deliveryLng: activeDelivery.delivery_longitude ?? deliveryCoords?.lng ?? null,
-                            customerName: customerInfo?.name || 'Πελάτης',
-                            customerPhone: customerInfo?.phone || null,
-                            status: activeDelivery.status ?? 'accepted',
-                            items: activeDelivery.order_items?.map(i => ({ name: i.name, quantity: i.quantity })) ?? [],
-                            estimatedPayout: getDriverPayoutBreakdown(activeDelivery as any).total,
-                            pickupChecklist: ['Όλα τα προϊόντα', 'Ποτά', 'Μαχαιροπίρουνα'],
-                            predictedReadyAt: (activeDelivery as any).predicted_ready_at ?? null,
-                            notes: (activeDelivery as any).notes ?? null,
-                            paymentMethod: (activeDelivery as any).payment_method ?? null,
-                            cashToCollect: (activeDelivery as any).payment_method === 'cash'
-                              ? Number((activeDelivery as any).cash_received ?? 0) || (Number((activeDelivery as any).total_amount ?? 0) + Number((activeDelivery as any).delivery_fee ?? 0) + Number((activeDelivery as any).tip_amount ?? 0))
-                              : null,
-                          }}
-                          onStatusUpdate={(status) => updateDeliveryStatus(activeDelivery.id, status)}
-                          onFocusDestination={() => { setNavMode(true); }}
-                        />
-                      </>
+                    {!hasIncomingOffers && activeDeliveries.length > 0 && (
+                      <ActiveOrdersList
+                        items={listItems}
+                        completedItems={recentCompleted}
+                        onNavToStore={() => { setNavMode(true); }}
+                        onConfirmPickup={(id) => handleStatusUpdate(id, 'picked_up')}
+                        onComplete={(id) => handleStatusUpdate(id, 'delivered')}
+                        busyId={busyStatusId}
+                      />
                     )}
 
                     {!activeDelivery && isOnline && !onBreak && cashCapped && (
@@ -854,54 +866,19 @@ export default function DriverApp() {
                       </div>
                     )}
 
-                    {/* Offer mode — fixed dock; map stays visible above */}
-                    {hasIncomingOffers && isOnline && !onBreak && !cashCapped && !loading && (
+                    {/* Offer mode — one card at a time; price is the only info */}
+                    {topOffer && isOnline && !onBreak && !cashCapped && (
                       <div className="space-y-2 pb-1">
-                        {offers.length > 1 && (
-                          <p className="px-0.5 text-[11px] font-heading font-semibold tabular-nums text-[hsl(var(--driver-text-muted))]">
-                            {offers.length} διαθέσιμες προσφορές
-                          </p>
-                        )}
-                        {offers.map((offer) => {
-                          const breakdown = getDriverPayoutBreakdown(offer as any);
-                          return (
-                            <OrderOfferCard
-                              key={offer.id}
-                              offer={{
-                                id: offer.id,
-                                storeName: offer.store_name || 'Κατάστημα',
-                                storeAddress: offer.store_address || 'Διεύθυνση καταστήματος',
-                                deliveryAddress: offer.delivery_address || 'Πελάτης',
-                                estimatedPayout: breakdown.total,
-                                basePay: breakdown.basePay,
-                                tipAmount: breakdown.tipAmount,
-                                poolBonus: Number((offer as any).driver_pool_bonus ?? 0),
-                                paymentMethod: (offer as any).payment_method ?? null,
-                                cashToCollect: (offer as any).payment_method === 'cash'
-                                  ? Number((offer as any).cash_received ?? 0) || (Number((offer as any).total_amount ?? 0) + Number((offer as any).delivery_fee ?? 0) + Number((offer as any).tip_amount ?? 0))
-                                  : null,
-                                customerNotes: (offer as any).notes ?? null,
-                                perKmRate: 0.50,
-                                totalDistance: Number((offer as any).distance_km ?? 0),
-                                estimatedTime: offer.estimated_prep_time ?? 20,
-                                itemCount: offer.order_items?.length ?? 0,
-                                items: (offer.order_items ?? []).map((it: any) => ({
-                                  name: it.name || 'Προϊόν',
-                                  quantity: Number(it.quantity ?? 1),
-                                  unitPrice: it.unit_price != null ? Number(it.unit_price) : null,
-                                })),
-                                orderNumber: (offer as any).store_order_number ?? offer.id.slice(0, 8),
-                                orderTotal: Number((offer as any).total_amount ?? 0) || null,
-                                predictedReadyAt: (offer as any).predicted_ready_at ?? null,
-                                orderStatus: offer.status ?? null,
-                              }}
-                              onAccept={acceptOrder}
-                              onDecline={handleDecline}
-                              expiresAt={offerExpiresAt[offer.id] ?? null}
-                              timeoutSec={offerTimeoutSec}
-                            />
-                          );
-                        })}
+                        <OneAtATimeOfferCard
+                          key={topOffer.id}
+                          id={topOffer.id}
+                          kicker={secondPhase ? 'Αυξημένη ζήτηση' : 'Νέα παραγγελία'}
+                          priceEur={topOfferPrice}
+                          expiresAt={offerExpiresAt[topOffer.id] ?? null}
+                          timeoutSec={offerTimeoutSec}
+                          onAccept={acceptOrder}
+                          onDecline={handleDecline}
+                        />
                       </div>
                     )}
                   </>

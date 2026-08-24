@@ -1277,7 +1277,10 @@ private fun StackedOfferCard(
     onAccept: () -> Unit,
     onDecline: () -> Unit,
 ) {
-    val payout = (offer.order.driver_payout ?: 0.0) +
+    // Stacked offers are always the SECOND order — it pays HALF of its base
+    // payout (accept-offer / driver_claim_order rule). Tip & pool bonus keep
+    // their full value.
+    val payout = ((offer.order.driver_payout ?: 0.0) * 0.5) +
         (offer.order.tip_amount ?: 0.0) +
         (offer.order.driver_pool_bonus ?: 0.0)
 
@@ -1494,6 +1497,27 @@ private fun ActiveTripCard(
         }
         trip.storeAddress?.let {
             Text(it, fontSize = 13.sp, color = TextMuted, modifier = Modifier.padding(top = 2.dp))
+        }
+        if (status in listOf("accepted", "preparing", "ready", "arrived")) {
+            trip.order.pickup_code?.takeIf { it.isNotBlank() }?.let { code ->
+                Spacer(Modifier.height(6.dp))
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "Κωδικός ταμείου",
+                        fontSize = 12.sp,
+                        color = TextMuted,
+                        fontWeight = FontWeight.Medium,
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        code,
+                        fontSize = 22.sp,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = 3.sp,
+                        color = FreshAmber,
+                    )
+                }
+            }
         }
         trip.order.delivery_address?.let {
             Text("Παράδοση: $it", fontSize = 14.sp, color = TextDark, modifier = Modifier.padding(top = 6.dp))

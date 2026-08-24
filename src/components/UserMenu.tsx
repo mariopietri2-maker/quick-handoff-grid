@@ -21,7 +21,7 @@ import { DriverAppSettings } from '@/components/driver/DriverAppSettings';
 import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
 
-export function UserMenu() {
+export function UserMenu({ blockSignOut }: { blockSignOut?: string | null } = {}) {
   const { user, profile, signOut, isAdmin, isM } = useAuth();
   const navigate = useNavigate();
   const isDriver = profile?.role === 'driver' || profile?.role === 'm' || isM;
@@ -74,6 +74,11 @@ export function UserMenu() {
     'px-3 pt-2 pb-1 text-[11px] font-heading font-bold uppercase tracking-wide text-muted-foreground';
 
   const handleSignOut = async () => {
+    if (blockSignOut) {
+      toast.error(blockSignOut);
+      setMenuOpen(false);
+      return;
+    }
     await signOut();
     navigate('/auth');
   };
