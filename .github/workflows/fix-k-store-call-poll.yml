@@ -16,23 +16,21 @@ jobs:
           p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
           t = p.read_text()
           old = '''                    storeCalls = storeCalls,\n                    activeStoreCall = activeStoreCall,\n                    error = null,\n                )\n                if (!isK) maybeAlertOffers(offers + stacked)\n'''
-          new = '''                    storeCalls = storeCalls,\n                    activeStoreCall = activeStoreCall,\n                    error = null,\n                )\n                if (!isK) maybeAlertOffers(offers + stacked)\n                // K-role: treat open store calls like offers (sound/vibrate) so driver notices without FCM\n                if (isK && storeCalls.isNotEmpty()) {\n                    maybeAlertOffers(\n                        storeCalls.map { c ->\n                            OfferUi(\n                                offerId = c.id,\n                                order = OrderUi(\n                                    id = c.id,\n                                    store_id = c.id,\n                                    store_name = c.storeName,\n                                    status = "store_call",\n                                ),\n                            )\n                        },\n                    )\n                }\n'''
-          if old not in t:
-              if 'isK && storeCalls.isNotEmpty()' in t:
-                  print('alert already present')
-              else:
-                  raise SystemExit('state update pattern missing')
+          new = '''                    storeCalls = storeCalls,\n                    activeStoreCall = activeStoreCall,\n                    error = null,\n                )\n                if (!isK) maybeAlertOffers(offers + stacked)\n                if (isK && storeCalls.isNotEmpty()) {\n                    val key = storeCalls.joinToString(",") { it.id }\n                    if (key != lastOfferAlertKey) {\n                        lastOfferAlertKey = key\n                        val local = _state.value.settingsLocal\n                        if (local.offerSound) playSoundById(local.soundId)\n                        if (local.vibration) vibrateOffer()\n                    }\n                }\n'''
+          if 'isK && storeCalls.isNotEmpty()' in t:
+              print('alert already present')
+          elif old not in t:
+              raise SystemExit('state update pattern missing')
           else:
               t = t.replace(old, new, 1)
               print('alert patched')
 
           old2 = '''        pollJob = viewModelScope.launch {\n            var tick = 0\n            while (true) {\n                delay(4_000)\n'''
-          new2 = '''        pollJob = viewModelScope.launch {\n            var tick = 0\n            while (true) {\n                // K drivers need faster poll — store calls are short-lived and FCM may be missing\n                val isKPoll = _state.value.driverProfile?.call_role == "K"\n                delay(if (isKPoll) 2_000 else 4_000)\n'''
-          if old2 not in t:
-              if 'isKPoll' in t:
-                  print('poll already patched')
-              else:
-                  raise SystemExit('poll pattern missing')
+          new2 = '''        pollJob = viewModelScope.launch {\n            var tick = 0\n            while (true) {\n                val isKPoll = _state.value.driverProfile?.call_role == "K"\n                delay(if (isKPoll) 2_000 else 4_000)\n'''
+          if 'isKPoll' in t:
+              print('poll already patched')
+          elif old2 not in t:
+              raise SystemExit('poll pattern missing')
           else:
               t = t.replace(old2, new2, 1)
               print('poll patched')
