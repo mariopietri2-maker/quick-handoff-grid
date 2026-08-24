@@ -7,26 +7,47 @@ jobs:
   cleanup:
     runs-on: ubuntu-latest
     steps:
-      - name: Delete old release assets
+      - uses: actions/checkout@v4
+      - name: Keep latest APKs and set version labels
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
-          # Keep only the latest native debug builds (current CI upload names)
-          KEEP='fresh-driver-native-debug.apk|fresh-driver-native-debug.aab|fresh-customer-native-debug.apk|fresh-customer-native-debug.aab'
-          # Also keep small preview images if present
-          KEEP_IMG='\.png$'
+          DRIVER_NAME=$(grep -E 'versionName\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          DRIVER_CODE=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          CUST_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          CUST_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
 
+          KEEP='fresh-driver-native-debug.apk|fresh-driver-native-debug.aab|fresh-customer-native-debug.apk|fresh-customer-native-debug.aab|\.png$'
           assets=$(gh api repos/mariopietri2-maker/quick-handoff-grid/releases/tags/mobile-apks-v1 --jq '.assets[] | "\(.id)\t\(.name)"')
           while IFS=$'\t' read -r id name; do
-            [ -z "$id" ] && continue
-            if echo "$name" | grep -Eq "$KEEP|$KEEP_IMG"; then
+            [ -z "${id:-}" ] && continue
+            if echo "$name" | grep -Eq "$KEEP"; then
               echo "KEEP  $name"
             else
-              echo "DELETE $name (id=$id)"
-              gh api -X DELETE "repos/mariopietri2-maker/quick-handoff-grid/releases/assets/$id"
+              echo "DELETE $name"
+              gh api -X DELETE "repos/mariopietri2-maker/quick-handoff-grid/releases/assets/$id" || true
             fi
           done <<< "$assets"
 
-          echo "--- Remaining assets ---"
+          TITLE="Driver ${DRIVER_NAME} (${DRIVER_CODE}) · Customer ${CUST_NAME} (${CUST_CODE})"
+          NOTES=$(cat <<EOF
+## Fresh Delivery — latest Android builds
+
+| App | Version | Build | File |
+|-----|---------|-------|------|
+| **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | \`fresh-driver-native-debug.apk\` |
+| **Customer** | **${CUST_NAME}** | ${CUST_CODE} | \`fresh-customer-native-debug.apk\` |
+
+### Driver APK — v${DRIVER_NAME} (build ${DRIVER_CODE})
+https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+
+### Customer APK — v${CUST_NAME} (build ${CUST_CODE})
+https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+
+Only the latest build is kept on this release.
+EOF
+)
+          gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"
+          echo "Release title: $TITLE"
           gh api repos/mariopietri2-maker/quick-handoff-grid/releases/tags/mobile-apks-v1 --jq '.assets[].name'
