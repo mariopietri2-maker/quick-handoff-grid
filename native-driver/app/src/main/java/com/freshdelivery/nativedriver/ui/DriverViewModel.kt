@@ -415,8 +415,9 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 val isK = driver?.call_role == "K"
                 val offers: List<OfferUi>
                 val stacked: List<OfferUi>
-                val blocked = dState.on_break == true ||
-                    (dState.shift_cash_balance ?: 0.0) >= (settings.max_cash_cap ?: 200.0)
+                // K-role drivers must not be blocked by cash cap — they only take N-store calls
+                val cashCappedNow = (dState.shift_cash_balance ?: 0.0) >= (settings.max_cash_cap ?: 200.0)
+                val blocked = dState.on_break == true || (!isK && cashCappedNow)
                 if (trips.isNotEmpty()) {
                     offers = emptyList()
                     val remaining = (maxStack - trips.size).coerceAtLeast(0)
