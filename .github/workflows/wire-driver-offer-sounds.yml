@@ -1,0 +1,131 @@
+name: Wire driver offer sounds admin tab
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/wire-driver-offer-sounds.yml"
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch AdminApp, SettingsHub, driver-sound-prefs
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+
+          # --- AdminApp.tsx ---
+          p = Path('src/pages/AdminApp.tsx')
+          t = p.read_text(encoding='utf-8')
+          if "DriverOfferSoundsPanel" not in t:
+              t = t.replace(
+                  "const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));",
+                  "const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));\nconst DriverOfferSoundsPanel = lazy(() => import('@/components/admin/DriverOfferSoundsPanel'));",
+              )
+              t = t.replace(
+                  "      case 'driver_messages':\n        return <DriverMessagesPanel />;",
+                  "      case 'driver_messages':\n        return <DriverMessagesPanel />;\n      case 'driver_offer_sounds':\n        return <DriverOfferSoundsPanel />;",
+              )
+              p.write_text(t, encoding='utf-8')
+              print('AdminApp patched')
+          else:
+              print('AdminApp already wired')
+
+          # --- SettingsHub ---
+          p = Path('src/components/admin/SettingsHub.tsx')
+          t = p.read_text(encoding='utf-8')
+          if "driver_offer_sounds" not in t:
+              t = t.replace(
+                  "  Users, ShieldCheck, Headphones, Zap, Palette, Sparkles, Megaphone, MessageSquareText,\n  SlidersHorizontal, Shield, Stethoscope, Activity, Cloud, FileCheck, TriangleAlert, Flag, Gauge,\n  Link2,",
+                  "  Users, ShieldCheck, Headphones, Zap, Palette, Sparkles, Megaphone, MessageSquareText,\n  SlidersHorizontal, Shield, Stethoscope, Activity, Cloud, FileCheck, TriangleAlert, Flag, Gauge,\n  Link2, Music2,",
+              )
+              # add under ops category
+              needle = "{ id: 'feature_flags', label: 'Feature flags'"
+              insert = "{ id: 'driver_offer_sounds', label: 'Ήχοι προσφοράς οδηγού', desc: 'Ανέβασμα / αφαίρεση ήχων για προσφορές χωρίς rebuild APK.', icon: Music2, accent: '#059669' },\n      " + needle
+              if needle in t:
+                  t = t.replace(needle, insert, 1)
+                  p.write_text(t, encoding='utf-8')
+                  print('SettingsHub patched')
+              else:
+                  print('SettingsHub needle missing')
+          else:
+              print('SettingsHub already has tab')
+
+          # --- driver-sound-prefs: prefer remote default URL ---
+          p = Path('src/lib/driver-sound-prefs.ts')
+          t = p.read_text(encoding='utf-8')
+          if 'list_driver_offer_sounds_public' not in t:
+              t = t.replace(
+                  "import offerChimeUrl from '@/assets/sounds/fresh_delivery.mp3';\n",
+                  "import offerChimeUrl from '@/assets/sounds/fresh_delivery.mp3';\nimport { supabase } from '@/integrations/supabase/client';\n",
+              )
+              # after getAudio function area, inject remote url cache
+              inject = '''
+let remoteOfferUrl: string | null = null;
+let remoteFetchedAt = 0;
+
+/** Refresh default offer sound URL from admin library (web/PWA — no APK rebuild). */
+export async function refreshRemoteOfferSoundUrl(): Promise<string | null> {
+  try {
+    const { data, error } = await (supabase as any).rpc('list_driver_offer_sounds_public');
+    if (error) throw error;
+    const rows = Array.isArray(data) ? data : [];
+    const def = rows.find((r: any) => r.is_default) ?? rows[0];
+    remoteOfferUrl = def?.public_url ? String(def.public_url) : null;
+    remoteFetchedAt = Date.now();
+    // Rebuild audio element on next play
+    try {
+      audioEl?.pause();
+    } catch {
+      /* ignore */
+    }
+    audioEl = null;
+    return remoteOfferUrl;
+  } catch (e) {
+    console.warn('remote offer sound fetch failed', e);
+    return remoteOfferUrl;
+  }
+}
+
+function resolveChimeSrc(): string {
+  if (remoteOfferUrl) return remoteOfferUrl;
+  // Stale-while-revalidate: kick a background refresh occasionally
+  if (typeof window !== 'undefined' && Date.now() - remoteFetchedAt > 60_000) {
+    void refreshRemoteOfferSoundUrl();
+  }
+  return offerChimeUrl;
+}
+
+'''
+              # Insert after `let audioEl` declaration
+              if 'let audioEl: HTMLAudioElement | null = null;' in t:
+                  t = t.replace(
+                      'let audioEl: HTMLAudioElement | null = null;\n',
+                      'let audioEl: HTMLAudioElement | null = null;\n' + inject,
+                      1,
+                  )
+              t = t.replace(
+                  "    audioEl = new Audio(offerChimeUrl);\n",
+                  "    audioEl = new Audio(resolveChimeSrc());\n",
+                  1,
+              )
+              # auto-refresh on module load in browser
+              t += "\nif (typeof window !== 'undefined') {\n  void refreshRemoteOfferSoundUrl();\n}\n"
+              p.write_text(t, encoding='utf-8')
+              print('driver-sound-prefs patched')
+          else:
+              print('driver-sound-prefs already remote-aware')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/AdminApp.tsx src/components/admin/SettingsHub.tsx src/lib/driver-sound-prefs.ts || true
+          if git diff --staged --quiet; then
+            echo "No changes"
+          else
+            git commit -m "feat(admin): wire offer sounds panel + remote default for web driver"
+            git push
+          fi
