@@ -824,11 +824,28 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Opens live chat from the headphone flow, seeding the first message. */
-    fun startLiveChat(initialMessage: String?) {
-        openLiveChat()
-        val msg = initialMessage?.trim()
-        if (!msg.isNullOrBlank()) sendLiveChatMessage(msg)
+    /** Start live chat with required topic. Only SUPPORT can close (server-side). */
+    fun startLiveChat(topic: String, initialMessage: String? = null) {
+        val uid = _state.value.userId ?: return
+        val topicTrim = topic.trim()
+        if (topicTrim.isEmpty()) {
+            _state.value = _state.value.copy(liveChatError = "Pick a topic")
+            return
+        }
+        viewModelScope.launch {
+            _state.value = _state.value.copy(liveChatLoading = true, liveChatError = null, liveChatOpen = true)
+            runCatching {
+                repo.ensureDriverLiveChatSession(topicTrim)
+                val body = initialMessage?.trim().orEmpty().ifBlank { "Topic: $topicTrim" }
+                repo.sendLiveChatMessage(uid, uid, body, topic = topicTrim)
+                repo.fetchLiveChat(uid)
+            }.onSuccess { msgs ->
+                _state.value = _state.value.copy(liveChatMessages = msgs, liveChatLoading = false, supportOpen = true)
+                startLiveChatSubscription(uid)
+            }.onFailure { e ->
+                _state.value = _state.value.copy(liveChatLoading = false, liveChatError = handleError("startLiveChat", e))
+            }
+        }
     }
 
     fun sendLiveChatMessage(text: String) {
@@ -882,7 +899,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun openSupport() {
         _state.value = _state.value.copy(supportOpen = true)
-        openLiveChat()
     }
 
     fun closeSupport() {

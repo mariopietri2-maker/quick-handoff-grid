@@ -501,13 +501,26 @@ class DriverRepository(
         }.decodeList<LiveChatMessageRow>()
     }
 
-    suspend fun sendLiveChatMessage(driverId: String, senderId: String, message: String) {
+    suspend fun ensureDriverLiveChatSession(topic: String): String {
+        return client.postgrest.rpc(
+            "ensure_driver_live_chat_session",
+            buildJsonObject { put("p_topic", topic) },
+        ).decodeAs<String>()
+    }
+
+    suspend fun sendLiveChatMessage(
+        driverId: String,
+        senderId: String,
+        message: String,
+        topic: String? = null,
+    ) {
         client.from("live_chat_messages").insert(
             buildJsonObject {
                 put("driver_id", driverId)
                 put("sender_id", senderId)
                 put("sender_role", "driver")
                 put("message", message)
+                if (!topic.isNullOrBlank()) put("topic", topic)
             },
         )
     }

@@ -77,6 +77,7 @@ import com.freshdelivery.nativedriver.ui.theme.FreshGreenBright
 fun SupportCenter(
     state: DriverUiState,
     onBack: () -> Unit,
+    onStartLiveChat: (topic: String, message: String) -> Unit,
     onSendLiveChat: (String) -> Unit,
     onOpenTicket: (SupportTicketRow) -> Unit,
     onCloseTicket: () -> Unit,
@@ -144,6 +145,15 @@ fun SupportCenter(
 
             Box(Modifier.fillMaxWidth().weight(1f)) {
                 when (screen) {
+                    "live-setup" -> LiveChatTopicSetup(
+                        busy = state.liveChatLoading,
+                        error = state.liveChatError,
+                        onBack = { screen = "menu" },
+                        onStart = { topic, msg ->
+                            onStartLiveChat(topic, msg)
+                            screen = "live"
+                        },
+                    )
                     "live" -> LiveChatPanel(
                         state = state,
                         onSend = onSendLiveChat,
@@ -164,7 +174,7 @@ fun SupportCenter(
                     )
                     else -> MenuPanel(
                         tickets = state.tickets,
-                        onLiveChat = { screen = "live" },
+                        onLiveChat = { screen = "live-setup" },
                         onTickets = { screen = "tickets" },
                         onNewTicket = { screen = "new-ticket" },
                         onOpen = onOpenTicket,
@@ -482,6 +492,59 @@ private fun CustomerContextCard(
                 Text(it, fontSize = 12.sp, color = cs.onSurfaceVariant, maxLines = 1)
             }
         }
+    }
+}
+
+
+private data class DriverHelpTopic(val id: String, val label: String)
+
+private val DRIVER_HELP_TOPICS = listOf(
+    DriverHelpTopic("order_issue", "Order issue"),
+    DriverHelpTopic("payment", "Payment / cash"),
+    DriverHelpTopic("app_bug", "App problem"),
+    DriverHelpTopic("store_call", "Store call (N/K)"),
+    DriverHelpTopic("account", "Account / documents"),
+    DriverHelpTopic("other", "Other"),
+)
+
+@Composable
+private fun LiveChatTopicSetup(
+    busy: Boolean,
+    error: String?,
+    onBack: () -> Unit,
+    onStart: (topic: String, message: String) -> Unit,
+) {
+    val cs = MaterialTheme.colorScheme
+    var selected by remember { mutableStateOf<String?>(null) }
+    var message by remember { mutableStateOf("") }
+    Column(Modifier.fillMaxWidth().verticalScroll(rememberScrollState()).padding(bottom = 24.dp)) {
+        Text("Before live chat", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(6.dp))
+        Text("Pick a topic and write a short message so support can help faster.", style = MaterialTheme.typography.bodyMedium, color = cs.onSurfaceVariant)
+        Spacer(Modifier.height(16.dp))
+        Text("Topic", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(8.dp))
+        DRIVER_HELP_TOPICS.forEach { topic ->
+            val active = selected == topic.id
+            Row(
+                Modifier.fillMaxWidth().padding(vertical = 4.dp).clip(RoundedCornerShape(14.dp))
+                    .background(if (active) FreshGreen.copy(alpha = 0.15f) else cs.surface)
+                    .border(1.dp, if (active) FreshGreen else cs.outline.copy(alpha = 0.3f), RoundedCornerShape(14.dp))
+                    .clickable { selected = topic.id }.padding(horizontal = 14.dp, vertical = 12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) { Text(topic.label, modifier = Modifier.weight(1f), fontWeight = if (active) FontWeight.Bold else FontWeight.Medium) }
+        }
+        Spacer(Modifier.height(16.dp))
+        Text("Message", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.titleSmall)
+        Spacer(Modifier.height(6.dp))
+        OutlinedTextField(value = message, onValueChange = { message = it }, modifier = Modifier.fillMaxWidth(), minLines = 3, maxLines = 5, placeholder = { Text("Describe the issue...") })
+        if (!error.isNullOrBlank()) { Spacer(Modifier.height(8.dp)); Text(error, color = FreshError, style = MaterialTheme.typography.bodySmall) }
+        Spacer(Modifier.height(16.dp))
+        Button(onClick = { val topic = selected ?: return@Button; onStart(topic, message.trim()) }, enabled = selected != null && !busy, modifier = Modifier.fillMaxWidth().height(52.dp), shape = RoundedCornerShape(16.dp)) {
+            if (busy) CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp, color = cs.onPrimary) else Text("Start live chat", fontWeight = FontWeight.Bold)
+        }
+        Spacer(Modifier.height(8.dp))
+        Text("Only support can close the conversation.", style = MaterialTheme.typography.labelSmall, color = cs.onSurfaceVariant)
     }
 }
 

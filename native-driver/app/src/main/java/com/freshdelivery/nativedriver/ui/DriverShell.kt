@@ -112,6 +112,7 @@ fun DriverShell(
     onSupportOpenTicket: (String) -> Unit = {},
     onSendChat: (String) -> Unit = {},
     onCloseChat: () -> Unit = {},
+    onStartLiveChat: (String, String) -> Unit = { _, _ -> },
     onSendLiveChat: (String) -> Unit = {},
 ) {
     val unread = state.notifications.count { it.read_at == null }
@@ -204,6 +205,7 @@ fun DriverShell(
             SupportCenter(
                 state = state,
                 onBack = onCloseSupport,
+                onStartLiveChat = onStartLiveChat,
                 onSendLiveChat = onSendLiveChat,
                 onOpenTicket = { t -> onSupportOpenTicket(t.id) },
                 onCloseTicket = onCloseChat,
