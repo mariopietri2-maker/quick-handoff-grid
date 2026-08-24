@@ -1,0 +1,36 @@
+name: Set release version notes
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  notes:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Edit mobile-apks-v1 title and notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          DRIVER_NAME=$(grep -E 'versionName\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          DRIVER_CODE=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          CUST_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          CUST_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          TITLE="Driver ${DRIVER_NAME} (${DRIVER_CODE}) · Customer ${CUST_NAME} (${CUST_CODE})"
+          NOTES="## Fresh Delivery — latest Android builds
+
+| App | Version | Build | Download |
+|-----|---------|-------|----------|
+| **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | [fresh-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk) |
+| **Customer** | **${CUST_NAME}** | ${CUST_CODE} | [fresh-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk) |
+
+### Driver APK — v${DRIVER_NAME} (build ${DRIVER_CODE})
+https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+
+### Customer APK — v${CUST_NAME} (build ${CUST_CODE})
+https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+
+Only the latest build is kept on this release."
+          gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"
+          echo "Updated release to: $TITLE"
