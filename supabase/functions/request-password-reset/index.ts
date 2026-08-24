@@ -25,6 +25,28 @@ function normalizeEmail(email: string) {
   return email.trim().toLowerCase();
 }
 
+// Only these origins may be used as the recovery-link redirect target.
+// Anything else falls back to the app — prevents recovery-token capture
+// via attacker-controlled redirectTo (open redirect / token leak).
+const ALLOWED_REDIRECT_ORIGINS = new Set([
+  "https://fresh-delivery-rho.vercel.app",
+  "https://quick-handoff-grid-production.up.railway.app",
+  "http://localhost:5173",
+  "http://127.0.0.1:5173",
+]);
+
+const DEFAULT_REDIRECT_TO = "https://fresh-delivery-rho.vercel.app/auth?reset=1";
+
+function safeRedirectTo(raw: unknown): string {
+  if (typeof raw !== "string" || !raw.startsWith("http")) return DEFAULT_REDIRECT_TO;
+  try {
+    const url = new URL(raw);
+    return ALLOWED_REDIRECT_ORIGINS.has(url.origin) ? url.toString() : DEFAULT_REDIRECT_TO;
+  } catch {
+    return DEFAULT_REDIRECT_TO;
+  }
+}
+
 async function sha256Hex(value: string) {
   const data = new TextEncoder().encode(value);
   const digest = await crypto.subtle.digest("SHA-256", data);
@@ -60,10 +82,7 @@ Deno.serve(async (req) => {
   };
 
   // Find auth user by email (admin list is paginated — use generateLink probe).
-  const redirectTo =
-    typeof body.redirectTo === "string" && body.redirectTo.startsWith("http")
-      ? body.redirectTo
-      : "https://fresh-delivery-rho.vercel.app/auth?reset=1";
+  const redirectTo = safeRedirectTo(body.redirectTo);
 
   const { data: linkData, error: linkErr } = await admin.auth.admin.generateLink({
     type: "recovery",
