@@ -1,0 +1,20 @@
+name: Apply support topic patch
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Reassemble and apply patch
+        run: |
+          set -euo pipefail
+          cat patches/support-topic-and-close.part* | tr -d '\n' | base64 -d > /tmp/support.patch
+          git apply --whitespace=nowarn /tmp/support.patch
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -m "feat(support): driver topic before live chat; support can close" || true
+          git push
