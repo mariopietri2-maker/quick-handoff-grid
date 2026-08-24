@@ -1,0 +1,51 @@
+name: Reorder download page
+on:
+  push:
+    paths:
+      - '.github/workflows/reorder-download-page.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: |
+          set -euo pipefail
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+          page = Path('src/pages/DownloadAppPage.tsx')
+          pt = page.read_text()
+          old = '''        <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+          <ApkCard flavor="customer" highlighted={focus === 'customer'} />
+          <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
+          <ApkCard flavor="driver" highlighted={focus === 'driver'} />
+          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
+        </div>'''
+          new = '''        <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
+          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
+          <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
+          <ApkCard flavor="driver" highlighted={focus === 'driver'} />
+          <ApkCard flavor="customer" highlighted={focus === 'customer'} />
+        </div>'''
+          if new in pt:
+              print('already ordered')
+          elif old in pt:
+              pt = pt.replace(old, new, 1)
+              print('reordered cards')
+          else:
+              raise SystemExit('card grid pattern missing')
+          pt2 = pt.replace(
+              'Capacitor v{APK_BUILD_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Native driver v{APK_NATIVE_DRIVER_VERSION}',
+              'Native driver v{APK_NATIVE_DRIVER_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Capacitor v{APK_BUILD_VERSION}',
+          )
+          page.write_text(pt2)
+          print('header ok' if pt2 != pt else 'header already')
+          PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/DownloadAppPage.tsx
+          git commit -m "chore(web): show latest native APKs first on /download" || true
+          git push
