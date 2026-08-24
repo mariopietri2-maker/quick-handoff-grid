@@ -182,6 +182,7 @@ data class LiveChatMessageRow(
     val sender_id: String? = null,
     val sender_role: String? = null,
     val message: String? = null,
+    val topic: String? = null,
     val created_at: String? = null,
 )
 
