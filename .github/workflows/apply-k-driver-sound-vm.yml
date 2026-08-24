@@ -6,8 +6,9 @@ on:
     branches:
       - fix/k-driver-sound-rebuild
     paths:
-      - "patches/k-driver-sound-vm.patch"
+      - "patches/**"
       - ".github/workflows/apply-k-driver-sound-vm.yml"
+      - "native-driver/**"
 
 jobs:
   apply-and-build:
@@ -16,83 +17,93 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
           ref: fix/k-driver-sound-rebuild
 
-      - name: Apply ViewModel patch if needed
+      - name: Apply patches
         run: |
           set -euo pipefail
-          TARGET=native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
-          if grep -q 'startAlertBurst' "$TARGET" 2>/dev/null; then
-            echo "ViewModel already patched"
-          else
+          if ! grep -q 'startAlertBurst' native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt; then
             patch -p1 < patches/k-driver-sound-vm.patch
-            echo "Patch applied"
+            echo "VM patch applied"
+          else
+            echo "VM already patched"
           fi
-          grep -q 'startAlertBurst' "$TARGET"
-          grep -q 'driver-offers-v3' native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/DriverFirebaseMessagingService.kt
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt")
+          t = p.read_text()
+          # Fix broken multi-line string that breaks Kotlin compile
+          bad = '"Επιβεβαιώνεις ότι ολοκλήρωσες την κλήση στο ${active.store_name};\nΜετά δεν θα μπορείς να την ανοίξεις ξανά."'
+          # Source may contain a real newline inside the string literal
+          import re
+          t2, n = re.subn(
+              r'"Επιβεβαιώνεις ότι ολοκλήρωσες την κλήση στο \$\{active\.store_name\};\s*\nΜετά δεν θα μπορείς να την ανοίξεις ξανά\."',
+              '"Επιβεβαιώνεις ότι ολοκλήρωσες την κλήση στο ${active.store_name};\\nΜετά δεν θα μπορείς να την ανοίξεις ξανά."',
+              t,
+              count=1,
+          )
+          if n:
+              t = t2
+              print("HomeScreen string fixed", n)
+          else:
+              print("HomeScreen string already ok or pattern miss")
+          if "\nprivate fun StoreCallSheet(" in t and "@Composable\nprivate fun StoreCallSheet(" not in t:
+              t = t.replace("\nprivate fun StoreCallSheet(", "\n@Composable\nprivate fun StoreCallSheet(")
+              print("StoreCallSheet marked @Composable")
+          p.write_text(t)
+          assert "startAlertBurst" in Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt").read_text()
+          assert "driver-offers-v3" in Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/DriverFirebaseMessagingService.kt").read_text()
+          print("ok")
+          PY
 
-      - name: Commit patched ViewModel
+      - name: Commit source fixes
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
-          if git diff --cached --quiet; then
-            echo "No ViewModel changes to commit"
-          else
-            git commit -m "fix(native-driver): repeat store-call/offer alert burst for K drivers"
-            git push origin HEAD:fix/k-driver-sound-rebuild
+          git add -A native-driver
+          if git diff --cached --quiet; then echo no changes; else
+            git commit -m "fix(native-driver): sound burst + HomeScreen compile fix"
+            git push origin HEAD:fix/k-driver-sound-rebuild || true
           fi
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v4
+      - uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: "17"
+      - uses: android-actions/setup-android@v3
+      - run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
-        run: sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
-
-      - name: Configure Mapbox + local.properties
+      - name: Mapbox + local.properties
         env:
           MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
         run: |
           echo "sdk.dir=$ANDROID_HOME" > native-driver/local.properties
+          mkdir -p "$HOME/.gradle"
           if [ -n "${MAPBOX_DOWNLOADS_TOKEN:-}" ]; then
-            mkdir -p "$HOME/.gradle"
             echo "MAPBOX_DOWNLOADS_TOKEN=$MAPBOX_DOWNLOADS_TOKEN" >> "$HOME/.gradle/gradle.properties"
-            echo "Mapbox token configured"
-          else
-            echo "WARN: MAPBOX_DOWNLOADS_TOKEN missing"
+            echo "systemProp.mapboxDownloadsToken=$MAPBOX_DOWNLOADS_TOKEN" >> "$HOME/.gradle/gradle.properties"
           fi
 
-      - name: Build native driver debug APK
+      - name: Build driver debug APK
         working-directory: native-driver
         run: |
-          chmod +x gradlew || true
+          chmod +x gradlew
           ./gradlew :app:assembleDebug --no-daemon --stacktrace
 
-      - name: Upload driver APK artifact
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: fresh-driver-native-debug
           path: native-driver/app/build/outputs/apk/debug/*.apk
           if-no-files-found: error
 
-      - name: Publish to mobile-apks-v1 release
+      - name: Publish release asset
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          set -euo pipefail
           mkdir -p dist
-          APK=$(ls native-driver/app/build/outputs/apk/debug/*.apk | head -1)
-          cp "$APK" dist/fresh-driver-native-debug.apk
-          gh release view mobile-apks-v1 >/dev/null 2>&1 || \
-            gh release create mobile-apks-v1 --title "Mobile APKs" --notes "Native debug APKs"
+          cp native-driver/app/build/outputs/apk/debug/*.apk dist/fresh-driver-native-debug.apk
+          gh release view mobile-apks-v1 >/dev/null 2>&1 || gh release create mobile-apks-v1 --title "Mobile APKs" --notes "Native debug APKs"
           gh release upload mobile-apks-v1 dist/fresh-driver-native-debug.apk --clobber
-          echo "Published: https://github.com/${{ github.repository }}/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk"
+          echo "APK: https://github.com/${{ github.repository }}/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk"
