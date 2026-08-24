@@ -345,6 +345,7 @@ fun HomeScreen(
     val centerLat = markers.firstOrNull()?.lat ?: primary?.storeLat ?: state.geo?.lat
     val centerLng = markers.firstOrNull()?.lng ?: primary?.storeLng ?: state.geo?.lng
     val err = friendlyError(state.error)
+    val hasStoreCall = state.online && state.activeTrips.isEmpty() && state.isCallDriver && state.storeCalls.isNotEmpty()
     val hasOffer = state.online && state.activeTrips.isEmpty() && state.offers.isNotEmpty()
     val hasTrip = state.activeTrips.isNotEmpty()
 
@@ -674,26 +675,25 @@ fun HomeScreen(
                     }
                 }
 
+                hasStoreCall -> {
+                    state.storeCalls.take(1).forEach { call ->
+                        StoreCallSheet(
+                            call = call,
+                            busy = state.busy,
+                            onAccept = { onAcceptStoreCall(call.id) },
+                        )
+                    }
+                }
+
                 hasOffer -> {
-                    // Store call card for K-role drivers (shown above regular offers)
-                    if (state.isCallDriver && state.storeCalls.isNotEmpty()) {
-                        state.storeCalls.take(1).forEach { call ->
-                            StoreCallSheet(
-                                call = call,
-                                busy = state.busy,
-                                onAccept = { onAcceptStoreCall(call.id) },
-                            )
-                        }
-                    } else {
-                        state.offers.take(1).forEach { offer ->
-                            OfferSheet(
-                                offer = offer,
-                                busy = state.busy,
-                                timeoutSec = state.settings.dist_offer_timeout_seconds ?: 60,
-                                onAccept = { onAccept(offer.offerId, null) },
-                                onDecline = { onDecline(offer.offerId) },
-                            )
-                        }
+                    state.offers.take(1).forEach { offer ->
+                        OfferSheet(
+                            offer = offer,
+                            busy = state.busy,
+                            timeoutSec = state.settings.dist_offer_timeout_seconds ?: 60,
+                            onAccept = { onAccept(offer.offerId, null) },
+                            onDecline = { onDecline(offer.offerId) },
+                        )
                     }
                 }
 
