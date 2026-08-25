@@ -47,7 +47,7 @@ function parseAiJson(raw: string): any {
   }
 }
 
-/** Keep moves gradual: ±10% from current, then clamp to guardrails. */
+/** Keep moves gradual: \u00b110% from current, then clamp to guardrails. */
 function gradualClamp(proposed: number, current: number, min: number, max: number) {
   const lo = Math.max(min, round2(current * 0.9));
   const hi = Math.min(max, round2(current * 1.1));
@@ -87,7 +87,7 @@ Deno.serve(async (req) => {
 
     const body = await req.json().catch(() => ({}));
     const dryRun = !!body?.dry_run;
-    // Manual "Εκτέλεση τώρα" can force-apply even when auto_apply is off.
+    // Manual "\u0395\u03ba\u03c4\u03ad\u03bb\u03b5\u03c3\u03b7 \u03c4\u03ce\u03c1\u03b1" can force-apply even when auto_apply is off.
     const forceApply = !!body?.force_apply && !isCron;
 
     // ---------- config ----------
@@ -194,16 +194,9 @@ Deno.serve(async (req) => {
       }),
     };
 
-    // ---------- ask the AI ----------
-    const apiKey = getAiGatewayApiKey();
-    if (!apiKey) {
-      await admin
-        .from("ai_pricing_runs")
-        .insert({ status: "error", context, error: "AI gateway key missing (AI_GATEWAY_API_KEY)" })
-        .catch(() => null);
-      return json({ error: "AI gateway key missing (AI_GATEWAY_API_KEY)" }, 500);
-    }
-
+    // ---------- decide pricing ----------
+    // Full AI when a gateway key exists; otherwise a deterministic rule-based
+    // engine on the same live signals so the feature never hard-fails.
     const guardrails = {
       delivery_fee_multiplier: [Number(cfg.delivery_fee_min_mult), Number(cfg.delivery_fee_max_mult)],
       driver_pay_multiplier: [Number(cfg.driver_pay_min_mult), Number(cfg.driver_pay_max_mult)],
@@ -212,7 +205,38 @@ Deno.serve(async (req) => {
     };
 
     const model = (cfg.model && String(cfg.model).trim()) || DEFAULT_MODEL;
+    const apiKey = getAiGatewayApiKey();
+    let engine = "ai";
+    let decision: any;
 
+    if (!apiKey) {
+      engine = "rule-based";
+      const demand = Number(context.open_orders_per_driver ?? 0);
+      const accept = context.offer_accept_rate == null ? null : Number(context.offer_accept_rate);
+      const hour = Number(context.local_hour ?? 0);
+      const peak = (hour >= 12 && hour <= 15) || (hour >= 19 && hour <= 22);
+
+      let feeTarget = 1;
+      let payTarget = 1;
+      if (demand >= 3) { feeTarget = 1.08; payTarget = 1.1; }
+      else if (demand >= 2) { feeTarget = 1.05; payTarget = 1.06; }
+      else if (demand > 0 && demand <= 0.5 && (accept == null || accept > 0.9)) { feeTarget = 0.95; }
+      if (accept != null && accept < 0.6) payTarget = Math.max(payTarget, 1.1);
+      if (peak) payTarget = Math.max(payTarget, 1.05);
+      if (demand === 0) feeTarget = Math.min(feeTarget, 1);
+
+      decision = {
+        delivery_fee_multiplier: feeTarget,
+        driver_pay_multiplier: payTarget,
+        stores: [],
+        reasoning:
+          `\u039a\u03b1\u03bd\u03cc\u03bd\u03b1\u03c2 \u03b5\u03c3\u03c9\u03c4\u03b5\u03c1\u03b9\u03ba\u03ae\u03c2 \u03bc\u03b7\u03c7\u03b1\u03bd\u03ae\u03c2 (\u03c7\u03c9\u03c1\u03af\u03c2 AI \u03ba\u03bb\u03b5\u03b9\u03b4\u03af): ${context.open_orders} \u03b5\u03bd\u03b5\u03c1\u03b3\u03ad\u03c2 \u03c0\u03b1\u03c1\u03b1\u03b3\u03b3\u03b5\u03bb\u03af\u03b5\u03c2 / ` +
+          `${context.drivers_on_shift} \u03bf\u03b4\u03b7\u03b3\u03bf\u03af \u03c3\u03b5 \u03b2\u03ac\u03c1\u03b4\u03b9\u03b1 (\u03b6\u03ae\u03c4\u03b7\u03c3\u03b7 ${demand}/\u03bf\u03b4\u03b7\u03b3\u03cc)` +
+          (accept == null ? "" : `, \u03b1\u03c0\u03bf\u03b4\u03bf\u03c7\u03ae \u03c0\u03c1\u03bf\u03c3\u03c6\u03bf\u03c1\u03ce\u03bd ${(accept * 100).toFixed(0)}%`) +
+          (peak ? ", \u03ce\u03c1\u03b1 \u03b1\u03b9\u03c7\u03bc\u03ae\u03c2" : "") +
+          ". \u03a1\u03cd\u03b8\u03bc\u03b9\u03c3\u03b7 \u03c0\u03bf\u03bb\u03bb\u03b1\u03c0\u03bb\u03b1\u03c3\u03b9\u03b1\u03c3\u03c4\u03ce\u03bd \u03bc\u03b5 \u03c3\u03c4\u03b1\u03b4\u03b9\u03b1\u03ba\u03ae \u03bc\u03b5\u03c4\u03b1\u03b2\u03bf\u03bb\u03ae \u03b5\u03bd\u03c4\u03cc\u03c2 \u03bf\u03c1\u03af\u03c9\u03bd.",
+      };
+    } else {
     const prompt = `You are the pricing engine of a food-delivery marketplace in Greece (Ioannina).
 Given the live marketplace snapshot, decide pricing multipliers.
 
@@ -255,7 +279,7 @@ Reply with JSON only:
     }
 
     const aiJson = await aiRes.json();
-    const decision = parseAiJson(aiJson?.choices?.[0]?.message?.content ?? "{}");
+    decision = parseAiJson(aiJson?.choices?.[0]?.message?.content ?? "{}");
 
     // Guard against empty/garbled AI payloads: without any decision field we'd
     // otherwise record a silent no-op "ok" run that looks like success.
@@ -269,6 +293,7 @@ Reply with JSON only:
       await admin.from("ai_pricing_runs").insert({ status: "error", context, error: detail }).catch(() => null);
       return json({ error: detail }, 502);
     }
+    } // end AI branch
 
     // ---------- clamp ----------
     const feeMult = gradualClamp(
@@ -291,7 +316,7 @@ Reply with JSON only:
       .insert({
         status: "ok",
         context,
-        decisions: { delivery_fee_multiplier: feeMult, driver_pay_multiplier: payMult, stores: storeDecisions, model },
+        decisions: { delivery_fee_multiplier: feeMult, driver_pay_multiplier: payMult, stores: storeDecisions, model, engine },
         reasoning: typeof decision.reasoning === "string" ? decision.reasoning.slice(0, 2000) : null,
         applied: false,
       })
@@ -320,7 +345,7 @@ Reply with JSON only:
           old_value: oldFee,
           new_value: feeMult,
           reason: decision.reasoning ?? null,
-          target_label: "Πλατφόρμα",
+          target_label: "\u03a0\u03bb\u03b1\u03c4\u03c6\u03cc\u03c1\u03bc\u03b1",
         });
       }
       if (oldPay !== payMult) {
@@ -331,7 +356,7 @@ Reply with JSON only:
           old_value: oldPay,
           new_value: payMult,
           reason: decision.reasoning ?? null,
-          target_label: "Πλατφόρμα",
+          target_label: "\u03a0\u03bb\u03b1\u03c4\u03c6\u03cc\u03c1\u03bc\u03b1",
         });
       }
 
@@ -373,7 +398,7 @@ Reply with JSON only:
               field: "menu_price_multiplier",
               old_value: 1,
               new_value: round2(mult),
-              reason: sd.reason ?? `${changed} προϊόντα`,
+              reason: sd.reason ?? `${changed} \u03c0\u03c1\u03bf\u03ca\u03cc\u03bd\u03c4\u03b1`,
             });
           }
         }
@@ -395,6 +420,7 @@ Reply with JSON only:
       reasoning: decision.reasoning ?? null,
       adjustments: adjustments.length,
       model,
+      engine,
       context,
     });
   } catch (e) {
