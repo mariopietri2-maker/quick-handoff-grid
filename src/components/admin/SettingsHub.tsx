@@ -5,7 +5,7 @@ import { Search, X, ChevronRight } from 'lucide-react';
 import {
   Users, ShieldCheck, Headphones, Zap, Palette, Sparkles, Megaphone, MessageSquareText,
   SlidersHorizontal, Shield, Stethoscope, Activity, Cloud, FileCheck, TriangleAlert, Flag, Gauge,
-  Link2,
+  Link2, Truck,
 } from 'lucide-react';
 
 type Entry = { id: string; label: string; desc: string; icon: any; accent: string; danger?: boolean };
@@ -42,6 +42,7 @@ const CATEGORIES: Category[] = [
     id: 'ops', label: 'Λειτουργία & Ανάπτυξη', accent: '#059669', iconBg: 'bg-emerald-500/10', iconFg: 'text-emerald-600',
     items: [
       { id: 'feature_flags', label: 'Feature flags', desc: 'Ενεργοποίηση/απενεργοποίηση λειτουργιών.', icon: Flag, accent: '#059669' },
+      { id: 'platform_mode', label: 'Marketplace & Delivery', desc: 'Delivery on/off, χρόνοι παράδοσης & ποιος παραδίδει ανά κατάστημα.', icon: Truck, accent: '#059669' },
       { id: 'api_connections', label: 'API Συνδέσεις', desc: 'Σύνδεση με άλλη πλατφόρμα: λήψη παραγγελιών & αποστολή status.', icon: Link2, accent: '#059669' },
       { id: 'overrides', label: 'Operational overrides', desc: 'Παρακάμψεις λειτουργίας σε πραγματικό χρόνο.', icon: SlidersHorizontal, accent: '#059669' },
       { id: 'mission_control', label: 'Mission Control', desc: 'Κεντρικός έλεγχος κρίσιμων λειτουργιών.', icon: Shield, accent: '#059669' },

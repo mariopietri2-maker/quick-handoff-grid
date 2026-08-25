@@ -31,6 +31,9 @@ import { AiSpotlightCard, AiCardStrip } from '@/components/customer/AiSpotlightC
 import CustomerGames from '@/components/customer/CustomerGames';
 import { storeMatchesCategory } from '@/lib/category-match';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { useDeliveryEta } from '@/hooks/useDeliveryEta';
+import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
 
 // Lazy-load the address picker: it pulls in the ~1.7MB mapbox-gl chunk, so it
 // should only load when the customer actually opens the delivery address sheet.
@@ -44,6 +47,7 @@ type StoreRow = Database['public']['Tables']['stores']['Row'] & {
   promo_badge?: string | null;
   highlight_color?: string | null;
   covers_delivery_fee?: boolean;
+  fulfilment_mode?: 'platform' | 'store' | null;
 };
 
 export default function CustomerApp() {
@@ -93,6 +97,10 @@ export default function CustomerApp() {
   const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { settings: platformSettings } = usePlatformSettings();
+  const deliveryEnabled = platformSettings.delivery_enabled;
+  const baseEta = useDeliveryEta(0);
+  const etaCap = platformSettings.eta_max_cap_minutes;
 
   const [addressOpen, setAddressOpen] = useState(false);
   const [deliveryAddress, setDeliveryAddress] = useState<string>(() => {
@@ -529,6 +537,10 @@ export default function CustomerApp() {
                 <div className="flex gap-3 px-4 pb-1 w-max">
                   {promotedStores.map((store) => {
                     const cover = store.cover_image_url || store.image_url;
+                    const open = isStoreOpenNow(store.opening_hours, store.holiday_dates);
+                    const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
+                    const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
+                    const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
                     return (
                     <button
                       key={store.id}
@@ -541,7 +553,9 @@ export default function CustomerApp() {
                           <img
                             src={cover}
                             alt={`Φωτογραφία εστιατορίου ${store.name}`}
-                            className="w-full h-full object-cover"
+                            className={`w-full h-full object-cover transition-transform duration-500 ${
+                              open ? '' : 'grayscale opacity-60'
+                            }`}
                             loading="lazy"
                           />
                         ) : (
@@ -549,16 +563,21 @@ export default function CustomerApp() {
                             <Utensils className="h-8 w-8 text-[hsl(var(--c-text-muted))]" />
                           </div>
                         )}
+                        {!open && (
+                          <span className="absolute top-2 left-2 text-[10px] font-extrabold uppercase tracking-wide text-white bg-neutral-600/95 px-2 py-0.5 rounded-md shadow">
+                            Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
+                          </span>
+                        )}
                         {cfg.sections.show_store_badges && store.promo_badge && (
                           <span className="absolute bottom-2 left-2 text-[10px] font-extrabold uppercase tracking-wide text-white bg-[hsl(var(--c-accent))] px-2 py-0.5 rounded-md shadow">
                             {store.promo_badge}
                           </span>
                         )}
                       </div>
-                      <div className="text-[14px] font-extrabold c-ink truncate">
+                      <div className={`text-[14px] font-extrabold c-ink truncate ${open ? '' : 'opacity-60'}`}>
                         {store.name}
                       </div>
-                      <p className="text-[12px] c-soft mt-0.5 truncate">
+                      <p className={`text-[12px] c-soft mt-0.5 truncate ${open ? '' : 'opacity-60'}`}>
                         {store.tagline ? (
                           <>{store.tagline}</>
                         ) : (
@@ -566,8 +585,9 @@ export default function CustomerApp() {
                             {ratings[store.id]?.count > 0 && (
                               <>★ {ratings[store.id].avg.toFixed(1)} · </>
                             )}
-                            {20 + (store.prep_buffer_minutes ?? 0)}–
-                            {35 + (store.prep_buffer_minutes ?? 0)} {t('customer.min')}
+                            {deliveryEnabled && (
+                              <>{etaLow}–{etaHigh} {t('customer.min')}</>
+                            )}
                           </>
                         )}
                       </p>
@@ -681,9 +701,13 @@ export default function CustomerApp() {
             ) : (
               <div className="space-y-5">
                 {filtered.map((store) => {
-                  const etaLow = 20 + (store.prep_buffer_minutes ?? 0);
-                  const etaHigh = 35 + (store.prep_buffer_minutes ?? 0);
-                  const fee = store.covers_delivery_fee ? 0 : 0.99;
+                  const open = isStoreOpenNow(store.opening_hours, store.holiday_dates);
+                  const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
+                  const platformDelivers =
+                    deliveryEnabled && (store.fulfilment_mode ?? 'platform') !== 'store';
+                  const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const fee = platformDelivers && !store.covers_delivery_fee ? 0.99 : 0;
                   const rating = ratings[store.id];
                   const cover = store.cover_image_url || store.image_url;
                   const highlight = store.highlight_color?.trim();
@@ -695,7 +719,11 @@ export default function CustomerApp() {
                       onClick={() => navigate(`/restaurant/${store.id}`)}
                       className="w-full text-left group"
                     >
-                      <div className="relative aspect-[16/10] rounded-xl overflow-hidden mb-2.5 bg-[hsl(var(--c-surface-muted))]">
+                      <div
+                        className={`relative aspect-[16/10] rounded-xl overflow-hidden mb-2.5 bg-[hsl(var(--c-surface-muted))] transition-all duration-300 ${
+                          open ? '' : 'grayscale opacity-70'
+                        }`}
+                      >
                         {cover ? (
                           <img
                             src={cover}
@@ -708,6 +736,17 @@ export default function CustomerApp() {
                             <Utensils className="h-10 w-10 text-[hsl(var(--c-text-muted))]" />
                           </div>
                         )}
+                        {!open && (
+                          <span className="absolute top-2.5 right-2.5 text-white bg-neutral-700/95 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
+                            Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
+                          </span>
+                        )}
+                        {open && (
+                          <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-emerald-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
+                            <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
+                            Ανοιχτό
+                          </span>
+                        )}
                         {highlight && (
                           <div
                             className="absolute inset-x-0 bottom-0 h-1.5"
@@ -718,7 +757,7 @@ export default function CustomerApp() {
                           <FavoriteButton storeId={store.id} size="sm" />
                         </div>
                         {store.busy_mode && (
-                          <div className="absolute top-2.5 right-2.5 bg-[hsl(var(--c-text)/0.9)] text-[hsl(var(--c-bg))] rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide">
+                          <div className="absolute top-10 right-2.5 bg-[hsl(var(--c-text)/0.9)] text-[hsl(var(--c-bg))] rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide">
                             {t('customer.busy')}
                           </div>
                         )}
@@ -729,7 +768,7 @@ export default function CustomerApp() {
                                 {store.promo_badge}
                               </span>
                             )}
-                            {fee === 0 && (
+                            {platformDelivers && fee === 0 && (
                               <span className="text-[10px] font-extrabold uppercase tracking-wide text-[hsl(var(--c-accent-dark))] bg-[hsl(var(--c-surface)/0.95)] px-2 py-0.5 rounded-md shadow">
                                 0€ {t('customer.delivery')}
                               </span>
@@ -740,13 +779,13 @@ export default function CustomerApp() {
 
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0 flex-1">
-                          <h3 className="font-heading font-extrabold text-[16px] c-ink truncate leading-tight">
+                          <h3 className={`font-heading font-extrabold text-[16px] c-ink truncate leading-tight ${open ? '' : 'opacity-60'}`}>
                             {store.name}
                           </h3>
                           {store.tagline && (
-                            <p className="text-[12px] c-soft mt-0.5 truncate">{store.tagline}</p>
+                            <p className={`text-[12px] c-soft mt-0.5 truncate ${open ? '' : 'opacity-60'}`}>{store.tagline}</p>
                           )}
-                          <p className="text-[13px] c-soft mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5">
+                          <p className={`text-[13px] mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${open ? 'c-soft' : 'opacity-60 c-soft'}`}>
                             {rating?.count > 0 ? (
                               <span className="inline-flex items-center gap-0.5 font-semibold c-ink">
                                 <Star className="h-3 w-3 fill-[hsl(var(--c-text))] text-[hsl(var(--c-text))]" />
@@ -756,15 +795,27 @@ export default function CustomerApp() {
                             ) : (
                               <span className="font-semibold text-[hsl(var(--c-accent))]">Νέο</span>
                             )}
-                            <span>·</span>
-                            <span className="inline-flex items-center gap-1">
-                              <Clock className="h-3 w-3" />
-                              {etaLow}–{etaHigh} {t('customer.min')}
-                            </span>
-                            <span>·</span>
-                            <span>
-                              {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
-                            </span>
+                            {deliveryEnabled && (
+                              <>
+                                <span>·</span>
+                                <span className="inline-flex items-center gap-1">
+                                  <Clock className="h-3 w-3" />
+                                  {etaLow}–{etaHigh} {t('customer.min')}
+                                </span>
+                              </>
+                            )}
+                            {platformDelivers && (
+                              <>
+                                <span>·</span>
+                                <span className="inline-flex items-center gap-1 font-bold text-[hsl(var(--c-accent))]">
+                                  Delivered by Fresh
+                                </span>
+                                <span>·</span>
+                                <span>
+                                  {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
+                                </span>
+                              </>
+                            )}
                           </p>
                         </div>
                       </div>

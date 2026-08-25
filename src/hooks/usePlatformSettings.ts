@@ -21,6 +21,10 @@ export interface PlatformSettings {
   wait_bonus_rate_per_min: number;
   wait_bonus_grace_minutes: number;
   wait_bonus_cap: number;
+  delivery_enabled: boolean;
+  eta_min_minutes: number;
+  eta_max_minutes: number;
+  eta_max_cap_minutes: number;
 }
 
 function normalizeSettings(row: any): PlatformSettings {
@@ -41,6 +45,10 @@ function normalizeSettings(row: any): PlatformSettings {
     wait_bonus_rate_per_min: Number(row?.wait_bonus_rate_per_min) || 0.1,
     wait_bonus_grace_minutes: Number(row?.wait_bonus_grace_minutes) || 10,
     wait_bonus_cap: Number(row?.wait_bonus_cap) || 10,
+    delivery_enabled: row?.delivery_enabled !== false,
+    eta_min_minutes: Number(row?.eta_min_minutes) || 25,
+    eta_max_minutes: Number(row?.eta_max_minutes) || 35,
+    eta_max_cap_minutes: Number(row?.eta_max_cap_minutes) || 50,
   };
 }
 
@@ -62,6 +70,10 @@ function getDefaultSettings(): PlatformSettings {
     wait_bonus_rate_per_min: 0.1,
     wait_bonus_grace_minutes: 10,
     wait_bonus_cap: 10,
+    delivery_enabled: true,
+    eta_min_minutes: 25,
+    eta_max_minutes: 35,
+    eta_max_cap_minutes: 50,
   };
 }
 

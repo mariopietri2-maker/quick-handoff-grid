@@ -102,6 +102,7 @@ export const ADMIN_SECTION_CAPABILITY: Record<string, AdminCapability> = {
   store_billing: 'finances',
   store_appearance: 'orders',
   store_photos: 'orders',
+  platform_mode: 'settings',
   pricing: 'settings',
   stripe_payments: 'finances',
   feature_flags: 'settings',

@@ -49,6 +49,7 @@ export default function CheckoutPage() {
   const [storeCenter, setStoreCenter] = useState<[number, number] | null>(null);
 
   const [cardPaymentsAllowed, setCardPaymentsAllowed] = useState(true);
+  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
 
   useEffect(() => {
     (supabase as any).rpc('get_platform_settings_public')
@@ -63,6 +64,11 @@ export default function CheckoutPage() {
         }
         if (row.stripe_publishable_key) {
           setPaymentsPublishableKey(row.stripe_publishable_key);
+        }
+        if (typeof row.delivery_enabled === 'boolean') {
+          setDeliveryEnabled(row.delivery_enabled);
+          // Marketplace-only mode: no delivery charge
+          if (!row.delivery_enabled) setDeliveryFee(0);
         }
       });
   }, []);
@@ -244,15 +250,15 @@ export default function CheckoutPage() {
       navigate('/auth?next=/checkout');
       return;
     }
-    if (!address.trim()) {
+    if (!address.trim() && deliveryEnabled) {
       toast.error('Παρακαλώ εισάγετε διεύθυνση παράδοσης');
       return;
     }
-    if (!deliveryCoords?.lat || !deliveryCoords?.lon) {
+    if (deliveryEnabled && (!deliveryCoords?.lat || !deliveryCoords?.lon)) {
       toast.error('Επίλεξε διεύθυνση από τη λίστα ή σημείωσέ την στον χάρτη.');
       return;
     }
-    if (!isWithinIoanninaServiceArea(deliveryCoords.lat, deliveryCoords.lon)) {
+    if (deliveryEnabled && !isWithinIoanninaServiceArea(deliveryCoords.lat, deliveryCoords.lon)) {
       toast.error(OUT_OF_ZONE_MESSAGE);
       return;
     }
@@ -423,7 +429,8 @@ export default function CheckoutPage() {
           </CardContent>
         </Card>
 
-        {/* Delivery Address */}
+        {/* Delivery Address — hidden in marketplace-only mode */}
+        {deliveryEnabled && (
         <Card className="rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)]">
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
@@ -452,6 +459,7 @@ export default function CheckoutPage() {
             />
           </CardContent>
         </Card>
+        )}
 
         <ScheduledDeliveryPicker value={scheduledFor} onChange={setScheduledFor} />
 
@@ -623,10 +631,12 @@ export default function CheckoutPage() {
                 <span className="text-success">-{discount.toFixed(2)}€</span>
               </div>
             )}
-            <div className="flex justify-between text-sm">
-              <span className="text-muted-foreground">Κόστος Παράδοσης</span>
-              <span className="text-foreground">{deliveryFee.toFixed(2)}€</span>
-            </div>
+            {deliveryEnabled && (
+              <div className="flex justify-between text-sm">
+                <span className="text-muted-foreground">Κόστος Παράδοσης</span>
+                <span className="text-foreground">{deliveryFee.toFixed(2)}€</span>
+              </div>
+            )}
             <div className="flex justify-between text-sm">
               <span className="text-muted-foreground">Φιλοδώρημα Οδηγού</span>
               <span className="text-foreground">{tipAmount.toFixed(2)}€</span>

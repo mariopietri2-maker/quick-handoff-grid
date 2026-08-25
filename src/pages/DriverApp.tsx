@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, Suspense } from 'react';
 import { useSearchParams, Link } from 'react-router-dom';
-import { Car, Zap, Radio, MapPin, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck, Headphones, Navigation, Crosshair, Power } from 'lucide-react';
+import { Car, Zap, Radio, MapPin, ArrowLeft, ClipboardList, ShieldCheck, PackageCheck, Navigation, Crosshair, Power } from 'lucide-react';
 import { useDriverLocation } from '@/hooks/useDriverLocation';
 import { useDriverNotifications } from '@/hooks/useDriverNotifications';
 import { startPushRegistration } from '@/lib/push-register';
@@ -729,31 +729,6 @@ export default function DriverApp() {
 
           {/* Bottom dock — solid sheet (no clipped glass lip over the map) */}
           <div className={`fixed bottom-0 left-0 right-0 z-20 pointer-events-none ${isNavActive ? 'hidden' : ''}`}>
-            {!hasIncomingOffers && (
-            <div className="flex justify-end gap-2 px-3 pb-2 pointer-events-auto">
-              <button
-                onClick={() => setSupportOpen(true)}
-                className="h-10 w-10 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-lg hover:bg-[hsl(var(--driver-surface))] transition-all duration-200 active:scale-90"
-                aria-label="Υποστήριξη"
-                title="Υποστήριξη"
-              >
-                <Headphones className="h-5 w-5 text-[hsl(var(--driver-text))]" />
-              </button>
-            </div>
-            )}
-
-            {/* During offers, keep a light support control */}
-            {hasIncomingOffers && (
-            <div className="flex justify-end gap-2 px-3 pb-2 pointer-events-auto">
-              <button
-                onClick={() => setSupportOpen(true)}
-                className="h-9 w-9 rounded-full driver-glass border border-[hsl(var(--driver-border))] flex items-center justify-center shadow-md active:scale-90"
-                aria-label="Υποστήριξη"
-              >
-                <Headphones className="h-[18px] w-[18px] text-[hsl(var(--driver-text))]" />
-              </button>
-            </div>
-            )}
 
             <div
               className={`pointer-events-auto bg-[hsl(var(--driver-surface))] border-t border-[hsl(var(--driver-border))] rounded-t-[22px] shadow-[0_-8px_28px_-10px_hsl(220,18%,14%,0.16)] flex flex-col ${

@@ -23,8 +23,13 @@ import { SEO } from '@/components/SEO';
 import { customerAccentStyle } from '@/lib/customer-theme';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { openRealtimeChannel } from '@/lib/realtime-channel';
+import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+import { useDeliveryEta } from '@/hooks/useDeliveryEta';
+import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
 
-type StoreRow = Database['public']['Tables']['stores']['Row'];
+type StoreRow = Database['public']['Tables']['stores']['Row'] & {
+  fulfilment_mode?: 'platform' | 'store' | null;
+};
 type MenuItemRow = Database['public']['Tables']['menu_items']['Row'];
 
 const VISIBLE_ITEM_QUERY = (storeId: string) =>
@@ -42,6 +47,9 @@ export default function RestaurantPage() {
   const navigate = useNavigate();
   const { addItem, items, updateQuantity, itemCount, total, storeId: cartStoreId } = useCart();
   const cfg = useCustomerAppConfig();
+  const { settings: platformSettings } = usePlatformSettings();
+  const deliveryEnabled = platformSettings.delivery_enabled;
+  const etaCap = platformSettings.eta_max_cap_minutes;
   const [store, setStore] = useState<StoreRow | null>(null);
   const [menuItems, setMenuItems] = useState<MenuItemRow[]>([]);
   const [loading, setLoading] = useState(true);
@@ -154,6 +162,10 @@ export default function RestaurantPage() {
 
   const handleAdd = (item: MenuItemRow) => {
     if (!store) return;
+    if (!storeOpen) {
+      toast('Το κατάστημα είναι κλειστό — δοκίμασε αργότερα', { duration: 3000 });
+      return;
+    }
     if (cartStoreId && cartStoreId !== store.id) {
       toast('Το καλάθι εκκαθαρίστηκε — αλλαγή εστιατορίου', { duration: 3000 });
     }
@@ -164,9 +176,14 @@ export default function RestaurantPage() {
     });
   };
 
-  const etaLow = 20 + (store?.prep_buffer_minutes ?? 0);
-  const etaHigh = 35 + (store?.prep_buffer_minutes ?? 0);
   const cartForThisStore = itemCount > 0 && cartStoreId === store?.id;
+  const storeEta = useDeliveryEta(store?.prep_buffer_minutes ?? 0);
+  const etaLow = Math.min(storeEta.min, etaCap);
+  const etaHigh = Math.min(storeEta.max, etaCap);
+  const storeOpen = store ? isStoreOpenNow((store as any).opening_hours, (store as any).holiday_dates) : true;
+  const closedLabel = store && !storeOpen ? nextOpeningLabel((store as any).opening_hours) : null;
+  const platformDelivers =
+    deliveryEnabled && ((store as any)?.fulfilment_mode ?? 'platform') !== 'store';
 
   if (loading) {
     return (
@@ -314,12 +331,38 @@ export default function RestaurantPage() {
           </h1>
           <div className="flex items-center gap-x-3 gap-y-1.5 mt-2.5 flex-wrap text-[13px] font-semibold c-muted">
             <RatingBadge storeId={store.id} />
-            <span className="inline-flex items-center gap-1">
-              <Clock className="h-3.5 w-3.5 c-soft" />
-              {etaLow}–{etaHigh} λεπ
-            </span>
-            <span>0.99€ παράδοση</span>
+            {storeOpen ? (
+              <span className="inline-flex items-center gap-1 font-bold text-emerald-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                Ανοιχτό
+              </span>
+            ) : (
+              <span className="inline-flex items-center gap-1 font-bold text-neutral-500">
+                <span className="h-1.5 w-1.5 rounded-full bg-neutral-400" />
+                Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
+              </span>
+            )}
+            {deliveryEnabled && (
+              <span className="inline-flex items-center gap-1">
+                <Clock className="h-3.5 w-3.5 c-soft" />
+                {etaLow}–{etaHigh} λεπ
+              </span>
+            )}
+            {platformDelivers && (
+              <>
+                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
+                  Delivered by Fresh
+                </span>
+                <span>0.99€ παράδοση</span>
+              </>
+            )}
           </div>
+          {!storeOpen && (
+            <div className="mt-3 bg-muted border border-border rounded-xl px-3 py-2 text-xs text-muted-foreground font-semibold flex items-center gap-1.5">
+              <Clock className="h-3.5 w-3.5" />
+              Το κατάστημα είναι κλειστό — μπορείς να περιηγηθείς στο μενού αλλά όχι να παραγγείλεις τώρα.
+            </div>
+          )}
           {store.address && (
             <p className="text-[12px] c-muted flex items-start gap-1 mt-2 leading-snug">
               <MapPin className="h-3.5 w-3.5 flex-shrink-0 mt-0.5" />

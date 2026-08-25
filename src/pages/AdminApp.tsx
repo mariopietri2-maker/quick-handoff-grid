@@ -55,6 +55,7 @@ const CustomerAppCustomization = lazy(() => import('@/components/admin/CustomerA
 const AiHeroCardsAdmin = lazy(() => import('@/components/admin/AiHeroCardsAdmin'));
 const AdminStoreAppearance = lazy(() => import('@/components/admin/AdminStoreAppearance'));
 const AdminStorePhotos = lazy(() => import('@/components/admin/AdminStorePhotos'));
+const PlatformModeSettings = lazy(() => import('@/components/admin/PlatformModeSettings'));
 const AdminAdvertisingPanel = lazy(() => import('@/components/admin/AdminAdvertisingPanel'));
 const AadeCompliance = lazy(() => import('@/components/admin/AadeCompliance'));
 const AdminSettingsHub = lazy(() => import('@/components/admin/SettingsHub'));
@@ -437,6 +438,8 @@ export default function AdminApp() {
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
+      case 'platform_mode':
+        return <PlatformModeSettings />;
       case 'drivers':
         return <DriversSection drivers={drivers} allDrivers={allDrivers} driverProfiles={driverProfiles.data} driverStates={driverStates.data} driverLocations={driverLocations.data} driverWallets={driverWallets.data} orders={orders.data ?? []} filter={driverFilter} setFilter={setDriverFilter} onToggle={handleToggleDriverActive} onResetCash={handleResetDriverCash} onResetWallet={handleResetDriverWallet} onForceEndShift={handleForceEndShift} onGrantBonus={handleGrantBonus} onSuspend={handleSuspendDriver} onAdjustWallet={handleAdjustWallet} onClearCashDebt={handleClearCashDebt} onMessage={handleMessageDriver} />;
       case 'driver_approvals':
