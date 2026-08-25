@@ -3,6 +3,7 @@ on:
   push:
     paths:
       - '.github/workflows/apply-ioannina-address.yml'
+      - 'scripts/apply_ioannina_address.py'
   workflow_dispatch:
 jobs:
   apply:
@@ -11,35 +12,11 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Apply Ioannina address UX
+      - run: python3 scripts/apply_ioannina_address.py
+      - name: Commit
         run: |
-          set -euo pipefail
-          python3 << 'PY'
-from pathlib import Path
-import re
-
-vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
-t = vm.read_text()
-if 'IOA_MIN_LAT' not in t:
-    anchor = 'class CustomerViewModel('
-    idx = t.find(anchor)
-    brace = t.find('{', idx)
-    insert = '''
-    companion object {
-        private const val IOA_MIN_LAT = 39.58
-        private const val IOA_MAX_LAT = 39.75
-        private const val IOA_MIN_LNG = 20.72
-        private const val IOA_MAX_LNG = 20.98
-    }
-
-    private fun inIoanninaArea(lat: Double, lng: Double): Boolean =
-        lat in IOA_MIN_LAT..IOA_MAX_LAT && lng in IOA_MIN_LNG..IOA_MAX_LNG
-
-    private fun biasToIoannina(query: String): String {
-        val q = query.trim()
-        if (q.isEmpty()) return q
-        val lower = q.lowercase()
-        if ("ιωάννιν" in lower or "ιωαννιν" in lower):
-            pass
-'''
-PY
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git commit -m "feat(customer): friendlier Ioannina-focused address (2.7.1)" || exit 0
+          git push
