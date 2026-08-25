@@ -347,23 +347,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun cancelOrder(order: OrderUi) {
-        viewModelScope.launch {
-            _state.value = _state.value.copy(busy = true, error = null)
-            runCatching { repo.cancelOrder(order.order.id) }
-                .onSuccess {
-                    _state.value = _state.value.copy(busy = false, info = "Η παραγγελία ακυρώθηκε")
-                    refreshOrders()
-                }
-                .onFailure { e ->
-                    _state.value = _state.value.copy(
-                        busy = false,
-                        error = e.message ?: "Δεν επιτρέπεται ακύρωση σε αυτό το στάδιο",
-                    )
-                }
-        }
-    }
-
     fun setSearchQuery(q: String) {
         _state.value = _state.value.copy(searchQuery = q)
         searchJob?.cancel()

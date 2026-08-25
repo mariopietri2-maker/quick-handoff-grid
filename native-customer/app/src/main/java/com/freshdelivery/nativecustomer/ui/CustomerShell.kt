@@ -176,7 +176,6 @@ fun CustomerShell(
     onSelectSaved: (SavedAddressRow) -> Unit = {},
     onDeleteSaved: (String) -> Unit = {},
     onSaveProfile: (String, String) -> Unit = { _, _ -> },
-    onCancelOrder: (OrderUi) -> Unit = {},
     onClearMessages: () -> Unit = {},
     onSpinWheel: () -> Unit = {},
     onOpenCard: (Int) -> Unit = {},
@@ -351,7 +350,7 @@ fun CustomerShell(
                     onEditAddress = { addressOpen = true; onClearSuggestions() },
                     onUseLocation = onUseLocation,
                 )
-                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onCancelOrder)
+                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh)
                 CustomerTab.Track -> TrackTab(state)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport)
             }
@@ -1797,7 +1796,6 @@ private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
     onRefresh: () -> Unit,
-    onCancelOrder: (OrderUi) -> Unit,
 ) {
     LazyColumn(
         Modifier

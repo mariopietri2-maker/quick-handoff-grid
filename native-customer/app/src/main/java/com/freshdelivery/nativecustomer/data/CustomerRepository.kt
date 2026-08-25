@@ -128,7 +128,6 @@ class CustomerRepository(
         runCatching { client.realtime.removeAllChannels() }
     }
     suspend fun upsertPushToken(userId: String, token: String) {}
-    suspend fun cancelOrder(orderId: String) {}
     suspend fun searchStores(query: String): List<StoreRow> = emptyList()
     suspend fun fetchMenu(storeId: String): List<MenuItemRow> = emptyList()
     suspend fun saveMyDeliveryAddress(address: String, lat: Double?, lng: Double?) {}

@@ -93,7 +93,6 @@ class MainActivity : ComponentActivity() {
                             onSelectSaved = vm::selectSavedAddress,
                             onDeleteSaved = vm::deleteSavedAddress,
                             onSaveProfile = vm::saveProfile,
-                            onCancelOrder = vm::cancelOrder,
                             onClearMessages = vm::clearMessages,
                             onSpinWheel = vm::spinWheel,
                             onOpenCard = vm::openMysteryCard,
