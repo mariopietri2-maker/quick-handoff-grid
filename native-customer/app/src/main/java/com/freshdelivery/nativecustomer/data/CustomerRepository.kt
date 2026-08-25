@@ -128,8 +128,38 @@ class CustomerRepository(
         runCatching { client.realtime.removeAllChannels() }
     }
     suspend fun upsertPushToken(userId: String, token: String) {}
-    suspend fun searchStores(query: String): List<StoreRow> = emptyList()
-    suspend fun fetchMenu(storeId: String): List<MenuItemRow> = emptyList()
+        suspend fun searchStores(query: String): List<StoreRow> {
+        val q = query.trim()
+        if (q.isEmpty()) return fetchStores()
+        return client.from("stores_public")
+            .select(Columns.list(
+                "id", "name", "address", "latitude", "longitude", "is_active",
+                "image_url", "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+                "fulfilment_mode",
+            )) {
+                filter {
+                    eq("is_active", true)
+                    ilike("name", "%$q%")
+                }
+                order("name", Order.ASCENDING)
+                limit(100L)
+            }.decodeList<StoreRow>()
+    }
+    suspend fun fetchMenu(storeId: String): List<MenuItemRow> {
+        return client.from("menu_items")
+            .select(Columns.list(
+                "id", "store_id", "name", "price", "description", "category",
+                "is_available", "image_url",
+            )) {
+                filter {
+                    eq("store_id", storeId)
+                    eq("is_available", true)
+                }
+                order("category", Order.ASCENDING)
+                order("name", Order.ASCENDING)
+                limit(500L)
+            }.decodeList<MenuItemRow>()
+    }
     suspend fun saveMyDeliveryAddress(address: String, lat: Double?, lng: Double?) {}
     suspend fun rememberAddressGeocode(label: String, address: String, lat: Double, lng: Double) {}
     suspend fun suggestCachedAddresses(query: String, limit: Int): List<CachedSuggestionRow> = emptyList()
