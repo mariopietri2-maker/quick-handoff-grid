@@ -1,5 +1,5 @@
 import {
-  LayoutDashboard, ShoppingBag, Store, Users, Wallet, Settings2,
+  LayoutDashboard, ShoppingBag, Store, Users, UserRound, Wallet, Settings2,
   ChevronLeft, ChevronRight, LogOut, Shield, UserCircle, Repeat, Bike, ShoppingCart,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -84,6 +84,17 @@ export const NAV_SECTIONS = [
       { id: 'driver_offer_sounds', label: '🔊 Ήχοι προσφοράς' },
       { id: 'drivers_ioannina_map', label: '🏍️ Χάρτης Ιωαννίνων' },
       { id: 'service_zones', label: 'Ζώνες παράδοσης' },
+    ],
+  },
+  {
+    id: 'customers',
+    label: 'Πελάτες',
+    icon: UserRound,
+    accent: 'text-primary',
+    accentBg: 'bg-primary/10',
+    defaultTab: 'customer_registry',
+    tabs: [
+      { id: 'customer_registry', label: '📋 Μητρώο' },
     ],
   },
   {

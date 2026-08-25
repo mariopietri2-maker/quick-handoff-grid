@@ -43,6 +43,7 @@ const OperationalOverrides   = lazy(() => import('@/components/admin/Operational
 const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserActions'));
 const DriverMessagesPanel    = lazy(() => import('@/components/admin/DriverMessagesPanel'));
 const DriverRegistryPanel    = lazy(() => import('@/components/admin/DriverRegistryPanel'));
+const CustomerRegistryPanel  = lazy(() => import('@/components/admin/CustomerRegistryPanel'));
 const DriverApprovalsPanel   = lazy(() => import('@/components/admin/DriverApprovalsPanel'));
 const AdminPermissionsManager= lazy(() => import('@/components/admin/AdminPermissionsManager'));
 const CannedRepliesManager   = lazy(() => import('@/components/admin/CannedRepliesManager'));
@@ -500,6 +501,8 @@ export default function AdminApp() {
         return <DriverMessagesPanel />;
       case 'driver_registry':
         return <DriverRegistryPanel profiles={profiles.data} driverProfiles={(driverProfiles.data ?? []) as any} />;
+      case 'customer_registry':
+        return <CustomerRegistryPanel profiles={profiles.data} orders={(orders.data ?? []) as any} />;
       case 'remote_actions':
         return <RemoteUserActions />;
       case 'admin_perms':
