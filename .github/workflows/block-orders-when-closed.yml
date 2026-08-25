@@ -1,0 +1,327 @@
+name: Block orders when store closed
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/block-orders-when-closed.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Add StoreHours + block placeOrder / cart
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          # Shared open-hours helper used by ViewModel
+          hours = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/StoreHours.kt')
+          hours.write_text('''package com.freshdelivery.nativecustomer.data
+
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+/** True when the store accepts new orders right now. */
+fun StoreRow.isOpenForOrders(): Boolean {
+    if (is_active == false) return false
+    if (busy_mode == true) return false
+    val today = LocalDate.now()
+    val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
+    if ((holiday_dates ?: emptyList()).any { it.contains(dateKey) }) return false
+    val hours = opening_hours ?: return true
+    val now = LocalDateTime.now()
+    val dayKey = when (now.dayOfWeek) {
+        DayOfWeek.MONDAY -> "mon"
+        DayOfWeek.TUESDAY -> "tue"
+        DayOfWeek.WEDNESDAY -> "wed"
+        DayOfWeek.THURSDAY -> "thu"
+        DayOfWeek.FRIDAY -> "fri"
+        DayOfWeek.SATURDAY -> "sat"
+        DayOfWeek.SUNDAY -> "sun"
+    }
+    val schedule = hours.jsonObject[dayKey] ?: return true
+    val obj = schedule.jsonObject
+    val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+    if (!enabled) return false
+    val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: return true
+    val close = obj["close"]?.jsonPrimitive?.contentOrNull ?: return true
+    fun toMin(v: String): Int? {
+        val hhmm = v.trim().split(":")
+        if (hhmm.size != 2) return null
+        return hhmm[0].toIntOrNull()?.times(60)?.plus(hhmm[1].toIntOrNull() ?: 0)
+    }
+    val openMin = toMin(open) ?: return true
+    val closeMin = toMin(close) ?: return true
+    val minuteOfDay = now.hour * 60 + now.minute
+    return if (closeMin > openMin) minuteOfDay in openMin until closeMin
+    else minuteOfDay >= openMin || minuteOfDay < closeMin
+}
+
+fun StoreRow.closedReason(): String? {
+    if (is_active == false) return "Το κατάστημα είναι ανενεργό."
+    if (busy_mode == true) return "Το κατάστημα είναι προσωρινά σε παύση παραγγελιών."
+    if (!isOpenForOrders()) return "Το κατάστημα είναι κλειστό αυτή τη στιγμή."
+    return null
+}
+''', encoding='utf-8')
+          print('StoreHours.kt written')
+
+          vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
+          t = vm.read_text(encoding='utf-8')
+
+          if 'isOpenForOrders' not in t:
+              t = t.replace(
+                  'import com.freshdelivery.nativecustomer.data.StoreRow\n',
+                  'import com.freshdelivery.nativecustomer.data.StoreRow\n'
+                  'import com.freshdelivery.nativecustomer.data.closedReason\n'
+                  'import com.freshdelivery.nativecustomer.data.isOpenForOrders\n',
+                  1,
+              )
+              print('imports ok')
+
+          # Block placeOrder
+          needle = '''    fun placeOrder() {
+        val s = _state.value
+        val storeId = s.cartStoreId ?: return
+        if (s.cart.isEmpty()) return
+        if (s.deliveryAddress.isBlank()) {
+            _state.value = s.copy(error = "Βάλε διεύθυνση παράδοσης")
+            return
+        }
+        if (s.deliveryLat == null || s.deliveryLng == null) {
+            _state.value = s.copy(error = "Πάτα «Εύρεση στον χάρτη» ή «Η τοποθεσία μου» για ακριβείς συντεταγμένες")
+            return
+        }
+        viewModelScope.launch {'''
+          repl = '''    fun placeOrder() {
+        val s = _state.value
+        val storeId = s.cartStoreId ?: return
+        if (s.cart.isEmpty()) return
+        val cartStore = s.stores.find { it.id == storeId } ?: s.selectedStore
+        cartStore?.closedReason()?.let { reason ->
+            _state.value = s.copy(error = reason)
+            return
+        }
+        if (s.deliveryAddress.isBlank()) {
+            _state.value = s.copy(error = "Βάλε διεύθυνση παράδοσης")
+            return
+        }
+        if (s.deliveryLat == null || s.deliveryLng == null) {
+            _state.value = s.copy(error = "Πάτα «Εύρεση στον χάρτη» ή «Η τοποθεσία μου» για ακριβείς συντεταγμένες")
+            return
+        }
+        viewModelScope.launch {'''
+          if needle in t:
+              t = t.replace(needle, repl, 1)
+              print('placeOrder blocked')
+          else:
+              print('WARNING placeOrder pattern')
+
+          # Block addToCart when closed
+          old_add = '''    fun addToCart(item: MenuItemRow) {
+        val s = _state.value
+        if (s.cartStoreId != null && s.cartStoreId != item.store_id) {
+            _state.value = s.copy(error = "Άδειασε το καλάθι για άλλο κατάστημα")
+            return
+        }'''
+          new_add = '''    fun addToCart(item: MenuItemRow) {
+        val s = _state.value
+        val store = s.selectedStore ?: s.stores.find { it.id == item.store_id }
+        store?.closedReason()?.let { reason ->
+            _state.value = s.copy(error = reason)
+            return
+        }
+        if (s.cartStoreId != null && s.cartStoreId != item.store_id) {
+            _state.value = s.copy(error = "Άδειασε το καλάθι για άλλο κατάστημα")
+            return
+        }'''
+          if old_add in t:
+              t = t.replace(old_add, new_add, 1)
+              print('addToCart blocked')
+          else:
+              print('WARNING addToCart')
+
+          vm.write_text(t, encoding='utf-8')
+
+          shell = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          st = shell.read_text(encoding='utf-8')
+
+          if 'isOpenForOrders' not in st:
+              st = st.replace(
+                  'import com.freshdelivery.nativecustomer.data.StoreRow\n',
+                  'import com.freshdelivery.nativecustomer.data.StoreRow\n'
+                  'import com.freshdelivery.nativecustomer.data.closedReason\n'
+                  'import com.freshdelivery.nativecustomer.data.isOpenForOrders\n',
+                  1,
+              )
+
+          # Disable place-order button when store closed
+          old_btn = '''                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(58.dp)
+                            .shadow(12.dp, RoundedCornerShape(29.dp))
+                            .clip(RoundedCornerShape(29.dp))
+                            .background(if (state.busy || state.cart.isEmpty() || address.isBlank()) FreshChipGradient else FreshGradient)
+                            .clickable(
+                                enabled = !state.busy && state.cart.isNotEmpty() && address.isNotBlank(),
+                                onClick = onPlaceOrder,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (state.busy) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(
+                                "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal),
+                                fontWeight = FontWeight.Bold,
+                                color = if (state.cart.isEmpty() || address.isBlank()) FreshMuted else Color.White,
+                            )
+                        }
+                    }'''
+          new_btn = '''                    val cartStore = state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore
+                    val closedMsg = cartStore?.closedReason()
+                    if (closedMsg != null) {
+                        Text(
+                            closedMsg,
+                            color = MaterialTheme.colorScheme.error,
+                            fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.padding(bottom = 8.dp),
+                        )
+                    }
+                    val canOrder = !state.busy && state.cart.isNotEmpty() && address.isNotBlank() && closedMsg == null
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(58.dp)
+                            .shadow(12.dp, RoundedCornerShape(29.dp))
+                            .clip(RoundedCornerShape(29.dp))
+                            .background(if (!canOrder) FreshChipGradient else FreshGradient)
+                            .clickable(
+                                enabled = canOrder,
+                                onClick = onPlaceOrder,
+                            ),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (state.busy) {
+                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                        } else {
+                            Text(
+                                if (closedMsg != null) "Κλειστό — δεν δέχεται παραγγελίες"
+                                else "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal),
+                                fontWeight = FontWeight.Bold,
+                                color = if (!canOrder) FreshMuted else Color.White,
+                            )
+                        }
+                    }'''
+          if old_btn in st:
+              st = st.replace(old_btn, new_btn, 1)
+              print('cart button blocked')
+          else:
+              print('WARNING cart button pattern')
+
+          # Menu: banner when closed + don't show add when closed
+          if 'Το κατάστημα είναι κλειστό' not in st:
+              old_menu = '''            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.RestaurantMenu, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Μενού", style = MaterialTheme.typography.titleLarge)'''
+              new_menu = '''            item {
+                val closedMsg = store?.closedReason()
+                if (closedMsg != null) {
+                    Surface(
+                        color = FreshRoseSoft,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                    ) {
+                        Text(
+                            closedMsg,
+                            color = FreshRose,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(12.dp),
+                        )
+                    }
+                }
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 14.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.RestaurantMenu, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text("Μενού", style = MaterialTheme.typography.titleLarge)'''
+              if old_menu in st:
+                  st = st.replace(old_menu, new_menu, 1)
+                  print('menu banner')
+
+          # Wire isStoreOpenNow to shared helper for consistency
+          old_iso = '''private fun isStoreOpenNow(store: StoreRow): Boolean {
+    if (store.is_active == false) return false
+    val today = LocalDate.now()
+    val holidayDates = store.holiday_dates ?: emptyList()
+    val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
+    if (holidayDates.any { it.contains(dateKey) }) return false
+    val hours = store.opening_hours ?: return true
+    val now = LocalDateTime.now()
+    val dayKey = when (now.dayOfWeek) {
+        DayOfWeek.MONDAY -> "mon"
+        DayOfWeek.TUESDAY -> "tue"
+        DayOfWeek.WEDNESDAY -> "wed"
+        DayOfWeek.THURSDAY -> "thu"
+        DayOfWeek.FRIDAY -> "fri"
+        DayOfWeek.SATURDAY -> "sat"
+        DayOfWeek.SUNDAY -> "sun"
+    }
+    val schedule = hours.jsonObject[dayKey] ?: return true
+    val obj = schedule.jsonObject
+    val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+    if (!enabled) return false
+    val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: return true
+    val close = obj["close"]?.jsonPrimitive?.contentOrNull ?: return true
+    fun toMin(v: String): Int? {
+        val hhmm = v.trim().split(":")
+        if (hhmm.size != 2) return null
+        return hhmm[0].toIntOrNull()?.times(60)?.plus(hhmm[1].toIntOrNull() ?: 0)
+    }
+    val openMin = toMin(open) ?: return true
+    val closeMin = toMin(close) ?: return true
+    val minuteOfDay = now.hour * 60 + now.minute
+    return if (closeMin > openMin) minuteOfDay in openMin until closeMin else minuteOfDay >= openMin || minuteOfDay < closeMin
+}'''
+          new_iso = '''private fun isStoreOpenNow(store: StoreRow): Boolean = store.isOpenForOrders()'''
+          if old_iso in st:
+              st = st.replace(old_iso, new_iso, 1)
+              print('isStoreOpenNow delegated')
+
+          shell.write_text(st, encoding='utf-8')
+
+          g = Path('native-customer/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 261', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.7.7-closed-store"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('version 2.7.7-closed-store / 261')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-customer): block orders when store closed/busy (2.7.7)"; git push; fi
