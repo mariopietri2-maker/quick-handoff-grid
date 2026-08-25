@@ -7,6 +7,7 @@ import {
   persistCardClaimDay,
   persistSpinDay,
   prizeToDeal,
+  resolveDailyGameShow,
   secondsToMidnight,
   setWonDeal,
   type GameDeal,
@@ -45,6 +46,16 @@ export function useCustomerGames() {
   const [claimedCardIndex, setClaimedCardIndex] = useState<number | null>(null);
   const [openedCards, setOpenedCards] = useState<number[]>([]);
 
+  // Daily 60% appearance + 5-minute visibility window (mirrors the native app).
+  const [showState, setShowState] = useState(() => resolveDailyGameShow());
+
+  useEffect(() => {
+    if (showState.expiresAt == null) return;
+    const ms = Math.max(0, showState.expiresAt - Date.now());
+    const t = window.setTimeout(() => setShowState((s) => ({ ...s, show: false })), ms);
+    return () => window.clearTimeout(t);
+  }, [showState]);
+
   useEffect(() => {
     const t = window.setInterval(() => setDealSeconds((s) => Math.max(1, s - 1)), 1000);
     return () => window.clearInterval(t);
@@ -60,6 +71,7 @@ export function useCustomerGames() {
     setClaimedCardIndex(null);
     setOpenedCards([]);
     setWonDeal(null);
+    setShowState(resolveDailyGameShow());
     setDealSeconds(secondsToMidnight());
   }, [dealSeconds]);
 
@@ -117,6 +129,7 @@ export function useCustomerGames() {
 
   return {
     enabled,
+    show: showState.show,
     active,
     dealSeconds,
     spinning,

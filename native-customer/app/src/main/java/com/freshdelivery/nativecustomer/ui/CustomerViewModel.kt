@@ -63,6 +63,9 @@ enum class SupportView { Topics, Compose, MyTickets, Live, Ticket }
 /** Topics that skip the async ticket queue and open the urgent live chat instead (mirrors web). */
 private val URGENT_TOPICS = setOf("wrong_order")
 
+/** How long the games section stays visible once it appears — then it hides for the rest of the day. */
+private const val GAME_SHOW_WINDOW_MS = 5 * 60 * 1000L
+
 data class CustomerUiState(
     val bootstrapping: Boolean = true,
     val signedIn: Boolean = false,
@@ -168,6 +171,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var liveChatSessionJob: Job? = null
     private var ticketJob: Job? = null
     private var searchJob: Job? = null
+    private var gameShowUntilMs = 0L
 
     init {
         _state.value = _state.value.copy(gameShow = rollDailyGameShow())
@@ -207,7 +211,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         _state.value = CustomerUiState(bootstrapping = false, signedIn = false).copy(
                             gameActive = gameActive,
                             cards = cards,
-                            gameShow = Random.nextDouble() < 0.6,
+                            gameShow = rollDailyGameShow(),
                         )
                     }
                     else -> Unit
@@ -965,6 +969,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun selectGame(game: String) {
+        gameShowUntilMs = System.currentTimeMillis() + GAME_SHOW_WINDOW_MS
         _state.value = _state.value.copy(gameActive = game, gameShow = true)
         persistAdminState()
     }
@@ -1314,16 +1319,29 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             .edit().putString("card_claim_day", todayKey()).apply()
     }
 
-    /** One 60% roll per calendar day — decides if the games section shows customers; sticky until midnight. */
+    /**
+     * One 60% roll per calendar day — decides if the games section shows customers.
+     * When it appears it stays visible for 5 minutes only; after that it hides
+     * (live via the game ticker) and does not return until the next day's roll.
+     */
     private fun rollDailyGameShow(): Boolean {
         val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
         if (prefs.getString("game_show_day", null) == todayKey()) {
-            return prefs.getBoolean("game_show_today", false)
+            if (!prefs.getBoolean("game_show_today", false)) {
+                gameShowUntilMs = 0L
+                return false
+            }
+            val shownAt = prefs.getLong("game_shown_at", 0L)
+            val until = shownAt + GAME_SHOW_WINDOW_MS
+            gameShowUntilMs = until
+            return System.currentTimeMillis() < until
         }
         val show = Random.nextDouble() < 0.6
+        gameShowUntilMs = if (show) System.currentTimeMillis() + GAME_SHOW_WINDOW_MS else 0L
         prefs.edit()
             .putString("game_show_day", todayKey())
             .putBoolean("game_show_today", show)
+            .putLong("game_shown_at", System.currentTimeMillis())
             .apply()
         return show
     }
@@ -1356,7 +1374,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         gameShow = if (s.gameEnabled) rollDailyGameShow() else false,
                     )
                 } else {
-                    _state.value = s.copy(dealSeconds = s.dealSeconds - 1)
+                    val expired = gameShowUntilMs > 0 && System.currentTimeMillis() >= gameShowUntilMs
+                    if (expired) {
+                        gameShowUntilMs = 0L
+                        _state.value = s.copy(dealSeconds = s.dealSeconds - 1, gameShow = false)
+                    } else {
+                        _state.value = s.copy(dealSeconds = s.dealSeconds - 1)
+                    }
                 }
             }
         }

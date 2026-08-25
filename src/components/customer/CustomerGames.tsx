@@ -9,7 +9,7 @@ const WHEEL_RADIUS = 58;
 export default function CustomerGames() {
   const g = useCustomerGames();
 
-  if (!g.enabled) return null;
+  if (!g.enabled || !g.show) return null;
 
   return g.active === 'wheel' ? (
     <LuckyWheel

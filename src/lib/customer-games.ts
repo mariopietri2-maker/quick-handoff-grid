@@ -43,6 +43,36 @@ export function persistCardClaimDay() {
   } catch {}
 }
 
+/** How long the games section stays visible once it appears — then it hides for the rest of the day. */
+const GAME_SHOW_WINDOW_MS = 5 * 60 * 1000;
+
+/**
+ * One 60% roll per calendar day. When it wins, the games section shows for
+ * GAME_SHOW_WINDOW_MS only; afterwards (and on any later visit that day) it
+ * stays hidden until the next day's roll.
+ */
+export function resolveDailyGameShow(): { show: boolean; expiresAt: number | null } {
+  try {
+    const day = todayKey();
+    if (localStorage.getItem(`${PREFIX}game_show_day`) === day) {
+      if (localStorage.getItem(`${PREFIX}game_show_today`) !== 'true') {
+        return { show: false, expiresAt: null };
+      }
+      const shownAt = parseInt(localStorage.getItem(`${PREFIX}game_shown_at`) || '0', 10) || 0;
+      const expiresAt = shownAt + GAME_SHOW_WINDOW_MS;
+      return { show: Date.now() < expiresAt, expiresAt };
+    }
+    const show = Math.random() < 0.6;
+    const now = Date.now();
+    localStorage.setItem(`${PREFIX}game_show_day`, day);
+    localStorage.setItem(`${PREFIX}game_show_today`, String(show));
+    localStorage.setItem(`${PREFIX}game_shown_at`, String(now));
+    return { show, expiresAt: show ? now + GAME_SHOW_WINDOW_MS : null };
+  } catch {
+    return { show: false, expiresAt: null };
+  }
+}
+
 export function secondsToMidnight(): number {
   const now = new Date();
   const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
