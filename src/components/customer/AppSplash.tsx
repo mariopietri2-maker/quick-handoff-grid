@@ -8,7 +8,7 @@ import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 export default function AppSplash() {
   const cfg = useCustomerAppConfig();
   const brand = cfg.branding.app_name || 'Fresh Delivery';
-  const tagline = cfg.branding.tagline || 'Fast · Fresh · Local';
+  const tagline = cfg.branding.tagline || 'Fresh Meals. Fast Delivery.';
   const logo = cfg.branding.logo_url;
   const initial = (brand.trim().charAt(0) || 'F').toUpperCase();
 

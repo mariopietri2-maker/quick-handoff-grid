@@ -109,7 +109,7 @@ data class PromoBanner(
 data class CustomerAppConfig(
     val appName: String = "Fresh Delivery",
     val cityLabel: String = "Ιωάννινα",
-    val tagline: String = "Fast · Fresh · Local",
+    val tagline: String = "Fresh Meals. Fast Delivery.",
     val logoUrl: String? = null,
     /** Show logo/wordmark chip in the home header (web `branding.show_header_brand`). */
     val showHeaderBrand: Boolean = true,

@@ -144,7 +144,7 @@ fun LoginScreen(
                 color = cs.onBackground,
             )
             Text(
-                text = "Ιωάννινα · Live deliveries",
+                text = "Fresh Meals. Fast Delivery.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = cs.onSurfaceVariant,
             )

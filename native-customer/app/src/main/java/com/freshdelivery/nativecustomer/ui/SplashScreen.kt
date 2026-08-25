@@ -42,7 +42,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshTeal
 @Composable
 fun SplashScreen(
     appName: String = "Fresh Delivery",
-    tagline: String = "Fast · Fresh · Local",
+    tagline: String = "Fresh Meals. Fast Delivery.",
 ) {
     val infinite = rememberInfiniteTransition(label = "splash")
     val ringScale by infinite.animateFloat(

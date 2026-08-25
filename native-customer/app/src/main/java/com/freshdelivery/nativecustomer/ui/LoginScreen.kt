@@ -135,7 +135,7 @@ fun LoginScreen(
             fontWeight = FontWeight.Bold,
         )
         Text(
-            if (signupMode) "Δημιούργησε λογαριασμό" else "Παράγγειλε από τα αγαπημένα σου",
+            if (signupMode) "Δημιούργησε λογαριασμό" else "Fresh Meals. Fast Delivery.",
             color = FreshMuted,
             style = MaterialTheme.typography.bodyMedium,
         )
