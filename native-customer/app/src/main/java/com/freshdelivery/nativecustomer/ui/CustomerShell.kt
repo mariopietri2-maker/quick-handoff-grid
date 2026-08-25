@@ -160,7 +160,6 @@ fun CustomerShell(
     onUseLocation: () -> Unit = {},
     onGeocode: (String) -> Unit = {},
     onPickSuggestion: (AddressSuggestion) -> Unit = {},
-    onAutocomplete: (String) -> Unit = {},
     onClearSuggestions: () -> Unit = {},
     onSelectSaved: (SavedAddressRow) -> Unit = {},
     onDeleteSaved: (String) -> Unit = {},
@@ -206,9 +205,7 @@ fun CustomerShell(
             onSetDelivery = onSetDelivery,
             onUseLocation = onUseLocation,
             onGeocode = onGeocode,
-            onPickSuggestion = onPickSuggestion,
             onSaveAddress = onSaveAddress,
-            onAutocomplete = onAutocomplete,
             onSelectSaved = onSelectSaved,
             onDeleteSaved = onDeleteSaved,
             snackbar = snackbar,
@@ -1504,9 +1501,7 @@ private fun AddressPickerScreen(
     onSetDelivery: (String, Double?, Double?) -> Unit,
     onUseLocation: () -> Unit,
     onGeocode: (String) -> Unit,
-    onPickSuggestion: (AddressSuggestion) -> Unit,
     onSaveAddress: () -> Unit,
-    onAutocomplete: (String) -> Unit = {},
     onSelectSaved: (SavedAddressRow) -> Unit = {},
     onDeleteSaved: (String) -> Unit = {},
     snackbar: SnackbarHostState? = null,
@@ -1547,67 +1542,16 @@ private fun AddressPickerScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
-            Text(
-                "Παράδοση στην περιοχή Ιωαννίνων",
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                color = FreshInk,
-            )
-            Text(
-                "Γράψε οδό και αριθμό — θα ψάξουμε αυτόματα στα Ιωάννινα. Δεν χρειάζεται να γράψεις την πόλη.",
-                style = MaterialTheme.typography.bodySmall,
-                color = FreshMuted,
-                modifier = Modifier.padding(top = 4.dp, bottom = 12.dp),
-            )
             OutlinedTextField(
                 value = address,
-                onValueChange = {
-                    address = it
-                    onAutocomplete(it)
-                },
+                onValueChange = { address = it },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Οδός και αριθμός") },
-                placeholder = { Text("π.χ. Δωδώνης 15") },
-                leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshGreen) },
+                label = { Text("Οδός, αριθμός, πόλη") },
+                leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshMuted) },
                 shape = RoundedCornerShape(16.dp),
                 colors = fieldColors,
             )
-            Spacer(Modifier.height(10.dp))
-            Text("Γρήγορες περιοχές", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge, color = FreshMuted)
-            Spacer(Modifier.height(6.dp))
-            val quickAreas = listOf(
-                "Κέντρο Ιωαννίνων",
-                "Ανατολή",
-                "Κατσικάς",
-                "Εξοχή",
-                "Περίβλεπτος",
-                "Νεοχωρόπουλο",
-            )
-            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
-                quickAreas.chunked(3).forEach { row ->
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp), modifier = Modifier.fillMaxWidth()) {
-                        row.forEach { area ->
-                            FilterChip(
-                                selected = false,
-                                onClick = {
-                                    address = area
-                                    onAutocomplete(area)
-                                    onGeocode(area)
-                                },
-                                label = { Text(area, maxLines = 1, style = MaterialTheme.typography.labelMedium) },
-                                colors = FilterChipDefaults.filterChipColors(
-                                    containerColor = FreshChip,
-                                    labelColor = FreshInk,
-                                ),
-                                modifier = Modifier.weight(1f),
-                            )
-                        }
-                        repeat(3 - row.size) { Spacer(Modifier.weight(1f)) }
-                    }
-                }
-            }
-            Spacer(Modifier.height(8.dp))
             if (state.savedAddresses.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Text("Αποθηκευμένες διευθύνσεις", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
@@ -1695,26 +1639,6 @@ private fun AddressPickerScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = if (pinned) FreshGreen else MaterialTheme.colorScheme.error,
             )
-            if (state.addressSuggestions.isNotEmpty()) {
-                Spacer(Modifier.height(8.dp))
-                Text("Προτάσεις", fontWeight = FontWeight.SemiBold)
-                state.addressSuggestions.forEach { s ->
-                    Surface(
-                        onClick = {
-                            onPickSuggestion(s)
-                            onSaveAddress()
-                            onBack()
-                        },
-                        color = FreshChip,
-                        shape = RoundedCornerShape(12.dp),
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(top = 6.dp),
-                    ) {
-                        Text(s.label, modifier = Modifier.padding(12.dp))
-                    }
-                }
-            }
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (state.deliveryAddress.isNotBlank()) {

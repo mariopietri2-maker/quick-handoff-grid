@@ -16,7 +16,7 @@ True native customer app (no Capacitor WebView). Same Supabase backend and **sam
 | Active order banner → live track | ✅ |
 | Menu + cart + qty | ✅ |
 | Checkout via `place_order` (cash + promo code) | ✅ |
-| Address: GPS + Geocoder autocomplete | ✅ |
+| Address: GPS + Geocoder (no autocomplete) | ✅ |
 | Dynamic delivery fee (base + per-km) | ✅ |
 | Last delivery address remembered | ✅ |
 | Active / recent orders + cancel | ✅ |

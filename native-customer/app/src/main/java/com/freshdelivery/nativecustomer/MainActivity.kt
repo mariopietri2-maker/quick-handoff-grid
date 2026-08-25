@@ -86,7 +86,6 @@ class MainActivity : ComponentActivity() {
                             onUseLocation = vm::useCurrentLocation,
                             onGeocode = vm::geocodeAddress,
                             onPickSuggestion = vm::pickAddressSuggestion,
-                            onAutocomplete = vm::autocompleteAddress,
                             onClearSuggestions = vm::clearAddressSuggestions,
                             onSelectSaved = vm::selectSavedAddress,
                             onDeleteSaved = vm::deleteSavedAddress,

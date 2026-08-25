@@ -156,28 +156,6 @@ data class CustomerUiState(
 val TERMINAL_STATUSES = listOf("delivered", "cancelled", "rejected", "refunded")
 
 class CustomerViewModel(app: Application) : AndroidViewModel(app) {
-    companion object {
-        /** Soft delivery area around Ioannina (bias + filter, not a hard lock). */
-        private const val IOA_MIN_LAT = 39.58
-        private const val IOA_MAX_LAT = 39.75
-        private const val IOA_MIN_LNG = 20.72
-        private const val IOA_MAX_LNG = 20.98
-    }
-
-    private fun inIoanninaArea(lat: Double, lng: Double): Boolean =
-        lat in IOA_MIN_LAT..IOA_MAX_LAT && lng in IOA_MIN_LNG..IOA_MAX_LNG
-
-    private fun biasToIoannina(query: String): String {
-        val q = query.trim()
-        if (q.isEmpty()) return q
-        val lower = q.lowercase()
-        if ("ιωάννιν" in lower || "ιωαννιν" in lower || "ioannina" in lower || "giannina" in lower) {
-            return q
-        }
-        return "$q, Ιωάννινα"
-    }
-
-
     private val repo = CustomerRepository()
     private val _state = MutableStateFlow(CustomerUiState())
     val state: StateFlow<CustomerUiState> = _state.asStateFlow()
@@ -189,11 +167,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var liveChatJob: Job? = null
     private var liveChatSessionJob: Job? = null
     private var ticketJob: Job? = null
-    private var autocompleteJob: Job? = null
     private var searchJob: Job? = null
 
     init {
-        _state.value = _state.value.copy(gameShow = Random.nextDouble() < 0.6)
+        _state.value = _state.value.copy(gameShow = rollDailyGameShow())
         loadAdminState()
         PushTokenHolder.listener = { token ->
             val uid = _state.value.userId
@@ -413,9 +390,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 val loc = fused.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).await()
                     ?: fused.lastLocation.await()
                     ?: error("Δεν βρέθηκε τοποθεσία")
-                if (!inIoanninaArea(loc.latitude, loc.longitude)) {
-                    error("Η τοποθεσία σου είναι εκτός περιοχής Ιωαννίνων. Επίλεξε διεύθυνση μέσα στην πόλη.")
-                }
                 val label = reverseGeocode(loc.latitude, loc.longitude)
                 _state.value = _state.value.copy(
                     locating = false,
@@ -423,7 +397,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     deliveryLng = loc.longitude,
                     deliveryAddress = label ?: _state.value.deliveryAddress,
                     addressSuggestions = emptyList(),
-                    info = "Τοποθεσία στην περιοχή Ιωαννίνων",
+                    info = "Η τοποθεσία ενημερώθηκε",
                 )
                 recomputeDeliveryFee()
                 persistLastAddress()
@@ -441,10 +415,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             val hits = runCatching { forwardGeocodeMany(address) }.getOrNull().orEmpty()
             when {
                 hits.isEmpty() -> {
-                    _state.value = _state.value.copy(
-                        locating = false,
-                        error = "Δεν βρέθηκε στην περιοχή Ιωαννίνων. Δοκίμασε οδό + αριθμό (π.χ. Δωδώνης 15)",
-                    )
+                    _state.value = _state.value.copy(locating = false, error = "Δεν βρέθηκε η διεύθυνση")
                 }
                 hits.size == 1 -> {
                     val h = hits.first()
@@ -513,18 +484,15 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
         runCatching {
-            val biased = biasToIoannina(address)
             @Suppress("DEPRECATION")
-            val geocoder = Geocoder(getApplication(), Locale("el", "GR"))
-            val boxed = geocoder.getFromLocationName(
-                biased, 8, IOA_MIN_LAT, IOA_MIN_LNG, IOA_MAX_LAT, IOA_MAX_LNG,
-            ).orEmpty()
-            val fallback = if (boxed.isEmpty()) geocoder.getFromLocationName(biased, 8).orEmpty() else boxed
-            fallback.mapNotNull { a ->
-                val line = a.getAddressLine(0) ?: return@mapNotNull null
-                if (!inIoanninaArea(a.latitude, a.longitude)) return@mapNotNull null
-                AddressSuggestion(line, a.latitude, a.longitude)
-            }.distinctBy { it.label }
+            Geocoder(getApplication(), Locale.getDefault())
+                .getFromLocationName(address, 5)
+                ?.mapNotNull { a ->
+                    val line = a.getAddressLine(0) ?: return@mapNotNull null
+                    AddressSuggestion(line, a.latitude, a.longitude)
+                }
+                ?.distinctBy { it.label }
+                .orEmpty()
         }.getOrElse { emptyList() }
     }
 
@@ -629,31 +597,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(addressSuggestions = emptyList())
     }
 
-    /** Debounced live autocomplete: shared cache → saved addresses → device geocoder. */
-    fun autocompleteAddress(query: String) {
-        autocompleteJob?.cancel()
-        val q = query.trim()
-        if (q.length < 3) {
-            _state.value = _state.value.copy(addressSuggestions = emptyList())
-            return
-        }
-        autocompleteJob = viewModelScope.launch {
-            delay(220)
-            val cached = runCatching { repo.suggestCachedAddresses(q, 6) }.getOrDefault(emptyList())
-            val geocoder = runCatching { forwardGeocodeMany(q) }.getOrDefault(emptyList())
-            val streetKey = streetKeyOf(q)
-            val saved = _state.value.savedAddresses
-                .filter { it.latitude != null && it.longitude != null }
-                .filter { it.address.contains(q, ignoreCase = true) || streetKeyOf(it.address) == streetKey }
-                .map { AddressSuggestion(it.address, it.latitude!!, it.longitude!!) }
-            val merged = LinkedHashMap<String, AddressSuggestion>()
-            (saved + cached.map { AddressSuggestion(it.display_address, it.latitude ?: 0.0, it.longitude ?: 0.0) } + geocoder)
-                .filter { it.lat != 0.0 || it.lng != 0.0 }
-                .forEach { s -> merged.putIfAbsent(s.label.trim().lowercase(), s) }
-            _state.value = _state.value.copy(addressSuggestions = merged.values.take(8).toList())
-        }
-    }
-
     /** Apply a personally saved address (resolves coords on the fly if missing). */
     fun selectSavedAddress(sa: SavedAddressRow) {
         val addr = sa.address.trim()
@@ -718,13 +661,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { repo.rememberAddressGeocode(label, label, lat, lng) }
         }
     }
-
-    /** Strip the trailing house number so "Δημοκρατίας 15" matches "Δημοκρατίας 12". */
-    private fun streetKeyOf(address: String): String =
-        address.lowercase().trim()
-            .replace(Regex("\\d.*$"), "")
-            .replace(Regex("\\s+"), " ")
-            .trim()
 
     fun setNotes(notes: String) {
         _state.value = _state.value.copy(notes = notes)
@@ -1378,6 +1314,20 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             .edit().putString("card_claim_day", todayKey()).apply()
     }
 
+    /** One 60% roll per calendar day — decides if the games section shows customers; sticky until midnight. */
+    private fun rollDailyGameShow(): Boolean {
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        if (prefs.getString("game_show_day", null) == todayKey()) {
+            return prefs.getBoolean("game_show_today", false)
+        }
+        val show = Random.nextDouble() < 0.6
+        prefs.edit()
+            .putString("game_show_day", todayKey())
+            .putBoolean("game_show_today", show)
+            .apply()
+        return show
+    }
+
     /** Seconds until local midnight — drives the daily game-cycle countdown. */
     private fun secondsToMidnight(): Int =
         java.time.Duration.between(
@@ -1403,7 +1353,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         claimedCardIndex = null,
                         openedCards = emptySet(),
                         appliedDeal = null,
-                        gameShow = if (s.gameEnabled) Random.nextDouble() < 0.6 else false,
+                        gameShow = if (s.gameEnabled) rollDailyGameShow() else false,
                     )
                 } else {
                     _state.value = s.copy(dealSeconds = s.dealSeconds - 1)
