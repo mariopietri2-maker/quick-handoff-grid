@@ -112,7 +112,7 @@ export default function PlatformModeSettings() {
       p_action: 'set_store_fulfilment',
       p_target_type: 'store',
       p_target_id: r.id,
-      p_description: `${r.name}: ${mode === 'platform' ? 'Fresh οδηγοί' : 'δικό της delivery'}`,
+      p_description: `${r.name}: ${mode === 'platform' ? 'Delivered by Fresh' : 'store delivery'}`,
     });
     toast.success(`Αποθηκεύτηκε για ${r.name}`);
   };
@@ -156,7 +156,7 @@ export default function PlatformModeSettings() {
           <div className="space-y-1">
             <h2 className="font-heading font-bold text-base flex items-center gap-2">
               <Timer className="h-4 w-4" />
-              Χρόνος Παράδοσης
+              Timers / χρόνος παράδοσης (ETA)
             </h2>
             <p className="text-sm text-muted-foreground leading-relaxed">
               Βασικό εύρος που βλέπουν οι πελάτες. Το σύστημα το προσαρμόζει αυτόματα:
@@ -223,9 +223,7 @@ export default function PlatformModeSettings() {
               Ποιος παραδίδει ανά κατάστημα
             </h2>
             <p className="text-sm text-muted-foreground">
-              «Fresh οδηγοί» εμφανίζει το σήμα “Delivered by Fresh” στο κατάστημα.
-              «Δική της» σημαίνει ότι το κατάστημα παραδίδει με δικούς του ανθρώπους —
-              δεν εμφανίζεται κανένα σήμα.
+              Επίλεξε ανά κατάστημα αν η παράδοση γίνεται από οδηγούς Fresh («Delivered by Fresh») ή από το ίδιο το κατάστημα. Μπορείς να το αλλάξεις οποιαδήποτε στιγμή.
             </p>
           </div>
 
@@ -248,8 +246,8 @@ export default function PlatformModeSettings() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="platform">Fresh οδηγοί</SelectItem>
-                        <SelectItem value="store">Δική της παράδοση</SelectItem>
+                        <SelectItem value="platform">Delivered by Fresh</SelectItem>
+                        <SelectItem value="store">Παράδοση καταστήματος</SelectItem>
                       </SelectContent>
                     </Select>
                   </div>
