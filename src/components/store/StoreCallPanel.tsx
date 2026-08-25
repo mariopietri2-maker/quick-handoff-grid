@@ -308,14 +308,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
               setConfirmOpen(open);
             }}
           >
-            <AlertDialogContent
-              onPointerDownOutside={(e) => {
-                if (loading) e.preventDefault();
-              }}
-              onEscapeKeyDown={(e) => {
-                if (loading) e.preventDefault();
-              }}
-            >
+            <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Επιβεβαίωση κλήσης οδηγού</AlertDialogTitle>
                 <AlertDialogDescription>
