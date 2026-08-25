@@ -117,9 +117,7 @@ data class CustomerAppConfig(
         CategoryTile("Καφές", "☕", "Καφέδες"),
         CategoryTile("Γλυκά", "🍰", "Γλυκά"),
     ),
-    val promos: List<PromoBanner> = listOf(
-        PromoBanner("NEW", "Δωρεάν παράδοση", "στην πρώτη σου παραγγελία", "WELCOME", true),
-    ),
+    val promos: List<PromoBanner> = emptyList(),
     val games: GameConfig = defaultGameConfig(),
 )
 
