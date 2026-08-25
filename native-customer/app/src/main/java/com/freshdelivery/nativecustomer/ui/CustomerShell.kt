@@ -137,6 +137,18 @@ import kotlinx.serialization.json.jsonPrimitive
 private val FreshGradient = Brush.horizontalGradient(listOf(FreshGreen, FreshViolet))
 private val FreshChipGradient = Brush.horizontalGradient(listOf(FreshChip, FreshChip))
 
+/** Parses a CSS HSL triplet like "24 100% 62%" into (accent, accentDark) — mirrors web `customer-theme.ts`. */
+private fun hslTriplet(value: String?): Pair<Color, Color>? {
+    val parts = value?.trim()?.split(Regex("[\\s,]+")) ?: return null
+    if (parts.size < 3) return null
+    val h = parts[0].toFloatOrNull() ?: return null
+    val s = parts[1].removeSuffix("%").toFloatOrNull()?.div(100f) ?: return null
+    val l = parts[2].removeSuffix("%").toFloatOrNull()?.div(100f) ?: return null
+    val accent = Color.hsl(h, s.coerceIn(0f, 1f), l.coerceIn(0f, 1f))
+    val dark = Color.hsl(h, s.coerceIn(0f, 1f), (l - 0.11f).coerceIn(0f, 1f))
+    return accent to dark
+}
+
 @Composable
 fun CustomerShell(
     state: CustomerUiState,
@@ -474,6 +486,55 @@ private fun HomeTab(
                     .padding(horizontal = 16.dp)
                     .padding(top = 8.dp, bottom = 4.dp),
             ) {
+                if (state.appConfig.showHeaderBrand) {
+                    val accentPair = hslTriplet(state.appConfig.accentHsl)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Box(
+                            Modifier
+                                .size(40.dp)
+                                .clip(CircleShape)
+                                .background(
+                                    accentPair
+                                        ?.let { Brush.linearGradient(listOf(it.first, it.second)) }
+                                        ?: FreshGradient,
+                                ),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            val logo = state.appConfig.logoUrl
+                            if (!logo.isNullOrBlank()) {
+                                AsyncImage(
+                                    model = logo,
+                                    contentDescription = state.appConfig.appName,
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier
+                                        .fillMaxSize()
+                                        .clip(CircleShape),
+                                )
+                            } else {
+                                Text(
+                                    text = state.appConfig.appName.trim().take(1).uppercase().ifBlank { "F" },
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Black,
+                                    fontSize = 18.sp,
+                                )
+                            }
+                        }
+                        Spacer(Modifier.width(10.dp))
+                        Column(Modifier.weight(1f)) {
+                            Text(
+                                text = state.appConfig.appName,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                            )
+                            Text(
+                                text = state.appConfig.tagline,
+                                color = FreshMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                    }
+                    Spacer(Modifier.height(12.dp))
+                }
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Box(
                         Modifier
@@ -501,7 +562,7 @@ private fun HomeTab(
                             style = MaterialTheme.typography.labelMedium,
                         )
                         Text(
-                            text = state.deliveryAddress.ifBlank { "Επίλεξε διεύθυνση" },
+                            text = state.deliveryAddress.ifBlank { state.appConfig.cityLabel },
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,

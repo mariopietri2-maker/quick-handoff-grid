@@ -111,6 +111,10 @@ data class CustomerAppConfig(
     val cityLabel: String = "Ιωάννινα",
     val tagline: String = "Fast · Fresh · Local",
     val logoUrl: String? = null,
+    /** Show logo/wordmark chip in the home header (web `branding.show_header_brand`). */
+    val showHeaderBrand: Boolean = true,
+    /** Brand accent as CSS HSL triplet, e.g. "24 100% 62%" (web `branding.accent_hsl`). */
+    val accentHsl: String? = null,
     val tiles: List<CategoryTile> = listOf(
         CategoryTile("Φαγητό", "🍔", "all"),
         CategoryTile("Πίτσα", "🍕", "Πίτσες"),

@@ -40,7 +40,10 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshTeal
 
 /** Emerald v2 launch splash — mirrors web `#splash`. */
 @Composable
-fun SplashScreen(appName: String = "Fresh Delivery") {
+fun SplashScreen(
+    appName: String = "Fresh Delivery",
+    tagline: String = "Fast · Fresh · Local",
+) {
     val infinite = rememberInfiniteTransition(label = "splash")
     val ringScale by infinite.animateFloat(
         initialValue = 0.8f,
@@ -120,7 +123,7 @@ fun SplashScreen(appName: String = "Fresh Delivery") {
             )
             Spacer(Modifier.height(6.dp))
             Text(
-                "Παράγγειλε από τα αγαπημένα σου",
+                tagline,
                 color = Color(0xFF9CA3AF),
                 fontSize = 13.sp,
             )

@@ -50,7 +50,10 @@ class MainActivity : ComponentActivity() {
                 }
                 when {
                     state.bootstrapping || !splashMinElapsed -> {
-                        SplashScreen(appName = state.appConfig.appName)
+                        SplashScreen(
+                            appName = state.appConfig.appName,
+                            tagline = state.appConfig.tagline,
+                        )
                     }
                     !state.signedIn -> {
                         LoginScreen(

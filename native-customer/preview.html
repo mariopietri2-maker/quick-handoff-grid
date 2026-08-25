@@ -1,0 +1,215 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Preview — Brand &amp; Address parity (Native ↔ Capacitor)</title>
+<style>
+  :root{
+    --fresh-bg:#F2F8F4; --fresh-ink:#0E2B1D; --fresh-muted:#5C7A6B;
+    --fresh-green:#0FB876; --fresh-teal:#14B8A6; --fresh-soft:#DFF7EC;
+    --fresh-divider:#E0EDE6;
+    /* brand accent used by BOTH phones — toggle with the buttons below */
+    --acc-a:#0FB876; --acc-b:#14B8A6;
+    --acc-a-dark:#0A8A58; --acc-b-dark:#0E8F82;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{background:#10151b;color:#e7edf3;font-family:"Segoe UI",Roboto,Arial,sans-serif;padding:28px 20px 60px}
+  h1{font-size:20px;font-weight:800;letter-spacing:-.3px}
+  .sub{color:#93a4b3;font-size:13px;margin-top:6px;max-width:900px;line-height:1.5}
+  .switch{margin:18px 0 26px;display:flex;gap:8px;align-items:center;font-size:12px;color:#93a4b3}
+  .switch button{border:1px solid #2c3946;background:#161d26;color:#cfd9e2;border-radius:999px;padding:6px 14px;font-size:12px;cursor:pointer}
+  .switch button.on{border-color:var(--acc-a);color:#fff;background:#12241d}
+  .grid{display:flex;flex-wrap:wrap;gap:26px;align-items:flex-start}
+  .col{display:flex;flex-direction:column;gap:22px}
+  .tag{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#93a4b3}
+  .tag b{color:#fff}
+  .phone{width:290px;background:#000;border-radius:38px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+  .screen{border-radius:30px;overflow:hidden;height:520px;display:flex;flex-direction:column;position:relative}
+  .statusbar{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;font-size:10px;font-weight:700}
+  /* ---------- light customer app screens ---------- */
+  .app{background:var(--fresh-bg);color:var(--fresh-ink);flex:1;display:flex;flex-direction:column}
+  .hdr{padding:10px 16px 12px;border-bottom:1px solid var(--fresh-divider);background:#fff}
+  .brandrow{display:flex;align-items:center;gap:10px;margin-bottom:12px}
+  .chip{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,var(--acc-a),var(--acc-b));
+        display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px;flex-shrink:0}
+  .chip.web{width:32px;height:32px;border-radius:12px;font-size:13px}
+  .bname{font-weight:900;font-size:17px;letter-spacing:-.2px;color:var(--fresh-ink)}
+  .bname.web{font-size:15px}
+  .btag{font-size:11px;color:var(--fresh-muted);margin-top:2px}
+  .btag.web{font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.14em;margin-top:3px}
+  .addrrow{display:flex;align-items:center;gap:8px}
+  .pin{width:30px;height:30px;border-radius:50%;background:var(--fresh-soft);display:flex;align-items:center;justify-content:center;color:var(--fresh-green);font-size:14px;flex-shrink:0}
+  .alabel{font-size:11px;color:var(--fresh-muted)}
+  .avalue{font-weight:700;font-size:15px;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:170px}
+  .gps{margin-left:auto;color:var(--fresh-green);font-size:16px}
+  .search{margin-top:12px;background:#fff;border:1px solid var(--fresh-divider);border-radius:16px;padding:11px 14px;color:#8fa79a;font-size:13px;box-shadow:0 4px 10px rgba(14,43,29,.06)}
+  .feed{padding:12px 16px;display:flex;gap:10px}
+  .tile{flex:1;background:#fff;border-radius:16px;padding:12px 8px;text-align:center;font-size:11px;font-weight:700;color:var(--fresh-ink)}
+  .tile span{display:block;font-size:20px;margin-bottom:4px}
+  .navbar{margin-top:auto;background:#fff;border-top:.5px solid var(--fresh-divider);display:flex;padding:8px 0 14px}
+  .nav{flex:1;text-align:center;font-size:10px;color:var(--fresh-muted);font-weight:600}
+  .nav i{display:block;font-style:normal;font-size:17px;margin-bottom:2px}
+  .nav.on{color:var(--fresh-green);font-weight:800}
+  /* ---------- splash screens ---------- */
+  .splash-nat{flex:1;background:radial-gradient(circle at 50% 30%,rgba(15,184,118,.35),transparent 62%),#0A0D0C;
+              display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+  .logo-tile{width:96px;height:96px;border-radius:28px;background:linear-gradient(135deg,#0B8F5F,var(--fresh-green),#2DD4BF);
+             display:flex;align-items:center;justify-content:center;font-size:42px;box-shadow:0 10px 26px rgba(0,0,0,.5)}
+  .s-name{font-size:25px;font-weight:900;letter-spacing:-.5px;margin-top:26px}
+  .s-tag{font-size:12.5px;color:#9CA3AF;margin-top:6px}
+  .bar{width:150px;height:4px;border-radius:99px;background:rgba(255,255,255,.12);margin-top:30px;overflow:hidden}
+  .bar i{display:block;height:100%;width:64%;border-radius:99px;background:linear-gradient(90deg,var(--fresh-green),var(--fresh-teal))}
+  .splash-web{flex:1;background:linear-gradient(180deg,var(--acc-b) 0%,var(--acc-a-dark) 55%,#123f31 100%);
+              display:flex;flex-direction:column;align-items:center;justify-content:center;color:#fff}
+  .splash-web .logo-tile{background:rgba(255,255,255,.16);backdrop-filter:blur(2px)}
+  .note{font-size:12px;color:#93a4b3;line-height:1.55;max-width:300px;margin-top:8px}
+  .note code{color:#7ee2b8;font-family:Consolas,monospace;font-size:11px}
+  .old .strike{text-decoration:line-through;text-decoration-color:#f43f5e}
+</style>
+</head>
+<body>
+
+<h1>Preview — in-app brand &amp; address parity (before APK build)</h1>
+<p class="sub">Mockups rendered from the real values in <code style="color:#7ee2b8">CustomerShell.kt</code>,
+<code style="color:#7ee2b8">SplashScreen.kt</code> (native) and
+<code style="color:#7ee2b8">CustomerApp.tsx</code> (web/Capacitor). Both apps read the same
+<code style="color:#7ee2b8">customer_app_config.published_config</code>, so what you see here is what ships.</p>
+
+<div class="switch">
+  Brand accent (from admin config):
+  <button id="em" class="on" onclick="setAccent('emerald')">Emerald (default)</button>
+  <button id="or" onclick="setAccent('orange')">Orange (admin example)</button>
+  <span>— watch BOTH phones change together</span>
+</div>
+
+<div class="grid">
+
+  <!-- Capacitor / web reference -->
+  <div class="col">
+    <div class="tag">Capacitor / Web — reference (<b>unchanged UI</b>)</div>
+    <div class="phone"><div class="screen">
+      <div class="app">
+        <div class="statusbar" style="color:var(--fresh-muted)">9:41<span>▮▮▮ 🔋</span></div>
+        <div class="hdr">
+          <div class="brandrow">
+            <div class="chip web">F</div>
+            <div><div class="bname web">Fresh Delivery</div><div class="btag web">Fast · Fresh · Local</div></div>
+          </div>
+          <div class="addrrow">
+            <div><div class="alabel">Παράδοση σε</div><div class="avalue">Ιωάννινα ⌄</div></div>
+          </div>
+          <div class="search">🔍 Αναζήτηση καταστήματα…</div>
+        </div>
+        <div class="feed">
+          <div class="tile"><span>🍔</span>Φαγητό</div><div class="tile"><span>🍕</span>Πίτσα</div>
+          <div class="tile"><span>☕</span>Καφές</div><div class="tile"><span>🍰</span>Γλυκά</div>
+        </div>
+        <div class="navbar">
+          <div class="nav on"><i>⌂</i>Αρχική</div><div class="nav"><i>🔍</i>Αναζήτηση</div>
+          <div class="nav"><i>🧾</i>Παραγγελίες</div><div class="nav"><i>👤</i>Λογαριασμός</div>
+        </div>
+      </div>
+    </div></div>
+    <p class="note">Brand row: initial-chip + <b>Fresh Delivery</b> + tagline · empty address falls back to
+    <b>Ιωάννινα</b> (<code>city_label</code>). This is the target the native app was matched against.</p>
+  </div>
+
+  <!-- Native AFTER -->
+  <div class="col">
+    <div class="tag">Native — <b>AFTER</b> my changes ✅</div>
+    <div class="phone"><div class="screen">
+      <div class="app">
+        <div class="statusbar" style="color:var(--fresh-muted)">9:41<span>▮▮▮ 🔋</span></div>
+        <div class="hdr">
+          <div class="brandrow">
+            <div class="chip">F</div>
+            <div><div class="bname">Fresh Delivery</div><div class="btag">Fast · Fresh · Local</div></div>
+          </div>
+          <div class="addrrow">
+            <div class="pin">📍</div>
+            <div><div class="alabel">Παράδοση σε</div><div class="avalue">Ιωάννινα</div></div>
+            <div class="gps">◎</div>
+          </div>
+          <div class="search">🔍 Αναζήτηση…</div>
+        </div>
+        <div class="feed">
+          <div class="tile"><span>🍔</span>Φαγητό</div><div class="tile"><span>🍕</span>Πίτσα</div>
+          <div class="tile"><span>☕</span>Καφές</div><div class="tile"><span>🍰</span>Γλυκά</div>
+        </div>
+        <div class="navbar">
+          <div class="nav on"><i>⌂</i>Αρχική</div><div class="nav"><i>🔍</i>Αναζήτηση</div>
+          <div class="nav"><i>🧾</i>Παραγγελίες</div><div class="nav"><i>👤</i>Λογαριασμός</div>
+        </div>
+      </div>
+    </div></div>
+    <p class="note"><b>New:</b> 40dp gradient chip (or admin logo) + name + tagline from config ·
+    address fallback → <code>cityLabel</code> · accent follows <code>accent_hsl</code> like web ·
+    launcher label <b>Fresh</b>, ID <code>com.freshdelivery.customer</code>.</p>
+  </div>
+
+  <!-- Native BEFORE -->
+  <div class="col">
+    <div class="tag">Native — <b>BEFORE</b> (old build)</div>
+    <div class="phone old"><div class="screen">
+      <div class="app">
+        <div class="statusbar" style="color:var(--fresh-muted)">9:41<span>▮▮▮ 🔋</span></div>
+        <div class="hdr">
+          <div class="addrrow">
+            <div class="pin">📍</div>
+            <div><div class="alabel">Παράδοση σε</div><div class="avalue strike">Επίλεξε διεύθυνση</div></div>
+            <div class="gps">◎</div>
+          </div>
+          <div class="search">🔍 Αναζήτηση…</div>
+        </div>
+        <div class="feed">
+          <div class="tile"><span>🍔</span>Φαγητό</div><div class="tile"><span>🍕</span>Πίτσα</div>
+          <div class="tile"><span>☕</span>Καφές</div><div class="tile"><span>🍰</span>Γλυκά</div>
+        </div>
+        <div class="navbar">
+          <div class="nav on"><i>⌂</i>Αρχική</div><div class="nav"><i>🔍</i>Αναζήτηση</div>
+          <div class="nav"><i>🧾</i>Παραγγελίες</div><div class="nav"><i>👤</i>Λογαριασμός</div>
+        </div>
+      </div>
+    </div></div>
+    <p class="note">No brand row at all · address fallback “Επίλεξε διεύθυνση” · branding not loaded from Supabase (stub).</p>
+  </div>
+
+  <!-- Splashes -->
+  <div class="col">
+    <div class="tag">Splash — native AFTER vs BEFORE</div>
+    <div class="phone"><div class="screen">
+      <div class="splash-nat">
+        <div class="logo-tile">🏪</div>
+        <div class="s-name">Fresh Delivery</div>
+        <div class="s-tag">Fast · Fresh · Local</div>
+        <div class="bar"><i></i></div>
+      </div>
+    </div></div>
+    <p class="note">Tagline now comes from config (<code>appConfig.tagline</code>) — same text as the web splash,
+    instead of the hardcoded «Παράγγειλε από τα αγαπημένα σου» shown in old builds.</p>
+    <div class="phone old"><div class="screen">
+      <div class="splash-nat">
+        <div class="logo-tile">🏪</div>
+        <div class="s-name">Fresh Delivery</div>
+        <div class="s-tag strike">Παράγγειλε από τα αγαπημένα σου</div>
+        <div class="bar"><i></i></div>
+      </div>
+    </div></div>
+  </div>
+
+</div>
+
+<script>
+function setAccent(k){
+  const r=document.documentElement.style;
+  if(k==='orange'){r.setProperty('--acc-a','#F97316');r.setProperty('--acc-b','#FB923C');
+    r.setProperty('--acc-a-dark','#EA580C');r.setProperty('--acc-b-dark','#C2410C');}
+  else{r.setProperty('--acc-a','#0FB876');r.setProperty('--acc-b','#14B8A6');
+    r.setProperty('--acc-a-dark','#0A8A58');r.setProperty('--acc-b-dark','#0E8F82');}
+  document.getElementById('em').classList.toggle('on',k!=='orange');
+  document.getElementById('or').classList.toggle('on',k==='orange');
+}
+</script>
+</body>
+</html>

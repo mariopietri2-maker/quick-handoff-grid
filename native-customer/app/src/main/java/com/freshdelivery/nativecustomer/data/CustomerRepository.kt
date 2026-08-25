@@ -17,8 +17,12 @@ import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
 
 /**
@@ -72,7 +76,33 @@ class CustomerRepository(
     }
 
     suspend fun platformFees(): PlatformFees = PlatformFees()
-    suspend fun fetchAppConfig(): CustomerAppConfig = CustomerAppConfig()
+
+    /**
+     * Reads the PUBLISHED customer app config (mirrors web `useCustomerAppConfig.loadShared`).
+     * Only branding fields are consumed natively today; games/tiles stay on defaults.
+     */
+    suspend fun fetchAppConfig(): CustomerAppConfig {
+        val defaults = CustomerAppConfig()
+        return runCatching {
+            val row = client.from("customer_app_config")
+                .select(Columns.list("published_config"))
+                .decodeSingleOrNull<CustomerAppConfigRow>()
+            val cfg = row?.published_config?.jsonObject ?: return@runCatching defaults
+            val branding = cfg["branding"]?.jsonObject
+            fun brandStr(key: String): String? =
+                branding?.get(key)?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+            defaults.copy(
+                appName = brandStr("app_name") ?: defaults.appName,
+                cityLabel = brandStr("city_label") ?: defaults.cityLabel,
+                tagline = brandStr("tagline") ?: defaults.tagline,
+                logoUrl = brandStr("logo_url"),
+                showHeaderBrand = branding?.get("show_header_brand")
+                    ?.jsonPrimitive?.booleanOrNull ?: true,
+                accentHsl = brandStr("accent_hsl"),
+            )
+        }.getOrDefault(defaults)
+    }
+
     suspend fun canManageGames(): Boolean = false
     suspend fun subscribeOrders(userId: String): Flow<Unit> {
         val channel = client.channel("customer-orders-$userId")
