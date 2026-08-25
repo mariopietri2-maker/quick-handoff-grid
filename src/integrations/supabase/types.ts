@@ -2767,6 +2767,7 @@ export type Database = {
       }
       service_zones: {
         Row: {
+          area?: unknown
           center_latitude: number
           center_longitude: number
           city: string
@@ -2777,6 +2778,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          area?: unknown
           center_latitude: number
           center_longitude: number
           city: string
@@ -2787,6 +2789,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          area?: unknown
           center_latitude?: number
           center_longitude?: number
           city?: string

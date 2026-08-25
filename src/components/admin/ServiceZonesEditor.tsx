@@ -6,13 +6,14 @@ import { supabase } from '@/integrations/supabase/client';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, MapPin, Save, Locate, Search, Pencil, Check, X, RotateCcw, Maximize2 } from 'lucide-react';
+import { Plus, Trash2, MapPin, Save, Locate, Pencil, Check, X, Maximize2, Undo2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { geocodeAddress } from '@/lib/geocode';
+
+type LngLat = [number, number];
 
 interface ServiceZone {
   id: string;
@@ -21,10 +22,13 @@ interface ServiceZone {
   center_longitude: number;
   radius_km: number;
   is_active: boolean;
+  /** Drawn delivery area — GeoJSON Polygon ([lng,lat] rings). Null = legacy circle zone. */
+  area: GeoJSON.Polygon | null;
 }
 
 const DEFAULT_CENTER: [number, number] = [20.8537, 39.6650]; // Ιωάννινα
 const CIRCLE_POINTS = 64;
+const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
 /** Generate a GeoJSON Polygon approximating a circle (radius in km) around [lng,lat]. */
 function circlePolygon(lng: number, lat: number, radiusKm: number): GeoJSON.Feature<GeoJSON.Polygon> {
@@ -45,20 +49,6 @@ function circlePolygon(lng: number, lat: number, radiusKm: number): GeoJSON.Feat
   return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [coords] } };
 }
 
-/** Destination point given start [lng,lat], bearing (rad) and distance (km). */
-function destination(lng: number, lat: number, bearingRad: number, distKm: number): [number, number] {
-  const earthRadius = 6371;
-  const d = distKm / earthRadius;
-  const latRad = (lat * Math.PI) / 180;
-  const lngRad = (lng * Math.PI) / 180;
-  const lat2 = Math.asin(Math.sin(latRad) * Math.cos(d) + Math.cos(latRad) * Math.sin(d) * Math.cos(bearingRad));
-  const lng2 = lngRad + Math.atan2(
-    Math.sin(bearingRad) * Math.sin(d) * Math.cos(latRad),
-    Math.cos(d) - Math.sin(latRad) * Math.sin(lat2),
-  );
-  return [(lng2 * 180) / Math.PI, (lat2 * 180) / Math.PI];
-}
-
 /** Great-circle distance in km between two [lng,lat] points. */
 function haversineKm(lng1: number, lat1: number, lng2: number, lat2: number): number {
   const earthRadius = 6371;
@@ -71,15 +61,28 @@ function haversineKm(lng1: number, lat1: number, lng2: number, lat2: number): nu
   return 2 * earthRadius * Math.asin(Math.min(1, Math.sqrt(a)));
 }
 
-const EDGE_BEARING_RAD = Math.PI / 2; // handle sits due east of the center
+/** Centroid (mean of vertices) of an unclosed vertex list. */
+function centroidOf(pts: LngLat[]): { lng: number; lat: number } {
+  let sx = 0;
+  let sy = 0;
+  for (const [lng, lat] of pts) {
+    sx += lng;
+    sy += lat;
+  }
+  return { lng: sx / pts.length, lat: sy / pts.length };
+}
+
+/** Legacy radius_km that best covers the drawn shape (DB CHECK: 0 < r <= 50). */
+function coveringRadiusKm(pts: LngLat[]): number {
+  const c = centroidOf(pts);
+  let max = 0;
+  for (const [lng, lat] of pts) max = Math.max(max, haversineKm(c.lng, c.lat, lng, lat));
+  return Math.min(50, Math.max(1, Math.round(max * 2) / 2));
+}
 
 export default function ServiceZonesEditor() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
-  const centerMarkerRef = useRef<mapboxgl.Marker | null>(null);
-  const edgeMarkerRef = useRef<mapboxgl.Marker | null>(null);
-  const draggingCenterRef = useRef(false);
-  const draggingEdgeRef = useRef(false);
   const prevSelectedIdRef = useRef<string | null | undefined>(undefined);
   const { token } = useMapboxToken();
 
@@ -93,12 +96,15 @@ export default function ServiceZonesEditor() {
   // Nothing below touches the map until mapReady flips true (on 'load').
   const [mapReady, setMapReady] = useState(false);
 
+  // Drawing state — click points on the map to outline the delivery area.
+  const [drawing, setDrawing] = useState(false);
+  const [draftPts, setDraftPts] = useState<LngLat[]>([]);
+  const drawingRef = useRef(drawing);
+  drawingRef.current = drawing;
+
   // Flexible-editing UI state
   const [renameOpen, setRenameOpen] = useState(false);
   const [renameVal, setRenameVal] = useState('');
-  const [latInput, setLatInput] = useState('');
-  const [lngInput, setLngInput] = useState('');
-  const [radiusInput, setRadiusInput] = useState('');
   const [searchQ, setSearchQ] = useState('');
   const [searching, setSearching] = useState(false);
 
@@ -110,18 +116,18 @@ export default function ServiceZonesEditor() {
     savedRef.current = map;
   }, []);
   const selectedSaved = selectedId ? savedRef.current[selectedId] ?? null : null;
+  const selected = zones.find(z => z.id === selectedId) ?? null;
   const isDirty = !!selected && !!selectedSaved && (
     selected.center_latitude !== selectedSaved.center_latitude ||
     selected.center_longitude !== selectedSaved.center_longitude ||
     Number(selected.radius_km) !== Number(selectedSaved.radius_km) ||
     selected.is_active !== selectedSaved.is_active ||
-    selected.city !== selectedSaved.city
+    selected.city !== selectedSaved.city ||
+    JSON.stringify(selected.area ?? null) !== JSON.stringify(selectedSaved.area ?? null)
   );
 
   const zonesRef = useRef(zones);
   zonesRef.current = zones;
-
-  const selected = zones.find(z => z.id === selectedId) ?? null;
 
   const load = useCallback(async () => {
     const { data, error } = await supabase
@@ -129,12 +135,19 @@ export default function ServiceZonesEditor() {
       .select('*')
       .order('city');
     if (error) { toast.error('Αποτυχία φόρτωσης ζωνών'); return; }
-    setZones((data ?? []) as ServiceZone[]);
-    markSaved((data ?? []) as ServiceZone[]);
-    if (data && data.length && !selectedId) setSelectedId(data[0].id);
-  }, [selectedId, markSaved]);
+    const list = ((data ?? []) as ServiceZone[]).map(z => ({ ...z, area: (z.area ?? null) as GeoJSON.Polygon | null }));
+    setZones(list);
+    markSaved(list);
+    setSelectedId(prev => prev ?? (list[0]?.id ?? null));
+  }, [markSaved]);
 
   useEffect(() => { load(); }, [load]);
+
+  // Switching zones cancels any in-progress drawing.
+  useEffect(() => {
+    setDrawing(false);
+    setDraftPts([]);
+  }, [selectedId]);
 
   // Init map
   useEffect(() => {
@@ -150,8 +163,8 @@ export default function ServiceZonesEditor() {
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.on('load', () => {
       if (mapRef.current !== map) return;
-      // Faint circles for all the OTHER zones — clickable to switch selection.
-      map.addSource('zones-others', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      // Faint shapes for all the OTHER zones — clickable to switch selection.
+      map.addSource('zones-others', { type: 'geojson', data: EMPTY_FC });
       map.addLayer({
         id: 'others-fill',
         type: 'fill',
@@ -164,18 +177,32 @@ export default function ServiceZonesEditor() {
         source: 'zones-others',
         paint: { 'line-color': '#94a3b8', 'line-width': 1, 'line-dasharray': [2, 2] },
       });
-      map.addSource('zone-circle', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addSource('zone-shape', { type: 'geojson', data: EMPTY_FC });
       map.addLayer({
         id: 'zone-fill',
         type: 'fill',
-        source: 'zone-circle',
+        source: 'zone-shape',
         paint: { 'fill-color': '#3b82f6', 'fill-opacity': 0.18 },
       });
       map.addLayer({
         id: 'zone-line',
         type: 'line',
-        source: 'zone-circle',
+        source: 'zone-shape',
         paint: { 'line-color': '#2563eb', 'line-width': 2 },
+      });
+      // In-progress drawn polygon.
+      map.addSource('zone-draft', { type: 'geojson', data: EMPTY_FC });
+      map.addLayer({
+        id: 'draft-fill',
+        type: 'fill',
+        source: 'zone-draft',
+        paint: { 'fill-color': '#10b981', 'fill-opacity': 0.15 },
+      });
+      map.addLayer({
+        id: 'draft-line',
+        type: 'line',
+        source: 'zone-draft',
+        paint: { 'line-color': '#059669', 'line-width': 2 },
       });
       setMapReady(true);
     });
@@ -183,81 +210,62 @@ export default function ServiceZonesEditor() {
     return () => {
       map.remove();
       mapRef.current = null;
-      centerMarkerRef.current = null;
-      edgeMarkerRef.current = null;
       setMapReady(false);
     };
   }, [token]);
 
-  // Create markers for the selected zone (stable across drags)
+  // While drawing: every map click drops a polygon vertex.
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !mapReady || !selectedId) {
-      centerMarkerRef.current?.remove();
-      centerMarkerRef.current = null;
-      edgeMarkerRef.current?.remove();
-      edgeMarkerRef.current = null;
-      return;
-    }
-
-    // Markers must always have a position before hitting the map — an
-    // unpositioned marker crashes with "reading 'lng'" on first render.
-    const zone = zonesRef.current.find(v => v.id === selectedId) ?? null;
-    const zLng = Number(zone?.center_longitude);
-    const zLat = Number(zone?.center_latitude);
-    const startCenter: [number, number] =
-      Number.isFinite(zLng) && Number.isFinite(zLat) ? [zLng, zLat] : [DEFAULT_CENTER[0], DEFAULT_CENTER[1]];
-    const startEdge: [number, number] =
-      zone && Number.isFinite(zLng) && Number.isFinite(zLat)
-        ? destination(startCenter[0], startCenter[1], EDGE_BEARING_RAD, Math.max(1, Number(zone.radius_km) || 1))
-        : [DEFAULT_CENTER[0], DEFAULT_CENTER[1]];
-
-    const centerMarker = new mapboxgl.Marker({ color: '#2563eb', draggable: true })
-      .setLngLat(startCenter)
-      .addTo(map);
-    centerMarker.on('dragstart', () => { draggingCenterRef.current = true; });
-    centerMarker.on('drag', () => {
-      if (!zonesRef.current.some(v => v.id === selectedId)) return;
-      const { lng, lat } = centerMarker.getLngLat();
-      setZones(prev => prev.map(v => v.id === selectedId ? { ...v, center_longitude: lng, center_latitude: lat } : v));
-    });
-    centerMarker.on('dragend', () => { draggingCenterRef.current = false; });
-
-    const edgeMarker = new mapboxgl.Marker({ color: '#f59e0b', draggable: true, scale: 1.1 })
-      .setLngLat(startEdge)
-      .addTo(map);
-    edgeMarker.getElement().title = 'Σύρε για αλλαγή ακτίνας';
-    edgeMarker.on('dragstart', () => { draggingEdgeRef.current = true; });
-    edgeMarker.on('drag', () => {
-      const z = zonesRef.current.find(v => v.id === selectedId);
-      if (!z) return;
-      const { lng, lat } = edgeMarker.getLngLat();
-      const km = Math.min(50, Math.max(1, Math.round(haversineKm(z.center_longitude, z.center_latitude, lng, lat) * 2) / 2));
-      setZones(prev => prev.map(v => v.id === selectedId ? { ...v, radius_km: km } : v));
-    });
-    edgeMarker.on('dragend', () => { draggingEdgeRef.current = false; });
-
-    centerMarkerRef.current = centerMarker;
-    edgeMarkerRef.current = edgeMarker;
-
-    return () => {
-      centerMarker.remove();
-      edgeMarker.remove();
-      centerMarkerRef.current = null;
-      edgeMarkerRef.current = null;
+    if (!map || !mapReady || !drawing) return;
+    const onClick = (e: mapboxgl.MapMouseEvent) => {
+      setDraftPts(prev => [...prev, [e.lngLat.lng, e.lngLat.lat]]);
     };
-  }, [selectedId, mapReady]);
+    map.getCanvas().style.cursor = 'crosshair';
+    map.doubleClickZoom?.disable();
+    map.on('click', onClick);
+    return () => {
+      map.getCanvas().style.cursor = '';
+      map.doubleClickZoom?.enable();
+      map.off('click', onClick);
+    };
+  }, [drawing, mapReady]);
 
-  // Click a faint zone circle on the map to select that zone
+  // Render the in-progress outline/fill.
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const src = map.getSource('zone-draft') as mapboxgl.GeoJSONSource | undefined;
+    if (!src) return;
+    const features: GeoJSON.Feature[] = [];
+    if (draftPts.length >= 2) {
+      features.push({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'LineString', coordinates: draftPts },
+      });
+    }
+    if (draftPts.length >= 3) {
+      features.push({
+        type: 'Feature',
+        properties: {},
+        geometry: { type: 'Polygon', coordinates: [[...draftPts, draftPts[0]]] },
+      });
+    }
+    src.setData({ type: 'FeatureCollection', features });
+  }, [draftPts, mapReady]);
+
+  // Click a faint zone shape on the map to select that zone (disabled mid-draw).
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const onClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      if (drawingRef.current) return;
       const id = e.features?.[0]?.properties?.id as string | undefined;
       if (id) setSelectedId(id);
     };
-    const onEnter = () => { map.getCanvas().style.cursor = 'pointer'; };
-    const onLeave = () => { map.getCanvas().style.cursor = ''; };
+    const onEnter = () => { if (!drawingRef.current) map.getCanvas().style.cursor = 'pointer'; };
+    const onLeave = () => { if (!drawingRef.current) map.getCanvas().style.cursor = ''; };
     map.on('click', 'others-fill', onClick);
     map.on('mousemove', 'others-fill', onEnter);
     map.on('mouseleave', 'others-fill', onLeave);
@@ -268,76 +276,90 @@ export default function ServiceZonesEditor() {
     };
   }, [mapReady]);
 
-  // Keep manual lat/lng/radius inputs in sync with the selected zone
-  useEffect(() => {
-    setLatInput(selected ? Number(selected.center_latitude).toFixed(5) : '');
-    setLngInput(selected ? Number(selected.center_longitude).toFixed(5) : '');
-    setRadiusInput(selected ? String(Number(selected.radius_km)) : '');
-  }, [selected?.id, selected?.center_latitude, selected?.center_longitude, selected?.radius_km]);
+  /** Geometry for a zone: drawn polygon when present, else its legacy circle. */
+  const shapeFor = (z: ServiceZone): GeoJSON.Feature<GeoJSON.Polygon> =>
+    z.area
+      ? { type: 'Feature', properties: {}, geometry: z.area }
+      : circlePolygon(Number(z.center_longitude), Number(z.center_latitude), Number(z.radius_km) || 1);
 
-  // Sync circle geometry + marker positions with the selected zone
-  const selLat = selected?.center_latitude;
-  const selLng = selected?.center_longitude;
-  const selRadius = selected?.radius_km;
-
+  // Sync zone shapes on the map.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
-    const selected = zonesRef.current.find(v => v.id === selectedId) ?? null;
+    const sel = zonesRef.current.find(v => v.id === selectedId) ?? null;
 
-    const draw = () => {
-      // Faint circles for every other zone (clickable via others-fill layer)
-      const othersSrc = map.getSource('zones-others') as mapboxgl.GeoJSONSource | undefined;
-      if (othersSrc) {
-        othersSrc.setData({
-          type: 'FeatureCollection',
-          features: zonesRef.current
-            .filter(z => z.id !== selectedId)
-            .map(z => {
-              const poly = circlePolygon(Number(z.center_longitude), Number(z.center_latitude), Number(z.radius_km) || 1);
-              return { ...poly, properties: { id: z.id, city: z.city } };
-            }),
-        });
-      }
-      const src = map.getSource('zone-circle') as mapboxgl.GeoJSONSource | undefined;
-      if (!src) return;
-      if (!selected) {
-        src.setData({ type: 'FeatureCollection', features: [] });
-        return;
-      }
-      src.setData({
+    const othersSrc = map.getSource('zones-others') as mapboxgl.GeoJSONSource | undefined;
+    if (othersSrc) {
+      othersSrc.setData({
         type: 'FeatureCollection',
-        features: [circlePolygon(selected.center_longitude, selected.center_latitude, Number(selected.radius_km))],
+        features: zonesRef.current
+          .filter(z => z.id !== selectedId)
+          .map(z => ({ ...shapeFor(z), properties: { id: z.id, city: z.city } })),
       });
-    };
-    // Style is guaranteed loaded here (mapReady), so drawing is always safe.
-    draw();
+    }
+    const src = map.getSource('zone-shape') as mapboxgl.GeoJSONSource | undefined;
+    if (src) {
+      src.setData(
+        sel
+          ? { type: 'FeatureCollection', features: [{ ...shapeFor(sel), properties: {} }] }
+          : EMPTY_FC,
+      );
+    }
 
-    if (!selected) return;
-
-    const cLng = Number(selected.center_longitude);
-    const cLat = Number(selected.center_latitude);
+    if (!sel) return;
+    const cLng = Number(sel.center_longitude);
+    const cLat = Number(sel.center_latitude);
     if (!Number.isFinite(cLng) || !Number.isFinite(cLat)) return;
 
-    const centerMarker = centerMarkerRef.current;
-    const edgeMarker = edgeMarkerRef.current;
-    if (centerMarker && !draggingCenterRef.current) {
-      centerMarker.setLngLat([cLng, cLat]);
-    }
-    if (edgeMarker && !draggingEdgeRef.current) {
-      const [elng, elat] = destination(cLng, cLat, EDGE_BEARING_RAD, Math.max(1, Number(selected.radius_km) || 1));
-      edgeMarker.setLngLat([elng, elat]);
-    }
-
-    if (prevSelectedIdRef.current !== selectedId) {
+    if (prevSelectedIdRef.current !== selectedId && !drawingRef.current) {
       prevSelectedIdRef.current = selectedId;
       map.flyTo({ center: [cLng, cLat], zoom: 12 });
     }
-  }, [selectedId, selLat, selLng, selRadius, mapReady]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedId, zones, mapReady]);
 
   const updateLocal = (patch: Partial<ServiceZone>) => {
     if (!selected) return;
     setZones(prev => prev.map(z => z.id === selected.id ? { ...z, ...patch } : z));
+  };
+
+  // ---------- Drawing actions ----------
+
+  const startDrawing = () => {
+    if (!selectedId) {
+      toast.error('Επιλέξτε ή δημιουργήστε ζώνη πρώτα');
+      return;
+    }
+    setDraftPts([]);
+    setDrawing(true);
+    toast('Κλικ στον χάρτη για να προσθέσετε σημεία της ζώνης');
+  };
+
+  const undoPoint = () => setDraftPts(prev => prev.slice(0, -1));
+
+  const cancelDrawing = () => {
+    setDrawing(false);
+    setDraftPts([]);
+  };
+
+  /** Close the outline: store the polygon + derive legacy center/radius metadata. */
+  const finishDrawing = () => {
+    if (!selected || draftPts.length < 3) return;
+    const ring: LngLat[] = [...draftPts, draftPts[0]];
+    const c = centroidOf(draftPts);
+    updateLocal({
+      area: { type: 'Polygon', coordinates: [ring] },
+      center_latitude: c.lat,
+      center_longitude: c.lng,
+      radius_km: coveringRadiusKm(draftPts),
+    });
+    cancelDrawing();
+    toast.success('Το σχέδιο ολοκληρώθηκε — πατήστε Αποθήκευση');
+  };
+
+  /** Remove the drawn shape — the zone falls back to its circle definition. */
+  const clearArea = () => {
+    updateLocal({ area: null });
   };
 
   const persist = async () => {
@@ -353,6 +375,7 @@ export default function ServiceZonesEditor() {
         center_longitude: selected.center_longitude,
         radius_km: selected.radius_km,
         is_active: selected.is_active,
+        area: selected.area,
       })
       .eq('id', selected.id);
     setSaving(false);
@@ -378,30 +401,7 @@ export default function ServiceZonesEditor() {
     updateLocal({ city: val });
   };
 
-  /** Commit manually typed center coordinates. */
-  const commitCoords = () => {
-    if (!selected) return;
-    const lat = Number(latInput.replace(',', '.'));
-    const lng = Number(lngInput.replace(',', '.'));
-    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 85 || Math.abs(lng) > 180) {
-      toast.error('Μη έγκυρες συντεταγμένες');
-      return;
-    }
-    updateLocal({ center_latitude: lat, center_longitude: lng });
-  };
-
-  /** Commit manually typed radius (1–50 km, matches DB CHECK). */
-  const commitRadiusInput = () => {
-    if (!selected) return;
-    const km = Number(radiusInput.replace(',', '.'));
-    if (!Number.isFinite(km) || km < 1 || km > 50) {
-      toast.error('Η ακτίνα πρέπει να είναι 1–50 km');
-      return;
-    }
-    updateLocal({ radius_km: Math.round(km * 2) / 2 });
-  };
-
-  /** Search an address and move the zone center there. */
+  /** Search an address and fly there (also refreshes legacy center metadata). */
   const searchCenter = async () => {
     const q = searchQ.trim();
     if (!q || !selected) return;
@@ -417,23 +417,34 @@ export default function ServiceZonesEditor() {
     toast.success(`Κέντρο: ${hit.formatted}`);
   };
 
-  /** Zoom so every zone circle is visible. */
+  /** Zoom so every zone shape is visible. */
   const fitAllZones = () => {
     const map = mapRef.current;
     if (!map || !mapReady || zones.length === 0) return;
     const b = new mapboxgl.LngLatBounds();
+    let any = false;
     for (const z of zones) {
+      const ring = z.area?.coordinates?.[0];
+      if (ring && ring.length) {
+        for (const [lng, lat] of ring) {
+          if (Number.isFinite(lng) && Number.isFinite(lat)) { b.extend([lng, lat]); any = true; }
+        }
+        continue;
+      }
       const lng = Number(z.center_longitude);
       const lat = Number(z.center_latitude);
       const km = Math.max(1, Number(z.radius_km) || 1);
       if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+      const dLat = km / 111.32;
+      const dLng = dLat / Math.max(0.1, Math.cos((lat * Math.PI) / 180));
       b.extend([lng, lat]);
-      b.extend(destination(lng, lat, 0, km));
-      b.extend(destination(lng, lat, Math.PI, km));
-      b.extend(destination(lng, lat, EDGE_BEARING_RAD, km));
-      b.extend(destination(lng, lat, -EDGE_BEARING_RAD, km));
+      b.extend([lng, lat + dLat]);
+      b.extend([lng, lat - dLat]);
+      b.extend([lng + dLng, lat]);
+      b.extend([lng - dLng, lat]);
+      any = true;
     }
-    if (!b.isEmpty()) map.fitBounds(b, { padding: 60, duration: 600 });
+    if (any && !b.isEmpty()) map.fitBounds(b, { padding: 60, duration: 600 });
   };
 
   /** Revert local edits of the selected zone back to last-saved values. */
@@ -442,6 +453,7 @@ export default function ServiceZonesEditor() {
     const saved = savedRef.current[selectedId];
     if (!saved) return;
     setZones(prev => prev.map(z => z.id === selectedId ? { ...saved } : z));
+    setDraftPts([]);
   };
 
   const getMapCenter = useCallback((): { lat: number; lng: number } => {
@@ -464,17 +476,17 @@ export default function ServiceZonesEditor() {
     const c = getMapCenter();
     const { data, error } = await supabase
       .from('service_zones')
-      .insert({ city, center_latitude: c.lat, center_longitude: c.lng, radius_km: 18, is_active: true })
+      .insert({ city, center_latitude: c.lat, center_longitude: c.lng, radius_km: 18, is_active: true, area: null })
       .select()
       .single();
     setCreating(false);
     if (error) { toast.error(error.message.includes('duplicate') ? 'Η πόλη υπάρχει ήδη' : 'Αποτυχία'); return; }
     setNewCity('');
-    const created = data as ServiceZone;
+    const created = { ...(data as ServiceZone), area: ((data as ServiceZone).area ?? null) as GeoJSON.Polygon | null };
     setZones(prev => [...prev, created].sort((a, b) => a.city.localeCompare(b.city)));
     markSaved([...zonesRef.current, created]);
     setSelectedId(created.id);
-    toast.success(`Δημιουργήθηκε ζώνη: ${city}`);
+    toast.success(`Δημιουργήθηκε ζώνη: ${city} — σχεδιάστε την περιοχή της`);
   };
 
   const removeZone = async (id: string) => {
@@ -487,12 +499,6 @@ export default function ServiceZonesEditor() {
     toast.success('Η ζώνη διαγράφηκε');
   };
 
-  const recenterOnMap = () => {
-    if (!selected) return;
-    const c = getMapCenter();
-    updateLocal({ center_latitude: c.lat, center_longitude: c.lng });
-  };
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[340px_1fr] gap-4">
       {/* LEFT: zones list + editor */}
@@ -503,7 +509,7 @@ export default function ServiceZonesEditor() {
             <h2 className="font-heading font-semibold text-foreground">Ζώνες Παράδοσης</h2>
           </div>
           <p className="text-xs text-muted-foreground">
-            Μια ζώνη ανά πόλη. Διευθύνσεις πελατών εκτός κύκλου μπλοκάρονται αυτόματα στο checkout.
+            Μια ζώνη ανά πόλη. Σχεδιάστε την περιοχή στον χάρτη — διευθύνσεις εκτός ζώνης μπλοκάρονται αυτόματα στο checkout.
           </p>
           <div className="flex gap-2">
             <Input
@@ -534,7 +540,7 @@ export default function ServiceZonesEditor() {
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">{z.city}</p>
                 <p className="text-[11px] text-muted-foreground">
-                  ακτίνα {Number(z.radius_km).toFixed(1)} km
+                  {z.area ? 'σχεδιασμένη ζώνη' : `ακτίνα ${Number(z.radius_km).toFixed(1)} km`}
                 </p>
               </div>
               <Badge variant={z.is_active ? 'default' : 'outline'} className="text-[10px]">
@@ -572,13 +578,59 @@ export default function ServiceZonesEditor() {
                 </div>
               )}
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Σύρε τον μπλε δείκτη για κέντρο ή το πορτοκαλί για ακτίνα.
+                {selected.area
+                  ? 'Σχεδιασμένη ζώνη — η περιοχή που ορίσατε ισχύει ως έχει.'
+                  : 'Δεν έχει σχεδιαστεί ζώνη· ισχύει προσωρινά κύκλος ακτίνας.'}
               </p>
             </div>
 
-            {/* Address search → center */}
+            {/* Drawing controls */}
+            <div className="space-y-2 rounded-lg border border-dashed border-primary/40 bg-primary/5 p-3">
+              <Label className="text-xs font-semibold text-foreground">Σχέδιο ζώνης</Label>
+              {!drawing ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    Κλικ στον χάρτη για σημεία → κλείστε το σχήμα με «Ολοκλήρωση» (τουλάχιστον 3 σημεία).
+                  </p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button variant="outline" size="sm" onClick={startDrawing}>
+                      <Pencil className="h-3.5 w-3.5 mr-1.5" />
+                      {selected.area ? 'Ανασχεδίαση' : 'Ξεκίνα σχέδιο'}
+                    </Button>
+                    {selected.area && (
+                      <Button variant="outline" size="sm" onClick={clearArea}>
+                        <X className="h-3.5 w-3.5 mr-1.5" />
+                        Αφαίρεση σχεδίου
+                      </Button>
+                    )}
+                  </div>
+                </>
+              ) : (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    Σημεία: {draftPts.length}{draftPts.length < 3 ? ' (χρειάζονται τουλάχιστον 3)' : ''} — κλικ για επόμενο.
+                  </p>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Button size="sm" onClick={finishDrawing} disabled={draftPts.length < 3}>
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Ολοκλήρωση
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={undoPoint} disabled={draftPts.length === 0}>
+                      <Undo2 className="h-3.5 w-3.5 mr-1" />
+                      Αναίρεση
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={cancelDrawing}>
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Άκυρο
+                    </Button>
+                  </div>
+                </>
+              )}
+            </div>
+
+            {/* Address search — navigate the map (also updates legacy center) */}
             <div className="space-y-1.5">
-              <Label className="text-xs text-muted-foreground">Κέντρο από διεύθυνση</Label>
+              <Label className="text-xs text-muted-foreground">Πλοήγηση σε διεύθυνση</Label>
               <div className="flex gap-2">
                 <Input
                   placeholder="π.χ. Πλατία Μαβίλη 5, Ιωάννινα"
@@ -587,58 +639,9 @@ export default function ServiceZonesEditor() {
                   onKeyDown={e => e.key === 'Enter' && searchCenter()}
                 />
                 <Button onClick={searchCenter} disabled={!searchQ.trim() || searching} size="sm">
-                  <Search className="h-4 w-4" />
+                  <Locate className="h-4 w-4" />
                 </Button>
               </div>
-            </div>
-
-            {/* Manual coordinates */}
-            <div className="grid grid-cols-2 gap-2">
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Latitude</Label>
-                <Input
-                  inputMode="decimal"
-                  value={latInput}
-                  onChange={e => setLatInput(e.target.value)}
-                  onBlur={commitCoords}
-                  onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-                />
-              </div>
-              <div className="space-y-1.5">
-                <Label className="text-xs text-muted-foreground">Longitude</Label>
-                <Input
-                  inputMode="decimal"
-                  value={lngInput}
-                  onChange={e => setLngInput(e.target.value)}
-                  onBlur={commitCoords}
-                  onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-                />
-              </div>
-            </div>
-
-            {/* Radius: slider + numeric input */}
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <Label className="text-xs text-muted-foreground">Ακτίνα κάλυψης</Label>
-                <div className="flex items-center gap-1.5">
-                  <Input
-                    inputMode="decimal"
-                    value={radiusInput}
-                    onChange={e => setRadiusInput(e.target.value)}
-                    onBlur={commitRadiusInput}
-                    onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
-                    className="w-16 h-7 text-xs text-right"
-                  />
-                  <span className="text-[11px] text-muted-foreground">km</span>
-                </div>
-              </div>
-              <Slider
-                value={[Number(selected.radius_km)]}
-                min={1}
-                max={50}
-                step={0.5}
-                onValueChange={([v]) => updateLocal({ radius_km: v })}
-              />
             </div>
 
             <div className="flex items-center justify-between rounded-lg bg-muted/40 px-3 py-2">
@@ -650,16 +653,12 @@ export default function ServiceZonesEditor() {
             </div>
 
             <div className="grid grid-cols-2 gap-2">
-              <Button variant="outline" size="sm" onClick={recenterOnMap}>
-                <Locate className="h-3.5 w-3.5 mr-1.5" />
-                Κέντρο = θέα
-              </Button>
               <Button variant="outline" size="sm" onClick={fitAllZones}>
                 <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
                 Όλες οι ζώνες
               </Button>
               <Button variant="outline" size="sm" onClick={resetChanges} disabled={!isDirty}>
-                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                <X className="h-3.5 w-3.5 mr-1.5" />
                 Ακύρωση αλλαγών
               </Button>
               <Button variant="outline" size="sm" onClick={() => removeZone(selected.id)}>
