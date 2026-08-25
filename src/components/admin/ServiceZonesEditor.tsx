@@ -10,8 +10,9 @@ import { Slider } from '@/components/ui/slider';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, MapPin, Save, Locate } from 'lucide-react';
+import { Plus, Trash2, MapPin, Save, Locate, Search, Pencil, Check, X, RotateCcw, Maximize2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { geocodeAddress } from '@/lib/geocode';
 
 interface ServiceZone {
   id: string;
@@ -92,6 +93,31 @@ export default function ServiceZonesEditor() {
   // Nothing below touches the map until mapReady flips true (on 'load').
   const [mapReady, setMapReady] = useState(false);
 
+  // Flexible-editing UI state
+  const [renameOpen, setRenameOpen] = useState(false);
+  const [renameVal, setRenameVal] = useState('');
+  const [latInput, setLatInput] = useState('');
+  const [lngInput, setLngInput] = useState('');
+  const [radiusInput, setRadiusInput] = useState('');
+  const [searchQ, setSearchQ] = useState('');
+  const [searching, setSearching] = useState(false);
+
+  /** Snapshot of the last-saved DB state per zone id — powers dirty check + Reset. */
+  const savedRef = useRef<Record<string, ServiceZone>>({});
+  const markSaved = useCallback((list: ServiceZone[]) => {
+    const map: Record<string, ServiceZone> = {};
+    for (const z of list) map[z.id] = { ...z };
+    savedRef.current = map;
+  }, []);
+  const selectedSaved = selectedId ? savedRef.current[selectedId] ?? null : null;
+  const isDirty = !!selected && !!selectedSaved && (
+    selected.center_latitude !== selectedSaved.center_latitude ||
+    selected.center_longitude !== selectedSaved.center_longitude ||
+    Number(selected.radius_km) !== Number(selectedSaved.radius_km) ||
+    selected.is_active !== selectedSaved.is_active ||
+    selected.city !== selectedSaved.city
+  );
+
   const zonesRef = useRef(zones);
   zonesRef.current = zones;
 
@@ -104,8 +130,9 @@ export default function ServiceZonesEditor() {
       .order('city');
     if (error) { toast.error('Αποτυχία φόρτωσης ζωνών'); return; }
     setZones((data ?? []) as ServiceZone[]);
+    markSaved((data ?? []) as ServiceZone[]);
     if (data && data.length && !selectedId) setSelectedId(data[0].id);
-  }, [selectedId]);
+  }, [selectedId, markSaved]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -123,6 +150,20 @@ export default function ServiceZonesEditor() {
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.on('load', () => {
       if (mapRef.current !== map) return;
+      // Faint circles for all the OTHER zones — clickable to switch selection.
+      map.addSource('zones-others', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
+      map.addLayer({
+        id: 'others-fill',
+        type: 'fill',
+        source: 'zones-others',
+        paint: { 'fill-color': '#94a3b8', 'fill-opacity': 0.08 },
+      });
+      map.addLayer({
+        id: 'others-line',
+        type: 'line',
+        source: 'zones-others',
+        paint: { 'line-color': '#94a3b8', 'line-width': 1, 'line-dasharray': [2, 2] },
+      });
       map.addSource('zone-circle', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({
         id: 'zone-fill',
@@ -191,7 +232,7 @@ export default function ServiceZonesEditor() {
       const z = zonesRef.current.find(v => v.id === selectedId);
       if (!z) return;
       const { lng, lat } = edgeMarker.getLngLat();
-      const km = Math.min(30, Math.max(1, Math.round(haversineKm(z.center_longitude, z.center_latitude, lng, lat) * 2) / 2));
+      const km = Math.min(50, Math.max(1, Math.round(haversineKm(z.center_longitude, z.center_latitude, lng, lat) * 2) / 2));
       setZones(prev => prev.map(v => v.id === selectedId ? { ...v, radius_km: km } : v));
     });
     edgeMarker.on('dragend', () => { draggingEdgeRef.current = false; });
@@ -207,6 +248,33 @@ export default function ServiceZonesEditor() {
     };
   }, [selectedId, mapReady]);
 
+  // Click a faint zone circle on the map to select that zone
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !mapReady) return;
+    const onClick = (e: mapboxgl.MapMouseEvent & { features?: mapboxgl.MapboxGeoJSONFeature[] }) => {
+      const id = e.features?.[0]?.properties?.id as string | undefined;
+      if (id) setSelectedId(id);
+    };
+    const onEnter = () => { map.getCanvas().style.cursor = 'pointer'; };
+    const onLeave = () => { map.getCanvas().style.cursor = ''; };
+    map.on('click', 'others-fill', onClick);
+    map.on('mousemove', 'others-fill', onEnter);
+    map.on('mouseleave', 'others-fill', onLeave);
+    return () => {
+      map.off('click', 'others-fill', onClick);
+      map.off('mousemove', 'others-fill', onEnter);
+      map.off('mouseleave', 'others-fill', onLeave);
+    };
+  }, [mapReady]);
+
+  // Keep manual lat/lng/radius inputs in sync with the selected zone
+  useEffect(() => {
+    setLatInput(selected ? Number(selected.center_latitude).toFixed(5) : '');
+    setLngInput(selected ? Number(selected.center_longitude).toFixed(5) : '');
+    setRadiusInput(selected ? String(Number(selected.radius_km)) : '');
+  }, [selected?.id, selected?.center_latitude, selected?.center_longitude, selected?.radius_km]);
+
   // Sync circle geometry + marker positions with the selected zone
   const selLat = selected?.center_latitude;
   const selLng = selected?.center_longitude;
@@ -218,6 +286,19 @@ export default function ServiceZonesEditor() {
     const selected = zonesRef.current.find(v => v.id === selectedId) ?? null;
 
     const draw = () => {
+      // Faint circles for every other zone (clickable via others-fill layer)
+      const othersSrc = map.getSource('zones-others') as mapboxgl.GeoJSONSource | undefined;
+      if (othersSrc) {
+        othersSrc.setData({
+          type: 'FeatureCollection',
+          features: zonesRef.current
+            .filter(z => z.id !== selectedId)
+            .map(z => {
+              const poly = circlePolygon(Number(z.center_longitude), Number(z.center_latitude), Number(z.radius_km) || 1);
+              return { ...poly, properties: { id: z.id, city: z.city } };
+            }),
+        });
+      }
       const src = map.getSource('zone-circle') as mapboxgl.GeoJSONSource | undefined;
       if (!src) return;
       if (!selected) {
@@ -261,10 +342,13 @@ export default function ServiceZonesEditor() {
 
   const persist = async () => {
     if (!selected) return;
+    const city = selected.city.trim();
+    if (!city) { toast.error('Η πόλη δεν μπορεί να είναι κενή'); return; }
     setSaving(true);
     const { error } = await supabase
       .from('service_zones')
       .update({
+        city,
         center_latitude: selected.center_latitude,
         center_longitude: selected.center_longitude,
         radius_km: selected.radius_km,
@@ -272,7 +356,92 @@ export default function ServiceZonesEditor() {
       })
       .eq('id', selected.id);
     setSaving(false);
-    if (error) toast.error('Αποτυχία αποθήκευσης'); else toast.success('Η ζώνη αποθηκεύτηκε');
+    if (error) {
+      toast.error(error.message.includes('duplicate') || error.message.includes('unique')
+        ? 'Υπάρχει ήδη ζώνη με αυτή την πόλη'
+        : 'Αποτυχία αποθήκευσης');
+      return;
+    }
+    markSaved(Object.values({ ...savedRef.current, [selected.id]: { ...selected, city } }));
+    toast.success('Η ζώνη αποθηκεύτηκε');
+  };
+
+  /** Commit an inline city rename locally (persisted with Αποθήκευση). */
+  const commitRename = () => {
+    const val = renameVal.trim();
+    setRenameOpen(false);
+    if (!val || !selected || val === selected.city) return;
+    if (zones.some(z => z.id !== selected.id && z.city === val)) {
+      toast.error('Υπάρχει ήδη ζώνη με αυτή την πόλη');
+      return;
+    }
+    updateLocal({ city: val });
+  };
+
+  /** Commit manually typed center coordinates. */
+  const commitCoords = () => {
+    if (!selected) return;
+    const lat = Number(latInput.replace(',', '.'));
+    const lng = Number(lngInput.replace(',', '.'));
+    if (!Number.isFinite(lat) || !Number.isFinite(lng) || Math.abs(lat) > 85 || Math.abs(lng) > 180) {
+      toast.error('Μη έγκυρες συντεταγμένες');
+      return;
+    }
+    updateLocal({ center_latitude: lat, center_longitude: lng });
+  };
+
+  /** Commit manually typed radius (1–50 km, matches DB CHECK). */
+  const commitRadiusInput = () => {
+    if (!selected) return;
+    const km = Number(radiusInput.replace(',', '.'));
+    if (!Number.isFinite(km) || km < 1 || km > 50) {
+      toast.error('Η ακτίνα πρέπει να είναι 1–50 km');
+      return;
+    }
+    updateLocal({ radius_km: Math.round(km * 2) / 2 });
+  };
+
+  /** Search an address and move the zone center there. */
+  const searchCenter = async () => {
+    const q = searchQ.trim();
+    if (!q || !selected) return;
+    setSearching(true);
+    const hit = await geocodeAddress(q);
+    setSearching(false);
+    if (!hit || !Number.isFinite(hit.latitude) || !Number.isFinite(hit.longitude)) {
+      toast.error('Δεν βρέθηκε η διεύθυνση');
+      return;
+    }
+    updateLocal({ center_latitude: hit.latitude, center_longitude: hit.longitude });
+    mapRef.current?.flyTo({ center: [hit.longitude, hit.latitude], zoom: 13 });
+    toast.success(`Κέντρο: ${hit.formatted}`);
+  };
+
+  /** Zoom so every zone circle is visible. */
+  const fitAllZones = () => {
+    const map = mapRef.current;
+    if (!map || !mapReady || zones.length === 0) return;
+    const b = new mapboxgl.LngLatBounds();
+    for (const z of zones) {
+      const lng = Number(z.center_longitude);
+      const lat = Number(z.center_latitude);
+      const km = Math.max(1, Number(z.radius_km) || 1);
+      if (!Number.isFinite(lng) || !Number.isFinite(lat)) continue;
+      b.extend([lng, lat]);
+      b.extend(destination(lng, lat, 0, km));
+      b.extend(destination(lng, lat, Math.PI, km));
+      b.extend(destination(lng, lat, EDGE_BEARING_RAD, km));
+      b.extend(destination(lng, lat, -EDGE_BEARING_RAD, km));
+    }
+    if (!b.isEmpty()) map.fitBounds(b, { padding: 60, duration: 600 });
+  };
+
+  /** Revert local edits of the selected zone back to last-saved values. */
+  const resetChanges = () => {
+    if (!selectedId) return;
+    const saved = savedRef.current[selectedId];
+    if (!saved) return;
+    setZones(prev => prev.map(z => z.id === selectedId ? { ...saved } : z));
   };
 
   const getMapCenter = useCallback((): { lat: number; lng: number } => {
@@ -301,8 +470,10 @@ export default function ServiceZonesEditor() {
     setCreating(false);
     if (error) { toast.error(error.message.includes('duplicate') ? 'Η πόλη υπάρχει ήδη' : 'Αποτυχία'); return; }
     setNewCity('');
-    setZones(prev => [...prev, data as ServiceZone].sort((a, b) => a.city.localeCompare(b.city)));
-    setSelectedId((data as ServiceZone).id);
+    const created = data as ServiceZone;
+    setZones(prev => [...prev, created].sort((a, b) => a.city.localeCompare(b.city)));
+    markSaved([...zonesRef.current, created]);
+    setSelectedId(created.id);
     toast.success(`Δημιουργήθηκε ζώνη: ${city}`);
   };
 
@@ -311,6 +482,7 @@ export default function ServiceZonesEditor() {
     const { error } = await supabase.from('service_zones').delete().eq('id', id);
     if (error) { toast.error('Αποτυχία διαγραφής'); return; }
     setZones(prev => prev.filter(z => z.id !== id));
+    delete savedRef.current[id];
     if (selectedId === id) setSelectedId(null);
     toast.success('Η ζώνη διαγράφηκε');
   };
@@ -374,22 +546,96 @@ export default function ServiceZonesEditor() {
 
         {selected && (
           <Card className="p-4 space-y-4">
+            {/* City name + inline rename */}
             <div>
-              <h3 className="font-heading font-semibold text-foreground">{selected.city}</h3>
+              {renameOpen ? (
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    autoFocus
+                    value={renameVal}
+                    onChange={e => setRenameVal(e.target.value)}
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') commitRename();
+                      if (e.key === 'Escape') setRenameOpen(false);
+                    }}
+                    maxLength={60}
+                  />
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={commitRename}><Check className="h-4 w-4 text-primary" /></Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => setRenameOpen(false)}><X className="h-4 w-4" /></Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-heading font-semibold text-foreground truncate">{selected.city}</h3>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => { setRenameVal(selected.city); setRenameOpen(true); }}>
+                    <Pencil className="h-3.5 w-3.5 text-muted-foreground" />
+                  </Button>
+                </div>
+              )}
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Σύρε τον μπλε δείκτη για μετακίνηση κέντρου ή το πορτοκαλί για αλλαγή ακτίνας.
+                Σύρε τον μπλε δείκτη για κέντρο ή το πορτοκαλί για ακτίνα.
               </p>
             </div>
 
+            {/* Address search → center */}
+            <div className="space-y-1.5">
+              <Label className="text-xs text-muted-foreground">Κέντρο από διεύθυνση</Label>
+              <div className="flex gap-2">
+                <Input
+                  placeholder="π.χ. Πλατία Μαβίλη 5, Ιωάννινα"
+                  value={searchQ}
+                  onChange={e => setSearchQ(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && searchCenter()}
+                />
+                <Button onClick={searchCenter} disabled={!searchQ.trim() || searching} size="sm">
+                  <Search className="h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Manual coordinates */}
+            <div className="grid grid-cols-2 gap-2">
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Latitude</Label>
+                <Input
+                  inputMode="decimal"
+                  value={latInput}
+                  onChange={e => setLatInput(e.target.value)}
+                  onBlur={commitCoords}
+                  onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label className="text-xs text-muted-foreground">Longitude</Label>
+                <Input
+                  inputMode="decimal"
+                  value={lngInput}
+                  onChange={e => setLngInput(e.target.value)}
+                  onBlur={commitCoords}
+                  onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                />
+              </div>
+            </div>
+
+            {/* Radius: slider + numeric input */}
             <div className="space-y-2">
               <div className="flex items-center justify-between">
                 <Label className="text-xs text-muted-foreground">Ακτίνα κάλυψης</Label>
-                <Badge variant="outline" className="font-heading">{Number(selected.radius_km).toFixed(1)} km</Badge>
+                <div className="flex items-center gap-1.5">
+                  <Input
+                    inputMode="decimal"
+                    value={radiusInput}
+                    onChange={e => setRadiusInput(e.target.value)}
+                    onBlur={commitRadiusInput}
+                    onKeyDown={e => e.key === 'Enter' && (e.currentTarget as HTMLInputElement).blur()}
+                    className="w-16 h-7 text-xs text-right"
+                  />
+                  <span className="text-[11px] text-muted-foreground">km</span>
+                </div>
               </div>
               <Slider
                 value={[Number(selected.radius_km)]}
                 min={1}
-                max={30}
+                max={50}
                 step={0.5}
                 onValueChange={([v]) => updateLocal({ radius_km: v })}
               />
@@ -403,19 +649,29 @@ export default function ServiceZonesEditor() {
               />
             </div>
 
-            <div className="flex gap-2">
-              <Button variant="outline" size="sm" className="flex-1" onClick={recenterOnMap}>
+            <div className="grid grid-cols-2 gap-2">
+              <Button variant="outline" size="sm" onClick={recenterOnMap}>
                 <Locate className="h-3.5 w-3.5 mr-1.5" />
-                Κέντρο = θέα χάρτη
+                Κέντρο = θέα
               </Button>
-              <Button variant="ghost" size="sm" onClick={() => removeZone(selected.id)}>
-                <Trash2 className="h-3.5 w-3.5 text-destructive" />
+              <Button variant="outline" size="sm" onClick={fitAllZones}>
+                <Maximize2 className="h-3.5 w-3.5 mr-1.5" />
+                Όλες οι ζώνες
+              </Button>
+              <Button variant="outline" size="sm" onClick={resetChanges} disabled={!isDirty}>
+                <RotateCcw className="h-3.5 w-3.5 mr-1.5" />
+                Ακύρωση αλλαγών
+              </Button>
+              <Button variant="outline" size="sm" onClick={() => removeZone(selected.id)}>
+                <Trash2 className="h-3.5 w-3.5 mr-1.5 text-destructive" />
+                Διαγραφή
               </Button>
             </div>
 
             <Button onClick={persist} disabled={saving} className="w-full">
               <Save className="h-4 w-4 mr-2" />
-              Αποθήκευση Ζώνης
+              {isDirty ? 'Αποθήκευση αλλαγών' : 'Αποθήκευση Ζώνης'}
+              {isDirty && <span className="ml-1.5 h-2 w-2 rounded-full bg-amber-400 inline-block" />}
             </Button>
           </Card>
         )}
