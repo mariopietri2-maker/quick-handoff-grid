@@ -1,0 +1,22 @@
+name: Apply Delivered by Fresh native
+on:
+  push:
+    paths:
+      - 'scripts/apply_delivered_by_fresh_native.py'
+      - '.github/workflows/apply-delivered-by-fresh-native.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_delivered_by_fresh_native.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git commit -m "feat(native-customer): Delivered by Fresh on store cards" || exit 0
+          git push
