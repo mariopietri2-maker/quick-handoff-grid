@@ -1,0 +1,39 @@
+name: Label release 2.6.13 / 2.7.1
+on:
+  workflow_dispatch:
+  workflow_run:
+    workflows: ["Build Native APKs"]
+    types: [completed]
+permissions:
+  contents: write
+jobs:
+  label:
+    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Update GitHub release notes
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          BODY=$(cat <<'EOF'
+          ## Fresh Delivery latest Android builds
+
+          **Latest first**
+
+          1. **Driver APK** — **2.6.13-native** (build 264)
+          - Store + customer pins on pending offers
+          - Branded launcher icon · name Fresh Driver
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+
+          2. **Customer APK** — **2.7.1-native** (build 253)
+          - Friendlier Ioannina address picker
+          - Quick area chips · street+number search
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+
+          Only the latest build is kept on this release.
+          EOF
+          )
+          gh release edit mobile-apks-v1 \
+            --repo "${{ github.repository }}" \
+            --title "Driver 2.6.13-native (264) · Customer 2.7.1-native (253)" \
+            --notes "$BODY"
