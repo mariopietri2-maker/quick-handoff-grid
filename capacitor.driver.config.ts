@@ -9,6 +9,7 @@ const config: CapacitorConfig = {
     androidScheme: 'https',
     hostname: 'localhost',
     allowNavigation: [
+      'https://freshdelivery.app/*',
       'https://ojkesspghyqmjmupybva.supabase.co/*',
       'https://*.supabase.co/*',
       'https://quick-handoff-grid-production.up.railway.app/*',

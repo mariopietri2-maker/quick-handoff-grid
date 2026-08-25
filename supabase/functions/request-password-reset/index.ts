@@ -29,13 +29,14 @@ function normalizeEmail(email: string) {
 // Anything else falls back to the app — prevents recovery-token capture
 // via attacker-controlled redirectTo (open redirect / token leak).
 const ALLOWED_REDIRECT_ORIGINS = new Set([
+  "https://freshdelivery.app",
   "https://fresh-delivery-rho.vercel.app",
   "https://quick-handoff-grid-production.up.railway.app",
   "http://localhost:5173",
   "http://127.0.0.1:5173",
 ]);
 
-const DEFAULT_REDIRECT_TO = "https://fresh-delivery-rho.vercel.app/auth?reset=1";
+const DEFAULT_REDIRECT_TO = "https://freshdelivery.app/auth?reset=1";
 
 function safeRedirectTo(raw: unknown): string {
   if (typeof raw !== "string" || !raw.startsWith("http")) return DEFAULT_REDIRECT_TO;

@@ -209,7 +209,7 @@ fun LoginScreen(
             }
             TextButton(
                 onClick = {
-                    val uri = Uri.parse("https://quick-handoff-grid-production.up.railway.app/auth?reset=1")
+                    val uri = Uri.parse("https://freshdelivery.app/auth?reset=1")
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 },
             ) {

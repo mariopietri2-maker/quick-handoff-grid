@@ -67,9 +67,19 @@ delivered 200, and the order leaves `pending`.
   dispatch (`main @ 97885cb0`) was waiting to start. Re-dispatch if it gets cancelled.
 
 ## 3. Minor checks
-- `freshdelivery.app` DNS does not resolve — fix at the registrar if it should be a
-  real domain; otherwise it is only an unused fallback origin
-  (`SITE_FALLBACK_ORIGINS`).
+- `freshdelivery.app` is now the **primary branded origin** (`SITE_ORIGIN` in
+  `src/lib/site.ts`, SEO/og URLs, password-reset default, Capacitor
+  `allowNavigation`, native deep links). Railway is the only host; Vercel is
+  retired from the live path (its `allowNavigation` entries stay so already
+  installed APKs keep working).
+  Launch wiring (Railway-only):
+  1. Railway → service → Settings → Networking → Custom Domain → add
+     `freshdelivery.app` (+ `www`), note the DNS target Railway shows;
+  2. Registrar → create the record(s) Railway asks for (CNAME for `www`;
+     apex via CNAME-flattening/ALIAS or the A record if offered);
+  3. Supabase Auth → URL Configuration → Site URL `https://freshdelivery.app`,
+     redirect `https://freshdelivery.app/**`;
+  4. Verify HTTPS cert is issued and the app loads on the domain.
 - Launcher/theme: modern-fresh palette is applied (`#10B981` / `#7C6CFF`).
 
 ## 4. Automated card refunds, saved cards & alerting

@@ -222,7 +222,7 @@ fun LoginScreen(
                 TextButton(
                     onClick = {
                         val uri = Uri.parse(
-                            "https://quick-handoff-grid-production.up.railway.app/driver?reset=1",
+                            "https://freshdelivery.app/driver?reset=1",
                         )
                         context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                     },
@@ -247,7 +247,7 @@ fun LoginScreen(
             // Driver application — create a driver account, wait for approval
             TextButton(
                 onClick = {
-                    val uri = Uri.parse("https://quick-handoff-grid-production.up.railway.app/auth")
+                    val uri = Uri.parse("https://freshdelivery.app/auth")
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 },
                 modifier = Modifier.fillMaxWidth(),
@@ -291,7 +291,7 @@ fun LoginScreen(
             TextButton(
                 onClick = {
                     context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://quick-handoff-grid-production.up.railway.app/support")),
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://freshdelivery.app/support")),
                     )
                 },
             ) {

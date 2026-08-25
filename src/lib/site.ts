@@ -1,14 +1,13 @@
 /** Canonical public production origins. `SITE_ORIGIN` is the primary serving
  *  host; the rest are mirrors that serve the exact same SPA build and can keep
  *  the platform up if the primary is unreachable. Keep in sync with
- *  `vercel.json` / `railway.json` and the Capacitor `allowNavigation` lists. */
+ *  `railway.json` and the Capacitor `allowNavigation` lists. */
 export const SITE_ORIGINS = [
-  'https://fresh-delivery-rho.vercel.app',
-  'https://quick-handoff-grid-production.up.railway.app',
   'https://freshdelivery.app',
+  'https://quick-handoff-grid-production.up.railway.app',
 ] as const;
 
-/** Primary host (Vercel — deployed from `main`). */
+/** Primary branded host (freshdelivery.app — served by Railway). */
 export const SITE_ORIGIN = SITE_ORIGINS[0];
 
 /** Optional extra hosts still allowed for Capacitor navigation & deep links. */
