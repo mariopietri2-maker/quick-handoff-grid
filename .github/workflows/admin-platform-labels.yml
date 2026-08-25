@@ -1,0 +1,55 @@
+name: Admin platform mode labels
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/admin-platform-labels.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Polish PlatformModeSettings labels
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          p = Path('src/components/admin/PlatformModeSettings.tsx')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace(
+              '«Fresh οδηγοί» εμφανίζει το σήμα “Delivered by Fresh” στο κατάστημα.\n              «Δική της» σημαίνει ότι το κατάστημα παραδίδει με δικούς του ανθρώπους —\n              δεν εμφανίζεται κανένα σήμα.',
+              'Επίλεξε ανά κατάστημα αν η παράδοση γίνεται από οδηγούς Fresh («Delivered by Fresh») ή από το ίδιο το κατάστημα. Μπορείς να το αλλάξεις οποιαδήποτε στιγμή.',
+          )
+          t = t.replace(
+              '<SelectItem value="platform">Fresh οδηγοί</SelectItem>\n                        <SelectItem value="store">Δική της παράδοση</SelectItem>',
+              '<SelectItem value="platform">Delivered by Fresh</SelectItem>\n                        <SelectItem value="store">Παράδοση καταστήματος</SelectItem>',
+          )
+          t = t.replace(
+              'Χρόνος Παράδοσης',
+              'Timers / χρόνος παράδοσης (ETA)',
+          )
+          t = t.replace(
+              "p_description: `${r.name}: ${mode === 'platform' ? 'Fresh οδηγοί' : 'δικό της delivery'}`",
+              "p_description: `${r.name}: ${mode === 'platform' ? 'Delivered by Fresh' : 'store delivery'}`",
+          )
+          # Sidebar label clarity
+          side = Path('src/components/admin/AdminSidebar.tsx')
+          if side.exists():
+              s = side.read_text(encoding='utf-8')
+              s2 = s.replace(
+                  "{ id: 'platform_mode', label: '🚚 Marketplace & Delivery' }",
+                  "{ id: 'platform_mode', label: '🚚 Delivered by Fresh & ETA' }",
+              )
+              if s2 != s:
+                  side.write_text(s2, encoding='utf-8')
+                  print('sidebar label')
+          p.write_text(t, encoding='utf-8')
+          print('platform mode labels updated')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "chore(admin): Delivered by Fresh + ETA labels"; git push; fi
