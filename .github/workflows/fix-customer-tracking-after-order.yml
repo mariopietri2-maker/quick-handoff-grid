@@ -1,0 +1,230 @@
+name: Fix customer tracking after order
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-customer-tracking-after-order.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch ViewModel + Shell + version
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+
+          vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
+          t = vm.read_text(encoding='utf-8')
+
+          # Force cash at place time + always open track even if id parse is odd
+          old = '''            }.onSuccess { placedId ->
+                persistLastAddress()
+                saveAddress()
+                val placed = placedId?.takeIf { it.isNotBlank() }
+                _state.value = _state.value.copy(
+                    busy = false,
+                    cart = emptyList(),
+                    cartStoreId = null,
+                    cartStoreName = null,
+                    showCart = false,
+                    tipAmount = 0.0,
+                    notes = "",
+                    addressSuggestions = emptyList(),
+                    info = "Η παραγγελία καταχωρήθηκε!",
+                    appliedDeal = null,
+                )
+                // Auto-open the live tracking map for the freshly placed order
+                // (web parity: checkouts jump straight to /order-tracking/<id>).
+                if (placed != null) {
+                    autoOpenTrack(
+                        orderId = placed,
+                        storeId = storeId,
+                        storeName = s.cartStoreName ?: store?.name,
+                        storeLat = store?.latitude,
+                        storeLng = store?.longitude,
+                    )
+                } else {
+                    _state.value = _state.value.copy(tab = CustomerTab.Orders)
+                    refreshOrders()
+                }
+            }.onFailure { e ->'''
+
+          new = '''            }.onSuccess { placedId ->
+                persistLastAddress()
+                saveAddress()
+                val placed = placedId.trim().trim('"').takeIf { it.isNotBlank() }
+                val storeName = s.cartStoreName ?: store?.name
+                // Always leave checkout and open tracking (or Orders as fallback).
+                _state.value = _state.value.copy(
+                    busy = false,
+                    cart = emptyList(),
+                    cartStoreId = null,
+                    cartStoreName = null,
+                    showCart = false,
+                    selectedStore = null,
+                    menu = emptyList(),
+                    tipAmount = 0.0,
+                    notes = "",
+                    addressSuggestions = emptyList(),
+                    paymentMethod = "cash",
+                    info = "Η παραγγελία καταχωρήθηκε! Παρακολούθησε την παράδοση.",
+                    appliedDeal = null,
+                    tab = CustomerTab.Track,
+                )
+                if (placed != null) {
+                    autoOpenTrack(
+                        orderId = placed,
+                        storeId = storeId,
+                        storeName = storeName,
+                        storeLat = store?.latitude,
+                        storeLng = store?.longitude,
+                    )
+                } else {
+                    // Still leave cart; refresh list so user can open tracking from Παραγγελίες
+                    _state.value = _state.value.copy(tab = CustomerTab.Orders)
+                    refreshOrders()
+                }
+            }.onFailure { e ->'''
+
+          if old in t:
+              t = t.replace(old, new, 1)
+              print('ViewModel onSuccess patched')
+          elif 'Παρακολούθησε την παράδοση' in t:
+              print('ViewModel already patched')
+          else:
+              print('WARNING: ViewModel pattern not found')
+
+          # Ensure placeOrder forces paymentMethod cash (only supported method)
+          old_call = '''                repo.placeOrder(
+                    storeId = storeId,
+                    items = s.cart,
+                    deliveryAddress = s.deliveryAddress.trim(),
+                    deliveryLat = s.deliveryLat,
+                    deliveryLng = s.deliveryLng,
+                    paymentMethod = s.paymentMethod,'''
+          new_call = '''                // Native: only cash is supported — always send cash even if UI state drifted
+                repo.placeOrder(
+                    storeId = storeId,
+                    items = s.cart,
+                    deliveryAddress = s.deliveryAddress.trim(),
+                    deliveryLat = s.deliveryLat,
+                    deliveryLng = s.deliveryLng,
+                    paymentMethod = "cash",'''
+          if old_call in t:
+              t = t.replace(old_call, new_call, 1)
+              print('forced cash on placeOrder')
+          vm.write_text(t, encoding='utf-8')
+
+          # Shell: cash always clearly selected; card stays disabled with label
+          shell = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          st = shell.read_text(encoding='utf-8')
+          bad = '''                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { onSetPayment("cash") },
+                            enabled = state.paymentMethod != "cash",
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = if (state.paymentMethod == "cash") FreshGreen else FreshChip,
+                                contentColor = if (state.paymentMethod == "cash") Color.White else FreshInk,
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Outlined.Wallet, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Μετρητά")
+                        }
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = FreshChip,
+                                contentColor = FreshMuted,
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Outlined.CreditCard, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Κάρτα (σύντομα)")
+                        }
+                    }'''
+          good = '''                    // Cash is the only live method — always selected & tappable for clarity
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = { onSetPayment("cash") },
+                            enabled = true,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = FreshGreen,
+                                contentColor = Color.White,
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Outlined.Wallet, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Μετρητά ✓")
+                        }
+                        Button(
+                            onClick = {},
+                            enabled = false,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = FreshChip,
+                                contentColor = FreshMuted,
+                                disabledContainerColor = FreshChip,
+                                disabledContentColor = FreshMuted,
+                            ),
+                            shape = RoundedCornerShape(16.dp),
+                            modifier = Modifier.weight(1f),
+                        ) {
+                            Icon(Icons.Outlined.CreditCard, contentDescription = null)
+                            Spacer(Modifier.width(6.dp))
+                            Text("Κάρτα (σύντομα)")
+                        }
+                    }
+                    Text(
+                        "Πληρωμή μετρητά στον οδηγό κατά την παράδοση",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(top = 6.dp),
+                    )'''
+          if bad in st:
+              st = st.replace(bad, good, 1)
+              shell.write_text(st, encoding='utf-8')
+              print('Shell payment UI patched')
+          elif 'Μετρητά ✓' in st:
+              print('Shell already patched')
+          else:
+              print('WARNING: Shell payment block not exact')
+
+          # TrackTab: clearer success copy when order just placed
+          old_track = '''                Text(
+                    "Επίλεξε παραγγελία από Παραγγελίες για live tracking.",
+                    color = FreshMuted,
+                )'''
+          new_track = '''                Text(
+                    "Η παραγγελία καταχωρήθηκε. Άνοιξε Παραγγελίες → Παρακολούθηση αν δεν φαίνεται ο χάρτης.",
+                    color = FreshMuted,
+                )'''
+          if old_track in st:
+              st = st.replace(old_track, new_track, 1)
+              shell.write_text(st, encoding='utf-8')
+              print('Track empty copy updated')
+
+          g = Path('native-customer/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = gt.replace('versionCode = 256', 'versionCode = 257')
+          gt = gt.replace('versionCode = 255', 'versionCode = 257')
+          gt = gt.replace('versionName = "2.7.4-place-order-fix"', 'versionName = "2.7.5-track-after-order"')
+          gt = gt.replace('versionName = "2.7.3-native"', 'versionName = "2.7.5-track-after-order"')
+          g.write_text(gt, encoding='utf-8')
+          print('version -> 2.7.5-track-after-order')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-customer): open Track after place order + cash UX"; git push; fi
