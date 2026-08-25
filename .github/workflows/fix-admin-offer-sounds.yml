@@ -1,0 +1,176 @@
+name: Fix admin offer sounds panel
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-admin-offer-sounds.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Wire panel in AdminApp + migration
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+
+          p = Path('src/pages/AdminApp.tsx')
+          t = p.read_text(encoding='utf-8')
+
+          if 'DriverOfferSoundsPanel' not in t:
+              # Add lazy import near other lazy panels
+              needle = "const AdminAdvertisingPanel"
+              # find a stable anchor
+              if 'const AdminAdvertisingPanel' in t:
+                  t = t.replace(
+                      "const AdminAdvertisingPanel",
+                      "const DriverOfferSoundsPanel = lazy(() => import('@/components/admin/DriverOfferSoundsPanel'));\nconst AdminAdvertisingPanel",
+                      1,
+                  )
+              else:
+                  # fallback after first const lazy line
+                  t = t.replace(
+                      "const OrdersKanban  = lazy(() => import('@/components/admin/OrdersKanban'));",
+                      "const OrdersKanban  = lazy(() => import('@/components/admin/OrdersKanban'));\nconst DriverOfferSoundsPanel = lazy(() => import('@/components/admin/DriverOfferSoundsPanel'));",
+                      1,
+                  )
+              print('lazy import added')
+          else:
+              print('lazy import exists')
+
+          if "case 'driver_offer_sounds'" not in t:
+              t = t.replace(
+                  "      case 'advertising':\n        return <AdminAdvertisingPanel />;",
+                  "      case 'driver_offer_sounds':\n        return <DriverOfferSoundsPanel />;\n      case 'advertising':\n        return <AdminAdvertisingPanel />;",
+                  1,
+              )
+              print('case added')
+          else:
+              print('case exists')
+
+          p.write_text(t, encoding='utf-8')
+
+          # Ensure migration for table + storage + RLS + RPC
+          mig = Path('supabase/migrations/20260825223000_driver_offer_sounds.sql')
+          mig.parent.mkdir(parents=True, exist_ok=True)
+          mig.write_text('''-- Driver offer sounds catalog (admin upload, remote URL for apps)
+CREATE TABLE IF NOT EXISTS public.driver_offer_sounds (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  storage_path text NOT NULL,
+  public_url text NOT NULL,
+  is_default boolean NOT NULL DEFAULT false,
+  is_active boolean NOT NULL DEFAULT true,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS driver_offer_sounds_default_idx
+  ON public.driver_offer_sounds (is_default DESC, created_at DESC)
+  WHERE is_active = true;
+
+ALTER TABLE public.driver_offer_sounds ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "driver_offer_sounds_select" ON public.driver_offer_sounds;
+CREATE POLICY "driver_offer_sounds_select" ON public.driver_offer_sounds
+  FOR SELECT TO authenticated
+  USING (true);
+
+DROP POLICY IF EXISTS "driver_offer_sounds_admin_all" ON public.driver_offer_sounds;
+CREATE POLICY "driver_offer_sounds_admin_all" ON public.driver_offer_sounds
+  FOR ALL TO authenticated
+  USING (
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
+    )
+  )
+  WITH CHECK (
+    EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
+    )
+  );
+
+-- Storage bucket (public read for playback)
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES (
+  'driver-offer-sounds',
+  'driver-offer-sounds',
+  true,
+  2097152,
+  ARRAY['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/webm','audio/x-wav']
+)
+ON CONFLICT (id) DO UPDATE SET
+  public = true,
+  file_size_limit = 2097152;
+
+DROP POLICY IF EXISTS "driver_offer_sounds_storage_read" ON storage.objects;
+CREATE POLICY "driver_offer_sounds_storage_read" ON storage.objects
+  FOR SELECT TO public
+  USING (bucket_id = 'driver-offer-sounds');
+
+DROP POLICY IF EXISTS "driver_offer_sounds_storage_admin" ON storage.objects;
+CREATE POLICY "driver_offer_sounds_storage_admin" ON storage.objects
+  FOR ALL TO authenticated
+  USING (
+    bucket_id = 'driver-offer-sounds'
+    AND EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
+    )
+  )
+  WITH CHECK (
+    bucket_id = 'driver-offer-sounds'
+    AND EXISTS (
+      SELECT 1 FROM public.user_roles ur
+      WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
+    )
+  );
+
+CREATE OR REPLACE FUNCTION public.set_default_driver_offer_sound(p_id uuid)
+RETURNS void
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = auth.uid() AND ur.role = 'admin'
+  ) THEN
+    RAISE EXCEPTION 'admin only';
+  END IF;
+  UPDATE public.driver_offer_sounds SET is_default = false WHERE is_default = true;
+  UPDATE public.driver_offer_sounds SET is_default = true, is_active = true WHERE id = p_id;
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.set_default_driver_offer_sound(uuid) TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.get_default_driver_offer_sound()
+RETURNS TABLE (id uuid, name text, public_url text)
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT s.id, s.name, s.public_url
+  FROM public.driver_offer_sounds s
+  WHERE s.is_active = true AND s.is_default = true
+  ORDER BY s.created_at DESC
+  LIMIT 1;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.get_default_driver_offer_sound() TO authenticated, anon;
+''', encoding='utf-8')
+          print('migration written')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(admin): wire offer sounds panel + DB/storage"; git push; fi
