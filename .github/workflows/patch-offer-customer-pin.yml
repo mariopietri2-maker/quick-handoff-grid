@@ -1,0 +1,25 @@
+name: Patch offer customer pin
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/patch_offer_customer_pin.py'
+      - '.github/workflows/patch-offer-customer-pin.yml'
+permissions:
+  contents: write
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/patch_offer_customer_pin.py
+      - name: Commit + bump version
+        run: |
+          set -euo pipefail
+          sed -i 's/versionCode = [0-9]*/versionCode = 264/' native-driver/app/build.gradle.kts
+          sed -i 's/versionName = "[^"]*"/versionName = "2.6.13-native"/' native-driver/app/build.gradle.kts
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt native-driver/app/build.gradle.kts
+          git commit -m "feat(driver): show customer + store pins on pending offers" || exit 0
+          git push
