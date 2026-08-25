@@ -1,0 +1,310 @@
+name: Deploy all + rebuild APKs
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/deploy-all-rebuild.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply pending product fixes
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          # ===== AdminApp: driver offer sounds =====
+          p = Path('src/pages/AdminApp.tsx')
+          t = p.read_text(encoding='utf-8')
+          if 'DriverOfferSoundsPanel' not in t:
+              t = t.replace(
+                  "const AdminAdvertisingPanel = lazy(() => import('@/components/admin/AdminAdvertisingPanel'));",
+                  "const DriverOfferSoundsPanel = lazy(() => import('@/components/admin/DriverOfferSoundsPanel'));\nconst AdminAdvertisingPanel = lazy(() => import('@/components/admin/AdminAdvertisingPanel'));",
+                  1,
+              )
+          if "case 'driver_offer_sounds'" not in t:
+              t = t.replace(
+                  "      case 'advertising':\n        return <AdminAdvertisingPanel />;",
+                  "      case 'driver_offer_sounds':\n        return <DriverOfferSoundsPanel />;\n      case 'advertising':\n        return <AdminAdvertisingPanel />;",
+                  1,
+              )
+          p.write_text(t, encoding='utf-8')
+          print('AdminApp sounds:', 'DriverOfferSoundsPanel' in t)
+
+          # ===== mobileApp store flavor =====
+          p = Path('src/lib/mobileApp.ts')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace("export type MobileAppFlavor = 'customer' | 'driver' | 'shared';", "export type MobileAppFlavor = 'customer' | 'driver' | 'store' | 'shared';")
+          if "appId.includes('store')" not in t:
+              t = t.replace(
+                  "  if (appId.includes('driver')) return 'driver';\n  if (appId.includes('customer')) return 'customer';",
+                  "  if (appId.includes('driver')) return 'driver';\n  if (appId.includes('store')) return 'store';\n  if (appId.includes('customer')) return 'customer';",
+              )
+          for old, new in [
+              ("if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') return ENV_FLAVOR;",
+               "if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver' || ENV_FLAVOR === 'store') return ENV_FLAVOR;"),
+              ("if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') {",
+               "if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver' || ENV_FLAVOR === 'store') {"),
+              ("const env = (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') ? ENV_FLAVOR : null;",
+               "const env = (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver' || ENV_FLAVOR === 'store') ? ENV_FLAVOR : null;"),
+          ]:
+              t = t.replace(old, new)
+          if "flavor === 'store') return '/store'" not in t:
+              t = t.replace(
+                  "  if (flavor === 'driver') return '/driver';\n  if (flavor === 'customer') return '/order';",
+                  "  if (flavor === 'driver') return '/driver';\n  if (flavor === 'store') return '/store';\n  if (flavor === 'customer') return '/order';",
+              )
+          if "flavor === 'store') return ['store']" not in t:
+              t = t.replace(
+                  "  if (flavor === 'driver') return ['driver', 'm'];\n  if (flavor === 'customer') return ['customer'];",
+                  "  if (flavor === 'driver') return ['driver', 'm'];\n  if (flavor === 'store') return ['store'];\n  if (flavor === 'customer') return ['customer'];",
+              )
+          p.write_text(t, encoding='utf-8')
+          print('mobileApp store flavor')
+
+          # ===== syncAppRole store =====
+          Path('src/lib/syncAppRole.ts').write_text('''import { supabase } from '@/integrations/supabase/client';
+import { resolveMobileFlavor, type MobileAppFlavor } from '@/lib/mobileApp';
+
+export async function syncRoleForMobileShell(
+  flavor?: MobileAppFlavor,
+): Promise<{ ok: boolean; role?: string; error?: string }> {
+  const app = flavor ?? (await resolveMobileFlavor());
+  if (app !== 'customer' && app !== 'driver' && app !== 'store') {
+    return { ok: true };
+  }
+  const { data, error } = await (supabase as any).rpc('sync_app_role', { p_app: app });
+  if (error) return { ok: false, error: error.message };
+  return { ok: true, role: (data as any)?.role };
+}
+''', encoding='utf-8')
+
+          # ===== AuthPage store shell =====
+          p = Path('src/pages/AuthPage.tsx')
+          t = p.read_text(encoding='utf-8')
+          if 'isStoreShell' not in t:
+              t = t.replace(
+                  "  const isDriverShell = flavor === 'driver';\n  const isCustomerShell = flavor === 'customer';",
+                  "  const isDriverShell = flavor === 'driver';\n  const isCustomerShell = flavor === 'customer';\n  const isStoreShell = flavor === 'store';",
+              )
+              t = t.replace(
+                  "  if (opts.role === 'store' && opts.flavor === 'shared') return '/store';",
+                  "  if (opts.role === 'store' || opts.flavor === 'store') return '/store';",
+              )
+              t = t.replace(
+                  "    return isDriverShell ? '/driver' : '/order';",
+                  "    return isDriverShell ? '/driver' : isStoreShell ? '/store' : '/order';",
+              )
+              t = t.replace(
+                  "        const { error, session } = await signUp(emailNorm, password, fullName, 'customer');",
+                  "        const signupRole = isDriverShell ? 'driver' : isStoreShell ? 'store' : 'customer';\n        const { error, session } = await signUp(emailNorm, password, fullName, signupRole);",
+              )
+          p.write_text(t, encoding='utf-8')
+          print('AuthPage store')
+
+          # ===== StoreHours + ViewModel closed block =====
+          Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/StoreHours.kt').write_text('''package com.freshdelivery.nativecustomer.data
+
+import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalDateTime
+import kotlinx.serialization.json.booleanOrNull
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+
+fun StoreRow.isOpenForOrders(): Boolean {
+    if (is_active == false) return false
+    if (busy_mode == true) return false
+    val today = LocalDate.now()
+    val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
+    if ((holiday_dates ?: emptyList()).any { it.contains(dateKey) }) return false
+    val hours = opening_hours ?: return true
+    val now = LocalDateTime.now()
+    val dayKey = when (now.dayOfWeek) {
+        DayOfWeek.MONDAY -> "mon"
+        DayOfWeek.TUESDAY -> "tue"
+        DayOfWeek.WEDNESDAY -> "wed"
+        DayOfWeek.THURSDAY -> "thu"
+        DayOfWeek.FRIDAY -> "fri"
+        DayOfWeek.SATURDAY -> "sat"
+        DayOfWeek.SUNDAY -> "sun"
+    }
+    val schedule = hours.jsonObject[dayKey] ?: return true
+    val obj = schedule.jsonObject
+    val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+    if (!enabled) return false
+    val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: return true
+    val close = obj["close"]?.jsonPrimitive?.contentOrNull ?: return true
+    fun toMin(v: String): Int? {
+        val hhmm = v.trim().split(":")
+        if (hhmm.size != 2) return null
+        return hhmm[0].toIntOrNull()?.times(60)?.plus(hhmm[1].toIntOrNull() ?: 0)
+    }
+    val openMin = toMin(open) ?: return true
+    val closeMin = toMin(close) ?: return true
+    val minuteOfDay = now.hour * 60 + now.minute
+    return if (closeMin > openMin) minuteOfDay in openMin until closeMin
+    else minuteOfDay >= openMin || minuteOfDay < closeMin
+}
+
+fun StoreRow.closedReason(): String? {
+    if (is_active == false) return "Το κατάστημα είναι ανενεργό."
+    if (busy_mode == true) return "Το κατάστημα είναι προσωρινά σε παύση παραγγελιών."
+    if (!isOpenForOrders()) return "Το κατάστημα είναι κλειστό αυτή τη στιγμή."
+    return null
+}
+''', encoding='utf-8')
+
+          vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
+          t = vm.read_text(encoding='utf-8')
+          if 'closedReason' not in t:
+              t = t.replace(
+                  'import com.freshdelivery.nativecustomer.data.StoreRow\n',
+                  'import com.freshdelivery.nativecustomer.data.StoreRow\nimport com.freshdelivery.nativecustomer.data.closedReason\nimport com.freshdelivery.nativecustomer.data.isOpenForOrders\n',
+                  1,
+              )
+          if 'cartStore?.closedReason()' not in t:
+              needle = '''    fun placeOrder() {
+        val s = _state.value
+        val storeId = s.cartStoreId ?: return
+        if (s.cart.isEmpty()) return
+        if (s.deliveryAddress.isBlank()) {'''
+              repl = '''    fun placeOrder() {
+        val s = _state.value
+        val storeId = s.cartStoreId ?: return
+        if (s.cart.isEmpty()) return
+        val cartStore = s.stores.find { it.id == storeId } ?: s.selectedStore
+        cartStore?.closedReason()?.let { reason ->
+            _state.value = s.copy(error = reason)
+            return
+        }
+        if (s.deliveryAddress.isBlank()) {'''
+              if needle in t:
+                  t = t.replace(needle, repl, 1)
+                  print('placeOrder closed check')
+          if 'store?.closedReason()' not in t or 'fun addToCart' in t:
+              old_add = '''    fun addToCart(item: MenuItemRow) {
+        val s = _state.value
+        if (s.cartStoreId != null && s.cartStoreId != item.store_id) {
+            _state.value = s.copy(error = "Άδειασε το καλάθι για άλλο κατάστημα")
+            return
+        }'''
+              new_add = '''    fun addToCart(item: MenuItemRow) {
+        val s = _state.value
+        val store = s.selectedStore ?: s.stores.find { it.id == item.store_id }
+        store?.closedReason()?.let { reason ->
+            _state.value = s.copy(error = reason)
+            return
+        }
+        if (s.cartStoreId != null && s.cartStoreId != item.store_id) {
+            _state.value = s.copy(error = "Άδειασε το καλάθι για άλλο κατάστημα")
+            return
+        }'''
+              if old_add in t:
+                  t = t.replace(old_add, new_add, 1)
+                  print('addToCart closed check')
+          # tracking keep optimistic
+          if 'matched ?: cur ?: active' not in t:
+              old = '''                val tracked = _state.value.trackingOrder
+                    ?.let { cur -> orders.firstOrNull { it.order.id == cur.order.id } }
+                    ?: active'''
+              new = '''                val cur = _state.value.trackingOrder
+                val matched = cur?.let { c ->
+                    val id = c.order.id.trim().trim('"')
+                    orders.firstOrNull { it.order.id.trim().trim('"') == id }
+                }
+                val tracked = matched ?: cur ?: active'''
+              if old in t:
+                  t = t.replace(old, new, 1)
+                  print('refreshOrders keep optimistic')
+          vm.write_text(t, encoding='utf-8')
+
+          # Check StoreRow has busy_mode
+          sr = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data')
+          for f in sr.glob('*.kt'):
+              txt = f.read_text(encoding='utf-8')
+              if 'data class StoreRow' in txt and 'busy_mode' not in txt:
+                  txt2 = re.sub(
+                      r'(data class StoreRow\([^)]*is_active[^,]*,)',
+                      r'\1\n    val busy_mode: Boolean? = null,',
+                      txt,
+                      count=1,
+                  )
+                  if txt2 == txt and 'val is_active' in txt:
+                      txt2 = txt.replace('val is_active: Boolean? = null,', 'val is_active: Boolean? = null,\n    val busy_mode: Boolean? = null,', 1)
+                  f.write_text(txt2, encoding='utf-8')
+                  print('StoreRow busy_mode', f.name)
+
+          # Bump versions
+          g = Path('native-customer/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 262', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.7.8-live-bundle"', gt)
+          g.write_text(gt, encoding='utf-8')
+
+          gd = Path('native-driver/app/build.gradle.kts')
+          if gd.exists():
+              dt = gd.read_text(encoding='utf-8')
+              dt = re.sub(r'versionCode = \d+', 'versionCode = 270', dt)
+              dt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.16-live-bundle"', dt)
+              gd.write_text(dt, encoding='utf-8')
+
+          # migrations if missing
+          Path('supabase/migrations').mkdir(parents=True, exist_ok=True)
+          Path('supabase/migrations/20260825223000_driver_offer_sounds.sql').write_text('''CREATE TABLE IF NOT EXISTS public.driver_offer_sounds (
+  id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
+  name text NOT NULL,
+  storage_path text NOT NULL,
+  public_url text NOT NULL,
+  is_default boolean NOT NULL DEFAULT false,
+  is_active boolean NOT NULL DEFAULT true,
+  created_by uuid REFERENCES auth.users(id) ON DELETE SET NULL,
+  created_at timestamptz NOT NULL DEFAULT now()
+);
+ALTER TABLE public.driver_offer_sounds ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "driver_offer_sounds_select" ON public.driver_offer_sounds;
+CREATE POLICY "driver_offer_sounds_select" ON public.driver_offer_sounds FOR SELECT TO authenticated USING (true);
+DROP POLICY IF EXISTS "driver_offer_sounds_admin_all" ON public.driver_offer_sounds;
+CREATE POLICY "driver_offer_sounds_admin_all" ON public.driver_offer_sounds FOR ALL TO authenticated
+  USING (EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin'))
+  WITH CHECK (EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin'));
+INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_types)
+VALUES ('driver-offer-sounds','driver-offer-sounds', true, 2097152,
+  ARRAY['audio/mpeg','audio/mp3','audio/wav','audio/ogg','audio/webm','audio/x-wav'])
+ON CONFLICT (id) DO UPDATE SET public = true, file_size_limit = 2097152;
+DROP POLICY IF EXISTS "driver_offer_sounds_storage_read" ON storage.objects;
+CREATE POLICY "driver_offer_sounds_storage_read" ON storage.objects FOR SELECT TO public USING (bucket_id = 'driver-offer-sounds');
+DROP POLICY IF EXISTS "driver_offer_sounds_storage_admin" ON storage.objects;
+CREATE POLICY "driver_offer_sounds_storage_admin" ON storage.objects FOR ALL TO authenticated
+  USING (bucket_id = 'driver-offer-sounds' AND EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin'))
+  WITH CHECK (bucket_id = 'driver-offer-sounds' AND EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin'));
+CREATE OR REPLACE FUNCTION public.set_default_driver_offer_sound(p_id uuid) RETURNS void LANGUAGE plpgsql SECURITY DEFINER SET search_path = public AS $$
+BEGIN
+  IF NOT EXISTS (SELECT 1 FROM public.user_roles ur WHERE ur.user_id = auth.uid() AND ur.role = 'admin') THEN RAISE EXCEPTION 'admin only'; END IF;
+  UPDATE public.driver_offer_sounds SET is_default = false WHERE is_default = true;
+  UPDATE public.driver_offer_sounds SET is_default = true, is_active = true WHERE id = p_id;
+END; $$;
+GRANT EXECUTE ON FUNCTION public.set_default_driver_offer_sound(uuid) TO authenticated;
+''', encoding='utf-8')
+
+          print('versions bumped 262 / 270')
+          PY
+      - name: Commit all fixes
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "no changes — force empty touch"
+            date > .deploy-stamp
+            git add .deploy-stamp
+            git commit -m "chore: live deploy stamp $(date -u +%Y%m%d%H%M)"
+          else
+            git commit -m "deploy: sounds panel, store auth, closed-store, APK 2.7.8/2.6.16"
+          fi
+          git push
