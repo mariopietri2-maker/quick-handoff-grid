@@ -44,10 +44,42 @@ function circlePolygon(lng: number, lat: number, radiusKm: number): GeoJSON.Feat
   return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [coords] } };
 }
 
+/** Destination point given start [lng,lat], bearing (rad) and distance (km). */
+function destination(lng: number, lat: number, bearingRad: number, distKm: number): [number, number] {
+  const earthRadius = 6371;
+  const d = distKm / earthRadius;
+  const latRad = (lat * Math.PI) / 180;
+  const lngRad = (lng * Math.PI) / 180;
+  const lat2 = Math.asin(Math.sin(latRad) * Math.cos(d) + Math.cos(latRad) * Math.sin(d) * Math.cos(bearingRad));
+  const lng2 = lngRad + Math.atan2(
+    Math.sin(bearingRad) * Math.sin(d) * Math.cos(latRad),
+    Math.cos(d) - Math.sin(latRad) * Math.sin(lat2),
+  );
+  return [(lng2 * 180) / Math.PI, (lat2 * 180) / Math.PI];
+}
+
+/** Great-circle distance in km between two [lng,lat] points. */
+function haversineKm(lng1: number, lat1: number, lng2: number, lat2: number): number {
+  const earthRadius = 6371;
+  const toRad = Math.PI / 180;
+  const dLat = (lat2 - lat1) * toRad;
+  const dLng = (lng2 - lng1) * toRad;
+  const a =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1 * toRad) * Math.cos(lat2 * toRad) * Math.sin(dLng / 2) ** 2;
+  return 2 * earthRadius * Math.asin(Math.min(1, Math.sqrt(a)));
+}
+
+const EDGE_BEARING_RAD = Math.PI / 2; // handle sits due east of the center
+
 export default function ServiceZonesEditor() {
   const mapContainer = useRef<HTMLDivElement>(null);
   const mapRef = useRef<mapboxgl.Map | null>(null);
   const centerMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const edgeMarkerRef = useRef<mapboxgl.Marker | null>(null);
+  const draggingCenterRef = useRef(false);
+  const draggingEdgeRef = useRef(false);
+  const prevSelectedIdRef = useRef<string | null | undefined>(undefined);
   const { token } = useMapboxToken();
 
   const [zones, setZones] = useState<ServiceZone[]>([]);
@@ -55,6 +87,9 @@ export default function ServiceZonesEditor() {
   const [newCity, setNewCity] = useState('');
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+
+  const zonesRef = useRef(zones);
+  zonesRef.current = zones;
 
   const selected = zones.find(z => z.id === selectedId) ?? null;
 
@@ -101,31 +136,93 @@ export default function ServiceZonesEditor() {
     return () => { map.remove(); mapRef.current = null; };
   }, [token]);
 
-  // Render selected zone on the map
+  // Create markers for the selected zone (stable across drags)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !selected) return;
+    if (!map || !selectedId) {
+      centerMarkerRef.current?.remove();
+      centerMarkerRef.current = null;
+      edgeMarkerRef.current?.remove();
+      edgeMarkerRef.current = null;
+      return;
+    }
+
+    const centerMarker = new mapboxgl.Marker({ color: '#2563eb', draggable: true })
+      .setLngLat([20.8537, 39.6650])
+      .addTo(map);
+    centerMarker.on('dragstart', () => { draggingCenterRef.current = true; });
+    centerMarker.on('drag', () => {
+      if (!zonesRef.current.some(v => v.id === selectedId)) return;
+      const { lng, lat } = centerMarker.getLngLat();
+      setZones(prev => prev.map(v => v.id === selectedId ? { ...v, center_longitude: lng, center_latitude: lat } : v));
+    });
+    centerMarker.on('dragend', () => { draggingCenterRef.current = false; });
+
+    const edgeMarker = new mapboxgl.Marker({ color: '#f59e0b', draggable: true, scale: 1.1 })
+      .addTo(map);
+    edgeMarker.getElement().title = 'Σύρε για αλλαγή ακτίνας';
+    edgeMarker.on('dragstart', () => { draggingEdgeRef.current = true; });
+    edgeMarker.on('drag', () => {
+      const z = zonesRef.current.find(v => v.id === selectedId);
+      if (!z) return;
+      const { lng, lat } = edgeMarker.getLngLat();
+      const km = Math.min(30, Math.max(1, Math.round(haversineKm(z.center_longitude, z.center_latitude, lng, lat) * 2) / 2));
+      setZones(prev => prev.map(v => v.id === selectedId ? { ...v, radius_km: km } : v));
+    });
+    edgeMarker.on('dragend', () => { draggingEdgeRef.current = false; });
+
+    centerMarkerRef.current = centerMarker;
+    edgeMarkerRef.current = edgeMarker;
+
+    return () => {
+      centerMarker.remove();
+      edgeMarker.remove();
+      centerMarkerRef.current = null;
+      edgeMarkerRef.current = null;
+    };
+  }, [selectedId]);
+
+  // Sync circle geometry + marker positions with the selected zone
+  const selLat = selected?.center_latitude;
+  const selLng = selected?.center_longitude;
+  const selRadius = selected?.radius_km;
+
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map) return;
+    const selected = zonesRef.current.find(v => v.id === selectedId) ?? null;
+
     const draw = () => {
       const src = map.getSource('zone-circle') as mapboxgl.GeoJSONSource | undefined;
       if (!src) return;
-      const poly = circlePolygon(selected.center_longitude, selected.center_latitude, selected.radius_km);
-      src.setData({ type: 'FeatureCollection', features: [poly] });
+      if (!selected) {
+        src.setData({ type: 'FeatureCollection', features: [] });
+        return;
+      }
+      src.setData({
+        type: 'FeatureCollection',
+        features: [circlePolygon(selected.center_longitude, selected.center_latitude, Number(selected.radius_km))],
+      });
     };
     if (map.isStyleLoaded()) draw(); else map.once('load', draw);
 
-    // center marker (draggable)
-    if (centerMarkerRef.current) centerMarkerRef.current.remove();
-    const marker = new mapboxgl.Marker({ color: '#2563eb', draggable: true })
-      .setLngLat([selected.center_longitude, selected.center_latitude])
-      .addTo(map);
-    marker.on('dragend', () => {
-      const { lng, lat } = marker.getLngLat();
-      setZones(prev => prev.map(z => z.id === selected.id ? { ...z, center_longitude: lng, center_latitude: lat } : z));
-    });
-    centerMarkerRef.current = marker;
+    if (!selected) return;
 
-    map.flyTo({ center: [selected.center_longitude, selected.center_latitude], zoom: 12 });
-  }, [selectedId, selected?.center_latitude, selected?.center_longitude, selected?.radius_km]);
+    const centerMarker = centerMarkerRef.current;
+    const edgeMarker = edgeMarkerRef.current;
+    if (centerMarker && !draggingCenterRef.current) {
+      centerMarker.setLngLat([selected.center_longitude, selected.center_latitude]);
+    }
+    if (edgeMarker && !draggingEdgeRef.current) {
+      const [elng, elat] = destination(selected.center_longitude, selected.center_latitude, EDGE_BEARING_RAD, Number(selected.radius_km));
+      edgeMarker.setLngLat([elng, elat]);
+    }
+
+    if (prevSelectedIdRef.current !== selectedId) {
+      prevSelectedIdRef.current = selectedId;
+      map.flyTo({ center: [selected.center_longitude, selected.center_latitude], zoom: 12 });
+    }
+  }, [selectedId, selLat, selLng, selRadius]);
 
   const updateLocal = (patch: Partial<ServiceZone>) => {
     if (!selected) return;
@@ -239,7 +336,7 @@ export default function ServiceZonesEditor() {
             <div>
               <h3 className="font-heading font-semibold text-foreground">{selected.city}</h3>
               <p className="text-[11px] text-muted-foreground mt-0.5">
-                Σύρε τον μπλε δείκτη στον χάρτη για να μετακινήσεις το κέντρο.
+                Σύρε τον μπλε δείκτη για μετακίνηση κέντρου ή το πορτοκαλί για αλλαγή ακτίνας.
               </p>
             </div>
 
