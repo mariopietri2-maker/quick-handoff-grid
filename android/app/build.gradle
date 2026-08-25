@@ -1,10 +1,10 @@
 apply plugin: 'com.android.application'
 
 android {
-    namespace = "app.lovable.a8538a5288f34701a1b9d56a6120ba4c"
+    namespace = "com.freshdelivery.customer"
     compileSdk = rootProject.ext.compileSdkVersion
     defaultConfig {
-        applicationId "app.lovable.a8538a5288f34701a1b9d56a6120ba4c"
+        applicationId "com.freshdelivery.customer"
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

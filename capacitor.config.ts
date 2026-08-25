@@ -4,8 +4,9 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const isDev = process.env.CAPACITOR_DEV === '1';
 
 const config: CapacitorConfig = {
-  appId: 'app.lovable.a8538a5288f34701a1b9d56a6120ba4c',
-  appName: 'Fresh Delivery',
+  // Matches native-customer applicationId (see native-customer/app/build.gradle.kts)
+  appId: 'com.freshdelivery.customer',
+  appName: 'Fresh',
   webDir: 'dist',
   server: {
     url: 'https://quick-handoff-grid-production.up.railway.app',
@@ -21,13 +22,14 @@ const config: CapacitorConfig = {
     ],
   },
   android: {
-    backgroundColor: '#1a1a2e',
+    // Emerald v2 brand (native-customer Theme.kt): mint bg, emerald primary
+    backgroundColor: '#F2F8F4',
     // Debug APKs only — release builds must keep these false
     webContentsDebuggingEnabled: isDev,
     allowMixedContent: isDev,
   },
   ios: {
-    backgroundColor: '#1a1a2e',
+    backgroundColor: '#F2F8F4',
     contentInset: 'never',
     scrollEnabled: false,
   },
@@ -35,11 +37,11 @@ const config: CapacitorConfig = {
     CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#1a1a2e',
+      backgroundColor: '#F2F8F4',
       overlaysWebView: true,
     },
     SplashScreen: {
-      backgroundColor: '#1a1a2e',
+      backgroundColor: '#0FB876',
     },
   },
 };

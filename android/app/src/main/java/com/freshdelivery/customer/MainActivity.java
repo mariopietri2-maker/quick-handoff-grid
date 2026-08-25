@@ -1,4 +1,4 @@
-package app.lovable.a8538a5288f34701a1b9d56a6120ba4c;
+package com.freshdelivery.customer;
 
 import com.getcapacitor.BridgeActivity;
 

@@ -1,6 +1,6 @@
 {
-  "appId": "app.lovable.a8538a5288f34701a1b9d56a6120ba4c",
-  "appName": "Fresh Delivery",
+  "appId": "com.freshdelivery.customer",
+  "appName": "Fresh",
   "webDir": "dist",
   "server": {
     "url": "https://quick-handoff-grid-production.up.railway.app",
@@ -16,12 +16,12 @@
     ]
   },
   "android": {
-    "backgroundColor": "#1a1a2e",
+    "backgroundColor": "#F2F8F4",
     "webContentsDebuggingEnabled": false,
     "allowMixedContent": false
   },
   "ios": {
-    "backgroundColor": "#1a1a2e",
+    "backgroundColor": "#F2F8F4",
     "contentInset": "never",
     "scrollEnabled": false
   },
@@ -31,11 +31,11 @@
     },
     "StatusBar": {
       "style": "DARK",
-      "backgroundColor": "#1a1a2e",
+      "backgroundColor": "#F2F8F4",
       "overlaysWebView": true
     },
     "SplashScreen": {
-      "backgroundColor": "#1a1a2e"
+      "backgroundColor": "#0FB876"
     }
   }
 }
