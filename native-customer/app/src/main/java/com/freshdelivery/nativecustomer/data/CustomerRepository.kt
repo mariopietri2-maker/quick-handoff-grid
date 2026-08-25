@@ -15,12 +15,14 @@ import io.github.jan.supabase.realtime.realtime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
+import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.booleanOrNull
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
@@ -179,7 +181,10 @@ class CustomerRepository(
         distanceKm: Double?,
         promoCode: String? = null,
     ): String {
-        val raw = client.postgrest.rpc(
+        // place_order returns a bare UUID string (not a JSON array).
+        // decodeSingle/decodeList expect '[' and crash with:
+        //   Expected start of the array '[', but had '"'
+        val response = client.postgrest.rpc(
             "place_order",
             buildJsonObject {
                 put("p_store_id", storeId)
@@ -205,8 +210,25 @@ class CustomerRepository(
                 put("p_distance_km", distanceKm)
                 put("p_promo_code", promoCode)
             },
-        ).decodeSingle<String>()
-        return raw
+        )
+        val orderId = runCatching {
+            response.decodeAs<String>()
+        }.recoverCatching {
+            response.decodeList<String>().first()
+        }.recoverCatching {
+            // Parse raw JSON body: "uuid" or ["uuid"]
+            val text = response.data.toString().trim()
+            val element = Json.parseToJsonElement(text)
+            when {
+                element is kotlinx.serialization.json.JsonPrimitive -> element.content
+                else -> element.jsonArray.first().jsonPrimitive.content
+            }
+        }.getOrElse {
+            error("place_order: unexpected response (expected UUID string)")
+        }
+        val cleaned = orderId.trim().trim('"')
+        if (cleaned.isBlank()) error("place_order returned empty id")
+        return cleaned
     }
     suspend fun fetchStores(): List<StoreRow> {
         return client.from("stores_public")
