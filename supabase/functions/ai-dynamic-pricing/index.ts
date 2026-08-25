@@ -128,12 +128,27 @@ Deno.serve(async (req) => {
 
     if (ordersRes.error) console.error("orders signal error", ordersRes.error.message);
     if (statesRes.error) console.error("driver_state signal error", statesRes.error.message);
+    if (offersRes.error) console.error("pending_offers signal error", offersRes.error.message);
+    if (treasuryRes.error) console.error("admin_treasury signal error", treasuryRes.error.message);
+    if (storesRes.error) console.error("stores signal error", storesRes.error.message);
+
+    let settings = (settingsRes.data ?? {}) as Record<string, any>;
+    if (settingsRes.error) {
+      // The wide select can fail if one column is missing/renamed; retry with
+      // just the multipliers so pricing still sees the current values.
+      console.error("platform_settings signal error", settingsRes.error.message);
+      const minimal = await admin
+        .from("platform_settings")
+        .select("ai_delivery_fee_multiplier, ai_driver_pay_multiplier")
+        .eq("id", 1)
+        .maybeSingle();
+      if (!minimal.error && minimal.data) settings = minimal.data;
+    }
 
     const orders = ordersRes.data ?? [];
     const states = statesRes.data ?? [];
     const offers = offersRes.data ?? [];
     const stores = storesRes.data ?? [];
-    const settings = settingsRes.data ?? {};
 
     const activeStatuses = ["pending", "placed", "accepted", "preparing", "ready", "arrived", "picked_up"];
     const openOrders = orders.filter((o: any) => activeStatuses.includes(o.status));
@@ -181,7 +196,13 @@ Deno.serve(async (req) => {
 
     // ---------- ask the AI ----------
     const apiKey = getAiGatewayApiKey();
-    if (!apiKey) return json({ error: "AI gateway key missing (AI_GATEWAY_API_KEY)" }, 500);
+    if (!apiKey) {
+      await admin
+        .from("ai_pricing_runs")
+        .insert({ status: "error", context, error: "AI gateway key missing (AI_GATEWAY_API_KEY)" })
+        .catch(() => null);
+      return json({ error: "AI gateway key missing (AI_GATEWAY_API_KEY)" }, 500);
+    }
 
     const guardrails = {
       delivery_fee_multiplier: [Number(cfg.delivery_fee_min_mult), Number(cfg.delivery_fee_max_mult)],
@@ -212,6 +233,8 @@ Snapshot: ${JSON.stringify(context)}
 Reply with JSON only:
 {"delivery_fee_multiplier":number,"driver_pay_multiplier":number,"reasoning":"one short paragraph in Greek","stores":[{"id":"uuid","commission_pct":number|null,"menu_price_multiplier":number|null,"reason":"short Greek reason"}]}`;
 
+    const aiCtrl = new AbortController();
+    const aiTimeout = setTimeout(() => aiCtrl.abort(), 25_000);
     const aiRes = await fetch(`${AI_GATEWAY_BASE}/v1/chat/completions`, {
       method: "POST",
       headers: { "Content-Type": "application/json", Authorization: `Bearer ${apiKey}` },
@@ -220,18 +243,32 @@ Reply with JSON only:
         messages: [{ role: "user", content: prompt }],
         response_format: { type: "json_object" },
       }),
-    });
+      signal: aiCtrl.signal,
+    }).finally(() => clearTimeout(aiTimeout));
 
     if (aiRes.status === 429) return json({ error: "Rate limited, try again shortly" }, 429);
     if (aiRes.status === 402) return json({ error: "AI credits exhausted" }, 402);
     if (!aiRes.ok) {
       const text = await aiRes.text();
-      await admin.from("ai_pricing_runs").insert({ status: "error", context, error: text.slice(0, 800) });
+      await admin.from("ai_pricing_runs").insert({ status: "error", context, error: text.slice(0, 800) }).catch(() => null);
       return json({ error: "AI request failed", detail: text.slice(0, 400), model }, 500);
     }
 
     const aiJson = await aiRes.json();
     const decision = parseAiJson(aiJson?.choices?.[0]?.message?.content ?? "{}");
+
+    // Guard against empty/garbled AI payloads: without any decision field we'd
+    // otherwise record a silent no-op "ok" run that looks like success.
+    const hasDecision =
+      decision.delivery_fee_multiplier != null ||
+      decision.driver_pay_multiplier != null ||
+      (Array.isArray(decision.stores) && decision.stores.length > 0) ||
+      typeof decision.reasoning === "string";
+    if (!hasDecision) {
+      const detail = `Empty AI response (model ${model})`;
+      await admin.from("ai_pricing_runs").insert({ status: "error", context, error: detail }).catch(() => null);
+      return json({ error: detail }, 502);
+    }
 
     // ---------- clamp ----------
     const feeMult = gradualClamp(
@@ -362,6 +399,14 @@ Reply with JSON only:
     });
   } catch (e) {
     console.error("ai-dynamic-pricing error", e);
+    try {
+      await admin.from("ai_pricing_runs").insert({
+        status: "error",
+        error: `unhandled: ${(e as Error).message}`.slice(0, 800),
+      });
+    } catch {
+      // best effort only
+    }
     return json({ error: (e as Error).message }, 500);
   }
 });

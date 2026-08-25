@@ -69,10 +69,26 @@ const DEFAULT_CFG: Config = {
 const MODEL_OPTIONS = [
   'google/gemini-2.5-flash',
   'google/gemini-2.5-flash-lite',
-  'google/gemini-3-flash-preview',
 ];
 
 const num = (v: any, d = 0) => (v === null || v === undefined || v === '' ? d : Number(v));
+
+/** Pull the real error message out of a failed supabase.functions.invoke call. */
+async function invokeErrorMessage(error: any): Promise<string> {
+  let detail = error?.message ?? 'Αποτυχία εκτέλεσης';
+  const ctx = error?.context;
+  if (ctx && typeof ctx.json === 'function') {
+    try {
+      const payload = await ctx.json();
+      if (payload?.error) {
+        detail = payload.error + (payload.detail ? ` — ${payload.detail}` : '');
+      }
+    } catch {
+      // keep generic message
+    }
+  }
+  return detail;
+}
 
 export default function AiDynamicPricing() {
   const [cfg, setCfg] = useState<Config | null>(null);
@@ -123,7 +139,10 @@ export default function AiDynamicPricing() {
   const save = async () => {
     if (!cfg) return;
     setSaving(true);
-    const { error } = await supabase.from('ai_pricing_config' as any).upsert({ id: true, ...cfg } as any);
+    // Never write last_run_at back — the cron updates it server-side and a
+    // stale value from panel load would re-open the throttle window.
+    const { last_run_at: _lastRunAt, ...persistable } = cfg;
+    const { error } = await supabase.from('ai_pricing_config' as any).upsert({ id: true, ...persistable } as any);
     setSaving(false);
     if (error) {
       toast.error(error.message);
@@ -139,9 +158,13 @@ export default function AiDynamicPricing() {
       body: { dry_run: opts.dryRun, force_apply: !!opts.forceApply },
     });
     setRunning(false);
-    if (error) { toast.error(error.message); return; }
+    if (error) {
+      toast.error(await invokeErrorMessage(error));
+      load();
+      return;
+    }
     const payload = data as any;
-    if (payload?.error) { toast.error(payload.error); return; }
+    if (payload?.error) { toast.error(payload.error); load(); return; }
     if (payload?.skipped) {
       toast.message(payload.reason === 'disabled' ? 'AI pricing είναι απενεργοποιημένο' : `Παραλείφθηκε: ${payload.reason}`);
       load();

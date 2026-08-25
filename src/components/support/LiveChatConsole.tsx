@@ -40,6 +40,7 @@ export function LiveChatConsole() {
   const { isAdmin } = useAuth();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
+  const [tab, setTab] = useState<'active' | 'closed'>('active');
   const [active, setActive] = useState<Conversation | null>(null);
   const [closing, setClosing] = useState(false);
 
@@ -114,6 +115,10 @@ export function LiveChatConsole() {
       .some((v) => String(v).toLowerCase().includes(q));
   });
 
+  const activeChats = searched.filter((c) => c.session_status !== 'closed');
+  const closedChats = searched.filter((c) => c.session_status === 'closed');
+  const visibleChats = tab === 'active' ? activeChats : closedChats;
+
   const selectedProfile = active ? profileInfo(active.participant_id) : null;
 
   // Keep the open thread in sync when the list refreshes (e.g. closed elsewhere).
@@ -165,6 +170,48 @@ export function LiveChatConsole() {
               className="pl-8 h-9 text-sm bg-card"
             />
           </div>
+          <div className="grid grid-cols-2 gap-1 rounded-lg bg-muted/60 p-1">
+            <button
+              type="button"
+              onClick={() => setTab('active')}
+              className={cn(
+                'h-7 rounded-md text-[11px] font-heading font-semibold flex items-center justify-center gap-1.5 transition-all',
+                tab === 'active'
+                  ? 'bg-card shadow-sm text-success border border-success/20'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              Ενεργές
+              <span
+                className={cn(
+                  'inline-flex items-center justify-center min-w-[18px] h-[15px] px-1 rounded-full text-[9px] font-bold tabular-nums',
+                  tab === 'active' ? 'bg-success/15 text-success' : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {activeChats.length}
+              </span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setTab('closed')}
+              className={cn(
+                'h-7 rounded-md text-[11px] font-heading font-semibold flex items-center justify-center gap-1.5 transition-all',
+                tab === 'closed'
+                  ? 'bg-card shadow-sm text-muted-foreground border border-border'
+                  : 'text-muted-foreground hover:text-foreground',
+              )}
+            >
+              Κλειστές
+              <span
+                className={cn(
+                  'inline-flex items-center justify-center min-w-[18px] h-[15px] px-1 rounded-full text-[9px] font-bold tabular-nums',
+                  tab === 'closed' ? 'bg-muted text-foreground' : 'bg-muted text-muted-foreground',
+                )}
+              >
+                {closedChats.length}
+              </span>
+            </button>
+          </div>
         </div>
 
         <div className="flex-1 min-h-0 overflow-y-auto scrollbar-thin p-2 space-y-1.5">
@@ -172,12 +219,16 @@ export function LiveChatConsole() {
             <div className="flex items-center justify-center h-full text-muted-foreground">
               <Loader2 className="h-5 w-5 animate-spin" />
             </div>
-          ) : searched.length === 0 ? (
+          ) : visibleChats.length === 0 ? (
             <p className="text-center text-xs text-muted-foreground py-10 px-4">
-              {search ? 'Δεν βρέθηκε συνομιλία.' : 'Καμία ζωντανή συνομιλία ακόμα.'}
+              {search
+                ? 'Δεν βρέθηκε συνομιλία.'
+                : tab === 'active'
+                ? 'Καμία ζωντανή συνομιλία ακόμα.'
+                : 'Καμία κλειστή συνομιλία.'}
             </p>
           ) : (
-            searched.map((c) => {
+            visibleChats.map((c) => {
               const isNew =
                 differenceInMinutes(new Date(), new Date(c.last_message_at)) < 10 &&
                 c.last_sender_role !== (isAdmin ? 'admin' : 'support');
