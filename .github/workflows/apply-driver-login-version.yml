@@ -1,0 +1,22 @@
+name: Apply driver login version
+on:
+  push:
+    paths:
+      - 'scripts/apply_driver_login_version.py'
+      - '.github/workflows/apply-driver-login-version.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_driver_login_version.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/ native-customer/
+          git commit -m "feat(driver): version on login + 2.6.14" || exit 0
+          git push
