@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Put latest natives first + bump website versions
+      - name: Bump website versions + refresh release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -23,52 +23,35 @@ jobs:
           CUST_C=$(grep -oP 'versionCode = \K[0-9]+' native-customer/app/build.gradle.kts | head -1)
           echo "Driver $DRIVER_V ($DRIVER_C) · Customer $CUST_V ($CUST_C)"
 
-          python3 << PY
+          export DRIVER_V CUST_V
+          python3 - <<'PY'
+          import os
+          import re
           from pathlib import Path
 
-          driver_v = """$DRIVER_V""".strip()
-          cust_v = """$CUST_V""".strip()
+          driver_v = os.environ["DRIVER_V"].strip()
+          cust_v = os.environ["CUST_V"].strip()
 
           p = Path("src/lib/apk-downloads.ts")
-          t = p.read_text()
-          import re
-          t = re.sub(r"export const APK_NATIVE_DRIVER_VERSION = '[^']+';", f"export const APK_NATIVE_DRIVER_VERSION = '{driver_v}'", t)
-          t = re.sub(r"export const APK_NATIVE_CUSTOMER_VERSION = '[^']+';", f"export const APK_NATIVE_CUSTOMER_VERSION = '{cust_v}'", t)
-          p.write_text(t)
-          print("apk-downloads.ts versions updated")
-
-          page = Path("src/pages/DownloadAppPage.tsx")
-          pt = page.read_text()
-          old = '''        <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-          <ApkCard flavor="customer" highlighted={focus === 'customer'} />
-          <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
-          <ApkCard flavor="driver" highlighted={focus === 'driver'} />
-          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
-        </div>'''
-          new = '''        <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-          <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
-          <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
-          <ApkCard flavor="driver" highlighted={focus === 'driver'} />
-          <ApkCard flavor="customer" highlighted={focus === 'customer'} />
-        </div>'''
-          if new in pt:
-              print("DownloadAppPage already latest-first")
-          elif old in pt:
-              page.write_text(pt.replace(old, new, 1))
-              print("DownloadAppPage reordered latest-first")
-          else:
-              print("WARN: DownloadAppPage pattern missing")
-
-          # Version line: put native driver first
-          pt = page.read_text()
-          pt2 = re.sub(
-              r"Capacitor v\{APK_BUILD_VERSION\} · Native customer v\{APK_NATIVE_CUSTOMER_VERSION\} · Native driver v\{APK_NATIVE_DRIVER_VERSION\}",
-              "Native driver v{APK_NATIVE_DRIVER_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Capacitor v{APK_BUILD_VERSION}",
-              pt,
+          t = p.read_text(encoding="utf-8")
+          t2 = re.sub(
+              r"export const APK_NATIVE_DRIVER_VERSION = '[^']*';",
+              f"export const APK_NATIVE_DRIVER_VERSION = '{driver_v}';",
+              t,
           )
-          if pt2 != pt:
-              page.write_text(pt2)
-              print("header version order updated")
+          t2 = re.sub(
+              r"export const APK_NATIVE_CUSTOMER_VERSION = '[^']*';",
+              f"export const APK_NATIVE_CUSTOMER_VERSION = '{cust_v}';",
+              t2,
+          )
+          marker = f"export const APK_NATIVE_DRIVER_VERSION = '{driver_v}';"
+          if marker not in t2:
+              raise SystemExit("ERROR: APK_NATIVE_DRIVER_VERSION pattern drifted — update regex")
+          if t2 != t:
+              p.write_text(t2, encoding="utf-8")
+              print("apk-downloads.ts versions updated")
+          else:
+              print("apk-downloads.ts already up to date")
           PY
 
           BODY=$(cat <<EOF
@@ -96,6 +79,6 @@ jobs:
           if git diff --staged --quiet; then
             echo "No website file changes"
           else
-            git commit -m "chore(web): latest native APKs first (${DRIVER_V} / ${CUST_V})"
+            git commit -m "chore(web): latest native APK versions (${DRIVER_V} / ${CUST_V})"
             git push
           fi
