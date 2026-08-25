@@ -1,0 +1,170 @@
+name: Rebuild customer 260
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rebuild-customer-260.yml"
+jobs:
+  patch-and-note:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply track empty fixes
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
+          t = vm.read_text(encoding='utf-8')
+
+          old = '''    fun selectTab(tab: CustomerTab) {
+        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null, menu = emptyList())
+        when (tab) {
+            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
+            CustomerTab.Home, CustomerTab.Browse -> refreshStores()
+            CustomerTab.Profile -> Unit
+        }
+    }'''
+          new = '''    fun selectTab(tab: CustomerTab) {
+        var next = _state.value.copy(tab = tab, showCart = false, selectedStore = null, menu = emptyList())
+        if (tab == CustomerTab.Track && next.trackingOrder == null) {
+            val picked = next.orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+                ?: next.orders.firstOrNull()
+            next = next.copy(trackingOrder = picked)
+        }
+        _state.value = next
+        when (tab) {
+            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
+            CustomerTab.Home, CustomerTab.Browse -> refreshStores()
+            CustomerTab.Profile -> Unit
+        }
+    }'''
+          if old in t:
+              t = t.replace(old, new, 1); print('selectTab ok')
+          else:
+              print('selectTab skip', 'TERMINAL' in t and 'var next' in t)
+
+          old = '''    fun trackOrder(order: OrderUi?) {
+        _state.value = _state.value.copy(trackingOrder = order, tab = CustomerTab.Track, showCart = false)
+        refreshDriverLocation()
+    }'''
+          new = '''    fun trackOrder(order: OrderUi?) {
+        val picked = order
+            ?: _state.value.trackingOrder
+            ?: _state.value.orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+            ?: _state.value.orders.firstOrNull()
+        _state.value = _state.value.copy(
+            trackingOrder = picked,
+            tab = CustomerTab.Track,
+            showCart = false,
+            selectedStore = null,
+            menu = emptyList(),
+        )
+        if (picked == null) refreshOrders()
+        refreshDriverLocation()
+    }'''
+          if old in t:
+              t = t.replace(old, new, 1); print('trackOrder ok')
+          else:
+              print('trackOrder skip')
+
+          old = '''    fun refreshOrders() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                val orders = repo.fetchOrders(uid)
+                val active = orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+                val tracked = _state.value.trackingOrder
+                    ?.let { cur -> orders.firstOrNull { it.order.id == cur.order.id } }
+                    ?: active
+                _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
+                refreshDriverLocation()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }'''
+          new = '''    fun refreshOrders() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                val orders = repo.fetchOrders(uid)
+                val active = orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+                val cur = _state.value.trackingOrder
+                val matched = cur?.let { c ->
+                    val id = c.order.id.trim().trim('"')
+                    orders.firstOrNull { it.order.id.trim().trim('"') == id }
+                }
+                val tracked = matched ?: cur ?: active
+                _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
+                refreshDriverLocation()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }'''
+          if old in t:
+              t = t.replace(old, new, 1); print('refreshOrders ok')
+          else:
+              print('refreshOrders skip')
+
+          vm.write_text(t, encoding='utf-8')
+
+          shell = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          st = shell.read_text(encoding='utf-8')
+          old = '''private fun TrackTab(state: CustomerUiState) {
+    val order = state.trackingOrder'''
+          new = '''private fun TrackTab(state: CustomerUiState) {
+    val order = state.trackingOrder
+        ?: state.orders.firstOrNull { it.order.status !in listOf("delivered", "cancelled", "rejected", "refunded") }
+        ?: state.orders.firstOrNull()'''
+          if old in st and 'state.orders.firstOrNull' not in st.split('TrackTab')[1][:400]:
+              st = st.replace(old, new, 1); print('TrackTab ok')
+          else:
+              print('TrackTab skip or done')
+
+          old = '''            if (order == null) {
+                Text(
+                    "Επίλεξε παραγγελία από Παραγγελίες για live tracking.",
+                    color = FreshMuted,
+                )
+            } else {'''
+          new = '''            if (order == null) {
+                Text(
+                    if (state.orders.isEmpty()) {
+                        "Δεν υπάρχουν παραγγελίες ακόμα. Παράγγειλε και θα εμφανιστεί εδώ η παρακολούθηση."
+                    } else {
+                        "Άνοιξε Παραγγελίες και πάτα «Παρακολούθηση» σε μια ενεργή παραγγελία."
+                    },
+                    color = FreshMuted,
+                )
+            } else {'''
+          if old in st:
+              st = st.replace(old, new, 1); print('empty msg ok')
+
+          if 'val selected = state.tab == tab || (tab == CustomerTab.Orders && state.tab == CustomerTab.Track)' not in st:
+              st = st.replace(
+                  'val selected = state.tab == tab',
+                  'val selected = state.tab == tab || (tab == CustomerTab.Orders && state.tab == CustomerTab.Track)',
+                  1,
+              )
+              print('nav ok')
+
+          shell.write_text(st, encoding='utf-8')
+
+          g = Path('native-customer/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 260', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.7.6-track-fix"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('version 260')
+          PY
+      - name: Commit patch
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer
+          if git diff --staged --quiet; then echo no code changes; else git commit -m "fix(native-customer): empty tracking + 2.7.6-track-fix (260)"; git push; fi
