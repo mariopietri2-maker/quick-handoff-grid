@@ -1,0 +1,194 @@
+name: Fix customer empty tracking
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-customer-track-empty.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch ViewModel + TrackTab
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
+          t = vm.read_text(encoding='utf-8')
+
+          # refreshOrders: keep optimistic tracking if server list has not caught up yet
+          old_refresh = '''    fun refreshOrders() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                val orders = repo.fetchOrders(uid)
+                val active = orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+                val tracked = _state.value.trackingOrder
+                    ?.let { cur -> orders.firstOrNull { it.order.id == cur.order.id } }
+                    ?: active
+                _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
+                refreshDriverLocation()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }'''
+
+          new_refresh = '''    fun refreshOrders() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching {
+                val orders = repo.fetchOrders(uid)
+                val active = orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+                val cur = _state.value.trackingOrder
+                val matched = cur?.let { c ->
+                    val id = c.order.id.trim().trim('"')
+                    orders.firstOrNull { it.order.id.trim().trim('"') == id }
+                }
+                // Never wipe an optimistic tracking card just because the list is still empty
+                val tracked = matched ?: cur ?: active
+                _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
+                refreshDriverLocation()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message)
+            }
+        }
+    }'''
+
+          if old_refresh in t:
+              t = t.replace(old_refresh, new_refresh, 1)
+              print('refreshOrders patched')
+          elif 'Never wipe an optimistic' in t:
+              print('refreshOrders already patched')
+          else:
+              print('WARNING: refreshOrders pattern missing')
+
+          # trackOrder: if null passed, open first active order
+          old_track = '''    fun trackOrder(order: OrderUi?) {
+        _state.value = _state.value.copy(trackingOrder = order, tab = CustomerTab.Track, showCart = false)
+        refreshDriverLocation()
+    }'''
+          new_track = '''    fun trackOrder(order: OrderUi?) {
+        val picked = order
+            ?: _state.value.trackingOrder
+            ?: _state.value.orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+            ?: _state.value.orders.firstOrNull()
+        _state.value = _state.value.copy(
+            trackingOrder = picked,
+            tab = CustomerTab.Track,
+            showCart = false,
+            selectedStore = null,
+            menu = emptyList(),
+        )
+        if (picked == null) refreshOrders()
+        refreshDriverLocation()
+    }'''
+          if old_track in t:
+              t = t.replace(old_track, new_track, 1)
+              print('trackOrder patched')
+          else:
+              print('WARNING: trackOrder pattern missing')
+
+          # selectTab: when opening Orders, keep tracking; when Track, auto-pick
+          old_sel = '''    fun selectTab(tab: CustomerTab) {
+        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null, menu = emptyList())
+        when (tab) {
+            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
+            CustomerTab.Home, CustomerTab.Browse -> refreshStores()
+            CustomerTab.Profile -> Unit
+        }
+    }'''
+          new_sel = '''    fun selectTab(tab: CustomerTab) {
+        var next = _state.value.copy(tab = tab, showCart = false, selectedStore = null, menu = emptyList())
+        if (tab == CustomerTab.Track && next.trackingOrder == null) {
+            val picked = next.orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
+                ?: next.orders.firstOrNull()
+            next = next.copy(trackingOrder = picked)
+        }
+        _state.value = next
+        when (tab) {
+            CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
+            CustomerTab.Home, CustomerTab.Browse -> refreshStores()
+            CustomerTab.Profile -> Unit
+        }
+    }'''
+          if old_sel in t:
+              t = t.replace(old_sel, new_sel, 1)
+              print('selectTab patched')
+          else:
+              print('WARNING: selectTab pattern missing')
+
+          vm.write_text(t, encoding='utf-8')
+
+          shell = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          st = shell.read_text(encoding='utf-8')
+
+          # TrackTab: use active order fallback + show list of active orders when empty
+          old_tt = '''private fun TrackTab(state: CustomerUiState) {
+    val order = state.trackingOrder'''
+          new_tt = '''private fun TrackTab(state: CustomerUiState) {
+    val order = state.trackingOrder
+        ?: state.orders.firstOrNull { it.order.status !in listOf("delivered", "cancelled", "rejected", "refunded") }
+        ?: state.orders.firstOrNull()'''
+          if old_tt in st:
+              st = st.replace(old_tt, new_tt, 1)
+              print('TrackTab fallback')
+          else:
+              print('WARNING: TrackTab header missing')
+
+          old_empty = '''            if (order == null) {
+                Text(
+                    "Επίλεξε παραγγελία από Παραγγελίες για live tracking.",
+                    color = FreshMuted,
+                )
+            } else {'''
+          new_empty = '''            if (order == null) {
+                Text(
+                    if (state.orders.isEmpty()) {
+                        "Δεν υπάρχουν παραγγελίες ακόμα. Παράγγειλε και θα εμφανιστεί εδώ η παρακολούθηση."
+                    } else {
+                        "Άνοιξε Παραγγελίες και πάτα «Παρακολούθηση» σε μια ενεργή παραγγελία."
+                    },
+                    color = FreshMuted,
+                )
+                if (state.orders.isNotEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Ενεργές: " + state.orders.take(3).joinToString { (it.storeName ?: "#") + " · " + it.order.status },
+                        color = FreshInk,
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            } else {'''
+          if old_empty in st:
+              st = st.replace(old_empty, new_empty, 1)
+              print('empty copy updated')
+          else:
+              print('WARNING: empty track copy missing')
+
+          # Bottom nav: treat Track as Orders selected so user isn't "nowhere"
+          old_sel_nav = 'val selected = state.tab == tab'
+          new_sel_nav = 'val selected = state.tab == tab || (tab == CustomerTab.Orders && state.tab == CustomerTab.Track)'
+          if old_sel_nav in st:
+              st = st.replace(old_sel_nav, new_sel_nav, 1)
+              print('nav highlight for Track')
+
+          shell.write_text(st, encoding='utf-8')
+
+          g = Path('native-customer/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 260', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.7.6-track-fix"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('version 2.7.6-track-fix / 260')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-customer): empty tracking fallback + keep optimistic order"; git push; fi
