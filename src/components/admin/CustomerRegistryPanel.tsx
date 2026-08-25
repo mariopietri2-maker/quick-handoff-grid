@@ -5,7 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { MapPin, Pencil, Search, ShoppingBag, User, Wallet } from 'lucide-react';
+import { MapPin, Pencil, Search, ShoppingBag, Ticket, User } from 'lucide-react';
 import { format } from 'date-fns';
 import { el } from 'date-fns/locale';
 
@@ -22,7 +22,7 @@ type OrderLite = {
   id: string;
   customer_id: string | null;
   status: string | null;
-  total: number | null;
+  total_amount: number | null;
   created_at: string | null;
 };
 
@@ -53,7 +53,7 @@ export default function CustomerRegistryPanel({ profiles, orders }: Props) {
       .map((p) => {
         const cOrders = orders.filter((o) => o.customer_id === p.user_id);
         const delivered = cOrders.filter((o) => o.status === 'delivered');
-        const spent = delivered.reduce((s, o) => s + Number(o.total ?? 0), 0);
+        const spent = delivered.reduce((s, o) => s + Number(o.total_amount ?? 0), 0);
         const lastAt = cOrders
           .map((o) => o.created_at)
           .filter(Boolean)
@@ -103,6 +103,20 @@ export default function CustomerRegistryPanel({ profiles, orders }: Props) {
         .maybeSingle();
       if (error) throw error;
       return data as { balance: number; lifetime_credit: number } | null;
+    },
+  });
+
+  const rewards = useQuery({
+    queryKey: ['admin-customer-rewards', uid],
+    enabled: !!uid,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('customer_rewards')
+        .select('points, tier, lifetime_points')
+        .eq('user_id', uid!)
+        .maybeSingle();
+      if (error) throw error;
+      return data as { points: number; tier: string; lifetime_points: number } | null;
     },
   });
 
@@ -260,11 +274,25 @@ export default function CustomerRegistryPanel({ profiles, orders }: Props) {
                   />
                   <StatTile label="Σύνολο δαπανών" value={`€${selected.spent.toFixed(2)}`} />
                   <StatTile
-                    icon={<Wallet className="h-3.5 w-3.5" />}
-                    label="Πορτοφόλι"
+                    icon={<Ticket className="h-3.5 w-3.5" />}
+                    label="Κουπόνια"
                     value={wallet.data ? `€${Number(wallet.data.balance).toFixed(2)}` : '€0.00'}
                   />
                 </div>
+                <Field
+                  label="Συνολικά κουπόνια"
+                  value={
+                    wallet.data && Number(wallet.data.lifetime_credit) > 0
+                      ? `€${Number(wallet.data.lifetime_credit).toFixed(2)}`
+                      : null
+                  }
+                />
+                {rewards.data && (
+                  <>
+                    <Field label="Πόντοι ανταμοιβής" value={`${rewards.data.points} (${rewards.data.tier})`} />
+                    <Field label="Συνολικοί πόντοι" value={String(rewards.data.lifetime_points)} />
+                  </>
+                )}
                 <Field label="Τελευταία παραγγελία" value={selected.lastOrderAt ? fmtDate(selected.lastOrderAt) : null} />
                 <Field label="Εγγραφή" value={selected.profile.created_at ? fmtDate(selected.profile.created_at) : null} />
               </Section>

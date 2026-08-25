@@ -16,6 +16,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.emptyFlow
 import kotlinx.coroutines.flow.map
 import kotlinx.serialization.json.JsonNull
+import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonArray
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.put
@@ -39,6 +40,10 @@ class CustomerRepository(
         client.auth.signUpWith(Email) {
             this.email = email
             this.password = password
+            data = buildJsonObject {
+                if (!fullName.isNullOrBlank()) put("full_name", fullName)
+                if (!phone.isNullOrBlank()) put("phone", phone)
+            }
         }
     }
 
@@ -46,8 +51,26 @@ class CustomerRepository(
         client.auth.signOut()
     }
 
-    suspend fun loadProfile(userId: String): ProfileRow? = null
-    suspend fun updateProfile(userId: String, fullName: String?, phone: String?) {}
+    suspend fun loadProfile(userId: String): ProfileRow? =
+        runCatching {
+            client.from("profiles").select(Columns.list("id", "full_name", "phone")) {
+                filter { eq("user_id", userId) }
+                limit(1L)
+            }.decodeList<ProfileRow>().firstOrNull()
+        }.getOrNull()
+
+    suspend fun updateProfile(userId: String, fullName: String?, phone: String?) {
+        val name = fullName?.trim()?.takeIf { it.isNotEmpty() }
+        val tel = phone?.trim()?.takeIf { it.isNotEmpty() }
+        val obj = buildJsonObject {
+            put("full_name", name?.let { JsonPrimitive(it) } ?: JsonNull)
+            put("phone", tel?.let { JsonPrimitive(it) } ?: JsonNull)
+        }
+        client.from("profiles").update(obj) {
+            filter { eq("user_id", userId) }
+        }
+    }
+
     suspend fun platformFees(): PlatformFees = PlatformFees()
     suspend fun fetchAppConfig(): CustomerAppConfig = CustomerAppConfig()
     suspend fun canManageGames(): Boolean = false

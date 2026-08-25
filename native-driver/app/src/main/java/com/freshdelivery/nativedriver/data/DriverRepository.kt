@@ -83,7 +83,7 @@ class DriverRepository(
 
     suspend fun loadProfile(userId: String): ProfileRow? =
         client.from("profiles").select(Columns.ALL) {
-            filter { eq("id", userId) }
+            filter { eq("user_id", userId) }
             limit(1L)
         }.decodeList<ProfileRow>().firstOrNull()
 
@@ -565,7 +565,7 @@ class DriverRepository(
             if (phone != null) put("phone", phone)
         }
         client.from("profiles").update(obj) {
-            filter { eq("id", userId) }
+            filter { eq("user_id", userId) }
         }
     }
 
@@ -577,7 +577,7 @@ class DriverRepository(
     ) {
         val obj = buildJsonObject {
             if (vehicleType != null) put("vehicle_type", vehicleType)
-            if (vehiclePlate != null) put("vehicle_plate", vehiclePlate)
+            if (vehiclePlate != null) put("license_plate", vehiclePlate)
             if (iban != null) put("iban", iban)
         }
         client.from("driver_profiles").update(obj) {

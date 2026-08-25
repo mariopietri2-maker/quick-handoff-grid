@@ -415,7 +415,7 @@ private fun DriverContextCard(state: DriverUiState, onCall: (String?) -> Unit) {
             Text(
                 buildString {
                     append(state.driverProfile?.vehicle_type ?: "Όχημα")
-                    state.driverProfile?.vehicle_plate?.let { append(" · $it") }
+                    state.driverProfile?.license_plate?.let { append(" · $it") }
                     state.profile?.phone?.let { append(" · $it") }
                 },
                 fontSize = 12.sp,

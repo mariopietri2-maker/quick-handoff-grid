@@ -58,8 +58,8 @@ fun ProfileScreen(
     var vehicleType by remember(state.driverProfile?.vehicle_type) {
         mutableStateOf(state.driverProfile?.vehicle_type.orEmpty())
     }
-    var plate by remember(state.driverProfile?.vehicle_plate) {
-        mutableStateOf(state.driverProfile?.vehicle_plate.orEmpty())
+    var plate by remember(state.driverProfile?.license_plate) {
+        mutableStateOf(state.driverProfile?.license_plate.orEmpty())
     }
     var iban by remember(state.driverProfile?.iban) {
         mutableStateOf(state.driverProfile?.iban.orEmpty())

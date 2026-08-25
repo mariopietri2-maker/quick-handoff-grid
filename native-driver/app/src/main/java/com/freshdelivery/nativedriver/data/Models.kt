@@ -23,7 +23,7 @@ data class DriverProfileRow(
     val user_id: String,
     val is_active: Boolean? = true,
     val vehicle_type: String? = null,
-    val vehicle_plate: String? = null,
+    val license_plate: String? = null,
     val license_number: String? = null,
     val iban: String? = null,
     val bank_name: String? = null,
