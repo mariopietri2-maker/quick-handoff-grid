@@ -87,6 +87,10 @@ export default function ServiceZonesEditor() {
   const [newCity, setNewCity] = useState('');
   const [creating, setCreating] = useState(false);
   const [saving, setSaving] = useState(false);
+  // Camera/marker calls on a half-initialized map throw
+  // "Cannot read properties of undefined (reading 'lng')" in mapbox-gl v3.
+  // Nothing below touches the map until mapReady flips true (on 'load').
+  const [mapReady, setMapReady] = useState(false);
 
   const zonesRef = useRef(zones);
   zonesRef.current = zones;
@@ -118,6 +122,7 @@ export default function ServiceZonesEditor() {
     });
     map.addControl(new mapboxgl.NavigationControl(), 'top-right');
     map.on('load', () => {
+      if (mapRef.current !== map) return;
       map.addSource('zone-circle', { type: 'geojson', data: { type: 'FeatureCollection', features: [] } });
       map.addLayer({
         id: 'zone-fill',
@@ -131,15 +136,22 @@ export default function ServiceZonesEditor() {
         source: 'zone-circle',
         paint: { 'line-color': '#2563eb', 'line-width': 2 },
       });
+      setMapReady(true);
     });
     mapRef.current = map;
-    return () => { map.remove(); mapRef.current = null; };
+    return () => {
+      map.remove();
+      mapRef.current = null;
+      centerMarkerRef.current = null;
+      edgeMarkerRef.current = null;
+      setMapReady(false);
+    };
   }, [token]);
 
   // Create markers for the selected zone (stable across drags)
   useEffect(() => {
     const map = mapRef.current;
-    if (!map || !selectedId) {
+    if (!map || !mapReady || !selectedId) {
       centerMarkerRef.current?.remove();
       centerMarkerRef.current = null;
       edgeMarkerRef.current?.remove();
@@ -147,8 +159,20 @@ export default function ServiceZonesEditor() {
       return;
     }
 
+    // Markers must always have a position before hitting the map — an
+    // unpositioned marker crashes with "reading 'lng'" on first render.
+    const zone = zonesRef.current.find(v => v.id === selectedId) ?? null;
+    const zLng = Number(zone?.center_longitude);
+    const zLat = Number(zone?.center_latitude);
+    const startCenter: [number, number] =
+      Number.isFinite(zLng) && Number.isFinite(zLat) ? [zLng, zLat] : [DEFAULT_CENTER[0], DEFAULT_CENTER[1]];
+    const startEdge: [number, number] =
+      zone && Number.isFinite(zLng) && Number.isFinite(zLat)
+        ? destination(startCenter[0], startCenter[1], EDGE_BEARING_RAD, Math.max(1, Number(zone.radius_km) || 1))
+        : [DEFAULT_CENTER[0], DEFAULT_CENTER[1]];
+
     const centerMarker = new mapboxgl.Marker({ color: '#2563eb', draggable: true })
-      .setLngLat([20.8537, 39.6650])
+      .setLngLat(startCenter)
       .addTo(map);
     centerMarker.on('dragstart', () => { draggingCenterRef.current = true; });
     centerMarker.on('drag', () => {
@@ -159,6 +183,7 @@ export default function ServiceZonesEditor() {
     centerMarker.on('dragend', () => { draggingCenterRef.current = false; });
 
     const edgeMarker = new mapboxgl.Marker({ color: '#f59e0b', draggable: true, scale: 1.1 })
+      .setLngLat(startEdge)
       .addTo(map);
     edgeMarker.getElement().title = 'Σύρε για αλλαγή ακτίνας';
     edgeMarker.on('dragstart', () => { draggingEdgeRef.current = true; });
@@ -180,7 +205,7 @@ export default function ServiceZonesEditor() {
       centerMarkerRef.current = null;
       edgeMarkerRef.current = null;
     };
-  }, [selectedId]);
+  }, [selectedId, mapReady]);
 
   // Sync circle geometry + marker positions with the selected zone
   const selLat = selected?.center_latitude;
@@ -189,7 +214,7 @@ export default function ServiceZonesEditor() {
 
   useEffect(() => {
     const map = mapRef.current;
-    if (!map) return;
+    if (!map || !mapReady) return;
     const selected = zonesRef.current.find(v => v.id === selectedId) ?? null;
 
     const draw = () => {
@@ -204,25 +229,30 @@ export default function ServiceZonesEditor() {
         features: [circlePolygon(selected.center_longitude, selected.center_latitude, Number(selected.radius_km))],
       });
     };
-    if (map.isStyleLoaded()) draw(); else map.once('load', draw);
+    // Style is guaranteed loaded here (mapReady), so drawing is always safe.
+    draw();
 
     if (!selected) return;
+
+    const cLng = Number(selected.center_longitude);
+    const cLat = Number(selected.center_latitude);
+    if (!Number.isFinite(cLng) || !Number.isFinite(cLat)) return;
 
     const centerMarker = centerMarkerRef.current;
     const edgeMarker = edgeMarkerRef.current;
     if (centerMarker && !draggingCenterRef.current) {
-      centerMarker.setLngLat([selected.center_longitude, selected.center_latitude]);
+      centerMarker.setLngLat([cLng, cLat]);
     }
     if (edgeMarker && !draggingEdgeRef.current) {
-      const [elng, elat] = destination(selected.center_longitude, selected.center_latitude, EDGE_BEARING_RAD, Number(selected.radius_km));
+      const [elng, elat] = destination(cLng, cLat, EDGE_BEARING_RAD, Math.max(1, Number(selected.radius_km) || 1));
       edgeMarker.setLngLat([elng, elat]);
     }
 
     if (prevSelectedIdRef.current !== selectedId) {
       prevSelectedIdRef.current = selectedId;
-      map.flyTo({ center: [selected.center_longitude, selected.center_latitude], zoom: 12 });
+      map.flyTo({ center: [cLng, cLat], zoom: 12 });
     }
-  }, [selectedId, selLat, selLng, selRadius]);
+  }, [selectedId, selLat, selLng, selRadius, mapReady]);
 
   const updateLocal = (patch: Partial<ServiceZone>) => {
     if (!selected) return;
@@ -245,12 +275,24 @@ export default function ServiceZonesEditor() {
     if (error) toast.error('Αποτυχία αποθήκευσης'); else toast.success('Η ζώνη αποθηκεύτηκε');
   };
 
+  const getMapCenter = useCallback((): { lat: number; lng: number } => {
+    const map = mapRef.current;
+    if (map && mapReady) {
+      try {
+        const c = map.getCenter();
+        if (c && Number.isFinite(c.lat) && Number.isFinite(c.lng)) return { lat: c.lat, lng: c.lng };
+      } catch {
+        /* map tearing down */
+      }
+    }
+    return { lat: DEFAULT_CENTER[1], lng: DEFAULT_CENTER[0] };
+  }, [mapReady]);
+
   const createZone = async () => {
     const city = newCity.trim();
     if (!city) return;
     setCreating(true);
-    const map = mapRef.current;
-    const c = map ? map.getCenter() : { lng: DEFAULT_CENTER[0], lat: DEFAULT_CENTER[1] };
+    const c = getMapCenter();
     const { data, error } = await supabase
       .from('service_zones')
       .insert({ city, center_latitude: c.lat, center_longitude: c.lng, radius_km: 18, is_active: true })
@@ -274,9 +316,8 @@ export default function ServiceZonesEditor() {
   };
 
   const recenterOnMap = () => {
-    const map = mapRef.current;
-    if (!map || !selected) return;
-    const c = map.getCenter();
+    if (!selected) return;
+    const c = getMapCenter();
     updateLocal({ center_latitude: c.lat, center_longitude: c.lng });
   };
 
