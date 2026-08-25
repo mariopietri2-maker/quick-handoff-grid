@@ -1,0 +1,108 @@
+name: Apply customer track fix
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-customer-track-fix.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch with regex
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          vm = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt')
+          t = vm.read_text(encoding='utf-8')
+
+          # Force cash argument
+          t2, n = re.subn(
+              r'paymentMethod = s\.paymentMethod,',
+              'paymentMethod = "cash", // only method live on native',
+              t,
+              count=1,
+          )
+          print(f'cash force: {n}')
+          t = t2
+
+          # Replace onSuccess block body after placedId
+          pattern = r"(\}\.onSuccess \{ placedId ->\n)(.*?)(\}\.onFailure \{ e ->)"
+          repl = r'''\1                persistLastAddress()
+                saveAddress()
+                val placed = placedId.trim().trim('"').takeIf { it.isNotBlank() }
+                val storeName = s.cartStoreName ?: store?.name
+                _state.value = _state.value.copy(
+                    busy = false,
+                    cart = emptyList(),
+                    cartStoreId = null,
+                    cartStoreName = null,
+                    showCart = false,
+                    selectedStore = null,
+                    menu = emptyList(),
+                    tipAmount = 0.0,
+                    notes = "",
+                    addressSuggestions = emptyList(),
+                    paymentMethod = "cash",
+                    info = "Η παραγγελία καταχωρήθηκε! Παρακολούθησε την παράδοση.",
+                    appliedDeal = null,
+                    tab = CustomerTab.Track,
+                )
+                if (placed != null) {
+                    autoOpenTrack(
+                        orderId = placed,
+                        storeId = storeId,
+                        storeName = storeName,
+                        storeLat = store?.latitude,
+                        storeLng = store?.longitude,
+                    )
+                } else {
+                    _state.value = _state.value.copy(tab = CustomerTab.Orders)
+                    refreshOrders()
+                }
+            \3'''
+          t2, n = re.subn(pattern, repl, t, count=1, flags=re.S)
+          print(f'onSuccess replace: {n}')
+          if n == 0:
+              raise SystemExit('failed to patch onSuccess')
+          t = t2
+          vm.write_text(t, encoding='utf-8')
+
+          shell = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          st = shell.read_text(encoding='utf-8')
+          # Make cash button always green selected
+          st2, n = re.subn(
+              r'onClick = \{ onSetPayment\("cash"\) \},\s*enabled = state\.paymentMethod != "cash",',
+              'onClick = { onSetPayment("cash") },\n                            enabled = true,',
+              st,
+              count=1,
+          )
+          print(f'cash enabled: {n}')
+          st = st2
+          st2, n = re.subn(
+              r'Text\("Μετρητά"\)',
+              'Text("Μετρητά ✓")',
+              st,
+              count=1,
+          )
+          print(f'cash label: {n}')
+          st = st2
+          shell.write_text(st, encoding='utf-8')
+
+          g = Path('native-customer/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 258', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.7.5-track-after-order"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('version 258 / 2.7.5-track-after-order')
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-customer): Track after order + cash forced"; git push; fi
