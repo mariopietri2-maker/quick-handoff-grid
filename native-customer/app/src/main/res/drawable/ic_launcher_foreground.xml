@@ -1,12 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Brand green disc -->
     <path
-        android:fillColor="#22C55E"
-        android:pathData="M30,70 L54,28 L78,70 Z" />
+        android:fillColor="#06C167"
+        android:pathData="M54,22c17.67,0 32,14.33 32,32s-14.33,32 -32,32 -32,-14.33 -32,-32 14.33,-32 32,-32z" />
+    <!-- Shopping bag body -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M42,70 h24 v8 h-24 z" />
+        android:fillColor="#0B0F14"
+        android:pathData="M36,48h36c2.2,0 4,1.8 4,4v26c0,2.2 -1.8,4 -4,4H36c-2.2,0 -4,-1.8 -4,-4V52c0,-2.2 1.8,-4 4,-4z" />
+    <!-- Bag handles -->
+    <path
+        android:fillColor="#06C167"
+        android:pathData="M44,48c0,-6.6 4.5,-12 10,-12s10,5.4 10,12h-5.5c0,-3.6 -2,-6.5 -4.5,-6.5s-4.5,2.9 -4.5,6.5H44z" />
+    <!-- Fresh leaf mark on bag -->
+    <path
+        android:fillColor="#06C167"
+        android:pathData="M54,58c6,0 11,4 12,9 -6,1 -11,-3 -12,-9z" />
+    <path
+        android:fillColor="#06C167"
+        android:pathData="M54,58c-6,0 -11,4 -12,9 6,1 11,-3 12,-9z" />
+    <!-- Stem -->
+    <path
+        android:fillColor="#0B0F14"
+        android:pathData="M53.2,58h1.6v12h-1.6z" />
 </vector>
