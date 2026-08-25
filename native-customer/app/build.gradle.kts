@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 259
-        versionName = "2.7.5-track-after-order"
+        versionCode = 260
+        versionName = "2.7.6-track-fix"
 
         buildConfigField(
             "String",
