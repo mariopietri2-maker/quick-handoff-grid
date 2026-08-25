@@ -1,5 +1,7 @@
 package com.freshdelivery.nativecustomer.ui
 
+import com.freshdelivery.nativecustomer.BuildConfig
+
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
@@ -13,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
@@ -95,11 +98,16 @@ fun LoginScreen(
         focusedLabelColor = FreshGreen,
         cursorColor = FreshGreen,
     )
-    Column(
+    Box(
         Modifier
             .fillMaxSize()
             .background(FreshBg)
             .statusBarsPadding()
+            .navigationBarsPadding(),
+    ) {
+    Column(
+        Modifier
+            .fillMaxSize()
             .padding(horizontal = 24.dp),
         verticalArrangement = Arrangement.Center,
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -272,5 +280,14 @@ fun LoginScreen(
                 fontWeight = FontWeight.SemiBold,
             )
         }
+    }
+        Text(
+            text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+            color = FreshMuted,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 16.dp),
+        )
     }
 }
