@@ -1,9 +1,6 @@
 name: Label 2.6.10
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/label-261.yml'
 permissions:
   contents: write
 jobs:

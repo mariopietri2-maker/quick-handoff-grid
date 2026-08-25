@@ -1,10 +1,6 @@
 name: Patch offer customer pin
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'scripts/patch_offer_customer_pin.py'
-      - '.github/workflows/patch-offer-customer-pin.yml'
 permissions:
   contents: write
 jobs:

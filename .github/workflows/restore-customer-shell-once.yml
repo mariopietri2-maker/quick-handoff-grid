@@ -2,11 +2,6 @@ name: Restore CustomerShell Once
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/restore-customer-shell-once.yml"
-      - "native-customer/_restore_shell.b64"
-
 permissions:
   contents: write
 

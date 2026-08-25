@@ -1,10 +1,5 @@
 name: Apply login version label
 on:
-  push:
-    paths:
-      - 'scripts/apply_login_version.py'
-      - '.github/workflows/apply-login-version.yml'
-  workflow_dispatch:
 jobs:
   apply:
     runs-on: ubuntu-latest

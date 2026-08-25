@@ -1,10 +1,6 @@
 name: Next Wave Premium Native
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/next-wave-premium.yml'
-
 jobs:
   patch:
     runs-on: ubuntu-latest

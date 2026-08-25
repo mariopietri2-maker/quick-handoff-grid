@@ -2,10 +2,6 @@ name: Fix Customer Compile Once
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/fix-customer-compile.yml"
-
 permissions:
   contents: write
 

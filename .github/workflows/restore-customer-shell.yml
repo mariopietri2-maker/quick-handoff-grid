@@ -2,10 +2,6 @@ name: Restore CustomerShell
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/restore-customer-shell.yml"
-
 jobs:
   restore:
     runs-on: ubuntu-latest

@@ -1,10 +1,6 @@
 name: Native remote offer sound + wire admin
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/native-remote-offer-sound.yml"
-      - "native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/OfferSoundCache.kt"
 jobs:
   patch-build:
     runs-on: ubuntu-latest

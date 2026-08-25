@@ -1,9 +1,6 @@
 name: Store call TTL UI
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/store-call-ttl-ui.yml'
 permissions:
   contents: write
 jobs:

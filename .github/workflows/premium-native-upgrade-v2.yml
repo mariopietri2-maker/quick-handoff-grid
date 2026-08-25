@@ -1,10 +1,6 @@
 name: Premium Native Upgrade v2
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/premium-native-upgrade-v2.yml'
-
 jobs:
   patch:
     runs-on: ubuntu-latest

@@ -2,11 +2,6 @@ name: Apply Native Capacitor Parity
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "native-customer/_parity_payload.json"
-      - ".github/workflows/apply-native-parity.yml"
-
 permissions:
   contents: write
 

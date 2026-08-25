@@ -2,10 +2,6 @@ name: Apply driver alert burst + ensure APK build
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/apply-driver-alert-burst.yml"
-
 jobs:
   patch-and-build:
     runs-on: ubuntu-latest

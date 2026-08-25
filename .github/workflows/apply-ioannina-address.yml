@@ -1,10 +1,5 @@
 name: Apply Ioannina address UX
 on:
-  push:
-    paths:
-      - '.github/workflows/apply-ioannina-address.yml'
-      - 'scripts/apply_ioannina_address.py'
-  workflow_dispatch:
 jobs:
   apply:
     runs-on: ubuntu-latest

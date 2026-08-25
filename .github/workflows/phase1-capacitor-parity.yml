@@ -2,11 +2,6 @@ name: Phase1 Capacitor Parity
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/phase1-capacitor-parity.yml"
-      - "native-customer/_shell_phase1.b64"
-
 permissions:
   contents: write
 

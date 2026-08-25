@@ -1,9 +1,6 @@
 name: Confirm complete store call
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/confirm-store-complete.yml'
 permissions:
   contents: write
 jobs:

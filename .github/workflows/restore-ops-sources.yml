@@ -1,11 +1,6 @@
 name: Restore Ops ViewModel + HomeScreen
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/restore-ops-sources.yml"
-      - ".github/parity-payloads/ops/**"
-
 jobs:
   apply:
     runs-on: ubuntu-latest

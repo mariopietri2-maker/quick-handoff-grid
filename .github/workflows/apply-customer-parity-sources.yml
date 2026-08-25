@@ -2,11 +2,6 @@ name: Apply Customer Parity Sources
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - "native-customer/*.gz.b64"
-      - ".github/workflows/apply-customer-parity-sources.yml"
-
 permissions:
   contents: write
 

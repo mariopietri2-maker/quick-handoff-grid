@@ -1,10 +1,6 @@
 name: Fix broken Ops sources from history
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/fix-ops-sources.yml"
-
 jobs:
   fix:
     runs-on: ubuntu-latest

@@ -1,10 +1,6 @@
 name: Run patch active job confirm
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - 'scripts/patch_active_job_confirm.py'
-      - '.github/workflows/run-patch-active-job.yml'
 permissions:
   contents: write
 jobs:

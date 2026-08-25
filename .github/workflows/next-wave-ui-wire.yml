@@ -1,10 +1,6 @@
 name: Next Wave UI Wire
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/next-wave-ui-wire.yml'
-
 jobs:
   patch:
     runs-on: ubuntu-latest

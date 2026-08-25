@@ -1,10 +1,6 @@
 name: Wire advertising admin tab
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/wire-advertising-admin.yml"
-      - "src/components/admin/AdminAdvertisingPanel.tsx"
 jobs:
   wire:
     runs-on: ubuntu-latest

@@ -2,11 +2,6 @@ name: All Phases Capacitor Parity
 
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/all-phases-parity.yml"
-      - ".github/parity-payloads/**"
-
 jobs:
   parity:
     runs-on: ubuntu-latest

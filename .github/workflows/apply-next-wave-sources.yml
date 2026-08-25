@@ -1,11 +1,6 @@
 name: Apply Next Wave Kotlin Sources
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/apply-next-wave-sources.yml"
-      - ".github/parity-payloads/next-wave/**"
-
 jobs:
   apply:
     runs-on: ubuntu-latest

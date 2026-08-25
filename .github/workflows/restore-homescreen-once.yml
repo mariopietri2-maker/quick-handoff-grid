@@ -1,9 +1,6 @@
 name: Restore HomeScreen Once
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - '.github/workflows/restore-homescreen-once.yml'
 jobs:
   restore:
     runs-on: ubuntu-latest

@@ -1,9 +1,5 @@
 name: Reorder download page
 on:
-  push:
-    paths:
-      - '.github/workflows/reorder-download-page.yml'
-  workflow_dispatch:
 permissions:
   contents: write
 jobs:

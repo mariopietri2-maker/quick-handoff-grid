@@ -1,9 +1,6 @@
 name: Wire driver offer sounds admin tab
 on:
   workflow_dispatch:
-  push:
-    paths:
-      - ".github/workflows/wire-driver-offer-sounds.yml"
 jobs:
   wire:
     runs-on: ubuntu-latest
