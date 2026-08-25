@@ -1,0 +1,254 @@
+name: Store auth + Μητρώο parity
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/store-auth-mitroo.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch mobileApp, syncAppRole, Auth, ProtectedRoute, migration
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          # --- mobileApp.ts ---
+          p = Path('src/lib/mobileApp.ts')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace(
+              "export type MobileAppFlavor = 'customer' | 'driver' | 'shared';",
+              "export type MobileAppFlavor = 'customer' | 'driver' | 'store' | 'shared';",
+          )
+          if "appId.includes('store')" not in t:
+              t = t.replace(
+                  "  if (appId.includes('driver')) return 'driver';\n  if (appId.includes('customer')) return 'customer';\n  return 'shared';",
+                  "  if (appId.includes('driver')) return 'driver';\n  if (appId.includes('store')) return 'store';\n  if (appId.includes('customer')) return 'customer';\n  return 'shared';",
+              )
+          t = t.replace(
+              "  if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') return ENV_FLAVOR;",
+              "  if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver' || ENV_FLAVOR === 'store') return ENV_FLAVOR;",
+          )
+          if "if (flavor === 'store') return '/store';" not in t:
+              t = t.replace(
+                  "  if (flavor === 'driver') return '/driver';\n  if (flavor === 'customer') return '/order';\n  return '/';",
+                  "  if (flavor === 'driver') return '/driver';\n  if (flavor === 'store') return '/store';\n  if (flavor === 'customer') return '/order';\n  return '/';",
+              )
+          if "flavor === 'store') return ['store']" not in t:
+              t = t.replace(
+                  "  if (flavor === 'driver') return ['driver', 'm'];\n  if (flavor === 'customer') return ['customer'];\n  return null;",
+                  "  if (flavor === 'driver') return ['driver', 'm'];\n  if (flavor === 'store') return ['store'];\n  if (flavor === 'customer') return ['customer'];\n  return null;",
+              )
+          if 'isStorePath' not in t:
+              t += '''
+
+export function isStorePath(path: string): boolean {
+  return (
+    path.startsWith('/store') ||
+    path.startsWith('/auth') ||
+    path.startsWith('/legal')
+  );
+}
+'''
+          # resolveMobileFlavor ENV checks
+          t = t.replace(
+              "  if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') {",
+              "  if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver' || ENV_FLAVOR === 'store') {",
+          )
+          t = t.replace(
+              "  const env = (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') ? ENV_FLAVOR : null;",
+              "  const env = (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver' || ENV_FLAVOR === 'store') ? ENV_FLAVOR : null;",
+          )
+          p.write_text(t, encoding='utf-8')
+          print('mobileApp ok')
+
+          # --- syncAppRole.ts ---
+          p = Path('src/lib/syncAppRole.ts')
+          p.write_text('''import { supabase } from '@/integrations/supabase/client';
+import { resolveMobileFlavor, type MobileAppFlavor } from '@/lib/mobileApp';
+
+/**
+ * Align profiles.role with the native shell the user is in:
+ * - customer app → customer
+ * - driver app → driver (pending approval via is_active=false)
+ * - store app → store (Μητρώο καταστημάτων)
+ */
+export async function syncRoleForMobileShell(
+  flavor?: MobileAppFlavor,
+): Promise<{ ok: boolean; role?: string; error?: string }> {
+  const app = flavor ?? (await resolveMobileFlavor());
+  if (app !== 'customer' && app !== 'driver' && app !== 'store') {
+    return { ok: true };
+  }
+  const { data, error } = await (supabase as any).rpc('sync_app_role', { p_app: app });
+  if (error) {
+    return { ok: false, error: error.message };
+  }
+  return { ok: true, role: (data as any)?.role };
+}
+''', encoding='utf-8')
+          print('syncAppRole ok')
+
+          # --- AuthPage.tsx ---
+          p = Path('src/pages/AuthPage.tsx')
+          t = p.read_text(encoding='utf-8')
+
+          t = t.replace(
+              "  if (opts.role === 'store' && opts.flavor === 'shared') return '/store';\n  // Driver APK: never send new/customer accounts to /order (redirect loop).\n  if (opts.flavor === 'driver') return '/driver';\n  if (opts.flavor === 'customer') return '/order';",
+              "  if (opts.role === 'store' || opts.flavor === 'store') return '/store';\n  // Driver APK: never send new/customer accounts to /order (redirect loop).\n  if (opts.flavor === 'driver') return '/driver';\n  if (opts.flavor === 'customer') return '/order';",
+          )
+
+          t = t.replace(
+              "  const isDriverShell = flavor === 'driver';\n  const isCustomerShell = flavor === 'customer';",
+              "  const isDriverShell = flavor === 'driver';\n  const isCustomerShell = flavor === 'customer';\n  const isStoreShell = flavor === 'store';",
+          )
+
+          t = t.replace(
+              "    return isDriverShell ? '/driver' : '/order';",
+              "    return isDriverShell ? '/driver' : isStoreShell ? '/store' : '/order';",
+          )
+
+          t = t.replace(
+              "        const { error, session } = await signUp(emailNorm, password, fullName, 'customer');",
+              "        const signupRole = isDriverShell ? 'driver' : isStoreShell ? 'store' : 'customer';\n        const { error, session } = await signUp(emailNorm, password, fullName, signupRole);",
+          )
+
+          t = t.replace(
+              "          toast.success(\n            isDriverShell\n              ? 'Εγγραφή ολοκληρώθηκε. Αναμονή έγκρισης οδηγού.'\n              : 'Συνδεθήκατε! Καλώς ήρθατε.',\n          );",
+              "          toast.success(\n            isDriverShell\n              ? 'Εγγραφή ολοκληρώθηκε. Αναμονή έγκρισης οδηγού.'\n              : isStoreShell\n                ? 'Εγγραφή στο Μητρώο ολοκληρώθηκε. Μπείτε στο portal καταστήματος.'\n                : 'Συνδεθήκατε! Καλώς ήρθατε.',\n          );",
+          )
+
+          t = t.replace(
+              "            : isDriverShell\n              ? 'Δημιουργήστε λογαριασμό οδηγού (αυτόματος ρόλος · χρειάζεται έγκριση)'\n              : isCustomerShell\n                ? 'Δημιουργήστε λογαριασμό πελάτη (αυτόματος ρόλος)'\n                : 'Δημιουργήστε λογαριασμό πελάτη';",
+              "            : isDriverShell\n              ? 'Δημιουργήστε λογαριασμό οδηγού (αυτόματος ρόλος · χρειάζεται έγκριση)'\n              : isStoreShell\n                ? 'Εγγραφή στο Μητρώο καταστημάτων — ρόλος store'\n                : isCustomerShell\n                  ? 'Δημιουργήστε λογαριασμό πελάτη (αυτόματος ρόλος)'\n                  : 'Δημιουργήστε λογαριασμό πελάτη';",
+          )
+
+          # Login title hint for store
+          t = t.replace(
+              "          : isLogin\n            ? 'Σύνδεση'\n            : 'Εγγραφή';",
+              "          : isLogin\n            ? (isStoreShell ? 'Σύνδεση Μητρώου' : 'Σύνδεση')\n            : (isStoreShell ? 'Εγγραφή Μητρώου' : 'Εγγραφή');",
+          )
+
+          t = t.replace(
+              "          : isLogin\n            ? 'Μπείτε με email και κωδικό'\n            : isDriverShell",
+              "          : isLogin\n            ? (isStoreShell ? 'Μπείτε στο portal καταστήματος με email και κωδικό' : 'Μπείτε με email και κωδικό')\n            : isDriverShell",
+          )
+
+          # Logo variant for store
+          if "isStoreShell ? 'store'" not in t and "variant={isDriverShell" in t:
+              t = t.replace(
+                  "variant={isDriverShell ? 'driver' : isCustomerShell ? 'core' : 'ink'}",
+                  "variant={isDriverShell ? 'driver' : isStoreShell ? 'core' : isCustomerShell ? 'core' : 'ink'}",
+              )
+
+          p.write_text(t, encoding='utf-8')
+          print('AuthPage ok')
+
+          # --- ProtectedRoute ---
+          p = Path('src/components/ProtectedRoute.tsx')
+          t = p.read_text(encoding='utf-8')
+          t = t.replace(
+              "    if (flavor === 'driver' || flavor === 'customer') {\n      return <RoleAccessGate required={flavor === 'driver' ? 'driver' : 'customer'} />;\n    }",
+              "    if (flavor === 'driver' || flavor === 'customer' || flavor === 'store') {\n      return <RoleAccessGate required={flavor === 'driver' ? 'driver' : flavor === 'store' ? 'store' : 'customer'} />;\n    }",
+          )
+          t = t.replace(
+              "      if (flavor === 'driver') return <RoleAccessGate required=\"driver\" />;\n      if (flavor === 'customer') return <RoleAccessGate required=\"customer\" />;\n      return <Navigate to=\"/\" replace />;",
+              "      if (flavor === 'driver') return <RoleAccessGate required=\"driver\" />;\n      if (flavor === 'store') return <RoleAccessGate required=\"store\" />;\n      if (flavor === 'customer') return <RoleAccessGate required=\"customer\" />;\n      return <Navigate to=\"/\" replace />;",
+          )
+          t = t.replace(
+              "    if (flavor === 'customer') {\n      return <RoleAccessGate required=\"customer\" />;\n    }\n    return <Navigate to=\"/\" replace />;",
+              "    if (flavor === 'customer') {\n      return <RoleAccessGate required=\"customer\" />;\n    }\n    if (flavor === 'store') {\n      return <RoleAccessGate required=\"store\" />;\n    }\n    return <Navigate to=\"/\" replace />;",
+          )
+          p.write_text(t, encoding='utf-8')
+          print('ProtectedRoute ok')
+
+          # --- RoleAccessGate: accept store ---
+          p = Path('src/components/RoleAccessGate.tsx')
+          if p.exists():
+              t = p.read_text(encoding='utf-8')
+              if "required === 'store'" not in t and 'required:' in t:
+                  # soft: add store label if there's a map of labels
+                  t2 = t.replace("'driver': 'οδηγού'", "'driver': 'οδηγού', 'store': 'καταστήματος'")
+                  t2 = t2.replace('"driver": "οδηγού"', '"driver": "οδηγού", "store": "καταστήματος"')
+                  if t2 != t:
+                      p.write_text(t2, encoding='utf-8')
+                      print('RoleAccessGate labels')
+                  else:
+                      print('RoleAccessGate no label map change')
+
+          # --- Migration: sync_app_role accepts store ---
+          mig = Path('supabase/migrations/20260825220000_sync_app_role_store.sql')
+          mig.parent.mkdir(parents=True, exist_ok=True)
+          mig.write_text('''-- Allow store shell to claim store role (Μητρώο καταστημάτων)
+CREATE OR REPLACE FUNCTION public.sync_app_role(p_app text)
+RETURNS jsonb
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+DECLARE
+  uid uuid := auth.uid();
+  target text;
+  cur text;
+BEGIN
+  IF uid IS NULL THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'not_authenticated');
+  END IF;
+
+  target := lower(trim(coalesce(p_app, '')));
+  IF target NOT IN ('customer', 'driver', 'store') THEN
+    RETURN jsonb_build_object('ok', false, 'error', 'invalid_app');
+  END IF;
+
+  SELECT role INTO cur FROM public.profiles WHERE user_id = uid;
+
+  -- Do not demote admins / support
+  IF EXISTS (
+    SELECT 1 FROM public.user_roles ur
+    WHERE ur.user_id = uid AND ur.role IN ('admin', 'support')
+  ) THEN
+    RETURN jsonb_build_object('ok', true, 'role', coalesce(cur, target), 'skipped', true);
+  END IF;
+
+  -- Existing store owners keep store even if opening customer shell once
+  IF cur = 'store' AND target = 'customer' THEN
+    RETURN jsonb_build_object('ok', true, 'role', 'store', 'kept', true);
+  END IF;
+
+  UPDATE public.profiles
+  SET role = target,
+      updated_at = now()
+  WHERE user_id = uid;
+
+  IF NOT FOUND THEN
+    INSERT INTO public.profiles (user_id, role, full_name)
+    VALUES (uid, target, null)
+    ON CONFLICT (user_id) DO UPDATE SET role = excluded.role, updated_at = now();
+  END IF;
+
+  -- Mirror store membership in user_roles when claiming store
+  IF target = 'store' THEN
+    INSERT INTO public.user_roles (user_id, role)
+    VALUES (uid, 'store')
+    ON CONFLICT DO NOTHING;
+  END IF;
+
+  RETURN jsonb_build_object('ok', true, 'role', target);
+END;
+$$;
+
+GRANT EXECUTE ON FUNCTION public.sync_app_role(text) TO authenticated;
+''', encoding='utf-8')
+          print('migration written')
+          print('DONE')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "feat(store): auth parity + Μητρώο shell role"; git push; fi
