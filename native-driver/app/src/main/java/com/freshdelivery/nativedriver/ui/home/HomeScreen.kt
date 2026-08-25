@@ -1638,8 +1638,7 @@ private fun ActiveJobCard(
             title = { Text("Ολοκλήρωση κλήσης;", fontWeight = FontWeight.Bold) },
             text = {
                 Text(
-                    "Επιβεβαιώνεις ότι ολοκλήρωσες την κλήση στο ${active.store_name};
-Μετά δεν θα μπορείς να την ανοίξεις ξανά.",
+                    "Επιβεβαιώνεις ότι ολοκλήρωσες την κλήση στο ${active.store_name}\nΜετά δεν θα μπορείς να την ανοίξεις ξανά.",
                     fontSize = 14.sp,
                 )
             },
@@ -1665,6 +1664,7 @@ private fun ActiveJobCard(
     }
 }
 
+@Composable
 private fun StoreCallSheet(
     call: StoreCallRow,
     busy: Boolean,
