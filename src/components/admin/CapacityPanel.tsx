@@ -1,4 +1,4 @@
-﻿import { useMemo, useState } from 'react';
+ import { useMemo, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Activity,
@@ -311,7 +311,7 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
         <div>
           <h2 className="font-heading font-extrabold text-lg text-foreground">Î§Ï‰ÏÎ·Ï„Î¹ÎºÏŒÏ„Î·Ï„Î± Ï€Î»Î±Ï„Ï†ÏŒÏÎ¼Î±Ï‚</h2>
           <p className="text-[12.5px] text-muted-foreground mt-0.5 max-w-2xl">
-            Î ÏŒÏƒÎ¿ Î¼Ï€Î¿ÏÎµÎ¯ Î½Î± Î±Î½Ï„Î­Î¾ÎµÎ¹ Ï„Î¿ ÏƒÏÏƒÏ„Î·Î¼Î± Ï„ÏŽÏÎ± â€” Î²Î¬ÏƒÎµÎ¹ online Î¿Î´Î·Î³ÏŽÎ½, ÏÏ…Î¸Î¼Î¯ÏƒÎµÏ‰Î½ stacking/dispatch
+            Î ÏŒÏƒÎ¿ Î¼Ï€Î¿ÏÎµÎ¯ Î½Î± Î±Î½Ï„Î­Î¾ÎµÎ¹ Ï„Î¿ ÏƒÏÏƒÏ„Î·Î¼Î± Ï„ÏŽÏÎ± â€” Î²Î¬ÏƒÎµÎ¹ online Î¿Î´Î·Î³ÏŽÎ½, ÏÏ…Î¸Î¼Î¯ÏƒÎµÏ‰Î½ stacking/dispatch
             ÎºÎ±Î¹ Î¼ÎµÏ„ÏÎ·Î¼Î­Î½Ï‰Î½ Î¿ÏÎ¯Ï‰Î½ Î±Ï€ÏŒ stress test ({BM.measuredAt}).
           </p>
         </div>
@@ -585,7 +585,7 @@ export default function CapacityPanel({ onNavigate }: { onNavigate?: (tab: strin
       <section className="rounded-xl border border-dashed border-border bg-muted/30 p-4 space-y-2">
         <div className="flex items-center gap-2">
           <Zap className="h-4 w-4 text-primary" />
-          <h3 className="font-semibold text-sm">Î ÏŽÏ‚ Ï…Ï€Î¿Î»Î¿Î³Î¯Î¶ÎµÏ„Î±Î¹</h3>
+          <h3 className="font-semibold text-sm">Î ÏŽÏ‚ Ï…Ï€Î¿Î»Î¿Î³Î¯Î¶ÎµÏ„Î±Î¹</h3>
         </div>
         <p className="text-[12.5px] text-muted-foreground leading-relaxed">
           <strong className="text-foreground">Î˜ÎµÏ‰ÏÎ·Ï„Î¹ÎºÎ¬ Ï€Î±ÏÎ±Î³Î³ÎµÎ»Î¯ÎµÏ‚/ÏŽÏÎ±</strong> = online Î¿Î´Î·Î³Î¿Î¯ Ã—

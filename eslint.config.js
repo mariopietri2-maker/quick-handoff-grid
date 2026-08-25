@@ -8,6 +8,7 @@ export default tseslint.config(
   {
     ignores: [
       "dist",
+      "_swap_old/**",
       "android-customer/**",
       "android-driver/**",
       "ios-customer/**",
