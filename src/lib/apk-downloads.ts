@@ -9,7 +9,7 @@ export const APK_BUILD_VERSION = '1.0.7232800';
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
 export const APK_NATIVE_DRIVER_VERSION = '2.6.12-native-soundfix';
 
-/** Native Kotlin/Compose customer (Uber Eats–style UI). */
+/** Native Kotlin/Compose customer. */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.7.0-native';
 
 const RELEASE_BASE =
@@ -32,7 +32,7 @@ export const APK_DOWNLOADS = {
   customerNative: {
     id: 'customerNative' as const,
     title: 'Πελάτης Native',
-    subtitle: 'Uber Eats style · cart · Mapbox · FCM',
+    subtitle: 'Καλάθι · Mapbox · FCM',
     filename: 'fresh-customer-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh-customer-native-debug.apk`,
     sizeLabel: '~21 MB',
