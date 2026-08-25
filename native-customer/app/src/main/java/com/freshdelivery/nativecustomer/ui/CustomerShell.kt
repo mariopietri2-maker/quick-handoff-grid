@@ -1453,7 +1453,7 @@ private fun CartCheckoutScreen(
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Button(
                             onClick = { onSetPayment("cash") },
-                            enabled = state.paymentMethod != "cash",
+                            enabled = true,
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = if (state.paymentMethod == "cash") FreshGreen else FreshChip,
                                 contentColor = if (state.paymentMethod == "cash") Color.White else FreshInk,
@@ -1463,7 +1463,7 @@ private fun CartCheckoutScreen(
                         ) {
                             Icon(Icons.Outlined.Wallet, contentDescription = null)
                             Spacer(Modifier.width(6.dp))
-                            Text("Μετρητά")
+                            Text("Μετρητά ✓")
                         }
                         Button(
                             onClick = {},

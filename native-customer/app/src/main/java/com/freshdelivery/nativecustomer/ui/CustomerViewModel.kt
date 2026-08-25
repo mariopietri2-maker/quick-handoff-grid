@@ -689,7 +689,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     deliveryAddress = s.deliveryAddress.trim(),
                     deliveryLat = s.deliveryLat,
                     deliveryLng = s.deliveryLng,
-                    paymentMethod = s.paymentMethod,
+                    paymentMethod = "cash", // only method live on native
                     tipAmount = s.tipAmount,
                     deliveryFee = s.deliveryFee,
                     notes = s.notes.ifBlank { null },
@@ -698,35 +698,38 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }.onSuccess { placedId ->
                 persistLastAddress()
-                saveAddress()
-                val placed = placedId?.takeIf { it.isNotBlank() }
-                _state.value = _state.value.copy(
-                    busy = false,
-                    cart = emptyList(),
-                    cartStoreId = null,
-                    cartStoreName = null,
-                    showCart = false,
-                    tipAmount = 0.0,
-                    notes = "",
-                    addressSuggestions = emptyList(),
-                    info = "Η παραγγελία καταχωρήθηκε!",
-                    appliedDeal = null,
-                )
-                // Auto-open the live tracking map for the freshly placed order
-                // (web parity: checkouts jump straight to /order-tracking/<id>).
-                if (placed != null) {
-                    autoOpenTrack(
-                        orderId = placed,
-                        storeId = storeId,
-                        storeName = s.cartStoreName ?: store?.name,
-                        storeLat = store?.latitude,
-                        storeLng = store?.longitude,
-                    )
-                } else {
-                    _state.value = _state.value.copy(tab = CustomerTab.Orders)
-                    refreshOrders()
-                }
-            }.onFailure { e ->
+      saveAddress()
+      val placed = placedId.trim().trim('"').takeIf { it.isNotBlank() }
+      val storeName = s.cartStoreName ?: store?.name
+      _state.value = _state.value.copy(
+          busy = false,
+          cart = emptyList(),
+          cartStoreId = null,
+          cartStoreName = null,
+          showCart = false,
+          selectedStore = null,
+          menu = emptyList(),
+          tipAmount = 0.0,
+          notes = "",
+          addressSuggestions = emptyList(),
+          paymentMethod = "cash",
+          info = "Η παραγγελία καταχωρήθηκε! Παρακολούθησε την παράδοση.",
+          appliedDeal = null,
+          tab = CustomerTab.Track,
+      )
+      if (placed != null) {
+          autoOpenTrack(
+              orderId = placed,
+              storeId = storeId,
+              storeName = storeName,
+              storeLat = store?.latitude,
+              storeLng = store?.longitude,
+          )
+      } else {
+          _state.value = _state.value.copy(tab = CustomerTab.Orders)
+          refreshOrders()
+      }
+  }.onFailure { e ->
                 _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
             }
         }
