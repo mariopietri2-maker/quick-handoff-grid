@@ -60,6 +60,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.R
 import com.freshdelivery.nativedriver.data.DriverPreferences
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
@@ -303,6 +304,13 @@ fun LoginScreen(
                 "Με την είσοδο αποδέχεσαι τους όρους χρήσης",
                 style = MaterialTheme.typography.labelSmall,
                 color = cs.onSurfaceVariant.copy(alpha = 0.7f),
+                textAlign = TextAlign.Center,
+            )
+            Spacer(Modifier.height(12.dp))
+            Text(
+                text = "v${BuildConfig.VERSION_NAME} (${BuildConfig.VERSION_CODE})",
+                style = MaterialTheme.typography.labelSmall,
+                color = cs.onSurfaceVariant.copy(alpha = 0.55f),
                 textAlign = TextAlign.Center,
             )
         }
