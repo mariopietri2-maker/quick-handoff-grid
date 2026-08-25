@@ -213,6 +213,7 @@ class CustomerRepository(
             .select(Columns.list(
                 "id", "name", "address", "latitude", "longitude", "is_active",
                 "image_url", "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+                "fulfilment_mode",
             )) {
                 filter { eq("is_active", true) }
                 order("name", Order.ASCENDING)

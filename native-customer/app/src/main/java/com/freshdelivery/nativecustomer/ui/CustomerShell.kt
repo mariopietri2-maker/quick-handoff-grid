@@ -984,10 +984,24 @@ private fun FreshStoreCard(
                         fontWeight = FontWeight.SemiBold,
                     )
                 }
-                FreshMetaPill {
-                    Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text("Παράδοση", color = FreshInk, fontWeight = FontWeight.SemiBold)
+                val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
+                if (platformDelivers) {
+                    FreshMetaPill {
+                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Delivered by Fresh",
+                            color = FreshGreenDark,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                } else {
+                    FreshMetaPill {
+                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Παράδοση καταστήματος", color = FreshInk, fontWeight = FontWeight.SemiBold)
+                    }
                 }
                 Spacer(Modifier.weight(1f))
                 Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
