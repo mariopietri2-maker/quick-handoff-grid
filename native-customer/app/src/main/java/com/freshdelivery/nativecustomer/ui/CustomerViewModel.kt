@@ -156,6 +156,28 @@ data class CustomerUiState(
 val TERMINAL_STATUSES = listOf("delivered", "cancelled", "rejected", "refunded")
 
 class CustomerViewModel(app: Application) : AndroidViewModel(app) {
+    companion object {
+        /** Soft delivery area around Ioannina (bias + filter, not a hard lock). */
+        private const val IOA_MIN_LAT = 39.58
+        private const val IOA_MAX_LAT = 39.75
+        private const val IOA_MIN_LNG = 20.72
+        private const val IOA_MAX_LNG = 20.98
+    }
+
+    private fun inIoanninaArea(lat: Double, lng: Double): Boolean =
+        lat in IOA_MIN_LAT..IOA_MAX_LAT && lng in IOA_MIN_LNG..IOA_MAX_LNG
+
+    private fun biasToIoannina(query: String): String {
+        val q = query.trim()
+        if (q.isEmpty()) return q
+        val lower = q.lowercase()
+        if ("ιωάννιν" in lower || "ιωαννιν" in lower || "ioannina" in lower || "giannina" in lower) {
+            return q
+        }
+        return "$q, Ιωάννινα"
+    }
+
+
     private val repo = CustomerRepository()
     private val _state = MutableStateFlow(CustomerUiState())
     val state: StateFlow<CustomerUiState> = _state.asStateFlow()
@@ -391,6 +413,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 val loc = fused.getCurrentLocation(Priority.PRIORITY_BALANCED_POWER_ACCURACY, null).await()
                     ?: fused.lastLocation.await()
                     ?: error("Δεν βρέθηκε τοποθεσία")
+                if (!inIoanninaArea(loc.latitude, loc.longitude)) {
+                    error("Η τοποθεσία σου είναι εκτός περιοχής Ιωαννίνων. Επίλεξε διεύθυνση μέσα στην πόλη.")
+                }
                 val label = reverseGeocode(loc.latitude, loc.longitude)
                 _state.value = _state.value.copy(
                     locating = false,
@@ -398,7 +423,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     deliveryLng = loc.longitude,
                     deliveryAddress = label ?: _state.value.deliveryAddress,
                     addressSuggestions = emptyList(),
-                    info = "Η τοποθεσία ενημερώθηκε",
+                    info = "Τοποθεσία στην περιοχή Ιωαννίνων",
                 )
                 recomputeDeliveryFee()
                 persistLastAddress()
@@ -416,7 +441,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             val hits = runCatching { forwardGeocodeMany(address) }.getOrNull().orEmpty()
             when {
                 hits.isEmpty() -> {
-                    _state.value = _state.value.copy(locating = false, error = "Δεν βρέθηκε η διεύθυνση")
+                    _state.value = _state.value.copy(
+                        locating = false,
+                        error = "Δεν βρέθηκε στην περιοχή Ιωαννίνων. Δοκίμασε οδό + αριθμό (π.χ. Δωδώνης 15)",
+                    )
                 }
                 hits.size == 1 -> {
                     val h = hits.first()
@@ -485,15 +513,18 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
         runCatching {
+            val biased = biasToIoannina(address)
             @Suppress("DEPRECATION")
-            Geocoder(getApplication(), Locale.getDefault())
-                .getFromLocationName(address, 5)
-                ?.mapNotNull { a ->
-                    val line = a.getAddressLine(0) ?: return@mapNotNull null
-                    AddressSuggestion(line, a.latitude, a.longitude)
-                }
-                ?.distinctBy { it.label }
-                .orEmpty()
+            val geocoder = Geocoder(getApplication(), Locale("el", "GR"))
+            val boxed = geocoder.getFromLocationName(
+                biased, 8, IOA_MIN_LAT, IOA_MIN_LNG, IOA_MAX_LAT, IOA_MAX_LNG,
+            ).orEmpty()
+            val fallback = if (boxed.isEmpty()) geocoder.getFromLocationName(biased, 8).orEmpty() else boxed
+            fallback.mapNotNull { a ->
+                val line = a.getAddressLine(0) ?: return@mapNotNull null
+                if (!inIoanninaArea(a.latitude, a.longitude)) return@mapNotNull null
+                AddressSuggestion(line, a.latitude, a.longitude)
+            }.distinctBy { it.label }
         }.getOrElse { emptyList() }
     }
 
