@@ -68,6 +68,9 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.runtime.mutableStateMapOf
+import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
@@ -2342,12 +2345,14 @@ private fun ModifierPickerDialog(
     onConfirm: (List<com.freshdelivery.nativecustomer.data.MenuModifierRow>) -> Unit,
 ) {
     val groups = modifiers.groupBy { it.group_name }.toList()
-    val selected = remember { mutableStateMapOf<String, com.freshdelivery.nativecustomer.data.MenuModifierRow>() }
+    val selected = remember {
+        mutableStateMapOf<String, com.freshdelivery.nativecustomer.data.MenuModifierRow>()
+    }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text(item.name, fontWeight = FontWeight.Bold) },
         text = {
-            Column(Modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.fillMaxWidth()) {
                 groups.forEach { (group, opts) ->
                     Text(group, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
                     Spacer(Modifier.height(6.dp))
