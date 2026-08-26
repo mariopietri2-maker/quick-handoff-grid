@@ -184,6 +184,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     /** Keeps driver_locations.updated_at fresh while online (admin Online + dispatch). */
     private var heartbeatJob: Job? = null
     private var mediaPlayer: MediaPlayer? = null
+    private var storeCallRealtimeJob: Job? = null
     private var lastOfferAlertKey: String? = null
 
     init {
@@ -269,6 +270,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 isOps = isOps,
             )
             if (online) {
+                ensureStoreCallRealtime(true)
                 DriverLocationService.start(getApplication(), onBreak = dState.on_break == true)
                 locationTracker.start()
                 pushPresence(userId)
@@ -338,6 +340,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 repo.setShiftStarted(uid, online)
                 if (online) {
+                    ensureStoreCallRealtime(true)
                     DriverLocationService.start(getApplication(), onBreak = false)
                     locationTracker.start()
                     // Immediate GPS so admin Online flips without waiting for movement
@@ -345,6 +348,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     startPresenceHeartbeat()
                 } else {
                     stopPresenceHeartbeat()
+                    ensureStoreCallRealtime(false)
                     DriverLocationService.stop(getApplication())
                     repo.clearLocation(uid)
                 }
@@ -540,6 +544,28 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
 
     /** Accept a store call (K-role driver). */
+
+    private fun ensureStoreCallRealtime(enabled: Boolean) {
+        if (!enabled) {
+            storeCallRealtimeJob?.cancel()
+            storeCallRealtimeJob = null
+            return
+        }
+        if (storeCallRealtimeJob?.isActive == true) return
+        storeCallRealtimeJob = viewModelScope.launch {
+            runCatching {
+                repo.subscribeStoreCalls().collect {
+                    if (!_state.value.online) return@collect
+                    if (!_state.value.isCallDriver) return@collect
+                    refreshWork()
+                    val local = _state.value.settingsLocal
+                    if (local.offerSound) playSoundById(local.soundId)
+                    if (local.vibration) vibrateOffer()
+                }
+            }
+        }
+    }
+
     fun acceptStoreCall(callId: String) {
         runCatching { StoreCallRingService.stop(getApplication()) }
         val s = _state.value

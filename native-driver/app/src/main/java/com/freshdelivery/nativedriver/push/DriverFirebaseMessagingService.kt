@@ -111,8 +111,11 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             ensureOfferChannel(this)
             StoreCallRingService.ensureChannel(this)
             if (isStoreCall) {
-                // Looping FGS sound — survives after this service returns (background).
-                StoreCallRingService.start(this, title, body)
+                // 1) Local MAX notification with channel sound (works if process alive)
+                showNotification(title, body, isStoreCall = true)
+                // 2) Looping FGS ring — may be blocked on some OEMs; never fail the push
+                runCatching { StoreCallRingService.start(this, title, body) }
+                playOfferSound()
                 vibratePattern()
             } else {
                 showNotification(title, body, isStoreCall = false)
@@ -180,14 +183,16 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             putExtra("from_push", true)
             putExtra("is_store_call", isStoreCall)
         }
+        val req = if (isStoreCall) 42 else (System.currentTimeMillis() and 0xffff).toInt()
         val pi = PendingIntent.getActivity(
             this,
-            if (isStoreCall) 42 else (System.currentTimeMillis() and 0xffff).toInt(),
+            req,
             intent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE,
         )
-        val notification = NotificationCompat.Builder(this, CHANNEL_ID)
-            .setSmallIcon(android.R.drawable.ic_dialog_info)
+        val channel = if (isStoreCall) StoreCallRingService.CHANNEL_ID else CHANNEL_ID
+        val builder = NotificationCompat.Builder(this, channel)
+            .setSmallIcon(if (isStoreCall) android.R.drawable.ic_menu_call else android.R.drawable.ic_dialog_info)
             .setContentTitle(title)
             .setContentText(body)
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
@@ -198,18 +203,21 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             )
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSound(soundUri())
-            .setVibrate(longArrayOf(0, 400, 100, 400, 100, 300))
+            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
             .setContentIntent(pi)
             .setAutoCancel(true)
             .setOnlyAlertOnce(false)
             .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
-            .build()
+        if (isStoreCall) {
+            builder.setFullScreenIntent(pi, true)
+            builder.setTimeoutAfter(60_000L)
+        }
         val id = if (isStoreCall) {
-            STORE_CALL_NOTIF_ID
+            STORE_CALL_NOTIF_ID + (System.currentTimeMillis() % 100).toInt()
         } else {
             (System.currentTimeMillis() and 0x7fffffff).toInt()
         }
-        getSystemService(NotificationManager::class.java)?.notify(id, notification)
+        getSystemService(NotificationManager::class.java)?.notify(id, builder.build())
     }
 }
 

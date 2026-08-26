@@ -3,6 +3,7 @@ package com.freshdelivery.nativedriver
 import android.app.Application
 import com.freshdelivery.nativedriver.data.SupabaseModule
 import com.freshdelivery.nativedriver.push.DriverFirebaseMessagingService
+import com.freshdelivery.nativedriver.push.StoreCallRingService
 import com.mapbox.common.MapboxOptions
 
 class FreshDriverApp : Application() {
@@ -12,5 +13,6 @@ class FreshDriverApp : Application() {
         SupabaseModule.client
         // Register offer channel before any FCM arrives (sound + MAX importance).
         DriverFirebaseMessagingService.ensureOfferChannel(this)
+        StoreCallRingService.ensureChannel(this)
     }
 }

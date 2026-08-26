@@ -15,8 +15,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 273
-        versionName = "2.6.19-store-call-ring"
+        versionCode = 274
+        versionName = "2.6.20-store-call-fcm"
 
         buildConfigField(
             "String",

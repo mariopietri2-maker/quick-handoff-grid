@@ -208,6 +208,10 @@ function resolveCollapseKey(row: OutboxRow): string {
   if (type === "order_status" && orderId) return `order:${orderId}`;
   if (type === "offer") return `driver-offer:${row.user_id}`;
   if (type === "inbox") return `inbox:${row.user_id}`;
+  if (type === "store_call") {
+    const callId = typeof data.call_id === "string" ? data.call_id : "";
+    return callId ? `store_call:${callId}` : `store_call:${row.user_id}:${row.id}`;
+  }
   return `${row.app}:${row.user_id}`;
 }
 
@@ -289,14 +293,40 @@ async function sendFcm(opts: {
                 },
               };
             }
+            // Store calls MUST use a system notification + channel sound.
+            // Data-only messages often never wake the process when the app is
+            // backgrounded/killed (OEM restrictions) — driver only hears sound
+            // after opening the app (poll). Notification+data plays the channel
+            // sound from the system tray even when the process is dead.
+            const isStoreCall = (opts.data?.type === "store_call") ||
+              opts.channelId === "driver-store-calls-v1";
+            if (isStoreCall) {
+              return {
+                token: opts.token,
+                notification: { title: opts.title, body: opts.body },
+                data,
+                android: {
+                  priority: "HIGH",
+                  collapse_key: collapse,
+                  ttl: "300s",
+                  notification: {
+                    channel_id: opts.channelId,
+                    sound: offerSound,
+                    default_vibrate_timings: true,
+                    default_light_settings: true,
+                    notification_priority: "PRIORITY_MAX",
+                    visibility: "PUBLIC",
+                    tag: collapse || "store_call",
+                  },
+                },
+              };
+            }
             return {
               token: opts.token,
               data,
               android: {
                 priority: "HIGH",
                 collapse_key: collapse,
-                // No android.notification block — forces data message delivery
-                // to DriverFirebaseMessagingService even when app is backgrounded.
                 ttl: "120s",
               },
             };
@@ -336,12 +366,31 @@ async function sendFcm(opts: {
             },
             data: { ...opts.data, title: opts.title, body: opts.body },
           }
+          : ((opts.data?.type === "store_call") || opts.channelId === "driver-store-calls-v1")
+          ? {
+            to: opts.token,
+            priority: "high",
+            content_available: true,
+            collapse_key: collapse,
+            notification: {
+              title: opts.title,
+              body: opts.body,
+              sound: offerSound,
+              android_channel_id: opts.channelId,
+              tag: collapse || "store_call",
+            },
+            data: {
+              ...opts.data,
+              title: opts.title,
+              body: opts.body,
+              channel_id: opts.channelId,
+            },
+          }
           : {
             to: opts.token,
             priority: "high",
             content_available: true,
             collapse_key: collapse,
-            // Data-only: app shows local notification with alarm sound
             data: {
               ...opts.data,
               title: opts.title,

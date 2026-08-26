@@ -14,6 +14,7 @@ import io.github.jan.supabase.realtime.postgresChangeFlow
 import io.github.jan.supabase.realtime.realtime
 import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.map
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonNull
 import kotlinx.serialization.json.buildJsonObject
@@ -479,7 +480,17 @@ class DriverRepository(
     }
 
     /** Live new messages on a support ticket (RLS scopes to the own driver's ticket). */
-    suspend fun subscribeTicketMessages(ticketId: String): Flow<PostgresAction> {
+    /** Live INSERT on store_driver_calls — works while location FGS keeps process alive. */
+    suspend fun subscribeStoreCalls(): Flow<Unit> {
+        val channel = client.channel("driver-store-calls-${System.currentTimeMillis()}")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "store_driver_calls"
+        }
+        channel.subscribe()
+        return flow.map { }
+    }
+
+        suspend fun subscribeTicketMessages(ticketId: String): Flow<PostgresAction> {
         val channel = client.channel("driver-ticket-$ticketId")
         val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
             table = "ticket_messages"
