@@ -1,6 +1,8 @@
 package com.freshdelivery.nativecustomer.ui
 
 import android.app.Application
+import android.content.Intent
+import android.net.Uri
 import android.content.Context
 import android.content.pm.PackageManager
 import android.location.Geocoder
@@ -683,13 +685,14 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 if (store?.latitude != null && store.longitude != null && dLat != null && dLng != null) {
                     distanceKm = haversineKm(store.latitude, store.longitude, dLat, dLng)
                 }
+                val payMethod = if (s.paymentMethod == "card") "card" else "cash"
                 repo.placeOrder(
                     storeId = storeId,
                     items = s.cart,
                     deliveryAddress = s.deliveryAddress.trim(),
                     deliveryLat = s.deliveryLat,
                     deliveryLng = s.deliveryLng,
-                    paymentMethod = "cash", // only method live on native
+                    paymentMethod = payMethod,
                     tipAmount = s.tipAmount,
                     deliveryFee = s.deliveryFee,
                     notes = s.notes.ifBlank { null },
@@ -698,37 +701,46 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 )
             }.onSuccess { placedId ->
                 persistLastAddress()
-      saveAddress()
-      val placed = placedId.trim().trim('"').takeIf { it.isNotBlank() }
-      val storeName = s.cartStoreName ?: store?.name
-      _state.value = _state.value.copy(
-          busy = false,
-          cart = emptyList(),
-          cartStoreId = null,
-          cartStoreName = null,
-          showCart = false,
-          selectedStore = null,
-          menu = emptyList(),
-          tipAmount = 0.0,
-          notes = "",
-          addressSuggestions = emptyList(),
-          paymentMethod = "cash",
-          info = "Η παραγγελία καταχωρήθηκε! Παρακολούθησε την παράδοση.",
-          appliedDeal = null,
-          tab = CustomerTab.Track,
-      )
-      if (placed != null) {
-          autoOpenTrack(
-              orderId = placed,
-              storeId = storeId,
-              storeName = storeName,
-              storeLat = store?.latitude,
-              storeLng = store?.longitude,
-          )
-      } else {
-          _state.value = _state.value.copy(tab = CustomerTab.Orders)
-          refreshOrders()
-      }
+                saveAddress()
+                val placed = placedId.trim().trim('"').takeIf { it.isNotBlank() }
+                val storeName = s.cartStoreName ?: store?.name
+                val wasCard = s.paymentMethod == "card"
+                _state.value = _state.value.copy(
+                    busy = false,
+                    cart = emptyList(),
+                    cartStoreId = null,
+                    cartStoreName = null,
+                    showCart = false,
+                    selectedStore = null,
+                    menu = emptyList(),
+                    tipAmount = 0.0,
+                    notes = "",
+                    addressSuggestions = emptyList(),
+                    paymentMethod = "cash",
+                    info = if (wasCard) {
+                        "Παραγγελία καταχωρήθηκε. Ολοκλήρωσε την πληρωμή με κάρτα στο browser."
+                    } else {
+                        "Η παραγγελία καταχωρήθηκε! Παρακολούθησε την παράδοση."
+                    },
+                    appliedDeal = null,
+                    tab = CustomerTab.Track,
+                )
+                if (placed != null) {
+                    autoOpenTrack(
+                        orderId = placed,
+                        storeId = storeId,
+                        storeName = storeName,
+                        storeLat = store?.latitude,
+                        storeLng = store?.longitude,
+                    )
+                    if (wasCard) {
+                        // Stripe Embedded is web-only: open tracking page to complete card payment.
+                        openCardPaymentInBrowser(placed)
+                    }
+                } else {
+                    _state.value = _state.value.copy(tab = CustomerTab.Orders)
+                    refreshOrders()
+                }
   }.onFailure { e ->
                 _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
             }

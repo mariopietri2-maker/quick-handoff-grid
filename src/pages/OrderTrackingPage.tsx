@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, lazy, Suspense } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Phone, ChevronUp, ChevronDown, Package, Utensils, CheckCircle2, MapPin, Star, Copy } from 'lucide-react';
 import { toast } from 'sonner';
@@ -13,6 +13,11 @@ import { SEO } from '@/components/SEO';
 import { customerAccentStyle } from '@/lib/customer-theme';
 import { formatOrderNumber } from '@/lib/order-number';
 import { useDriverProximityAlert } from '@/hooks/useCustomerOrderNotifications';
+
+const OrderCheckout = lazy(() =>
+  import('@/components/OrderCheckout').then((m) => ({ default: m.OrderCheckout })),
+);
+
 
 type OrderRow = Database['public']['Tables']['orders']['Row'];
 type OrderItemRow = Database['public']['Tables']['order_items']['Row'];
@@ -176,6 +181,8 @@ export default function OrderTrackingPage() {
   const remainingMin = Math.max(0, Math.ceil((endTs - now) / 60_000));
 
   const showMap = !isCancelled && !isDelivered;
+  const canPayCard = status === 'pending' && (order as any).payment_method === 'card';
+
 
   return (
     <div className="customer-shell fixed inset-0 c-page overflow-hidden" style={customerAccentStyle()}>
@@ -185,6 +192,21 @@ export default function OrderTrackingPage() {
         path={`/order-tracking/${order.id}`}
         noindex
       />
+
+      
+      {canPayCard && (
+        <div className="absolute left-0 right-0 bottom-0 z-40 bg-card rounded-t-3xl shadow-[0_-12px_40px_rgba(0,0,0,0.2)] p-4 max-h-[70vh] overflow-y-auto">
+          <p className="font-heading font-bold text-lg mb-1">Πληρωμή με κάρτα</p>
+          <p className="text-sm text-muted-foreground mb-3">Ολοκλήρωσε την πληρωμή για να σταλεί η παραγγελία στο κατάστημα.</p>
+          <Suspense fallback={<div className="py-8 text-center text-muted-foreground">Φόρτωση checkout…</div>}>
+            <OrderCheckout
+              orderId={order.id}
+              returnPath={`/order-tracking/${order.id}`}
+              onError={(msg) => toast.error(msg || 'Σφάλμα πληρωμής')}
+            />
+          </Suspense>
+        </div>
+      )}
 
       {/* Thank-you overlay after delivery */}
       {showThankYou && (

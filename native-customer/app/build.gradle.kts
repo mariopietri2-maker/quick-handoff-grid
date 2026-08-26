@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 261
-        versionName = "2.7.7-map-static"
+        versionCode = 262
+        versionName = "2.7.8-track-eta-card"
 
         buildConfigField(
             "String",

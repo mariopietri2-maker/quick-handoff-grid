@@ -1463,21 +1463,21 @@ private fun CartCheckoutScreen(
                         ) {
                             Icon(Icons.Outlined.Wallet, contentDescription = null)
                             Spacer(Modifier.width(6.dp))
-                            Text("Μετρητά ✓")
+                            Text(if (state.paymentMethod == "cash") "Μετρητά ✓" else "Μετρητά")
                         }
                         Button(
-                            onClick = {},
-                            enabled = false,
+                            onClick = { onSetPayment("card") },
+                            enabled = true,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = FreshChip,
-                                contentColor = FreshMuted,
+                                containerColor = if (state.paymentMethod == "card") FreshGreen else FreshChip,
+                                contentColor = if (state.paymentMethod == "card") Color.White else FreshInk,
                             ),
                             shape = RoundedCornerShape(16.dp),
                             modifier = Modifier.weight(1f),
                         ) {
                             Icon(Icons.Outlined.CreditCard, contentDescription = null)
                             Spacer(Modifier.width(6.dp))
-                            Text("Κάρτα (σύντομα)")
+                            Text(if (state.paymentMethod == "card") "Κάρτα ✓" else "Κάρτα")
                         }
                     }
                 }
@@ -1991,7 +1991,34 @@ private fun TrackTab(state: CustomerUiState) {
                     }
                     StatusPill(order.order.status)
                 }
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
+                // ETA + headline
+                val etaMin = estimateEtaMinutes(order.order)
+                val headline = trackHeadline(order.order.status, state.driverLocation != null)
+                Row(
+                    Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Text(headline.first, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                        Text(headline.second, color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                    }
+                    if (etaMin != null) {
+                        Surface(color = FreshGreenSoft, shape = RoundedCornerShape(14.dp)) {
+                            Column(
+                                Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                            ) {
+                                Text("ETA", color = FreshMuted, style = MaterialTheme.typography.labelSmall)
+                                Text("~$etaMin΄", color = FreshGreen, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                OrderStatusTimeline(status = order.order.status)
+                Spacer(Modifier.height(12.dp))
                 Surface(
                     color = if (state.driverLocation != null) FreshGreenSoft else FreshVioletSoft,
                     shape = RoundedCornerShape(18.dp),
@@ -2008,6 +2035,7 @@ private fun TrackTab(state: CustomerUiState) {
                             when {
                                 state.driverLocation != null -> "Ο οδηγός κινείται προς εσένα."
                                 !order.order.driver_id.isNullOrBlank() -> "Αναμονή θέσης οδηγού…"
+                                order.order.status == "pending" -> "Ολοκλήρωσε την πληρωμή με κάρτα αν χρειάζεται."
                                 else -> "Δεν έχει ανατεθεί οδηγός ακόμα."
                             },
                             color = FreshInk,
@@ -2019,6 +2047,102 @@ private fun TrackTab(state: CustomerUiState) {
             }
         }
     }
+}
+
+private val TRACK_STEPS = listOf(
+    "placed" to "Στάλθηκε",
+    "accepted" to "Αποδεκτή",
+    "preparing" to "Ετοιμάζεται",
+    "ready" to "Έτοιμη",
+    "picked_up" to "Στο δρόμο",
+    "delivered" to "Παραδόθηκε",
+)
+
+@Composable
+private fun OrderStatusTimeline(status: String) {
+    val normalized = when (status) {
+        "pending" -> "placed"
+        "confirmed" -> "accepted"
+        "on_the_way", "in_transit", "arrived" -> "picked_up"
+        else -> status
+    }
+    val idx = TRACK_STEPS.indexOfFirst { it.first == normalized }.coerceAtLeast(0)
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        TRACK_STEPS.forEachIndexed { i, (_, label) ->
+            val done = i <= idx
+            val active = i == idx
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f),
+            ) {
+                Box(
+                    Modifier
+                        .size(if (active) 14.dp else 10.dp)
+                        .clip(CircleShape)
+                        .background(if (done) FreshGreen else FreshChip),
+                )
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    label,
+                    color = if (done) FreshInk else FreshMuted,
+                    fontWeight = if (active) FontWeight.Bold else FontWeight.Normal,
+                    style = MaterialTheme.typography.labelSmall,
+                    maxLines = 1,
+                )
+            }
+            if (i < TRACK_STEPS.lastIndex) {
+                Box(
+                    Modifier
+                        .weight(0.35f)
+                        .height(2.dp)
+                        .background(if (i < idx) FreshGreen else FreshChip),
+                )
+            }
+        }
+    }
+}
+
+private fun trackHeadline(status: String, hasDriverLoc: Boolean): Pair<String, String> = when (status) {
+    "pending" -> "Αναμονή πληρωμής" to "Ολοκλήρωσε την κάρτα για να σταλεί στο κατάστημα"
+    "placed" -> "Στείλαμε την παραγγελία" to "Περιμένουμε επιβεβαίωση από το κατάστημα"
+    "accepted", "confirmed" -> "Το κατάστημα αποδέχτηκε" to "Ξεκινάει η ετοιμασία"
+    "preparing" -> "Ετοιμάζεται φρέσκο" to "Σύντομα θα είναι έτοιμη"
+    "ready" -> "Έτοιμη για παραλαβή" to "Ψάχνουμε ή αναθέτουμε οδηγό"
+    "picked_up", "on_the_way", "in_transit", "arrived" ->
+        if (hasDriverLoc) "Ο οδηγός έρχεται!" to "Ζωντανή θέση στον χάρτη"
+        else "Ο οδηγός παρέλαβε" to "Καθ' οδόν προς εσένα"
+    "delivered" -> "Παραδόθηκε" to "Καλή όρεξη!"
+    "cancelled" -> "Ακυρώθηκε" to "Η παραγγελία ακυρώθηκε"
+    else -> statusLabel(status) to ""
+}
+
+/** Rough ETA minutes remaining — mirrors web prep(~30) + 15 buffer from created_at. */
+private fun estimateEtaMinutes(order: com.freshdelivery.nativecustomer.data.OrderRow): Int? {
+    if (order.status in listOf("delivered", "cancelled", "rejected", "refunded")) return null
+    if (order.status == "pending") return null
+    val created = order.created_at ?: return when (order.status) {
+        "picked_up", "on_the_way", "in_transit" -> 12
+        "ready" -> 18
+        "preparing", "accepted", "confirmed" -> 28
+        else -> 40
+    }
+    val startMs = runCatching {
+        java.time.Instant.parse(created).toEpochMilli()
+    }.getOrElse {
+        // fallback ISO without Z
+        runCatching { java.time.OffsetDateTime.parse(created).toInstant().toEpochMilli() }.getOrNull()
+            ?: return 30
+    }
+    val totalMin = 45 // 30 prep + 15 delivery buffer
+    val endMs = startMs + totalMin * 60_000L
+    val remaining = ((endMs - System.currentTimeMillis()) / 60_000.0).toInt()
+    return remaining.coerceIn(0, totalMin + 15)
 }
 
 @Composable
