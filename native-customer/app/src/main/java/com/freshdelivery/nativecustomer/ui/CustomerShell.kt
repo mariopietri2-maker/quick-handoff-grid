@@ -1944,8 +1944,15 @@ private fun TrackTab(state: CustomerUiState) {
             add(MapMarker(d.latitude, d.longitude, "Οδηγός", "#7C6CFF"))
         }
     }
-    val centerLat = markers.firstOrNull()?.lat ?: 39.6650
-    val centerLng = markers.firstOrNull()?.lng ?: 20.8537
+    // Prefer delivery pin, then store, then any marker (Ioannina fallback)
+    val centerLat = order?.order?.delivery_latitude
+        ?: order?.storeLat
+        ?: markers.firstOrNull()?.lat
+        ?: 39.6650
+    val centerLng = order?.order?.delivery_longitude
+        ?: order?.storeLng
+        ?: markers.firstOrNull()?.lng
+        ?: 20.8537
     Column(Modifier.fillMaxSize().background(FreshBg)) {
         Box(
             Modifier

@@ -1,19 +1,19 @@
 package com.freshdelivery.nativecustomer.ui.map
 
-import android.annotation.SuppressLint
-import android.webkit.WebSettings
-import android.webkit.WebView
-import android.webkit.WebViewClient
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.viewinterop.AndroidView
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import coil.compose.SubcomposeAsyncImage
 import com.freshdelivery.nativecustomer.BuildConfig
-import org.json.JSONArray
-import org.json.JSONObject
+import java.net.URLEncoder
+import java.nio.charset.StandardCharsets
 
 data class MapMarker(
     val lat: Double,
@@ -22,7 +22,18 @@ data class MapMarker(
     val color: String,
 )
 
-@SuppressLint("SetJavaScriptEnabled")
+private const val DEFAULT_LAT = 39.6650
+private const val DEFAULT_LNG = 20.8537
+
+/**
+ * Customer tracking map — Mapbox **Static Images** (no WebGL / WebView).
+ * Fixes the black screen on Track after order.
+ *
+ * Pins (from TrackTab):
+ *  - Store  #F97316  as soon as tracking opens
+ *  - Delivery #10B981 at geocoded / GPS address
+ *  - Driver #7C6CFF only after accept (driverLocation set)
+ */
 @Composable
 fun MapboxView(
     modifier: Modifier = Modifier,
@@ -30,91 +41,58 @@ fun MapboxView(
     centerLng: Double?,
     markers: List<MapMarker>,
 ) {
-    val html = remember(centerLat, centerLng, markers) {
-        buildMapHtml(
-            token = BuildConfig.MAPBOX_TOKEN,
-            lat = centerLat ?: 39.6650,
-            lng = centerLng ?: 20.8537,
-            markers = markers,
+    val token = BuildConfig.MAPBOX_TOKEN
+    val lat = centerLat ?: DEFAULT_LAT
+    val lng = centerLng ?: DEFAULT_LNG
+
+    val url = remember(lat, lng, markers) {
+        buildStaticMapUrl(token, lat, lng, markers)
+    }
+
+    Box(modifier.background(Color(0xFFE8EEF2))) {
+        SubcomposeAsyncImage(
+            model = url,
+            contentDescription = "Χάρτης παραγγελίας",
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            loading = {
+                Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = Color(0xFF06C167))
+                }
+            },
+            error = {
+                Box(Modifier.fillMaxSize().background(Color(0xFFE8EEF2)))
+            },
         )
     }
-    var lastInjected by remember { mutableStateOf<String?>(null) }
-    AndroidView(
-        modifier = modifier,
-        factory = { context ->
-            WebView(context).apply {
-                settings.javaScriptEnabled = true
-                settings.domStorageEnabled = true
-                settings.cacheMode = WebSettings.LOAD_DEFAULT
-                webViewClient = WebViewClient()
-                setBackgroundColor(0xFF0F172A.toInt())
-            }
-        },
-        update = { webView ->
-            if (lastInjected != html) {
-                lastInjected = html
-                webView.loadDataWithBaseURL(
-                    "https://api.mapbox.com",
-                    html,
-                    "text/html",
-                    "utf-8",
-                    null,
-                )
-            }
-        },
-    )
 }
 
-private fun buildMapHtml(token: String, lat: Double, lng: Double, markers: List<MapMarker>): String {
-    val arr = JSONArray()
-    markers.forEach { m ->
-        arr.put(
-            JSONObject()
-                .put("lat", m.lat)
-                .put("lng", m.lng)
-                .put("label", m.label)
-                .put("color", m.color),
-        )
+private fun buildStaticMapUrl(
+    token: String,
+    centerLat: Double,
+    centerLng: Double,
+    markers: List<MapMarker>,
+): String {
+    // pin-l+HEX(lng,lat) — Mapbox Static Images overlay
+    val overlay = markers.joinToString(",") { m ->
+        val hex = m.color.removePrefix("#").uppercase().filter { it.isLetterOrDigit() }.take(6)
+            .ifBlank { "22C55E" }
+        "pin-l+$hex(${m.lng},${m.lat})"
+    }.ifBlank { null }
+
+    val path = when {
+        overlay != null && markers.size > 1 ->
+            "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/$overlay/auto/800x1200@2x"
+        overlay != null ->
+            "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/$overlay/$centerLng,$centerLat,14.2,0/800x1200@2x"
+        else ->
+            "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/$centerLng,$centerLat,13.2,0/800x1200@2x"
     }
-    return """
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="utf-8"/>
-<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1"/>
-<script src="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.js"></script>
-<link href="https://api.mapbox.com/mapbox-gl-js/v3.5.1/mapbox-gl.css" rel="stylesheet"/>
-<style>
-  html,body,#map{margin:0;padding:0;height:100%;background:#0f172a}
-  .marker{width:14px;height:14px;border-radius:50%;border:2px solid #fff;box-shadow:0 0 0 2px rgba(0,0,0,.25)}
-</style>
-</head>
-<body>
-<div id="map"></div>
-<script>
-mapboxgl.accessToken = ${JSONObject.quote(token)};
-const markers = $arr;
-const map = new mapboxgl.Map({
-  container: 'map',
-  style: 'mapbox://styles/mapbox/streets-v12',
-  center: [$lng, $lat],
-  zoom: 13.2,
-  attributionControl: false
-});
-markers.forEach(m => {
-  const el = document.createElement('div');
-  el.className = 'marker';
-  el.style.background = m.color || '#22c55e';
-  el.title = m.label || '';
-  new mapboxgl.Marker(el).setLngLat([m.lng, m.lat]).addTo(map);
-});
-if (markers.length > 1) {
-  const b = new mapboxgl.LngLatBounds();
-  markers.forEach(m => b.extend([m.lng, m.lat]));
-  map.fitBounds(b, { padding: 60, maxZoom: 15 });
-}
-</script>
-</body>
-</html>
-""".trimIndent()
+
+    val encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8)
+    return if (markers.size > 1) {
+        "$path?padding=80&access_token=$encodedToken"
+    } else {
+        "$path?access_token=$encodedToken"
+    }
 }

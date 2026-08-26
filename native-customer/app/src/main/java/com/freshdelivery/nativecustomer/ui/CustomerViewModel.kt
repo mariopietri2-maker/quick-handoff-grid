@@ -738,6 +738,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun trackOrder(order: OrderUi?) {
         _state.value = _state.value.copy(trackingOrder = order, tab = CustomerTab.Track, showCart = false)
         refreshDriverLocation()
+        ensureDeliveryCoordsOnTrack(order)
     }
 
     private fun autoOpenTrack(
@@ -765,17 +766,66 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             storeLng = storeLng,
         )
         _state.value = _state.value.copy(trackingOrder = hint, tab = CustomerTab.Track, showCart = false)
+        ensureDeliveryCoordsOnTrack(hint)
         viewModelScope.launch {
             runCatching { repo.fetchOrders(s.userId.orEmpty()) }
                 .onSuccess { orders ->
                     val authoritative = orders.firstOrNull { it.order.id == orderId }
-                    val tracked = authoritative ?: _state.value.trackingOrder
+                    // Prefer server row, but keep local delivery coords if server still null.
+                    var tracked = authoritative ?: _state.value.trackingOrder
+                    tracked = tracked?.let { t ->
+                        if (t.order.delivery_latitude == null || t.order.delivery_longitude == null) {
+                            val st = _state.value
+                            if (st.deliveryLat != null && st.deliveryLng != null) {
+                                t.copy(
+                                    order = t.order.copy(
+                                        delivery_latitude = st.deliveryLat,
+                                        delivery_longitude = st.deliveryLng,
+                                        delivery_address = t.order.delivery_address
+                                            ?: st.deliveryAddress.takeIf { it.isNotBlank() },
+                                    ),
+                                )
+                            } else t
+                        } else t
+                    }
+                    // Keep store coords from optimistic hint if server join missed them
+                    if (tracked != null && (tracked.storeLat == null || tracked.storeLng == null) &&
+                        (storeLat != null && storeLng != null)
+                    ) {
+                        tracked = tracked.copy(storeLat = storeLat, storeLng = storeLng, storeName = tracked.storeName ?: storeName)
+                    }
                     _state.value = _state.value.copy(
                         orders = orders,
                         trackingOrder = tracked,
                     )
                     refreshDriverLocation()
+                    ensureDeliveryCoordsOnTrack(tracked)
                 }
+        }
+    }
+
+    /**
+     * If tracking order has address text but no lat/lng, forward-geocode
+     * so the green delivery pin appears on the map.
+     */
+    private fun ensureDeliveryCoordsOnTrack(order: OrderUi?) {
+        if (order == null) return
+        val hasCoords = order.order.delivery_latitude != null && order.order.delivery_longitude != null
+        if (hasCoords) return
+        val addr = order.order.delivery_address?.trim().orEmpty()
+        if (addr.isBlank()) return
+        viewModelScope.launch {
+            val hit = runCatching { forwardGeocodeMany(addr) }.getOrNull()?.firstOrNull() ?: return@launch
+            val cur = _state.value.trackingOrder ?: return@launch
+            if (cur.order.id != order.order.id) return@launch
+            _state.value = _state.value.copy(
+                trackingOrder = cur.copy(
+                    order = cur.order.copy(
+                        delivery_latitude = hit.lat,
+                        delivery_longitude = hit.lng,
+                    ),
+                ),
+            )
         }
     }
 
@@ -827,11 +877,27 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 val orders = repo.fetchOrders(uid)
                 val active = orders.firstOrNull { it.order.status !in TERMINAL_STATUSES }
-                val tracked = _state.value.trackingOrder
+                val prev = _state.value.trackingOrder
+                var tracked = prev
                     ?.let { cur -> orders.firstOrNull { it.order.id == cur.order.id } }
                     ?: active
+                // Preserve delivery/store coords from previous tracking row if refresh lost them
+                if (tracked != null && prev != null && tracked.order.id == prev.order.id) {
+                    if (tracked.order.delivery_latitude == null && prev.order.delivery_latitude != null) {
+                        tracked = tracked.copy(
+                            order = tracked.order.copy(
+                                delivery_latitude = prev.order.delivery_latitude,
+                                delivery_longitude = prev.order.delivery_longitude,
+                            ),
+                        )
+                    }
+                    if (tracked.storeLat == null && prev.storeLat != null) {
+                        tracked = tracked.copy(storeLat = prev.storeLat, storeLng = prev.storeLng)
+                    }
+                }
                 _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
                 refreshDriverLocation()
+                ensureDeliveryCoordsOnTrack(tracked)
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = e.message)
             }
@@ -839,8 +905,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun refreshDriverLocation() {
-        val driverId = _state.value.trackingOrder?.order?.driver_id ?: run {
+        val driverId = _state.value.trackingOrder?.order?.driver_id
+        if (driverId.isNullOrBlank()) {
             stopWatchingDriver()
+            if (_state.value.driverLocation != null) {
+                _state.value = _state.value.copy(driverLocation = null)
+            }
             return
         }
         watchDriver(driverId)
