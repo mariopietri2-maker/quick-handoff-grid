@@ -194,7 +194,7 @@ function resolveChannelId(
   const channel = typeof data?.channel === "string" ? data.channel : "";
   if (channel === "driver-inbox" || type === "inbox") return "driver-inbox";
   if (app === "customer") return "customer-orders-v2";
-  return "driver-offers-v3";
+  return "driver-offers-v4";
 }
 
 function resolveCollapseKey(row: OutboxRow): string {
@@ -211,7 +211,11 @@ function resolveCollapseKey(row: OutboxRow): string {
 }
 
 function resolveAndroidSound(channelId: string): string {
-  if (channelId === "driver-offers-v3" || channelId === "driver-offers-v2") {
+  if (
+    channelId === "driver-offers-v4" ||
+    channelId === "driver-offers-v3" ||
+    channelId === "driver-offers-v2"
+  ) {
     return "fresh_delivery";
   }
   if (channelId === "customer-orders-v2") return "customer_notify";
@@ -254,23 +258,46 @@ async function sendFcm(opts: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          message: {
-            token: opts.token,
-            notification: { title: opts.title, body: opts.body },
-            data: opts.data,
-            android: {
-              priority: opts.quiet ? "NORMAL" : "HIGH",
-              collapse_key: collapse,
-              notification: {
-                channel_id: opts.channelId,
-                sound: offerSound,
-                tag: collapse,
-                notification_priority: opts.quiet
-                  ? "PRIORITY_DEFAULT"
-                  : "PRIORITY_MAX",
+          message: (() => {
+            // Data-only + HIGH priority for driver offers / store calls so
+            // onMessageReceived runs in background and plays custom sound.
+            // Notification+data payloads are system-displayed silently for
+            // many OEMs when the app is backgrounded.
+            const data = {
+              ...opts.data,
+              title: opts.title,
+              body: opts.body,
+              channel_id: opts.channelId,
+            };
+            if (opts.quiet) {
+              return {
+                token: opts.token,
+                notification: { title: opts.title, body: opts.body },
+                data,
+                android: {
+                  priority: "NORMAL",
+                  collapse_key: collapse,
+                  notification: {
+                    channel_id: opts.channelId,
+                    sound: offerSound,
+                    tag: collapse,
+                    notification_priority: "PRIORITY_DEFAULT",
+                  },
+                },
+              };
+            }
+            return {
+              token: opts.token,
+              data,
+              android: {
+                priority: "HIGH",
+                collapse_key: collapse,
+                // No android.notification block — forces data message delivery
+                // to DriverFirebaseMessagingService even when app is backgrounded.
+                ttl: "120s",
               },
-            },
-          },
+            };
+          })(),
         }),
       },
     );
@@ -291,28 +318,35 @@ async function sendFcm(opts: {
         Authorization: `key=${legacyKey}`,
         "Content-Type": "application/json",
       },
-      body: JSON.stringify({
-        to: opts.token,
-        priority: opts.quiet ? "normal" : "high",
-        collapse_key: collapse,
-        notification: {
-          title: opts.title,
-          body: opts.body,
-          sound: offerSound,
-          android_channel_id: opts.channelId,
-          tag: collapse,
-        },
-        data: opts.data,
-        android: {
-          priority: opts.quiet ? "normal" : "high",
-          collapse_key: collapse,
-          notification: {
-            channel_id: opts.channelId,
-            sound: offerSound,
-            tag: collapse,
+      body: JSON.stringify(
+        opts.quiet
+          ? {
+            to: opts.token,
+            priority: "normal",
+            collapse_key: collapse,
+            notification: {
+              title: opts.title,
+              body: opts.body,
+              sound: offerSound,
+              android_channel_id: opts.channelId,
+              tag: collapse,
+            },
+            data: { ...opts.data, title: opts.title, body: opts.body },
+          }
+          : {
+            to: opts.token,
+            priority: "high",
+            content_available: true,
+            collapse_key: collapse,
+            // Data-only: app shows local notification with alarm sound
+            data: {
+              ...opts.data,
+              title: opts.title,
+              body: opts.body,
+              channel_id: opts.channelId,
+            },
           },
-        },
-      }),
+      ),
     });
     if (!res.ok) {
       console.warn("FCM legacy send failed", res.status, await res.text());
