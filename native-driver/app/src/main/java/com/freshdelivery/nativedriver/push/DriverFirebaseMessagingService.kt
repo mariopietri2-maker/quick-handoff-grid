@@ -55,8 +55,9 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
     private fun ensureChannel() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) return
         val manager = getSystemService(NotificationManager::class.java) ?: return
+        // ALARM usage + MAX importance so OEM battery savers still surface offers.
         val attrs = AudioAttributes.Builder()
-            .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+            .setUsage(AudioAttributes.USAGE_ALARM)
             .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
             .build()
         val channel = NotificationChannel(
@@ -64,12 +65,15 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             "Delivery offers",
             NotificationManager.IMPORTANCE_HIGH,
         ).apply {
-            description = "Incoming delivery offers and store calls"
+            description = "Incoming delivery offers and store calls — critical"
             enableVibration(true)
-            vibrationPattern = longArrayOf(0, 350, 80, 350, 80, 220)
+            vibrationPattern = longArrayOf(0, 400, 120, 400, 120, 400, 120, 600)
             setSound(soundUri(), attrs)
             lockscreenVisibility = Notification.VISIBILITY_PUBLIC
-            setBypassDnd(false)
+            setShowBadge(true)
+            // Channel id stays driver-offers-v3 (matches send-push). Reinstall may be needed
+            // if an older low-importance channel was already registered under this id.
+            enableLights(true)
         }
         manager.createNotificationChannel(channel)
     }
@@ -94,7 +98,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(
                 if (isStoreCall) NotificationCompat.CATEGORY_CALL
-                else NotificationCompat.CATEGORY_MESSAGE,
+                else NotificationCompat.CATEGORY_ALARM,
             )
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setSound(soundUri())

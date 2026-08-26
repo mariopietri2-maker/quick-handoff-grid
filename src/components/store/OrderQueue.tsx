@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Clock, Car, ChevronDown, ChevronRight, Timer, Plus, Minus, Trash2, Package,
+  Clock, Car, ChevronDown, ChevronRight, Timer, Plus, Minus, Trash2, Package, Ban,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -59,6 +59,23 @@ const statusConfig: Record<string, { label: string; short: string; bg: string; c
 };
 
 const PREP_PRESETS = [10, 15, 20, 30, 45];
+
+
+async function markItemSoldOut(menuItemId: string | null | undefined, itemName: string) {
+  if (!menuItemId) {
+    toast.error('Δεν βρέθηκε σύνδεση με το μενού');
+    return;
+  }
+  const { error } = await supabase
+    .from('menu_items')
+    .update({ is_available: false } as never)
+    .eq('id', menuItemId);
+  if (error) {
+    toast.error(error.message ?? 'Αποτυχία');
+    return;
+  }
+  toast.success(`«${itemName}» εξαντλήθηκε (μη διαθέσιμο στο μενού)`);
+}
 
 function itemCount(order: OrderWithItems) {
   return (order.order_items ?? []).reduce((n, i) => n + (Number(i.quantity) || 0), 0);
@@ -336,12 +353,25 @@ export function OrderQueue({
           <div className="px-2.5 pb-2.5 space-y-2 border-t border-border/50 pt-2">
             <div className="space-y-0.5">
               {items.map((item, i) => (
-                <div key={i} className="flex justify-between text-[12px] gap-2">
-                  <span className="text-foreground">
+                <div key={i} className="flex justify-between text-[12px] gap-2 items-center">
+                  <span className="text-foreground min-w-0">
                     {item.quantity}x {item.name}
                   </span>
-                  <span className="text-muted-foreground shrink-0 tabular-nums">
-                    €{Number(item.unit_price).toFixed(2)}
+                  <span className="flex items-center gap-1.5 shrink-0">
+                    <span className="text-muted-foreground tabular-nums">
+                      €{Number(item.unit_price).toFixed(2)}
+                    </span>
+                    {item.menu_item_id && (
+                      <button
+                        type="button"
+                        title="Εξαντλήθηκε — απόκρυψη από το μενού"
+                        className="inline-flex items-center gap-0.5 text-[10px] font-heading font-bold text-destructive/90 hover:text-destructive px-1.5 py-0.5 rounded border border-destructive/25 hover:bg-destructive/10"
+                        onClick={() => void markItemSoldOut(item.menu_item_id, item.name)}
+                      >
+                        <Ban className="h-3 w-3" aria-hidden />
+                        86
+                      </button>
+                    )}
                   </span>
                 </div>
               ))}

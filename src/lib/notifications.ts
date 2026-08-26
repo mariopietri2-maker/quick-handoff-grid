@@ -54,6 +54,31 @@ export function playOrderSound() {
 /**
  * Play a driver delivery alert — two quick low tones (randomized pair).
  */
+
+/** Loop store new-order chime until stopOrderAlertLoop() — kitchen missed-order proof. */
+let orderAlertTimer: ReturnType<typeof setInterval> | null = null;
+
+export function startOrderAlertLoop() {
+  if (orderAlertTimer != null) return;
+  playOrderSound();
+  orderAlertTimer = setInterval(() => {
+    try {
+      playOrderSound();
+    } catch {}
+  }, 3200);
+}
+
+export function stopOrderAlertLoop() {
+  if (orderAlertTimer != null) {
+    clearInterval(orderAlertTimer);
+    orderAlertTimer = null;
+  }
+}
+
+export function isOrderAlertLooping(): boolean {
+  return orderAlertTimer != null;
+}
+
 export function playDeliverySound() {
   const pairs: [number, number][] = [
     [440, 554.37],

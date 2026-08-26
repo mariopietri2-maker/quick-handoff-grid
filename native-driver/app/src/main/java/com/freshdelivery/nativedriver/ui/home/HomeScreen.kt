@@ -1061,9 +1061,11 @@ private fun OfferSheet(
         }
     }
 
-    val payout = (offer.order.driver_payout ?: 0.0) +
-        (offer.order.tip_amount ?: 0.0) +
-        (offer.order.driver_pool_bonus ?: 0.0)
+    val basePay = offer.order.driver_payout ?: 0.0
+    val tipPay = offer.order.tip_amount ?: 0.0
+    val bonusPay = offer.order.driver_pool_bonus ?: 0.0
+    val payout = basePay + tipPay + bonusPay
+    val distKm = offer.order.distance_km
 
     // €/h + ready ETA — same math as the web offer cards.
     val totalMin = estimateOfferMinutes(offer.order.distance_km, offer.order.predicted_ready_at, offer.order.status)
@@ -1132,6 +1134,29 @@ private fun OfferSheet(
                                 .padding(horizontal = 8.dp, vertical = 2.dp),
                         )
                     }
+                }
+            }
+
+            Spacer(Modifier.height(10.dp))
+
+            // Explicit € breakdown (Wolt/efood-style clarity on accept)
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(TrackFill, RoundedCornerShape(14.dp))
+                    .padding(horizontal = 12.dp, vertical = 10.dp),
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+            ) {
+                BreakdownRow("Βάση διαδρομής", eur(basePay))
+                if (tipPay > 0.0) BreakdownRow("Φιλοδώρημα", eur(tipPay))
+                if (bonusPay > 0.0) BreakdownRow("Bonus", eur(bonusPay))
+                distKm?.takeIf { it > 0 }?.let {
+                    BreakdownRow("Απόσταση", "%.1f χλμ".format(it))
+                }
+                HorizontalDivider(color = Color(0xFF3A423C), thickness = 1.dp)
+                BreakdownRow("Σύνολο κέρδους", eur(payout), emphasize = true)
+                if (isCash) {
+                    BreakdownRow("Είσπραξη μετρητών", "${moneyPlain(cashAmount)}€", emphasize = true)
                 }
             }
 
@@ -1400,6 +1425,29 @@ private fun StackedOfferCard(
 }
 
 @Composable
+
+@Composable
+private fun BreakdownRow(label: String, value: String, emphasize: Boolean = false) {
+    Row(
+        Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            label,
+            fontSize = if (emphasize) 13.sp else 12.sp,
+            fontWeight = if (emphasize) FontWeight.Bold else FontWeight.Medium,
+            color = if (emphasize) TextDark else TextMuted,
+        )
+        Text(
+            value,
+            fontSize = if (emphasize) 15.sp else 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = if (emphasize) FreshGreenBright else TextDark,
+        )
+    }
+}
+
 private fun Chip(text: String, bg: Color, fg: Color) {
     Text(
         text,

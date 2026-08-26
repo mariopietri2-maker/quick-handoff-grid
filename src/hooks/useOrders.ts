@@ -2,7 +2,7 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
-import { playOrderSound, showOrderNotification } from '@/lib/notifications';
+import { playOrderSound, showOrderNotification, startOrderAlertLoop, stopOrderAlertLoop } from '@/lib/notifications';
 import { playOfferAlert, stopOfferAlert } from '@/lib/driver-sound-prefs';
 import { isAppActive, notifyDriverOfferLocal } from '@/lib/push-register';
 
@@ -84,7 +84,7 @@ export function useStoreOrders(storeId: string | null) {
             const newId = (payload.new as any)?.id as string | undefined;
             if (newId) setPendingIds((prev) => (prev.includes(newId) ? prev : [...prev, newId]));
             try {
-              playOrderSound();
+              startOrderAlertLoop();
               if (newId) showOrderNotification(newId, 0);
             } catch {}
           } else if (payload.eventType === 'UPDATE') {
@@ -134,12 +134,35 @@ export function useStoreOrders(storeId: string | null) {
       return false;
     }
     setPendingIds((prev) => prev.filter((id) => id !== orderId));
+    if (newStatus !== 'placed') {
+      // Optimistically quiet if no other placed left (effect will confirm after refetch)
+      setOrders((prev) => {
+        const next = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
+        if (!next.some((o) => o.status === 'placed')) stopOrderAlertLoop();
+        return next;
+      });
+    }
     void fetchOrders();
     return true;
   };
 
   // Alias kept for older call sites that still destructure updateOrderStatus
   const updateOrderStatus = updateStatus;
+
+
+  // Keep ringing while any order is still "placed" (unaccepted).
+  useEffect(() => {
+    const hasNew = orders.some((o) => o.status === 'placed');
+    if (hasNew) startOrderAlertLoop();
+    else stopOrderAlertLoop();
+    return () => {
+      // Don't stop on dependency churn mid-flight — only cleanup unmount
+    };
+  }, [orders]);
+
+  useEffect(() => {
+    return () => stopOrderAlertLoop();
+  }, []);
 
   return { orders, loading, updateStatus, updateOrderStatus, pendingIds, refetch: fetchOrders };
 }
