@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8" />
+<title>Fresh Delivery — Παρουσίαση</title>
+<style>
+  @page { size: A4 landscape; margin: 0; }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body {
+    font-family: "Segoe UI", "Arial", system-ui, sans-serif;
+    color: #FBF3EA;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  body { background: #fff; }
+
+  .page {
+    position: relative;
+    width: 297mm;
+    height: 210mm;
+    page-break-after: always;
+    background:
+      radial-gradient(140mm 90mm at 88% -6%, rgba(255,178,61,.16), transparent 65%),
+      radial-gradient(110mm 80mm at -4% 108%, rgba(255,122,61,.10), transparent 60%),
+      #1E1810;
+    padding: 20mm 22mm;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  .page::before {
+    content: "";
+    position: absolute; inset: 0;
+    opacity: .05;
+    background-image:
+      linear-gradient(rgba(255,255,255,.55) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(255,255,255,.55) 1px, transparent 1px);
+    background-size: 14mm 14mm;
+    pointer-events: none;
+  }
+
+  .head {
+    display: flex; align-items: center; justify-content: space-between;
+    margin-bottom: 9mm;
+  }
+  .brand { display: flex; align-items: center; gap: 3.2mm; }
+  .mark {
+    width: 11mm; height: 11mm; border-radius: 3.4mm;
+    background: linear-gradient(135deg, #FFD166, #FFB23D 60%, #FF7A3D);
+    display: grid; place-items: center;
+    color: #2A1A0A; font-weight: 900; font-size: 4.8mm;
+  }
+  .brand span { font-weight: 800; letter-spacing: 2.4pt; text-transform: uppercase; font-size: 9.5pt; }
+  .num { font-family: Consolas, monospace; font-size: 9pt; color: rgba(251,243,234,.45); }
+
+  .eyebrow {
+    font-size: 9.5pt; font-weight: 800; letter-spacing: 3.4pt;
+    text-transform: uppercase; color: #FFB23D;
+    display: flex; align-items: center; gap: 4mm;
+    margin-bottom: 5mm;
+  }
+  .eyebrow::before { content: ""; width: 10mm; height: 1.1mm; border-radius: 1mm; background: #FFB23D; }
+
+  h1 { font-size: 30pt; font-weight: 900; line-height: 1.12; letter-spacing: -.4pt; max-width: 235mm; }
+  h1 em, h2 em { color: #FFB23D; font-style: normal; }
+  .body-text { margin-top: 5mm; font-size: 13pt; line-height: 1.55; color: rgba(251,243,234,.7); max-width: 190mm; }
+
+  ul.bullets { list-style: none; margin-top: 7mm; max-width: 230mm; }
+  ul.bullets li {
+    position: relative;
+    padding-left: 7.5mm;
+    margin-bottom: 4.2mm;
+    font-size: 12.5pt; line-height: 1.5;
+    color: rgba(251,243,234,.86);
+  }
+  ul.bullets li::before {
+    content: "";
+    position: absolute; left: 0; top: 3.2mm;
+    width: 2.2mm; height: 2.2mm; border-radius: 999px;
+    background: #FFB23D;
+  }
+  ul.bullets li b { color: #FBF3EA; }
+
+  .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 5mm; margin-top: 8mm; max-width: 250mm; }
+  .kpi {
+    border: 1px solid rgba(255,255,255,.12);
+    background: rgba(255,255,255,.04);
+    border-radius: 5mm; padding: 6.5mm 7mm;
+  }
+  .kpi p { font-size: 8.5pt; font-weight: 700; letter-spacing: 1.6pt; text-transform: uppercase; color: rgba(251,243,234,.5); }
+  .kpi b { display: block; font-size: 21pt; font-weight: 900; margin-top: 2mm; }
+  .kpi small { display: block; font-size: 9pt; color: rgba(251,243,234,.45); margin-top: 1.6mm; }
+
+  table { width: 100%; max-width: 245mm; border-collapse: collapse; margin-top: 6mm; }
+  td {
+    border-bottom: 1px solid rgba(255,255,255,.09);
+    padding: 4.4mm 2mm;
+    font-size: 11.5pt; vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  td.lbl { font-weight: 700; color: rgba(251,243,234,.92); }
+  td.note { font-size: 9.5pt; color: rgba(251,243,234,.48); padding-left: 6mm; width: 58%; }
+  td.val { text-align: right; font-weight: 900; color: #FFB23D; white-space: nowrap; }
+
+  .chips { display: flex; flex-wrap: wrap; gap: 3mm; margin-top: 7mm; max-width: 240mm; }
+  .chip {
+    font-size: 10pt; font-weight: 700;
+    border: 1px solid rgba(255,255,255,.15);
+    background: rgba(255,255,255,.04);
+    padding: 2.6mm 5.5mm; border-radius: 999px;
+    color: rgba(251,243,234,.82);
+  }
+
+  .foot { margin-top: auto; font-size: 9pt; color: rgba(251,243,234,.4); padding-top: 5mm; }
+
+  /* Title page */
+  .title-center { justify-content: center; align-items: flex-start; }
+  .big-mark {
+    width: 26mm; height: 26mm; border-radius: 8mm;
+    background: linear-gradient(135deg, #FFD166, #FFB23D 60%, #FF7A3D);
+    display: grid; place-items: center;
+    color: #2A1A0A; font-weight: 900; font-size: 12mm;
+    box-shadow: 0 8mm 18mm rgba(255,178,61,.35);
+    margin-bottom: 10mm;
+  }
+  .title-page h1 { font-size: 40pt; max-width: 250mm; }
+</style>
+</head>
+<body>
+
+<!-- 1 · Τίτλος -->
+<section class="page title-page title-center">
+  <div class="big-mark">FD</div>
+  <p class="eyebrow" style="margin-bottom:6mm">Fresh Delivery · Ιωάννινα</p>
+  <h1>Η πλατφόρμα delivery που συνδέει καταστήματα, οδηγούς και πελάτες σε πραγματικό χρόνο.</h1>
+  <p class="body-text">Web + native apps · auto-dispatch · live tracking · admin &amp; support ops.</p>
+  <p class="foot">Παρουσίαση προϊόντος · freshdelivery.app</p>
+</section>
+
+<!-- 2 · Πρόβλημα -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">02 / 13</span></header>
+  <p class="eyebrow">Το πρόβλημα</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Οι τοπικές αγορές χρειάζονται δικό τους δίκτυο — <em>όχι μόνο μεγάλα marketplaces</em>.</h2>
+  <ul class="bullets">
+    <li>Καταστήματα χωρίς δίκαιο έλεγχο σε προμήθειες και ροή παραγγελιών</li>
+    <li>Οδηγοί χωρίς διαφανή αμοιβή / fair dispatch</li>
+    <li>Πελάτες χωρίς αξιόπιστο live tracking σε μικρή πόλη</li>
+    <li>Ops χωρίς ενιαίο control center για ακυρώσεις, refunds, SLA</li>
+  </ul>
+</section>
+
+<!-- 3 · Πώς δουλεύει -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">03 / 13</span></header>
+  <p class="eyebrow">Πώς δουλεύει</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Από το μενού μέχρι την πόρτα σε ένα <em>κλειστό loop</em>.</h2>
+  <ul class="bullets">
+    <li><b>1. Πελάτης</b> παραγγέλνει στο /order (web ή APK) — cash ή card</li>
+    <li><b>2. Κατάστημα</b> δέχεται &amp; ετοιμάζει στο /store (PWA)</li>
+    <li><b>3. Auto-dispatch</b> στέλνει προσφορά στον κοντινό / δίκαιο οδηγό</li>
+    <li><b>4. Οδηγός</b> παραλαμβάνει → live map → παράδοση</li>
+    <li><b>5. Admin/Support</b> μπορούν να τροποποιήσουν live παραγγελίες</li>
+  </ul>
+</section>
+
+<!-- 4 · Ρόλοι -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">04 / 13</span></header>
+  <p class="eyebrow">Ρόλοι</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Πέντε επιφάνειες — <em>ένα backend</em>.</h2>
+  <ul class="bullets">
+    <li><b>Πελάτης</b> — browse, checkout, tracking, wallet</li>
+    <li><b>Κατάστημα</b> — multi-store portal, μενού, ώρες, wallet</li>
+    <li><b>Οδηγός</b> — online, offers, χάρτης, χρήματα, κλήσεις καταστημάτων (K ρόλος)</li>
+    <li><b>Admin</b> — dispatch, οικονομικά, photos, capacity, cost</li>
+    <li><b>Support</b> — tickets, τροποποίηση/ακύρωση, unassign</li>
+  </ul>
+</section>
+
+<!-- 5 · Τεχνολογία -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">05 / 13</span></header>
+  <p class="eyebrow">Τεχνολογία</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Modern stack, <em>production-ready</em>.</h2>
+  <ul class="bullets">
+    <li><b>Frontend:</b> React 18 · Vite · TypeScript · Tailwind · Capacitor 8</li>
+    <li><b>Backend:</b> Supabase (Postgres, Auth, Realtime, Edge Functions, RLS)</li>
+    <li><b>Maps:</b> Mapbox · <b>Push:</b> Firebase FCM · <b>Payments:</b> Stripe</li>
+    <li><b>Host:</b> Railway (SPA · usage-based containers) · Mobile: Android AAB + iOS Xcode projects</li>
+    <li><b>Service area:</b> κλειδωμένη ζώνη Ιωαννίνων</li>
+  </ul>
+</section>
+
+<!-- 6 · Στατιστικά -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">06 / 13</span></header>
+  <p class="eyebrow">Live snapshot · Αύγουστος 2026</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Τι τρέχει σήμερα στην <em>παραγωγή</em>.</h2>
+  <div class="kpis">
+    <div class="kpi"><p>Παραγγελίες (σύνολο)</p><b>37</b><small>25 παραδομένες</small></div>
+    <div class="kpi"><p>GMV παραδομένων</p><b>€497</b><small>μέσο καλάθι ~€19,90</small></div>
+    <div class="kpi"><p>Delivery fees</p><b>€0</b><small>tips €1 · fees προσωρινά 0</small></div>
+    <div class="kpi"><p>Live καταστήματα</p><b>6</b><small>ενεργά με μενού</small></div>
+    <div class="kpi"><p>Οδηγοί</p><b>25</b><small>profiles</small></div>
+    <div class="kpi"><p>Profiles</p><b>58</b><small>όλοι οι ρόλοι</small></div>
+  </div>
+  <p class="foot">Δεδομένα από Supabase production · Αύγουστος 2026 (κυρίως cash)</p>
+</section>
+
+<!-- 7 · Οικονομικό μοντέλο -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">07 / 13</span></header>
+  <p class="eyebrow">Οικονομικό μοντέλο</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Πώς μοιράζεται η αξία <em>ανά παραγγελία</em>.</h2>
+  <ul class="bullets">
+    <li>Default store commission ≈ <b>43%</b> (ρυθμιζόμενο ανά κατάστημα)</li>
+    <li>Admin share ≈ <b>33%</b> του commission split (ρυθμιζόμενο)</li>
+    <li>Driver pay: base €3 + €0,50/km (min €3 · max €12) + tip</li>
+    <li>Platform service fee πελάτη: <b>€0,99</b> (ρυθμιζόμενο)</li>
+    <li>Driver pool: ~10% του subtotal για σταθερές αμοιβές</li>
+    <li>Fair auto-dispatch με στόχο ρυθμό κερδών οδηγού</li>
+  </ul>
+</section>
+
+<!-- 8 · Μηνιαίο κόστος -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">08 / 13</span></header>
+  <p class="eyebrow">Μηνιαίο κόστος υποδομής</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Εκτίμηση fixed costs σε <em>soft-launch / early scale</em>.</h2>
+  <table>
+    <tr><td class="lbl">Railway (SPA host)</td><td class="note">Hobby $5/μήνα με included usage · usage-based μετά</td><td class="val">€5–25</td></tr>
+    <tr><td class="lbl">Supabase</td><td class="note">Free → Pro ($25) όταν ξεπεραστούν τα limits</td><td class="val">€0–25</td></tr>
+    <tr><td class="lbl">Mapbox</td><td class="note">Free tier · μετά pay-as-you-go</td><td class="val">€0–40</td></tr>
+    <tr><td class="lbl">Firebase / FCM</td><td class="note">σχεδόν δωρεάν σε early volume</td><td class="val">€0–10</td></tr>
+    <tr><td class="lbl">Domain + email</td><td class="note">amortized</td><td class="val">€2–8</td></tr>
+    <tr><td class="lbl">Apple Developer</td><td class="note">$99/έτος</td><td class="val">~€8</td></tr>
+    <tr><td class="lbl">Google Play</td><td class="note">$25 μία φορά</td><td class="val">€0</td></tr>
+    <tr><td class="lbl">Σύνολο fixed (εκτίμηση)</td><td class="note">πριν Stripe % &amp; ads</td><td class="val">€15–110</td></tr>
+  </table>
+  <p class="foot">Μεταβλητά: Stripe ~1,4% + €0,25 / card · SMS/email αν ενεργοποιηθούν</p>
+</section>
+
+<!-- 9 · Κόστος ανά κλίμακα -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">09 / 13</span></header>
+  <p class="eyebrow">Κόστος ανά κλίμακα</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Πόσο κοστίζει η πλατφόρμα τον μήνα, <em>με βάση τους χρήστες</em>.</h2>
+  <table>
+    <tr><td class="lbl">Έως 500 χρήστες</td><td class="note">~200 παραγγελίες/μήνα · όλα τα free tiers</td><td class="val">€0–40</td></tr>
+    <tr><td class="lbl">~1.000 χρήστες</td><td class="note">~500 παραγγελίες · πιθανό Supabase Pro ($25)</td><td class="val">€25–75</td></tr>
+    <tr><td class="lbl">~5.000 χρήστες</td><td class="note">~2.500 παραγγελίες · + Railway usage-based, Mapbox pay-as-you-go</td><td class="val">€65–160</td></tr>
+    <tr><td class="lbl">~20.000 χρήστες</td><td class="note">~10.000 παραγγελίες · + compute add-on Supabase, egress overages</td><td class="val">€130–380</td></tr>
+    <tr><td class="lbl">~100.000 χρήστες</td><td class="note">~50.000 παραγγελίες · dedicated compute, CDN, support SLA</td><td class="val">€450–1.200</td></tr>
+  </table>
+  <p class="foot">Infra = €0,02–0,06 ανά παραγγελία · Stripe καλύπτεται από προμήθεια στο μέσο καλάθι €19,90</p>
+</section>
+
+<!-- 10 · Unit economics -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">10 / 13</span></header>
+  <p class="eyebrow">Unit economics (παράδειγμα)</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Σε €20 καλάθι με delivery, <em>το δίκτυο πληρώνει όλους</em>.</h2>
+  <ul class="bullets">
+    <li>Παράδειγμα: τρόφιμα €18 + delivery fee + tip</li>
+    <li>Κατάστημα κρατά το μεγαλύτερο μέρος του food subtotal (μετά commission)</li>
+    <li>Οδηγός: locked payout από απόσταση + tip</li>
+    <li>Πλατφόρμα: commission share + service fee − Stripe σε card</li>
+    <li>Στόχος soft-launch: κάλυψη infra (€50–100/μήνα) με λίγες δεκάδες παραγγελίες/ημέρα</li>
+  </ul>
+</section>
+
+<!-- 11 · Χωρητικότητα -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">11 / 13</span></header>
+  <p class="eyebrow">Απόδοση</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Μετρημένη χωρητικότητα <em>(stress 20 Ιουλ 2026)</em>.</h2>
+  <div class="kpis">
+    <div class="kpi"><p>place_order burst</p><b>45 rps</b><small>100% success · p50 129ms</small></div>
+    <div class="kpi"><p>Safe sustained</p><b>20/min</b><small>~1.200 παραγγελίες/ώρα θεωρητικά</small></div>
+    <div class="kpi"><p>Read mix</p><b>296 rps</b><small>SPA p50 7ms</small></div>
+  </div>
+  <div class="kpis" style="grid-template-columns:repeat(1,1fr);max-width:100mm;margin-top:5mm">
+    <div class="kpi"><p>Mapbox caution</p><b>~14 rps</b><small>κρατάμε κάτω από αυτό</small></div>
+  </div>
+</section>
+
+<!-- 12 · Mobile -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">12 / 13</span></header>
+  <p class="eyebrow">Stores &amp; mobile</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Έτοιμο για <em>Play / App Store</em>.</h2>
+  <ul class="bullets">
+    <li>Android signed AAB: com.freshdelivery.customer / .driver</li>
+    <li>Native driver app v2.6.8 (Kotlin + Compose · Mapbox · FCM)</li>
+    <li>Instant push κλήσεις καταστημάτων → K οδηγοί (FCM + polling fallback)</li>
+    <li>Active-job card: αποδοχή / ολοκλήρωση κλήσης μέσα από την εφαρμογή</li>
+    <li>iOS Xcode projects για Archive σε Mac</li>
+    <li>Store portal ως PWA (/store) — χωρίς ξεχωριστό APK</li>
+    <li>6 live καταστήματα με logo + cover photos</li>
+  </ul>
+</section>
+
+<!-- 13 · Επόμενα βήματα -->
+<section class="page">
+  <header class="head"><div class="brand"><div class="mark">FD</div><span>Fresh Delivery</span></div><span class="num">13 / 13</span></header>
+  <p class="eyebrow">Επόμενα βήματα</p>
+  <h2 style="font-size:24pt;font-weight:900;line-height:1.15">Από soft-launch σε <em>δημόσια κυκλοφορία</em>.</h2>
+  <ul class="bullets">
+    <li>Stripe live keys + webhooks</li>
+    <li>Play Internal testing → Production</li>
+    <li>TestFlight μετά το πρώτο Archive</li>
+    <li>Περισσότερα καταστήματα Ιωαννίνων + driver onboarding</li>
+    <li>Privacy policy / Data safety / screenshots για review</li>
+  </ul>
+  <div class="chips">
+    <span class="chip">freshdelivery.app</span>
+    <span class="chip">Web PWA</span>
+    <span class="chip">Android</span>
+    <span class="chip">iOS</span>
+    <span class="chip">Ιωάννινα</span>
+  </div>
+  <p class="foot">freshdelivery · web στο Railway · Παρουσίαση Αυγούστου 2026</p>
+</section>
+
+</body>
+</html>
