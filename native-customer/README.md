@@ -23,8 +23,8 @@ True native customer app (no Capacitor WebView). Same Supabase backend and **sam
 | Live tracking map (Mapbox GL) | ✅ |
 | Customer wallet / coupons on Profile | ✅ |
 | FCM push (`push_tokens`, app=`customer`) | ✅ |
-| Card / Stripe in-app | ⏳ use web/Capacitor checkout; native stays cash |
-| AI hero carousel / group order / scheduled delivery | ⏳ later |
+| Card / Stripe PaymentSheet | ✅ native
+| Menu modifiers + address autocomplete + ratings | ✅
 
 ## Build
 

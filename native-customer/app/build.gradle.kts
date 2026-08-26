@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 262
-        versionName = "2.7.8-track-eta-card"
+        versionCode = 263
+        versionName = "2.8.0-stripe-mod-addr-rate"
 
         buildConfigField(
             "String",
@@ -87,6 +87,7 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.9.0")
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
+    implementation("com.stripe:stripe-android:21.6.0")
     implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
     implementation("com.google.firebase:firebase-messaging")
 

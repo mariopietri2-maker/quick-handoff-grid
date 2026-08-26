@@ -157,6 +157,9 @@ fun CustomerShell(
     onCloseStore: () -> Unit,
     onToggleFavorite: (String) -> Unit = {},
     onAddToCart: (MenuItemRow) -> Unit,
+    onConfirmModifiers: (MenuItemRow, List<com.freshdelivery.nativecustomer.data.MenuModifierRow>) -> Unit = { _, _ -> },
+    onDismissModifiers: () -> Unit = {},
+    onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
     onUpdateQty: (String, Int) -> Unit,
     onToggleCart: (Boolean) -> Unit,
     onSetDelivery: (String, Double?, Double?) -> Unit,
@@ -171,6 +174,7 @@ fun CustomerShell(
     onSearch: (String) -> Unit = {},
     onUseLocation: () -> Unit = {},
     onGeocode: (String) -> Unit = {},
+    onAddressQuery: (String) -> Unit = {},
     onPickSuggestion: (AddressSuggestion) -> Unit = {},
     onClearSuggestions: () -> Unit = {},
     onSelectSaved: (SavedAddressRow) -> Unit = {},
@@ -275,6 +279,15 @@ fun CustomerShell(
         Triple(CustomerTab.Profile, "Λογαριασμός", Icons.Outlined.AccountCircle),
     )
 
+    state.modifierPickerItem?.let { item ->
+        ModifierPickerDialog(
+            item = item,
+            modifiers = state.menuModifiers[item.id].orEmpty(),
+            onDismiss = onDismissModifiers,
+            onConfirm = { selected -> onConfirmModifiers(item, selected) },
+        )
+    }
+
     Scaffold(
         containerColor = FreshBg,
         snackbarHost = { SnackbarHost(snackbar) },
@@ -350,7 +363,7 @@ fun CustomerShell(
                     onEditAddress = { addressOpen = true; onClearSuggestions() },
                     onUseLocation = onUseLocation,
                 )
-                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh)
+                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview)
                 CustomerTab.Track -> TrackTab(state)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport)
             }
@@ -1810,6 +1823,7 @@ private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
     onRefresh: () -> Unit,
+    onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
 ) {
     LazyColumn(
         Modifier
@@ -1900,6 +1914,14 @@ private fun OrdersTab(
                 Spacer(Modifier.height(12.dp))
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     StatusPill(item.order.status)
+                    if (item.order.status == "delivered" && item.order.id !in state.reviewedOrderIds) {
+                        Spacer(Modifier.height(8.dp))
+                        ReviewStarsRow(
+                            onSubmit = { rating, comment ->
+                                onSubmitReview(item.order.id, item.order.store_id, rating, comment)
+                            },
+                        )
+                    }
                     Spacer(Modifier.weight(1f))
                     item.order.total_amount?.let {
                         Text("€" + "%.2f".format(it), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
@@ -2309,5 +2331,104 @@ private fun ProfileTab(
             Text("Αποσύνδεση", fontWeight = FontWeight.SemiBold)
         }
         Spacer(Modifier.height(12.dp))
+    }
+}
+
+@Composable
+private fun ModifierPickerDialog(
+    item: MenuItemRow,
+    modifiers: List<com.freshdelivery.nativecustomer.data.MenuModifierRow>,
+    onDismiss: () -> Unit,
+    onConfirm: (List<com.freshdelivery.nativecustomer.data.MenuModifierRow>) -> Unit,
+) {
+    val groups = modifiers.groupBy { it.group_name }.toList()
+    val selected = remember { mutableStateMapOf<String, com.freshdelivery.nativecustomer.data.MenuModifierRow>() }
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(item.name, fontWeight = FontWeight.Bold) },
+        text = {
+            Column(Modifier = Modifier.fillMaxWidth()) {
+                groups.forEach { (group, opts) ->
+                    Text(group, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
+                    Spacer(Modifier.height(6.dp))
+                    opts.forEach { opt ->
+                        val isOn = selected[opt.id] != null
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .clip(RoundedCornerShape(10.dp))
+                                .background(if (isOn) FreshGreenSoft else FreshChip)
+                                .clickable {
+                                    val multi = opt.is_multi
+                                    if (multi) {
+                                        if (isOn) selected.remove(opt.id) else selected[opt.id] = opt
+                                    } else {
+                                        opts.forEach { selected.remove(it.id) }
+                                        selected[opt.id] = opt
+                                    }
+                                }
+                                .padding(10.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text(opt.option_name, style = MaterialTheme.typography.bodyMedium)
+                            if (opt.price_delta > 0) {
+                                Text("+€%.2f".format(opt.price_delta), color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                            }
+                        }
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = {
+                // required groups
+                val missing = groups.any { (g, opts) ->
+                    opts.any { it.is_required } && opts.none { selected.containsKey(it.id) }
+                }
+                if (missing) return@TextButton
+                onConfirm(selected.values.toList())
+            }) { Text("Προσθήκη") }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("Άκυρο") }
+        },
+    )
+}
+
+@Composable
+private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
+    var rating by remember { mutableIntStateOf(0) }
+    var comment by remember { mutableStateOf("") }
+    Column(Modifier.fillMaxWidth()) {
+        Text("Βαθμολόγησε", fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelLarge)
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            (1..5).forEach { star ->
+                Icon(
+                    imageVector = if (star <= rating) Icons.Outlined.Star else Icons.Outlined.Star,
+                    contentDescription = null,
+                    tint = if (star <= rating) FreshAmber else FreshMuted,
+                    modifier = Modifier
+                        .size(28.dp)
+                        .clickable { rating = star },
+                )
+            }
+        }
+        if (rating > 0) {
+            OutlinedTextField(
+                value = comment,
+                onValueChange = { if (it.length <= 200) comment = it },
+                placeholder = { Text("Σχόλιο (προαιρετικό)") },
+                modifier = Modifier.fillMaxWidth(),
+                singleLine = true,
+            )
+            Button(
+                onClick = { onSubmit(rating, comment) },
+                colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("Υποβολή") }
+        }
     }
 }

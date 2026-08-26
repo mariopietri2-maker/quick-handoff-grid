@@ -44,6 +44,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.withContext
 import java.util.Locale
@@ -68,6 +72,14 @@ private val URGENT_TOPICS = setOf("wrong_order")
 /** How long the games section stays visible once it appears — then it hides for the rest of the day. */
 private const val GAME_SHOW_WINDOW_MS = 5 * 60 * 1000L
 
+data class PaymentSheetRequest(
+    val orderId: String,
+    val clientSecret: String,
+    val publishableKey: String,
+    val ephemeralKey: String? = null,
+    val customerId: String? = null,
+)
+
 data class CustomerUiState(
     val bootstrapping: Boolean = true,
     val signedIn: Boolean = false,
@@ -91,6 +103,12 @@ data class CustomerUiState(
     val tipAmount: Double = 0.0,
     val deliveryFee: Double = 0.99,
     val paymentMethod: String = "cash",
+    /** Modifiers for current store menu (keyed by menu_item_id). */
+    val menuModifiers: Map<String, List<com.freshdelivery.nativecustomer.data.MenuModifierRow>> = emptyMap(),
+    val modifierPickerItem: com.freshdelivery.nativecustomer.data.MenuItemRow? = null,
+    /** Stripe PaymentSheet launch request (consumed by MainActivity). */
+    val paymentSheetRequest: PaymentSheetRequest? = null,
+    val reviewedOrderIds: Set<String> = emptySet(),
     val orders: List<OrderUi> = emptyList(),
     val trackingOrder: OrderUi? = null,
     val driverLocation: DriverLocationRow? = null,
@@ -397,6 +415,23 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    /** Live address suggestions while typing (Mapbox). */
+    fun onAddressQuery(query: String) {
+        _state.value = _state.value.copy(deliveryAddress = query)
+        if (query.trim().length < 4) {
+            _state.value = _state.value.copy(addressSuggestions = emptyList())
+            return
+        }
+        viewModelScope.launch {
+            kotlinx.coroutines.delay(350)
+            if (_state.value.deliveryAddress != query) return@launch
+            val hits = runCatching { forwardGeocodeMany(query) }.getOrNull().orEmpty()
+            if (_state.value.deliveryAddress == query) {
+                _state.value = _state.value.copy(addressSuggestions = hits)
+            }
+        }
+    }
+
     fun geocodeAddress(address: String) {
         if (address.isBlank()) return
         viewModelScope.launch {
@@ -472,10 +507,39 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
+        val q = address.trim()
+        if (q.length < 3) return@withContext emptyList()
+        // 1) Mapbox Geocoding (autocomplete-quality, Greece bias)
+        val mapbox = runCatching {
+            val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
+            val url = java.net.URL(
+                "https://api.mapbox.com/geocoding/v5/mapbox.places/" +
+                    java.net.URLEncoder.encode(q, "UTF-8") +
+                    ".json?access_token=$token&country=gr&language=el&limit=6&types=address,place,locality,neighborhood,poi",
+            )
+            val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
+                connectTimeout = 8000
+                readTimeout = 8000
+                requestMethod = "GET"
+            }
+            val body = conn.inputStream.bufferedReader().readText()
+            val root = kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject
+            val features = root["features"]?.jsonArray.orEmpty()
+            features.mapNotNull { f ->
+                val obj = f.jsonObject
+                val place = obj["place_name"]?.jsonPrimitive?.contentOrNull ?: return@mapNotNull null
+                val center = obj["center"]?.jsonArray ?: return@mapNotNull null
+                val lng = center.getOrNull(0)?.jsonPrimitive?.content?.toDoubleOrNull() ?: return@mapNotNull null
+                val lat = center.getOrNull(1)?.jsonPrimitive?.content?.toDoubleOrNull() ?: return@mapNotNull null
+                AddressSuggestion(place, lat, lng)
+            }
+        }.getOrElse { emptyList() }
+        if (mapbox.isNotEmpty()) return@withContext mapbox.distinctBy { it.label }
+        // 2) Android Geocoder fallback
         runCatching {
             @Suppress("DEPRECATION")
             Geocoder(getApplication(), Locale.getDefault())
-                .getFromLocationName(address, 5)
+                .getFromLocationName(q, 5)
                 ?.mapNotNull { a ->
                     val line = a.getAddressLine(0) ?: return@mapNotNull null
                     AddressSuggestion(line, a.latitude, a.longitude)
@@ -502,8 +566,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             _state.value = _state.value.copy(selectedStore = store, busy = true, error = null)
             runCatching {
+                val menu = repo.fetchMenu(store.id)
+                val mods = repo.fetchModifiers(menu.map { it.id })
+                val byItem = mods.groupBy { it.menu_item_id }
                 _state.value = _state.value.copy(
-                    menu = repo.fetchMenu(store.id),
+                    menu = menu,
+                    menuModifiers = byItem,
                     busy = false,
                 )
             }.onFailure { e ->
@@ -517,24 +585,62 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun addToCart(item: MenuItemRow) {
+        val mods = _state.value.menuModifiers[item.id].orEmpty()
+        if (mods.isNotEmpty()) {
+            _state.value = _state.value.copy(modifierPickerItem = item)
+            return
+        }
+        addToCartWithModifiers(item, emptyList())
+    }
+
+    fun dismissModifierPicker() {
+        _state.value = _state.value.copy(modifierPickerItem = null)
+    }
+
+    fun confirmModifiers(item: MenuItemRow, selected: List<com.freshdelivery.nativecustomer.data.MenuModifierRow>) {
+        addToCartWithModifiers(item, selected)
+        _state.value = _state.value.copy(modifierPickerItem = null)
+    }
+
+    private fun addToCartWithModifiers(
+        item: MenuItemRow,
+        selected: List<com.freshdelivery.nativecustomer.data.MenuModifierRow>,
+    ) {
         val s = _state.value
-        if (s.cartStoreId != null && s.cartStoreId != item.store_id) {
+        val storeId = s.selectedStore?.id ?: return
+        if (s.cartStoreId != null && s.cartStoreId != storeId) {
             _state.value = s.copy(error = "Άδειασε το καλάθι για άλλο κατάστημα")
             return
         }
-        val existing = s.cart.find { it.menuItemId == item.id }
-        val next = if (existing != null) {
-            s.cart.map {
-                if (it.menuItemId == item.id) it.copy(quantity = it.quantity + 1) else it
-            }
+        val extra = selected.sumOf { it.price_delta }
+        val label = selected.joinToString(", ") { it.option_name }
+        val name = if (label.isBlank()) item.name else "${item.name} ($label)"
+        val unit = item.price + extra
+        val keyIds = selected.map { it.id }.sorted()
+        val existing = s.cart.indexOfFirst {
+            it.menuItemId == item.id && it.selectedModifierIds.sorted() == keyIds
+        }
+        val next = s.cart.toMutableList()
+        if (existing >= 0) {
+            val line = next[existing]
+            next[existing] = line.copy(quantity = line.quantity + 1)
         } else {
-            s.cart + CartLine(item.id, item.name, item.price, 1)
+            next.add(
+                CartLine(
+                    menuItemId = item.id,
+                    name = name,
+                    price = unit,
+                    quantity = 1,
+                    modifierLabel = label,
+                    selectedModifierIds = keyIds,
+                ),
+            )
         }
         _state.value = s.copy(
             cart = next,
-            cartStoreId = item.store_id,
-            cartStoreName = s.selectedStore?.name ?: s.cartStoreName,
-            info = "Προστέθηκε: ${item.name}",
+            cartStoreId = storeId,
+            cartStoreName = s.selectedStore?.name,
+            error = null,
         )
     }
 
@@ -734,8 +840,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         storeLng = store?.longitude,
                     )
                     if (wasCard) {
-                        // Stripe Embedded is web-only: open tracking page to complete card payment.
-                        openCardPaymentInBrowser(placed)
+                        launchNativePaymentSheet(placed)
                     }
                 } else {
                     _state.value = _state.value.copy(tab = CustomerTab.Orders)
@@ -751,6 +856,75 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(trackingOrder = order, tab = CustomerTab.Track, showCart = false)
         refreshDriverLocation()
         ensureDeliveryCoordsOnTrack(order)
+    }
+
+
+    private fun launchNativePaymentSheet(orderId: String) {
+        viewModelScope.launch {
+            _state.value = _state.value.copy(busy = true, error = null)
+            runCatching { repo.createPaymentSheet(orderId) }
+                .onSuccess { payload ->
+                    if (payload.publishableKey.isBlank() || payload.paymentIntentClientSecret.isBlank()) {
+                        _state.value = _state.value.copy(busy = false, error = "Stripe δεν είναι ρυθμισμένο.")
+                        openCardPaymentInBrowser(orderId)
+                        return@onSuccess
+                    }
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        paymentSheetRequest = PaymentSheetRequest(
+                            orderId = orderId,
+                            clientSecret = payload.paymentIntentClientSecret,
+                            publishableKey = payload.publishableKey,
+                            ephemeralKey = payload.ephemeralKey,
+                            customerId = payload.customerId,
+                        ),
+                        info = "Ολοκλήρωσε την πληρωμή στο φύλλο κάρτας.",
+                    )
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        busy = false,
+                        error = e.message ?: "Αποτυχία Stripe",
+                    )
+                    openCardPaymentInBrowser(orderId)
+                }
+        }
+    }
+
+    fun clearPaymentSheetRequest() {
+        _state.value = _state.value.copy(paymentSheetRequest = null)
+    }
+
+    fun onPaymentSheetResult(success: Boolean, message: String?) {
+        clearPaymentSheetRequest()
+        if (success) {
+            _state.value = _state.value.copy(info = "Η πληρωμή ολοκληρώθηκε!")
+            refreshOrders()
+        } else if (!message.isNullOrBlank()) {
+            _state.value = _state.value.copy(error = message)
+        }
+    }
+
+    fun submitReview(orderId: String, storeId: String, rating: Int, comment: String) {
+        viewModelScope.launch {
+            val ok = repo.submitReview(orderId, storeId, rating, comment.ifBlank { null })
+            if (ok) {
+                _state.value = _state.value.copy(
+                    reviewedOrderIds = _state.value.reviewedOrderIds + orderId,
+                    info = "Ευχαριστούμε για την κριτική!",
+                )
+            } else {
+                _state.value = _state.value.copy(error = "Αποτυχία υποβολής κριτικής")
+            }
+        }
+    }
+
+    private fun openCardPaymentInBrowser(orderId: String) {
+        runCatching {
+            val uri = Uri.parse("https://freshdelivery.app/order-tracking/$orderId?pay=1")
+            val intent = Intent(Intent.ACTION_VIEW, uri).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+            getApplication<Application>().startActivity(intent)
+        }
     }
 
     private fun autoOpenTrack(

@@ -3,6 +3,8 @@ package com.freshdelivery.nativecustomer.data
 import io.github.jan.supabase.SupabaseClient
 import io.github.jan.supabase.auth.auth
 import io.github.jan.supabase.auth.providers.builtin.Email
+import io.github.jan.supabase.functions.functions
+import io.ktor.client.statement.bodyAsText
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.postgrest.query.Columns
@@ -26,6 +28,7 @@ import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
 import kotlinx.serialization.json.put
+import kotlinx.serialization.json.JsonObject
 
 /**
  * Customer repository. Ordering, tracking and driver-location are wired to
@@ -162,6 +165,70 @@ class CustomerRepository(
                 limit(500L)
             }.decodeList<MenuItemRow>()
     }
+
+    suspend fun fetchModifiers(menuItemIds: List<String>): List<MenuModifierRow> {
+        if (menuItemIds.isEmpty()) return emptyList()
+        return runCatching {
+            client.from("menu_item_modifiers")
+                .select(Columns.list("id", "menu_item_id", "group_name", "option_name", "price_delta", "is_required", "is_multi", "sort_order")) {
+                    filter { isIn("menu_item_id", menuItemIds) }
+                    order("sort_order", Order.ASCENDING)
+                    limit(1000L)
+                }.decodeList<MenuModifierRow>()
+        }.getOrElse { emptyList() }
+    }
+
+    /**
+     * Stripe PaymentSheet payload for a pending card order.
+     * Requires edge function `create-payment-sheet` deployed.
+     */
+    suspend fun createPaymentSheet(orderId: String): PaymentSheetPayload {
+        val raw = client.functions.invoke(
+            function = "create-payment-sheet",
+            body = buildJsonObject {
+                put("orderId", orderId)
+                put("environment", "live")
+            },
+        )
+        val text = raw.bodyAsText()
+        val el = Json.parseToJsonElement(text).jsonObject
+        el["error"]?.jsonPrimitive?.contentOrNull?.let { error(it) }
+        return PaymentSheetPayload(
+            paymentIntentClientSecret = el["paymentIntent"]?.jsonPrimitive?.content
+                ?: error("missing paymentIntent"),
+            ephemeralKey = el["ephemeralKey"]?.jsonPrimitive?.content,
+            customerId = el["customer"]?.jsonPrimitive?.content,
+            publishableKey = el["publishableKey"]?.jsonPrimitive?.content.orEmpty(),
+        )
+    }
+
+    suspend fun submitReview(orderId: String, storeId: String, rating: Int, comment: String?): Boolean {
+        val uid = client.auth.currentUserOrNull()?.id ?: return false
+        return runCatching {
+            client.from("reviews").insert(
+                buildJsonObject {
+                    put("customer_id", uid)
+                    put("store_id", storeId)
+                    put("order_id", orderId)
+                    put("rating", rating)
+                    put("comment", comment)
+                },
+            )
+            true
+        }.getOrDefault(false)
+    }
+
+    suspend fun hasReviewed(orderId: String): Boolean {
+        return runCatching {
+            val rows = client.from("reviews")
+                .select(Columns.list("id")) {
+                    filter { eq("order_id", orderId) }
+                    limit(1L)
+                }.decodeList<kotlinx.serialization.json.JsonObject>()
+            rows.isNotEmpty()
+        }.getOrDefault(false)
+    }
+
     suspend fun saveMyDeliveryAddress(address: String, lat: Double?, lng: Double?) {}
     suspend fun rememberAddressGeocode(label: String, address: String, lat: Double, lng: Double) {}
     suspend fun suggestCachedAddresses(query: String, limit: Int): List<CachedSuggestionRow> = emptyList()
@@ -205,7 +272,7 @@ class CustomerRepository(
                 put("p_payment_method", paymentMethod)
                 put("p_tip_amount", tipAmount)
                 put("p_delivery_fee", deliveryFee)
-                put("p_notes", notes)
+                put("p_notes", buildOrderNotes(notes, items))
                 put("p_scheduled_for", JsonNull)
                 put("p_distance_km", distanceKm)
                 put("p_promo_code", promoCode)
@@ -297,3 +364,20 @@ class CustomerRepository(
     fun subscribeLiveChat(customerId: String): Flow<Unit> = emptyFlow()
     fun subscribeLiveChatSessions(customerId: String): Flow<Unit> = emptyFlow()
 }
+
+private fun buildOrderNotes(notes: String?, items: List<CartLine>): String? {
+    val modLines = items.mapNotNull { line ->
+        val m = line.modifierLabel.trim()
+        if (m.isBlank()) null else "${line.name}: $m"
+    }
+    val parts = listOfNotNull(notes?.takeIf { it.isNotBlank() }, modLines.takeIf { it.isNotEmpty() }?.joinToString("\n"))
+    return parts.takeIf { it.isNotEmpty() }?.joinToString("\n")
+}
+
+@kotlinx.serialization.Serializable
+data class PaymentSheetPayload(
+    val paymentIntentClientSecret: String,
+    val ephemeralKey: String? = null,
+    val customerId: String? = null,
+    val publishableKey: String = "",
+)

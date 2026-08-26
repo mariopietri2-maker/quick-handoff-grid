@@ -34,11 +34,26 @@ data class MenuItemRow(
     val image_url: String? = null,
 )
 
+@Serializable
+data class MenuModifierRow(
+    val id: String,
+    val menu_item_id: String,
+    val group_name: String,
+    val option_name: String,
+    val price_delta: Double = 0.0,
+    val is_required: Boolean = false,
+    val is_multi: Boolean = false,
+    val sort_order: Int = 0,
+)
+
 data class CartLine(
     val menuItemId: String,
     val name: String,
     val price: Double,
     val quantity: Int,
+    /** Human-readable selected options (shown to kitchen via notes / name suffix). */
+    val modifierLabel: String = "",
+    val selectedModifierIds: List<String> = emptyList(),
 )
 
 @Serializable

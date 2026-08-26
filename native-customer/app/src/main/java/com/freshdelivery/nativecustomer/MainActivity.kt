@@ -5,6 +5,12 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.stripe.android.PaymentConfiguration
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
@@ -22,14 +28,43 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshCustomerTheme
 import kotlinx.coroutines.delay
 
 class MainActivity : ComponentActivity() {
+    private lateinit var paymentSheet: PaymentSheet
+    private var paymentOrderId: String? = null
+
     private val vm: CustomerViewModel by viewModels()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        paymentSheet = PaymentSheet(this) { result ->
+            val ok = result is PaymentSheetResult.Completed
+            val msg = when (result) {
+                is PaymentSheetResult.Failed -> result.error.localizedMessage
+                is PaymentSheetResult.Canceled -> "Η πληρωμή ακυρώθηκε"
+                else -> null
+            }
+            // ViewModel is recreated in compose - use a static holder
+            PaymentSheetBridge.onResult(ok, msg)
+        }
         enableEdgeToEdge()
         setContent {
             FreshCustomerTheme {
                 val state by vm.state.collectAsState()
+                LaunchedEffect(Unit) {
+                    PaymentSheetBridge.handler = { ok, msg -> vm.onPaymentSheetResult(ok, msg) }
+                }
+                LaunchedEffect(state.paymentSheetRequest?.orderId) {
+                    val req = state.paymentSheetRequest ?: return@LaunchedEffect
+                    runCatching {
+                        PaymentConfiguration.init(this@MainActivity, req.publishableKey)
+                    }
+                    val config = PaymentSheet.Configuration(
+                        merchantDisplayName = "Fresh Delivery",
+                        customer = if (req.customerId != null && req.ephemeralKey != null) {
+                            PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey)
+                        } else null,
+                    )
+                    paymentSheet.presentWithPaymentIntent(req.clientSecret, config)
+                }
                 var splashMinElapsed by remember { mutableStateOf(false) }
                 val permissionLauncher = rememberLauncherForActivityResult(
                     ActivityResultContracts.RequestMultiplePermissions(),
@@ -74,6 +109,10 @@ class MainActivity : ComponentActivity() {
                             onCloseStore = vm::closeStore,
                             onToggleFavorite = vm::toggleFavorite,
                             onAddToCart = vm::addToCart,
+                            onConfirmModifiers = vm::confirmModifiers,
+                            onDismissModifiers = vm::dismissModifierPicker,
+                            onSubmitReview = vm::submitReview,
+                            onAddressQuery = vm::onAddressQuery,
                             onUpdateQty = vm::updateQty,
                             onToggleCart = vm::toggleCart,
                             onSetDelivery = vm::setDelivery,
@@ -114,5 +153,13 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+}
+
+/** Bridges Activity PaymentSheet callbacks to the current ViewModel. */
+object PaymentSheetBridge {
+    @Volatile var handler: ((Boolean, String?) -> Unit)? = null
+    fun onResult(success: Boolean, message: String?) {
+        handler?.invoke(success, message)
     }
 }
