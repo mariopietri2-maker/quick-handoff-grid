@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import {
   ArrowDownCircle,
   ArrowUpCircle,
@@ -21,7 +21,9 @@ import {
   type CompletedOrderRef,
 } from '@/components/driver/CompletedOrderDetailSheet';
 
-/** Polished money tab — balance, today, shift cash, activity + order detail. */
+type HistoryTab = 'deliveries' | 'moves';
+
+/** Simple money tab: balance, cash, one history (not two stacked lists). */
 export function DriverMoneyPanel() {
   const { wallet, transactions, loading } = useDriverWallet();
   const { today, week, recentEarnings } = useEarnings();
@@ -29,26 +31,21 @@ export function DriverMoneyPanel() {
   const { settings: platformSettings } = usePlatformSettings();
   const cap = platformSettings.max_cash_cap;
   const [detailRef, setDetailRef] = useState<CompletedOrderRef>(null);
+  const [historyTab, setHistoryTab] = useState<HistoryTab>('deliveries');
   const [ackResetAt, setAckResetAt] = useState<string | null>(() =>
     typeof window !== 'undefined' ? localStorage.getItem('driver_cash_reset_ack') : null,
   );
 
-  if (loading) {
-    return (
-      <div className="text-center py-16 animate-fade-in">
-        <div className="h-9 w-9 border-[3px] border-[hsl(var(--driver-accent))] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
-        <p className="text-[hsl(var(--driver-text-muted))] font-heading text-sm">Φόρτωση…</p>
-      </div>
-    );
-  }
-
   const balance = Number(wallet?.available_balance ?? 0);
   const pending = Number(wallet?.pending_balance ?? 0);
   const withdrawn = Number(wallet?.total_withdrawn ?? 0);
-  const recent = transactions
-    .filter((tx) => tx.type !== 'earning_credit')
-    .slice(0, 12);
-  const deliveries = recentEarnings.slice(0, 12);
+
+  const deliveries = useMemo(() => recentEarnings.slice(0, 20), [recentEarnings]);
+  const moves = useMemo(
+    () => transactions.filter((tx) => tx.type !== 'earning_credit').slice(0, 20),
+    [transactions],
+  );
+  const hasMoves = moves.length > 0;
 
   const cash = Number(state?.shift_cash_balance ?? 0);
   const cashPct = Math.min((cash / Math.max(cap, 1)) * 100, 100);
@@ -68,8 +65,18 @@ export function DriverMoneyPanel() {
     setDetailRef({ orderId, earningId });
   };
 
+  if (loading) {
+    return (
+      <div className="text-center py-16 animate-fade-in">
+        <div className="h-9 w-9 border-[3px] border-[hsl(var(--driver-accent))] border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+        <p className="text-[hsl(var(--driver-text-muted))] font-heading text-sm">Φόρτωση…</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-4 animate-fade-in">
+      {/* 1. Balance */}
       <section className="relative overflow-hidden rounded-[22px] driver-gradient-earn shadow-[0_16px_40px_-18px_hsl(162_58%_28%/0.55)]">
         <div
           className="pointer-events-none absolute inset-0 opacity-40"
@@ -86,9 +93,9 @@ export function DriverMoneyPanel() {
               </div>
               <div>
                 <p className="text-white/75 text-[10px] font-heading font-semibold uppercase tracking-[0.14em] leading-none">
-                  Διαθέσιμο υπόλοιπο
+                  Κέρδη — διαθέσιμα
                 </p>
-                <p className="text-white/55 text-[11px] mt-1 leading-none">Πιστώνεται με κάθε παράδοση</p>
+                <p className="text-white/55 text-[11px] mt-1 leading-none">Με κάθε παράδοση</p>
               </div>
             </div>
             {pending > 0 && (
@@ -103,7 +110,7 @@ export function DriverMoneyPanel() {
             <span className="text-[22px] font-bold text-white/70 ml-1">€</span>
           </p>
 
-          <div className="mt-4 flex items-center gap-3 text-[11px] text-white/65 font-heading">
+          <div className="mt-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-[11px] text-white/65 font-heading">
             <span className="inline-flex items-center gap-1">
               <TrendingUp className="h-3 w-3" />
               Εβδομάδα {week.total.toFixed(2)}€
@@ -126,13 +133,12 @@ export function DriverMoneyPanel() {
             <Stat label="Σύνολο" value={`${today.total.toFixed(2)}€`} emphasize />
             <Stat label="Βασική" value={`${today.basePay.toFixed(2)}€`} />
             <Stat label="Tips" value={`${today.tips.toFixed(2)}€`} />
-            {today.bonuses > 0 && (
-              <Stat label="Extras" value={`${today.bonuses.toFixed(2)}€`} />
-            )}
+            {today.bonuses > 0 && <Stat label="Extras" value={`${today.bonuses.toFixed(2)}€`} />}
           </div>
         </div>
       </section>
 
+      {/* 2. Shift cash */}
       <section
         className={`rounded-[20px] driver-glass overflow-hidden ${
           cashCapped
@@ -159,14 +165,12 @@ export function DriverMoneyPanel() {
               <p className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))] leading-tight">
                 Ταμείο βάρδιας
               </p>
-              <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5">
-                Μετρητά που κρατάς τώρα
-              </p>
+              <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5">Μετρητά που κρατάς</p>
             </div>
           </div>
           <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] px-2 h-6 text-[9.5px] font-heading font-bold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
             <Lock className="h-2.5 w-2.5" />
-            Μόνο admin
+            Admin
           </span>
         </div>
 
@@ -205,7 +209,10 @@ export function DriverMoneyPanel() {
                 </p>
                 <p className="text-[hsl(var(--driver-text-muted))]">
                   {new Date(lastReset!).toLocaleString('el-GR', {
-                    day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit',
+                    day: '2-digit',
+                    month: 'short',
+                    hour: '2-digit',
+                    minute: '2-digit',
                   })}
                 </p>
               </div>
@@ -225,98 +232,123 @@ export function DriverMoneyPanel() {
               <AlertTriangle className="h-4 w-4 text-destructive shrink-0 mt-0.5" />
               <p className="text-[12px] leading-relaxed text-[hsl(var(--driver-text))]">
                 <span className="font-heading font-bold text-destructive">Όριο μετρητών. </span>
-                Παρέδωσε τα χρήματα σε διαχειριστή για νέες παραγγελίες.
+                Παρέδωσε τα χρήματα σε διαχειριστή.
               </p>
             </div>
           ) : cashWarn ? (
             <p className="text-[12px] text-[hsl(var(--driver-warm))] leading-relaxed px-0.5">
-              Πλησιάζεις το όριο (€{cap}). Σκέψου να παραδώσεις μετρητά σύντομα.
+              Πλησιάζεις το όριο (€{cap}).
             </p>
           ) : (
             <p className="text-[11.5px] text-[hsl(var(--driver-text-muted))] leading-relaxed px-0.5">
-              Μόνο ο διαχειριστής μπορεί να μηδενίσει το ταμείο μετά την παράδοση μετρητών.
+              Μηδενισμός ταμείου μόνο από admin.
             </p>
           )}
         </div>
       </section>
 
+      {/* 3. One history — tabs instead of two stacked lists */}
       <section className="rounded-[20px] driver-glass overflow-hidden">
-        <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
-          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Παραδόσεις</p>
-          <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
-            πάτα για λεπτομέρειες
-          </span>
+        <div className="px-4 pt-3.5 pb-2 border-b border-[hsl(var(--driver-border))]">
+          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))] mb-2.5">
+            Ιστορικό
+          </p>
+          <div className="grid grid-cols-2 gap-1 rounded-xl bg-[hsl(var(--driver-surface-muted))] p-1">
+            <button
+              type="button"
+              onClick={() => setHistoryTab('deliveries')}
+              className={`h-9 rounded-lg text-[13px] font-heading font-bold transition-colors ${
+                historyTab === 'deliveries'
+                  ? 'bg-card text-[hsl(var(--driver-text))] shadow-sm'
+                  : 'text-[hsl(var(--driver-text-muted))]'
+              }`}
+            >
+              Παραδόσεις
+            </button>
+            <button
+              type="button"
+              onClick={() => setHistoryTab('moves')}
+              disabled={!hasMoves}
+              className={`h-9 rounded-lg text-[13px] font-heading font-bold transition-colors disabled:opacity-40 ${
+                historyTab === 'moves'
+                  ? 'bg-card text-[hsl(var(--driver-text))] shadow-sm'
+                  : 'text-[hsl(var(--driver-text-muted))]'
+              }`}
+            >
+              Κινήσεις{hasMoves ? ` (${moves.length})` : ''}
+            </button>
+          </div>
         </div>
 
-        {deliveries.length === 0 ? (
-          <div className="px-4 py-10 text-center">
-            <div className="h-12 w-12 rounded-2xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex items-center justify-center mx-auto mb-3">
-              <Package className="h-5 w-5 text-[hsl(var(--driver-text-muted))]" />
+        {historyTab === 'deliveries' ? (
+          deliveries.length === 0 ? (
+            <div className="px-4 py-10 text-center">
+              <div className="h-12 w-12 rounded-2xl bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] flex items-center justify-center mx-auto mb-3">
+                <Package className="h-5 w-5 text-[hsl(var(--driver-text-muted))]" />
+              </div>
+              <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">
+                Καμία παράδοση ακόμα
+              </p>
+              <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-1">
+                Μετά από κάθε παράδοση εμφανίζεται εδώ η αμοιβή.
+              </p>
             </div>
-            <p className="font-heading font-bold text-sm text-[hsl(var(--driver-text))]">Καμία παράδοση ακόμα</p>
-            <p className="text-[12px] text-[hsl(var(--driver-text-muted))] mt-1">
-              Μετά από κάθε παράδοση θα βλέπεις αμοιβή, tip, extras και χλμ.
-            </p>
-          </div>
+          ) : (
+            <ul className="divide-y divide-[hsl(var(--driver-border))]">
+              {deliveries.map((e, i) => {
+                const tip = Number(e.tip ?? 0);
+                const bonus = Number(e.bonus ?? 0);
+                const total = Number(e.total ?? Number(e.base_pay) + tip + bonus);
+                return (
+                  <li key={e.id}>
+                    <button
+                      type="button"
+                      onClick={() => openOrder(e.order_id, e.id)}
+                      disabled={!e.order_id}
+                      className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[hsl(var(--driver-surface))]/70 active:bg-[hsl(var(--driver-surface))] disabled:opacity-60"
+                      style={{
+                        animationDelay: `${Math.min(i, 6) * 40}ms`,
+                        animationFillMode: 'both',
+                      }}
+                    >
+                      <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))]">
+                        <Package className="h-4 w-4" strokeWidth={2.25} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-[13.5px] font-heading font-semibold text-[hsl(var(--driver-text))] truncate leading-tight">
+                          Παράδοση
+                          {tip > 0 ? ` · tip ${tip.toFixed(2)}€` : ''}
+                          {bonus > 0 ? ` · extra ${bonus.toFixed(2)}€` : ''}
+                        </p>
+                        <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 tabular-nums">
+                          {new Date(e.created_at).toLocaleDateString('el-GR', {
+                            weekday: 'short',
+                            day: '2-digit',
+                            month: 'short',
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })}
+                        </p>
+                      </div>
+                      <span className="font-heading font-extrabold text-[15px] tabular-nums shrink-0 text-[hsl(var(--driver-accent))]">
+                        +{total.toFixed(2)}€
+                      </span>
+                      {e.order_id && (
+                        <ChevronRight className="h-4 w-4 shrink-0 text-[hsl(var(--driver-text-muted))]" />
+                      )}
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          )
+        ) : moves.length === 0 ? (
+          <p className="px-4 py-8 text-center text-sm text-[hsl(var(--driver-text-muted))]">
+            Δεν υπάρχουν άλλες κινήσεις.
+          </p>
         ) : (
           <ul className="divide-y divide-[hsl(var(--driver-border))]">
-            {deliveries.map((e, i) => {
-              const tip = Number(e.tip ?? 0);
-              const bonus = Number(e.bonus ?? 0);
-              const total = Number(e.total ?? Number(e.base_pay) + tip + bonus);
-              return (
-                <li key={e.id}>
-                  <button
-                    type="button"
-                    onClick={() => openOrder(e.order_id, e.id)}
-                    disabled={!e.order_id}
-                    className="w-full flex items-center gap-3 px-4 py-3.5 text-left transition-colors hover:bg-[hsl(var(--driver-surface))]/70 active:bg-[hsl(var(--driver-surface))] disabled:opacity-60 animate-fade-in"
-                    style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}
-                  >
-                    <div className="h-10 w-10 rounded-xl flex items-center justify-center shrink-0 bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))]">
-                      <Package className="h-4 w-4" strokeWidth={2.25} />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[13.5px] font-heading font-semibold text-[hsl(var(--driver-text))] truncate leading-tight">
-                        Παράδοση · {Number(e.base_pay).toFixed(2)}€
-                        {tip > 0 ? ` + tip ${tip.toFixed(2)}€` : ''}
-                        {bonus > 0 ? ` + extra ${bonus.toFixed(2)}€` : ''}
-                      </p>
-                      <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 tabular-nums">
-                        {new Date(e.created_at).toLocaleDateString('el-GR', {
-                          weekday: 'short',
-                          day: '2-digit',
-                          month: 'short',
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </p>
-                    </div>
-                    <span className="font-heading font-extrabold text-[15px] tabular-nums shrink-0 text-[hsl(var(--driver-accent))]">
-                      {total.toFixed(2)}€
-                    </span>
-                    {e.order_id && (
-                      <ChevronRight className="h-4 w-4 shrink-0 text-[hsl(var(--driver-text-muted))]" />
-                    )}
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        )}
-      </section>
-
-      {recent.length > 0 && (
-      <section className="rounded-[20px] driver-glass overflow-hidden">
-        <div className="px-4 py-3.5 border-b border-[hsl(var(--driver-border))] flex items-center justify-between">
-          <p className="font-heading font-bold text-[14px] text-[hsl(var(--driver-text))]">Κινήσεις</p>
-          <span className="text-[10px] font-heading font-semibold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
-            Τελευταίες {recent.length}
-          </span>
-        </div>
-
-          <ul className="divide-y divide-[hsl(var(--driver-border))]">
-            {recent.map((tx, i) => {
+            {moves.map((tx, i) => {
               const isCredit = [
                 'deposit',
                 'bonus',
@@ -341,7 +373,7 @@ export function DriverMoneyPanel() {
                         : tx.description || (isCredit ? 'Πίστωση' : 'Ανάληψη');
 
               const rowClass =
-                'w-full flex items-center gap-3 px-4 py-3.5 text-left animate-fade-in' +
+                'w-full flex items-center gap-3 px-4 py-3.5 text-left' +
                 (hasOrder
                   ? ' transition-colors hover:bg-[hsl(var(--driver-surface))]/70 active:bg-[hsl(var(--driver-surface))]'
                   : '');
@@ -378,7 +410,9 @@ export function DriverMoneyPanel() {
                   </div>
                   <span
                     className={`font-heading font-extrabold text-[15px] tabular-nums shrink-0 ${
-                      isCredit ? 'text-[hsl(var(--driver-accent))]' : 'text-[hsl(var(--driver-text-muted))]'
+                      isCredit
+                        ? 'text-[hsl(var(--driver-accent))]'
+                        : 'text-[hsl(var(--driver-text-muted))]'
                     }`}
                   >
                     {isCredit ? '+' : '−'}
@@ -391,16 +425,9 @@ export function DriverMoneyPanel() {
               );
 
               return (
-                <li
-                  key={tx.id}
-                  style={{ animationDelay: `${Math.min(i, 6) * 40}ms`, animationFillMode: 'both' }}
-                >
+                <li key={tx.id} style={{ animationDelay: `${Math.min(i, 6) * 40}ms` }}>
                   {hasOrder ? (
-                    <button
-                      type="button"
-                      className={rowClass}
-                      onClick={() => openOrder(tx.order_id)}
-                    >
+                    <button type="button" className={rowClass} onClick={() => openOrder(tx.order_id)}>
                       {inner}
                     </button>
                   ) : (
@@ -410,8 +437,8 @@ export function DriverMoneyPanel() {
               );
             })}
           </ul>
+        )}
       </section>
-      )}
 
       <CompletedOrderDetailSheet
         refTarget={detailRef}
