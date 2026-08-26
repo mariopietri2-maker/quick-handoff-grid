@@ -119,6 +119,12 @@ export default function DownloadAppPage() {
         path="/download"
       />
 
+      <p className="mt-4 mb-2 text-xs text-amber-800 dark:text-amber-200/90 max-w-xl mx-auto leading-relaxed rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-center">
+        Αν η λήψη <strong>κολλήσει στο 100%</strong>: άνοιξε τις <strong>Λήψεις</strong> του τηλεφώνου,
+        πάτα το <code className="text-[10px]">.apk</code>, επίτρεψε εγκατάσταση από άγνωστες πηγές.
+        Διέγραψε παλιά λήψη και ξαναπάτα Λήψη αν χρειαστεί.
+      </p>
+
       <div aria-hidden className="pointer-events-none absolute inset-0 overflow-hidden">
         <div
           className="absolute -top-24 -left-16 h-[380px] w-[380px] rounded-full opacity-40 blur-3xl"

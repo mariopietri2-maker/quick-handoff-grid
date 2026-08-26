@@ -69,15 +69,34 @@ export function apkLandingUrl(flavor: ApkFlavor, origin: string = SITE_ORIGIN): 
   return `${origin.replace(/\/$/, '')}/download?app=${flavor}`;
 }
 
-/** Start an APK download only after an explicit user gesture. */
-export function startApkDownload(flavor: ApkFlavor) {
+/** Cache-bust so Android/Chrome does not reuse a half-finished download. */
+export function apkFileUrl(flavor: ApkFlavor): string {
   const apk = APK_DOWNLOADS[flavor];
+  const v = encodeURIComponent(apk.versionLabel || String(Date.now()));
+  const sep = apk.fileUrl.includes('?') ? '&' : '?';
+  return `${apk.fileUrl}${sep}v=${v}`;
+}
+
+/**
+ * Start an APK download only after an explicit user gesture.
+ * On mobile, navigate in the same tab — target=_blank often leaves the
+ * system download stuck at 100% / "opening" without install.
+ */
+export function startApkDownload(flavor: ApkFlavor) {
+  const url = apkFileUrl(flavor);
+  const isMobile = typeof navigator !== 'undefined' &&
+    /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    // Same-tab navigation triggers the Android download manager cleanly.
+    window.location.assign(url);
+    return;
+  }
+
   const a = document.createElement('a');
-  a.href = apk.fileUrl;
+  a.href = url;
   a.rel = 'noopener noreferrer';
   a.target = '_blank';
-  // Do NOT set download= — cross-origin APKs ignore it and some browsers
-  // treat download+apk href as an immediate install prompt.
   document.body.appendChild(a);
   a.click();
   a.remove();
