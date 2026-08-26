@@ -550,7 +550,29 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun signOut() {
-        viewModelScope.launch { repo.signOut() }
+        viewModelScope.launch {
+            runCatching { repo.signOut() }
+            // Clear UI immediately even if sessionStatus is slow/missed.
+            pollJob?.cancel()
+            ordersRealtimeJob?.cancel()
+            driverRealtimeJob?.cancel()
+            driverChannelFor = null
+            liveChatJob?.cancel()
+            liveChatJob = null
+            liveChatSessionJob?.cancel()
+            liveChatSessionJob = null
+            ticketJob?.cancel()
+            ticketJob = null
+            runCatching { repo.unsubscribeAll() }
+            val gameActive = _state.value.gameActive
+            val cards = _state.value.cards
+            _state.value = CustomerUiState(bootstrapping = false, signedIn = false).copy(
+                gameActive = gameActive,
+                cards = cards,
+                gameShow = rollDailyGameShow(),
+                info = "Αποσυνδέθηκες.",
+            )
+        }
     }
 
     fun selectTab(tab: CustomerTab) {

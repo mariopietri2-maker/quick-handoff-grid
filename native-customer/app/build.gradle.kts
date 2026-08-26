@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 263
-        versionName = "2.8.0-stripe-mod-addr-rate"
+        versionCode = 264
+        versionName = "2.8.1-logout"
 
         buildConfigField(
             "String",

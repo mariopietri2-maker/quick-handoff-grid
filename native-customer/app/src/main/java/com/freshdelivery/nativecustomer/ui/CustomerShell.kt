@@ -2193,13 +2193,28 @@ private fun ProfileTab(
             .fillMaxSize()
             .background(FreshBg)
             .statusBarsPadding()
-            .padding(horizontal = 16.dp),
+            .verticalScroll(rememberScrollState())
+            .padding(horizontal = 16.dp)
+            .navigationBarsPadding()
+            .padding(bottom = 24.dp),
     ) {
-        Text(
-            "Λογαριασμός",
-            style = MaterialTheme.typography.headlineMedium,
-            modifier = Modifier.padding(vertical = 12.dp),
-        )
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(vertical = 12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                "Λογαριασμός",
+                style = MaterialTheme.typography.headlineMedium,
+            )
+            TextButton(onClick = onSignOut) {
+                Icon(Icons.Outlined.Logout, contentDescription = null, tint = FreshRose, modifier = Modifier.size(18.dp))
+                Spacer(Modifier.width(4.dp))
+                Text("Έξοδος", color = FreshRose, fontWeight = FontWeight.Bold)
+            }
+        }
         Column(
             Modifier
                 .fillMaxWidth()
@@ -2317,23 +2332,28 @@ private fun ProfileTab(
                 else Text("Αποθήκευση", fontWeight = FontWeight.Bold)
             }
         }
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(24.dp))
         OutlinedButton(
             onClick = onSignOut,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(48.dp)
-                .navigationBarsPadding()
-                .padding(bottom = 8.dp),
+                .height(52.dp),
             shape = RoundedCornerShape(24.dp),
             colors = ButtonDefaults.outlinedButtonColors(contentColor = FreshRose),
-            border = androidx.compose.foundation.BorderStroke(1.dp, FreshRose),
+            border = androidx.compose.foundation.BorderStroke(1.5.dp, FreshRose),
         ) {
-            Icon(Icons.Outlined.Logout, contentDescription = null, modifier = Modifier.size(18.dp))
-            Spacer(Modifier.width(6.dp))
-            Text("Αποσύνδεση", fontWeight = FontWeight.SemiBold)
+            Icon(Icons.Outlined.Logout, contentDescription = null, modifier = Modifier.size(20.dp))
+            Spacer(Modifier.width(8.dp))
+            Text("Αποσύνδεση", fontWeight = FontWeight.Bold)
         }
-        Spacer(Modifier.height(12.dp))
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Θα χρειαστεί να συνδεθείς ξανά για παραγγελίες.",
+            color = FreshMuted,
+            style = MaterialTheme.typography.bodySmall,
+            modifier = Modifier.fillMaxWidth(),
+        )
+        Spacer(Modifier.height(16.dp))
     }
 }
 
