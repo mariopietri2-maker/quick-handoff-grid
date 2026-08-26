@@ -33,7 +33,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         /** Bump when channel attributes change (Android freezes channel settings). */
-        const val CHANNEL_ID = "driver-offers-v4"
+        const val CHANNEL_ID = "driver-offers-v5"
         private const val STORE_CALL_NOTIF_ID = 71001
 
         /** Create channel at process start so first push already has sound. */
@@ -51,7 +51,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             val channel = NotificationChannel(
                 CHANNEL_ID,
                 "Κλήσεις & προσφορές",
-                NotificationManager.IMPORTANCE_HIGH,
+                NotificationManager.IMPORTANCE_MAX,
             ).apply {
                 description = "Κλήσεις καταστήματος και προσφορές παράδοσης — ήχος συναγερμού"
                 enableVibration(true)
@@ -63,7 +63,8 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             }
             manager.createNotificationChannel(channel)
             // Drop old silent channel ids if present (optional; id is frozen per install)
-            runCatching { manager.deleteNotificationChannel("driver-offers-v3") }
+            runCatching { manager.deleteNotificationChannel("driver-offers-v4")
+            runCatching { manager.deleteNotificationChannel("driver-offers-v3") } }
             runCatching { manager.deleteNotificationChannel("driver-offers-v2") }
         }
     }
@@ -103,16 +104,22 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             "freshdriver:offer",
         )?.apply {
             setReferenceCounted(false)
-            acquire(8_000L)
+            acquire(if (isStoreCall) 20_000L else 8_000L)
         }
 
         try {
             ensureOfferChannel(this)
-            showNotification(title, body, isStoreCall)
-            // Always play sound in process — covers OEMs that mute tray notifications.
-            if (isStoreCall || isOffer || type.isBlank()) {
-                playOfferSound()
+            StoreCallRingService.ensureChannel(this)
+            if (isStoreCall) {
+                // Looping FGS sound — survives after this service returns (background).
+                StoreCallRingService.start(this, title, body)
                 vibratePattern()
+            } else {
+                showNotification(title, body, isStoreCall = false)
+                if (isOffer || type.isBlank()) {
+                    playOfferSound()
+                    vibratePattern()
+                }
             }
         } finally {
             runCatching {

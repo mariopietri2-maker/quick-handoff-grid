@@ -194,7 +194,8 @@ function resolveChannelId(
   const channel = typeof data?.channel === "string" ? data.channel : "";
   if (channel === "driver-inbox" || type === "inbox") return "driver-inbox";
   if (app === "customer") return "customer-orders-v2";
-  return "driver-offers-v4";
+  if (type === "store_call") return "driver-store-calls-v1";
+  return "driver-offers-v5";
 }
 
 function resolveCollapseKey(row: OutboxRow): string {
@@ -212,6 +213,8 @@ function resolveCollapseKey(row: OutboxRow): string {
 
 function resolveAndroidSound(channelId: string): string {
   if (
+    channelId === "driver-store-calls-v1" ||
+    channelId === "driver-offers-v5" ||
     channelId === "driver-offers-v4" ||
     channelId === "driver-offers-v3" ||
     channelId === "driver-offers-v2"

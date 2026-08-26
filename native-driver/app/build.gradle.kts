@@ -16,7 +16,7 @@ android {
         minSdk = 26
         targetSdk = 35
         versionCode = 273
-        versionName = "2.6.19-bg-offer-sound"
+        versionName = "2.6.19-store-call-ring"
 
         buildConfigField(
             "String",

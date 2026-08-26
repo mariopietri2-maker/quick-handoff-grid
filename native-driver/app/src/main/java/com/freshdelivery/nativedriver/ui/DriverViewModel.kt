@@ -12,6 +12,7 @@ import android.os.VibratorManager
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.freshdelivery.nativedriver.R
+import com.freshdelivery.nativedriver.push.StoreCallRingService
 import com.freshdelivery.nativedriver.data.ActiveTripUi
 import com.freshdelivery.nativedriver.data.DriverNotificationRow
 import com.freshdelivery.nativedriver.data.DriverPreferences
@@ -540,6 +541,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     /** Accept a store call (K-role driver). */
     fun acceptStoreCall(callId: String) {
+        runCatching { StoreCallRingService.stop(getApplication()) }
         val s = _state.value
         val removed = s.storeCalls.firstOrNull { it.id == callId }
         _state.value = s.copy(

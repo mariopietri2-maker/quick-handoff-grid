@@ -12,6 +12,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import com.freshdelivery.nativedriver.ui.navigation.DriverNavGraph
 import com.freshdelivery.nativedriver.ui.theme.FreshDriverTheme
+import com.freshdelivery.nativedriver.push.StoreCallRingService
 
 class MainActivity : ComponentActivity() {
 
@@ -22,6 +23,8 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         requestRuntimePermissions()
+        // Opening the app stops the background store-call ring.
+        StoreCallRingService.stop(this)
 
         setContent {
             FreshDriverTheme {
@@ -30,6 +33,17 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        StoreCallRingService.stop(this)
+    }
+
+    override fun onResume() {
+        super.onResume()
+        StoreCallRingService.stop(this)
     }
 
     private fun requestRuntimePermissions() {
