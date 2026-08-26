@@ -110,14 +110,14 @@ fun MoneyScreen(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "€${\"%.2f\".format(earningsBalance)}",
+                    "€${"%.2f".format(earningsBalance)}",
                     style = MaterialTheme.typography.displaySmall,
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                 )
                 if (pending > 0) {
                     Text(
-                        "+€${\"%.2f\".format(pending)} εκκρεμεί",
+                        "+€${"%.2f".format(pending)} εκκρεμεί",
                         color = Color.White.copy(alpha = 0.75f),
                         style = MaterialTheme.typography.bodySmall,
                     )
@@ -130,14 +130,14 @@ fun MoneyScreen(
             StatMini(
                 icon = { Icon(Icons.Outlined.Today, null, tint = FreshGreen, modifier = Modifier.size(20.dp)) },
                 label = "Σήμερα",
-                value = "€${\"%.2f\".format(money?.todayTotal ?: 0.0)}",
+                value = "€${"%.2f".format(money?.todayTotal ?: 0.0)}",
                 sub = "${money?.todayTrips ?: 0} παραδόσεις",
                 modifier = Modifier.weight(1f),
             )
             StatMini(
                 icon = { Icon(Icons.Outlined.Payments, null, tint = FreshAmber, modifier = Modifier.size(20.dp)) },
                 label = "Εβδομάδα",
-                value = "€${\"%.2f\".format(money?.weekTotal ?: 0.0)}",
+                value = "€${"%.2f".format(money?.weekTotal ?: 0.0)}",
                 sub = "συνολικά",
                 modifier = Modifier.weight(1f),
             )
@@ -159,7 +159,7 @@ fun MoneyScreen(
                 .padding(16.dp),
         ) {
             Text(
-                "€${\"%.2f\".format(customerCash)} / €${\"%.0f\".format(cashCap)}",
+                "€${"%.2f".format(customerCash)} / €${"%.0f".format(cashCap)}",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = if (state.cashCapped) cs.error else cs.onSurface,
@@ -244,9 +244,9 @@ fun MoneyScreen(
                                     style = MaterialTheme.typography.bodyMedium,
                                 )
                                 val parts = buildList {
-                                    e.base_pay?.takeIf { it > 0 }?.let { add("βάση €${\"%.2f\".format(it)}") }
-                                    e.tip?.takeIf { it > 0 }?.let { add("tip €${\"%.2f\".format(it)}") }
-                                    e.bonus?.takeIf { it > 0 }?.let { add("bonus €${\"%.2f\".format(it)}") }
+                                    e.base_pay?.takeIf { it > 0 }?.let { add("βάση €${"%.2f".format(it)}") }
+                                    e.tip?.takeIf { it > 0 }?.let { add("tip €${"%.2f".format(it)}") }
+                                    e.bonus?.takeIf { it > 0 }?.let { add("bonus €${"%.2f".format(it)}") }
                                 }
                                 if (parts.isNotEmpty()) {
                                     Text(
@@ -257,7 +257,7 @@ fun MoneyScreen(
                                 }
                             }
                             Text(
-                                "+€${\"%.2f\".format(e.total ?: 0.0)}",
+                                "+€${"%.2f".format(e.total ?: 0.0)}",
                                 color = FreshGreen,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.titleMedium,
@@ -289,7 +289,7 @@ fun MoneyScreen(
                                 )
                             }
                             Text(
-                                "€${\"%.2f\".format(tx.amount)}",
+                                "€${"%.2f".format(tx.amount)}",
                                 fontWeight = FontWeight.SemiBold,
                                 color = if (tx.amount >= 0) FreshGreen else cs.error,
                             )

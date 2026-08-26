@@ -1153,7 +1153,7 @@ private fun OfferSheet(
                 distKm?.takeIf { it > 0 }?.let {
                     BreakdownRow("Απόσταση", "%.1f χλμ".format(it))
                 }
-                HorizontalDivider(color = Color(0xFF3A423C), thickness = 1.dp)
+                Box(Modifier.fillMaxWidth().height(1.dp).background(Color(0xFF3A423C)))
                 BreakdownRow("Σύνολο κέρδους", eur(payout), emphasize = true)
                 if (isCash) {
                     BreakdownRow("Είσπραξη μετρητών", "${moneyPlain(cashAmount)}€", emphasize = true)
@@ -1425,8 +1425,6 @@ private fun StackedOfferCard(
 }
 
 @Composable
-
-@Composable
 private fun BreakdownRow(label: String, value: String, emphasize: Boolean = false) {
     Row(
         Modifier.fillMaxWidth(),
@@ -1448,6 +1446,7 @@ private fun BreakdownRow(label: String, value: String, emphasize: Boolean = fals
     }
 }
 
+@Composable
 private fun Chip(text: String, bg: Color, fg: Color) {
     Text(
         text,
