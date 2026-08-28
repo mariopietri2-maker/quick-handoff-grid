@@ -208,10 +208,10 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             .setAutoCancel(true)
             .setOnlyAlertOnce(false)
             .setDefaults(NotificationCompat.DEFAULT_LIGHTS)
-        if (isStoreCall) {
-            builder.setFullScreenIntent(pi, true)
-            builder.setTimeoutAfter(60_000L)
-        }
+        // Heads-up / lock-screen for offers and store calls when backgrounded
+        builder.setFullScreenIntent(pi, true)
+        builder.setTimeoutAfter(90_000L)
+
         val id = if (isStoreCall) {
             STORE_CALL_NOTIF_ID + (System.currentTimeMillis() % 100).toInt()
         } else {

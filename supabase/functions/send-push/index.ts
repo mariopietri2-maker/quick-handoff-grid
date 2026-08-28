@@ -293,14 +293,19 @@ async function sendFcm(opts: {
                 },
               };
             }
-            // Store calls MUST use a system notification + channel sound.
+            // Offers + store calls MUST use system notification + channel sound.
             // Data-only messages often never wake the process when the app is
-            // backgrounded/killed (OEM restrictions) — driver only hears sound
-            // after opening the app (poll). Notification+data plays the channel
-            // sound from the system tray even when the process is dead.
-            const isStoreCall = (opts.data?.type === "store_call") ||
-              opts.channelId === "driver-store-calls-v1";
-            if (isStoreCall) {
+            // backgrounded/killed (OEM restrictions). Notification+data plays
+            // the channel sound from the system tray even when the process is dead.
+            const msgType = opts.data?.type || "";
+            const isCritical =
+              msgType === "store_call" ||
+              msgType === "offer" ||
+              opts.channelId === "driver-store-calls-v1" ||
+              opts.channelId === "driver-offers-v5" ||
+              opts.channelId === "driver-offers-v4" ||
+              opts.channelId === "driver-offers-v3";
+            if (isCritical) {
               return {
                 token: opts.token,
                 notification: { title: opts.title, body: opts.body },
@@ -316,7 +321,7 @@ async function sendFcm(opts: {
                     default_light_settings: true,
                     notification_priority: "PRIORITY_MAX",
                     visibility: "PUBLIC",
-                    tag: collapse || "store_call",
+                    tag: collapse || (msgType === "store_call" ? "store_call" : "driver_offer"),
                   },
                 },
               };
@@ -366,7 +371,14 @@ async function sendFcm(opts: {
             },
             data: { ...opts.data, title: opts.title, body: opts.body },
           }
-          : ((opts.data?.type === "store_call") || opts.channelId === "driver-store-calls-v1")
+          : (
+            opts.data?.type === "store_call" ||
+            opts.data?.type === "offer" ||
+            opts.channelId === "driver-store-calls-v1" ||
+            opts.channelId === "driver-offers-v5" ||
+            opts.channelId === "driver-offers-v4" ||
+            opts.channelId === "driver-offers-v3"
+          )
           ? {
             to: opts.token,
             priority: "high",
@@ -377,7 +389,7 @@ async function sendFcm(opts: {
               body: opts.body,
               sound: offerSound,
               android_channel_id: opts.channelId,
-              tag: collapse || "store_call",
+              tag: collapse || (opts.data?.type === "store_call" ? "store_call" : "driver_offer"),
             },
             data: {
               ...opts.data,
