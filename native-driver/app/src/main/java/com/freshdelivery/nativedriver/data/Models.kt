@@ -97,7 +97,11 @@ data class StoreRow(
     val longitude: Double? = null,
     val image_url: String? = null,
     val cover_image_url: String? = null,
+    val is_active: Boolean? = true,
 )
+
+@Serializable
+data class StoreIdOnlyRow(val store_id: String)
 
 @Serializable
 data class StoreCountRow(

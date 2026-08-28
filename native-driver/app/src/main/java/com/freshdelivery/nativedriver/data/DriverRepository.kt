@@ -145,10 +145,11 @@ class DriverRepository(
     /** Active stores (public catalog view) for the driver map, incl. photos. */
     suspend fun fetchMapStores(): List<StoreRow> {
         return client.from("stores_public")
-            .select(Columns.list("id", "name", "latitude", "longitude", "image_url", "cover_image_url")) {
+            .select(Columns.list("id", "name", "latitude", "longitude", "image_url", "cover_image_url", "is_active")) {
                 order("name", Order.ASCENDING)
-                limit(100L)
+                limit(150L)
             }.decodeList<StoreRow>()
+            .filter { (it.is_active != false) && it.latitude != null && it.longitude != null }
     }
 
     /** Unoffered / unassigned kitchen order counts per store for map badges. */
@@ -156,7 +157,22 @@ class DriverRepository(
         val rows = runCatching {
             client.postgrest.rpc("get_store_active_order_counts").decodeList<StoreCountRow>()
         }.getOrDefault(emptyList())
-        return rows.associate { it.store_id to (it.active_count ?: 0L) }
+        if (rows.isNotEmpty()) {
+            return rows.associate { it.store_id to (it.active_count ?: 0L) }
+        }
+        return runCatching {
+            client.from("orders")
+                .select(Columns.list("store_id")) {
+                    filter {
+                        isIn("status", listOf("placed", "accepted", "preparing", "ready"))
+                        exact("driver_id", null)
+                    }
+                    limit(500L)
+                }.decodeList<StoreIdOnlyRow>()
+                .groupingBy { it.store_id }
+                .eachCount()
+                .mapValues { it.value.toLong() }
+        }.getOrDefault(emptyMap())
     }
 
     suspend fun fetchPendingOffers(userId: String): List<OfferUi> {
