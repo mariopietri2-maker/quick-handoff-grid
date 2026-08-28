@@ -1,0 +1,177 @@
+name: Fix driver map icons + background push
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-driver-map-push.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply fixes
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          # ---- DriverMapView: parallel photo load, bigger pins, count always ----
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/map/DriverMapView.kt')
+          t = p.read_text(encoding='utf-8')
+          if t.startswith('\ufeff'):
+              t = t[1:]
+          if 'coroutineScope' not in t:
+              t = t.replace(
+                  'import kotlinx.coroutines.Dispatchers\nimport kotlinx.coroutines.withContext',
+                  'import kotlinx.coroutines.Dispatchers\nimport kotlinx.coroutines.async\nimport kotlinx.coroutines.awaitAll\nimport kotlinx.coroutines.coroutineScope\nimport kotlinx.coroutines.withContext',
+              )
+          old_prod = '''    val storeIcons by produceState<Map<String, Bitmap>>(initialValue = emptyMap(), storeMarkers) {
+        val placeholders = storeMarkers.associate { m ->
+            m.id to createStoreMarkerBitmap(null, m.name, m.count)
+        }
+        value = placeholders
+        withContext(Dispatchers.IO) {
+            storeMarkers.forEach { m ->
+                val url = m.imageUrl ?: return@forEach
+                val photo = try {
+                    val req = ImageRequest.Builder(context)
+                        .data(url)
+                        .allowHardware(false)
+                        .size(256)
+                        .build()
+                    (imageLoader.execute(req) as? SuccessResult)?.drawable?.toBitmapOrNull()
+                } catch (_: Throwable) {
+                    null
+                }
+                if (photo != null) {
+                    val upgraded = createStoreMarkerBitmap(photo, m.name, m.count)
+                    value = value + (m.id to upgraded)
+                }
+            }
+        }
+    }'''
+          new_prod = '''    val storeIcons by produceState<Map<String, Bitmap>>(initialValue = emptyMap(), storeMarkers) {
+        // Instant placeholders with order-count badges (no network wait).
+        val placeholders = storeMarkers.associate { m ->
+            m.id to createStoreMarkerBitmap(null, m.name, m.count)
+        }
+        value = placeholders
+        // Load all store photos in parallel so icons appear ASAP.
+        withContext(Dispatchers.IO) {
+            coroutineScope {
+                val jobs = storeMarkers.map { m ->
+                    async {
+                        val url = m.imageUrl?.takeIf { it.isNotBlank() } ?: return@async null
+                        val photo = try {
+                            val req = ImageRequest.Builder(context)
+                                .data(url)
+                                .allowHardware(false)
+                                .size(192)
+                                .memoryCacheKey(url)
+                                .diskCacheKey(url)
+                                .build()
+                            (imageLoader.execute(req) as? SuccessResult)?.drawable?.toBitmapOrNull()
+                        } catch (_: Throwable) {
+                            null
+                        }
+                        if (photo != null) m.id to createStoreMarkerBitmap(photo, m.name, m.count) else null
+                    }
+                }
+                jobs.awaitAll().filterNotNull().forEach { (id, bmp) ->
+                    value = value + (id to bmp)
+                }
+            }
+        }
+    }'''
+          if old_prod in t:
+              t = t.replace(old_prod, new_prod)
+              print('parallel store icons')
+          t = t.replace('.withIconSize(1.35)', '.withIconSize(1.55)')
+          # larger marker box
+          t = t.replace('val box = 104f', 'val box = 112f')
+          t = t.replace('val badgeH = 32f', 'val badgeH = 34f')
+          p.write_text(t, encoding='utf-8')
+
+          # ---- HomeScreen: cover_image_url fallback ----
+          hp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt')
+          ht = hp.read_text(encoding='utf-8')
+          old_m = '''            com.freshdelivery.nativedriver.ui.map.StoreMapMarker(
+                id = it.id,
+                lat = it.latitude!!,
+                lng = it.longitude!!,
+                name = it.name ?: "Store",
+                imageUrl = it.image_url,
+                count = state.storeCounts[it.id] ?: 0L,
+            )'''
+          new_m = '''            com.freshdelivery.nativedriver.ui.map.StoreMapMarker(
+                id = it.id,
+                lat = it.latitude!!,
+                lng = it.longitude!!,
+                name = it.name ?: "Store",
+                imageUrl = it.image_url?.takeIf { u -> u.isNotBlank() }
+                    ?: it.cover_image_url?.takeIf { u -> u.isNotBlank() },
+                count = state.storeCounts[it.id] ?: 0L,
+            )'''
+          if old_m in ht:
+              ht = ht.replace(old_m, new_m)
+              print('cover fallback')
+          hp.write_text(ht, encoding='utf-8')
+
+          # ---- ViewModel: refresh store map every poll (faster counts) ----
+          vp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
+          vt = vp.read_text(encoding='utf-8')
+          vt2 = vt.replace('if (tick % 5 == 0) refreshStoreMap()', 'if (tick % 2 == 0) refreshStoreMap()')
+          # also refresh map when offers update
+          if 'maybeAlertOffers' in vt2 and 'refreshStoreMap()' in vt2:
+              vt2 = vt2.replace(
+                  'if (!isKOnly) maybeAlertOffers(offers + stacked)',
+                  'if (!isKOnly) maybeAlertOffers(offers + stacked)\n                if (offers.isNotEmpty() || stacked.isNotEmpty()) refreshStoreMap()',
+              )
+          if vt2 != vt:
+              vp.write_text(vt2, encoding='utf-8')
+              print('faster store map refresh')
+
+          # ---- FCM: always show+sound for offers; treat new_order types ----
+          fp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/DriverFirebaseMessagingService.kt')
+          ft = fp.read_text(encoding='utf-8')
+          ft = ft.replace(
+              'val isOffer = type == "offer" || type == "new_offer" || data.containsKey("offer_id")',
+              'val isOffer = type == "offer" || type == "new_offer" || type == "pending_offer" || type == "order_offer" || data.containsKey("offer_id") || data.containsKey("order_id")',
+          )
+          old_else = '''            } else {
+                showNotification(title, body, isStoreCall = false)
+                if (isOffer || type.isBlank()) {
+                    playOfferSound()
+                    vibratePattern()
+                }
+            }'''
+          new_else = '''            } else {
+                // Always surface a local heads-up when the process is awake
+                // (system may also show notification payload when backgrounded).
+                showNotification(title, body, isStoreCall = false)
+                playOfferSound()
+                vibratePattern()
+            }'''
+          if old_else in ft:
+              ft = ft.replace(old_else, new_else)
+              print('fcm always sound')
+          # Longer wake for offers
+          ft = ft.replace('acquire(if (isStoreCall) 20_000L else 8_000L)', 'acquire(if (isStoreCall) 25_000L else 15_000L)')
+          fp.write_text(ft, encoding='utf-8')
+
+          # Bump driver version
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 272', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.18-map-push"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('version 2.6.18-map-push')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): instant store icons, order counts, background offer sound"; git push; fi
