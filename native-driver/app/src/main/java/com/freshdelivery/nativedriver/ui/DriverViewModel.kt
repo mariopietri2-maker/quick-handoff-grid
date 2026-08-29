@@ -186,6 +186,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private var mediaPlayer: MediaPlayer? = null
     private var storeCallRealtimeJob: Job? = null
     private var lastOfferAlertKey: String? = null
+    private var lastStoreCallAlertKey: String? = null
 
     init {
         viewModelScope.launch {

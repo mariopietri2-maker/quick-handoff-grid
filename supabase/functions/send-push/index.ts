@@ -194,8 +194,8 @@ function resolveChannelId(
   const channel = typeof data?.channel === "string" ? data.channel : "";
   if (channel === "driver-inbox" || type === "inbox") return "driver-inbox";
   if (app === "customer") return "customer-orders-v2";
-  if (type === "store_call") return "driver-store-calls-v1";
-  return "driver-offers-v5";
+  if (type === "store_call") return "driver-store-calls-v2";
+  return "driver-offers-v6";
 }
 
 function resolveCollapseKey(row: OutboxRow): string {
@@ -217,8 +217,8 @@ function resolveCollapseKey(row: OutboxRow): string {
 
 function resolveAndroidSound(channelId: string): string {
   if (
-    channelId === "driver-store-calls-v1" ||
-    channelId === "driver-offers-v5" ||
+    channelId === "driver-store-calls-v2" ||
+    channelId === "driver-offers-v6" ||
     channelId === "driver-offers-v4" ||
     channelId === "driver-offers-v3" ||
     channelId === "driver-offers-v2"
@@ -301,8 +301,8 @@ async function sendFcm(opts: {
             const isCritical =
               msgType === "store_call" ||
               msgType === "offer" ||
-              opts.channelId === "driver-store-calls-v1" ||
-              opts.channelId === "driver-offers-v5" ||
+              opts.channelId === "driver-store-calls-v2" ||
+              opts.channelId === "driver-offers-v6" ||
               opts.channelId === "driver-offers-v4" ||
               opts.channelId === "driver-offers-v3";
             if (isCritical) {
@@ -374,8 +374,8 @@ async function sendFcm(opts: {
           : (
             opts.data?.type === "store_call" ||
             opts.data?.type === "offer" ||
-            opts.channelId === "driver-store-calls-v1" ||
-            opts.channelId === "driver-offers-v5" ||
+            opts.channelId === "driver-store-calls-v2" ||
+            opts.channelId === "driver-offers-v6" ||
             opts.channelId === "driver-offers-v4" ||
             opts.channelId === "driver-offers-v3"
           )

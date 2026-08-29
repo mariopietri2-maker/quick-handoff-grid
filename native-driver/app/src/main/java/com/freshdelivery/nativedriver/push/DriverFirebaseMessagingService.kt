@@ -33,7 +33,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         /** Bump when channel attributes change (Android freezes channel settings). */
-        const val CHANNEL_ID = "driver-offers-v5"
+        const val CHANNEL_ID = "driver-offers-v6"
         private const val STORE_CALL_NOTIF_ID = 71001
 
         /** Create channel at process start so first push already has sound. */
@@ -63,6 +63,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             }
             manager.createNotificationChannel(channel)
             // Drop old silent channel ids if present (optional; id is frozen per install)
+            runCatching { manager.deleteNotificationChannel("driver-offers-v5") }
             runCatching { manager.deleteNotificationChannel("driver-offers-v4")
             runCatching { manager.deleteNotificationChannel("driver-offers-v3") } }
             runCatching { manager.deleteNotificationChannel("driver-offers-v2") }
