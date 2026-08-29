@@ -1,0 +1,184 @@
+name: Fix store-call ring volume
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-store-call-ring.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch ring path
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          # --- ViewModel: start StoreCallRingService on open store calls; separate alert key ---
+          vp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
+          vt = vp.read_text(encoding='utf-8')
+
+          if 'lastStoreCallAlertKey' not in vt:
+              vt = vt.replace(
+                  'private var lastOfferAlertKey: String? = null',
+                  'private var lastOfferAlertKey: String? = null\n    private var lastStoreCallAlertKey: String? = null',
+              )
+
+          old_sc = '''                if (isCallDriverRole && storeCalls.isNotEmpty()) {
+                    val key = storeCalls.joinToString(",") { it.id }
+                    if (key != lastOfferAlertKey) {
+                        lastOfferAlertKey = key
+                        val local = _state.value.settingsLocal
+                        if (local.offerSound) playSoundById(local.soundId)
+                        if (local.vibration) vibrateOffer()
+                    }
+                }'''
+          new_sc = '''                if (isCallDriverRole && storeCalls.isNotEmpty()) {
+                    val key = storeCalls.joinToString(",") { it.id }
+                    if (key != lastStoreCallAlertKey) {
+                        lastStoreCallAlertKey = key
+                        // Looping foreground ring at ALARM volume — works with screen off / other apps.
+                        runCatching {
+                            StoreCallRingService.start(
+                                getApplication(),
+                                title = "📞 Κλήση καταστήματος",
+                                body = storeCalls.firstOrNull()?.store_name
+                                    ?: "Άνοιξε για αποδοχή",
+                            )
+                        }
+                        val local = _state.value.settingsLocal
+                        if (local.vibration) vibrateOffer()
+                    }
+                } else if (storeCalls.isEmpty()) {
+                    lastStoreCallAlertKey = null
+                    runCatching { StoreCallRingService.stop(getApplication()) }
+                }'''
+          if old_sc in vt:
+              vt = vt.replace(old_sc, new_sc)
+              print('store call ring service on poll')
+
+          # playSoundById: force ALARM stream after create
+          old_play = '''            OfferSoundId.CLASSIC -> runCatching {
+                mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+                    it.isLooping = false'''
+          if old_play in vt:
+              vt = vt.replace(
+                  old_play,
+                  '''            OfferSoundId.CLASSIC -> runCatching {
+                mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+                    runCatching {
+                        it.setAudioAttributes(
+                            android.media.AudioAttributes.Builder()
+                                .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                                .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                                .build(),
+                        )
+                    }
+                    it.isLooping = false''',
+              )
+              print('classic sound ALARM attrs')
+
+          vp.write_text(vt, encoding='utf-8')
+
+          # --- StoreCallRingService: bump channel + force STREAM_ALARM ---
+          sp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/StoreCallRingService.kt')
+          st = sp.read_text(encoding='utf-8')
+          st = st.replace(
+              'const val CHANNEL_ID = "driver-store-calls-v1"',
+              'const val CHANNEL_ID = "driver-store-calls-v2"',
+          )
+          # Ensure looping player uses ALARM even when created from res
+          if 'setAudioAttributes' not in st.split('startLoopingSound')[1][:800] if 'startLoopingSound' in st else True:
+              old_loop = '''            val p = MediaPlayer.create(this, R.raw.fresh_delivery)
+                ?: MediaPlayer().apply {
+                    setDataSource(
+                        applicationContext,
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+                    )
+                    setAudioAttributes(
+                        AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_ALARM)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build(),
+                    )
+                    prepare()
+                }
+            p.isLooping = true
+            p.setVolume(1f, 1f)
+            p.start()'''
+              new_loop = '''            val attrs = AudioAttributes.Builder()
+                .setUsage(AudioAttributes.USAGE_ALARM)
+                .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                .build()
+            val p = MediaPlayer().apply {
+                setAudioAttributes(attrs)
+                setDataSource(
+                    applicationContext,
+                    android.net.Uri.parse("android.resource://$packageName/${R.raw.fresh_delivery}"),
+                )
+                isLooping = true
+                setVolume(1f, 1f)
+                prepare()
+            }
+            // Fallback to system ringtone if raw missing
+            runCatching { p.start() }.onFailure {
+                runCatching {
+                    p.reset()
+                    p.setAudioAttributes(attrs)
+                    p.setDataSource(
+                        applicationContext,
+                        RingtoneManager.getDefaultUri(RingtoneManager.TYPE_RINGTONE),
+                    )
+                    p.isLooping = true
+                    p.prepare()
+                    p.start()
+                }
+            }'''
+              if old_loop in st:
+                  st = st.replace(old_loop, new_loop)
+                  print('ring service alarm stream')
+          # request audio focus in startLoopingSound area - skip if complex
+          sp.write_text(st, encoding='utf-8')
+
+          # --- FCM: bump offer channel + always start ring service for store_call ---
+          fp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/DriverFirebaseMessagingService.kt')
+          ft = fp.read_text(encoding='utf-8')
+          ft = ft.replace(
+              'const val CHANNEL_ID = "driver-offers-v5"',
+              'const val CHANNEL_ID = "driver-offers-v6"',
+          )
+          if 'deleteNotificationChannel("driver-offers-v5")' not in ft:
+              ft = ft.replace(
+                  'runCatching { manager.deleteNotificationChannel("driver-offers-v4")',
+                  'runCatching { manager.deleteNotificationChannel("driver-offers-v5") }\n            runCatching { manager.deleteNotificationChannel("driver-offers-v4")',
+              )
+          # Ensure store_call path starts ring service (already there) - also for generic
+          fp.write_text(ft, encoding='utf-8')
+
+          # send-push channel id for store calls → v2
+          pp = Path('supabase/functions/send-push/index.ts')
+          if pp.exists():
+              pt = pp.read_text(encoding='utf-8')
+              pt2 = pt.replace('driver-store-calls-v1', 'driver-store-calls-v2')
+              pt2 = pt2.replace('driver-offers-v5', 'driver-offers-v6')
+              if pt2 != pt:
+                  pp.write_text(pt2, encoding='utf-8')
+                  print('send-push channel bump')
+
+          # version bump
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 273', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.19-store-ring"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('bumped 2.6.19-store-ring')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): store-call alarm ring loops in background"; git push; fi
