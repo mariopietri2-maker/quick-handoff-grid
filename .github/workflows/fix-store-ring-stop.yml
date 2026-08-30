@@ -1,0 +1,180 @@
+name: Fix store ring stop
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-store-ring-stop.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          # 1) StoreCallRingService — shorter max, reliable stop via stopService
+          sp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/StoreCallRingService.kt')
+          st = sp.read_text(encoding='utf-8')
+          st = st.replace('private const val MAX_RING_MS = 45_000L', 'private const val MAX_RING_MS = 30_000L')
+
+          old_stop = '''        fun stop(context: Context) {
+            context.startService(
+                Intent(context, StoreCallRingService::class.java).apply { action = ACTION_STOP },
+            )
+        }'''
+          new_stop = '''        fun stop(context: Context) {
+            // Prefer explicit stopService so OEM kills the FGS even if onStartCommand is delayed.
+            runCatching {
+                context.startService(
+                    Intent(context, StoreCallRingService::class.java).apply { action = ACTION_STOP },
+                )
+            }
+            runCatching {
+                context.stopService(Intent(context, StoreCallRingService::class.java))
+            }
+        }'''
+          if old_stop in st:
+              st = st.replace(old_stop, new_stop)
+              print('stop() improved')
+
+          # On ACTION_STOP also cancel notification explicitly
+          if 'ACTION_STOP' in st and 'cancel(NOTIF_ID)' not in st:
+              st = st.replace(
+                  '''            ACTION_STOP -> {
+                stopSelfRing()
+                return START_NOT_STICKY
+            }''',
+                  '''            ACTION_STOP -> {
+                stopSelfRing()
+                runCatching {
+                    getSystemService(NotificationManager::class.java)?.cancel(NOTIF_ID)
+                }
+                return START_NOT_STICKY
+            }''',
+              )
+              print('ACTION_STOP cancel notif')
+
+          # Don't restart sound if already looping (onStartCommand START)
+          if 'if (player?.isPlaying == true)' not in st:
+              st = st.replace(
+                  'acquireWake()\n                startLoopingSound()',
+                  '''if (player?.isPlaying != true) {
+                    acquireWake()
+                    startLoopingSound()
+                }
+                // Always (re)arm auto-stop so ring never runs forever
+                stopRunnable?.let { handler.removeCallbacks(it) }
+                val stop = Runnable { stopSelfRing() }
+                stopRunnable = stop
+                handler.postDelayed(stop, MAX_RING_MS)
+                return START_STICKY''',
+              )
+              # Remove duplicate timer block that follows if we duplicated
+              # careful: original had stopRunnable after startLoopingSound
+              # if we injected early return, remove old timer
+              old_timer = '''                stopRunnable?.let { handler.removeCallbacks(it) }
+                val stop = Runnable { stopSelfRing() }
+                stopRunnable = stop
+                handler.postDelayed(stop, MAX_RING_MS)
+            }
+        }
+        return START_STICKY'''
+              # might appear twice - leave as is if structure broken
+          sp.write_text(st, encoding='utf-8')
+
+          # Fix potential double timer in onStartCommand by rewriting the else branch cleanly
+          st = sp.read_text(encoding='utf-8')
+          # Find and replace entire onStartCommand method body for reliability
+          import re as _re
+          m = _re.search(r'override fun onStartCommand\(intent: Intent\?, flags: Int, startId: Int\): Int \{.*?return START_STICKY\n    \}', st, _re.S)
+          if m:
+              new_osc = '''override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        when (intent?.action) {
+            ACTION_STOP -> {
+                stopSelfRing()
+                runCatching {
+                    getSystemService(NotificationManager::class.java)?.cancel(NOTIF_ID)
+                }
+                return START_NOT_STICKY
+            }
+            else -> {
+                val title = intent?.getStringExtra("title") ?: "📞 Κλήση καταστήματος"
+                val body = intent?.getStringExtra("body") ?: "Άνοιξε την εφαρμογή για αποδοχή"
+                ensureChannel(this)
+                val notif = buildNotification(title, body)
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ServiceCompat.startForeground(
+                        this,
+                        NOTIF_ID,
+                        notif,
+                        ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK,
+                    )
+                } else {
+                    startForeground(NOTIF_ID, notif)
+                }
+                if (player?.isPlaying != true) {
+                    acquireWake()
+                    startLoopingSound()
+                }
+                // Auto-stop — never ring forever
+                stopRunnable?.let { handler.removeCallbacks(it) }
+                val stop = Runnable { stopSelfRing() }
+                stopRunnable = stop
+                handler.postDelayed(stop, MAX_RING_MS)
+            }
+        }
+        return START_STICKY
+    }'''
+              st = st[:m.start()] + new_osc + st[m.end():]
+              sp.write_text(st, encoding='utf-8')
+              print('onStartCommand rewritten')
+
+          # 2) ViewModel realtime: do NOT start ring on every event — refreshWork handles it once
+          vp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
+          vt = vp.read_text(encoding='utf-8')
+          old_rt = '''                repo.subscribeStoreCalls().collect {
+                    if (!_state.value.online) return@collect
+                    if (!_state.value.isCallDriver) return@collect
+                    refreshWork()
+                    val local = _state.value.settingsLocal
+                    if (local.offerSound) {
+                        runCatching {
+                            StoreCallRingService.start(
+                                getApplication(),
+                                title = "📞 Κλήση καταστήματος",
+                                body = "Νέα κλήση — άνοιξε για αποδοχή",
+                            )
+                        }
+                    }
+                    if (local.vibration) vibrateOffer()
+                }'''
+          new_rt = '''                repo.subscribeStoreCalls().collect {
+                    if (!_state.value.online) return@collect
+                    if (!_state.value.isCallDriver) return@collect
+                    // Only refresh — refreshWork starts ring once per call id (no restart spam).
+                    refreshWork()
+                }'''
+          if old_rt in vt:
+              vt = vt.replace(old_rt, new_rt)
+              print('realtime no ring spam')
+              vp.write_text(vt, encoding='utf-8')
+
+          # 3) Bump version so APK rebuild is obvious
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 274', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.20-ring-stop"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('version 2.6.20-ring-stop')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): stop store-call ring after 30s; no realtime restart spam"; git push; fi
