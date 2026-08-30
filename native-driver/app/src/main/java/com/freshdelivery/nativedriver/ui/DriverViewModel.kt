@@ -1,6 +1,7 @@
 package com.freshdelivery.nativedriver.ui
 
 import android.app.Application
+import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
 import android.media.RingtoneManager
@@ -34,7 +35,6 @@ import com.freshdelivery.nativedriver.data.TicketMessageRow
 import com.freshdelivery.nativedriver.data.StoreCallRow
 import com.freshdelivery.nativedriver.data.ActiveStoreCallRow
 import com.freshdelivery.nativedriver.data.StoreRow
-import io.github.jan.supabase.realtime.PostgresAction
 import com.freshdelivery.nativedriver.location.DriverGeo
 import com.freshdelivery.nativedriver.location.DriverLocationService
 import com.freshdelivery.nativedriver.location.DriverLocationTracker
@@ -129,7 +129,6 @@ private fun friendlyError(t: Throwable?): String {
     }
 }
 
-/** Classifies an exception as a technical failure (network/server) vs a validation message. */
 private fun isTechnicalError(t: Throwable?): Boolean {
     val lower = t?.message?.lowercase() ?: return false
     return "unable to resolve host" in lower ||
@@ -167,10 +166,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     )
     val state: StateFlow<DriverUiState> = _state.asStateFlow()
 
-    /**
-     * Technical failures are logged to app_errors for the admin panel and hidden
-     * from the driver (returns null). User-facing validation messages still show.
-     */
     private fun handleError(context: String, e: Throwable?): String? {
         if (!isTechnicalError(e)) return friendlyError(e)
         val message = e?.message ?: friendlyError(e)
@@ -181,7 +176,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private var pollJob: Job? = null
     private var chatJob: Job? = null
     private var liveChatJob: Job? = null
-    /** Keeps driver_locations.updated_at fresh while online (admin Online + dispatch). */
     private var heartbeatJob: Job? = null
     private var mediaPlayer: MediaPlayer? = null
     private var storeCallRealtimeJob: Job? = null
@@ -206,7 +200,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 viewModelScope.launch { runCatching { repo.upsertPushToken(uid, token) } }
             }
         }
-        // Instant store-call refresh: FCM data message (type=store_call) → refresh now.
         StoreCallSignal.listener = {
             viewModelScope.launch { runCatching { refreshWork() } }
         }
@@ -246,7 +239,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         prefs.offerSoundId = s.soundId
         prefs.mapStyleLight = s.mapStyleLight
         _state.value = _state.value.copy(settingsLocal = s)
-        if (!s.offerSound) stopOfferSound()
+        if (!s.offerSound) {
+            stopOfferSound()
+            runCatching { StoreCallRingService.stop(getApplication()) }
+        }
     }
 
     fun previewSound(soundId: String) {
@@ -344,7 +340,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     ensureStoreCallRealtime(true)
                     DriverLocationService.start(getApplication(), onBreak = false)
                     locationTracker.start()
-                    // Immediate GPS so admin Online flips without waiting for movement
                     pushPresence(uid)
                     startPresenceHeartbeat()
                 } else {
@@ -352,6 +347,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     ensureStoreCallRealtime(false)
                     DriverLocationService.stop(getApplication())
                     repo.clearLocation(uid)
+                    runCatching { StoreCallRingService.stop(getApplication()) }
                 }
                 _state.value = _state.value.copy(driverState = repo.loadDriverState(uid))
             }.onFailure { e ->
@@ -395,7 +391,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         refreshStoreMap()
     }
 
-    /** Stores + their active order counts for the Home map. */
     fun refreshStoreMap() {
         viewModelScope.launch {
             runCatching {
@@ -419,13 +414,11 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 val trips = repo.fetchActiveTrips(uid)
                 val maxStack = settings.max_stacked_orders ?: 3
                 val callRole = driver?.call_role
-                // pure K = store calls only; both/admin = regular offers + store calls
                 val isKOnly = callRole == "K"
                 val isCallDriverRole = callRole == "K" || callRole == "both"
                 val offers: List<OfferUi>
                 val stacked: List<OfferUi>
                 val cashCappedNow = (dState.shift_cash_balance ?: 0.0) >= (settings.max_cash_cap ?: 200.0)
-                // cash cap still applies when receiving regular offers (not pure K)
                 val blocked = dState.on_break == true || (!isKOnly && cashCappedNow)
                 if (trips.isNotEmpty()) {
                     offers = emptyList()
@@ -440,14 +433,11 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     } else emptyList()
                 } else {
                     stacked = emptyList()
-                    // K-role drivers work ONLY store calls — never main-project orders
                     offers = if (!blocked && _state.value.online && !isKOnly) repo.fetchPendingOffers(uid) else emptyList()
                 }
 
-                // Fetch store calls for K-role drivers
                 val storeCalls = if (!blocked && _state.value.online && isCallDriverRole)
                     repo.fetchOpenStoreCalls() else emptyList()
-                // Persistent active job card
                 val activeStoreCall = if (_state.value.online && isCallDriverRole)
                     repo.fetchMyActiveStoreCall() else null
 
@@ -465,12 +455,24 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 if (!isKOnly) maybeAlertOffers(offers + stacked)
                 if (isCallDriverRole && storeCalls.isNotEmpty()) {
                     val key = storeCalls.joinToString(",") { it.id }
-                    if (key != lastOfferAlertKey) {
-                        lastOfferAlertKey = key
+                    if (key != lastStoreCallAlertKey) {
+                        lastStoreCallAlertKey = key
                         val local = _state.value.settingsLocal
-                        if (local.offerSound) playSoundById(local.soundId)
+                        if (local.offerSound) {
+                            runCatching {
+                                StoreCallRingService.start(
+                                    getApplication(),
+                                    title = "📞 Κλήση καταστήματος",
+                                    body = storeCalls.firstOrNull()?.store_name
+                                        ?: "Άνοιξε για αποδοχή",
+                                )
+                            }
+                        }
                         if (local.vibration) vibrateOffer()
                     }
+                } else if (storeCalls.isEmpty()) {
+                    lastStoreCallAlertKey = null
+                    runCatching { StoreCallRingService.stop(getApplication()) }
                 }
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = handleError("refreshWork", e))
@@ -511,7 +513,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         val removed = s.offers.firstOrNull { it.offerId == offerId }
             ?: s.stackedOffers.firstOrNull { it.offerId == offerId }
-        // Optimistically dismiss the offer sheet so the driver gets instant feedback.
         _state.value = s.copy(
             offers = s.offers.filterNot { it.offerId == offerId },
             stackedOffers = s.stackedOffers.filterNot { it.offerId == offerId },
@@ -543,9 +544,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-
-    /** Accept a store call (K-role driver). */
-
     private fun ensureStoreCallRealtime(enabled: Boolean) {
         if (!enabled) {
             storeCallRealtimeJob?.cancel()
@@ -560,7 +558,15 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     if (!_state.value.isCallDriver) return@collect
                     refreshWork()
                     val local = _state.value.settingsLocal
-                    if (local.offerSound) playSoundById(local.soundId)
+                    if (local.offerSound) {
+                        runCatching {
+                            StoreCallRingService.start(
+                                getApplication(),
+                                title = "📞 Κλήση καταστήματος",
+                                body = "Νέα κλήση — άνοιξε για αποδοχή",
+                            )
+                        }
+                    }
                     if (local.vibration) vibrateOffer()
                 }
             }
@@ -569,6 +575,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun acceptStoreCall(callId: String) {
         runCatching { StoreCallRingService.stop(getApplication()) }
+        lastStoreCallAlertKey = null
         val s = _state.value
         val removed = s.storeCalls.firstOrNull { it.id == callId }
         _state.value = s.copy(
@@ -598,7 +605,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Finish the active store call (K-role driver). */
     fun completeActiveCall() {
         val call = _state.value.activeStoreCall ?: return
         _state.value = _state.value.copy(busy = true, error = null)
@@ -620,7 +626,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             }
         }
     }
-
 
     fun openOps() {
         if (!_state.value.isOps) return
@@ -665,7 +670,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         val removed = s.offers.firstOrNull { it.offerId == offerId }
             ?: s.stackedOffers.firstOrNull { it.offerId == offerId }
-        // Optimistically dismiss the offer sheet for instant feedback.
         _state.value = s.copy(
             offers = s.offers.filterNot { it.offerId == offerId },
             stackedOffers = s.stackedOffers.filterNot { it.offerId == offerId },
@@ -697,8 +701,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun advanceTrip(orderId: String, nextStatus: String) {
         val s = _state.value
-        // Optimistically advance the trip card so the button reacts instantly;
-        // roll back to the previous status if the server rejects the transition.
         val before = s.activeTrips
         val after = if (nextStatus == "delivered") {
             s.activeTrips.filterNot { it.order.id == orderId }
@@ -806,7 +808,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun refreshChatMessages(ticketId: String) {
-        val uid = _state.value.userId ?: return
         viewModelScope.launch {
             runCatching { repo.fetchTicketMessages(ticketId) }
                 .onSuccess { msgs ->
@@ -866,7 +867,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Start live chat with required topic. Only SUPPORT can close (server-side). */
     fun startLiveChat(topic: String, initialMessage: String? = null) {
         val uid = _state.value.userId ?: return
         val topicTrim = topic.trim()
@@ -972,11 +972,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(error = null, info = null)
     }
 
-    /**
-     * Admin Online requires driver_locations.updated_at within 10 minutes.
-     * Fused location only updates on movement (≥3 m), so parked drivers need
-     * a timed heartbeat that re-upserts the last known coordinates.
-     */
     private fun startPresenceHeartbeat() {
         heartbeatJob?.cancel()
         heartbeatJob = viewModelScope.launch {
@@ -1014,8 +1009,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 if (_state.value.signedIn) {
                     refreshWork()
                     if (_state.value.tab == DriverTab.Inbox) refreshInbox()
-                    // Keep store order badges fresh on the map even when offline.
-                    if (tick % 5 == 0) refreshStoreMap()
+                    if (tick % 2 == 0) refreshStoreMap()
                 }
             }
         }
@@ -1026,6 +1020,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         pollJob = null
         stopPresenceHeartbeat()
         stopOfferSound()
+        runCatching { StoreCallRingService.stop(getApplication()) }
     }
 
     private fun maybeAlertOffers(offers: List<OfferUi>) {
@@ -1045,9 +1040,14 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     private fun playSoundById(soundId: String) {
         stopOfferSound()
         val app = getApplication<Application>()
+        val attrs = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_ALARM)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
         when (OfferSoundId.fromId(soundId)) {
             OfferSoundId.CLASSIC -> runCatching {
                 mediaPlayer = MediaPlayer.create(app, R.raw.fresh_delivery)?.also {
+                    runCatching { it.setAudioAttributes(attrs) }
                     it.isLooping = false
                     it.start()
                 }
@@ -1055,6 +1055,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             OfferSoundId.CHIME -> runCatching {
                 val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
                 mediaPlayer = MediaPlayer.create(app, uri)?.also {
+                    runCatching { it.setAudioAttributes(attrs) }
                     it.isLooping = false
                     it.start()
                 }
@@ -1062,6 +1063,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             OfferSoundId.ALERT -> runCatching {
                 val uri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 mediaPlayer = MediaPlayer.create(app, uri)?.also {
+                    runCatching { it.setAudioAttributes(attrs) }
                     it.isLooping = false
                     it.start()
                     it.setOnCompletionListener { stopOfferSound() }
@@ -1113,14 +1115,13 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    /** Play a short sequence of DTMF/system tones (no asset files needed). */
     private fun playToneSequence(
         tones: List<Pair<Int, Int>>,
         gapsMs: List<Long> = emptyList(),
         volume: Int = 90,
     ) {
         runCatching {
-            val tg = ToneGenerator(AudioManager.STREAM_NOTIFICATION, volume.coerceIn(1, 100))
+            val tg = ToneGenerator(AudioManager.STREAM_ALARM, volume.coerceIn(1, 100))
             viewModelScope.launch {
                 try {
                     tones.forEachIndexed { i, (tone, dur) ->
@@ -1144,7 +1145,6 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 @Suppress("DEPRECATION")
                 app.getSystemService(Vibrator::class.java)
             } ?: return
-            // Stronger pattern: long pulse, short gap, long pulse, short gap, medium pulse
             val pattern = longArrayOf(0, 350, 80, 350, 80, 220)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 val amps = intArrayOf(0, 255, 0, 255, 0, 200)
