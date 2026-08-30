@@ -1,0 +1,88 @@
+name: Bump driver 2.6.21 and rebuild APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/bump-driver-2-6-21.yml"
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch ring stop + version
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 275', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.21-bg-ring"', gt)
+          g.write_text(gt, encoding='utf-8')
+          print('version bumped')
+
+          sp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/push/StoreCallRingService.kt')
+          st = sp.read_text(encoding='utf-8')
+          st = st.replace('private const val MAX_RING_MS = 45_000L', 'private const val MAX_RING_MS = 30_000L')
+          old_stop = '''        fun stop(context: Context) {
+            context.startService(
+                Intent(context, StoreCallRingService::class.java).apply { action = ACTION_STOP },
+            )
+        }'''
+          new_stop = '''        fun stop(context: Context) {
+            runCatching {
+                context.startService(
+                    Intent(context, StoreCallRingService::class.java).apply { action = ACTION_STOP },
+                )
+            }
+            runCatching {
+                context.stopService(Intent(context, StoreCallRingService::class.java))
+            }
+        }'''
+          if old_stop in st:
+              st = st.replace(old_stop, new_stop)
+              print('stop improved')
+          sp.write_text(st, encoding='utf-8')
+
+          # Realtime: only refreshWork (no restart spam)
+          vp = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
+          vt = vp.read_text(encoding='utf-8')
+          old_rt = '''                repo.subscribeStoreCalls().collect {
+                    if (!_state.value.online) return@collect
+                    if (!_state.value.isCallDriver) return@collect
+                    refreshWork()
+                    val local = _state.value.settingsLocal
+                    if (local.offerSound) {
+                        runCatching {
+                            StoreCallRingService.start(
+                                getApplication(),
+                                title = "📞 Κλήση καταστήματος",
+                                body = "Νέα κλήση — άνοιξε για αποδοχή",
+                            )
+                        }
+                    }
+                    if (local.vibration) vibrateOffer()
+                }'''
+          new_rt = '''                repo.subscribeStoreCalls().collect {
+                    if (!_state.value.online) return@collect
+                    if (!_state.value.isCallDriver) return@collect
+                    refreshWork()
+                }'''
+          if old_rt in vt:
+              vt = vt.replace(old_rt, new_rt)
+              vp.write_text(vt, encoding='utf-8')
+              print('realtime deduped')
+          elif 'Only refresh' in vt or 'refreshWork()\n                }' in vt:
+              print('realtime already ok')
+          else:
+              print('realtime pattern not found')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "chore(native-driver): 2.6.21-bg-ring (30s auto-stop)"; git push; fi
