@@ -1,0 +1,64 @@
+name: Fix push token RPC client
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-push-token-rpc.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch DriverRepository upsertPushToken
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt')
+          t = p.read_text(encoding='utf-8')
+          old = '''    suspend fun upsertPushToken(userId: String, token: String) {
+        client.from("push_tokens").upsert(
+            PushTokenUpsert(user_id = userId, token = token),
+        ) { onConflict = "token" }
+    }'''
+          new = '''    suspend fun upsertPushToken(userId: String, token: String) {
+        // Prefer SECURITY DEFINER RPC so the same device token can be
+        // reassigned when a different driver logs in (UNIQUE token + RLS).
+        val rpcOk = runCatching {
+            client.postgrest.rpc(
+                "register_driver_push_token",
+                buildJsonObject {
+                    put("p_token", token)
+                    put("p_platform", "android")
+                },
+            )
+        }.isSuccess
+        if (!rpcOk) {
+            runCatching {
+                client.from("push_tokens").upsert(
+                    PushTokenUpsert(user_id = userId, token = token),
+                ) { onConflict = "token" }
+            }
+        }
+    }'''
+          if old in t:
+              t = t.replace(old, new)
+              print('upsert patched')
+          else:
+              print('pattern missing')
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \d+', 'versionCode = 276', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.22-fcm-token"', gt)
+          g.write_text(gt, encoding='utf-8')
+          p.write_text(t, encoding='utf-8')
+          print('version 2.6.22')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): FCM token register via RPC + 2.6.22"; git push; fi
