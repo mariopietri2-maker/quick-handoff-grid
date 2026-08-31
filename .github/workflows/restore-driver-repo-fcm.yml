@@ -1,0 +1,67 @@
+name: Restore DriverRepository + FCM RPC + bump APK
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-driver-repo-fcm.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore and patch
+        run: |
+          set -e
+          # Restore full file from last known good commit (before truncation)
+          git show 6fdfc002628abb1ac3730d1a856363d37620c00f:native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt > native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt')
+          t = p.read_text(encoding='utf-8')
+          old = '''    suspend fun upsertPushToken(userId: String, token: String) {
+        client.from("push_tokens").upsert(
+            PushTokenUpsert(user_id = userId, token = token),
+        ) { onConflict = "token" }
+    }'''
+          new = '''    suspend fun upsertPushToken(userId: String, token: String) {
+        // Prefer SECURITY DEFINER RPC so the same device token can be
+        // reassigned when a different driver logs in (UNIQUE token + RLS).
+        val rpcOk = runCatching {
+            client.postgrest.rpc(
+                "register_driver_push_token",
+                buildJsonObject {
+                    put("p_token", token)
+                    put("p_platform", "android")
+                },
+            )
+        }.isSuccess
+        if (!rpcOk) {
+            runCatching {
+                client.from("push_tokens").upsert(
+                    PushTokenUpsert(user_id = userId, token = token),
+                ) { onConflict = "token" }
+            }
+        }
+    }'''
+          if old not in t:
+              raise SystemExit('upsert pattern not found')
+          p.write_text(t.replace(old, new), encoding='utf-8')
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          gt = re.sub(r'versionCode = \\d+', 'versionCode = 276', gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.22-fcm-token"', gt)
+          g.write_text(gt, encoding='utf-8')
+          Path('native-driver/APK_VERSION.txt').write_text('2.6.22-fcm-token\nversionCode=276\n')
+          print('restored+patched', p.stat().st_size)
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): restore DriverRepository + FCM token RPC 2.6.22"; git push; fi
