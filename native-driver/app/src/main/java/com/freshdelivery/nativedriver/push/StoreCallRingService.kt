@@ -209,6 +209,10 @@ class StoreCallRingService : Service() {
         stopRunnable?.let { handler.removeCallbacks(it) }
         stopRunnable = null
         stopPlayer()
+        // Also kill the FCM fallback loop (same process): otherwise it keeps
+        // ringing until its own 15s timer even though the driver already
+        // accepted / the call is gone.
+        FallbackRingPlayer.stop()
         runCatching {
             if (wake?.isHeld == true) wake?.release()
         }

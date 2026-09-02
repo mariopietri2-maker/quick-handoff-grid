@@ -163,6 +163,9 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             player.start()
             // Never let the fallback loop ring unbounded — stop after a few rings.
             if (loop) {
+                // Stop any previous fallback loop first so back-to-back pushes
+                // can't orphan a looping player that no timer will stop.
+                FallbackRingPlayer.stop()
                 FallbackRingPlayer.player = player
                 Handler(Looper.getMainLooper()).postDelayed({ FallbackRingPlayer.stop() }, _MAX_FALLBACK_RING_MS)
             }

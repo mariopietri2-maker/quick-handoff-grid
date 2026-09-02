@@ -31,7 +31,10 @@ export function useStoreOrders(storeId: string | null, opts?: { suppressSound?: 
   const ACTIVE_STATUSES = useRef(new Set(['placed', 'accepted', 'preparing', 'ready']));
 
   const fetchOrders = useCallback(async () => {
-    if (!storeId) return;
+    if (!storeId) {
+      setLoading(false);
+      return;
+    }
     const { data, error } = await supabase
       .from('orders')
       .select('*, order_items(*)')

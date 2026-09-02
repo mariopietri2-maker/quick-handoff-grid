@@ -11,6 +11,8 @@ import { showOsNotification } from '@/lib/push-notifications';
 interface Props {
   storeId: string;
   storeName: string;
+  /** When true, the "driver accepted" chime is silenced (OS notification + toast still show). */
+  muted?: boolean;
 }
 
 type CallStatus = 'idle' | 'open' | 'accepted' | 'closed';
@@ -50,7 +52,7 @@ function formatCountdown(totalSec: number): string {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
-export function StoreCallPanel({ storeId, storeName }: Props) {
+export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
   const [state, setState] = useState<CallState>(idleState);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -122,9 +124,11 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
 
   useEffect(() => {
     fetchCall();
-    const interval = setInterval(fetchCall, 3000);
+    // Adaptive polling: slow while idle (nothing to see), fast while a call
+    // is live so accept/close reflects within seconds. Cuts idle DB reads ~70%.
+    const interval = setInterval(fetchCall, state.status === 'idle' ? 10_000 : 3_000);
     return () => clearInterval(interval);
-  }, [fetchCall]);
+  }, [fetchCall, state.status]);
 
   useEffect(() => {
     if (state.status !== 'open') return;
@@ -136,9 +140,11 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
     const prev = prevStatusRef.current;
     prevStatusRef.current = state.status;
     if (prev !== 'accepted' && state.status === 'accepted') {
-      try {
-        playDeliverySound();
-      } catch {}
+      if (!muted) {
+        try {
+          playDeliverySound();
+        } catch {}
+      }
       try {
         if (typeof navigator !== 'undefined' && navigator.vibrate) {
           navigator.vibrate([0, 200, 80, 200, 80, 300]);
@@ -157,7 +163,7 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
           : 'Ένας οδηγός αποδέχτηκε την κλήση.',
       });
     }
-  }, [state.status, state.driverName, state.callId, storeName, toast]);
+  }, [state.status, state.driverName, state.callId, storeName, toast, muted]);
 
   useEffect(() => {
     const active = state.status === 'open' || state.status === 'accepted';
@@ -350,14 +356,30 @@ export function StoreCallPanel({ storeId, storeName }: Props) {
             Η κλήση είναι ενεργή. Οι οδηγοί K έχουν ειδοποιηθεί.
           </p>
           {secondsLeft != null && (
-            <div className="mt-5 inline-flex flex-col items-center rounded-2xl bg-amber-500/10 px-6 py-3 border border-amber-500/20">
-              <span className="text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
-                Απομένει
-              </span>
-              <span className="text-4xl font-mono font-bold tabular-nums text-amber-600 dark:text-amber-400">
-                {formatCountdown(secondsLeft)}
-              </span>
-            </div>
+            <>
+              <div className="mt-5 inline-flex flex-col items-center rounded-2xl bg-amber-500/10 px-6 py-3 border border-amber-500/20">
+                <span className="text-xs font-medium uppercase tracking-wide text-amber-700 dark:text-amber-400">
+                  Απομένει
+                </span>
+                <span className="text-4xl font-mono font-bold tabular-nums text-amber-600 dark:text-amber-400">
+                  {formatCountdown(secondsLeft)}
+                </span>
+              </div>
+              <div
+                className="mt-4 h-2 w-full overflow-hidden rounded-full bg-amber-500/15"
+                role="progressbar"
+                aria-valuemin={0}
+                aria-valuemax={100}
+                aria-valuenow={Math.round((1 - secondsLeft / OPEN_TTL_SEC) * 100)}
+              >
+                <div
+                  className="h-full rounded-full bg-amber-500 transition-[width] duration-1000"
+                  style={{
+                    width: `${Math.min(100, Math.max(0, (1 - secondsLeft / OPEN_TTL_SEC) * 100))}%`,
+                  }}
+                />
+              </div>
+            </>
           )}
           {state.callId && (
             <Button

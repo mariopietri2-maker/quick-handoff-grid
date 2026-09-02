@@ -12,9 +12,50 @@ function getAudioContext(): AudioContext {
   return audioContext;
 }
 
+/**
+ * Browsers keep AudioContext `suspended` until a user gesture — oscillators
+ * scheduled before that play silence (no error is thrown). Call
+ * unlockAudio() from a tap handler and installAudioUnlock() once on app
+ * mount so later alert chimes are actually audible.
+ */
+export function unlockAudio() {
+  try {
+    const ctx = getAudioContext();
+    if (ctx.state === 'suspended') {
+      void ctx.resume().catch(() => {});
+    }
+    // Inaudible blip fully unlocks output on strict browsers.
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    gain.gain.value = 0;
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.05);
+  } catch (e) {
+    console.warn('Could not unlock audio:', e);
+  }
+}
+
+let audioUnlockInstalled = false;
+
+/** Unlock audio on the first user interaction anywhere on the page. */
+export function installAudioUnlock() {
+  if (audioUnlockInstalled || typeof window === 'undefined') return;
+  audioUnlockInstalled = true;
+  const unlock = () => unlockAudio();
+  window.addEventListener('pointerdown', unlock, { passive: true });
+  window.addEventListener('keydown', unlock);
+  window.addEventListener('touchend', unlock, { passive: true });
+}
+
 function playTones(frequencies: number[], type: OscillatorType = 'sine', duration = 0.15, gap = 0.12, gainPeak = 0.3) {
   try {
     const ctx = getAudioContext();
+    // Staff may have tapped since page load — resume so this chime sounds.
+    if (ctx.state === 'suspended') {
+      void ctx.resume().catch(() => {});
+    }
     const now = ctx.currentTime;
     frequencies.forEach((freq, i) => {
       const osc = ctx.createOscillator();

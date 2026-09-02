@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
+  Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BellOff, BarChart3, Tag,
   Package, Clock, Zap, PackagePlus, ArrowLeft, LayoutGrid,
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
@@ -27,7 +27,7 @@ import { Label } from '@/components/ui/label';
 import { StoreCallPanel } from '@/components/store/StoreCallPanel';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
-import { requestNotificationPermission } from '@/lib/notifications';
+import { requestNotificationPermission, installAudioUnlock, unlockAudio } from '@/lib/notifications';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { StorePwaInstallBanner } from '@/components/store/StorePwaInstallBanner';
 
@@ -39,17 +39,44 @@ export default function StoreApp() {
   );
 
   const handleEnableNotifications = async () => {
+    // This tap is a user gesture — unlock alert audio at the same time.
+    unlockAudio();
     const granted = await requestNotificationPermission();
     setNotifPermission(granted ? 'granted' : 'denied');
   };
 
+  // Unlock alert audio on first interaction anywhere (autoplay policy).
+  useEffect(() => {
+    installAudioUnlock();
+  }, []);
+
   const {
     store, stores, selectedStoreId, selectStore, loading: storeLoading, createStore,
   } = useStore();
+  // N stores are call-only: they never render orders, so skip the orders
+  // fetch + realtime subscription entirely (faster load, less battery/data).
+  const isNStore = store?.store_role === 'N';
   const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(
-    store?.id ?? null,
-    { suppressSound: store?.store_role === 'N' },
+    isNStore ? null : (store?.id ?? null),
+    { suppressSound: isNStore },
   );
+  // Persisted mute for the "driver accepted" chime (N stores only).
+  const [callMuted, setCallMuted] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem('store-call-muted') === '1';
+    } catch {
+      return false;
+    }
+  });
+  const toggleCallMuted = () => {
+    setCallMuted((m) => {
+      const next = !m;
+      try {
+        localStorage.setItem('store-call-muted', next ? '1' : '0');
+      } catch {}
+      return next;
+    });
+  };
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<ViewMode>('portal');
@@ -232,7 +259,21 @@ export default function StoreApp() {
                 </Button>
               </div>
             )}
-            <StoreCallPanel storeId={store.id} storeName={store.name} />
+            <StoreCallPanel storeId={store.id} storeName={store.name} muted={callMuted} />
+            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 px-3 py-2">
+              <p className="text-xs font-heading text-muted-foreground">Ήχος αποδοχής οδηγού</p>
+              <Button
+                type="button"
+                size="sm"
+                variant="ghost"
+                onClick={toggleCallMuted}
+                className="gap-1.5 font-heading"
+                aria-pressed={callMuted}
+              >
+                {callMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
+                {callMuted ? 'Σίγαση' : 'Ηχηρό'}
+              </Button>
+            </div>
             <p className="text-center text-xs text-muted-foreground px-4">
               Κράτα την οθόνη ανοιχτή ή εγκατέστησε την εφαρμογή για πιο αξιόπιστες ειδοποιήσεις.
             </p>
