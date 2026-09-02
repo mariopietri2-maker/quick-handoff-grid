@@ -1,0 +1,32 @@
+name: Force driver version 281
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/force-driver-version-281.yml"
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set version
+        run: |
+          set -euo pipefail
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path('native-driver/app/build.gradle.kts')
+          t = p.read_text()
+          t = re.sub(r'versionCode\s*=\s*\d+', 'versionCode = 281', t, count=1)
+          t = re.sub(r'versionName\s*=\s*"[^"]*"', 'versionName = "2.6.27-bg-offer"', t, count=1)
+          p.write_text(t)
+          print([l for l in p.read_text().splitlines() if 'versionCode' in l or 'versionName' in l][:4])
+          PY
+      - name: Commit and trigger note
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/app/build.gradle.kts
+          if git diff --staged --quiet; then echo no changes; else git commit -m "chore(driver): version 2.6.27-bg-offer (281)"; git push; fi
