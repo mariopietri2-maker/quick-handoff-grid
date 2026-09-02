@@ -55,17 +55,31 @@ export function playOrderSound() {
  * Play a driver delivery alert — two quick low tones (randomized pair).
  */
 
-/** Loop store new-order chime until stopOrderAlertLoop() — kitchen missed-order proof. */
+/**
+ * Repeat the store new-order chime a few times so the kitchen misses it, then
+ * stop automatically. Calling stopOrderAlertLoop() (e.g. order accepted) stops
+ * it immediately; otherwise it self-limits to MAX_ORDER_ALERT_RINGS.
+ */
 let orderAlertTimer: ReturnType<typeof setInterval> | null = null;
+let orderAlertCount = 0;
+const MAX_ORDER_ALERT_RINGS = 5;
+const ORDER_ALERT_GAP_MS = 3200;
 
 export function startOrderAlertLoop() {
   if (orderAlertTimer != null) return;
+  orderAlertCount = 0;
   playOrderSound();
+  orderAlertCount = 1;
   orderAlertTimer = setInterval(() => {
     try {
+      if (orderAlertCount >= MAX_ORDER_ALERT_RINGS) {
+        stopOrderAlertLoop();
+        return;
+      }
       playOrderSound();
+      orderAlertCount += 1;
     } catch {}
-  }, 3200);
+  }, ORDER_ALERT_GAP_MS);
 }
 
 export function stopOrderAlertLoop() {
@@ -73,6 +87,7 @@ export function stopOrderAlertLoop() {
     clearInterval(orderAlertTimer);
     orderAlertTimer = null;
   }
+  orderAlertCount = 0;
 }
 
 export function isOrderAlertLooping(): boolean {

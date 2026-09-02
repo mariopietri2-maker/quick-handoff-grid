@@ -31,7 +31,7 @@ class StoreCallRingService : Service() {
         const val ACTION_STOP = "com.freshdelivery.nativedriver.STORE_CALL_RING_STOP"
         const val CHANNEL_ID = "driver-store-calls-v3"
         private const val NOTIF_ID = 71002
-        private const val MAX_RING_MS = 45_000L
+        private const val MAX_RING_MS = 15_000L
 
         fun start(context: Context, title: String, body: String) {
             val i = Intent(context, StoreCallRingService::class.java).apply {

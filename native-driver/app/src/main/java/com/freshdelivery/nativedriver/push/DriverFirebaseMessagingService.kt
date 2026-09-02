@@ -11,6 +11,8 @@ import android.media.MediaPlayer
 import android.media.RingtoneManager
 import android.net.Uri
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -35,6 +37,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
         /** Bump when channel attributes change (Android freezes channel settings). */
         const val CHANNEL_ID = "driver-offers-v6"
         private const val STORE_CALL_NOTIF_ID = 71001
+        private const val _MAX_FALLBACK_RING_MS = 15_000L
 
         /** Create channel at process start so first push already has sound. */
         fun ensureOfferChannel(context: Context) {
@@ -158,6 +161,11 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             }
             player.setVolume(1f, 1f)
             player.start()
+            // Never let the fallback loop ring unbounded — stop after a few rings.
+            if (loop) {
+                FallbackRingPlayer.player = player
+                Handler(Looper.getMainLooper()).postDelayed({ FallbackRingPlayer.stop() }, _MAX_FALLBACK_RING_MS)
+            }
         }
     }
 
@@ -229,4 +237,22 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 object DriverPushTokenHolder {
     @Volatile var pendingToken: String? = null
     @Volatile var listener: ((String) -> Unit)? = null
+}
+
+/**
+ * Keeps a reference to the in-messaging-service looping fallback player so it
+ * can be released after a bounded number of rings instead of looping forever.
+ */
+object FallbackRingPlayer {
+    @Volatile var player: MediaPlayer? = null
+
+    fun stop() {
+        val p = player
+        player = null
+        runCatching {
+            p?.isLooping = false
+            p?.stop()
+            p?.release()
+        }
+    }
 }
