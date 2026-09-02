@@ -1,0 +1,106 @@
+name: Fix cancel sound sed
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-cancel-sound-sed.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch with Python (unicode-safe)
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          import re
+
+          q = Path('src/components/store/OrderQueue.tsx')
+          qt = q.read_text(encoding='utf-8')
+
+          # Replace the cancel RPC block by matching unique ASCII anchors
+          pattern = re.compile(
+              r"onClick=\{async \(\) => \{\s*"
+              r"const \{ error \} = await supabase\.rpc\('transition_order_status' as never, \{\s*"
+              r"p_order_id: order\.id,\s*"
+              r"p_new_status: 'cancelled',\s*"
+              r"p_estimated_prep_time: null,\s*"
+              r"\} as never\);\s*"
+              r"if \(error\) toast\.error\([^;]+;\s*"
+              r"else toast\.success\([^;]+;\s*"
+              r"\}\}",
+              re.MULTILINE,
+          )
+          repl = (
+              "onClick={async () => {\n"
+              "                        const ok = await onStatusUpdate(order.id, 'cancelled');\n"
+              "                        if (ok === false) toast.error('Cancel failed');\n"
+              "                        else toast.success('Order cancelled');\n"
+              "                      }}"
+          )
+          qt2, n = pattern.subn(repl, qt, count=1)
+          if n != 1:
+              # fallback: line-based
+              if "onStatusUpdate(order.id, 'cancelled')" in qt:
+                  print('already fixed')
+              else:
+                  raise SystemExit(f'regex replacements={n}')
+          else:
+              q.write_text(qt2, encoding='utf-8')
+              print('OrderQueue cancel -> onStatusUpdate')
+
+          p = Path('src/hooks/useOrders.ts')
+          t = p.read_text(encoding='utf-8')
+          if len(t) < 500:
+              raise SystemExit('useOrders too small')
+
+          # On UPDATE remove: stop sound if no placed remain
+          if 'stopOrderAlertLoop' in t and "status === 'placed')) {\n                  stopOrderAlertLoop" not in t:
+              t = t.replace(
+                  "if (row?.status && !ACTIVE_STATUSES.current.has(row.status)) {\n"
+                  "              setOrders((prev) => prev.filter((o) => o.id !== row.id));\n"
+                  "              setPendingIds((prev) => prev.filter((id) => id !== row.id));",
+                  "if (row?.status && !ACTIVE_STATUSES.current.has(row.status)) {\n"
+                  "              setOrders((prev) => {\n"
+                  "                const next = prev.filter((o) => o.id !== row.id);\n"
+                  "                if (!suppressSound && !next.some((o) => o.status === 'placed')) {\n"
+                  "                  stopOrderAlertLoop();\n"
+                  "                }\n"
+                  "                return next;\n"
+                  "              });\n"
+                  "              setPendingIds((prev) => prev.filter((id) => id !== row.id));",
+              )
+              t = t.replace(
+                  "if (old?.id) {\n"
+                  "              setOrders((prev) => prev.filter((o) => o.id !== old.id));\n"
+                  "              setPendingIds((prev) => prev.filter((id) => id !== old.id));",
+                  "if (old?.id) {\n"
+                  "              setOrders((prev) => {\n"
+                  "                const next = prev.filter((o) => o.id !== old.id);\n"
+                  "                if (!suppressSound && !next.some((o) => o.status === 'placed')) {\n"
+                  "                  stopOrderAlertLoop();\n"
+                  "                }\n"
+                  "                return next;\n"
+                  "              });\n"
+                  "              setPendingIds((prev) => prev.filter((id) => id !== old.id));",
+              )
+              p.write_text(t, encoding='utf-8')
+              print('useOrders realtime stop added')
+          else:
+              print('useOrders skip realtime patch')
+
+          # Always stop optimistically inside updateStatus when leaving placed
+          t = p.read_text(encoding='utf-8')
+          if "if (newStatus !== 'placed')" in t and 'stopOrderAlertLoop' in t:
+              print('updateStatus already has stop path')
+          PY
+          grep -q "onStatusUpdate(order.id, 'cancelled')" src/components/store/OrderQueue.tsx
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(store): stop new-order sound on cancel"; git push; fi
