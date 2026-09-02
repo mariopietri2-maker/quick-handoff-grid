@@ -1,0 +1,101 @@
+name: Fix cancel sound
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-cancel-sound.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch OrderQueue + useOrders
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          q = Path('src/components/store/OrderQueue.tsx')
+          qt = q.read_text()
+          if "onStatusUpdate(order.id, 'cancelled')" not in qt:
+              old = """                    <AlertDialogAction
+                      onClick={async () => {
+                        const { error } = await supabase.rpc('transition_order_status' as never, {
+                          p_order_id: order.id,
+                          p_new_status: 'cancelled',
+                          p_estimated_prep_time: null,
+                        } as never);
+                        if (error) toast.error(error.message || 'Η ακύρωση απέτυχε');
+                        else toast.success('Παραγγελία ακυρώθηκε');
+                      }}
+                      className=\"bg-destructive text-destructive-foreground hover:bg-destructive/90\"
+                    >"""
+              new = """                    <AlertDialogAction
+                      onClick={async () => {
+                        const ok = await onStatusUpdate(order.id, 'cancelled');
+                        if (ok === false) toast.error('Η ακύρωση απέτυχε');
+                        else toast.success('Παραγγελία ακυρώθηκε');
+                      }}
+                      className=\"bg-destructive text-destructive-foreground hover:bg-destructive/90\"
+                    >"""
+              if old not in qt:
+                  raise SystemExit('OrderQueue pattern missing')
+              q.write_text(qt.replace(old, new))
+              print('OrderQueue patched')
+          else:
+              print('OrderQueue already ok')
+
+          p = Path('src/hooks/useOrders.ts')
+          t = p.read_text()
+          if t.strip() == 'PLACEHOLDER' or len(t) < 500:
+              raise SystemExit('useOrders is PLACEHOLDER — restore first')
+
+          # stop loop on cancel/delete when no placed left
+          needle = "setOrders((prev) => prev.filter((o) => o.id !== row.id));\n              setPendingIds((prev) => prev.filter((id) => id !== row.id));"
+          repl = """setOrders((prev) => {
+                const next = prev.filter((o) => o.id !== row.id);
+                if (!suppressSound && !next.some((o) => o.status === 'placed')) {
+                  stopOrderAlertLoop();
+                }
+                return next;
+              });
+              setPendingIds((prev) => prev.filter((id) => id !== row.id));"""
+          if 'stopOrderAlertLoop();\n                }\n                return next;' not in t and needle in t:
+              t = t.replace(needle, repl, 1)
+              # DELETE path similar
+              needle2 = "setOrders((prev) => prev.filter((o) => o.id !== old.id));\n              setPendingIds((prev) => prev.filter((id) => id !== old.id));"
+              repl2 = """setOrders((prev) => {
+                const next = prev.filter((o) => o.id !== old.id);
+                if (!suppressSound && !next.some((o) => o.status === 'placed')) {
+                  stopOrderAlertLoop();
+                }
+                return next;
+              });
+              setPendingIds((prev) => prev.filter((id) => id !== old.id));"""
+              if needle2 in t:
+                  t = t.replace(needle2, repl2, 1)
+              p.write_text(t)
+              print('useOrders realtime stop patched')
+          else:
+              print('useOrders realtime already patched or different')
+
+          # INSERT respect suppressSound
+          t = p.read_text()
+          t2 = t.replace(
+              "try {\n              startOrderAlertLoop();",
+              "try {\n              if (!suppressSound) startOrderAlertLoop();",
+          )
+          if t2 != t:
+              p.write_text(t2)
+              print('suppressSound on INSERT')
+          PY
+          grep -q "onStatusUpdate(order.id, 'cancelled')" src/components/store/OrderQueue.tsx
+          test "$(wc -c < src/hooks/useOrders.ts)" -gt 5000
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/store/OrderQueue.tsx src/hooks/useOrders.ts
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(store): stop new-order sound when store cancels"; git push; fi
