@@ -12,15 +12,14 @@ const config: CapacitorConfig = {
       'https://freshdelivery.app/*',
       'https://ojkesspghyqmjmupybva.supabase.co/*',
       'https://*.supabase.co/*',
-      'https://quick-handoff-grid-production.up.railway.app/*',
-      'https://fresh-delivery-rho.vercel.app/*',
+      'https://quick-handoff-grid-8qu8.vercel.app/*',
+      'https://*.vercel.app/*',
       'https://api.mapbox.com/*',
     ],
   },
   android: {
     path: 'android-driver',
     backgroundColor: '#0f172a',
-    // Enable only for local debug APKs; store builds omit this via build-store-aabs.sh
     webContentsDebuggingEnabled: process.env.CAPACITOR_DEV === '1',
   },
   ios: {
@@ -30,7 +29,6 @@ const config: CapacitorConfig = {
     scrollEnabled: false,
   },
   plugins: {
-    // Route fetch/XHR through native HTTP — fixes "Failed to fetch" login in WebView
     CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
@@ -49,14 +47,10 @@ const config: CapacitorConfig = {
     },
     Geolocation: {},
     BackgroundGeolocation: {
-      // Shown on the Android FG-service notification while the driver is online.
-      // Runtime copy is set in useDriverLocation via start() — keep in sync.
       notificationTitle: 'Διαθέσιμος',
       notificationText: 'Είσαι συνδεδεμένος και σε θέση να δεχτείς παραγγελίες',
     },
     PushNotifications: {
-      // Foreground: no OS sound — Realtime already plays the in-app chime.
-      // Background/killed: APNs/FCM payload still carries sound.
       presentationOptions: ['badge', 'alert'],
     },
   },
