@@ -29,7 +29,7 @@ class StoreCallRingService : Service() {
     companion object {
         const val ACTION_START = "com.freshdelivery.nativedriver.STORE_CALL_RING_START"
         const val ACTION_STOP = "com.freshdelivery.nativedriver.STORE_CALL_RING_STOP"
-        const val CHANNEL_ID = "driver-store-calls-v2"
+        const val CHANNEL_ID = "driver-store-calls-v3"
         private const val NOTIF_ID = 71002
         private const val MAX_RING_MS = 45_000L
 
@@ -77,6 +77,7 @@ class StoreCallRingService : Service() {
             }
             mgr.createNotificationChannel(ch)
             // Drop old silent/quiet ids so upgrades always use this loud-sound channel.
+            runCatching { mgr.deleteNotificationChannel("driver-store-calls-v2") }
             runCatching { mgr.deleteNotificationChannel("driver-store-calls-v1") }
         }
     }

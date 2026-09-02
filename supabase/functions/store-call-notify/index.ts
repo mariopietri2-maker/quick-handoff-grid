@@ -126,7 +126,7 @@ Deno.serve(async (req) => {
         }),
         channelId:
           data.type === "store_call" || !data.type
-            ? "driver-store-calls-v2"
+            ? "driver-store-calls-v3"
             : "driver-offers-v6",
       });
       if (delivered) ok = true;
