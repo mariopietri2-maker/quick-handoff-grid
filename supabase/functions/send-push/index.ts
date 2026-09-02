@@ -293,10 +293,11 @@ async function sendFcm(opts: {
                 },
               };
             }
-            // Offers + store calls MUST use system notification + channel sound.
-            // Data-only messages often never wake the process when the app is
-            // backgrounded/killed (OEM restrictions). Notification+data plays
-            // the channel sound from the system tray even when the process is dead.
+            // Offers + store calls: send DATA-ONLY HIGH priority so onMessageReceived
+            // ALWAYS runs (foreground AND background) and plays the loud looping
+            // alarm sound + posts our own MAX notification. A `notification` block
+            // would be system-displayed when backgrounded and only play the (soft)
+            // channel sound — onMessageReceived never runs, so the loud ring is skipped.
             const msgType = opts.data?.type || "";
             const isCritical =
               msgType === "store_call" ||
@@ -308,21 +309,11 @@ async function sendFcm(opts: {
             if (isCritical) {
               return {
                 token: opts.token,
-                notification: { title: opts.title, body: opts.body },
                 data,
                 android: {
                   priority: "HIGH",
                   collapse_key: collapse,
                   ttl: "300s",
-                  notification: {
-                    channel_id: opts.channelId,
-                    sound: offerSound,
-                    default_vibrate_timings: true,
-                    default_light_settings: true,
-                    notification_priority: "PRIORITY_MAX",
-                    visibility: "PUBLIC",
-                    tag: collapse || (msgType === "store_call" ? "store_call" : "driver_offer"),
-                  },
                 },
               };
             }
@@ -384,13 +375,6 @@ async function sendFcm(opts: {
             priority: "high",
             content_available: true,
             collapse_key: collapse,
-            notification: {
-              title: opts.title,
-              body: opts.body,
-              sound: offerSound,
-              android_channel_id: opts.channelId,
-              tag: collapse || (opts.data?.type === "store_call" ? "store_call" : "driver_offer"),
-            },
             data: {
               ...opts.data,
               title: opts.title,

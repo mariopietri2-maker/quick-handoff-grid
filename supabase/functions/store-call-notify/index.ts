@@ -199,19 +199,12 @@ async function sendFcm(opts: {
         body: JSON.stringify({
           message: {
             token: opts.token,
-            notification: { title: opts.title, body: opts.body },
+            // Data-only so onMessageReceived runs in background and plays the
+            // loud looping alarm sound + posts our own MAX notification.
             data: opts.data,
             android: {
               priority: "HIGH",
               ttl: "300s",
-              notification: {
-                channel_id: opts.channelId,
-                sound: "fresh_delivery",
-                default_vibrate_timings: true,
-                notification_priority: "PRIORITY_MAX",
-                visibility: "PUBLIC",
-                tag: opts.data.call_id ? `store_call:${opts.data.call_id}` : "store_call",
-              },
             },
           },
         }),
@@ -236,12 +229,6 @@ async function sendFcm(opts: {
       to: opts.token,
       priority: "high",
       content_available: true,
-      notification: {
-        title: opts.title,
-        body: opts.body,
-        sound: "fresh_delivery",
-        android_channel_id: opts.channelId,
-      },
       data: opts.data,
     }),
   });
