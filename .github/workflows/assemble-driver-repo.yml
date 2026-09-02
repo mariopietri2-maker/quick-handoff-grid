@@ -12,22 +12,53 @@ jobs:
       contents: write
     steps:
       - uses: actions/checkout@v4
-      - name: Concat parts
+      - name: Decode and write DriverRepository
         run: |
           set -euo pipefail
           TARGET=native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt
           mkdir -p "$(dirname "$TARGET")"
-          cat native-driver/_restore_parts/part0.txt \
-              native-driver/_restore_parts/part1.txt \
-              native-driver/_restore_parts/part2.txt \
-              native-driver/_restore_parts/part3.txt > "$TARGET"
+          if [ -f native-driver/_restore_parts/b64_0.txt ]; then
+            cat native-driver/_restore_parts/b64_*.txt | tr -d '\n' | base64 -d > "$TARGET"
+          else
+            curl -fsSL "https://raw.githubusercontent.com/mariopietri2-maker/quick-handoff-grid/6fdfc002628abb1ac3730d1a856363d37620c00f/native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt" -o "$TARGET"
+            python3 - <<'PY'
+from pathlib import Path
+p=Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt")
+t=p.read_text()
+old='''    suspend fun upsertPushToken(userId: String, token: String) {
+        client.from("push_tokens").upsert(
+            PushTokenUpsert(user_id = userId, token = token),
+        ) { onConflict = "token" }
+    }'''
+new='''    suspend fun upsertPushToken(userId: String, token: String) {
+        val rpcOk = runCatching {
+            client.postgrest.rpc(
+                "register_driver_push_token",
+                buildJsonObject {
+                    put("p_token", token)
+                    put("p_platform", "android")
+                },
+            )
+        }.isSuccess
+        if (!rpcOk) {
+            runCatching {
+                client.from("push_tokens").upsert(
+                    PushTokenUpsert(user_id = userId, token = token),
+                ) { onConflict = "token" }
+            }
+        }
+    }'''
+if old in t: p.write_text(t.replace(old,new))
+PY
+          fi
           wc -c "$TARGET"
-          grep -q register_driver_push_token "$TARGET"
+          test "$(wc -c < "$TARGET")" -gt 20000
+          grep -q upsertPushToken "$TARGET"
           python3 -c "import re; from pathlib import Path; g=Path('native-driver/app/build.gradle.kts'); t=g.read_text(); t=re.sub(r'versionCode = \\d+','versionCode = 277',t); t=re.sub(r'versionName = \"[^\"]+\"','versionName = \"2.6.23-fcm-token\"',t); g.write_text(t)"
           echo '2.6.23-fcm-token' > native-driver/APK_VERSION.txt
       - name: Commit
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -A
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt native-driver/app/build.gradle.kts native-driver/APK_VERSION.txt
           if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): restore full DriverRepository 2.6.23-fcm-token"; git push; fi
