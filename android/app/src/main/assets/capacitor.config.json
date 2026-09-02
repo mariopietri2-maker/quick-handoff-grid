@@ -3,15 +3,15 @@
   "appName": "Fresh",
   "webDir": "dist",
   "server": {
-    "url": "https://quick-handoff-grid-production.up.railway.app",
+    "url": "https://quick-handoff-grid-8qu8.vercel.app",
     "cleartext": false,
     "androidScheme": "https",
     "allowNavigation": [
+      "https://quick-handoff-grid-8qu8.vercel.app/*",
       "https://freshdelivery.app/*",
+      "https://*.vercel.app/*",
       "https://ojkesspghyqmjmupybva.supabase.co/*",
       "https://*.supabase.co/*",
-      "https://quick-handoff-grid-production.up.railway.app/*",
-      "https://fresh-delivery-rho.vercel.app/*",
       "https://api.mapbox.com/*"
     ]
   },

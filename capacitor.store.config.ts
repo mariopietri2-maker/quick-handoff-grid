@@ -2,7 +2,6 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
  * Store owner beta APK — loads the live Store PWA at /store on Vercel.
- * Railway is no longer the production web host.
  */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.store',
@@ -13,11 +12,11 @@ const config: CapacitorConfig = {
     cleartext: false,
     androidScheme: 'https',
     allowNavigation: [
+      'https://quick-handoff-grid-8qu8.vercel.app/*',
+      'https://*.vercel.app/*',
       'https://freshdelivery.app/*',
       'https://ojkesspghyqmjmupybva.supabase.co/*',
       'https://*.supabase.co/*',
-      'https://quick-handoff-grid-8qu8.vercel.app/*',
-      'https://*.vercel.app/*',
       'https://api.mapbox.com/*',
       'https://js.stripe.com/*',
       'https://*.stripe.com/*',

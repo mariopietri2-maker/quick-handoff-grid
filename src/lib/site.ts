@@ -1,13 +1,14 @@
 /** Canonical public production origins. `SITE_ORIGIN` is the primary serving
- *  host; the rest are mirrors that serve the exact same SPA build and can keep
- *  the platform up if the primary is unreachable. Keep in sync with
- *  `railway.json` and the Capacitor `allowNavigation` lists. */
+ *  host; the rest are mirrors that serve the same SPA. Keep in sync with
+ *  Capacitor `allowNavigation` lists. */
 export const SITE_ORIGINS = [
+  'https://quick-handoff-grid-8qu8.vercel.app',
   'https://freshdelivery.app',
+  'https://fresh-delivery-rho.vercel.app',
   'https://quick-handoff-grid-production.up.railway.app',
 ] as const;
 
-/** Primary branded host (freshdelivery.app — served by Railway). */
+/** Primary production host (Vercel). */
 export const SITE_ORIGIN = SITE_ORIGINS[0];
 
 /** Optional extra hosts still allowed for Capacitor navigation & deep links. */
@@ -38,8 +39,7 @@ export function relativeUrlToOrigin(path: string, origin = effectiveOrigin()): s
 
 /**
  * Responds with the first origin that serves the SPA. Used to pick a healthy
- * host for absolute links (e.g. QR landing pages) so that if the primary host
- * is down, links resolve to a mirror instead.
+ * host for absolute links (e.g. QR landing pages).
  */
 export async function pickHealthyOrigin(path = '/'): Promise<string> {
   const current = currentOrigin();
@@ -64,32 +64,21 @@ export async function pickHealthyOrigin(path = '/'): Promise<string> {
 
 /**
  * Fetch through the app origins with failover: tries `SITE_ORIGIN` first, then
- * each `SITE_FALLBACK_ORIGINS` mirror. Resolves with the first non-network
- * failure (HTTP errors still resolve; use `res.ok` to gate business logic).
+ * each `SITE_FALLBACK_ORIGINS` entry. Only fails over for network errors / 5xx.
  */
-export async function fetchWithFailover(
+export async function fetchWithOriginFailover(
   path: string,
-  init: RequestInit = {},
-  options: { timeoutMs?: number } = {},
+  init?: RequestInit,
 ): Promise<Response> {
-  const timeoutMs = options.timeoutMs ?? 8000;
-  const origins = currentOrigin()
-    ? [currentOrigin() as string, ...SITE_ORIGINS.filter((o) => o !== currentOrigin())]
-    : SITE_ORIGINS;
-  let lastError: unknown;
-  for (const origin of origins) {
+  const errors: unknown[] = [];
+  for (const origin of SITE_ORIGINS) {
     try {
-      const ctrl = new AbortController();
-      const t = setTimeout(() => ctrl.abort(), timeoutMs);
-      const res = await fetch(relativeUrlToOrigin(path, origin), {
-        ...init,
-        signal: ctrl.signal,
-      });
-      clearTimeout(t);
-      return res;
-    } catch (err) {
-      lastError = err;
+      const res = await fetch(relativeUrlToOrigin(path, origin), init);
+      if (res.ok || (res.status >= 400 && res.status < 500)) return res;
+      errors.push(new Error(`${origin} → ${res.status}`));
+    } catch (e) {
+      errors.push(e);
     }
   }
-  throw lastError instanceof Error ? lastError : new Error(`All app origins unreachable: ${origins.join(', ')}`);
+  throw errors[errors.length - 1] ?? new Error('All origins failed');
 }

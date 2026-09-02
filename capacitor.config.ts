@@ -4,27 +4,24 @@ import type { CapacitorConfig } from '@capacitor/cli';
 const isDev = process.env.CAPACITOR_DEV === '1';
 
 const config: CapacitorConfig = {
-  // Matches native-customer applicationId (see native-customer/app/build.gradle.kts)
   appId: 'com.freshdelivery.customer',
   appName: 'Fresh',
   webDir: 'dist',
   server: {
-    url: 'https://quick-handoff-grid-production.up.railway.app',
+    url: 'https://quick-handoff-grid-8qu8.vercel.app',
     cleartext: isDev,
     androidScheme: 'https',
     allowNavigation: [
+      'https://quick-handoff-grid-8qu8.vercel.app/*',
       'https://freshdelivery.app/*',
+      'https://*.vercel.app/*',
       'https://ojkesspghyqmjmupybva.supabase.co/*',
       'https://*.supabase.co/*',
-      'https://quick-handoff-grid-production.up.railway.app/*',
-      'https://fresh-delivery-rho.vercel.app/*',
       'https://api.mapbox.com/*',
     ],
   },
   android: {
-    // Emerald v2 brand (native-customer Theme.kt): mint bg, emerald primary
     backgroundColor: '#F2F8F4',
-    // Debug APKs only — release builds must keep these false
     webContentsDebuggingEnabled: isDev,
     allowMixedContent: isDev,
   },
