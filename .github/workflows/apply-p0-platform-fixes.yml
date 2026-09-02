@@ -1,0 +1,90 @@
+name: Apply P0 platform fixes
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/apply-p0-platform-fixes.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch platform files
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          # CheckoutPage
+          p = Path('src/pages/CheckoutPage.tsx')
+          t = p.read_text(encoding='utf-8')
+          if "from '@/lib/store-hours'" not in t:
+              t = t.replace(
+                  "import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';",
+                  "import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';\nimport { isStoreOpenNow } from '@/lib/store-hours';",
+              )
+          needle = """    if (!storeId || items.length === 0) return;\n\n    setSubmitting(true);"""
+          repl = """    if (!storeId || items.length === 0) return;\n\n    try {\n      const { data: storeRow } = await supabase\n        .from('stores')\n        .select('opening_hours, holiday_dates, is_active')\n        .eq('id', storeId)\n        .maybeSingle();\n      if (storeRow && (storeRow as any).is_active === false) {\n        toast.error('Το κατάστημα δεν δέχεται παραγγελίες αυτή τη στιγμή');\n        return;\n      }\n      if (storeRow && !isStoreOpenNow((storeRow as any).opening_hours, (storeRow as any).holiday_dates)) {\n        toast.error('Το κατάστημα είναι κλειστό — δοκίμασε όταν ανοίξει');\n        return;\n      }\n    } catch {\n      /* non-fatal */\n    }\n\n    setSubmitting(true);"""
+          if needle in t and 'δοκίμασε όταν ανοίξει' not in t:
+              t = t.replace(needle, repl)
+          t = t.replace(
+              "navigate(`/order-tracking/${order.id}`);",
+              "navigate(`/order-tracking/${order.id}`, { replace: true });",
+          )
+          p.write_text(t, encoding='utf-8')
+          print('CheckoutPage ok')
+
+          # CustomerApp fee labels
+          c = Path('src/pages/CustomerApp.tsx')
+          ct = c.read_text(encoding='utf-8')
+          old = """                            {deliveryEnabled && (\n                              <>{etaLow}–{etaHigh} {t('customer.min')}</>\n                            )}"""
+          new = """                            {deliveryEnabled && (\n                              <>\n                                {etaLow}–{etaHigh} {t('customer.min')}\n                                {' · '}\n                                {(store as any).covers_delivery_fee ? 'Δωρεάν παρ.' : '0,99€ παρ.'}\n                              </>\n                            )}"""
+          if old in ct and 'Δωρεάν παρ.' not in ct:
+              ct = ct.replace(old, new)
+              c.write_text(ct, encoding='utf-8')
+              print('CustomerApp fee ok')
+          else:
+              print('CustomerApp skip')
+
+          # OrderQueue stop sound
+          q = Path('src/components/store/OrderQueue.tsx')
+          qt = q.read_text(encoding='utf-8')
+          if "from '@/lib/notifications'" not in qt:
+              qt = qt.replace(
+                  "import { cn } from '@/lib/utils';",
+                  "import { cn } from '@/lib/utils';\nimport { stopOrderAlertLoop } from '@/lib/notifications';",
+              )
+          if "onStatusUpdate(order.id, 'cancelled')" in qt and 'stopOrderAlertLoop()' not in qt:
+              qt = qt.replace(
+                  "const ok = await onStatusUpdate(order.id, 'cancelled');",
+                  "stopOrderAlertLoop();\n                        const ok = await onStatusUpdate(order.id, 'cancelled');",
+              )
+          q.write_text(qt, encoding='utf-8')
+          print('OrderQueue ok')
+
+          # RestaurantPage MenuItemRow disabled
+          r = Path('src/pages/RestaurantPage.tsx')
+          rt = r.read_text(encoding='utf-8')
+          if 'disabled = false' not in rt:
+              rt = rt.replace(
+                  "function MenuItemRow({\n  item,\n  qty,\n  onAdd,\n  onMinus,\n}: {\n  item: MenuItemRow;\n  qty: number;\n  onAdd: () => void;\n  onMinus: () => void;\n}) {",
+                  "function MenuItemRow({\n  item,\n  qty,\n  onAdd,\n  onMinus,\n  disabled = false,\n}: {\n  item: MenuItemRow;\n  qty: number;\n  onAdd: () => void;\n  onMinus: () => void;\n  disabled?: boolean;\n}) {",
+              )
+          if 'onAdd={() => handleAdd(item)}' in rt and 'disabled={!storeOpen}' not in rt:
+              rt = rt.replace(
+                  'onAdd={() => handleAdd(item)}',
+                  'onAdd={() => handleAdd(item)} disabled={!storeOpen}',
+              )
+          if '{!hasImage && (' in rt and '{!hasImage && !disabled && (' not in rt:
+              rt = rt.replace('{!hasImage && (', '{!hasImage && !disabled && (', 1)
+          r.write_text(rt, encoding='utf-8')
+          print('RestaurantPage ok')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/CheckoutPage.tsx src/pages/CustomerApp.tsx src/components/store/OrderQueue.tsx src/pages/RestaurantPage.tsx
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(platform): P0 closed-store block, tracking nav, cancel sound, fee labels"; git push; fi
