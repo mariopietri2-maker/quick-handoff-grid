@@ -116,12 +116,14 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
                 showNotification(title, body, isStoreCall = true)
                 // 2) Looping FGS ring — may be blocked on some OEMs; never fail the push
                 runCatching { StoreCallRingService.start(this, title, body) }
-                playOfferSound()
+                // 3) Fallback: loop the loud alarm sound immediately so even a
+                //    throttled/transient FCM process rings continuously.
+                playOfferSound(loop = true)
                 vibratePattern()
             } else {
                 showNotification(title, body, isStoreCall = false)
                 if (isOffer || type.isBlank()) {
-                    playOfferSound()
+                    playOfferSound(loop = false)
                     vibratePattern()
                 }
             }
@@ -135,7 +137,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
     private fun soundUri(): Uri =
         Uri.parse("android.resource://$packageName/${R.raw.fresh_delivery}")
 
-    private fun playOfferSound() {
+    private fun playOfferSound(loop: Boolean) {
         runCatching {
             val player = MediaPlayer.create(this, R.raw.fresh_delivery)
                 ?: MediaPlayer().apply {
@@ -148,11 +150,13 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
                     )
                     prepare()
                 }
+            player.isLooping = loop
             player.setOnCompletionListener { it.release() }
             player.setOnErrorListener { mp, _, _ ->
                 mp.release()
                 true
             }
+            player.setVolume(1f, 1f)
             player.start()
         }
     }
