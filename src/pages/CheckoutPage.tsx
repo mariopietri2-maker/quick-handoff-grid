@@ -20,6 +20,7 @@ import { customerAccentStyle } from '@/lib/customer-theme';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
 import { isWithinIoanninaServiceArea, OUT_OF_ZONE_MESSAGE } from '@/lib/geo-defaults';
+import { isStoreOpenNow } from '@/lib/store-hours';
 import { mapboxDrivingKmWithCache } from '@/lib/addressCache';
 import { getWonDeal } from '@/lib/customer-games';
 
@@ -264,6 +265,24 @@ export default function CheckoutPage() {
     }
     if (!storeId || items.length === 0) return;
 
+    try {
+      const { data: storeRow } = await supabase
+        .from('stores')
+        .select('opening_hours, holiday_dates, is_active')
+        .eq('id', storeId)
+        .maybeSingle();
+      if (storeRow && (storeRow as any).is_active === false) {
+        toast.error('Το κατάστημα δεν δέχεται παραγγελίες αυτή τη στιγμή');
+        return;
+      }
+      if (storeRow && !isStoreOpenNow((storeRow as any).opening_hours, (storeRow as any).holiday_dates)) {
+        toast.error('Το κατάστημα είναι κλειστό — δοκίμασε όταν ανοίξει');
+        return;
+      }
+    } catch {
+      /* non-fatal */
+    }
+
     setSubmitting(true);
     try {
       // Compute driving distance via Mapbox if we have both store + delivery coords
@@ -335,7 +354,7 @@ export default function CheckoutPage() {
       } else {
         clearCart();
         toast.success('Η παραγγελία καταχωρήθηκε! 🎉');
-        navigate(`/order-tracking/${order.id}`);
+        navigate(`/order-tracking/${order.id}`, { replace: true });
       }
     } catch (error: any) {
       toast.error(error.message || 'Αποτυχία υποβολής παραγγελίας');

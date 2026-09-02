@@ -464,7 +464,7 @@ export default function RestaurantPage() {
                         key={item.id}
                         item={item}
                         qty={qty}
-                        onAdd={() => handleAdd(item)}
+                        onAdd={() => handleAdd(item)} disabled={!storeOpen}
                         onMinus={() => updateQuantity(item.id, qty - 1)}
                       />
                     );
@@ -518,11 +518,13 @@ function MenuItemRow({
   qty,
   onAdd,
   onMinus,
+  disabled = false,
 }: {
   item: MenuItemRow;
   qty: number;
   onAdd: () => void;
   onMinus: () => void;
+  disabled?: boolean;
 }) {
   const hasImage = Boolean(item.image_url);
   const inCart = qty > 0;
@@ -552,7 +554,7 @@ function MenuItemRow({
           <span className="text-[14px] font-extrabold c-ink tabular-nums">
             {Number(item.price).toFixed(2)}€
           </span>
-          {!hasImage && (
+          {!hasImage && !disabled && (
             inCart ? (
               <QuantityStepper qty={qty} onMinus={onMinus} onPlus={onAdd} />
             ) : (

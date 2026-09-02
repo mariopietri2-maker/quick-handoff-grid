@@ -15,6 +15,7 @@ import type { OrderWithItems } from '@/hooks/useOrders';
 import { formatOrderNumber } from '@/lib/order-number';
 import { formatDriverCode } from '@/lib/driver-code';
 import { cn } from '@/lib/utils';
+import { stopOrderAlertLoop } from '@/lib/notifications';
 
 interface OrderQueueProps {
   orders: OrderWithItems[];
@@ -489,6 +490,7 @@ export function OrderQueue({
                     <AlertDialogCancel>Όχι</AlertDialogCancel>
                     <AlertDialogAction
                       onClick={async () => {
+                        stopOrderAlertLoop();
                         const ok = await onStatusUpdate(order.id, 'cancelled');
                         if (ok === false) toast.error('Cancel failed');
                         else toast.success('Order cancelled');

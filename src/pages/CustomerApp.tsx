@@ -586,7 +586,11 @@ export default function CustomerApp() {
                               <>★ {ratings[store.id].avg.toFixed(1)} · </>
                             )}
                             {deliveryEnabled && (
-                              <>{etaLow}–{etaHigh} {t('customer.min')}</>
+                              <>
+                                {etaLow}–{etaHigh} {t('customer.min')}
+                                {' · '}
+                                {(store as any).covers_delivery_fee ? 'Δωρεάν παρ.' : '0,99€ παρ.'}
+                              </>
                             )}
                           </>
                         )}
