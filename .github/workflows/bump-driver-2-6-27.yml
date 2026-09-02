@@ -1,0 +1,53 @@
+name: Bump driver 2.6.27 and simplify money UI
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/bump-driver-2-6-27.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Bump version + money UI
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          g = Path('native-driver/app/build.gradle.kts')
+          t = g.read_text()
+          t = t.replace('versionCode = 280', 'versionCode = 281')
+          t = t.replace('versionName = "2.6.26-call-fixes"', 'versionName = "2.6.27-bg-offer"')
+          # also bump if already different intermediate
+          import re
+          t = re.sub(r'versionCode = \d+', 'versionCode = 281', t, count=1)
+          t = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.27-bg-offer"', t, count=1)
+          g.write_text(t)
+          print(g.read_text().split('versionCode')[1][:80])
+
+          m = Path('src/components/driver/DriverMoneyPanel.tsx')
+          mt = m.read_text(encoding='utf-8')
+          import re as _re
+          mt2 = _re.sub(
+              r'(<p className="font-heading font-bold text-\[14px\] text-\[hsl\(var\(--driver-text\)\)\] mb-2\.5">\s*Ιστορικό\s*</p>)\s*<div className="grid grid-cols-2[\s\S]*?</div>\s*</div>',
+              r'''\1
+          <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mb-1">Παραδόσεις (νεότερα πρώτα)</p>
+        </div>''',
+              mt,
+              count=1,
+          )
+          mt2 = mt2.replace(
+              "const [historyTab, setHistoryTab] = useState<HistoryTab>('deliveries');",
+              "const [historyTab] = useState<HistoryTab>('deliveries');",
+          )
+          m.write_text(mt2, encoding='utf-8')
+          print('money panel updated', 'setHistoryTab' not in mt2)
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/app/build.gradle.kts src/components/driver/DriverMoneyPanel.tsx
+          if git diff --staged --quiet; then echo no changes; else git commit -m "chore(driver): v2.6.27 + simpler Κέρδη history"; git push; fi
