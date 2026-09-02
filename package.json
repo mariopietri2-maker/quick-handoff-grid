@@ -104,6 +104,7 @@
     "zod": "^3.25.76"
   },
   "devDependencies": {
+    "@capacitor/browser": "^8.0.4",
     "@eslint/js": "^9.32.0",
     "@playwright/test": "^1.60.0",
     "@tailwindcss/typography": "^0.5.16",
