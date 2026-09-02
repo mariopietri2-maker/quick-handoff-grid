@@ -1,5 +1,6 @@
 // Notification utilities used across the apps (store, driver, customer).
 import { showOsNotification, ensureNotificationPermission } from './push-notifications';
+import { loadStoreSoundPrefs } from './store-sound-prefs';
 import customerNotifyUrl from '@/assets/sounds/customer_notify.mp3';
 
 let audioContext: AudioContext | null = null;
@@ -78,8 +79,9 @@ function playTones(frequencies: number[], type: OscillatorType = 'sine', duratio
 
 /**
  * Play a notification chime — random short melody for new store orders.
+ * Volume is 0..1 gain peak (store sound settings).
  */
-export function playOrderSound() {
+export function playOrderSound(volume = 0.3) {
   const patterns: number[][] = [
     [523.25, 659.25, 783.99],       // C major
     [392.0, 523.25, 659.25],        // G → C → E
@@ -89,7 +91,7 @@ export function playOrderSound() {
     [659.25, 783.99, 987.77],       // E → G → B
   ];
   const freqs = patterns[Math.floor(Math.random() * patterns.length)]!;
-  playTones(freqs);
+  playTones(freqs, 'sine', 0.15, 0.12, Math.max(0, Math.min(1, volume)));
 }
 
 /**
@@ -97,27 +99,32 @@ export function playOrderSound() {
  */
 
 /**
- * Repeat the store new-order chime a few times so the kitchen misses it, then
- * stop automatically. Calling stopOrderAlertLoop() (e.g. order accepted) stops
- * it immediately; otherwise it self-limits to MAX_ORDER_ALERT_RINGS.
+ * Repeat the store new-order chime a few times so the kitchen doesn't miss
+ * it, then stop automatically. Calling stopOrderAlertLoop() (e.g. order
+ * accepted) stops it immediately; otherwise it self-limits to the store's
+ * configured repeat count. Prefs are re-read live on every ring, so muting
+ * or changing volume/repeats in settings applies instantly — including
+ * stopping a running loop when the chime is disabled.
  */
 let orderAlertTimer: ReturnType<typeof setInterval> | null = null;
 let orderAlertCount = 0;
-const MAX_ORDER_ALERT_RINGS = 5;
 const ORDER_ALERT_GAP_MS = 3200;
 
 export function startOrderAlertLoop() {
   if (orderAlertTimer != null) return;
+  const prefs = loadStoreSoundPrefs();
+  if (!prefs.orderChimeEnabled) return;
   orderAlertCount = 0;
-  playOrderSound();
+  playOrderSound(prefs.orderVolume);
   orderAlertCount = 1;
   orderAlertTimer = setInterval(() => {
     try {
-      if (orderAlertCount >= MAX_ORDER_ALERT_RINGS) {
+      const live = loadStoreSoundPrefs();
+      if (!live.orderChimeEnabled || orderAlertCount >= live.orderRepeats) {
         stopOrderAlertLoop();
         return;
       }
-      playOrderSound();
+      playOrderSound(live.orderVolume);
       orderAlertCount += 1;
     } catch {}
   }, ORDER_ALERT_GAP_MS);
@@ -135,7 +142,7 @@ export function isOrderAlertLooping(): boolean {
   return orderAlertTimer != null;
 }
 
-export function playDeliverySound() {
+export function playDeliverySound(volume = 0.35) {
   const pairs: [number, number][] = [
     [440, 554.37],
     [392, 523.25],
@@ -143,7 +150,7 @@ export function playDeliverySound() {
     [493.88, 587.33],
   ];
   const [a, b] = pairs[Math.floor(Math.random() * pairs.length)]!;
-  playTones([a, b], 'triangle', 0.18, 0.1, 0.35);
+  playTones([a, b], 'triangle', 0.18, 0.1, Math.max(0, Math.min(1, volume)));
 }
 
 /**

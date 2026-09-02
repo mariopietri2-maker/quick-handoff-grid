@@ -3,6 +3,7 @@ import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { toast } from 'sonner';
 import { playOrderSound, showOrderNotification, startOrderAlertLoop, stopOrderAlertLoop } from '@/lib/notifications';
+import { STORE_SOUND_PREFS_EVENT, loadStoreSoundPrefs, type StoreSoundPrefs } from '@/lib/store-sound-prefs';
 import { playOfferAlert, stopOfferAlert } from '@/lib/driver-sound-prefs';
 import { isAppActive, notifyDriverOfferLocal } from '@/lib/push-register';
 
@@ -163,6 +164,18 @@ export function useStoreOrders(storeId: string | null, opts?: { suppressSound?: 
       // Don't stop on dependency churn mid-flight — only cleanup unmount
     };
   }, [orders, suppressSound]);
+
+  // If the store mutes the order chime in settings mid-ring, stop now.
+  // (Volume/repeat changes apply live — the loop re-reads prefs each ring.)
+  useEffect(() => {
+    const onPrefs = (e: Event) => {
+      const detail = (e as CustomEvent<StoreSoundPrefs>).detail;
+      const enabled = detail?.orderChimeEnabled ?? loadStoreSoundPrefs().orderChimeEnabled;
+      if (!enabled) stopOrderAlertLoop();
+    };
+    window.addEventListener(STORE_SOUND_PREFS_EVENT, onPrefs);
+    return () => window.removeEventListener(STORE_SOUND_PREFS_EVENT, onPrefs);
+  }, []);
 
   useEffect(() => {
     return () => stopOrderAlertLoop();

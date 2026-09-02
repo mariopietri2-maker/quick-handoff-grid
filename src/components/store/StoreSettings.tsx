@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, Clock, Zap, Truck, MapPin, Save, Image as ImageIcon, Phone, Store as StoreIcon, Loader2, Sparkles } from 'lucide-react';
+import { AlertTriangle, BellRing, Clock, Play, Volume2, VolumeX, Zap, Truck, MapPin, Save, Image as ImageIcon, Phone, Store as StoreIcon, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -8,6 +8,13 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { useStore } from '@/hooks/useStore';
+import {
+  STORE_SOUND_PREFS_EVENT,
+  loadStoreSoundPrefs,
+  saveStoreSoundPrefs,
+  type StoreSoundPrefs,
+} from '@/lib/store-sound-prefs';
+import { playOrderSound, unlockAudio } from '@/lib/notifications';
 
 interface StoreSettingsProps {
   storeId: string;
@@ -38,6 +45,28 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
     highlight_color: '',
   });
   const [saving, setSaving] = useState(false);
+  // Local-device sound preferences (same module the N-store call view uses).
+  const [sound, setSound] = useState<StoreSoundPrefs>(() => loadStoreSoundPrefs());
+
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      const detail = (e as CustomEvent<StoreSoundPrefs>).detail;
+      setSound(detail ?? loadStoreSoundPrefs());
+    };
+    window.addEventListener(STORE_SOUND_PREFS_EVENT, onChange);
+    return () => window.removeEventListener(STORE_SOUND_PREFS_EVENT, onChange);
+  }, []);
+
+  const updateSound = (patch: Partial<StoreSoundPrefs>) => {
+    const next = { ...sound, ...patch };
+    setSound(next);
+    saveStoreSoundPrefs(next);
+  };
+
+  const testOrderSound = () => {
+    unlockAudio();
+    playOrderSound(sound.orderVolume);
+  };
 
   useEffect(() => {
     if (storeId) selectStore(storeId);
@@ -177,6 +206,89 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
               </p>
             </div>
           )}
+        </CardContent>
+      </Card>
+
+      <Card className="shadow-[var(--shadow-md)]">
+        <CardContent className="p-4 space-y-4">
+          <h3 className="font-heading font-semibold text-foreground flex items-center gap-2">
+            <BellRing className="h-4 w-4 text-primary" /> Ήχοι ειδοποιήσεων
+          </h3>
+          <p className="text-xs text-muted-foreground -mt-2">
+            Αφορούν αυτή τη συσκευή — ο ήχος νέων παραγγελιών και κλήσεων οδηγού.
+          </p>
+
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              {sound.orderChimeEnabled ? (
+                <Volume2 className="h-4 w-4 text-primary" />
+              ) : (
+                <VolumeX className="h-4 w-4 text-muted-foreground" />
+              )}
+              <div>
+                <p className="text-sm font-medium">Ήχος νέων παραγγελιών</p>
+                <p className="text-xs text-muted-foreground">Chime όταν έρχεται νέα παραγγελία</p>
+              </div>
+            </div>
+            <Switch
+              checked={sound.orderChimeEnabled}
+              onCheckedChange={(checked) => updateSound({ orderChimeEnabled: checked })}
+            />
+          </div>
+
+          <div className={`space-y-4 ${!sound.orderChimeEnabled ? 'opacity-45 pointer-events-none' : ''}`}>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Ένταση</p>
+                <Badge variant="outline">{Math.round(sound.orderVolume * 100)}%</Badge>
+              </div>
+              <Slider
+                value={[sound.orderVolume * 100]}
+                min={0}
+                max={100}
+                step={5}
+                onValueChange={([val]) => updateSound({ orderVolume: (val ?? 100) / 100 })}
+              />
+            </div>
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <p className="text-sm font-medium">Επαναλήψεις</p>
+                <Badge variant="outline">{sound.orderRepeats}×</Badge>
+              </div>
+              <Slider
+                value={[sound.orderRepeats]}
+                min={1}
+                max={5}
+                step={1}
+                onValueChange={([val]) => updateSound({ orderRepeats: val ?? 5 })}
+              />
+              <p className="text-[11px] text-muted-foreground">
+                Πόσες φορές παίζει το chime σε κάθε νέα παραγγελία
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm font-medium">Ήχος αποδοχής κλήσης</p>
+              <p className="text-xs text-muted-foreground">Chime όταν οδηγός αποδεχτεί κλήση (N καταστήματα)</p>
+            </div>
+            <Switch
+              checked={sound.callChimeEnabled}
+              onCheckedChange={(checked) => updateSound({ callChimeEnabled: checked })}
+            />
+          </div>
+
+          <Button
+            type="button"
+            variant="outline"
+            className="w-full font-heading"
+            disabled={!sound.orderChimeEnabled}
+            onClick={testOrderSound}
+          >
+            <Play className="h-4 w-4 mr-2" />
+            Δοκιμή ήχου
+          </Button>
         </CardContent>
       </Card>
 

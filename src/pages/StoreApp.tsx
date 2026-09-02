@@ -25,9 +25,16 @@ import { Card, CardContent } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StoreCallPanel } from '@/components/store/StoreCallPanel';
+import { StoreNewsPanel } from '@/components/store/StoreNewsPanel';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission, installAudioUnlock, unlockAudio } from '@/lib/notifications';
+import {
+  STORE_SOUND_PREFS_EVENT,
+  loadStoreSoundPrefs,
+  saveStoreSoundPrefs,
+  type StoreSoundPrefs,
+} from '@/lib/store-sound-prefs';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { StorePwaInstallBanner } from '@/components/store/StorePwaInstallBanner';
 
@@ -60,23 +67,23 @@ export default function StoreApp() {
     isNStore ? null : (store?.id ?? null),
     { suppressSound: isNStore },
   );
-  // Persisted mute for the "driver accepted" chime (N stores only).
-  const [callMuted, setCallMuted] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem('store-call-muted') === '1';
-    } catch {
-      return false;
-    }
-  });
+  // Store sound prefs — shared with StoreSettings ("Ήχοι ειδοποιήσεων").
+  // N stores only use the call-chime switch, but it is the same setting.
+  const [storeSound, setStoreSound] = useState<StoreSoundPrefs>(() => loadStoreSoundPrefs());
+  useEffect(() => {
+    const onChange = (e: Event) => {
+      const detail = (e as CustomEvent<StoreSoundPrefs>).detail;
+      setStoreSound(detail ?? loadStoreSoundPrefs());
+    };
+    window.addEventListener(STORE_SOUND_PREFS_EVENT, onChange);
+    return () => window.removeEventListener(STORE_SOUND_PREFS_EVENT, onChange);
+  }, []);
   const toggleCallMuted = () => {
-    setCallMuted((m) => {
-      const next = !m;
-      try {
-        localStorage.setItem('store-call-muted', next ? '1' : '0');
-      } catch {}
-      return next;
-    });
+    const next = { ...storeSound, callChimeEnabled: !storeSound.callChimeEnabled };
+    setStoreSound(next);
+    saveStoreSoundPrefs(next);
   };
+  const callMuted = !storeSound.callChimeEnabled;
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<ViewMode>('portal');
@@ -243,8 +250,14 @@ export default function StoreApp() {
             <p className="text-muted-foreground font-heading mb-3">Δεν βρέθηκε κατάστημα</p>
             <Button onClick={backToPortal}>Πίσω στο portal</Button>
           </div>
-        ) : store.store_role === 'N' ? (
-          <div className="py-6 max-w-lg mx-auto space-y-4">
+        ) : (
+          <div className="lg:grid lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-5 lg:items-start space-y-4 lg:space-y-0">
+            <aside className="order-2 lg:order-1 min-w-0 lg:sticky lg:top-16">
+              <StoreNewsPanel />
+            </aside>
+            <div className="order-1 lg:order-2 min-w-0">
+              {store.store_role === 'N' ? (
+                <div className="py-6 max-w-lg mx-auto space-y-4">
             {notifPermission !== 'granted' && (
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-info/10 border border-info/25">
                 <Bell className="h-6 w-6 text-info shrink-0" />
@@ -277,9 +290,9 @@ export default function StoreApp() {
             <p className="text-center text-xs text-muted-foreground px-4">
               Κράτα την οθόνη ανοιχτή ή εγκατέστησε την εφαρμογή για πιο αξιόπιστες ειδοποιήσεις.
             </p>
-          </div>
-        ) : (
-          <>
+                </div>
+              ) : (
+                <>
             {notifPermission === 'default' && (
               <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
                 <Bell className="h-5 w-5 text-info shrink-0" />
@@ -386,8 +399,11 @@ export default function StoreApp() {
                 <StoreSettings storeId={store.id} />
                 <PrinterSettings storeName={store.name} />
               </TabsContent>
-            </Tabs>
+              </Tabs>
           </>
+              )}
+            </div>
+          </div>
         )}
       </div>
     </div>
