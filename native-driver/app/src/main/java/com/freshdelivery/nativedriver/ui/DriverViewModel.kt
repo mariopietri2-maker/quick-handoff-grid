@@ -997,7 +997,8 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         pollJob = viewModelScope.launch {
             var tick = 0
             while (true) {
-                val isKPoll = _state.value.driverProfile?.call_role == "K"
+                val role = _state.value.driverProfile?.call_role
+                val isKPoll = role == "K" || role == "both"
                 delay(if (isKPoll) 2_000 else 4_000)
                 tick++
                 if (_state.value.signedIn) {

@@ -2,7 +2,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { AlertDialog, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Truck, CheckCircle, AlertCircle } from 'lucide-react';
+import { Loader2, Truck, CheckCircle, AlertCircle, X } from 'lucide-react';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import { playDeliverySound } from '@/lib/notifications';
@@ -58,13 +58,19 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmCloseOpen, setConfirmCloseOpen] = useState(false);
+  /** Shown on the idle card when our open call vanished without us closing it (DB expiry). */
+  const [expiredNotice, setExpiredNotice] = useState(false);
   const { toast } = useToast();
   const prevStatusRef = useRef<CallStatus>('idle');
   const wakeLockRef = useRef<WakeLockSentinel | null>(null);
   /** Ignore stale closed/null polls after we create an open call. */
   const holdOpenUntilRef = useRef(0);
+  /** True while a close we initiated is in flight / done — suppresses the expiry notice. */
+  const closedByUsRef = useRef(false);
   const confirmOpenRef = useRef(false);
   const [, setTick] = useState(0);
+  const stateRef = useRef(state);
+  stateRef.current = state;
 
   confirmOpenRef.current = confirmOpen;
 
@@ -78,6 +84,17 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
       });
       if (error) throw error;
       const call = data?.[0];
+
+      // Expiry detection: our open call turned closed without us closing it
+      // (DB cron after 15 min) — the state mapper below will drop to idle,
+      // so raise the notice here while we still know the previous state.
+      const prev = stateRef.current;
+      if (prev.status === 'open' && prev.callId && !closedByUsRef.current && call && call.id === prev.callId) {
+        const latest = mapStatus(call.status);
+        if (latest !== 'open' && latest !== 'accepted') {
+          setExpiredNotice(true);
+        }
+      }
 
       setState((prev) => {
         const hold = Date.now() < holdOpenUntilRef.current;
@@ -227,6 +244,8 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
 
       const createdAt = call.created_at ?? new Date().toISOString();
       holdOpenUntilRef.current = Date.now() + 15_000;
+      closedByUsRef.current = false;
+      setExpiredNotice(false);
       setConfirmOpen(false);
       setState({
         status: 'open',
@@ -253,6 +272,7 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
   const handleCloseCall = async () => {
     if (!state.callId) return;
     setLoading(true);
+    closedByUsRef.current = true;
     try {
       const { error } = await supabase.rpc('close_store_driver_call', {
         p_call_id: state.callId,
@@ -262,6 +282,7 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
       setState(idleState());
       toast({ title: 'Κλήση κλείστηκε' });
     } catch (e: unknown) {
+      closedByUsRef.current = false;
       const msg = e instanceof Error ? e.message : 'Σφάλμα';
       toast({ title: 'Σφάλμα', description: msg, variant: 'destructive' });
     } finally {
@@ -281,6 +302,26 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
 
   if (state.status === 'idle') {
     return (
+      <>
+        {expiredNotice && (
+          <div className="w-full max-w-md mx-auto mb-4 flex items-start gap-2.5 p-4 rounded-2xl bg-amber-500/10 border border-amber-500/30 text-left">
+            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-heading font-semibold text-foreground">Η κλήση έληξε χωρίς αποδοχή</p>
+              <p className="text-xs text-muted-foreground mt-0.5">
+                Κανένας οδηγός δεν αποδέχτηκε σε 15΄. Κάλεσε ξανά αν χρειάζεσαι οδηγό.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setExpiredNotice(false)}
+              aria-label="Απόκρυψη ειδοποίησης"
+              className="h-7 w-7 rounded-lg flex items-center justify-center text-muted-foreground hover:text-foreground hover:bg-muted shrink-0"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
       <Card className="w-full max-w-md mx-auto shadow-lg">
         <CardContent className="pt-8 pb-10 px-6 text-center">
           <div className="mx-auto h-20 w-20 rounded-full bg-emerald-500/10 flex items-center justify-center">
@@ -344,6 +385,7 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
           {state.error && <p className="mt-3 text-sm text-destructive">{state.error}</p>}
         </CardContent>
       </Card>
+      </>
     );
   }
 
