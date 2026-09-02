@@ -1,0 +1,34 @@
+name: Restore useOrders and OrderQueue
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "_restore_parts/**"
+      - ".github/workflows/restore-use-orders.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Assemble files
+        run: |
+          set -euo pipefail
+          if [ -d _restore_parts/useOrders ]; then
+            cat _restore_parts/useOrders/part*.txt > src/hooks/useOrders.ts
+            wc -c src/hooks/useOrders.ts
+            grep -q useStoreOrders src/hooks/useOrders.ts
+            grep -q stopOrderAlertLoop src/hooks/useOrders.ts
+          fi
+          if [ -d _restore_parts/OrderQueue ]; then
+            cat _restore_parts/OrderQueue/part*.txt > src/components/store/OrderQueue.tsx
+            wc -c src/components/store/OrderQueue.tsx
+            grep -q "onStatusUpdate(order.id, 'cancelled')" src/components/store/OrderQueue.tsx
+          fi
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/hooks/useOrders.ts src/components/store/OrderQueue.tsx
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(store): stop order sound on cancel + restore useOrders"; git push; fi
