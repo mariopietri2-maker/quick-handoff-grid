@@ -79,7 +79,7 @@ export async function showOsNotification(opts: {
             body: opts.body,
             schedule: { at: new Date(Date.now() + 50) },
             smallIcon: 'ic_stat_icon_config_sample',
-            channelId: opts.channelId ?? 'driver-offers-v3',
+            channelId: opts.channelId ?? 'driver-offers-v6',
             ...(Object.keys(extra).length ? { extra } : {}),
           },
         ],
@@ -111,7 +111,23 @@ export async function showOsNotification(opts: {
 export async function initNotificationChannels() {
   if (!isNative) return;
   try {
-    // Channel sound is immutable after first create — keep id stable.
+    // Channel sound is immutable after first create — bump the id when the
+    // sound config changes so existing installs re-create it (matches the
+    // server FCM channel_id and the native Kotlin shell).
+    await LocalNotifications.createChannel({
+      id: 'driver-offers-v6',
+      name: 'Νέες παραγγελίες',
+      description: 'Ήχος προσφοράς Fresh Delivery (fresh_delivery)',
+      importance: 5,
+      visibility: 1,
+      vibration: true,
+      lights: true,
+      sound: 'fresh_delivery',
+    });
+  } catch (e) {
+    console.warn('createChannel driver-offers-v6 error', e);
+  }
+  try {
     await LocalNotifications.createChannel({
       id: 'driver-offers-v3',
       name: 'Νέες παραγγελίες',

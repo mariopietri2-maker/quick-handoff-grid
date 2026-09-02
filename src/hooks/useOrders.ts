@@ -137,7 +137,7 @@ export function useStoreOrders(storeId: string | null) {
     if (newStatus !== 'placed') {
       // Optimistically quiet if no other placed left (effect will confirm after refetch)
       setOrders((prev) => {
-        const next = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
+        const next = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus as OrderWithItems['status'] } : o));
         if (!next.some((o) => o.status === 'placed')) stopOrderAlertLoop();
         return next;
       });
@@ -359,6 +359,50 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     fetchOrders();
   }, [fetchOrders]);
 
+  // Persistent alert: ring while unaccepted offers exist.
+  // Foreground → ONE in-app Fresh Delivery chime burst (this effect owns it).
+  // Locked/background → local OS notification (channel sound) until accepted,
+  // re-triggered so Android plays the sound again. FCM covers killed apps.
+  // Sound deliberately fires ONLY for the offer recipient (pending_offers is
+  // driver-filtered) — the plain orders INSERT is fleet-wide, so it must not buzz.
+  const ringableKey = offers
+    .map((o) => o.id)
+    .sort()
+    .join(',');
+  const ringOrderId = offers[0]?.id ?? null;
+  useEffect(() => {
+    if (activeDelivery || !ringableKey || !ringOrderId) {
+      stopOfferAlert();
+      return;
+    }
+
+    const tick = () => {
+      if (isAppActive()) {
+        playOfferAlert();
+      } else {
+        void notifyDriverOfferLocal({
+          orderId: ringOrderId,
+          retrigger: true,
+          title: 'Νέα παράδοση!',
+          body: 'Έχεις νέα προσφορά — άνοιξε την εφαρμογή.',
+        });
+      }
+    };
+
+    tick();
+    const id = window.setInterval(tick, 4500);
+    const onActive = () => {
+      // Resume ring after unlock — playOfferAlert has its own lock so this
+      // won't stack with an in-flight burst.
+      if (isAppActive() && !activeDelivery) playOfferAlert();
+    };
+    window.addEventListener('driver-app-active-changed', onActive);
+    return () => {
+      window.clearInterval(id);
+      window.removeEventListener('driver-app-active-changed', onActive);
+    };
+  }, [ringableKey, ringOrderId, activeDelivery]);
+
   useEffect(() => {
     if (!user) return;
 
@@ -366,35 +410,27 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       .channel(`driver-orders-${user.id}`)
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'orders' },
-        (payload) => {
-          const row = (payload.new ?? payload.old) as any;
-          if (!row) return;
-          const relevant =
-            row.status === 'placed' ||
-            row.driver_id === user.id ||
-            (payload.old as any)?.driver_id === user.id;
-          if (relevant) {
-            void fetchOrders();
-            if (payload.eventType === 'INSERT' && row.status === 'placed') {
-              // Don't buzz drivers for scheduled orders that are still hours out —
-              // the offer only lands once auto-dispatch opens the 45-min window.
-              const sched = row.scheduled_for ? new Date(row.scheduled_for).getTime() : null;
-              const withinHold = !sched || sched <= Date.now() + 45 * 60_000;
-              if (withinHold) {
-                try {
-                  playOfferAlert();
-                  if (!isAppActive()) notifyDriverOfferLocal();
-                } catch {}
-              }
-            }
-          }
+        { event: '*', schema: 'public', table: 'orders', filter: `driver_id=eq.${user.id}` },
+        () => {
+          void fetchOrders();
         },
       )
       .on(
         'postgres_changes',
-        { event: '*', schema: 'public', table: 'pending_offers', filter: `driver_id=eq.${user.id}` },
-        () => {
+        { event: 'INSERT', schema: 'public', table: 'pending_offers', filter: `driver_id=eq.${user.id}` },
+        (payload) => {
+          // Background/locked: local OS banner ASAP (FCM still covers killed apps).
+          // Foreground sound is owned solely by the ringableKey effect after fetch —
+          // playing here too caused a double Fresh Delivery chime.
+          const row = payload.new as { order_id?: string } | null;
+          const orderId = row?.order_id;
+          if (!isAppActive() && orderId) {
+            void notifyDriverOfferLocal({
+              orderId,
+              title: 'Νέα παράδοση!',
+              body: 'Έχεις νέα προσφορά — άνοιξε την εφαρμογή.',
+            });
+          }
           void fetchOrders();
         },
       )
