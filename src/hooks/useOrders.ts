@@ -90,7 +90,13 @@ export function useStoreOrders(storeId: string | null) {
           } else if (payload.eventType === 'UPDATE') {
             const row = payload.new as any;
             if (row?.status && !ACTIVE_STATUSES.current.has(row.status)) {
-              setOrders((prev) => prev.filter((o) => o.id !== row.id));
+              setOrders((prev) => {
+                const next = prev.filter((o) => o.id !== row.id);
+                if (!suppressSound && !next.some((o) => o.status === 'placed')) {
+                  stopOrderAlertLoop();
+                }
+                return next;
+              });
               setPendingIds((prev) => prev.filter((id) => id !== row.id));
             } else {
               scheduleRefetch();
@@ -98,7 +104,13 @@ export function useStoreOrders(storeId: string | null) {
           } else if (payload.eventType === 'DELETE') {
             const old = payload.old as any;
             if (old?.id) {
-              setOrders((prev) => prev.filter((o) => o.id !== old.id));
+              setOrders((prev) => {
+                const next = prev.filter((o) => o.id !== old.id);
+                if (!suppressSound && !next.some((o) => o.status === 'placed')) {
+                  stopOrderAlertLoop();
+                }
+                return next;
+              });
               setPendingIds((prev) => prev.filter((id) => id !== old.id));
             }
           }
