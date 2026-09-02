@@ -58,10 +58,10 @@ jobs:
               raise SystemExit("pattern missing")
           g = Path("native-driver/app/build.gradle.kts")
           gt = g.read_text(encoding="utf-8")
-          gt = re.sub(r"versionCode = \\d+", "versionCode = 277", gt)
-          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.23-fcm-token"', gt)
+          gt = re.sub(r"versionCode = \\d+", "versionCode = 278", gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.24-sound-fix"', gt)
           g.write_text(gt, encoding="utf-8")
-          Path("native-driver/APK_VERSION.txt").write_text("2.6.23-fcm-token\nversionCode=277\n")
+          Path("native-driver/APK_VERSION.txt").write_text("2.6.24-sound-fix\nversionCode=277\n")
           print("size", p.stat().st_size)
           PY
       - name: Commit
@@ -69,4 +69,4 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): restore DriverRepository + FCM RPC 2.6.23"; git push; fi
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(native-driver): restore DriverRepository + FCM RPC 2.6.24"; git push; fi
