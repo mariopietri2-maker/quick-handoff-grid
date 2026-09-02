@@ -7,7 +7,7 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 export const APK_BUILD_VERSION = '1.0.7232800';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
-export const APK_NATIVE_DRIVER_VERSION = '2.6.26-call-fixes';
+export const APK_NATIVE_DRIVER_VERSION = '2.6.27-bg-offer';
 
 /** Native Kotlin/Compose customer. */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.8.2-sound-fix';
@@ -22,7 +22,7 @@ export const APK_DOWNLOADS = {
   driverNative: {
     id: 'driverNative' as const,
     title: 'Οδηγός Native',
-    subtitle: 'Kotlin + Compose · Mapbox · FCM',
+    subtitle: 'Kotlin + Compose · Mapbox · FCM · background ring',
     filename: 'fresh-driver-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh-driver-native-debug.apk`,
     sizeLabel: '~87 MB',
@@ -88,7 +88,6 @@ export function startApkDownload(flavor: ApkFlavor) {
     /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 
   if (isMobile) {
-    // Same-tab navigation triggers the Android download manager cleanly.
     window.location.assign(url);
     return;
   }
