@@ -1,0 +1,132 @@
+name: Restore store cancel sound fix
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-cancel-sound.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore useOrders and patch cancel sound
+        run: |
+          set -euo pipefail
+          # Last known-good useOrders before accidental PLACEHOLDER overwrite
+          GOOD_UO=704620353101aaa08f11d6df5e04125dff3a0ead
+          git show "$GOOD_UO:src/hooks/useOrders.ts" > src/hooks/useOrders.ts
+          # Last known-good OrderQueue before this fix (same commit family)
+          if git cat-file -e "$GOOD_UO:src/components/store/OrderQueue.tsx" 2>/dev/null; then
+            git show "$GOOD_UO:src/components/store/OrderQueue.tsx" > src/components/store/OrderQueue.tsx
+          fi
+          python3 << 'PY'
+          from pathlib import Path
+
+          # --- useOrders: stop sound on realtime cancel/delete ---
+          p = Path('src/hooks/useOrders.ts')
+          t = p.read_text()
+          if 'PLACEHOLDER' in t or len(t) < 500:
+              raise SystemExit('useOrders still broken')
+
+          old = '''          } else if (payload.eventType === 'UPDATE') {
+            const row = payload.new as any;
+            if (row?.status && !ACTIVE_STATUSES.current.has(row.status)) {
+              setOrders((prev) => prev.filter((o) => o.id !== row.id));
+              setPendingIds((prev) => prev.filter((id) => id !== row.id));
+            } else {
+              scheduleRefetch();
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const old = payload.old as any;
+            if (old?.id) {
+              setOrders((prev) => prev.filter((o) => o.id !== old.id));
+              setPendingIds((prev) => prev.filter((id) => id !== old.id));
+            }
+          }'''
+
+          new = '''          } else if (payload.eventType === 'UPDATE') {
+            const row = payload.new as any;
+            if (row?.status && !ACTIVE_STATUSES.current.has(row.status)) {
+              // cancelled / delivered / etc. — drop from queue and stop ring
+              // if nothing else is still waiting for accept.
+              setOrders((prev) => {
+                const next = prev.filter((o) => o.id !== row.id);
+                if (!suppressSound && !next.some((o) => o.status === 'placed')) {
+                  stopOrderAlertLoop();
+                }
+                return next;
+              });
+              setPendingIds((prev) => prev.filter((id) => id !== row.id));
+            } else {
+              scheduleRefetch();
+            }
+          } else if (payload.eventType === 'DELETE') {
+            const old = payload.old as any;
+            if (old?.id) {
+              setOrders((prev) => {
+                const next = prev.filter((o) => o.id !== old.id);
+                if (!suppressSound && !next.some((o) => o.status === 'placed')) {
+                  stopOrderAlertLoop();
+                }
+                return next;
+              });
+              setPendingIds((prev) => prev.filter((id) => id !== old.id));
+            }
+          }'''
+
+          if old in t:
+              t = t.replace(old, new)
+              print('patched realtime stop')
+          elif 'nothing else is still waiting' in t:
+              print('realtime already patched')
+          else:
+              print('WARN: realtime block pattern missing')
+
+          t = t.replace('  }, [storeId, scheduleRefetch]);', '  }, [storeId, scheduleRefetch, suppressSound]);', 1)
+          p.write_text(t)
+
+          # --- OrderQueue: cancel via onStatusUpdate ---
+          q = Path('src/components/store/OrderQueue.tsx')
+          qt = q.read_text()
+          old_q = '''                    <AlertDialogAction
+                      onClick={async () => {
+                        const { error } = await supabase.rpc('transition_order_status' as never, {
+                          p_order_id: order.id,
+                          p_new_status: 'cancelled',
+                          p_estimated_prep_time: null,
+                        } as never);
+                        if (error) toast.error(error.message || 'Η ακύρωση απέτυχε');
+                        else toast.success('Παραγγελία ακυρώθηκε');
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >'''
+          new_q = '''                    <AlertDialogAction
+                      onClick={async () => {
+                        // Must go through onStatusUpdate so useStoreOrders can
+                        // stop the new-order alert loop immediately.
+                        const ok = await onStatusUpdate(order.id, 'cancelled');
+                        if (ok === false) toast.error('Η ακύρωση απέτυχε');
+                        else toast.success('Παραγγελία ακυρώθηκε');
+                      }}
+                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                    >'''
+          if old_q in qt:
+              q.write_text(qt.replace(old_q, new_q))
+              print('patched OrderQueue cancel')
+          elif "onStatusUpdate(order.id, 'cancelled')" in qt:
+              print('OrderQueue already patched')
+          else:
+              print('WARN: OrderQueue cancel pattern missing')
+          PY
+          grep -q useStoreOrders src/hooks/useOrders.ts
+          test "$(wc -c < src/hooks/useOrders.ts)" -gt 10000
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/hooks/useOrders.ts src/components/store/OrderQueue.tsx
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(store): stop new-order sound when store cancels"; git push; fi
