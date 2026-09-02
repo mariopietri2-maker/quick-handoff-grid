@@ -2,22 +2,25 @@ import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
  * Store owner beta APK — loads the live Store PWA at /store
- * (same Railway production host as the web portal).
+ * (Vercel production host; Railway retired for web).
  */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.store',
   appName: 'Fresh Store',
   webDir: 'dist',
   server: {
-    url: 'https://quick-handoff-grid-production.up.railway.app/store',
+    // Primary: Vercel project domain (stable). Keep Railway in allowlist as fallback.
+    url: 'https://fresh-delivery-rho.vercel.app/store',
     cleartext: false,
     androidScheme: 'https',
     allowNavigation: [
       'https://freshdelivery.app/*',
       'https://ojkesspghyqmjmupybva.supabase.co/*',
       'https://*.supabase.co/*',
-      'https://quick-handoff-grid-production.up.railway.app/*',
       'https://fresh-delivery-rho.vercel.app/*',
+      'https://quick-handoff-grid-8qu8.vercel.app/*',
+      'https://*.vercel.app/*',
+      'https://quick-handoff-grid-production.up.railway.app/*',
       'https://api.mapbox.com/*',
       'https://js.stripe.com/*',
       'https://*.stripe.com/*',
