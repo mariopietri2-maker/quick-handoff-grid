@@ -1,0 +1,63 @@
+name: Customer notif banner
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/customer-notif-banner.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch CustomerApp
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          c = Path('src/pages/CustomerApp.tsx')
+          ct = c.read_text(encoding='utf-8')
+          if 'Ενεργοποίησε ειδοποιήσεις' in ct:
+              print('already')
+          else:
+              if "from '@/lib/notifications'" not in ct:
+                  ct = ct.replace(
+                      "import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';",
+                      "import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';\nimport { requestNotificationPermission } from '@/lib/notifications';",
+                  )
+              if 'notifNeed' not in ct:
+                  ct = ct.replace(
+                      "  const [debouncedSearch, setDebouncedSearch] = useState('');",
+                      "  const [debouncedSearch, setDebouncedSearch] = useState('');\n  const [notifNeed, setNotifNeed] = useState(false);\n  useEffect(() => {\n    if (typeof window === 'undefined' || !('Notification' in window)) return;\n    setNotifNeed(Notification.permission === 'default');\n  }, []);",
+                  )
+              ct = ct.replace(
+                  '        {/* Main feed */}',
+                  '''        {notifNeed && (
+          <div className="mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
+            <p className="text-[12px] flex-1 text-foreground font-medium leading-snug">
+              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5"
+              onClick={async () => {
+                await requestNotificationPermission();
+                setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default');
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
+        {/* Main feed */}''',
+              )
+              c.write_text(ct, encoding='utf-8')
+              print('patched')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/CustomerApp.tsx
+          if git diff --staged --quiet; then echo no; else git commit -m "feat(customer): notification permission banner"; git push; fi
