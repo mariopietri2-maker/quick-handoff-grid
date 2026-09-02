@@ -1,0 +1,123 @@
+name: Fix StoreWalletCard PLACEHOLDER
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-store-wallet-placeholder.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 40
+      - name: Restore from git history then patch
+        run: |
+          set -euo pipefail
+          git show 1e4a8f00a5c9ea391f71f75cb84f7b5ccc8f5c76:src/components/store/StoreWalletCard.tsx > src/components/store/StoreWalletCard.tsx
+          test $(wc -c < src/components/store/StoreWalletCard.tsx) -gt 5000
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('src/components/store/StoreWalletCard.tsx')
+          t = p.read_text(encoding='utf-8')
+          if 'store-commission' not in t:
+              old = """  const { data: wallet } = useQuery({
+    queryKey: ['store-wallet', storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('store_wallets')
+        .select('available_balance, lifetime_earnings, updated_at')
+        .eq('store_id', storeId)
+        .maybeSingle();"""
+              ins = """  const { data: storeMeta } = useQuery({
+    queryKey: ['store-commission', storeId],
+    queryFn: async () => {
+      const { data } = await (supabase as any)
+        .from('stores')
+        .select('commission_pct, name')
+        .eq('id', storeId)
+        .maybeSingle();
+      return data as { commission_pct: number | null; name: string } | null;
+    },
+    enabled: !!storeId,
+  });
+
+  const { data: wallet } = useQuery({
+    queryKey: ['store-wallet', storeId],
+    queryFn: async () => {
+      const { data, error } = await (supabase as any)
+        .from('store_wallets')
+        .select('available_balance, lifetime_earnings, updated_at')
+        .eq('store_id', storeId)
+        .maybeSingle();"""
+              if old not in t:
+                  raise SystemExit('wallet query missing')
+              t = t.replace(old, ins)
+          if 'Προμήθεια πλατφόρμας' not in t:
+              needle = '      <Card className="border-l-4 border-l-emerald-500 shadow-md">'
+              block = '''      {storeMeta?.commission_pct != null && (
+        <div className="rounded-xl border border-border bg-muted/40 px-3 py-2 text-[12px] text-muted-foreground">
+          Προμήθεια πλατφόρμας:{' '}
+          <span className="font-bold text-foreground tabular-nums">
+            {Number(storeMeta.commission_pct).toFixed(1)}%
+          </span>
+          <span>
+            {' '}· καθαρό κατάστημα ~{(100 - Number(storeMeta.commission_pct)).toFixed(1)}%
+          </span>
+        </div>
+      )}
+
+      <Card className="border-l-4 border-l-emerald-500 shadow-md">'''
+              if needle not in t:
+                  raise SystemExit('card missing')
+              t = t.replace(needle, block, 1)
+          p.write_text(t, encoding='utf-8')
+          assert 'PLACEHOLDER' not in t
+          print('wallet restored', p.stat().st_size)
+
+          c = Path('src/pages/CustomerApp.tsx')
+          ct = c.read_text(encoding='utf-8')
+          if "from '@/lib/notifications'" not in ct:
+              ct = ct.replace(
+                  "import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';",
+                  "import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';\nimport { requestNotificationPermission } from '@/lib/notifications';",
+              )
+          if 'notifNeed' not in ct:
+              ct = ct.replace(
+                  "  const [debouncedSearch, setDebouncedSearch] = useState('');",
+                  "  const [debouncedSearch, setDebouncedSearch] = useState('');\n  const [notifNeed, setNotifNeed] = useState(false);\n  useEffect(() => {\n    if (typeof window === 'undefined' || !('Notification' in window)) return;\n    setNotifNeed(Notification.permission === 'default');\n  }, []);",
+              )
+          if 'Ενεργοποίησε ειδοποιήσεις' not in ct:
+              ct = ct.replace(
+                  '        {/* Main feed */}',
+                  '''        {notifNeed && (
+          <div className="mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
+            <p className="text-[12px] flex-1 text-foreground font-medium leading-snug">
+              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5"
+              onClick={async () => {
+                await requestNotificationPermission();
+                setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default');
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
+        {/* Main feed */}''',
+              )
+          c.write_text(ct, encoding='utf-8')
+          print('customer patched')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/store/StoreWalletCard.tsx src/pages/CustomerApp.tsx
+          if git diff --staged --quiet; then echo no changes; else git commit -m "feat: store commission display + customer push banner"; git push; fi
+"}
