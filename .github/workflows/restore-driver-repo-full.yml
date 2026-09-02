@@ -1,0 +1,81 @@
+name: Restore DriverRepository full
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-driver-repo-full.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore from good commit and patch FCM RPC
+        run: |
+          set -euo pipefail
+          GOOD=6fdfc002628abb1ac3730d1a856363d37620c00f
+          TARGET=native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt
+          git show "$GOOD:$TARGET" > "$TARGET"
+          wc -c "$TARGET"
+          python3 << 'PY'
+          from pathlib import Path
+          import re
+          p = Path("native-driver/app/src/main/java/com/freshdelivery/nativedriver/data/DriverRepository.kt")
+          t = p.read_text(encoding="utf-8")
+          if len(t) < 10000:
+              raise SystemExit(f"file still too small: {len(t)}")
+          old = """    suspend fun upsertPushToken(userId: String, token: String) {
+        client.from(\"push_tokens\").upsert(
+            PushTokenUpsert(user_id = userId, token = token),
+        ) { onConflict = \"token\" }
+    }"""
+          new = """    suspend fun upsertPushToken(userId: String, token: String) {
+        // Prefer SECURITY DEFINER RPC so the same device token can be
+        // reassigned when a different driver logs in (UNIQUE token + RLS).
+        val rpcOk = runCatching {
+            client.postgrest.rpc(
+                \"register_driver_push_token\",
+                buildJsonObject {
+                    put(\"p_token\", token)
+                    put(\"p_platform\", \"android\")
+                },
+            )
+        }.isSuccess
+        if (!rpcOk) {
+            runCatching {
+                client.from(\"push_tokens\").upsert(
+                    PushTokenUpsert(user_id = userId, token = token),
+                ) { onConflict = \"token\" }
+            }
+        }
+    }"""
+          if old not in t:
+              if "register_driver_push_token" in t:
+                  print("already patched")
+              else:
+                  raise SystemExit("upsert pattern not found")
+          else:
+              p.write_text(t.replace(old, new), encoding="utf-8")
+              print("patched FCM RPC")
+          g = Path("native-driver/app/build.gradle.kts")
+          gt = g.read_text(encoding="utf-8")
+          gt = re.sub(r"versionCode = \\d+", "versionCode = 277", gt)
+          gt = re.sub(r'versionName = "[^"]+"', 'versionName = "2.6.23-fcm-token"', gt)
+          g.write_text(gt, encoding="utf-8")
+          Path("native-driver/APK_VERSION.txt").write_text("2.6.23-fcm-token\nversionCode=277\n")
+          print("size", p.stat().st_size)
+          PY
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if git diff --staged --quiet; then
+            echo "no changes"
+          else
+            git commit -m "fix(native-driver): restore full DriverRepository + 2.6.23-fcm-token"
+            git push
+          fi
