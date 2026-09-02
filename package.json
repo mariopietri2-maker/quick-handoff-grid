@@ -13,6 +13,7 @@
     "build:dev": "vite build --mode development",
     "lint": "eslint .",
     "typecheck": "tsc -b",
+    "audit:edge-cost": "node scripts/audit-edge-crons.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
