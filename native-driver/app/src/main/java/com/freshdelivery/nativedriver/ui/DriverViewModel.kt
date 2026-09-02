@@ -556,18 +556,12 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                 repo.subscribeStoreCalls().collect {
                     if (!_state.value.online) return@collect
                     if (!_state.value.isCallDriver) return@collect
+                    // refreshWork() is the single source of truth for the
+                    // store-call ring: it starts on a NEW open call (key-deduped)
+                    // and stops when no open calls remain. Re-starting the ring
+                    // here on every realtime event (incl. our own acceptance
+                    // UPDATE) would keep re-arming the sound endlessly.
                     refreshWork()
-                    val local = _state.value.settingsLocal
-                    if (local.offerSound) {
-                        runCatching {
-                            StoreCallRingService.start(
-                                getApplication(),
-                                title = "📞 Κλήση καταστήματος",
-                                body = "Νέα κλήση — άνοιξε για αποδοχή",
-                            )
-                        }
-                    }
-                    if (local.vibration) vibrateOffer()
                 }
             }
         }

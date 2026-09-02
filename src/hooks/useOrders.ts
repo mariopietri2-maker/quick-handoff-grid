@@ -19,7 +19,8 @@ export interface OrderWithItems extends OrderRow {
   customer_phone?: string | null;
 }
 
-export function useStoreOrders(storeId: string | null) {
+export function useStoreOrders(storeId: string | null, opts?: { suppressSound?: boolean }) {
+  const suppressSound = opts?.suppressSound === true;
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
   const [pendingIds, setPendingIds] = useState<string[]>([]);
@@ -84,7 +85,7 @@ export function useStoreOrders(storeId: string | null) {
             const newId = (payload.new as any)?.id as string | undefined;
             if (newId) setPendingIds((prev) => (prev.includes(newId) ? prev : [...prev, newId]));
             try {
-              startOrderAlertLoop();
+              if (!suppressSound) startOrderAlertLoop();
               if (newId) showOrderNotification(newId, 0);
             } catch {}
           } else if (payload.eventType === 'UPDATE') {
@@ -153,12 +154,12 @@ export function useStoreOrders(storeId: string | null) {
   // Keep ringing while any order is still "placed" (unaccepted).
   useEffect(() => {
     const hasNew = orders.some((o) => o.status === 'placed');
-    if (hasNew) startOrderAlertLoop();
+    if (hasNew && !suppressSound) startOrderAlertLoop();
     else stopOrderAlertLoop();
     return () => {
       // Don't stop on dependency churn mid-flight — only cleanup unmount
     };
-  }, [orders]);
+  }, [orders, suppressSound]);
 
   useEffect(() => {
     return () => stopOrderAlertLoop();

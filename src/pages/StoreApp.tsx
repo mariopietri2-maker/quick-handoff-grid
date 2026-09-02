@@ -46,7 +46,10 @@ export default function StoreApp() {
   const {
     store, stores, selectedStoreId, selectStore, loading: storeLoading, createStore,
   } = useStore();
-  const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(store?.id ?? null);
+  const { orders, loading: ordersLoading, updateStatus, pendingIds } = useStoreOrders(
+    store?.id ?? null,
+    { suppressSound: store?.store_role === 'N' },
+  );
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<ViewMode>('portal');
