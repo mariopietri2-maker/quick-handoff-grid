@@ -39,6 +39,7 @@ const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditT
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
 const StripePaymentsSettings = lazy(() => import('@/components/admin/StripePaymentsSettings'));
 const CallRolesPanel = lazy(() => import('@/components/admin/CallRolesPanel'));
+const StoreCallsPanel = lazy(() => import('@/components/admin/StoreCallsPanel'));
 const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
 const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserActions'));
 const DriverMessagesPanel    = lazy(() => import('@/components/admin/DriverMessagesPanel'));
@@ -458,6 +459,8 @@ export default function AdminApp() {
         return <UsersSection profiles={profiles.data} adminUserIds={adminUserIds} driverCodeMap={driverCodeMap} onChangeRole={handleChangeRole} onToggleAdmin={handleToggleAdmin} />;
       case 'call_roles':
         return <CallRolesPanel />;
+      case 'store_calls':
+        return <StoreCallsPanel />;
       case 'settings_home':
         return <AdminSettingsHub onNavigate={setActiveSection} />;
       case 'financials':
