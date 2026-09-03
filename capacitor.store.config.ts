@@ -1,18 +1,17 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
 /**
- * Store owner beta APK — loads the live Store PWA at /store on Vercel.
+ * Store owner beta APK — loads the live Store PWA at /store.
  */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.store',
   appName: 'Fresh Store',
   webDir: 'dist',
   server: {
-    url: 'https://quick-handoff-grid-8qu8.vercel.app/store',
+    url: 'https://freshdelivery.app/store',
     cleartext: false,
     androidScheme: 'https',
     allowNavigation: [
-      'https://quick-handoff-grid-8qu8.vercel.app/*',
       'https://*.vercel.app/*',
       'https://freshdelivery.app/*',
       'https://ojkesspghyqmjmupybva.supabase.co/*',
