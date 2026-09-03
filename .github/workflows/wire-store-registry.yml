@@ -1,0 +1,68 @@
+name: Wire store registry into AdminApp
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/wire-store-registry.yml"
+      - "src/components/admin/StoreRegistryPanel.tsx"
+jobs:
+  wire:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch AdminSidebar + AdminApp
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          # Sidebar
+          sp = Path('src/components/admin/AdminSidebar.tsx')
+          st = sp.read_text()
+          if "store_registry" not in st:
+              st = st.replace(
+                  "{ id: 'stores', label: 'Καταστήματα' },",
+                  "{ id: 'stores', label: 'Καταστήματα' },\n      { id: 'store_registry', label: '📋 Μητρώο' },",
+                  1,
+              )
+              sp.write_text(st)
+              print('sidebar patched')
+          else:
+              print('sidebar already has store_registry')
+
+          ap = Path('src/pages/AdminApp.tsx')
+          at = ap.read_text()
+          if 'StoreRegistryPanel' not in at:
+              at = at.replace(
+                  "const CustomerRegistryPanel  = lazy(() => import('@/components/admin/CustomerRegistryPanel'));",
+                  "const CustomerRegistryPanel  = lazy(() => import('@/components/admin/CustomerRegistryPanel'));\nconst StoreRegistryPanel     = lazy(() => import('@/components/admin/StoreRegistryPanel'));",
+                  1,
+              )
+          if "case 'store_registry'" not in at:
+              at = at.replace(
+                  "case 'stores':\n        return <StoresSection",
+                  "case 'stores':\n        return <StoresSection",
+                  1,
+              )
+              # insert after stores case return line
+              needle = "return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;"
+              if needle in at:
+                  at = at.replace(
+                      needle,
+                      needle + "\n      case 'store_registry':\n        return <StoreRegistryPanel stores={allStores as any} profiles={profiles.data as any} />;",
+                      1,
+                  )
+              else:
+                  raise SystemExit('stores case return not found')
+          ap.write_text(at)
+          print('AdminApp patched')
+          assert Path('src/components/admin/StoreRegistryPanel.tsx').exists()
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/admin/AdminSidebar.tsx src/pages/AdminApp.tsx src/components/admin/StoreRegistryPanel.tsx
+          if git diff --staged --quiet; then echo no; else git commit -m "feat(admin): wire Store Μητρώο tab"; git push; fi
