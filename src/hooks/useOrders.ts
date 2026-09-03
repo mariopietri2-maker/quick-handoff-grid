@@ -23,9 +23,9 @@ export function useStoreOrders(
   storeId: string | null,
   opts: { suppressSound?: boolean } = {},
 ) {
-  const suppressSound = opts.suppressSound === true;
-  const suppressSoundRef = useRef(suppressSound);
-  suppressSoundRef.current = suppressSound;
+  const disableOrderSound = opts.suppressSound === true;
+  const disableOrderSoundRef = useRef(disableOrderSound);
+  disableOrderSoundRef.current = disableOrderSound;
 
   const [orders, setOrders] = useState<OrderWithItems[]>([]);
   const [loading, setLoading] = useState(true);
@@ -94,7 +94,7 @@ export function useStoreOrders(
             const newId = (payload.new as any)?.id as string | undefined;
             if (newId) setPendingIds((prev) => (prev.includes(newId) ? prev : [...prev, newId]));
             try {
-              if (!suppressSoundRef.current) {
+              if (!disableOrderSoundRef.current) {
                 startOrderAlertLoop({ maxRepeats: autoAcceptRef.current ? 5 : null });
               }
               if (newId) showOrderNotification(newId, 0);
@@ -104,7 +104,7 @@ export function useStoreOrders(
             if (row?.status && !ACTIVE_STATUSES.current.has(row.status)) {
               setOrders((prev) => {
                 const next = prev.filter((o) => o.id !== row.id);
-                if (!suppressSoundRef.current && !next.some((o) => o.status === 'placed')) stopOrderAlertLoop();
+                if (!disableOrderSoundRef.current && !next.some((o) => o.status === 'placed')) stopOrderAlertLoop();
                 return next;
               });
               setPendingIds((prev) => prev.filter((id) => id !== row.id));
@@ -114,7 +114,7 @@ export function useStoreOrders(
             if (old?.id) {
               setOrders((prev) => {
                 const next = prev.filter((o) => o.id !== old.id);
-                if (!suppressSoundRef.current && !next.some((o) => o.status === 'placed')) stopOrderAlertLoop();
+                if (!disableOrderSoundRef.current && !next.some((o) => o.status === 'placed')) stopOrderAlertLoop();
                 return next;
               });
               setPendingIds((prev) => prev.filter((id) => id !== old.id));
@@ -159,11 +159,11 @@ export function useStoreOrders(
   };
 
   useEffect(() => {
-    if (suppressSound) { stopOrderAlertLoop(); return; }
+    if (disableOrderSound) { stopOrderAlertLoop(); return; }
     const hasNew = orders.some((o) => o.status === 'placed');
     if (hasNew) startOrderAlertLoop({ maxRepeats: autoAcceptEnabled ? 5 : null });
     else stopOrderAlertLoop();
-  }, [orders, autoAcceptEnabled, suppressSound]);
+  }, [orders, autoAcceptEnabled, disableOrderSound]);
 
   useEffect(() => () => stopOrderAlertLoop(), []);
 
