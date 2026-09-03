@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import {
-  Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BellOff, BarChart3, Tag,
+  Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
   Package, Clock, Zap, PackagePlus, ArrowLeft, LayoutGrid, Power,
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
@@ -30,12 +30,6 @@ import { Switch } from '@/components/ui/switch';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission, installAudioUnlock, unlockAudio } from '@/lib/notifications';
-import {
-  STORE_SOUND_PREFS_EVENT,
-  loadStoreSoundPrefs,
-  saveStoreSoundPrefs,
-  type StoreSoundPrefs,
-} from '@/lib/store-sound-prefs';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { StorePwaInstallBanner } from '@/components/store/StorePwaInstallBanner';
 
@@ -68,23 +62,6 @@ export default function StoreApp() {
     isNStore ? null : (store?.id ?? null),
     { suppressSound: isNStore },
   );
-  // Store sound prefs — shared with StoreSettings ("Ήχοι ειδοποιήσεων").
-  // N stores only use the call-chime switch, but it is the same setting.
-  const [storeSound, setStoreSound] = useState<StoreSoundPrefs>(() => loadStoreSoundPrefs());
-  useEffect(() => {
-    const onChange = (e: Event) => {
-      const detail = (e as CustomEvent<StoreSoundPrefs>).detail;
-      setStoreSound(detail ?? loadStoreSoundPrefs());
-    };
-    window.addEventListener(STORE_SOUND_PREFS_EVENT, onChange);
-    return () => window.removeEventListener(STORE_SOUND_PREFS_EVENT, onChange);
-  }, []);
-  const toggleCallMuted = () => {
-    const next = { ...storeSound, callChimeEnabled: !storeSound.callChimeEnabled };
-    setStoreSound(next);
-    saveStoreSoundPrefs(next);
-  };
-  const callMuted = !storeSound.callChimeEnabled;
   const [newStore, setNewStore] = useState({ name: '', address: '', phone: '' });
   const [creating, setCreating] = useState(false);
   const [view, setView] = useState<ViewMode>('portal');
@@ -299,21 +276,7 @@ export default function StoreApp() {
                 </Button>
               </div>
             )}
-            <StoreCallPanel storeId={store.id} storeName={store.name} muted={callMuted} disabled={!store.is_active} />
-            <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 px-3 py-2">
-              <p className="text-xs font-heading text-muted-foreground">Ήχος αποδοχής οδηγού</p>
-              <Button
-                type="button"
-                size="sm"
-                variant="ghost"
-                onClick={toggleCallMuted}
-                className="gap-1.5 font-heading"
-                aria-pressed={callMuted}
-              >
-                {callMuted ? <BellOff className="h-4 w-4" /> : <Bell className="h-4 w-4" />}
-                {callMuted ? 'Σίγαση' : 'Ηχηρό'}
-              </Button>
-            </div>
+            <StoreCallPanel storeId={store.id} storeName={store.name} disabled={!store.is_active} />
             <p className="text-center text-xs text-muted-foreground px-4">
               Κράτα την οθόνη ανοιχτή ή εγκατέστησε την εφαρμογή για πιο αξιόπιστες ειδοποιήσεις.
             </p>

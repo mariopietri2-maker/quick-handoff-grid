@@ -268,17 +268,6 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm font-medium">Ήχος αποδοχής κλήσης</p>
-              <p className="text-xs text-muted-foreground">Chime όταν οδηγός αποδεχτεί κλήση (N καταστήματα)</p>
-            </div>
-            <Switch
-              checked={sound.callChimeEnabled}
-              onCheckedChange={(checked) => updateSound({ callChimeEnabled: checked })}
-            />
-          </div>
-
           <Button
             type="button"
             variant="outline"
