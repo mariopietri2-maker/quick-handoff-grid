@@ -1,5 +1,5 @@
 /* Fresh Delivery — minimal service worker for PWA installability (store + web). */
-const CACHE = 'fresh-pwa-v2';
+const CACHE = 'fresh-pwa-v3';
 const PRECACHE = [
   '/',
   '/store',
