@@ -1,5 +1,5 @@
 /* Fresh Delivery — minimal service worker for PWA installability (store + web). */
-const CACHE = 'fresh-pwa-v2';
+const CACHE = 'fresh-pwa-v3';
 const PRECACHE = [
   '/',
   '/store',
@@ -47,7 +47,24 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Static assets: stale-while-revalidate
+  // JavaScript must be network-first so a deploy cannot leave the app running
+  // an old bundle that references removed variables.
+  if (/\.(?:js|tsx?)$/i.test(url.pathname) || url.pathname.includes('/assets/')) {
+    event.respondWith(
+      fetch(req)
+        .then((res) => {
+          if (res.ok) {
+            const copy = res.clone();
+            caches.open(CACHE).then((c) => c.put(req, copy)).catch(() => {});
+          }
+          return res;
+        })
+        .catch(() => caches.match(req)),
+    );
+    return;
+  }
+
+  // Other static assets: stale-while-revalidate
   event.respondWith(
     caches.match(req).then((cached) => {
       const networked = fetch(req)

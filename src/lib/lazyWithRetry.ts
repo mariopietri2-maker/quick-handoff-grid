@@ -28,7 +28,14 @@ export function reloadForStaleChunk(reason?: unknown): boolean {
     /* private mode — still try once */
   }
   console.warn('[chunk] stale asset — reloading', reason);
-  window.location.reload();
+  // Do not let an old PWA cache restore the broken Store bundle after reload.
+  const clearCaches = caches?.keys?.()
+    .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
+    .catch(() => undefined);
+  const unregisterWorkers = navigator.serviceWorker?.getRegistrations?.()
+    .then((registrations) => Promise.all(registrations.map((registration) => registration.unregister())))
+    .catch(() => undefined);
+  void Promise.all([clearCaches, unregisterWorkers]).finally(() => window.location.reload());
   return true;
 }
 
