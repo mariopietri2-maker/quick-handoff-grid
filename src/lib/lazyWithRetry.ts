@@ -10,7 +10,8 @@ export function isStaleChunkError(error: unknown): boolean {
     /error loading dynamically imported module/i.test(msg) ||
     /Importing a module script failed/i.test(msg) ||
     /Loading chunk [\w-]+ failed/i.test(msg) ||
-    /ChunkLoadError/i.test(msg)
+    /ChunkLoadError/i.test(msg) ||
+    /(supress|suppress)Sound is not defined/i.test(msg)
   );
 }
 
