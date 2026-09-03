@@ -823,7 +823,16 @@ export default function DriverApp() {
                     {!hasIncomingOffers && activeDeliveries.length > 0 && (
                       <ActiveOrdersList
                         items={listItems}
-                        completedItems={recentCompleted}
+                        completedItems={recentCompleted.map((o) => {
+                          const earn = o.driver_payout != null
+                            ? Number(o.driver_payout)
+                            : getDriverPayoutBreakdown(o as any).total;
+                          return {
+                            id: o.id,
+                            label: `${o.store_name || storeInfo?.name || 'Παραγγελία'} · #${o.id.slice(0, 6)}`,
+                            earnEur: earn,
+                          };
+                        })}
                         onNavToStore={() => { setNavMode(true); }}
                         onConfirmPickup={(id) => handleStatusUpdate(id, 'picked_up')}
                         onComplete={(id) => handleStatusUpdate(id, 'delivered')}

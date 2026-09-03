@@ -149,7 +149,7 @@ export function useStoreOrders(
     setPendingIds((prev) => prev.filter((id) => id !== orderId));
     if (newStatus !== 'placed') {
       setOrders((prev) => {
-        const next = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus } : o));
+        const next = prev.map((o) => (o.id === orderId ? { ...o, status: newStatus as OrderRow['status'] } : o));
         if (!next.some((o) => o.status === 'placed')) stopOrderAlertLoop();
         return next;
       });
@@ -194,7 +194,7 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
       let activeQ = supabase
         .from('orders')
         .select('*, order_items(*)')
-        .in('status', ['accepted', 'preparing', 'ready', 'picked_up', 'on_the_way'])
+        .in('status', ['accepted', 'preparing', 'ready', 'picked_up'])
         .order('created_at', { ascending: false })
         .limit(20);
       if (uid) activeQ = activeQ.eq('driver_id', uid);
@@ -270,7 +270,8 @@ export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
     if (offers.length > 0) {
       try {
         playOfferAlert();
-        if (!isAppActive()) notifyDriverOfferLocal(offers[0].id);
+        const first = offers[0];
+        if (first && !isAppActive()) notifyDriverOfferLocal({ orderId: first.id });
       } catch {}
     } else {
       try { stopOfferAlert(); } catch {}
