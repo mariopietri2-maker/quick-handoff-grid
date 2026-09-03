@@ -160,6 +160,19 @@ export default function StoreApp() {
   const placedCount = orders.filter((o) => o.status === 'placed').length;
   const tabsListRef = useRef<HTMLDivElement>(null);
 
+  /** Bell doubles as the new-orders indicator: tap jumps to orders.
+   *  If OS notifications aren't enabled yet, the same tap enables them. */
+  const handleBellTap = async () => {
+    if (notifPermission !== 'granted') {
+      await handleEnableNotifications();
+      return;
+    }
+    if (!isNStore) {
+      setActiveTab('orders');
+      try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch {}
+    }
+  };
+
   if (storeLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
@@ -199,9 +212,24 @@ export default function StoreApp() {
             </div>
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
-            {view === 'manage' && notifPermission !== 'granted' && (
-              <Button size="sm" variant="outline" className="font-heading gap-1" onClick={handleEnableNotifications} title={notifPermission === 'denied' ? 'Μπλοκαρισμένες — πάτα για οδηγίες' : 'Ενεργοποίηση ειδοποιήσεων'}>
-                <Bell className="h-3.5 w-3.5" /> Ειδοποιήσεις
+            {view === 'manage' && (
+              <Button
+                size="icon"
+                variant="outline"
+                className="relative shrink-0"
+                onClick={handleBellTap}
+                title={notifPermission !== 'granted' ? 'Πάτα για ενεργοποίηση ειδοποιήσεων' : placedCount > 0 ? `${placedCount} νέες παραγγελίες — πάτα για προβολή` : 'Ειδοποιήσεις'}
+                aria-label="Ειδοποιήσεις"
+              >
+                <Bell className="h-4 w-4" />
+                {placedCount > 0 && (
+                  <span className="absolute -top-1.5 -right-1.5 h-5 min-w-5 px-1 rounded-full bg-primary text-primary-foreground text-[10px] font-bold flex items-center justify-center">
+                    {placedCount > 99 ? '99+' : placedCount}
+                  </span>
+                )}
+                {notifPermission !== 'granted' && (
+                  <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full bg-amber-500 border-2 border-background" />
+                )}
               </Button>
             )}
             {view === 'manage' && store && <StoreSupportButton storeId={store.id} />}
