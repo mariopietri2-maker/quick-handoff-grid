@@ -63,6 +63,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'stores',
     tabs: [
       { id: 'stores', label: 'Καταστήματα' },
+      { id: 'store_registry', label: '📋 Μητρώο' },
       { id: 'platform_mode', label: '🚚 Delivered by Fresh & ETA' },
       { id: 'store_photos', label: '📷 Φωτογραφίες' },
       { id: 'store_appearance', label: '🎨 Εμφάνιση' },

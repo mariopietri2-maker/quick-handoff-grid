@@ -44,6 +44,7 @@ const RemoteUserActions      = lazy(() => import('@/components/admin/RemoteUserA
 const DriverMessagesPanel    = lazy(() => import('@/components/admin/DriverMessagesPanel'));
 const DriverRegistryPanel    = lazy(() => import('@/components/admin/DriverRegistryPanel'));
 const CustomerRegistryPanel  = lazy(() => import('@/components/admin/CustomerRegistryPanel'));
+const StoreRegistryPanel     = lazy(() => import('@/components/admin/StoreRegistryPanel'));
 const DriverApprovalsPanel   = lazy(() => import('@/components/admin/DriverApprovalsPanel'));
 const AdminPermissionsManager= lazy(() => import('@/components/admin/AdminPermissionsManager'));
 const CannedRepliesManager   = lazy(() => import('@/components/admin/CannedRepliesManager'));
@@ -438,6 +439,8 @@ export default function AdminApp() {
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
         return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
+      case 'store_registry':
+        return <StoreRegistryPanel stores={allStores as any} profiles={profiles.data as any} />;
       case 'platform_mode':
         return <PlatformModeSettings />;
       case 'drivers':
