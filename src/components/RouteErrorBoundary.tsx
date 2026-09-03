@@ -22,6 +22,12 @@ export class RouteErrorBoundary extends Component<{ children: ReactNode }, State
       reloadForStaleChunk(error);
       return;
     }
+    // Recover StoreApp sessions still running a bundle with the old
+    // misspelled sound flag.
+    if (/(supress|suppress)Sound is not defined/i.test(error?.message ?? '')) {
+      reloadForStaleChunk(error);
+      return;
+    }
     // One-shot recovery for known realtime subscribe races after deploys.
     const msg = error?.message ?? '';
     if (msg.includes("cannot add 'postgres_changes'") || msg.includes('after \'subscribe()\'')) {

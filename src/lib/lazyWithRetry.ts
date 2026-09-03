@@ -1,6 +1,6 @@
 import { ComponentType, lazy, LazyExoticComponent } from 'react';
 
-const RELOAD_KEY = 'fresh_chunk_reload_v1';
+const RELOAD_KEY = 'fresh_chunk_reload_v2';
 
 /** True when a dynamic import failed because the deploy hash changed (stale tab). */
 export function isStaleChunkError(error: unknown): boolean {
