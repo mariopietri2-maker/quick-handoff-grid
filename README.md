@@ -17,6 +17,7 @@ Customers browse & order · Multi-store owners manage everything · Drivers deli
 🚀 **Live:** [freshdelivery.app](https://freshdelivery.app) · 🛣️ **Mirror:** [quick-handoff-grid-production.up.railway.app](https://quick-handoff-grid-production.up.railway.app)
 📊 **Product deck:** [freshdelivery.app/presentation](https://freshdelivery.app/presentation)  
 📲 **Store PWA:** open `/store` in Chrome/Safari → *Install / Add to Home Screen*
+☁️ **Vercel:** import this repository as a Vite project; the Store app is available at `/store`
 
 </div>
 
@@ -79,7 +80,7 @@ Sub-routes: `/auth` · `/restaurant/:id` · `/checkout` · `/order-tracking/:id`
 | **Tax compliance** | AADE myDATA (Greek e-invoicing) — auto-submits every delivery |
 | **CI/CD** | GitHub Actions — lint, unit, build on PR/push; native APK/AAB releases |
 | **Tests** | Vitest (unit) · Playwright (e2e) · smoke/stress scripts |
-| **Hosting** | Railway — `freshdelivery.app` (custom domain) + `quick-handoff-grid-production.up.railway.app` mirror, auto-deploy from `main` |
+| **Hosting** | Railway — `freshdelivery.app` (custom domain) + `quick-handoff-grid-production.up.railway.app` mirror; Vercel-compatible via `vercel.json` |
 
 > 📦 **Package manager:** npm (`package-lock.json`) · 🟢 **Node** 20+ (22 recommended)
 
@@ -123,6 +124,20 @@ cp .env.example .env.local
 ```
 
 Vite **bakes** `VITE_*` into the client bundle at build time. The repo keeps `.env.production` with public anon/publishable keys so Railway deploys work without dashboard env.
+
+### ☁️ Vercel hosting
+
+To host the web Store app on Vercel, import this repository and keep the detected
+Vite settings from [`vercel.json`](vercel.json):
+
+- Build command: `npm run build`
+- Output directory: `dist`
+- Install command: `npm install`
+- Store URL: `https://<your-vercel-domain>/store`
+
+Add the public `VITE_*` values from `.env.production` to the Vercel project
+environment, then deploy. The Store app is a route in the shared SPA, not a
+separate build.
 
 | Variable | Notes |
 |---|---|
