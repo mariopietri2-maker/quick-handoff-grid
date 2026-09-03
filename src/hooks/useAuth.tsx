@@ -61,9 +61,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       .select('role')
       .eq('user_id', userId);
     const roleList = (roles ?? []).map((r: UserRoleRow) => r.role);
+    // N stores are identified by stores.store_role, not the auth role enum.
+    // Keep their owners eligible for the store portal even if role sync has
+    // not yet populated profiles/user_roles with "store".
+    const { data: nStores } = await (supabase as any)
+      .from('stores')
+      .select('id')
+      .eq('owner_id', userId)
+      .eq('store_role', 'N')
+      .limit(1);
     setIsAdmin(roleList.includes('admin'));
     setIsSupport(roleList.includes('support'));
-    setIsStore(roleList.includes('store'));
+    setIsStore(roleList.includes('store') || (nStores?.length ?? 0) > 0);
     setIsM(roleList.includes('m') || data?.role === 'm');
   };
 
