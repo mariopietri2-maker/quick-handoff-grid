@@ -1,0 +1,4 @@
+Rebuild trigger 2026-09-03 — go-live checklist
+- Light theme defaults
+- Background offer 2.6.27 baseline
+- Install: releases/tag/mobile-apks-v1
