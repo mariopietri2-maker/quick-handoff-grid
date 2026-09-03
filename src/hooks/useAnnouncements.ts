@@ -1,13 +1,16 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
+import { openRealtimeChannel } from '@/lib/realtime-channel';
 
 export function useAnnouncements(audience?: 'drivers' | 'store_owners' | 'support' | 'all') {
   const queryClient = useQueryClient();
 
   useEffect(() => {
-    const channel = supabase
-      .channel('announcements-realtime')
+    // Unique topic per hook instance: AnnouncementsBanner + StoreNewsPanel mount
+    // together, and Supabase reuses channels by name — a fixed name crashes the
+    // second subscriber with "cannot add postgres_changes callbacks after subscribe()".
+    const channel = openRealtimeChannel('announcements-realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'announcements' },

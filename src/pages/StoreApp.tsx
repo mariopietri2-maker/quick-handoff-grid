@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
   Package, Clock, Zap, PackagePlus, ArrowLeft, LayoutGrid, Power,
@@ -30,6 +30,8 @@ import { Switch } from '@/components/ui/switch';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission, installAudioUnlock, unlockAudio } from '@/lib/notifications';
+import { showOsNotification } from '@/lib/push-notifications';
+import { toast } from 'sonner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { StorePwaInstallBanner } from '@/components/store/StorePwaInstallBanner';
 
@@ -40,11 +42,56 @@ export default function StoreApp() {
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'denied',
   );
 
+  /** Re-read the real OS/browser permission (native check included) — state goes stale otherwise. */
+  const syncNotifPermission = useCallback(async () => {
+    try {
+      const { Capacitor } = await import('@capacitor/core');
+      if (Capacitor.isNativePlatform()) {
+        const { LocalNotifications } = await import('@capacitor/local-notifications');
+        const cur = await LocalNotifications.checkPermissions().catch(() => null);
+        if (cur) {
+          setNotifPermission(cur.display === 'granted' ? 'granted' : cur.display === 'denied' ? 'denied' : 'default');
+          return;
+        }
+      }
+    } catch { /* web fallback below */ }
+    if (typeof window !== 'undefined' && 'Notification' in window) {
+      setNotifPermission(Notification.permission);
+    }
+  }, []);
+
+  // Keep the bell in sync when the user grants/blocks from browser settings and comes back.
+  useEffect(() => {
+    void syncNotifPermission();
+    const onVis = () => { if (document.visibilityState === 'visible') void syncNotifPermission(); };
+    document.addEventListener('visibilitychange', onVis);
+    window.addEventListener('focus', onVis);
+    return () => {
+      document.removeEventListener('visibilitychange', onVis);
+      window.removeEventListener('focus', onVis);
+    };
+  }, [syncNotifPermission]);
+
   const handleEnableNotifications = async () => {
     // This tap is a user gesture — unlock alert audio at the same time.
     unlockAudio();
     const granted = await requestNotificationPermission();
-    setNotifPermission(granted ? 'granted' : 'denied');
+    if (granted) {
+      setNotifPermission('granted');
+      toast.success('Ειδοποιήσεις ενεργές');
+      // Proof it works — real OS notification, not just a toast.
+      void showOsNotification({
+        title: 'Ειδοποιήσεις ενεργές',
+        body: 'Θα λαμβάνεις ήχο + ειδοποίηση για νέες κλήσεις / παραγγελίες.',
+        tag: 'store-notif-test',
+        vibrate: true,
+      });
+    } else {
+      // Re-read so 'denied' (blocked in browser settings — tapping again
+      // won't prompt) vs 'default' (dismissed — can tap again) stays accurate.
+      await syncNotifPermission();
+      toast.error('Μπλοκαρίστηκαν — επίτρεψέ τες από το λουκέτο στη γραμμή διεύθυνσης (Site settings → Notifications → Allow) και ξαναπάτα.');
+    }
   };
 
   // Unlock alert audio on first interaction anywhere (autoplay policy).
@@ -153,7 +200,7 @@ export default function StoreApp() {
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {view === 'manage' && notifPermission !== 'granted' && (
-              <Button size="sm" variant="outline" className="font-heading gap-1 hidden sm:flex" onClick={handleEnableNotifications}>
+              <Button size="sm" variant="outline" className="font-heading gap-1" onClick={handleEnableNotifications} title={notifPermission === 'denied' ? 'Μπλοκαρισμένες — πάτα για οδηγίες' : 'Ενεργοποίηση ειδοποιήσεων'}>
                 <Bell className="h-3.5 w-3.5" /> Ειδοποιήσεις
               </Button>
             )}
@@ -283,7 +330,7 @@ export default function StoreApp() {
                 </div>
               ) : (
                 <>
-            {notifPermission === 'default' && (
+            {notifPermission !== 'granted' && (
               <div className="mb-4 flex items-center gap-3 p-3 rounded-xl bg-info/10 border border-info/20">
                 <Bell className="h-5 w-5 text-info shrink-0" />
                 <div className="flex-1 min-w-0">
