@@ -72,6 +72,9 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
   }
 
   if (allowedRoles && profile && !allowedRoles.includes(profile.role)) {
+    if (allowedRoles.includes('store')) {
+      return <RoleAccessGate required="store" />;
+    }
     if (profile.role === 'm') return <Navigate to="/driver" replace />;
     if (profile.role === 'driver') return <Navigate to="/driver" replace />;
     if (profile.role === 'store') return <Navigate to="/store" replace />;
