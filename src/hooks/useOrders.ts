@@ -21,9 +21,9 @@ export interface OrderWithItems extends OrderRow {
 /** Store orders hook — suppressSound always defined to avoid ReferenceError. */
 export function useStoreOrders(
   storeId: string | null,
-  opts?: { suppressSound?: boolean },
+  opts: { suppressSound?: boolean } = {},
 ) {
-  const suppressSound = Boolean(opts?.suppressSound);
+  const suppressSound = opts.suppressSound === true;
   const suppressSoundRef = useRef(suppressSound);
   suppressSoundRef.current = suppressSound;
 
