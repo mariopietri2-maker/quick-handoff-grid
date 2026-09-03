@@ -1,0 +1,105 @@
+name: Fix useOrders suppressSound full
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-uo-suppress.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - name: Restore full file from pre-stub + harden
+        run: |
+          set -euo pipefail
+          for c in $(git rev-list -n 30 HEAD); do
+            if git show "$c:src/hooks/useOrders.ts" 2>/dev/null | grep -q 'pending_offers'; then
+              echo "using $c"
+              git show "$c:src/hooks/useOrders.ts" > src/hooks/useOrders.ts
+              break
+            fi
+          done
+          grep -q pending_offers src/hooks/useOrders.ts
+          python3 <<'PY'
+          from pathlib import Path
+          t = Path('src/hooks/useOrders.ts').read_text(encoding='utf-8')
+          if 'suppressSoundRef' not in t:
+              if 'opts?: { suppressSound?: boolean }' not in t:
+                  t = t.replace(
+                      'export function useStoreOrders(storeId: string | null) {',
+                      '''export function useStoreOrders(
+  storeId: string | null,
+  opts?: { suppressSound?: boolean },
+) {
+  const suppressSound = Boolean(opts?.suppressSound);
+  const suppressSoundRef = useRef(suppressSound);
+  suppressSoundRef.current = suppressSound;
+  const autoAcceptRef = useRef(false);
+''',
+                      1,
+                  )
+              elif 'const suppressSound' not in t:
+                  t = t.replace(
+                      'opts?: { suppressSound?: boolean },\n) {',
+                      '''opts?: { suppressSound?: boolean },
+) {
+  const suppressSound = Boolean(opts?.suppressSound);
+  const suppressSoundRef = useRef(suppressSound);
+  suppressSoundRef.current = suppressSound;
+  const autoAcceptRef = useRef(false);
+''',
+                      1,
+                  )
+              else:
+                  if 'suppressSoundRef' not in t:
+                      t = t.replace(
+                          'const suppressSound = !!opts?.suppressSound;',
+                          '''const suppressSound = Boolean(opts?.suppressSound);
+  const suppressSoundRef = useRef(suppressSound);
+  suppressSoundRef.current = suppressSound;
+  const autoAcceptRef = useRef(false);''',
+                          1,
+                      )
+                      if 'suppressSoundRef' not in t:
+                          t = t.replace(
+                              'const suppressSound = Boolean(opts?.suppressSound);',
+                              '''const suppressSound = Boolean(opts?.suppressSound);
+  const suppressSoundRef = useRef(suppressSound);
+  suppressSoundRef.current = suppressSound;
+  const autoAcceptRef = useRef(false);''',
+                              1,
+                          )
+              if 'autoAcceptEnabled' not in t:
+                  t = t.replace(
+                      'const [pendingIds, setPendingIds] = useState<string[]>([]);\n',
+                      '''const [pendingIds, setPendingIds] = useState<string[]>([]);
+  const [autoAcceptEnabled, setAutoAcceptEnabled] = useState(false);
+''',
+                      1,
+                  )
+              if 'autoAcceptEnabled' in t and 'autoAcceptRef.current = autoAcceptEnabled' not in t:
+                  t = t.replace(
+                      'const [autoAcceptEnabled, setAutoAcceptEnabled] = useState(false);\n',
+                      '''const [autoAcceptEnabled, setAutoAcceptEnabled] = useState(false);
+  autoAcceptRef.current = autoAcceptEnabled;
+''',
+                      1,
+                  )
+              t = t.replace('if (!suppressSound) {\n                startOrderAlertLoop', 'if (!suppressSoundRef.current) {\n                startOrderAlertLoop')
+              t = t.replace('if (!suppressSound && !next.some', 'if (!suppressSoundRef.current && !next.some')
+              t = t.replace('startOrderAlertLoop();', "startOrderAlertLoop({ maxRepeats: autoAcceptRef.current ? 5 : null });")
+          if 'Rest of file preserved' in t or 'pending_offers' not in t:
+              raise SystemExit('still broken')
+          Path('src/hooks/useOrders.ts').write_text(t, encoding='utf-8')
+          print('ok')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/hooks/useOrders.ts
+          if git diff --staged --quiet; then echo no; else git commit -m "fix: restore useOrders + define suppressSound"; git push; fi
