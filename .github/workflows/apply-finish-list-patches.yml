@@ -1,0 +1,65 @@
+name: Apply finish-list patches
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "patches/finish-list-*.patch"
+      - ".github/workflows/apply-finish-list-patches.yml"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patches
+        run: |
+          set -euo pipefail
+          git apply --verbose patches/finish-list-driver-offer.patch || python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/pages/DriverApp.tsx')
+          t = p.read_text()
+          if 'distanceKm={(topOffer' in t:
+              print('driver already')
+          else:
+              old = 'timeoutSec={offerTimeoutSec}\n                          onAccept={acceptOrder}'
+              new = 'timeoutSec={offerTimeoutSec}\n                          storeName={(topOffer as any).store_name ?? null}\n                          distanceKm={(topOffer as any).distance_km != null ? Number((topOffer as any).distance_km) : null}\n                          onAccept={acceptOrder}'
+              if old not in t: raise SystemExit('driver fallback fail')
+              p.write_text(t.replace(old, new, 1))
+              print('driver fallback ok')
+          PY
+          git apply --verbose patches/finish-list-customer-banner.patch || python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/pages/CustomerApp.tsx')
+          t = p.read_text()
+          if 'Ενεργοποίησε ειδοποιήσεις για την πορεία' in t:
+              print('customer already')
+          else:
+              if "from '@/lib/notifications'" not in t:
+                  t = t.replace("import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';", "import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';\nimport { requestNotificationPermission } from '@/lib/notifications';")
+              if 'notifNeed' not in t:
+                  t = t.replace("  const [debouncedSearch, setDebouncedSearch] = useState('');", "  const [debouncedSearch, setDebouncedSearch] = useState('');\n  const [notifNeed, setNotifNeed] = useState(false);\n  useEffect(() => {\n    if (typeof window === 'undefined' || !('Notification' in window)) return;\n    setNotifNeed(Notification.permission === 'default');\n  }, []);")
+              t = t.replace('        {/* Main feed */}', '''        {notifNeed && (
+          <div className="mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
+            <p className="text-[12px] flex-1 text-foreground font-medium leading-snug">
+              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.
+            </p>
+            <button type="button" className="shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5" onClick={async () => { await requestNotificationPermission(); setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default'); }}>OK</button>
+          </div>
+        )}
+        {/* Main feed %}'''.replace('{/* Main feed %}', '{/* Main feed %}').replace('{/* Main feed %}', '{/* Main feed %}'), 1)
+              # fix botched replace
+              t = t.replace('{/* Main feed %}', '{/* Main feed %}').replace('{/* Main feed %}', '{/* Main feed %}');
+              if 'Ενεργοποίησε ειδοποιήσεις για την πορεία' not in t:
+                  raise SystemExit('customer fallback fail')
+              p.write_text(t)
+              print('customer fallback ok')
+          PY
+          grep -n 'distanceKm={(topOffer' src/pages/DriverApp.tsx | head -1
+          grep -n 'Ενεργοποίησε ειδοποιήσεις για την πορεία' src/pages/CustomerApp.tsx | head -1
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/DriverApp.tsx src/pages/CustomerApp.tsx
+          if git diff --staged --quiet; then echo no changes; else git commit -m "feat: finish list — offer km/store + customer notif banner"; git push; fi

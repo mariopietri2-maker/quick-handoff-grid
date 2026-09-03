@@ -1,0 +1,48 @@
+diff --git a/src/pages/CustomerApp.tsx b/src/pages/CustomerApp.tsx
+index c297316..43b979b 100644
+--- a/src/pages/CustomerApp.tsx
++++ b/src/pages/CustomerApp.tsx
+@@ -34,6 +34,7 @@ import { openRealtimeChannel } from '@/lib/realtime-channel';
+ import { usePlatformSettings } from '@/hooks/usePlatformSettings';
+ import { useDeliveryEta } from '@/hooks/useDeliveryEta';
+ import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
++import { requestNotificationPermission } from '@/lib/notifications';
+ 
+ // Lazy-load the address picker: it pulls in the ~1.7MB mapbox-gl chunk, so it
+ // should only load when the customer actually opens the delivery address sheet.
+@@ -76,6 +77,11 @@ export default function CustomerApp() {
+   const [loading, setLoading] = useState(true);
+   const [search, setSearch] = useState('');
+   const [debouncedSearch, setDebouncedSearch] = useState('');
++  const [notifNeed, setNotifNeed] = useState(false);
++  useEffect(() => {
++    if (typeof window === 'undefined' || !('Notification' in window)) return;
++    setNotifNeed(Notification.permission === 'default');
++  }, []);
+   const [selectedCategory, setSelectedCategory] = useState('all');
+   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+ 
+@@ -617,6 +623,23 @@ export default function CustomerApp() {
+           <AiCardStrip />
+         )}
+ 
++        {notifNeed && (
++          <div className="mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
++            <p className="text-[12px] flex-1 text-foreground font-medium leading-snug">
++              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.
++            </p>
++            <button
++              type="button"
++              className="shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5"
++              onClick={async () => {
++                await requestNotificationPermission();
++                setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default');
++              }}
++            >
++              OK
++            </button>
++          </div>
++        )}
+         {/* Main feed */}
+         {cfg.sections.show_nearby && (
+           <section id="nearby-stores" className="pt-6 px-4 scroll-mt-28 pb-4">

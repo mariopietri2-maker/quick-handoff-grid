@@ -1,0 +1,13 @@
+diff --git a/src/pages/DriverApp.tsx b/src/pages/DriverApp.tsx
+index 5cfdcc2..2c342ea 100644
+--- a/src/pages/DriverApp.tsx
++++ b/src/pages/DriverApp.tsx
+@@ -851,6 +851,8 @@ export default function DriverApp() {
+                           priceEur={topOfferPrice}
+                           expiresAt={offerExpiresAt[topOffer.id] ?? null}
+                           timeoutSec={offerTimeoutSec}
++                          storeName={(topOffer as any).store_name ?? null}
++                          distanceKm={(topOffer as any).distance_km != null ? Number((topOffer as any).distance_km) : null}
+                           onAccept={acceptOrder}
+                           onDecline={handleDecline}
+                         />
