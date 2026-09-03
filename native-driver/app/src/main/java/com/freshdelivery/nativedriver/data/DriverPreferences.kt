@@ -48,7 +48,7 @@ class DriverPreferences(context: Context) {
 
     /** Use the light/white Mapbox style instead of the default dark style. */
     var mapStyleLight: Boolean
-        get() = prefs.getBoolean(KEY_MAP_STYLE_LIGHT, false)
+        get() = prefs.getBoolean(KEY_MAP_STYLE_LIGHT, true) // light map default (efood-style)
         set(value) = prefs.edit().putBoolean(KEY_MAP_STYLE_LIGHT, value).apply()
 
     /** "Remember me" — persist the email (and password when enabled) across launches. */

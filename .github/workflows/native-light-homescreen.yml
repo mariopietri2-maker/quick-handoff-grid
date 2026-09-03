@@ -1,0 +1,59 @@
+name: Native light HomeScreen palette
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/native-light-homescreen.yml"
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Light palette on HomeScreen
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt')
+          t = p.read_text(encoding='utf-8')
+          old = '''private val GreenBtn = Color(0xFF06C167)
+private val TextDark = Color(0xFFF0F4F1)
+private val TextMuted = Color(0xFF9AA6A0)
+private val SurfaceCard = Color(0xFF151A17)
+private val TrackFill = Color(0xFF1F2521)'''
+          new = '''// Light-first palette (efood-style surfaces; green brand actions)
+private val GreenBtn = Color(0xFF06C167)
+private val TextDark = Color(0xFF1A1A1A)
+private val TextMuted = Color(0xFF707070)
+private val SurfaceCard = Color(0xFFFFFFFF)
+private val TrackFill = Color(0xFFF1F1F2)
+private val PageBgLight = Color(0xFFF7F7F8)'''
+          if 'SurfaceCard = Color(0xFFFFFFFF)' in t:
+              print('already light')
+          elif old not in t:
+              raise SystemExit('palette block not found')
+          else:
+              t = t.replace(old, new, 1)
+              t = t.replace(
+                  'Box(Modifier.fillMaxSize().background(if (state.settingsLocal.mapStyleLight) Color(0xFFF4F6F4) else Color(0xFF0B0E0C)))',
+                  'Box(Modifier.fillMaxSize().background(if (state.settingsLocal.mapStyleLight) PageBgLight else Color(0xFF0B0E0C)))',
+              )
+              p.write_text(t, encoding='utf-8')
+              print('homescreen light ok')
+          # bump version for rebuild visibility
+          g = Path('native-driver/app/build.gradle.kts')
+          gt = g.read_text(encoding='utf-8')
+          if '2.6.28-light' not in gt:
+              gt = gt.replace('versionCode = 281', 'versionCode = 282')
+              gt = gt.replace('versionName = "2.6.27-bg-offer"', 'versionName = "2.6.28-light"')
+              g.write_text(gt, encoding='utf-8')
+              print('version bump')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/
+          if git diff --staged --quiet; then echo no; else git commit -m "feat(native-driver): light HomeScreen palette + 2.6.28-light"; git push; fi

@@ -10,7 +10,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 
-/** Premium dark-first scheme: deep charcoal surfaces, vivid green primary. */
+/** Dark scheme kept for optional night mode. */
 private val DarkColors = darkColorScheme(
     primary = FreshGreenBright,
     onPrimary = FreshCharcoal,
@@ -41,6 +41,7 @@ private val DarkColors = darkColorScheme(
     scrim = Color(0xCC000000),
 )
 
+/** Light-first (efood-style): #F7F7F8 page, white cards, green primary. */
 private val LightColors = lightColorScheme(
     primary = FreshGreen,
     onPrimary = Color.White,
@@ -79,7 +80,7 @@ private val FreshShapes = Shapes(
 
 @Composable
 fun FreshDriverTheme(
-    darkTheme: Boolean = true, // Premium dark-first by default
+    darkTheme: Boolean = false, // Light-first (efood-style); pass true for dark
     content: @Composable () -> Unit,
 ) {
     MaterialTheme(
