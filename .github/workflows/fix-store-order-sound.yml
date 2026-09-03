@@ -1,0 +1,107 @@
+name: Fix store order sound
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/fix-store-order-sound.yml"
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 30
+      - name: Restore from last good commit and apply sound policy
+        run: |
+          set -euo pipefail
+          # Last known good tree before accidental PLACEHOLDER
+          GOOD=$(git log --oneline --all -- src/lib/notifications.ts | grep -v PLACEHOLDER | head -1 | awk '{print $1}')
+          echo "good tip line: $GOOD"
+          # Prefer explicit sha of light-theme commit parent chain
+          if git cat-file -e 3490e00c92545d9770264c93074010c94cccb565^{commit} 2>/dev/null; then
+            BASE=3490e00c92545d9770264c93074010c94cccb565
+          else
+            BASE=$(git rev-list -n 1 HEAD -- src/lib/notifications.ts)
+          fi
+          echo "BASE=$BASE"
+          git show "$BASE:src/lib/notifications.ts" > src/lib/notifications.ts
+          git show "$BASE:src/hooks/useOrders.ts" > src/hooks/useOrders.ts
+          # If recovered file is PLACEHOLDER, fail
+          if grep -q 'PLACEHOLDER' src/lib/notifications.ts; then
+            echo 'still placeholder'; exit 1
+          fi
+          python3 <<'PY'
+          from pathlib import Path
+
+          # --- notifications.ts ---
+          p = Path('src/lib/notifications.ts')
+          t = p.read_text(encoding='utf-8')
+
+          import re
+          # Replace playOrderSound body if still random patterns
+          if '1046.5' not in t:
+              t2, n = re.subn(
+                  r'export function playOrderSound\(volume = 0\.3\) \{[\s\S]*?\n\}',
+                  '''export function playOrderSound(volume = 0.3) {\n  const v = Math.max(0, Math.min(1, volume));\n  // Double ding — efood-style kitchen POS\n  playTones([1046.5, 880.0], 'sine', 0.14, 0.12, v);\n}''',
+                  t,
+                  count=1,
+              )
+              if n != 1:
+                  raise SystemExit(f'playOrderSound replace failed n={n}')
+              t = t2
+
+          if 'orderAlertMaxRepeats' not in t:
+              t2, n = re.subn(
+                  r'export function startOrderAlertLoop\(\) \{[\s\S]*?\n\}',
+                  '''export function startOrderAlertLoop(opts?: { maxRepeats?: number | null }) {\n  const nextMax = opts && 'maxRepeats' in opts ? opts.maxRepeats ?? null : null;\n  if (orderAlertTimer != null) {\n    orderAlertMaxRepeats = nextMax;\n    if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n      stopOrderAlertLoop();\n    }\n    return;\n  }\n  const prefs = loadStoreSoundPrefs();\n  if (!prefs.orderChimeEnabled) return;\n  orderAlertMaxRepeats = nextMax;\n  orderAlertCount = 0;\n  playOrderSound(prefs.orderVolume);\n  orderAlertCount = 1;\n  if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n    stopOrderAlertLoop();\n    return;\n  }\n  orderAlertTimer = setInterval(() => {\n    try {\n      const live = loadStoreSoundPrefs();\n      if (!live.orderChimeEnabled) { stopOrderAlertLoop(); return; }\n      if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) { stopOrderAlertLoop(); return; }\n      playOrderSound(live.orderVolume);\n      orderAlertCount += 1;\n      if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) stopOrderAlertLoop();\n    } catch {}\n  }, 2800);\n}''',
+                  t,
+                  count=1,
+              )
+              if n != 1:
+                  raise SystemExit(f'startOrderAlertLoop replace failed n={n}')
+              t = t2
+              if 'let orderAlertMaxRepeats' not in t:
+                  t = t.replace(
+                      'let orderAlertCount = 0;',
+                      'let orderAlertCount = 0;\nlet orderAlertMaxRepeats: number | null = null;',
+                      1,
+                  )
+
+          p.write_text(t, encoding='utf-8')
+          print('notifications patched', '1046' in t, 'maxRepeats' in t)
+
+          # --- useOrders.ts ---
+          u = Path('src/hooks/useOrders.ts')
+          ut = u.read_text(encoding='utf-8')
+          if 'autoAcceptEnabled' not in ut:
+              old = '''export function useStoreOrders(storeId: string | null) {\n  const [orders, setOrders] = useState<OrderWithItems[]>([]);\n  const [loading, setLoading] = useState(true);\n  const [pendingIds, setPendingIds] = useState<string[]>([]);\n  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);\n  const burstCount = useRef(0);\n  const burstToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);\n\n  const ACTIVE_STATUSES = useRef(new Set(['placed', 'accepted', 'preparing', 'ready']));\n'''
+              new = '''export function useStoreOrders(\n  storeId: string | null,\n  opts?: { suppressSound?: boolean },\n) {\n  const suppressSound = !!opts?.suppressSound;\n  const [orders, setOrders] = useState<OrderWithItems[]>([]);\n  const [loading, setLoading] = useState(true);\n  const [pendingIds, setPendingIds] = useState<string[]>([]);\n  const [autoAcceptEnabled, setAutoAcceptEnabled] = useState(false);\n  const refetchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);\n  const burstCount = useRef(0);\n  const burstToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null);\n\n  const ACTIVE_STATUSES = useRef(new Set(['placed', 'accepted', 'preparing', 'ready']));\n\n  useEffect(() => {\n    if (!storeId) { setAutoAcceptEnabled(false); return; }\n    let cancelled = false;\n    void (supabase as any)\n      .from('store_auto_accept_rules')\n      .select('enabled')\n      .eq('store_id', storeId)\n      .maybeSingle()\n      .then(({ data }: any) => { if (!cancelled) setAutoAcceptEnabled(!!data?.enabled); });\n    const ch = supabase\n      .channel(`store-auto-accept-${storeId}`)\n      .on('postgres_changes', { event: '*', schema: 'public', table: 'store_auto_accept_rules', filter: `store_id=eq.${storeId}` }, (payload) => {\n        if (payload.eventType === 'DELETE') setAutoAcceptEnabled(false);\n        else {\n          const row = payload.new as { enabled?: boolean } | null;\n          if (row) setAutoAcceptEnabled(!!row.enabled);\n        }\n      })\n      .subscribe();\n    return () => { cancelled = true; void supabase.removeChannel(ch); };\n  }, [storeId]);\n'''
+              if old not in ut:
+                  raise SystemExit('useStoreOrders signature block missing on base')
+              ut = ut.replace(old, new, 1)
+
+          ut = ut.replace(
+              '''            try {\n              startOrderAlertLoop();\n              if (newId) showOrderNotification(newId, 0);\n            } catch {}''',
+              '''            try {\n              if (!suppressSound) {\n                startOrderAlertLoop({ maxRepeats: autoAcceptEnabled ? 5 : null });\n              }\n              if (newId) showOrderNotification(newId, 0);\n            } catch {}''',
+              1,
+          )
+
+          old_eff = '''  // Keep ringing while any order is still "placed" (unaccepted).\n  useEffect(() => {\n    const hasNew = orders.some((o) => o.status === 'placed');\n    if (hasNew) startOrderAlertLoop();\n    else stopOrderAlertLoop();\n    return () => {\n      // Don't stop on dependency churn mid-flight — only cleanup unmount\n    };\n  }, [orders]);'''
+          new_eff = '''  // Manual accept → ring until accepted; auto-accept → max 5 double-dings.\n  useEffect(() => {\n    if (suppressSound) { stopOrderAlertLoop(); return; }\n    const hasNew = orders.some((o) => o.status === 'placed');\n    if (hasNew) startOrderAlertLoop({ maxRepeats: autoAcceptEnabled ? 5 : null });\n    else stopOrderAlertLoop();\n  }, [orders, autoAcceptEnabled, suppressSound]);'''
+          if old_eff in ut:
+              ut = ut.replace(old_eff, new_eff, 1)
+          elif 'maxRepeats: autoAcceptEnabled' not in ut:
+              raise SystemExit('orders effect not patched')
+
+          u.write_text(ut, encoding='utf-8')
+          print('useOrders patched', 'autoAcceptEnabled' in ut)
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/notifications.ts src/hooks/useOrders.ts
+          git status
+          if git diff --staged --quiet; then echo no changes; else git commit -m "feat(store): double-ding until accept; auto-accept rings 5x"; git push; fi
