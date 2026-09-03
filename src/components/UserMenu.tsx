@@ -22,10 +22,10 @@ import { useDriverState } from '@/hooks/useDriverState';
 import { toast } from 'sonner';
 
 export function UserMenu({ blockSignOut }: { blockSignOut?: string | null } = {}) {
-  const { user, profile, signOut, isAdmin, isM } = useAuth();
+  const { user, profile, signOut, isAdmin, isM, isStore: hasStoreRole } = useAuth();
   const navigate = useNavigate();
   const isDriver = profile?.role === 'driver' || profile?.role === 'm' || isM;
-  const isStore = profile?.role === 'store'; 
+  const isStore = profile?.role === 'store' || hasStoreRole;
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [releaseOpen, setReleaseOpen] = useState(false);

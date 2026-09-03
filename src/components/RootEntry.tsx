@@ -19,7 +19,7 @@ function BootSpinner() {
  * to a role home (mobile shells, or a returning logged-in user on web).
  */
 export default function RootEntry() {
-  const { user, profile, loading, isAdmin, isSupport } = useAuth();
+  const { user, profile, loading, isAdmin, isSupport, isStore } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
 
   // Mobile shells (env or Capacitor appId) — sync redirect, no flash of Index.
@@ -37,7 +37,7 @@ export default function RootEntry() {
     if (!isAdmin && !isSupport) {
       if (profile.role === 'm') return <Navigate to="/driver" replace />;
       if (profile.role === 'driver') return <Navigate to="/driver" replace />;
-      if (profile.role === 'store') return <Navigate to="/store" replace />;
+      if (profile.role === 'store' || isStore) return <Navigate to="/store" replace />;
       return <Navigate to="/order" replace />;
     }
   }
