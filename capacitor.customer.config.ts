@@ -14,6 +14,7 @@ const config: CapacitorConfig = {
       'https://*.supabase.co/*',
       'https://quick-handoff-grid-8qu8.vercel.app/*',
       'https://*.vercel.app/*',
+      'https://quick-handoff-grid-production.up.railway.app/*',
       'https://api.mapbox.com/*',
     ],
   },

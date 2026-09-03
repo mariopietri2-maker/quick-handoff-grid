@@ -14,6 +14,7 @@ const config: CapacitorConfig = {
     allowNavigation: [
       'https://quick-handoff-grid-8qu8.vercel.app/*',
       'https://*.vercel.app/*',
+      'https://quick-handoff-grid-production.up.railway.app/*',
       'https://freshdelivery.app/*',
       'https://ojkesspghyqmjmupybva.supabase.co/*',
       'https://*.supabase.co/*',
