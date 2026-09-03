@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
-  ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
+  Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
   Package, Clock, Zap, PackagePlus, ArrowLeft, Power,
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
@@ -191,22 +191,41 @@ export default function StoreApp() {
                 <ArrowLeft className="h-4 w-4" />
               </Button>
             )}
-            <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-              <img src="/favicon.svg" alt="Fresh Delivery" className="h-6 w-6" />
-            </div>
-            <div className="min-w-0 leading-tight">
-              <p className="font-heading font-bold text-foreground truncate leading-tight">
-                Fresh Delivery
-              </p>
-              <p className="text-[11px] text-muted-foreground truncate leading-tight">
-                {view === 'portal'
-                  ? 'Τα καταστήματά μου'
-                  : view === 'create'
-                    ? 'Νέο κατάστημα'
-                    : store?.name ?? 'Κατάστημα'}
-                {view === 'manage' && placedCount > 0 && ` · ${placedCount} νέες`}
-              </p>
-            </div>
+            {isNStore ? (
+              <>
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                  <Store className="h-4 w-4 text-primary" />
+                </div>
+                <div className="min-w-0 leading-tight">
+                  <h1 className="font-heading font-bold text-foreground truncate leading-tight">
+                    {view === 'portal'
+                      ? 'Τα καταστήματά μου'
+                      : view === 'create'
+                        ? 'Νέο κατάστημα'
+                        : store?.name ?? 'Κατάστημα'}
+                  </h1>
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
+                  <img src="/favicon.svg" alt="Fresh Delivery" className="h-6 w-6" />
+                </div>
+                <div className="min-w-0 leading-tight">
+                  <p className="font-heading font-bold text-foreground truncate leading-tight">
+                    Fresh Delivery
+                  </p>
+                  <p className="text-[11px] text-muted-foreground truncate leading-tight">
+                    {view === 'portal'
+                      ? 'Τα καταστήματά μου'
+                      : view === 'create'
+                        ? 'Νέο κατάστημα'
+                        : store?.name ?? 'Κατάστημα'}
+                    {view === 'manage' && placedCount > 0 && ` · ${placedCount} νέες`}
+                  </p>
+                </div>
+              </>
+            )}
           </div>
           <div className="flex items-center gap-1.5 shrink-0">
             {view === 'manage' && (
