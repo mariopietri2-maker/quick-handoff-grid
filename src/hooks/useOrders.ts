@@ -171,22 +171,158 @@ export function useStoreOrders(
 }
 
 export function useDriverOrders(opts: { adminOverride?: boolean } = {}) {
-  void opts;
-  const [loading] = useState(false);
+  const { user } = useAuth();
+  const adminOverride = !!opts.adminOverride;
+  const [offers, setOffers] = useState<OrderWithItems[]>([]);
+  const [activeDelivery, setActiveDelivery] = useState<OrderWithItems | null>(null);
+  const [activeDeliveries, setActiveDeliveries] = useState<OrderWithItems[]>([]);
+  const [recentCompleted, setRecentCompleted] = useState<OrderWithItems[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [offerExpiresAt, setOfferExpiresAt] = useState<Record<string, string>>({});
+  const [offerTimeoutSec, setOfferTimeoutSec] = useState(60);
+  const [assignmentMode, setAssignmentMode] = useState<'auto' | 'manual'>('auto');
+  const [offerIds, setOfferIds] = useState<string[]>([]);
+
+  const fetchOrders = useCallback(async () => {
+    if (!user && !adminOverride) return;
+    setLoading(true);
+    try {
+      const uid = user?.id;
+      if (!uid && !adminOverride) return;
+
+      // Active deliveries for this driver
+      let activeQ = supabase
+        .from('orders')
+        .select('*, order_items(*)')
+        .in('status', ['accepted', 'preparing', 'ready', 'picked_up', 'on_the_way'])
+        .order('created_at', { ascending: false })
+        .limit(20);
+      if (uid) activeQ = activeQ.eq('driver_id', uid);
+      const { data: activeData } = await activeQ;
+      const actives = (activeData ?? []) as OrderWithItems[];
+      setActiveDeliveries(actives);
+      setActiveDelivery(actives[0] ?? null);
+
+      // Pending offers
+      if (uid) {
+        const { data: po } = await supabase
+          .from('pending_offers')
+          .select('order_id, expires_at, orders(*, order_items(*))')
+          .eq('driver_id', uid)
+          .gt('expires_at', new Date().toISOString())
+          .order('created_at', { ascending: false })
+          .limit(10);
+        const offs: OrderWithItems[] = [];
+        const expMap: Record<string, string> = {};
+        const ids: string[] = [];
+        for (const row of po ?? []) {
+          const ord = (row as any).orders as OrderWithItems | null;
+          if (ord && ord.status === 'placed') {
+            offs.push(ord);
+            if ((row as any).expires_at) expMap[ord.id] = (row as any).expires_at;
+            ids.push(ord.id);
+          }
+        }
+        setOffers(offs);
+        setOfferExpiresAt(expMap);
+        setOfferIds(ids);
+      }
+
+      // Recent completed
+      if (uid) {
+        const { data: done } = await supabase
+          .from('orders')
+          .select('*, order_items(*)')
+          .eq('driver_id', uid)
+          .eq('status', 'delivered')
+          .order('updated_at', { ascending: false })
+          .limit(15);
+        setRecentCompleted((done ?? []) as OrderWithItems[]);
+      }
+    } finally {
+      setLoading(false);
+    }
+  }, [user, adminOverride]);
+
+  useEffect(() => { void fetchOrders(); }, [fetchOrders]);
+
+  useEffect(() => {
+    if (!user?.id) return;
+    const uid = user.id;
+    const channel = supabase
+      .channel(`driver-orders-${uid}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'pending_offers', filter: `driver_id=eq.${uid}` },
+        () => { void fetchOrders(); },
+      )
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'orders', filter: `driver_id=eq.${uid}` },
+        () => { void fetchOrders(); },
+      )
+      .subscribe();
+    return () => { void supabase.removeChannel(channel); };
+  }, [user?.id, fetchOrders]);
+
+  // Ring on new offers
+  useEffect(() => {
+    if (offers.length > 0) {
+      try {
+        playOfferAlert();
+        if (!isAppActive()) notifyDriverOfferLocal(offers[0].id);
+      } catch {}
+    } else {
+      try { stopOfferAlert(); } catch {}
+    }
+  }, [offers]);
+
+  const acceptOrder = async (orderId: string): Promise<boolean> => {
+    if (!user?.id) return false;
+    const { error } = await supabase.rpc('accept_order_offer' as never, {
+      p_order_id: orderId,
+      p_driver_id: user.id,
+    } as never);
+    if (error) {
+      toast.error(error.message ?? 'Αποτυχία αποδοχής');
+      return false;
+    }
+    try { stopOfferAlert(); } catch {}
+    void fetchOrders();
+    return true;
+  };
+
+  const declineOrder = async (orderId: string) => {
+    if (!user?.id) return;
+    await supabase.from('pending_offers').delete().eq('driver_id', user.id).eq('order_id', orderId);
+    try { stopOfferAlert(); } catch {}
+    void fetchOrders();
+  };
+
+  const updateDeliveryStatus = async (orderId: string, newStatus: string) => {
+    const { error } = await supabase.rpc('transition_order_status' as never, {
+      p_order_id: orderId,
+      p_new_status: newStatus,
+      p_estimated_prep_time: null,
+    } as never);
+    if (error) toast.error(error.message ?? 'Failed');
+    void fetchOrders();
+  };
+
   return {
-    offers: [] as OrderWithItems[],
-    activeDelivery: null as OrderWithItems | null,
-    activeDeliveries: [] as OrderWithItems[],
-    recentCompleted: [] as OrderWithItems[],
+    offers,
+    activeDelivery,
+    activeDeliveries,
+    recentCompleted,
     loading,
-    acceptOrder: async (_id: string) => false,
-    declineOrder: async (_id: string) => {},
-    updateDeliveryStatus: async (_id: string, _s: string) => {},
-    offerExpiresAt: {} as Record<string, string>,
-    offerTimeoutSec: 60,
-    refetch: async () => {},
-    assignmentMode: 'auto' as const,
-    offerIds: [] as string[],
+    acceptOrder,
+    declineOrder,
+    updateDeliveryStatus,
+    refetch: fetchOrders,
+    assignmentMode,
+    offerIds,
+    offerExpiresAt,
+    offerTimeoutSec,
   };
 }
 
@@ -194,12 +330,31 @@ export function useUserStore() {
   const { user } = useAuth();
   const [storeId, setStoreId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+
   useEffect(() => {
-    if (!user) { setStoreId(null); setLoading(false); return; }
+    if (!user) return;
     let cancelled = false;
-    void supabase.from('stores').select('id').eq('owner_id', user.id).limit(1).maybeSingle()
-      .then(({ data }) => { if (!cancelled) { setStoreId(data?.id ?? null); setLoading(false); } });
-    return () => { cancelled = true; };
+    (async () => {
+      try {
+        const fromLs = localStorage.getItem('owner_selected_store_v1');
+        const { data } = await supabase
+          .from('stores')
+          .select('id')
+          .eq('owner_id', user.id)
+          .order('created_at', { ascending: true });
+        if (cancelled) return;
+        const ids = (data ?? []).map((s) => s.id);
+        const preferred = (fromLs && ids.includes(fromLs) && fromLs) || ids[0] || null;
+        setStoreId(preferred);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, [user]);
+
   return { storeId, loading };
 }
+// force-redeploy-suppress-fix
