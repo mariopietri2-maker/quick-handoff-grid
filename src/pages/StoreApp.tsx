@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BellOff, BarChart3, Tag,
-  Package, Clock, Zap, PackagePlus, ArrowLeft, LayoutGrid,
+  Package, Clock, Zap, PackagePlus, ArrowLeft, LayoutGrid, Power,
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -26,6 +26,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StoreCallPanel } from '@/components/store/StoreCallPanel';
 import { StoreNewsPanel } from '@/components/store/StoreNewsPanel';
+import { Switch } from '@/components/ui/switch';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
 import { requestNotificationPermission, installAudioUnlock, unlockAudio } from '@/lib/notifications';
@@ -58,7 +59,7 @@ export default function StoreApp() {
   }, []);
 
   const {
-    store, stores, selectedStoreId, selectStore, loading: storeLoading, createStore,
+    store, stores, selectedStoreId, selectStore, loading: storeLoading, createStore, updateStore,
   } = useStore();
   // N stores are call-only: they never render orders, so skip the orders
   // fetch + realtime subscription entirely (faster load, less battery/data).
@@ -258,6 +259,32 @@ export default function StoreApp() {
             <div className="order-1 lg:order-2 min-w-0">
               {store.store_role === 'N' ? (
                 <div className="py-6 max-w-lg mx-auto space-y-4">
+            <AnnouncementsBanner audience="store_owners" />
+            <div className="flex items-center justify-between rounded-2xl border border-border bg-card px-4 py-3 shadow-sm">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className={`h-9 w-9 rounded-xl flex items-center justify-center shrink-0 ${store.is_active ? 'bg-emerald-500/10' : 'bg-muted'}`}>
+                  <Power className={`h-5 w-5 ${store.is_active ? 'text-emerald-600' : 'text-muted-foreground'}`} />
+                </div>
+                <div className="min-w-0">
+                  <p className="text-sm font-heading font-semibold text-foreground">
+                    {store.is_active ? 'Ανοιχτό — δέχεται κλήσεις' : 'Κλειστό'}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    {store.is_active ? 'Το κουμπί κλήσης οδηγού είναι ενεργό' : 'Άνοιξε για να καλέσεις οδηγό'}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant={store.is_active ? 'default' : 'secondary'}>
+                  {store.is_active ? 'OPEN' : 'CLOSED'}
+                </Badge>
+                <Switch
+                  checked={!!store.is_active}
+                  onCheckedChange={(checked) => updateStore({ is_active: checked }, store.id)}
+                  aria-label="Ανοιχτό / Κλειστό καταστήματος"
+                />
+              </div>
+            </div>
             {notifPermission !== 'granted' && (
               <div className="flex items-center gap-3 p-4 rounded-2xl bg-info/10 border border-info/25">
                 <Bell className="h-6 w-6 text-info shrink-0" />
@@ -272,7 +299,7 @@ export default function StoreApp() {
                 </Button>
               </div>
             )}
-            <StoreCallPanel storeId={store.id} storeName={store.name} muted={callMuted} />
+            <StoreCallPanel storeId={store.id} storeName={store.name} muted={callMuted} disabled={!store.is_active} />
             <div className="flex items-center justify-between rounded-xl border border-border bg-muted/40 px-3 py-2">
               <p className="text-xs font-heading text-muted-foreground">Ήχος αποδοχής οδηγού</p>
               <Button

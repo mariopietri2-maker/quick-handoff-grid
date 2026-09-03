@@ -14,6 +14,8 @@ interface Props {
   storeName: string;
   /** When true, the "driver accepted" chime is silenced (OS notification + toast still show). */
   muted?: boolean;
+  /** When true (store closed), the call button is disabled. */
+  disabled?: boolean;
 }
 
 type CallStatus = 'idle' | 'open' | 'accepted' | 'closed';
@@ -53,7 +55,7 @@ function formatCountdown(totalSec: number): string {
   return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
 }
 
-export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
+export function StoreCallPanel({ storeId, storeName, muted = false, disabled = false }: Props) {
   const [state, setState] = useState<CallState>(idleState);
   const [loading, setLoading] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -290,6 +292,56 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
     }
   };
 
+  /** Driver arrived → close current call and immediately open a fresh one for the next order. */
+  const handleFinishAndNewCall = async () => {
+    if (!state.callId) return;
+    // If store is closed, just finish without opening a new call.
+    if (disabled) {
+      setConfirmCloseOpen(false);
+      await handleCloseCall();
+      return;
+    }
+    setLoading(true);
+    closedByUsRef.current = true;
+    try {
+      const { error: closeError } = await supabase.rpc('close_store_driver_call', {
+        p_call_id: state.callId,
+      });
+      if (closeError) throw closeError;
+
+      const { data, error: createError } = await supabase.rpc('create_store_driver_call', {
+        p_store_id: storeId,
+      });
+      if (createError) throw createError;
+      const call = Array.isArray(data) ? data[0] : data;
+      if (!call?.id) throw new Error('Η παλιά κλήση έκλεισε, αλλά η νέα δεν δημιουργήθηκε');
+
+      const createdAt = call.created_at ?? new Date().toISOString();
+      holdOpenUntilRef.current = Date.now() + 15_000;
+      setExpiredNotice(false);
+      setConfirmCloseOpen(false);
+      setState({
+        status: 'open',
+        callId: call.id,
+        driverName: null,
+        acceptedAt: null,
+        createdAt,
+        error: null,
+      });
+      toast({
+        title: 'Ολοκληρώθηκε — νέα κλήση ενεργή',
+        description: 'Οι οδηγοί K ειδοποιήθηκαν για την επόμενη παραγγελία.',
+      });
+      setTimeout(() => fetchCall(), 2000);
+    } catch (e: unknown) {
+      closedByUsRef.current = false;
+      const msg = e instanceof Error ? e.message : 'Σφάλμα';
+      toast({ title: 'Σφάλμα', description: msg, variant: 'destructive' });
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const secondsLeft =
     state.createdAt && state.status === 'open'
       ? Math.max(
@@ -335,8 +387,8 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
           </p>
           <Button
             type="button"
-            className="mt-8 w-full h-16 text-xl font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md active:scale-[0.98] transition-transform"
-            disabled={loading}
+            className="mt-8 w-full h-16 text-xl font-semibold bg-emerald-600 hover:bg-emerald-700 rounded-2xl shadow-md active:scale-[0.98] transition-transform disabled:opacity-50"
+            disabled={loading || disabled}
             onClick={() => setConfirmOpen(true)}
           >
             {loading ? (
@@ -344,6 +396,8 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
                 <Loader2 className="h-6 w-6 animate-spin" />
                 Δημιουργία…
               </span>
+            ) : disabled ? (
+              'Κλειστό — άνοιξε για κλήση'
             ) : (
               '📞 Κάλεσε τώρα τον οδηγό'
             )}
@@ -468,14 +522,23 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
             disabled={loading}
           >
             <CheckCircle className="mr-2 h-6 w-6" />
-            Ολοκλήρωση & Νέα κλήση
+            Τέλος — Νέα κλήση για επόμενη
+          </Button>
+          <Button
+            type="button"
+            variant="ghost"
+            className="mt-2 w-full h-11 text-sm rounded-xl"
+            onClick={handleCloseCall}
+            disabled={loading}
+          >
+            Ολοκλήρωση χωρίς νέα κλήση
           </Button>
           <AlertDialog open={confirmCloseOpen} onOpenChange={setConfirmCloseOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
-                <AlertDialogTitle>Ολοκλήρωση κλήσης;</AlertDialogTitle>
+                <AlertDialogTitle>Ο οδηγός έφτασε;</AlertDialogTitle>
                 <AlertDialogDescription>
-                  Επιβεβαιώνετε ότι ο οδηγός ολοκλήρωσε την κλήση; Μετά μπορείτε να καλέσετε ξανά.
+                  Θα κλείσει αυτή η κλήση και θα ανοίξει αυτόματα νέα για την επόμενη παραγγελία. Οι οδηγοί K θα ειδοποιηθούν ξανά.
                 </AlertDialogDescription>
               </AlertDialogHeader>
               <AlertDialogFooter>
@@ -486,12 +549,9 @@ export function StoreCallPanel({ storeId, storeName, muted = false }: Props) {
                   type="button"
                   className="bg-emerald-600 hover:bg-emerald-700"
                   disabled={loading}
-                  onClick={async () => {
-                    setConfirmCloseOpen(false);
-                    await handleCloseCall();
-                  }}
+                  onClick={handleFinishAndNewCall}
                 >
-                  Ναι, ολοκληρώθηκε
+                  {loading ? 'Παρακαλώ περίμενε…' : 'Ναι — Τέλος & Νέα κλήση'}
                 </Button>
               </AlertDialogFooter>
             </AlertDialogContent>
