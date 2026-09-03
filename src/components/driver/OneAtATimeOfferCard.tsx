@@ -96,9 +96,11 @@ function OneAtATimeOfferCardInner({
         </p>
         <div className="flex items-center gap-2">
           <div
-            className={`inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-mono font-bold tabular-nums ${\n              isUrgent
+            className={`inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-mono font-bold tabular-nums ${
+              isUrgent
                 ? 'border-destructive/25 bg-destructive/10 text-destructive'
-                : 'border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text))]'\n            }`}
+                : 'border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text))]'
+            }`}
           >
             <Timer className={`h-3 w-3 ${isUrgent ? 'animate-pulse' : ''}`} />
             0:{String(secondsLeft).padStart(2, '0')}
