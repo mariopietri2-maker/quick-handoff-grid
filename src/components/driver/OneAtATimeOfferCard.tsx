@@ -13,6 +13,10 @@ interface OneAtATimeOfferCardProps {
   expiresAt?: string | null;
   /** Fallback total window (seconds) when `expiresAt` is missing. */
   timeoutSec?: number;
+  /** Optional store name shown under the price. */
+  storeName?: string | null;
+  /** Optional distance in km. */
+  distanceKm?: number | null;
   onAccept: (id: string) => void;
   onDecline: (id: string) => void;
 }
@@ -26,8 +30,7 @@ function computeSecondsLeft(expiresAt?: string | null, fallback = 60): number {
 }
 
 /**
- * Minimal one-at-a-time offer card: price is the ONLY decision info.
- * Details unlock after accepting — by design.
+ * One-at-a-time offer: price + timer, optional store/distance.
  */
 function OneAtATimeOfferCardInner({
   id,
@@ -35,6 +38,8 @@ function OneAtATimeOfferCardInner({
   priceEur,
   expiresAt,
   timeoutSec = 60,
+  storeName,
+  distanceKm,
   onAccept,
   onDecline,
 }: OneAtATimeOfferCardProps) {
@@ -91,11 +96,9 @@ function OneAtATimeOfferCardInner({
         </p>
         <div className="flex items-center gap-2">
           <div
-            className={`inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-mono font-bold tabular-nums ${
-              isUrgent
+            className={`inline-flex h-6 items-center gap-1 rounded-md border px-2 text-[11px] font-mono font-bold tabular-nums ${\n              isUrgent
                 ? 'border-destructive/25 bg-destructive/10 text-destructive'
-                : 'border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text))]'
-            }`}
+                : 'border-[hsl(var(--driver-border))] bg-[hsl(var(--driver-surface-muted))] text-[hsl(var(--driver-text))]'\n            }`}
           >
             <Timer className={`h-3 w-3 ${isUrgent ? 'animate-pulse' : ''}`} />
             0:{String(secondsLeft).padStart(2, '0')}
@@ -119,16 +122,23 @@ function OneAtATimeOfferCardInner({
         />
       </div>
 
-      {/* The price IS the offer */}
       <p className="py-4 text-center font-heading text-[44px] font-extrabold leading-none tabular-nums tracking-tight text-[hsl(var(--driver-accent))]">
         {priceEur.toFixed(2)}
         <span className="ml-1 text-[22px] font-bold text-[hsl(var(--driver-text-muted))]">€</span>
       </p>
 
-      <p className="flex items-center justify-center gap-1.5 pb-2 text-[10.5px] font-medium text-[hsl(var(--driver-text-muted))]">
-        <Lock className="h-3 w-3" />
-        Οι λεπτομέρειες εμφανίζονται μετά την αποδοχή
-      </p>
+      {(storeName || distanceKm != null) ? (
+        <p className="flex items-center justify-center gap-2 pb-2 text-[12px] font-semibold text-[hsl(var(--driver-text))] tabular-nums">
+          {storeName && <span className="truncate max-w-[12rem]">{storeName}</span>}
+          {storeName && distanceKm != null && <span className="text-[hsl(var(--driver-text-muted))]">·</span>}
+          {distanceKm != null && <span>{Number(distanceKm).toFixed(1)} χλμ</span>}
+        </p>
+      ) : (
+        <p className="flex items-center justify-center gap-1.5 pb-2 text-[10.5px] font-medium text-[hsl(var(--driver-text-muted))]">
+          <Lock className="h-3 w-3" />
+          Οι λεπτομέρειες εμφανίζονται μετά την αποδοχή
+        </p>
+      )}
 
       <button
         type="button"
