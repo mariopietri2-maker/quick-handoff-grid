@@ -1,0 +1,141 @@
+name: Product complete polish
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/product-complete-polish.yml"
+      - "patches/product-complete-driver.patch"
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply product polish
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          # Driver offer wiring
+          d = Path('src/pages/DriverApp.tsx')
+          t = d.read_text(encoding='utf-8')
+          if 'distanceKm={(topOffer' not in t:
+              old = 'timeoutSec={offerTimeoutSec}\n                          onAccept={acceptOrder}'
+              new = 'timeoutSec={offerTimeoutSec}\n                          storeName={(topOffer as any).store_name ?? null}\n                          distanceKm={(topOffer as any).distance_km != null ? Number((topOffer as any).distance_km) : null}\n                          onAccept={acceptOrder}'
+              if old not in t:
+                  raise SystemExit('driver needle missing')
+              d.write_text(t.replace(old, new, 1), encoding='utf-8')
+              print('driver ok')
+          else:
+              print('driver already')
+
+          # Customer notif banner
+          c = Path('src/pages/CustomerApp.tsx')
+          ct = c.read_text(encoding='utf-8')
+          if 'Ενεργοποίησε ειδοποιήσεις για την πορεία' not in ct:
+              if "from '@/lib/notifications'" not in ct:
+                  ct = ct.replace(
+                      "import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';",
+                      "import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';\nimport { requestNotificationPermission } from '@/lib/notifications';",
+                  )
+              if 'notifNeed' not in ct:
+                  ct = ct.replace(
+                      "  const [debouncedSearch, setDebouncedSearch] = useState('');",
+                      "  const [debouncedSearch, setDebouncedSearch] = useState('');\n  const [notifNeed, setNotifNeed] = useState(false);\n  useEffect(() => {\n    if (typeof window === 'undefined' || !('Notification' in window)) return;\n    setNotifNeed(Notification.permission === 'default');\n  }, []);",
+                  )
+              marker = '        {/* Main feed */}'
+              banner = '''        {notifNeed && (
+          <div className="mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
+            <p className="text-[12px] flex-1 text-foreground font-medium leading-snug">
+              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5"
+              onClick={async () => {
+                await requestNotificationPermission();
+                setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default');
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
+        {/* Main feed %}'''
+              banner = banner.replace('{/* Main feed %}', '{/* Main feed %}')
+              # Use correct comment
+              banner = '''        {notifNeed && (
+          <div className="mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2">
+            <p className="text-[12px] flex-1 text-foreground font-medium leading-snug">
+              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.
+            </p>
+            <button
+              type="button"
+              className="shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5"
+              onClick={async () => {
+                await requestNotificationPermission();
+                setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default');
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
+        {/* Main feed %}'''
+              # Fix the closing comment properly
+              banner = banner.replace('{/* Main feed %}', '{/* Main feed %}')
+              banner = """        {notifNeed && (
+          <div className=\"mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2\">
+            <p className=\"text-[12px] flex-1 text-foreground font-medium leading-snug\">
+              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.
+            </p>
+            <button
+              type=\"button\"
+              className=\"shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5\"
+              onClick={async () => {
+                await requestNotificationPermission();
+                setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default');
+              }}
+            >
+              OK
+            </button>
+          </div>
+        )}
+        {/* Main feed */}\"""
+              # the above is messy - rewrite cleanly
+              banner = (
+                  "        {notifNeed && (\n"
+                  "          <div className=\"mx-4 mb-3 rounded-xl border border-primary/30 bg-primary/10 px-3 py-2.5 flex items-center gap-2\">\n"
+                  "            <p className=\"text-[12px] flex-1 text-foreground font-medium leading-snug\">\n"
+                  "              Ενεργοποίησε ειδοποιήσεις για την πορεία της παραγγελίας σου.\n"
+                  "            </p>\n"
+                  "            <button\n"
+                  "              type=\"button\"\n"
+                  "              className=\"shrink-0 rounded-lg bg-primary text-primary-foreground text-[11px] font-bold px-3 py-1.5\"\n"
+                  "              onClick={async () => {\n"
+                  "                await requestNotificationPermission();\n"
+                  "                setNotifNeed(typeof Notification !== 'undefined' && Notification.permission === 'default');\n"
+                  "              }}\n"
+                  "            >\n"
+                  "              OK\n"
+                  "            </button>\n"
+                  "          </div>\n"
+                  "        )}\n"
+                  "        {/* Main feed */}\n"
+              )
+              if marker not in ct:
+                  raise SystemExit('main feed missing')
+              ct = ct.replace(marker, banner, 1)
+              c.write_text(ct, encoding='utf-8')
+              print('customer ok')
+          else:
+              print('customer already')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/DriverApp.tsx src/pages/CustomerApp.tsx
+          if git diff --staged --quiet; then echo no changes; else git commit -m "feat: product polish offer km + customer notif banner"; git push; fi
