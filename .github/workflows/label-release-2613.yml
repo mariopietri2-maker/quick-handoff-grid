@@ -16,13 +16,13 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           BODY=$(cat <<'EOF'
-          ## Fresh Delivery latest Android builds
+          ## Fresh Meal latest Android builds
 
           **Latest first**
 
           1. **Driver APK** — **2.6.13-native** (build 264)
           - Store + customer pins on pending offers
-          - Branded launcher icon · name Fresh Driver
+          - Branded launcher icon · name Fresh Meal Driver
           https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
 
           2. **Customer APK** — **2.7.1-native** (build 253)

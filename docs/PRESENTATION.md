@@ -1,4 +1,4 @@
-# EpirusEats — Product presentation
+# Fresh Meal — Product presentation
 
 **Live:** https://freshdelivery.app/presentation  
 **As of:** 2026-07-23 (production Supabase `ojkesspghyqmjmupybva`)
@@ -7,7 +7,7 @@
 
 ## 1. What it is
 
-EpirusEats is a real-time food-delivery marketplace for **Ιωάννινα**: customers, multi-store restaurants, drivers, admin ops, and support — one Supabase backend, Railway SPA host, Capacitor mobile shells.
+Fresh Meal is a real-time food-delivery marketplace for **Ιωάννινα**: customers, multi-store restaurants, drivers, admin ops, and support — one Supabase backend, Railway SPA host, Capacitor mobile shells.
 
 ## 2. How it works
 

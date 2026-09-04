@@ -1,5 +1,5 @@
 /**
- * EpirusEats — E2E test bot v2 (cash order → dispatch → delivery).
+ * Fresh Meal — E2E test bot v2 (cash order → dispatch → delivery).
  * Drives real production business logic end-to-end:
  *   creates disposable auth users → customer places CASH order via place_order
  *   → store owner accepts/prepares/ready (spoofed session)

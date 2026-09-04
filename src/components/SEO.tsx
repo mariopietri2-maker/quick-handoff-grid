@@ -25,7 +25,7 @@ export function SEO({ title, description = '', path, type = 'website', image, js
     safeDescription.length > 160
       ? safeDescription.slice(0, 157) + '…'
       : safeDescription.length < 50
-        ? safeDescription + ' Παραγγείλτε φαγητό online στο EpirusEats.'.slice(0, 160 - safeDescription.length)
+        ? safeDescription + ' Παραγγείλτε φαγητό online στο Fresh Meal.'.slice(0, 160 - safeDescription.length)
         : safeDescription;
   const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 

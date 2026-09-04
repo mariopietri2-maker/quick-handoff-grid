@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 /** Offline customer shell — bundles `dist/` (no remote server URL). */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.customer',
-  appName: 'EpirusGo',
+  appName: 'Fresh Meal',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
@@ -51,7 +51,7 @@ const config: CapacitorConfig = {
     },
     Geolocation: {},
     BackgroundGeolocation: {
-      notificationTitle: 'Fresh Customer — τοποθεσία',
+      notificationTitle: 'Fresh Meal — τοποθεσία',
       notificationText: 'Ζωντανή παρακολούθηση παραγγελίας',
     },
   },

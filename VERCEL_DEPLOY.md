@@ -1,4 +1,4 @@
-# Deploy Fresh Delivery web on Vercel (temporary)
+# Deploy Fresh Meal web on Vercel (temporary)
 
 Backend stays on **Supabase**. Vercel only hosts the Vite frontend.
 

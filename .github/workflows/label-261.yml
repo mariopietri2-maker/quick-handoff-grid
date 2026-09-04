@@ -20,7 +20,7 @@ jobs:
           git commit -m "chore(web): driver APK label 2.6.10-native" || true
           git push || true
           BODY=$(cat <<'EOF'
-          ## Fresh Delivery latest Android builds
+          ## Fresh Meal latest Android builds
 
           **Latest first**
 

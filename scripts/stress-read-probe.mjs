@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Read-only / light stress probe for EpirusEats.
+ * Read-only / light stress probe for Fresh Meal.
  * Measures latency & error rates under concurrent load against:
  *   - Vercel SPA
  *   - get-mapbox-token edge function

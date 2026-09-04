@@ -259,7 +259,7 @@ jobs:
           mkdir -p dist
           cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
           gh release view mobile-apks-v1 >/dev/null 2>&1 || \
-            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs + AABs" --notes "Native debug APKs"
+            gh release create mobile-apks-v1 --title "Fresh Meal Android APKs + AABs" --notes "Native debug APKs"
           gh release upload mobile-apks-v1 dist/fresh-driver-native-debug.apk --clobber
           echo "Published:"
           ls -lah dist/

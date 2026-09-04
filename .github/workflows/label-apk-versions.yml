@@ -20,7 +20,7 @@ jobs:
           echo "Driver $DRIVER_NAME ($DRIVER_CODE)  Customer $CUST_NAME ($CUST_CODE)"
 
           NOTES=$(cat <<EOF
-          ## Fresh Delivery — latest Android builds
+          ## Fresh Meal — latest Android builds
 
           | App | Version | Build | File |
           |-----|---------|-------|------|
@@ -56,7 +56,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view mobile-apks-v1 >/dev/null 2>&1 || \\
-            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs + AABs" --notes "Native debug APKs and debug AABs. GitHub release only (not website)."
+            gh release create mobile-apks-v1 --title "Fresh Meal Android APKs + AABs" --notes "Native debug APKs and debug AABs. GitHub release only (not website)."
           gh release upload mobile-apks-v1 dist/* --clobber
           echo "Published to GitHub release mobile-apks-v1:"
           ls dist/
@@ -75,7 +75,7 @@ jobs:
           cp -f dist/fresh-driver-native-debug.apk "dist/fresh-driver-native-${DRIVER_NAME}-${DRIVER_CODE}.apk" 2>/dev/null || true
           cp -f dist/fresh-customer-native-debug.apk "dist/fresh-customer-native-${CUST_NAME}-${CUST_CODE}.apk" 2>/dev/null || true
           NOTES=$(cat <<EOF
-          ## Fresh Delivery — latest Android builds
+          ## Fresh Meal — latest Android builds
 
           | App | Version | Build | File |
           |-----|---------|-------|------|

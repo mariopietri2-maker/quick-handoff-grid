@@ -1,6 +1,6 @@
 {
-  "name": "EpirusEats",
-  "short_name": "EpirusEats",
+  "name": "Fresh Meal",
+  "short_name": "Fresh Meal",
   "description": "Παραγγελία φαγητού online — γρήγορα, αξιόπιστα.",
   "start_url": "/",
   "scope": "/",

@@ -51,7 +51,7 @@ jobs:
           val el = row?.published_config ?: return CustomerAppConfig()
           val obj = runCatching { el.jsonObject }.getOrNull() ?: return CustomerAppConfig()
           val branding = obj["branding"]?.jsonObject
-          val appName = branding?.get("app_name")?.jsonPrimitive?.contentOrNull ?: "Fresh Delivery"
+          val appName = branding?.get("app_name")?.jsonPrimitive?.contentOrNull ?: "Fresh Meal"
           val city = branding?.get("city_label")?.jsonPrimitive?.contentOrNull ?: "Ιωάννινα"
           val tagline = branding?.get("tagline")?.jsonPrimitive?.contentOrNull ?: "Fast · Fresh · Local"
           val logo = branding?.get("logo_url")?.jsonPrimitive?.contentOrNull

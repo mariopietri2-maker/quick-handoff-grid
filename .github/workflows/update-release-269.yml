@@ -13,7 +13,7 @@ jobs:
         run: |
           set -euo pipefail
           BODY=$(cat <<'EOF'
-          ## Fresh Delivery latest Android builds
+          ## Fresh Meal latest Android builds
 
           **Driver APK** — version **2.6.9-native** (build 260)
           - Fix: N-store call card shows without needing a regular order offer

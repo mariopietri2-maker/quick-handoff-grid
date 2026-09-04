@@ -1,11 +1,11 @@
 # Store publishing — Play Store + App Store
 
-EpirusEats ships **two** apps:
+Fresh Meal ships **two** apps:
 
 | App | Bundle / application ID |
 |---|---|
-| EpirusEats | `com.freshdelivery.customer` |
-| EpirusEats Driver | `com.freshdelivery.driver` |
+| Fresh Meal | `com.freshdelivery.customer` |
+| Fresh Meal Driver | `com.freshdelivery.driver` |
 
 Debug APKs (`./scripts/build-apks.sh`) are for sideload / beta testing only — **Play Store rejects unsigned/debug APKs**. Use **signed `.aab`** (Android App Bundle) for Play.
 

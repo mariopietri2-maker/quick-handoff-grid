@@ -55,7 +55,7 @@ jobs:
           PY
 
           BODY=$(cat <<EOF
-          ## Fresh Delivery latest Android builds
+          ## Fresh Meal latest Android builds
 
           **Latest first**
 

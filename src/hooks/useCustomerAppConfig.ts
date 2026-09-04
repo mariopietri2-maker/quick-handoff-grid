@@ -102,7 +102,7 @@ export type CustomerAppConfig = {
 
 export const DEFAULT_CONFIG: CustomerAppConfig = {
   branding: {
-    app_name: 'EpirusEats',
+    app_name: 'Fresh Meal',
     city_label: 'Ιωάννινα',
     accent_hsl: '218 78% 48%',
     accent_dark_hsl: '221 79% 38%',

@@ -5,7 +5,7 @@ const isDev = process.env.CAPACITOR_DEV === '1';
 
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.customer',
-  appName: 'EpirusGo',
+  appName: 'Fresh Meal',
   webDir: 'dist',
   server: {
     url: 'https://quick-handoff-grid-8qu8.vercel.app',

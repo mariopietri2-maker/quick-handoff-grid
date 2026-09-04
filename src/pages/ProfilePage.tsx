@@ -99,8 +99,8 @@ export default function ProfilePage() {
   return (
     <div className="customer-shell min-h-full c-page pb-4">
       <SEO
-        title="Το προφίλ μου — EpirusEats"
-        description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο EpirusEats."
+        title="Το προφίλ μου — Fresh Meal"
+        description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh Meal."
         path="/profile"
         noindex
       />
@@ -247,7 +247,7 @@ export default function ProfilePage() {
             <LogOut className="h-4 w-4" />
             Αποσύνδεση
           </button>
-          <p className="mt-4 text-center text-[10px] text-muted-foreground uppercase tracking-wider">EpirusEats · v2.4</p>
+          <p className="mt-4 text-center text-[10px] text-muted-foreground uppercase tracking-wider">Fresh Meal · v2.4</p>
         </div>
       </main>
 

@@ -112,7 +112,7 @@ export default function PlatformModeSettings() {
       p_action: 'set_store_fulfilment',
       p_target_type: 'store',
       p_target_id: r.id,
-      p_description: `${r.name}: ${mode === 'platform' ? 'Delivered by EpirusEats' : 'store delivery'}`,
+      p_description: `${r.name}: ${mode === 'platform' ? 'Delivered by Fresh Meal' : 'store delivery'}`,
     });
     toast.success(`Αποθηκεύτηκε για ${r.name}`);
   };
@@ -145,7 +145,7 @@ export default function PlatformModeSettings() {
             <Info className="h-3.5 w-3.5 shrink-0" />
             {settings.delivery_enabled
               ? 'Delivery ενεργό σε όλη την πλατφόρμα.'
-              : 'Marketplace-only mode: κρυμμένα χρεώση παράδοσης, ETA και "Delivered by EpirusEats".'}
+              : 'Marketplace-only mode: κρυμμένα χρεώση παράδοσης, ETA και "Delivered by Fresh Meal".'}
           </div>
         </CardContent>
       </Card>
@@ -223,7 +223,7 @@ export default function PlatformModeSettings() {
               Ποιος παραδίδει ανά κατάστημα
             </h2>
             <p className="text-sm text-muted-foreground">
-              Επίλεξε ανά κατάστημα αν η παράδοση γίνεται από οδηγούς Fresh («Delivered by EpirusEats») ή από το ίδιο το κατάστημα. Μπορείς να το αλλάξεις οποιαδήποτε στιγμή.
+              Επίλεξε ανά κατάστημα αν η παράδοση γίνεται από οδηγούς Fresh («Delivered by Fresh Meal») ή από το ίδιο το κατάστημα. Μπορείς να το αλλάξεις οποιαδήποτε στιγμή.
             </p>
           </div>
 
@@ -246,7 +246,7 @@ export default function PlatformModeSettings() {
                         <SelectValue />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="platform">Delivered by EpirusEats</SelectItem>
+                        <SelectItem value="platform">Delivered by Fresh Meal</SelectItem>
                         <SelectItem value="store">Παράδοση καταστήματος</SelectItem>
                       </SelectContent>
                     </Select>

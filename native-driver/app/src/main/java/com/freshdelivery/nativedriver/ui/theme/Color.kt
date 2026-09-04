@@ -3,7 +3,7 @@ package com.freshdelivery.nativedriver.ui.theme
 import androidx.compose.ui.graphics.Color
 
 /**
- * EpirusEats — premium dark-first palette.
+ * Fresh Meal — premium dark-first palette.
  * Deep slate surfaces with a vivid PAS Giannina blue action color that pops on dark.
  */
 val FreshGreen = Color(0xFF2E6FE0)          // brand blue / primary action

@@ -3,7 +3,7 @@
     - 'customer' → profiles.role = customer (keeps driver_profiles row if any)
     - 'driver'   → profiles.role = driver + user_roles + driver_profiles(is_active=false)
 
-  Called automatically from the Fresh Customer / Fresh Driver shells on signup & login.
+  Called automatically from the Fresh Meal / Fresh Meal Driver shells on signup & login.
   Does not touch admin / support / store accounts.
 */
 

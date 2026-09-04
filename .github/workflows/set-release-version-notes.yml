@@ -18,7 +18,7 @@ jobs:
           CUST_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           CUST_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
           TITLE="Driver ${DRIVER_NAME} (${DRIVER_CODE}) · Customer ${CUST_NAME} (${CUST_CODE})"
-          NOTES="## Fresh Delivery — latest Android builds
+          NOTES="## Fresh Meal — latest Android builds
 
 | App | Version | Build | Download |
 |-----|---------|-------|----------|

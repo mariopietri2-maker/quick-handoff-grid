@@ -1,6 +1,6 @@
 {
-  "name": "EpirusEats Store",
-  "short_name": "EpirusEats",
+  "name": "Fresh Meal Store",
+  "short_name": "Fresh Meal",
   "description": "Διαχείριση παραγγελιών, μενού και πορτοφολιού καταστήματος.",
   "start_url": "/store",
   "scope": "/",

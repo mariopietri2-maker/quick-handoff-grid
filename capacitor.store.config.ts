@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.store',
-  appName: 'EpirusGo Store',
+  appName: 'Fresh Meal Store',
   webDir: 'dist',
   server: {
     url: 'https://quick-handoff-grid-8qu8.vercel.app/store',

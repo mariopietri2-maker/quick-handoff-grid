@@ -139,7 +139,7 @@ write_release_cap_config() {
     geo_plugin=',
     "Geolocation": {},
     "BackgroundGeolocation": {
-      "notificationTitle": "Fresh Customer — τοποθεσία",
+      "notificationTitle": "Fresh Meal — τοποθεσία",
       "notificationText": "Ζωντανή παρακολούθηση παραγγελίας"
     }'
   fi
@@ -263,8 +263,8 @@ echo "==> Store AAB versionCode=$VERSION_CODE versionName=$VERSION_NAME"
 if [ -x "$ROOT/scripts/apply-firebase-android.sh" ] || [ -f "$ROOT/scripts/apply-firebase-android.sh" ]; then
   bash "$ROOT/scripts/apply-firebase-android.sh" || true
 fi
-sync_aab customer android-customer com.freshdelivery.customer "Fresh Customer"
-sync_aab driver android-driver com.freshdelivery.driver "Fresh Driver"
+sync_aab customer android-customer com.freshdelivery.customer "Fresh Meal"
+sync_aab driver android-driver com.freshdelivery.driver "Fresh Meal Driver"
 ls -lah store-bundles/
 sha256sum store-bundles/*.aab
 echo

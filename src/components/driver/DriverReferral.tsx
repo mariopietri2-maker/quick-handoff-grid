@@ -49,8 +49,8 @@ export function DriverReferral() {
   const shareCode = () => {
     if (referralCode && navigator.share) {
       navigator.share({
-        title: 'EpirusEats Driver',
-        text: `Γίνε οδηγός EpirusEats! Χρησιμοποίησε τον κωδικό μου: ${referralCode}`,
+        title: 'Fresh Meal Driver',
+        text: `Γίνε οδηγός Fresh Meal! Χρησιμοποίησε τον κωδικό μου: ${referralCode}`,
       });
     } else {
       copyCode();

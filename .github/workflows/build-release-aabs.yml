@@ -150,7 +150,7 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view play-store-aabs-v1 >/dev/null 2>&1 || \
-            gh release create play-store-aabs-v1 --title "Fresh Delivery — Play Store AABs" --notes "Signed release AABs: com.freshdelivery.customer + com.freshdelivery.driver. Upload each in Play Console → Internal testing or Production."
+            gh release create play-store-aabs-v1 --title "Fresh Meal — Play Store AABs" --notes "Signed release AABs: com.freshdelivery.customer + com.freshdelivery.driver. Upload each in Play Console → Internal testing or Production."
           gh release upload play-store-aabs-v1 store-bundles/*.aab --clobber
           echo "Published to GitHub release play-store-aabs-v1:"
           ls -lah store-bundles/

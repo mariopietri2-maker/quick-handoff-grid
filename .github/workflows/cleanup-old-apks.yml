@@ -24,6 +24,6 @@ jobs:
             if echo "$name" | grep -Eq "$KEEP"; then echo "KEEP $name"; else echo "DELETE $name"; gh api -X DELETE "repos/mariopietri2-maker/quick-handoff-grid/releases/assets/$id" || true; fi
           done <<< "$assets"
           TITLE="Driver ${DRIVER_NAME} (${DRIVER_CODE}) · Customer ${CUST_NAME} (${CUST_CODE})"
-          NOTES=$(printf '## Fresh Delivery latest Android builds\n\n**Driver APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk\n\n**Customer APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk\n\nOnly the latest build is kept on this release.' "$DRIVER_NAME" "$DRIVER_CODE" "$CUST_NAME" "$CUST_CODE")
+          NOTES=$(printf '## Fresh Meal latest Android builds\n\n**Driver APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk\n\n**Customer APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk\n\nOnly the latest build is kept on this release.' "$DRIVER_NAME" "$DRIVER_CODE" "$CUST_NAME" "$CUST_CODE")
           gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"
           echo "Release title: $TITLE"

@@ -126,7 +126,7 @@ data class PromoBanner(
 )
 
 data class CustomerAppConfig(
-    val appName: String = "EpirusEats",
+    val appName: String = "Fresh Meal",
     val cityLabel: String = "Ιωάννινα",
     val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
     val logoUrl: String? = null,

@@ -1,4 +1,4 @@
-# Fresh Driver — Native Android (Kotlin + Jetpack Compose)
+# Fresh Meal Driver — Native Android (Kotlin + Jetpack Compose)
 
 True native driver app (no Capacitor WebView). Same Supabase backend and **same application id** as the Capacitor driver (`com.freshdelivery.driver`) so it can replace the hybrid APK / use the same FCM Firebase app.
 
@@ -21,7 +21,7 @@ True native driver app (no Capacitor WebView). Same Supabase backend and **same 
 | Referral code share | ✅ |
 | Profile + sound / vibration / screen settings | ✅ |
 | FCM → `push_tokens` | ✅ |
-| EpirusEats chime | ✅ |
+| Fresh Meal chime | ✅ |
 | Turn-by-turn in-app banner | ⏳ later |
 | Wait-bonus / surge banners | ⏳ later |
 
@@ -44,4 +44,4 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 
 APK: `app/build/outputs/apk/debug/app-debug.apk` → published as `fresh-driver-native-debug.apk` on release `mobile-apks-v1` (beta download page).
 
-Install **replaces** the Capacitor Fresh Driver debug build (same app id). Uninstall the old APK first if signatures differ.
+Install **replaces** the Capacitor Fresh Meal Driver debug build (same app id). Uninstall the old APK first if signatures differ.

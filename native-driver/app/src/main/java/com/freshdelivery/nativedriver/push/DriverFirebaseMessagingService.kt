@@ -95,7 +95,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             ?: when {
                 isStoreCall -> "📞 Κλήση καταστήματος"
                 isOffer -> "Νέα προσφορά παράδοσης"
-                else -> "EpirusEats Driver"
+                else -> "Fresh Meal Driver"
             }
         val body = message.notification?.body
             ?: data["body"]

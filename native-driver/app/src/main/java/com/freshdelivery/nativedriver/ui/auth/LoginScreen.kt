@@ -131,14 +131,14 @@ fun LoginScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_logo_fresh),
-                    contentDescription = "EpirusEats",
+                    contentDescription = "Fresh Meal",
                     modifier = Modifier.size(68.dp),
                 )
             }
 
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "EpirusEats Driver",
+                text = "Fresh Meal Driver",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = cs.onBackground,

@@ -1,5 +1,5 @@
 /*
-  Allow self-serve driver signup from the Fresh Driver app.
+  Allow self-serve driver signup from the Fresh Meal Driver app.
 
   New accounts always start as profiles.role = customer (handle_new_user).
   The driver APK then called /order → MobileAppGate → /driver → ProtectedRoute

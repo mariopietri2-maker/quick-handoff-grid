@@ -21,7 +21,7 @@ function money(n: number | null | undefined) {
   return `€${Number(n ?? 0).toFixed(2)}`;
 }
 
-/** Professional 80mm kitchen / delivery receipt for EpirusEats. */
+/** Professional 80mm kitchen / delivery receipt for Fresh Meal. */
 export function printOrderTicket(
   order: OrderWithItems,
   storeName: string,
@@ -64,7 +64,7 @@ export function printOrderTicket(
     <!doctype html>
     <html lang="el">
     <head>
-      <title>Παραγγελία ${e(orderNo)} — EpirusEats</title>
+      <title>Παραγγελία ${e(orderNo)} — Fresh Meal</title>
       <meta charset="utf-8" />
       <style>
         @page { size: 80mm auto; margin: 3mm; }
@@ -215,7 +215,7 @@ export function printOrderTicket(
       </style>
     </head>
     <body>
-      <div class="brand">EpirusEats</div>
+      <div class="brand">Fresh Meal</div>
       <div class="store">${e(String(storeName ?? 'Κατάστημα'))}</div>
       <div class="meta">
         <span>${e(created.split(',')[0] ?? '')}</span>
@@ -283,7 +283,7 @@ export function printOrderTicket(
       <div class="barcode">▮▮▮ ▯▯▮ ▮▯▯ ▮▮▯ ▯▮▮ ▮▯▮</div>
 
       <div class="footer">
-        <div>Ευχαριστούμε — EpirusEats</div>
+        <div>Ευχαριστούμε — Fresh Meal</div>
         <div class="ref">REF ${e(orderNoPlain)} · ${e(String(order.id ?? '').slice(0, 8).toUpperCase())}</div>
       </div>
       <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),250);}</script>

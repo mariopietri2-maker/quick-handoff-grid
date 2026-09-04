@@ -31,7 +31,7 @@ if "fun fetchAppConfig" not in rt:
                 )
             }?.filter { it.enabled } ?: CustomerAppConfig().promos
             CustomerAppConfig(
-                appName = str("appName", "Fresh Delivery"),
+                appName = str("appName", "Fresh Meal"),
                 cityLabel = str("cityLabel", "Ιωάννινα"),
                 tagline = str("tagline", "Fast · Fresh · Local"),
                 logoUrl = obj["logoUrl"]?.jsonPrimitive?.contentOrNull,

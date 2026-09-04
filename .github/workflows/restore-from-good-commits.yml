@@ -113,6 +113,6 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view mobile-apks-v1 >/dev/null 2>&1 || \
-            gh release create mobile-apks-v1 --title "Fresh Delivery Android APKs + AABs" --notes "Native debug APKs"
+            gh release create mobile-apks-v1 --title "Fresh Meal Android APKs + AABs" --notes "Native debug APKs"
           gh release upload mobile-apks-v1 dist/* --clobber
           echo "Published to https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1"

@@ -22,7 +22,7 @@ jobs:
           from pathlib import Path
           p = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
           c = p.read_text()
-          c = c.replace('"Fresh"', '"Fresh Delivery"', 1)
+          c = c.replace('"Fresh"', '"Fresh Meal"', 1)
           old = '''                Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(
                         Icons.Outlined.LocationOn,
@@ -41,7 +41,7 @@ jobs:
                     )
                 }'''
           new = '''                Text(
-                    "Fresh Delivery",
+                    "Fresh Meal",
                     style = MaterialTheme.typography.labelMedium,
                     color = UberGreen,
                     fontWeight = FontWeight.Bold,
@@ -126,5 +126,5 @@ jobs:
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A native-customer/
           git status
-          git commit -m "fix(customer): restore full CustomerShell Uber Eats UI (Fresh Delivery)" || echo "no changes"
+          git commit -m "fix(customer): restore full CustomerShell Uber Eats UI (Fresh Meal)" || echo "no changes"
           git push origin main

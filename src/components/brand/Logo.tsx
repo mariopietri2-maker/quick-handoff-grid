@@ -20,7 +20,7 @@ const CONFIG: Record<LogoVariant, { stops: string[]; bag: string; fold: string; 
 const WORDMARK_ACCENT = { light: '#F29912', dark: '#FFA960' };
 
 /**
- * EpirusEats brand logo. Variants map to the app sub-brands:
+ * Fresh Meal brand logo. Variants map to the app sub-brands:
  * core (customer), driver, store/admin, web, ink (dark surfaces).
  */
 export function Logo({ variant = 'core', size = 28, withWordmark = false, className }: LogoProps) {
