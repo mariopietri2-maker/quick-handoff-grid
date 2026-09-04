@@ -115,6 +115,7 @@ export const NAV_SECTIONS = [
       { id: 'pricing', label: 'Τιμολόγηση' },
       { id: 'ai_pricing', label: '✨ AI Dynamic Pricing' },
       { id: 'stripe_payments', label: '💳 Stripe' },
+      { id: 'epsilon_invoicing', label: '🧾 Epsilon Τιμολόγηση' },
       { id: 'store_billing', label: 'Χρέωση' },
       { id: 'tickets', label: 'Support', badgeKey: 'pendingTickets' as const },
     ],

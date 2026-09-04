@@ -23,12 +23,16 @@
 
 ## Τι μένει για να δουλέψει
 
-1. Επιλογή παρόχου + credentials στα Supabase secrets (ποτέ στο repo).
-2. Ενημέρωση `invoice_provider_config` (`provider`, `enabled = true`).
-3. Υλοποίηση του `callProvider()` στο `supabase/functions/issue-invoice/index.ts`
-   (σήμαναν το σημείο με σχόλιο).
+1. Σύμβαση με Epsilon Digital + credentials στα Supabase secrets (ποτέ στο repo):
+   `EPSILON_API_KEY` (ή `EPSILON_SUBSCRIPTION_KEY`, ή `EPSILON_EMAIL`/`EPSILON_PASSWORD`),
+   προαιρετικά `EPSILON_API_URL`, για δοκιμές `EPSILON_DRY_RUN=true`.
+2. Admin → Οικονομικά → **Epsilon Τιμολόγηση**: επίλεξε provider `epsilon`,
+   περιβάλλον (sandbox/production), Company/Branch/Σειρά, issue path από το
+   Swagger (`beta-api.epsilonnet.gr`), ενεργοποίηση = ON, Αποθήκευση.
+3. Χειροκίνητη έκδοση από το ίδιο panel (Order ID + εκδότης) ή αυτόματα όταν
+   η παραγγελία γίνεται `delivered`.
 4. `supabase functions deploy issue-invoice` + `supabase db push`
-   (για το migration `20260904130000_order_invoices.sql`).
+   (migrations `20260904130000_order_invoices.sql`, `20260904140000_epsilon_invoicing.sql`).
 
 ## Σημειώσεις
 

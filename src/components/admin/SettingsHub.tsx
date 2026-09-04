@@ -5,7 +5,7 @@ import { Search, X, ChevronRight } from 'lucide-react';
 import {
   Users, ShieldCheck, Headphones, Zap, Palette, Sparkles, Megaphone, MessageSquareText,
   SlidersHorizontal, Shield, Stethoscope, Activity, Cloud, FileCheck, TriangleAlert, Flag, Gauge,
-  Link2, Truck,
+  Link2, Truck, ReceiptText,
 } from 'lucide-react';
 
 type Entry = { id: string; label: string; desc: string; icon: any; accent: string; danger?: boolean };
@@ -54,6 +54,7 @@ const CATEGORIES: Category[] = [
     id: 'system', label: 'Σύστημα & Συμμόρφωση', accent: '#7c3aed', iconBg: 'bg-violet-500/10', iconFg: 'text-violet-600',
     items: [
       { id: 'aade_compliance', label: 'ΑΑΔΕ / myDATA', desc: 'Φορολογική συμμόρφωση & αναφορές.', icon: FileCheck, accent: '#7c3aed' },
+      { id: 'epsilon_invoicing', label: 'Epsilon Τιμολόγηση', desc: 'Έκδοση παραστατικών μέσω Epsilon Digital + myDATA.', icon: ReceiptText, accent: '#7c3aed' },
       { id: 'system_health', label: 'Κατάσταση συστήματος', desc: 'Υγεία υπηρεσιών & εξαρτήσεων.', icon: Activity, accent: '#7c3aed' },
       { id: 'platform_cost', label: 'Κόστος πλατφόρμας', desc: 'Έξοδα υποδομής & υπηρεσιών.', icon: Gauge, accent: '#7c3aed' },
       { id: 'audit', label: 'Audit log', desc: 'Καταγραφή ενεργειών διαχειριστών.', icon: FileCheck, accent: '#7c3aed' },

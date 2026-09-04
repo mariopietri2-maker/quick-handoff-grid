@@ -105,6 +105,7 @@ export const ADMIN_SECTION_CAPABILITY: Record<string, AdminCapability> = {
   platform_mode: 'settings',
   pricing: 'settings',
   stripe_payments: 'finances',
+  epsilon_invoicing: 'finances',
   feature_flags: 'settings',
   platform_settings: 'settings',
   system_reset: 'settings',

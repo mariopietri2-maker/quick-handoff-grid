@@ -38,6 +38,8 @@ const AdminIoanninaMap       = lazy(() => import('@/components/admin/AdminIoanni
 const AdminAuditTab          = lazy(() => import('@/components/admin/AdminAuditTab'));
 const FeatureFlagsManager    = lazy(() => import('@/components/admin/FeatureFlagsManager'));
 const StripePaymentsSettings = lazy(() => import('@/components/admin/StripePaymentsSettings'));
+const EpsilonInvoicingPanel = lazy(() => import('@/components/admin/EpsilonInvoicingPanel'));
+const ApiConnectionsPanel = lazy(() => import('@/components/admin/ApiConnectionsPanel'));
 const CallRolesPanel = lazy(() => import('@/components/admin/CallRolesPanel'));
 const StoreCallsPanel = lazy(() => import('@/components/admin/StoreCallsPanel'));
 const OperationalOverrides   = lazy(() => import('@/components/admin/OperationalOverrides'));
@@ -488,6 +490,10 @@ export default function AdminApp() {
         return <AiDynamicPricing />;
       case 'stripe_payments':
         return <StripePaymentsSettings />;
+      case 'epsilon_invoicing':
+        return <EpsilonInvoicingPanel />;
+      case 'api_connections':
+        return <ApiConnectionsPanel />;
       case 'support_roles':
         return <SupportRoleManager />;
       case 'tickets':
