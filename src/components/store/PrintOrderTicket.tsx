@@ -2,7 +2,6 @@ import { Printer } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { escapeHtml } from '@/lib/escape-html';
 import { formatOrderNumber } from '@/lib/order-number';
-import { formatDriverCode } from '@/lib/driver-code';
 import type { OrderWithItems } from '@/hooks/useOrders';
 
 const PAYMENT_LABELS: Record<string, string> = {
@@ -22,7 +21,7 @@ function money(n: number | null | undefined) {
   return `€${Number(n ?? 0).toFixed(2)}`;
 }
 
-/** Professional 80mm kitchen / delivery receipt for Fresh Delivery. */
+/** Professional 80mm kitchen / delivery receipt for EpirusEats. */
 export function printOrderTicket(
   order: OrderWithItems,
   storeName: string,
@@ -48,7 +47,6 @@ export function printOrderTicket(
   const payKey = String((order as any).payment_method ?? '').toLowerCase();
   const payLabel = PAYMENT_LABELS[payKey] ?? (payKey ? payKey.toUpperCase() : null);
   const isCash = payKey === 'cash';
-  const driverLabel = formatDriverCode(extras.driverCode, { fallback: '' });
 
   const itemsHtml = (order.order_items ?? [])
     .map((i) => {
@@ -66,7 +64,7 @@ export function printOrderTicket(
     <!doctype html>
     <html lang="el">
     <head>
-      <title>Παραγγελία ${e(orderNo)} — Fresh Delivery</title>
+      <title>Παραγγελία ${e(orderNo)} — EpirusEats</title>
       <meta charset="utf-8" />
       <style>
         @page { size: 80mm auto; margin: 3mm; }
@@ -84,35 +82,36 @@ export function printOrderTicket(
         }
         .brand {
           text-align: center;
-          letter-spacing: 0.14em;
-          font-size: 10px;
+          letter-spacing: 0.18em;
+          font-size: 11px;
           font-weight: 700;
           text-transform: uppercase;
-          color: #111;
+          color: #000;
           margin: 0 0 2px;
-        }
-        .platform {
-          text-align: center;
-          font-size: 9px;
-          color: #444;
-          margin-bottom: 8px;
         }
         .store {
           text-align: center;
-          font-size: 15px;
+          font-size: 16px;
           font-weight: 800;
-          margin: 0 0 2px;
+          letter-spacing: 0.02em;
+          color: #000;
+          margin: 0 0 4px;
         }
         .meta {
-          text-align: center;
-          font-size: 10px;
+          display: flex;
+          justify-content: space-between;
+          border-top: 1px solid #222;
+          border-bottom: 1px solid #222;
+          padding: 4px 0;
+          margin-bottom: 10px;
           color: #333;
-          margin-bottom: 8px;
+          font-size: 10px;
         }
         .ticket-no {
           text-align: center;
           border: 2px solid #000;
-          padding: 10px 6px 8px;
+          border-radius: 8px;
+          padding: 12px 8px 10px;
           margin: 0 0 10px;
         }
         .ticket-no .label {
@@ -129,34 +128,37 @@ export function printOrderTicket(
         }
         .badge-row {
           display: flex;
-          gap: 6px;
+          gap: 8px;
           justify-content: center;
           flex-wrap: wrap;
           margin-bottom: 8px;
         }
         .badge {
           border: 1.5px solid #000;
-          padding: 3px 8px;
+          border-radius: 20px;
+          padding: 3px 10px;
           font-size: 10px;
           font-weight: 800;
           letter-spacing: 0.04em;
+          background: #fff;
+          color: #000;
         }
-        .badge.cash { background: #000; color: #fff; }
+        .badge.fill { background: #000; color: #fff; }
         hr {
           border: none;
-          border-top: 1px dashed #222;
+          border-top: 1px dashed #444;
           margin: 8px 0;
         }
         table.items { width: 100%; border-collapse: collapse; }
         table.items td { padding: 3px 0; vertical-align: top; }
         table.items .qty { width: 28px; font-weight: 800; }
         table.items .name { padding: 3px 4px; font-weight: 600; }
-        table.items .amt { text-align: right; white-space: nowrap; width: 58px; }
+        table.items .amt { text-align: right; white-space: nowrap; width: 58px; font-weight: 800; }
         table.totals { width: 100%; border-collapse: collapse; margin-top: 2px; }
         table.totals td { padding: 2px 0; }
         table.totals .r { text-align: right; }
         table.totals .grand td {
-          font-size: 15px;
+          font-size: 16px;
           font-weight: 900;
           border-top: 2px solid #000;
           padding-top: 6px;
@@ -164,21 +166,45 @@ export function printOrderTicket(
         .block {
           margin-top: 8px;
           font-size: 11px;
+          border-left: 3px solid #000;
+          padding-left: 8px;
         }
         .block strong { display: block; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
         .notes {
-          background: #f3f3f3;
-          border: 1px solid #000;
+          background: #000;
+          color: #fff;
+          border-radius: 6px;
+          text-align: center;
+          letter-spacing: 0.04em;
           padding: 6px;
           margin-top: 8px;
           font-size: 11px;
           font-weight: 700;
+        }
+        .note {
+          background: #f3f3f3;
+          border: 1px solid #000;
+          border-radius: 6px;
+          padding: 6px;
+          margin-top: 8px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #000;
+        }
+        .barcode {
+          text-align: center;
+          margin-top: 12px;
+          color: #444;
+          font-size: 9px;
+          letter-spacing: 2px;
         }
         .footer {
           text-align: center;
           margin-top: 12px;
           font-size: 9px;
           color: #333;
+          border-top: 1px solid #222;
+          padding-top: 8px;
         }
         .footer .ref {
           font-size: 8px;
@@ -189,10 +215,12 @@ export function printOrderTicket(
       </style>
     </head>
     <body>
-      <div class="brand">Fresh Delivery</div>
-      <div class="platform">Παραγγελία πλατφόρμας</div>
+      <div class="brand">EpirusEats</div>
       <div class="store">${e(String(storeName ?? 'Κατάστημα'))}</div>
-      <div class="meta">${e(created)}</div>
+      <div class="meta">
+        <span>${e(created.split(',')[0] ?? '')}</span>
+        <span>${e(created.split(',')[1] ?? '')}</span>
+      </div>
 
       <div class="ticket-no">
         <div class="label">Αριθμός παραγγελίας</div>
@@ -200,10 +228,14 @@ export function printOrderTicket(
       </div>
 
       ${
-        payLabel || driverLabel
+        payLabel
           ? `<div class="badge-row">
-              ${payLabel ? `<span class="badge${isCash ? ' cash' : ''}">${e(payLabel)}</span>` : ''}
-              ${driverLabel ? `<span class="badge">ΟΔΗΓΟΣ ${e(driverLabel)}</span>` : ''}
+              <span class="badge${isCash ? ' fill' : ''}">${e(payLabel)}</span>
+              ${
+                !isCash && payLabel
+                  ? '<span class="badge fill">ΠΛΗΡΩΘΗΚΕ</span>'
+                  : ''
+              }
             </div>`
           : ''
       }
@@ -235,42 +267,23 @@ export function printOrderTicket(
 
       ${
         order.notes
-          ? `<div class="notes"><strong>ΣΗΜΕΙΩΣΗ</strong>${e(String(order.notes))}</div>`
+          ? `<div class="note"><strong>ΣΗΜΕΙΩΣΗ · </strong>${e(String(order.notes))}</div>`
           : ''
       }
 
       ${
-        extras.customerName || extras.customerPhone
+        extras.customerName
           ? `<div class="block">
               <strong>Πελάτης</strong>
-              ${extras.customerName ? e(String(extras.customerName)) : ''}
-              ${extras.customerPhone ? `<br/>☎ ${e(String(extras.customerPhone))}` : ''}
+              ${e(String(extras.customerName))}
             </div>`
           : ''
       }
 
-      ${
-        order.delivery_address
-          ? `<div class="block">
-              <strong>Παράδοση</strong>
-              ${e(String(order.delivery_address))}
-            </div>`
-          : ''
-      }
-
-      ${
-        extras.driverName || driverLabel
-          ? `<div class="block">
-              <strong>Οδηγός</strong>
-              ${driverLabel ? e(driverLabel) : ''}${
-                extras.driverName ? ` · ${e(String(extras.driverName))}` : ''
-              }
-            </div>`
-          : ''
-      }
+      <div class="barcode">▮▮▮ ▯▯▮ ▮▯▯ ▮▮▯ ▯▮▮ ▮▯▮</div>
 
       <div class="footer">
-        <div>Ευχαριστούμε — Fresh Delivery</div>
+        <div>Ευχαριστούμε — EpirusEats</div>
         <div class="ref">REF ${e(orderNoPlain)} · ${e(String(order.id ?? '').slice(0, 8).toUpperCase())}</div>
       </div>
       <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),250);}</script>
