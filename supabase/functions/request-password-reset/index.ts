@@ -30,6 +30,8 @@ function normalizeEmail(email: string) {
 // via attacker-controlled redirectTo (open redirect / token leak).
 const ALLOWED_REDIRECT_ORIGINS = new Set([
   "https://freshdelivery.app",
+  "https://fresh2go.gr",
+  "https://www.fresh2go.gr",
   "https://fresh-delivery-rho.vercel.app",
   "https://quick-handoff-grid-production.up.railway.app",
   "http://localhost:5173",
