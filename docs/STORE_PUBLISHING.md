@@ -1,11 +1,11 @@
 # Store publishing — Play Store + App Store
 
-Fresh Meal ships **two** apps:
+fresh2go ships **two** apps:
 
 | App | Bundle / application ID |
 |---|---|
-| Fresh Meal | `com.freshdelivery.customer` |
-| Fresh Meal Driver | `com.freshdelivery.driver` |
+| fresh2go | `com.freshdelivery.customer` |
+| fresh2go Driver | `com.freshdelivery.driver` |
 
 Debug APKs (`./scripts/build-apks.sh`) are for sideload / beta testing only — **Play Store rejects unsigned/debug APKs**. Use **signed `.aab`** (Android App Bundle) for Play.
 

@@ -1,4 +1,4 @@
-# Go-Live Checklist — Fresh Meal
+# Go-Live Checklist — fresh2go
 
 Before public launch. Verified against the current codebase (Aug 2026).
 
@@ -80,7 +80,7 @@ delivered 200, and the order leaves `pending`.
   3. Supabase Auth → URL Configuration → Site URL `https://freshdelivery.app`,
      redirect `https://freshdelivery.app/**`;
   4. Verify HTTPS cert is issued and the app loads on the domain.
-- Launcher/theme: Fresh Meal blue palette is applied (`#1B4BA0` / `#2E6FE0`).
+- Launcher/theme: fresh2go blue palette is applied (`#1B4BA0` / `#2E6FE0`).
 
 ## 4. Automated card refunds, saved cards & alerting
 

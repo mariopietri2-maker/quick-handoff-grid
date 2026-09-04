@@ -325,7 +325,7 @@ private fun GlobalMenuButton(
                     }
                     Spacer(Modifier.width(9.dp))
                     Column {
-                        Text("Fresh Meal", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                        Text("fresh2go", color = Color.White, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                         Text("Driver · ${BuildConfig.VERSION_NAME}", color = MenuIconMuted, fontSize = 10.sp)
                     }
                 }

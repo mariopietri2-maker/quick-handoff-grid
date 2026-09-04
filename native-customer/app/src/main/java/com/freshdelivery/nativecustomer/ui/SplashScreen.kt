@@ -41,7 +41,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshTeal
 /** Emerald v2 launch splash — mirrors web `#splash`. */
 @Composable
 fun SplashScreen(
-    appName: String = "Fresh Meal",
+    appName: String = "fresh2go",
     tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
 ) {
     val infinite = rememberInfiniteTransition(label = "splash")

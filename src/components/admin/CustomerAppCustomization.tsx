@@ -170,7 +170,7 @@ export default function CustomerAppCustomization() {
                 <Input
                   value={draft.branding.tagline}
                   onChange={e => setDraft({ ...draft, branding: { ...draft.branding, tagline: e.target.value } })}
-                  placeholder="Η Ήπειρος στο σπίτι σου, γρήγορα."
+                  placeholder="Fresh Food. Fast Delivery."
                 />
               </div>
               <div className="flex items-center justify-between border rounded-lg p-3 bg-card">

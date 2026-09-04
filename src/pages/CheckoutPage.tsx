@@ -367,8 +367,8 @@ export default function CheckoutPage() {
     return (
       <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
         <SEO
-          title="Καλάθι αγορών — Fresh Meal"
-          description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο Fresh Meal."
+          title="Καλάθι αγορών — fresh2go"
+          description="Δείτε τα προϊόντα στο καλάθι σας και ολοκληρώστε την παραγγελία φαγητού στο fresh2go."
           path="/checkout"
           noindex
         />
@@ -393,7 +393,7 @@ export default function CheckoutPage() {
   return (
     <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page pb-[calc(8rem+var(--app-safe-bottom))]" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
       <SEO
-        title="Ολοκλήρωση παραγγελίας — Fresh Meal"
+        title="Ολοκλήρωση παραγγελίας — fresh2go"
         description="Ολοκληρώστε την παραγγελία σας με ασφαλή πληρωμή και γρήγορη παράδοση στην πόρτα σας."
         path="/checkout"
         noindex

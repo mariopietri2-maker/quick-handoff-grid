@@ -1,6 +1,6 @@
 <div align="center">
 
-# 📦 Fresh Meal
+# 📦 fresh2go
 
 ### 🛵 Real-time food delivery marketplace for **Ιωάννινα**
 
@@ -191,22 +191,22 @@ GitHub Actions (`build-native-apks.yml`) rebuilds native debug APKs/AABs and pub
 
 ### 📲 Download the native Customer app (Android)
 
-Scan with your phone to download the latest **Fresh Meal Customer** APK.
+Scan with your phone to download the latest **fresh2go Customer** APK.
 
 <div align="center">
-  <img src="docs/qr-customer-apk.png" width="220" height="220" alt="QR code — Fresh Meal Customer APK download"/>
+  <img src="docs/qr-customer-apk.png" width="220" height="220" alt="QR code — fresh2go Customer APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://freshdelivery.app/download?app=customerNative">Fresh Meal Customer download page</a> (chooses the newest APK from the <a href=[...]
+  <sub>→ opens the <a href="https://freshdelivery.app/download?app=customerNative">fresh2go Customer download page</a> (chooses the newest APK from the <a href=[...]
 </div>
 
 ### 📲 Download the native Driver app (Android)
 
-Scan with your phone to download the latest **Fresh Meal Driver** APK.
+Scan with your phone to download the latest **fresh2go Driver** APK.
 
 <div align="center">
-  <img src="docs/qr-driver-apk.png" width="220" height="220" alt="QR code — Fresh Meal Driver APK download"/>
+  <img src="docs/qr-driver-apk.png" width="220" height="220" alt="QR code — fresh2go Driver APK download"/>
   <br/>
-  <sub>→ opens the <a href="https://freshdelivery.app/download?app=driverNative">Fresh Meal Driver download page</a> (chooses the newest APK from the <a href="htt[...]
+  <sub>→ opens the <a href="https://freshdelivery.app/download?app=driverNative">fresh2go Driver download page</a> (chooses the newest APK from the <a href="htt[...]
 </div>
 
 **Store owners:** use the **PWA** at `/store` (Install / Add to Home Screen). Old `/download` URLs redirect there.
@@ -262,5 +262,5 @@ Open a PR against `main`. GitHub Actions runs lint + unit tests + build; Railway
 
 <div align="center">
   Made with ❤️ for the Ioannina community<br/>
-  <sub>© Fresh Meal · maintained by <a href="https://github.com/mariopietri2-maker">mariopietri2-maker</a></sub>
+  <sub>© fresh2go · maintained by <a href="https://github.com/mariopietri2-maker">mariopietri2-maker</a></sub>
 </div>

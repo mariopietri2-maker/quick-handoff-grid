@@ -45,7 +45,7 @@ write_cap_config() {
   local app_name="$4"
   local assets="$app_dir/app/src/main/assets"
   local geo_plugin=''
-  # Driver: no foreground OS sound — in-app Fresh Meal chime owns it.
+  # Driver: no foreground OS sound — in-app fresh2go chime owns it.
   # Customer / others: keep badge+sound+alert for order updates.
   local push_presentation='["badge", "sound", "alert"]'
   if [ "$flavor" = "driver" ]; then
@@ -60,7 +60,7 @@ write_cap_config() {
     geo_plugin=',
     "Geolocation": {},
     "BackgroundGeolocation": {
-      "notificationTitle": "Fresh Meal — τοποθεσία",
+      "notificationTitle": "fresh2go — τοποθεσία",
       "notificationText": "Ζωντανή παρακολούθηση παραγγελίας"
     }'
   fi
@@ -218,7 +218,7 @@ echo "==> APK versionCode=$VERSION_CODE versionName=$VERSION_NAME"
 if [ -x "$ROOT/scripts/apply-firebase-android.sh" ] || [ -f "$ROOT/scripts/apply-firebase-android.sh" ]; then
   bash "$ROOT/scripts/apply-firebase-android.sh" || true
 fi
-sync_flavor customer android-customer com.freshdelivery.customer "Fresh Meal"
-sync_flavor driver android-driver com.freshdelivery.driver "Fresh Meal Driver"
+sync_flavor customer android-customer com.freshdelivery.customer "fresh2go"
+sync_flavor driver android-driver com.freshdelivery.driver "fresh2go Driver"
 ls -lah mobile-apks/
 sha256sum mobile-apks/*.apk

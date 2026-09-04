@@ -8,7 +8,7 @@ const SUPABASE_KEY =
 
 if (!SUPABASE_URL || !SUPABASE_KEY) {
   throw new Error(
-    '[Fresh Meal] Missing VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY. Check .env.production / Vercel env.'
+    '[fresh2go] Missing VITE_SUPABASE_URL and/or VITE_SUPABASE_ANON_KEY. Check .env.production / Vercel env.'
   );
 }
 

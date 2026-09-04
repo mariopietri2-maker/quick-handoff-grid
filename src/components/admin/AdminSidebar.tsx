@@ -64,7 +64,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'stores', label: 'Καταστήματα' },
       { id: 'store_registry', label: '📋 Μητρώο' },
-      { id: 'platform_mode', label: '🚚 Delivered by Fresh Meal & ETA' },
+      { id: 'platform_mode', label: '🚚 Delivered by fresh2go & ETA' },
       { id: 'store_photos', label: '📷 Φωτογραφίες' },
       { id: 'store_appearance', label: '🎨 Εμφάνιση' },
       { id: 'promotions', label: 'Προωθήσεις' },
@@ -190,7 +190,7 @@ function SidebarBody({
         </div>
         {!collapsed && (
           <div className="ml-3 overflow-hidden">
-            <p className="font-heading font-extrabold text-[13.5px] leading-tight tracking-tight truncate">FRESH MEAL</p>
+            <p className="font-heading font-extrabold text-[13.5px] leading-tight tracking-tight truncate">FRESH2GO</p>
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground truncate leading-tight font-semibold mt-0.5">Control Center</p>
           </div>
         )}

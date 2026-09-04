@@ -110,7 +110,7 @@ class AppUpdateChecker(
             }
             val dm = appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val request = DownloadManager.Request(Uri.parse(info.url)).apply {
-                setTitle("Fresh Meal Driver — ενημέρωση")
+                setTitle("fresh2go Driver — ενημέρωση")
                 setDescription("Λήψη νέας έκδοσης…")
                 setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE)
                 setDestinationInExternalFilesDir(

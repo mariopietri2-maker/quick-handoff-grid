@@ -1,4 +1,4 @@
-# Store Printing — Fresh Meal
+# Store Printing — fresh2go
 
 Δελτίο κουζίνας 80mm (`PrintOrderTicket`) + ρυθμίσεις (`PrinterSettings`).
 Το δελτίο κουζίνας ΔΕΝ είναι τιμολόγιο — το fiscal block τυπώνεται μόνο

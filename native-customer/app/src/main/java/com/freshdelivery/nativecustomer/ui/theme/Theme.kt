@@ -13,7 +13,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Fresh Meal blue palette — deep PAS Giannina blue primary with ice-white surfaces. */
+/** fresh2go blue palette — deep PAS Giannina blue primary with ice-white surfaces. */
 val FreshGreen = Color(0xFF1B4BA0)      // primary blue
 val FreshGreenDark = Color(0xFF12336E)  // deep blue
 val FreshGreenSoft = Color(0xFFDCE6FB)  // blue chip

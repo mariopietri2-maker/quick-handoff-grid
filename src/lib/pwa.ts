@@ -29,7 +29,7 @@ export function setPwaManifest(kind: PwaManifestKind) {
 
   const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
   if (appleTitle) {
-    appleTitle.content = kind === 'store' ? 'Fresh Meal Store' : 'Fresh Meal';
+    appleTitle.content = kind === 'store' ? 'fresh2go Store' : 'fresh2go';
   }
 
   const appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;

@@ -1,6 +1,6 @@
 {
-  "name": "Fresh Meal",
-  "short_name": "Fresh Meal",
+  "name": "fresh2go",
+  "short_name": "fresh2go",
   "description": "Παραγγελία φαγητού online — γρήγορα, αξιόπιστα.",
   "start_url": "/",
   "scope": "/",

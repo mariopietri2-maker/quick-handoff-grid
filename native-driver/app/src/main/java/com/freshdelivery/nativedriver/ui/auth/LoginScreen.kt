@@ -131,14 +131,14 @@ fun LoginScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_logo_fresh),
-                    contentDescription = "Fresh Meal",
+                    contentDescription = "fresh2go",
                     modifier = Modifier.size(68.dp),
                 )
             }
 
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "Fresh Meal Driver",
+                text = "fresh2go Driver",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = cs.onBackground,

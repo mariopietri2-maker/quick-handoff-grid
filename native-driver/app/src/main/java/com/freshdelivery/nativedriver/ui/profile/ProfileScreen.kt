@@ -266,7 +266,7 @@ fun ProfileScreen(
 
         Spacer(Modifier.height(12.dp))
         Text(
-            "Fresh Meal Driver Native · v2.3",
+            "fresh2go Driver Native · v2.3",
             color = cs.onSurfaceVariant,
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.align(Alignment.CenterHorizontally),

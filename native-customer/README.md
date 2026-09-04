@@ -1,4 +1,4 @@
-# Fresh Meal — Native Android (Kotlin + Jetpack Compose)
+# fresh2go — Native Android (Kotlin + Jetpack Compose)
 
 True native customer app (no Capacitor WebView). Same Supabase backend and **same application id** as the Capacitor customer (`com.freshdelivery.customer`).
 

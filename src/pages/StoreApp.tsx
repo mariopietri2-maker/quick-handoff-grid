@@ -211,11 +211,11 @@ export default function StoreApp() {
             ) : (
               <>
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                  <img src="/favicon.svg" alt="Fresh Meal" className="h-6 w-6" />
+                  <img src="/favicon.svg" alt="fresh2go" className="h-6 w-6" />
                 </div>
                 <div className="min-w-0 leading-tight">
                   <p className="font-heading font-bold text-foreground truncate leading-tight">
-                    Fresh Meal
+                    fresh2go
                   </p>
                   <p className="text-[11px] text-muted-foreground truncate leading-tight">
                     {view === 'portal'

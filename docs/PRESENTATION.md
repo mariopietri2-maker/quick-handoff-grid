@@ -1,4 +1,4 @@
-# Fresh Meal — Product presentation
+# fresh2go — Product presentation
 
 **Live:** https://freshdelivery.app/presentation  
 **As of:** 2026-07-23 (production Supabase `ojkesspghyqmjmupybva`)
@@ -7,7 +7,7 @@
 
 ## 1. What it is
 
-Fresh Meal is a real-time food-delivery marketplace for **Ιωάννινα**: customers, multi-store restaurants, drivers, admin ops, and support — one Supabase backend, Railway SPA host, Capacitor mobile shells.
+fresh2go is a real-time food-delivery marketplace for **Ιωάννινα**: customers, multi-store restaurants, drivers, admin ops, and support — one Supabase backend, Railway SPA host, Capacitor mobile shells.
 
 ## 2. How it works
 

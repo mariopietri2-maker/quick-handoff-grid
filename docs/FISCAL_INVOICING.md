@@ -1,4 +1,4 @@
-# Fiscal Invoicing — Fresh Meal
+# Fiscal Invoicing — fresh2go
 
 > Τα HTML "Τιμολόγια ΦΠΑ" στα admin panels είναι **εσωτερικές καταστάσεις**,
 > όχι φορολογικά παραστατικά. Νόμιμη έκδοση = πιστοποιημένος πάροχος

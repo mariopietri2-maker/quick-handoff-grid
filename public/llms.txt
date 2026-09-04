@@ -1,13 +1,13 @@
-# Fresh Meal
+# fresh2go
 
 > Πλατφόρμα delivery φαγητού που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο.
 
-Fresh Meal is a real-time food delivery platform serving customers, restaurants, and drivers across Greece. Customers browse nearby restaurants, place orders, track deliveries live, and pay online or with cash.
+fresh2go is a real-time food delivery platform serving customers, restaurants, and drivers across Greece. Customers browse nearby restaurants, place orders, track deliveries live, and pay online or with cash.
 
 ## Pages
 
 - [Home](/): Landing page describing the service for customers, restaurants, and drivers.
 - [Browse restaurants](/order): Discover nearby restaurants, search menus, and place orders.
 - [Sign in](/auth): Customer, driver, and restaurant sign-in and sign-up.
-- [Terms of service](/legal/terms): Terms and conditions for using Fresh Meal.
-- [Privacy policy](/legal/privacy): How Fresh Meal collects and uses personal data.
+- [Terms of service](/legal/terms): Terms and conditions for using fresh2go.
+- [Privacy policy](/legal/privacy): How fresh2go collects and uses personal data.

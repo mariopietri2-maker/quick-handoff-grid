@@ -50,12 +50,12 @@ Deno.serve(async (req) => {
   }
   if (!title) {
     const m = text.match(/\] (.+)$/);
-    title = m ? m[1].slice(0, 80) : "Fresh Meal Alert";
+    title = m ? m[1].slice(0, 80) : "fresh2go Alert";
   }
 
   // HTTP header values must stay within ISO-8859-1 \u2014 strip anything wider
   // (Greek/em-dash/emoji are fine in the ntfy *body*, never in headers).
-  const safeTitle = title.replace(/[^\x20-\x7E]/g, "").trim().slice(0, 110) || "Fresh Meal Alert";
+  const safeTitle = title.replace(/[^\x20-\x7E]/g, "").trim().slice(0, 110) || "fresh2go Alert";
 
   const prio =
     severity === "critical" || severity === "error" ? "high" :
@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
     const ntfyRes = await fetch(`https://ntfy.sh/${topic}`, {
       method: "POST",
       headers: {
-        Title: `Fresh Meal \u00b7 ${safeTitle}`,
+        Title: `fresh2go \u00b7 ${safeTitle}`,
         Priority: prio,
         Tags: tags,
       },

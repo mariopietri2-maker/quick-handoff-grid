@@ -20,7 +20,7 @@ const CONFIG: Record<LogoVariant, { stops: string[]; bag: string; fold: string; 
 const WORDMARK_ACCENT = { light: '#F29912', dark: '#FFA960' };
 
 /**
- * Fresh Meal brand logo. Variants map to the app sub-brands:
+ * fresh2go brand logo. Variants map to the app sub-brands:
  * core (customer), driver, store/admin, web, ink (dark surfaces).
  */
 export function Logo({ variant = 'core', size = 28, withWordmark = false, className }: LogoProps) {
@@ -61,7 +61,7 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, classN
             color: 'inherit',
           }}
         >
-          Epirus&nbsp;<span style={{ color: accent }}>Go</span>
+          fresh2go
         </span>
       )}
     </span>

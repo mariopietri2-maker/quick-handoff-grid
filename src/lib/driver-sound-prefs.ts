@@ -1,12 +1,12 @@
 import offerChimeUrl from '@/assets/sounds/fresh_delivery.mp3';
 
 /**
- * Single Fresh Meal offer chime for the driver app.
+ * Single fresh2go offer chime for the driver app.
  * Same asset is used in-app (HTMLAudio) and on Android FCM / notification
  * channels as `res/raw/fresh_delivery.mp3`.
  */
 export const OFFER_SOUND_ID = 'fresh_delivery' as const;
-export const OFFER_SOUND_LABEL = 'Fresh Meal';
+export const OFFER_SOUND_LABEL = 'fresh2go';
 
 export interface DriverSoundPrefs {
   enabled: boolean;

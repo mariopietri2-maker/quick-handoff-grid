@@ -18,16 +18,16 @@ write_ios_cap_config() {
   local geo_plugin=''
   if [ "$flavor" = "customer" ]; then
     app_id="com.freshdelivery.customer"
-    app_name="Fresh Meal"
+    app_name="fresh2go"
     geo_plugin=',
     "Geolocation": {},
     "BackgroundGeolocation": {
-      "notificationTitle": "Fresh Meal — location",
+      "notificationTitle": "fresh2go — location",
       "notificationText": "Live order tracking"
     }'
   else
     app_id="com.freshdelivery.driver"
-    app_name="Fresh Meal Driver"
+    app_name="fresh2go Driver"
     geo_plugin=',
     "Geolocation": {},
     "BackgroundGeolocation": {

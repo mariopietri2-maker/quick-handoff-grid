@@ -26,7 +26,7 @@ class CustomerFirebaseMessagingService : FirebaseMessagingService() {
 
     override fun onMessageReceived(message: RemoteMessage) {
         super.onMessageReceived(message)
-        val title = message.notification?.title ?: message.data["title"] ?: "Fresh Meal"
+        val title = message.notification?.title ?: message.data["title"] ?: "fresh2go"
         val body = message.notification?.body ?: message.data["body"] ?: ""
         showNotification(title, body)
     }

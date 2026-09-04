@@ -1,4 +1,4 @@
-/* Fresh Meal — minimal service worker for PWA installability (store + web). */
+/* fresh2go — minimal service worker for PWA installability (store + web). */
 const CACHE = 'fresh-pwa-v3';
 const PRECACHE = [
   '/',

@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.store',
-  appName: 'Fresh Meal Store',
+  appName: 'fresh2go Store',
   webDir: 'dist',
   server: {
     url: 'https://freshdelivery.app/store',

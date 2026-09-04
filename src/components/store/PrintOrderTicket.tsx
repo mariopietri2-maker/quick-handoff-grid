@@ -28,7 +28,7 @@ function money(n: number | null | undefined) {
   return `€${Number(n ?? 0).toFixed(2)}`;
 }
 
-/** Professional 80mm kitchen / delivery receipt for Fresh Meal. */
+/** Professional 80mm kitchen / delivery receipt for fresh2go. */
 export function printOrderTicket(
   order: OrderWithItems,
   storeName: string,
@@ -71,7 +71,7 @@ export function printOrderTicket(
     <!doctype html>
     <html lang="el">
     <head>
-      <title>Παραγγελία ${e(orderNo)} — Fresh Meal</title>
+      <title>Παραγγελία ${e(orderNo)} — fresh2go</title>
       <meta charset="utf-8" />
       <style>
         @page { size: 80mm auto; margin: 3mm; }
@@ -239,7 +239,7 @@ export function printOrderTicket(
       </style>
     </head>
     <body>
-      <div class="brand">Fresh Meal</div>
+      <div class="brand">fresh2go</div>
       <div class="store">${e(String(storeName ?? 'Κατάστημα'))}</div>
       <div class="meta">
         <span>${e(created.split(',')[0] ?? '')}</span>
@@ -307,7 +307,7 @@ export function printOrderTicket(
       <div class="barcode">▮▮▮ ▯▯▮ ▮▯▯ ▮▮▯ ▯▮▮ ▮▯▮</div>
 
       <div class="footer">
-        <div>Ευχαριστούμε — Fresh Meal</div>
+        <div>Ευχαριστούμε — fresh2go</div>
         <div class="ref">REF ${e(orderNoPlain)} · ${e(String(order.id ?? '').slice(0, 8).toUpperCase())}</div>
       </div>
       ${

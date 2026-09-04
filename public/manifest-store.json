@@ -1,6 +1,6 @@
 {
-  "name": "Fresh Meal Store",
-  "short_name": "Fresh Meal",
+  "name": "fresh2go Store",
+  "short_name": "fresh2go",
   "description": "Διαχείριση παραγγελιών, μενού και πορτοφολιού καταστήματος.",
   "start_url": "/store",
   "scope": "/",

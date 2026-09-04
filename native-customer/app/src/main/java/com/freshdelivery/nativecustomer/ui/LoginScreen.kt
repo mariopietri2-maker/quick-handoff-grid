@@ -129,7 +129,7 @@ fun LoginScreen(
         }
         Spacer(Modifier.height(18.dp))
         Text(
-            "Fresh Meal",
+            "fresh2go",
             style = MaterialTheme.typography.displaySmall,
             color = FreshInk,
             fontWeight = FontWeight.Bold,
