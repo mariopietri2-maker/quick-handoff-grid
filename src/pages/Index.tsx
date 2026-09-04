@@ -89,7 +89,7 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="Fresh Delivery — Παραγγελία φαγητού online σε πραγματικό χρόνο"
+        title="EpirusEats — Παραγγελία φαγητού online σε πραγματικό χρόνο"
         description="Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα, στην πόρτα σας."
         path="/"
         image="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/6907eb92-746f-428e-b488-c3a1766ebcb0"
@@ -319,7 +319,7 @@ const Index = () => {
             <span className="text-border">·</span>
             <Link to="/presentation" className="text-muted-foreground hover:text-primary transition-smooth">Παρουσίαση</Link>
           </nav>
-          <p className="text-xs text-muted-foreground">© 2026 Fresh Delivery. Με ❤️ για την Ελλάδα.</p>
+          <p className="text-xs text-muted-foreground">© 2026 EpirusEats. Με ❤️ για την Ελλάδα.</p>
         </div>
       </footer>
     </div>

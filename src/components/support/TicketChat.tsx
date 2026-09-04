@@ -1,10 +1,10 @@
 import { forwardRef, useEffect, useImperativeHandle, useMemo, useRef, useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
-import { Loader2, Timer, AlarmClock } from 'lucide-react';
+import { Loader2, Timer, AlarmClock, UserCheck } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { toast } from 'sonner';
-import { useEffectiveSla, type TicketPriority } from '@/hooks/useSlaSettings';
+import { useEffectiveSla, useSlaSettings, PRIORITY_MULTIPLIERS, type TicketPriority } from '@/hooks/useSlaSettings';
 import { ChatComposer, type ComposerAttachment } from '@/components/chat/ChatComposer';
 import { ChatAttachment } from '@/components/chat/ChatAttachment';
 import { cn } from '@/lib/utils';
@@ -44,6 +44,7 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [now, setNow] = useState<Date>(new Date());
+  const [createdAt, setCreatedAt] = useState<string | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   const viewerIsAgent = isAdmin || profile?.role === 'support' || profile?.role === 'admin';
@@ -98,13 +99,21 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
     setLoading(true);
 
     const load = async () => {
-      const { data } = await supabase
-        .from('ticket_messages')
-        .select('*')
-        .eq('ticket_id', ticketId)
-        .order('created_at', { ascending: true });
+      const [{ data }, { data: ticket }] = await Promise.all([
+        supabase
+          .from('ticket_messages')
+          .select('*')
+          .eq('ticket_id', ticketId)
+          .order('created_at', { ascending: true }),
+        supabase
+          .from('support_tickets')
+          .select('created_at')
+          .eq('id', ticketId)
+          .maybeSingle(),
+      ]);
       if (active) {
         setMessages((data ?? []) as Message[]);
+        setCreatedAt((ticket as any)?.created_at ?? null);
         setLoading(false);
       }
     };
@@ -183,6 +192,27 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
   const urgentT = sla.urgent;
   const breachT = sla.breach;
 
+  // Public human-FIRST-response promise = the base (unscaled) breach SLA for
+  // this priority, shown to users as "a human answers within ~X".
+  const { data: baseSla } = useSlaSettings();
+  const publicPromiseSec = (baseSla?.breach ?? breachT) * (PRIORITY_MULTIPLIERS[priority] ?? 1);
+
+  // First-response tracking: elapsed time since ticket creation until the
+  // FIRST message from support/admin. Live for a user still waiting; frozen
+  // once answered.
+  const firstAgentMsg = useMemo(
+    () => messages.find((m) => m.sender_role === 'support' || m.sender_role === 'admin') ?? null,
+    [messages],
+  );
+  const ticketCreated = useMemo(() => (createdAt ? new Date(createdAt) : null), [createdAt]);
+  const firstResponseSec = useMemo(() => {
+    if (!ticketCreated) return null;
+    const answeredAt = firstAgentMsg ? new Date(firstAgentMsg.created_at) : null;
+    return differenceInSeconds(answeredAt ?? now, ticketCreated);
+  }, [ticketCreated, firstAgentMsg, now]);
+  const firstResponseLive = firstAgentMsg === null && firstResponseSec !== null;
+  const firstResponseDone = firstAgentMsg !== null && firstResponseSec !== null;
+
   // Color tiers driven by configurable SLA thresholds
   const timerTone = elapsedSec < warnT
     ? 'bg-emerald-500/10 text-emerald-700 border-emerald-500/30 dark:text-emerald-400'
@@ -212,6 +242,34 @@ export const TicketChat = forwardRef<TicketChatHandle, { ticketId: string; prior
           <span className="text-[10px] uppercase tracking-wide font-bold">SLA Παραβίαση</span>
         )}
       </div>
+
+      {!viewerIsAgent && ticketCreated && (
+        <div className="flex items-center justify-between gap-2 px-3 py-1.5 border-b bg-primary/[0.04] text-[11px] text-muted-foreground">
+          <span className="flex items-center gap-1.5 font-heading font-semibold text-foreground">
+            <UserCheck className="h-3.5 w-3.5 text-primary" />
+            Άνθρωπος απαντά σε ~{Math.round(publicPromiseSec / 60)} λεπτά
+          </span>
+          <span className="flex items-center gap-1.5 tabular-nums">
+            {ticketCreated && (
+              <>
+                {firstResponseDone ? (
+                  <>
+                    <UserCheck className="h-3.5 w-3.5" />
+                    Πρώτη απάντηση σε {formatElapsed(firstResponseSec!)}
+                  </>
+                ) : firstResponseLive ? (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Πέρασε {formatElapsed(firstResponseSec!)} · στόχος ~{Math.round(publicPromiseSec / 60)} λεπτά
+                  </>
+                ) : (
+                  'Αναμονή για την πρώτη απάντηση'
+                )}
+              </>
+            )}
+          </span>
+        </div>
+      )}
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
         {loading ? (

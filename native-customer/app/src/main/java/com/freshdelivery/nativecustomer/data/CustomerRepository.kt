@@ -68,6 +68,20 @@ class CustomerRepository(
             }.decodeList<ProfileRow>().firstOrNull()
         }.getOrNull()
 
+    /** Streak loyalty status from the `get_loyalty_status` RPC (customer_rewards). */
+    suspend fun fetchLoyaltyStatus(): LoyaltyStatus {
+        return runCatching {
+            client.postgrest.rpc("get_loyalty_status")
+        }.mapCatching { resp ->
+            // Prefer strict typed decode; fall back to a defensive manual parse.
+            runCatching { resp.decodeAs<LoyaltyStatus>() }
+                .getOrElse {
+                    val raw = resp.decodeAs<kotlinx.serialization.json.JsonElement>()
+                    LoyaltyStatus.fromJson(raw)
+                }
+        }.getOrDefault(LoyaltyStatus())
+    }
+
     suspend fun updateProfile(userId: String, fullName: String?, phone: String?) {
         val name = fullName?.trim()?.takeIf { it.isNotEmpty() }
         val tel = phone?.trim()?.takeIf { it.isNotEmpty() }

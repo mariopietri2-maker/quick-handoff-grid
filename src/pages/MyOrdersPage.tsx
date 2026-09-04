@@ -88,7 +88,7 @@ export default function MyOrdersPage() {
   return (
     <div className="customer-shell min-h-full c-page pb-4">
       <SEO
-        title="Οι παραγγελίες μου — Fresh Delivery"
+        title="Οι παραγγελίες μου — EpirusEats"
         description="Δείτε το ιστορικό παραγγελιών σας, παρακολουθήστε ενεργές αποστολές και επαναλάβετε αγαπημένες παραγγελίες."
         path="/orders"
         noindex

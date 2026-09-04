@@ -117,7 +117,7 @@ export async function initNotificationChannels() {
     await LocalNotifications.createChannel({
       id: 'driver-offers-v6',
       name: 'Νέες παραγγελίες',
-      description: 'Ήχος προσφοράς Fresh Delivery (fresh_delivery)',
+      description: 'Ήχος προσφοράς EpirusEats (fresh_delivery)',
       importance: 5,
       visibility: 1,
       vibration: true,
@@ -131,7 +131,7 @@ export async function initNotificationChannels() {
     await LocalNotifications.createChannel({
       id: 'driver-offers-v3',
       name: 'Νέες παραγγελίες',
-      description: 'Ήχος προσφοράς Fresh Delivery (fresh_delivery)',
+      description: 'Ήχος προσφοράς EpirusEats (fresh_delivery)',
       importance: 5,
       visibility: 1,
       vibration: true,

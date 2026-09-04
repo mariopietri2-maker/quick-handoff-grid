@@ -28,10 +28,10 @@ VALUES (
   true,
   jsonb_build_object(
     'branding', jsonb_build_object(
-      'app_name', 'Fresh Delivery',
+      'app_name', 'EpirusEats',
       'city_label', 'Ιωάννινα',
-      'accent_hsl', '4 90% 47%',
-      'accent_dark_hsl', '4 90% 38%',
+      'accent_hsl', '218 78% 48%',
+      'accent_dark_hsl', '221 79% 38%',
       'logo_url', null
     ),
     'tiles', jsonb_build_array(

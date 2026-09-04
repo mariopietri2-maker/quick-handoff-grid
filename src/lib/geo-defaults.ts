@@ -1,6 +1,6 @@
 import { haversineKm } from '@/lib/geocode';
 
-/** Canonical service city — Fresh Delivery operates in Ioannina only. */
+/** Canonical service city — EpirusEats operates in Ioannina only. */
 export const IOANNINA_CENTER = {
   lat: 39.6650,
   lng: 20.8537,

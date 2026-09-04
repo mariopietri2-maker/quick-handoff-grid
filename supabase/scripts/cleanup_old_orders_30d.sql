@@ -1,5 +1,5 @@
 -- =============================================================================
--- Free-plan 30-day cleanup for Fresh Delivery (quick-handoff-grid)
+-- Free-plan 30-day cleanup for EpirusEats (quick-handoff-grid)
 -- Keeps database size under the 500 MB Free limit by pruning old terminal data.
 --
 -- SAFE: only touches orders with status delivered/cancelled older than 30 days

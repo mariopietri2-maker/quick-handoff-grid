@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Receipt comparison — Current vs Improved</title>
+<style>
+  :root {
+  }
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background: #eef0f4;
+    margin: 0;
+    padding: 24px;
+    color: #111;
+  }
+  h1 {
+    text-align: center;
+    font-size: 18px;
+    margin: 0 0 4px;
+    color: #111;
+  }
+  .sub {
+    text-align: center;
+    color: #666;
+    font-size: 13px;
+    margin-bottom: 24px;
+  }
+  .compare {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 32px;
+    justify-content: center;
+    align-items: flex-start;
+  }
+  .panel {
+    flex: 0 0 auto;
+    width: 300px;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 6px 20px rgba(0,0,0,.10);
+    overflow: hidden;
+  }
+  .panel .head {
+    padding: 10px 14px;
+    border-bottom: 1px solid #eee;
+    font-weight: 700;
+    font-size: 13px;
+    background: #f8f9fb;
+    text-align: center;
+  }
+  .panel.current .head { color: #666; }
+  .panel.improved .head { color: #111; }
+  .ribbon {
+    display: inline-block;
+    margin-left: 8px;
+    font-size: 10px;
+    padding: 2px 6px;
+    border-radius: 20px;
+  }
+  .panel.current .ribbon { background:#eee; color:#555; }
+  .panel.improved .ribbon { background:#111; color:#fff; }
+  .paper {
+    padding: 18px 16px 20px;
+    font-family: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
+    font-size: 12px;
+    line-height: 1.45;
+    color: #000;
+  }
+  .paper .brand { text-align:center; letter-spacing:.14em; font-size:10px; font-weight:700; text-transform:uppercase; color:#111; margin-bottom:2px; }
+  .paper .platform { text-align:center; font-size:9px; color:#444; margin-bottom:8px; }
+  .paper .store { text-align:center; font-size:15px; font-weight:800; margin-bottom:2px; }
+  .paper .meta { text-align:center; font-size:10px; color:#333; margin-bottom:8px; }
+  .paper .ticket-no { text-align:center; border:2px solid #000; padding:10px 6px 8px; margin-bottom:10px; }
+  .paper .ticket-no .label { font-size:9px; letter-spacing:.12em; text-transform:uppercase; margin-bottom:2px; }
+  .paper .ticket-no .num { font-size:34px; font-weight:900; letter-spacing:.04em; line-height:1; }
+  .paper .badge-row { display:flex; gap:6px; justify-content:center; flex-wrap:wrap; margin-bottom:8px; }
+  .paper .badge { border:1.5px solid #000; padding:3px 8px; font-size:10px; font-weight:800; letter-spacing:.04em; }
+  .paper .badge.cash { background:#000; color:#fff; }
+  .paper hr { border:none; border-top:1px dashed #222; margin:8px 0; }
+  .paper table.items { width:100%; border-collapse:collapse; }
+  .paper table.items td { padding:3px 0; vertical-align:top; }
+  .paper table.items .qty { width:28px; font-weight:800; }
+  .paper table.items .name { padding:3px 4px; font-weight:600; }
+  .paper table.items .amt { text-align:right; white-space:nowrap; width:58px; }
+  .paper table.totals { width:100%; border-collapse:collapse; margin-top:2px; }
+  .paper table.totals td { padding:2px 0; }
+  .paper table.totals .r { text-align:right; }
+  .paper table.totals .grand td { font-size:15px; font-weight:900; border-top:2px solid #000; padding-top:6px; }
+  .paper .block { margin-top:8px; font-size:11px; }
+  .paper .block strong { display:block; font-size:9px; letter-spacing:.1em; text-transform:uppercase; margin-bottom:2px; }
+  .paper .notes { background:#f3f3f3; border:1px solid #000; padding:6px; margin-top:8px; font-size:11px; font-weight:700; }
+  .paper .footer { text-align:center; margin-top:12px; font-size:9px; color:#333; }
+  .paper .footer .ref { font-size:8px; color:#666; margin-top:4px; word-break:break-all; }
+
+  /* ---- IMPROVED variant (monochrome black) ---- */
+  .improved .paper { color:#000; }
+  .improved .paper .brand { color:#000; font-size:11px; letter-spacing:.18em; }
+  .improved .paper .brand b::after { content:"·"; margin:0 4px; }
+  .improved .paper .store { font-size:16px; letter-spacing:.02em; color:#000; }
+  .improved .paper .meta { display:flex; justify-content:space-between; border-top:1px solid #222; border-bottom:1px solid #222; padding:4px 0; margin-bottom:10px; color:#333; font-size:10px; }
+  .improved .paper .ticket-no { border:2px solid #000; border-radius:8px; background:#fff; padding:12px 8px 10px; }
+  .improved .paper .ticket-no .label { color:#000; }
+  .improved .paper .ticket-no .num { color:#000; }
+  .improved .paper .badge-row { gap:8px; }
+  .improved .paper .badge { border-radius:20px; border:1.5px solid #000; color:#000; background:#fff; }
+  .improved .paper .badge.cash { background:#000; color:#fff; border-color:#000; }
+  .improved .paper .badge.paid { background:#000; color:#fff; border-color:#000; }
+  .improved .paper table.items .amt { font-weight:800; }
+  .improved .paper hr { border-top:1px dashed #444; }
+  .improved .paper table.totals .grand td { border-top:2px solid #000; color:#000; font-size:16px; }
+  .improved .paper .notes.cash { background:#000; color:#fff; border:none; border-radius:6px; text-align:center; letter-spacing:.04em; }
+  .improved .paper .notes.note { background:#f3f3f3; border:1px solid #000; border-radius:6px; color:#000; font-weight:600; }
+  .improved .paper .block { border-left:3px solid #000; padding-left:8px; }
+  .improved .paper .block strong { color:#000; }
+  .improved .paper .eta { display:block; margin-top:2px; color:#555; }
+  .improved .paper .barcode { text-align:center; margin-top:12px; color:#444; font-size:9px; letter-spacing:2px; }
+  .improved .paper .footer { border-top:1px solid #222; padding-top:8px; color:#333; }
+</style>
+</head>
+<body>
+  <h1>Order ticket comparison</h1>
+  <div class="sub">Ταυτόχρονη σύγκριση — Επίλεξε ποια έκδοση σου αρέσει</div>
+
+  <div class="compare">
+    <!-- CURRENT -->
+    <div class="panel current">
+      <div class="head">Έκδοση Α — Τρέχουσα<span class="ribbon">σήμερα</span></div>
+      <div class="paper">
+        <div class="brand">EpirusEats</div>
+        <div class="platform">Παραγγελία πλατφόρμας</div>
+        <div class="store">Το Στέκι του Λευτέρη</div>
+        <div class="meta">03/09/2026, 21:47</div>
+
+        <div class="ticket-no">
+          <div class="label">Αριθμός παραγγελίας</div>
+          <div class="num">#1042</div>
+        </div>
+
+        <div class="badge-row">
+          <span class="badge">ΜΕΤΡΗΤΑ</span>
+        </div>
+
+        <hr/>
+        <table class="items">
+          <tbody>
+            <tr><td class="qty">1×</td><td class="name">Γύρος χοιρινός</td><td class="amt">€3.50</td></tr>
+            <tr><td class="qty">2×</td><td class="name">Πίτα σουβλάκι κοτόπουλο</td><td class="amt">€7.60</td></tr>
+            <tr><td class="qty">1×</td><td class="name">Fanta πορτοκάλι 330ml</td><td class="amt">€1.80</td></tr>
+            <tr><td class="qty">1×</td><td class="name">Τηγανητές πατάτες</td><td class="amt">€2.50</td></tr>
+          </tbody>
+        </table>
+        <hr/>
+
+        <table class="totals">
+          <tr><td>Υποσύνολο</td><td class="r">€15.40</td></tr>
+          <tr><td>Παράδοση</td><td class="r">€2.00</td></tr>
+          <tr><td>Φιλοδώρημα</td><td class="r">€1.00</td></tr>
+          <tr class="grand"><td>ΣΥΝΟΛΟ</td><td class="r">€18.40</td></tr>
+        </table>
+
+        <div class="notes">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ · €18.40</div>
+
+        <div class="block">
+          <strong>Πελάτης</strong>
+          Γιώργος Παπαδόπουλος
+        </div>
+
+        <div class="footer">
+          <div>Ευχαριστούμε — EpirusEats</div>
+          <div class="ref">REF 1042 · 1A2B3C4D</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPROVED -->
+    <div class="panel improved">
+      <div class="head">Έκδοση Β — Βελτιωμένη<span class="ribbon">πρόταση</span></div>
+      <div class="paper">
+        <div class="brand">EPIRUSEATS <b>bistro</b></div>
+        <div class="store">Το Στέκι του Λευτέρη</div>
+        <div class="meta">
+          <span>03/09/2026</span>
+          <span>21:47</span>
+        </div>
+
+        <div class="ticket-no">
+          <div class="label">Αριθμός παραγγελίας</div>
+          <div class="num">#1042</div>
+        </div>
+
+        <div class="badge-row">
+          <span class="badge cash">ΜΕΤΡΗΤΑ</span>
+        </div>
+
+        <hr/>
+        <table class="items">
+          <tbody>
+            <tr><td class="qty">1×</td><td class="name">Γύρος χοιρινός</td><td class="amt">€3.50</td></tr>
+            <tr><td class="qty">2×</td><td class="name">Πίτα σουβλάκι κοτόπουλο</td><td class="amt">€7.60</td></tr>
+            <tr><td class="qty">1×</td><td class="name">Fanta πορτοκάλι 330ml</td><td class="amt">€1.80</td></tr>
+            <tr><td class="qty">1×</td><td class="name">Τηγανητές πατάτες</td><td class="amt">€2.50</td></tr>
+          </tbody>
+        </table>
+        <hr/>
+
+        <table class="totals">
+          <tr><td>Υποσύνολο</td><td class="r">€15.40</td></tr>
+          <tr><td>Παράδοση</td><td class="r">€2.00</td></tr>
+          <tr><td>Φιλοδώρημα</td><td class="r">€1.00</td></tr>
+          <tr class="grand"><td>ΣΥΝΟΛΟ</td><td class="r">€18.40</td></tr>
+        </table>
+
+        <div class="notes cash">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ · €18.40</div>
+
+        <div class="block">
+          <strong>Πελάτης</strong>
+          Γιώργος Παπαδόπουλος
+        </div>
+
+        <div class="barcode">▮▮▮ ▯▯▮ ▮▯▮ ▮▮▯ ▯▮▮ ▮▯▮</div>
+        <div class="footer">
+          <div>Ευχαριστούμε — EpirusEats</div>
+          <div class="ref">REF 1042 · 1A2B3C4D</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- IMPROVED - CARD / ONLINE -->
+    <div class="panel improved">
+      <div class="head">Έκδοση Γ — Κάρτα / Online<span class="ribbon">επί πληρωμή</span></div>
+      <div class="paper">
+        <div class="brand">EPIRUSEATS <b>bistro</b></div>
+        <div class="store">Το Στέκι του Λευτέρη</div>
+        <div class="meta">
+          <span>03/09/2026</span>
+          <span>21:47</span>
+        </div>
+
+        <div class="ticket-no">
+          <div class="label">Αριθμός παραγγελίας</div>
+          <div class="num">#1042</div>
+        </div>
+
+        <div class="badge-row">
+          <span class="badge">ΚΑΡΤΑ</span>
+          <span class="badge paid">ΠΛΗΡΩΘΗΚΕ</span>
+        </div>
+
+        <hr/>
+        <table class="items">
+          <tbody>
+            <tr><td class="qty">1×</td><td class="name">Γύρος χοιρινός</td><td class="amt">€3.50</td></tr>
+            <tr><td class="qty">2×</td><td class="name">Πίτα σουβλάκι κοτόπουλο</td><td class="amt">€7.60</td></tr>
+            <tr><td class="qty">1×</td><td class="name">Fanta πορτοκάλι 330ml</td><td class="amt">€1.80</td></tr>
+            <tr><td class="qty">1×</td><td class="name">Τηγανητές πατάτες</td><td class="amt">€2.50</td></tr>
+          </tbody>
+        </table>
+        <hr/>
+
+        <table class="totals">
+          <tr><td>Υποσύνολο</td><td class="r">€15.40</td></tr>
+          <tr><td>Παράδοση</td><td class="r">€2.00</td></tr>
+          <tr><td>Φιλοδώρημα</td><td class="r">€1.00</td></tr>
+          <tr class="grand"><td>ΣΥΝΟΛΟ</td><td class="r">€18.40</td></tr>
+        </table>
+
+        <div class="block">
+          <strong>Πελάτης</strong>
+          Γιώργος Παπαδόπουλος
+        </div>
+
+        <div class="barcode">▮▮▮ ▯▯▮ ▮▯▮ ▮▮▯ ▯▮▮ ▮▯▮</div>
+        <div class="footer">
+          <div>Ευχαριστούμε — EpirusEats</div>
+          <div class="ref">REF 1042 · 1A2B3C4D</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>

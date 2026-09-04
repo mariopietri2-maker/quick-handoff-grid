@@ -58,7 +58,7 @@ class MainActivity : ComponentActivity() {
                         PaymentConfiguration.init(this@MainActivity, req.publishableKey)
                     }
                     val config = PaymentSheet.Configuration(
-                        merchantDisplayName = "Fresh Delivery",
+                        merchantDisplayName = "EpirusEats",
                         customer = if (req.customerId != null && req.ephemeralKey != null) {
                             PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey)
                         } else null,

@@ -196,7 +196,7 @@ Deno.serve(async (req) => {
         queue_name: "auth_emails",
         payload: {
           to: email,
-          subject: "Επαναφορά κωδικού — Fresh Delivery",
+          subject: "Επαναφορά κωδικού — EpirusEats",
           html:
             `<p>Ζητήσατε επαναφορά κωδικού.</p>` +
             `<p>Κωδικός (OTP): <strong>${otp}</strong></p>` +

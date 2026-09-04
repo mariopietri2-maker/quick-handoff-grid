@@ -2,6 +2,9 @@ package com.freshdelivery.nativecustomer.data
 
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.JsonElement
+import kotlinx.serialization.json.contentOrNull
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
 
 /** Capacitor parity tabs: Home · Browse · Orders · Account (+ Track overlay). */
 enum class CustomerTab { Home, Browse, Orders, Profile, Track }
@@ -123,13 +126,13 @@ data class PromoBanner(
 )
 
 data class CustomerAppConfig(
-    val appName: String = "Fresh Delivery",
+    val appName: String = "EpirusEats",
     val cityLabel: String = "Ιωάννινα",
-    val tagline: String = "Fresh Meals. Fast Delivery.",
+    val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
     val logoUrl: String? = null,
     /** Show logo/wordmark chip in the home header (web `branding.show_header_brand`). */
     val showHeaderBrand: Boolean = true,
-    /** Brand accent as CSS HSL triplet, e.g. "24 100% 62%" (web `branding.accent_hsl`). */
+    /** Brand accent as CSS HSL triplet, e.g. "218 78% 48%" (web `branding.accent_hsl`). */
     val accentHsl: String? = null,
     val tiles: List<CategoryTile> = listOf(
         CategoryTile("Φαγητό", "🍔", "all"),
@@ -307,3 +310,46 @@ data class SavedAddressRow(
     val longitude: Double? = null,
     val is_default: Boolean? = false,
 )
+
+/**
+ * Streak loyalty status returned by the `get_loyalty_status` RPC
+ * (customer_rewards + streak_milestones). Mirrors the web RewardsCard.
+ */
+@Serializable
+data class LoyaltyStatus(
+    val points: Long = 0,
+    val tier: String = "bronze",
+    val lifetime_points: Long = 0,
+    val current_streak: Int = 0,
+    val best_streak: Int = 0,
+    val streak_last_delivered: String? = null,
+    val next_milestone_day: Int = 3,
+    val next_milestone_bonus: Int = 50,
+    val next_milestone_label: String = "Ember",
+    val is_at_milestone: Boolean = false,
+) {
+    companion object {
+        /** Defensive parse of the RPC's JSONB object (handles missing/malformed fields). */
+        fun fromJson(el: JsonElement): LoyaltyStatus {
+            val obj = el.jsonObject
+            fun str(key: String): String? = obj[key].orNull()?.jsonPrimitive?.contentOrNull
+            fun longValue(key: String): Long? = str(key)?.toLongOrNull()
+            fun intValue(key: String): Int? = str(key)?.toIntOrNull()
+            fun boolValue(key: String): Boolean? = str(key)?.toBooleanStrictOrNull()
+            return LoyaltyStatus(
+                points = longValue("points") ?: 0,
+                tier = str("tier") ?: "bronze",
+                lifetime_points = longValue("lifetime_points") ?: 0,
+                current_streak = intValue("current_streak") ?: 0,
+                best_streak = intValue("best_streak") ?: 0,
+                streak_last_delivered = str("streak_last_delivered"),
+                next_milestone_day = intValue("next_milestone_day") ?: 3,
+                next_milestone_bonus = intValue("next_milestone_bonus") ?: 50,
+                next_milestone_label = str("next_milestone_label") ?: "Ember",
+                is_at_milestone = boolValue("is_at_milestone") ?: false,
+            )
+        }
+
+        private fun JsonElement?.orNull(): JsonElement? = this?.takeIf { it !is kotlinx.serialization.json.JsonNull }
+    }
+}

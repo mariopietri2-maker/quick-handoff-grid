@@ -117,7 +117,7 @@ fun ReferralScreen(state: DriverUiState) {
                             type = "text/plain"
                             putExtra(
                                 Intent.EXTRA_TEXT,
-                                "Γίνε οδηγός Fresh Delivery στα Ιωάννινα! Χρησιμοποίησε τον κωδικό μου: $code",
+                                "Γίνε οδηγός EpirusEats στα Ιωάννινα! Χρησιμοποίησε τον κωδικό μου: $code",
                             )
                         }
                         context.startActivity(Intent.createChooser(send, "Κοινοποίηση"))

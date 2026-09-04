@@ -1,11 +1,11 @@
 # Store publishing — Play Store + App Store
 
-Fresh ships **two** apps:
+EpirusEats ships **two** apps:
 
 | App | Bundle / application ID |
 |---|---|
-| Fresh Customer | `com.freshdelivery.customer` |
-| Fresh Driver | `com.freshdelivery.driver` |
+| EpirusEats | `com.freshdelivery.customer` |
+| EpirusEats Driver | `com.freshdelivery.driver` |
 
 Debug APKs (`./scripts/build-apks.sh`) are for sideload / beta testing only — **Play Store rejects unsigned/debug APKs**. Use **signed `.aab`** (Android App Bundle) for Play.
 

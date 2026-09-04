@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Dynamic Pricing Tool</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    margin: 0;
+    background: #0f172a;
+    color: #e2e8f0;
+    min-height: 100vh;
+  }
+  .wrap { max-width: 960px; margin: 0 auto; padding: 28px 20px 60px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  .sub { color: #94a3b8; margin: 0 0 24px; font-size: 14px; }
+  .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+  @media (max-width: 720px) { .grid { grid-template-columns: 1fr; } }
+  .card {
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 14px;
+    padding: 18px 20px;
+  }
+  .card h2 { margin: 0 0 16px; font-size: 16px; color: #93c5fd; }
+  .field { margin-bottom: 18px; }
+  .field label { display: flex; justify-content: space-between; font-size: 13px; color: #cbd5e1; margin-bottom: 6px; }
+  .field label b { color: #38bdf8; }
+  input[type=range] { width: 100%; accent-color: #38bdf8; }
+  input[type=number] {
+    width: 100%; padding: 8px; border-radius: 8px;
+    border: 1px solid #334155; background: #0f172a; color: #e2e8f0;
+  }
+  .result {
+    background: linear-gradient(135deg, #0ea5e9, #6366f1);
+    border-radius: 14px; padding: 20px 22px; margin-top: 20px; color: white;
+    display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap;
+  }
+  .price-big { font-size: 40px; font-weight: 800; }
+  .result .lbl { font-size: 13px; opacity: .85; }
+  .stat-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 16px; }
+  .stat {
+    background: #1e293b; border: 1px solid #334155;
+    border-radius: 12px; padding: 14px; text-align: center;
+  }
+  .stat .v { font-size: 20px; font-weight: 700; color: #38bdf8; }
+  .stat .l { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+  canvas { width: 100%; margin-top: 16px; }
+  .note { font-size: 12px; color: #64748b; margin-top: 14px; line-height: 1.6; }
+  .footer { text-align: center; color: #475569; font-size: 12px; margin-top: 30px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>AI Dynamic Pricing</h1>
+  <p class="sub">Adjust the sliders — it instantly recommends the best price that maximizes your revenue.</p>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Product Setup</h2>
+      <div class="field">
+        <label>Base cost per unit <b id="costVal">$10.00</b></label>
+        <input type="number" id="cost" min="0" step="1" value="10" style="margin-top:6px">
+      </div>
+      <div class="field">
+        <label>Units available (stock) <b id="stockVal">120</b></label>
+        <input type="range" id="stock" min="0" max="500" step="1" value="120">
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>Demand &amp; Competition</h2>
+      <div class="field">
+        <label>Demand strength <b id="demandVal">Medium (5/10)</b></label>
+        <input type="range" id="demand" min="1" max="10" step="1" value="5">
+      </div>
+      <div class="field">
+        <label>Competitor's price <b id="compVal">$15.00</b></label>
+        <input type="range" id="comp" min="1" max="50" step="0.5" value="15">
+      </div>
+    </div>
+  </div>
+
+  <div class="result">
+    <div>
+      <div class="lbl">Recommended price</div>
+      <div class="price-big" id="suggested">$15.00</div>
+    </div>
+    <div style="margin-left:auto;text-align:right">
+      <div class="lbl">Expected revenue / day</div>
+      <div style="font-size:22px;font-weight:700" id="revenue">$0</div>
+    </div>
+  </div>
+
+  <div class="stat-row">
+    <div class="stat"><div class="v" id="unitsExpected">0</div><div class="l">Units sold / day</div></div>
+    <div class="stat"><div class="v" id="profit">$0</div><div class="l">Profit / day</div></div>
+    <div class="stat"><div class="v" id="markup">0%</div><div class="l">Markup over cost</div></div>
+  </div>
+
+  <div class="card">
+    <h2>Revenue Curve (why this price?)</h2>
+    <canvas id="chart" height="220"></canvas>
+  </div>
+
+  <p class="note">
+    How it works: demand falls off as price rises (price elasticity). The tool simulates revenue = price × units sold
+    across many price points and picks the one that maximizes revenue, while staying competitive with the listed
+    competitor price. This is a simple, transparent version of how AI pricing engines decide.
+  </p>
+  <div class="footer">Dynamic Pricing Tool &mdash; runs fully in your browser, nothing is sent anywhere.</div>
+</div>
+
+<script>
+  const el = (id) => document.getElementById(id);
+  const canvas = el('chart');
+  const ctx = canvas.getContext('2d');
+
+  function readInputs() {
+    const cost = Math.max(0, parseFloat(el('cost').value) || 0);
+    const stock = parseInt(el('stock').value, 10);
+    const demand = parseInt(el('demand').value, 10);
+    const comp = parseFloat(el('comp').value);
+    return { cost, stock, demand, comp };
+  }
+
+  function estimUnits(price, d, stock) {
+    // Base units at price = cost depends on demand strength (1..10)
+    const base = 40 + d * 22;            // e.g. 100 units at cost price
+    // Price sensitivity: units fall as multiplier over cost grows
+    const ratio = price / Math.max(1, d * 2 + 2);
+    const elasticity = Math.pow(55 / ratio, 2.2);
+    let units = base * (cost > 0 ? Math.pow((cost * 1.0) / price, 2.0) * 4 : 1);
+    units = (d * 55) * Math.exp(-0.09 * price) * (price > 0 ? 1 : 0);
+    units = Math.min(units, stock);
+    return Math.max(0, Math.round(units));
+  }
+
+  function update() {
+    const { cost, stock, demand, comp } = readInputs();
+    el('costVal').textContent = '$' + cost.toFixed(2);
+    el('stockVal').textContent = stock;
+    el('demandVal').textContent = demandLabel(demand);
+    el('compVal').textContent = '$' + comp.toFixed(2);
+
+    // Evaluate all candidate prices
+    let best = { price: comp, revenue: 0 };
+    const rmin = Math.max(1, parseFloat((cost * 1.0).toFixed(2)));
+    const rmax = comp * 1.6 + 5;
+    const pts = [];
+    for (let p = 0.5; p <= rmax; p += 0.5) {
+      const units = estimUnits(p, demand, stock);
+      const rev = p * units;
+      pts.push({ p, units, rev });
+      if (rev > best.revenue && p >= cost) best = { price: p, revenue: rev };
+    }
+
+    const unitsBest = Math.round(estimUnits(best.price, demand, stock));
+    const revBest = best.price * unitsBest;
+    const profitBest = (best.price - cost) * unitsBest;
+
+    el('suggested').textContent = '$' + best.price.toFixed(2);
+    el('revenue').textContent = '$' + Math.round(revBest).toLocaleString();
+    el('unitsExpected').textContent = unitsBest.toLocaleString();
+    el('profit').textContent = '$' + Math.round(profitBest).toLocaleString();
+    el('markup').textContent =((cost>0)? ((best.price-cost)/cost*100) : 0).toFixed(0) + '%';
+
+    draw(pts, best);
+  }
+
+  function demandLabel(d) {
+    const names = ['Tiny','Very low','Low','Low-med','Medium','Med-high','High','Very high','Huge','Extreme'];
+    return names[d-1] + ' (' + d + '/10)';
+  }
+
+  function draw(pts, best) {
+    const W = canvas.width, H = canvas.height;
+    ctx.clearRect(0,0,W,H);
+    if (pts.length === 0) return;
+    const maxRev = Math.max(...pts.map(p=>p.rev), 1);
+    const maxPrice = pts[pts.length-1].p;
+
+    // area under revenue curve
+    ctx.beginPath();
+    pts.forEach((p,i)=>{ const x=norm(p.p,0,maxPrice,W); const y=norm(p.rev,0,maxRev,H); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.lineTo(W,H); ctx.lineTo(0,H); ctx.closePath();
+    ctx.fillStyle='rgba(56,189,248,0.15)'; ctx.fill();
+
+    ctx.beginPath();
+    pts.forEach((p,i)=>{ const x=norm(p.p,0,maxPrice,W); const y=norm(p.rev,0,maxRev,H); i?ctx.lineTo(x,y):ctx.moveTo(x,y); });
+    ctx.strokeStyle='#38bdf8'; ctx.lineWidth=2.5; ctx.stroke();
+
+    // best point
+    const bx = norm(best.price,0,maxPrice,W);
+    const by = norm(best.revenue,0,maxRev,H);
+    ctx.beginPath(); ctx.arc(bx,by,6,0,Math.PI*2);
+    ctx.fillStyle='#6366f1'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=2; ctx.stroke();
+
+    // labels
+    ctx.fillStyle='#e2e8f0'; ctx.font='12px sans-serif';
+    ctx.fillText('Recommended', bx-40, by-14);
+    ctx.fillStyle='#94a3b8';
+    ctx.fillText('Price ($)', 6, H-6);
+    ctx.fillText('Revenue ($/day)', 6, 14);
+  }
+
+  function norm(v, lo, hi, px){ return ((v-lo)/(hi-lo))*px; }
+
+  ['cost','stock','demand','comp'].forEach(id=>{
+    el(id).addEventListener('input', update);
+  });
+  update();
+
+  new ResizeObserver(()=>{
+    const ratio = canvas.offsetWidth / canvas.width;
+    canvas.style.height = (canvas.width*ratio*0.72)+'px';
+  }).observe(canvas);
+</script>
+</body>
+</html>

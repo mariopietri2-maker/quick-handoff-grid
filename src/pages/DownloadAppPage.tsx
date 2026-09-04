@@ -165,7 +165,7 @@ export default function DownloadAppPage() {
   return (
     <div className="min-h-screen bg-background text-foreground relative overflow-x-hidden">
       <SEO
-        title="Beta Android APK — Fresh Delivery"
+        title="Beta Android APK — EpirusEats"
         description="Δοκιμαστικά APK πελάτη/οδηγού και Store PWA μέχρι το Google Play."
         path="/download"
       />

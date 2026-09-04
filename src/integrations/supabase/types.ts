@@ -4257,6 +4257,10 @@ store_wallets: {
           read_ct: number
         }[]
       }
+      redeem_loyalty_points: {
+        Args: { p_points: number }
+        Returns: number
+      }
       redeem_wallet_credit: {
         Args: { p_amount: number; p_order_id: string }
         Returns: number

@@ -25,7 +25,7 @@ type HistoryTab = 'deliveries' | 'moves';
 
 /** Simple money tab: balance, cash, one history (not two stacked lists). */
 export function DriverMoneyPanel() {
-  const { wallet, transactions, loading } = useDriverWallet();
+  const { wallet, transactions, loading, cashOutstanding, cashOut, cashingOut } = useDriverWallet();
   const { today, week, recentEarnings } = useEarnings();
   const { state } = useDriverState();
   const { settings: platformSettings } = usePlatformSettings();
@@ -46,6 +46,10 @@ export function DriverMoneyPanel() {
     [transactions],
   );
   const hasMoves = moves.length > 0;
+
+  const unsettledDebt = Number(cashOutstanding ?? 0);
+  const withdrawable = Math.max(balance - unsettledDebt, 0);
+  const blockedByDebt = balance > 0 && unsettledDebt > 0 && withdrawable <= 0;
 
   const cash = Number(state?.shift_cash_balance ?? 0);
   const cashPct = Math.min((cash / Math.max(cap, 1)) * 100, 100);
@@ -135,6 +139,60 @@ export function DriverMoneyPanel() {
             <Stat label="Tips" value={`${today.tips.toFixed(2)}€`} />
             {today.bonuses > 0 && <Stat label="Extras" value={`${today.bonuses.toFixed(2)}€`} />}
           </div>
+        </div>
+      </section>
+
+      {/* 1b. Daily payout affordance */}
+      <section className="rounded-[20px] driver-glass overflow-hidden">
+        <div className="px-4 py-4 flex items-start justify-between gap-3">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <div className="h-10 w-10 rounded-xl bg-[hsl(var(--driver-accent))]/12 text-[hsl(var(--driver-accent))] flex items-center justify-center shrink-0">
+              <Banknote className="h-5 w-5" strokeWidth={2.25} />
+            </div>
+            <div className="min-w-0">
+              <p className="font-heading font-bold text-[15px] text-[hsl(var(--driver-text))] leading-tight">
+                Ανάληψη τώρα
+              </p>
+              <p className="text-[11px] text-[hsl(var(--driver-text-muted))] mt-0.5 leading-relaxed">
+                {blockedByDebt
+                  ? `Κρατάς ανοιχτό χρέος μετρητών €${unsettledDebt.toFixed(2)} — πρώτα εξόφλησε ή παράδωσε με κάρτα.`
+                  : unsettledDebt > 0
+                    ? `Διαθέσιμα μετά το ανοιχτό χρέος €${unsettledDebt.toFixed(2)}`
+                    : 'Μετακίνησε τα κέρδη σου στο πορτοφόλι σου όταν θες.'}
+              </p>
+            </div>
+          </div>
+          <span className="shrink-0 inline-flex items-center gap-1 rounded-full bg-[hsl(var(--driver-surface-muted))] border border-[hsl(var(--driver-border))] px-2 h-6 text-[9.5px] font-heading font-bold uppercase tracking-wider text-[hsl(var(--driver-text-muted))]">
+            <ArrowUpCircle className="h-2.5 w-2.5" />
+            {withdrawable.toFixed(2)}€
+          </span>
+        </div>
+        <div className="px-4 pb-4">
+          <button
+            onClick={() => cashOut(withdrawable)}
+            disabled={withdrawable <= 0 || cashingOut}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl font-heading font-bold text-sm h-11 disabled:opacity-40 disabled:cursor-not-allowed text-white driver-gradient-earn"
+          >
+            {cashingOut ? (
+              <>
+                <span className="h-4 w-4 border-2 border-white/40 border-t-white rounded-full animate-spin" />
+                Επεξεργασία…
+              </>
+            ) : withdrawable > 0 ? (
+              <>
+                <ArrowUpCircle className="h-4 w-4" />
+                Ανάληψη {withdrawable.toFixed(2)}€
+              </>
+            ) : (
+              <>
+                <Lock className="h-4 w-4" />
+                {unsettledDebt > 0 ? 'Αποκλεισμένο λόγω χρέους' : 'Χωρίς διαθέσιμο υπόλοιπο'}
+              </>
+            )}
+          </button>
+          <p className="text-[10.5px] text-[hsl(var(--driver-text-muted))] mt-2 leading-relaxed">
+            Η ανάληψη περνά από έγκριση αποθήκης. Αιτήματα γίνονται όλη μέρα.
+          </p>
         </div>
       </section>
 

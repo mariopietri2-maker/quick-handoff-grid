@@ -2261,6 +2261,8 @@ private fun ProfileTab(
             }
         }
         Spacer(Modifier.height(14.dp))
+        StreakLoyaltyCard(state)
+        Spacer(Modifier.height(14.dp))
         Row(
             Modifier
                 .fillMaxWidth()
@@ -2354,6 +2356,176 @@ private fun ProfileTab(
             modifier = Modifier.fillMaxWidth(),
         )
         Spacer(Modifier.height(16.dp))
+    }
+}
+
+/**
+ * "Streak Hero" loyalty card. Rewards consecutive-day ordering habits
+ * (not just spend): streak grows daily, resets when a day is missed, and
+ * grants a flat bonus at milestones (3 / 7 / 14 / 30 days).
+ */
+@Composable
+private fun StreakLoyaltyCard(state: CustomerUiState) {
+    val loyalty = state.loyalty ?: return
+    val streak = loyalty.current_streak
+    val bestStreak = loyalty.best_streak
+    val next = loyalty.next_milestone_day
+    val nextBonus = loyalty.next_milestone_bonus
+    val nextLabel = loyalty.next_milestone_label
+    val progress = if (next > 0) (streak.toFloat() / next.toFloat()).coerceIn(0f, 1f) else 1f
+    val daysToBonus = (next - streak).coerceAtLeast(0)
+    val tierLabel = when (loyalty.tier) {
+        "platinum" -> "Πλατινένιο"
+        "gold" -> "Χρυσό"
+        "silver" -> "Ασημένιο"
+        else -> "Χάλκινο"
+    }
+    val tierEmoji = when (loyalty.tier) {
+        "platinum" -> "💎"
+        "gold" -> "🥇"
+        "silver" -> "🥈"
+        else -> "🥉"
+    }
+
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .shadow(10.dp, RoundedCornerShape(26.dp))
+            .clip(RoundedCornerShape(26.dp))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF123A2C),
+                        Color(0xFF0A2218),
+                    ),
+                ),
+            )
+            .padding(18.dp),
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text("🔥", style = MaterialTheme.typography.titleLarge)
+                Spacer(Modifier.width(8.dp))
+                Column {
+                    Text(
+                        "Streak Hero",
+                        color = Color.White,
+                        fontWeight = FontWeight.ExtraBold,
+                        style = MaterialTheme.typography.titleMedium,
+                    )
+                    Text(
+                        "Παράγγειλε κάθε μέρα, κέρδισε μπόνους",
+                        color = Color(0xFF9FC6B2),
+                        style = MaterialTheme.typography.bodySmall,
+                    )
+                }
+            }
+            Spacer(Modifier.weight(1f))
+        }
+
+        Spacer(Modifier.height(16.dp))
+
+        Row(verticalAlignment = Alignment.Bottom) {
+            Text(
+                "$streak",
+                color = Color(0xFFF7B955),
+                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.displaySmall,
+            )
+            Spacer(Modifier.width(8.dp))
+            Text(
+                "μέρες συνεχόμενης\nπαραγγελίας",
+                color = Color.White,
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.bodySmall,
+                modifier = Modifier.padding(bottom = 6.dp),
+            )
+            Spacer(Modifier.weight(1f))
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // Points + tier row.
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Surface(
+                color = Color(0xFF1D5440),
+                shape = RoundedCornerShape(12.dp),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        "$tierEmoji  $tierLabel",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
+            }
+            Spacer(Modifier.weight(1f))
+            Text(
+                "${loyalty.points} πόντοι",
+                color = Color.White,
+                fontWeight = FontWeight.ExtraBold,
+                style = MaterialTheme.typography.titleMedium,
+            )
+        }
+
+        Spacer(Modifier.height(14.dp))
+
+        // Progress toward next milestone.
+        if (next > 0) {
+            Row(
+                Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    "Επόμενο ορόσημο: $nextLabel (+$nextBonus)",
+                    color = Color(0xFF9FC6B2),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.SemiBold,
+                )
+                Text(
+                    "$streak/$next",
+                    color = Color(0xFFF7B955),
+                    style = MaterialTheme.typography.bodySmall,
+                    fontWeight = FontWeight.Bold,
+                )
+            }
+            Spacer(Modifier.height(6.dp))
+            LinearProgressIndicator(
+                progress = { progress },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .clip(RoundedCornerShape(4.dp)),
+                color = Color(0xFFF7B955),
+                trackColor = Color(0xFF1D5440),
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                if (daysToBonus > 0)
+                    "$daysToBonus μέρες ακόμα για μπόνους $nextBonus πόντων!"
+                else
+                    "🎉 Μόλις έφτασες το ορόσημο $nextLabel!",
+                color = Color(0xFF9FC6B2),
+                style = MaterialTheme.typography.bodySmall,
+            )
+        }
+
+        Spacer(Modifier.height(10.dp))
+        HorizontalDivider(color = Color(0xFF1D5440))
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Ρεκόρ: $bestStreak μέρες · Χάσε μία μέρα και η σειρά μηδενίζεται.",
+            color = Color(0xFF7FA893),
+            style = MaterialTheme.typography.bodySmall,
+        )
     }
 }
 

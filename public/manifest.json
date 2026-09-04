@@ -1,13 +1,13 @@
 {
-  "name": "Fresh Delivery",
-  "short_name": "Fresh",
+  "name": "EpirusEats",
+  "short_name": "EpirusEats",
   "description": "Παραγγελία φαγητού online — γρήγορα, αξιόπιστα.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#F7F7F7",
-  "theme_color": "#F97316",
+  "background_color": "#F2F7FF",
+  "theme_color": "#1B4BA0",
   "lang": "el",
   "icons": [
     {

@@ -15,8 +15,8 @@ export default function PresentationPage() {
   return (
     <div className="min-h-[100dvh] bg-[#1E1810] text-[#FBF3EA] relative overflow-hidden">
       <SEO
-        title="Παρουσίαση — Fresh Delivery"
-        description="Βίντεο και PDF παρουσίαση της πλατφόρμας Fresh Delivery."
+        title="Παρουσίαση — EpirusEats"
+        description="Βίντεο και PDF παρουσίαση της πλατφόρμας EpirusEats."
         path="/presentation"
       />
 
@@ -36,7 +36,7 @@ export default function PresentationPage() {
           <ArrowLeft className="h-4 w-4" />
           Αρχική
         </Link>
-        <p className="font-heading font-extrabold tracking-tight text-[#FFB23D]">Fresh Delivery</p>
+        <p className="font-heading font-extrabold tracking-tight text-[#FFB23D]">EpirusEats</p>
         <span className="w-14" />
       </header>
 
@@ -109,7 +109,7 @@ export default function PresentationPage() {
             <div className="rounded-3xl border border-white/12 bg-black/40 overflow-hidden shadow-2xl shadow-black/40">
               <iframe
                 key={PDF_SRC}
-                title="Fresh Delivery — Παρουσίαση PDF"
+                title="EpirusEats — Παρουσίαση PDF"
                 className="w-full h-[72dvh] min-h-[420px] bg-[#141009]"
                 src={`${PDF_SRC}#view=FitH`}
               />

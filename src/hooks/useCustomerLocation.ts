@@ -150,7 +150,7 @@ export function useCustomerLocation(isActive: boolean) {
             await BgGeo.start(
               {
                 backgroundMessage: 'Ζωντανή παρακολούθηση παραγγελίας — το GPS ενημερώνεται στο παρασκήνιο.',
-                backgroundTitle: 'Fresh Customer — τοποθεσία',
+                backgroundTitle: 'EpirusEats — τοποθεσία',
                 requestPermissions: true,
                 stale: false,
                 distanceFilter: 25,

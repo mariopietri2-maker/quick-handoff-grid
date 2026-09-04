@@ -21,7 +21,7 @@ True native driver app (no Capacitor WebView). Same Supabase backend and **same 
 | Referral code share | ✅ |
 | Profile + sound / vibration / screen settings | ✅ |
 | FCM → `push_tokens` | ✅ |
-| Fresh Delivery chime | ✅ |
+| EpirusEats chime | ✅ |
 | Turn-by-turn in-app banner | ⏳ later |
 | Wait-bonus / surge banners | ⏳ later |
 

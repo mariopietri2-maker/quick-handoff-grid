@@ -13,26 +13,26 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
-/** Emerald v2 palette — emerald→teal primary, gold accents, airy mint surfaces. */
-val FreshGreen = Color(0xFF0FB876)
-val FreshGreenDark = Color(0xFF0A8A58)
-val FreshGreenSoft = Color(0xFFDFF7EC)
-val FreshTeal = Color(0xFF14B8A6)
-val FreshTealDark = Color(0xFF0E8F82)
-val FreshTealSoft = Color(0xFFDFF5F1)
+/** EpirusEats blue palette — deep PAS Giannina blue primary with ice-white surfaces. */
+val FreshGreen = Color(0xFF1B4BA0)      // primary blue
+val FreshGreenDark = Color(0xFF12336E)  // deep blue
+val FreshGreenSoft = Color(0xFFDCE6FB)  // blue chip
+val FreshTeal = Color(0xFF2E6FE0)       // bright brand blue
+val FreshTealDark = Color(0xFF1B4BA0)
+val FreshTealSoft = Color(0xFFE3ECFB)
 val FreshGold = Color(0xFFF7B955)
-val FreshViolet = Color(0xFF14B8A6)
-val FreshVioletSoft = Color(0xFFDFF5F1)
+val FreshViolet = Color(0xFF2E6FE0)
+val FreshVioletSoft = Color(0xFFE3ECFB)
 val FreshAmber = Color(0xFFF59E0B)
 val FreshAmberSoft = Color(0xFFFFF4E5)
 val FreshRose = Color(0xFFF43F5E)
 val FreshRoseSoft = Color(0xFFFFE9EC)
-val FreshInk = Color(0xFF0E2B1D)
-val FreshMuted = Color(0xFF5C7A6B)
-val FreshBg = Color(0xFFF2F8F4)
+val FreshInk = Color(0xFF10224A)        // deep blue ink
+val FreshMuted = Color(0xFF5A719C)
+val FreshBg = Color(0xFFF2F7FF)         // ice-white page
 val FreshSurface = Color(0xFFFFFFFF)
-val FreshChip = Color(0xFFE8F2EC)
-val FreshDivider = Color(0xFFE0EDE6)
+val FreshChip = Color(0xFFE4EDFC)
+val FreshDivider = Color(0xFFDCE5F5)
 
 private val FreshColors = lightColorScheme(
     primary = FreshGreen,

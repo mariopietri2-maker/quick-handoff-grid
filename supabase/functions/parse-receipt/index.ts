@@ -9,7 +9,7 @@ const corsHeaders = {
 
 const AI_GATEWAY_API_KEY = Deno.env.get("AI_GATEWAY_API_KEY") || Deno.env.get("LOVABLE_API_KEY");
 
-const SYSTEM_PROMPT = `You extract structured delivery-order data from raw receipt or notification text from food-delivery platforms (eFood, Wolt, Box) or any plain text the operator pastes.
+const ORDER_SYSTEM_PROMPT = `You extract structured delivery-order data from raw receipt or notification text from food-delivery platforms (eFood, Wolt, Box) or any plain text the operator pastes.
 
 Return ONLY valid JSON matching this shape:
 {
@@ -29,8 +29,27 @@ Rules:
 - If a field is missing, use null (or empty string for items_summary).
 - Never invent data — only extract what's present.`;
 
+const MENU_SYSTEM_PROMPT = `You extract a restaurant menu from raw text the operator pastes (copied from eFood, Wolt, Box, their website, or a word doc). It may list dishes grouped by category (e.g. "— Pizzas —", "Ανάμεικτες Σαλάτες").
+
+Return ONLY valid JSON:
+{
+  "source": "efood" | "wolt" | "box" | "other",
+  "menu_items": [
+    { "name": string, "price": number, "category": string | null, "description": string | null }
+  ]
+}
+
+Rules:
+- Each distinct dish becomes one entry — do NOT combine duplicates; if the same dish appears, keep it once.
+- Prices are EUR, plain numbers (strip €/currency).
+- If a dish has no price visible, use 0.
+- Infer category from section headers when present, else set null.
+- Keep descriptions only if clearly attached to that dish; otherwise null.
+- Never invent dishes — only extract what's present. If nothing looks like a menu, return "menu_items": [].`;
+
 interface ParseRequest {
   text: string;
+  mode?: string; // "menu" → also extract menu_items for store menu migration
 }
 
 Deno.serve(async (req) => {
@@ -63,6 +82,8 @@ Deno.serve(async (req) => {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
+
+    const SYSTEM_PROMPT = body?.mode === "menu" ? MENU_SYSTEM_PROMPT : ORDER_SYSTEM_PROMPT;
 
     const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
       method: "POST",

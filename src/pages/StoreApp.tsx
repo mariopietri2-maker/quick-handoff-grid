@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   Store, ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
-  Package, Clock, Zap, PackagePlus, ArrowLeft, Power,
+  Package, Clock, Zap, PackagePlus, ArrowLeft, Power, ReceiptText,
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -17,6 +17,8 @@ import { StoreHoursManager } from '@/components/store/StoreHoursManager';
 import AutoAcceptRules from '@/components/store/AutoAcceptRules';
 import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderIngest';
 import StoreWalletCard from '@/components/store/StoreWalletCard';
+import StoreOrderPnl from '@/components/store/StoreOrderPnl';
+import MenuImportFromReceipt from '@/components/store/MenuImportFromReceipt';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { OwnerStoresPortal } from '@/components/store/OwnerStoresPortal';
 import { Badge } from '@/components/ui/badge';
@@ -117,7 +119,7 @@ export default function StoreApp() {
       const t = new URLSearchParams(window.location.search).get('tab');
       if (
         t &&
-        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'promos', 'automation', 'settings'].includes(t)
+        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'promos', 'automation', 'settings', 'pnl'].includes(t)
       ) {
         return t;
       }
@@ -209,11 +211,11 @@ export default function StoreApp() {
             ) : (
               <>
                 <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center shrink-0 overflow-hidden">
-                  <img src="/favicon.svg" alt="Fresh Delivery" className="h-6 w-6" />
+                  <img src="/favicon.svg" alt="EpirusEats" className="h-6 w-6" />
                 </div>
                 <div className="min-w-0 leading-tight">
                   <p className="font-heading font-bold text-foreground truncate leading-tight">
-                    Fresh Delivery
+                    EpirusEats
                   </p>
                   <p className="text-[11px] text-muted-foreground truncate leading-tight">
                     {view === 'portal'
@@ -431,6 +433,10 @@ export default function StoreApp() {
                   <Zap className="h-4 w-4 mr-1.5" />
                   Auto
                 </TabsTrigger>
+                <TabsTrigger value="pnl" className="flex-1 min-w-[90px] font-heading rounded-lg">
+                  <ReceiptText className="h-4 w-4 mr-1.5" />
+                  Κέρδη
+                </TabsTrigger>
                 <TabsTrigger value="settings" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <Settings className="h-4 w-4 mr-1.5" />
                   Ρυθμίσεις
@@ -458,6 +464,7 @@ export default function StoreApp() {
                 <StoreExternalOrderIngest storeId={store.id} />
               </TabsContent>
               <TabsContent value="menu">
+                <MenuImportFromReceipt storeId={store.id} />
                 <MenuControl storeId={store.id} />
               </TabsContent>
               <TabsContent value="inventory">
@@ -474,6 +481,9 @@ export default function StoreApp() {
               </TabsContent>
               <TabsContent value="automation">
                 <AutoAcceptRules storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="pnl">
+                <StoreOrderPnl storeId={store.id} />
               </TabsContent>
               <TabsContent value="settings" className="space-y-4">
                 <StoreWalletCard storeId={store.id} />

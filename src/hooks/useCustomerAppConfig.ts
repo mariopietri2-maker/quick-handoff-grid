@@ -102,12 +102,12 @@ export type CustomerAppConfig = {
 
 export const DEFAULT_CONFIG: CustomerAppConfig = {
   branding: {
-    app_name: 'Fresh Delivery',
+    app_name: 'EpirusEats',
     city_label: 'Ιωάννινα',
-    accent_hsl: '24 100% 62%',
-    accent_dark_hsl: '24 90% 51%',
+    accent_hsl: '218 78% 48%',
+    accent_dark_hsl: '221 79% 38%',
     logo_url: null,
-    tagline: 'Fresh Meals. Fast Delivery.',
+    tagline: 'Η Ήπειρος στο σπίτι σου, γρήγορα.',
     show_header_brand: true,
   },
   tiles: [

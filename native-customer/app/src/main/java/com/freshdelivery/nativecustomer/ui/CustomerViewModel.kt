@@ -16,6 +16,7 @@ import com.freshdelivery.nativecustomer.data.DriverLocationRow
 import com.freshdelivery.nativecustomer.data.GameConfig
 import com.freshdelivery.nativecustomer.data.GameDeal
 import com.freshdelivery.nativecustomer.data.GamePrize
+import com.freshdelivery.nativecustomer.data.LoyaltyStatus
 import com.freshdelivery.nativecustomer.data.LiveChatMessageRow
 import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.data.MysteryCardDef
@@ -109,6 +110,7 @@ data class CustomerUiState(
     /** Stripe PaymentSheet launch request (consumed by MainActivity). */
     val paymentSheetRequest: PaymentSheetRequest? = null,
     val reviewedOrderIds: Set<String> = emptySet(),
+    val loyalty: LoyaltyStatus? = null,
     val orders: List<OrderUi> = emptyList(),
     val trackingOrder: OrderUi? = null,
     val driverLocation: DriverLocationRow? = null,
@@ -1040,6 +1042,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshAll() {
         refreshStores()
         refreshOrders()
+        refreshLoyalty()
     }
 
     fun refreshStores() {
@@ -1106,9 +1109,18 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
                 refreshDriverLocation()
                 ensureDeliveryCoordsOnTrack(tracked)
+                refreshLoyalty()
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = e.message)
             }
+        }
+    }
+
+    fun refreshLoyalty() {
+        val uid = _state.value.userId ?: return
+        viewModelScope.launch {
+            runCatching { repo.fetchLoyaltyStatus() }
+                .onSuccess { loyalty -> _state.value = _state.value.copy(loyalty = loyalty) }
         }
     }
 

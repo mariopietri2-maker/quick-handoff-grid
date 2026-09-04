@@ -5,7 +5,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
  */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.store',
-  appName: 'Fresh Store',
+  appName: 'EpirusGo Store',
   webDir: 'dist',
   server: {
     url: 'https://quick-handoff-grid-8qu8.vercel.app/store',
@@ -25,18 +25,18 @@ const config: CapacitorConfig = {
   },
   android: {
     path: 'android-store',
-    backgroundColor: '#0FB876',
+    backgroundColor: '#1B4BA0',
     webContentsDebuggingEnabled: true,
   },
   plugins: {
     CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'LIGHT',
-      backgroundColor: '#0FB876',
+      backgroundColor: '#1B4BA0',
       overlaysWebView: true,
     },
     SplashScreen: {
-      backgroundColor: '#0FB876',
+      backgroundColor: '#1B4BA0',
       launchAutoHide: true,
       launchShowDuration: 400,
       launchFadeOutDuration: 280,

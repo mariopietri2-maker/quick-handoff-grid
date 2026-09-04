@@ -318,11 +318,11 @@ export default function AuthPage() {
   return (
     <div className="min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain customer-scroll bg-[hsl(220,20%,7%)] flex flex-col">
       <SEO
-        title={isDriverShell ? 'Σύνδεση οδηγού — Fresh Delivery' : 'Σύνδεση & Εγγραφή — Fresh Delivery'}
-        description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο Fresh Delivery."
+        title={isDriverShell ? 'Σύνδεση οδηγού — EpirusEats' : 'Σύνδεση & Εγγραφή — EpirusEats'}
+        description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο EpirusEats."
         path="/auth"
       />
-      <h1 className="sr-only">Σύνδεση & Εγγραφή στο Fresh Delivery</h1>
+      <h1 className="sr-only">Σύνδεση & Εγγραφή στο EpirusEats</h1>
       <header className="px-4 py-4 flex items-center justify-between gap-2">
         {flavor === 'shared' ? (
           <button

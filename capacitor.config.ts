@@ -5,7 +5,7 @@ const isDev = process.env.CAPACITOR_DEV === '1';
 
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.customer',
-  appName: 'Fresh',
+  appName: 'EpirusGo',
   webDir: 'dist',
   server: {
     url: 'https://quick-handoff-grid-8qu8.vercel.app',
@@ -21,12 +21,12 @@ const config: CapacitorConfig = {
     ],
   },
   android: {
-    backgroundColor: '#F2F8F4',
+    backgroundColor: '#F2F7FF',
     webContentsDebuggingEnabled: isDev,
     allowMixedContent: isDev,
   },
   ios: {
-    backgroundColor: '#F2F8F4',
+    backgroundColor: '#F2F7FF',
     contentInset: 'never',
     scrollEnabled: false,
   },
@@ -34,11 +34,11 @@ const config: CapacitorConfig = {
     CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#F2F8F4',
+      backgroundColor: '#F2F7FF',
       overlaysWebView: true,
     },
     SplashScreen: {
-      backgroundColor: '#0FB876',
+      backgroundColor: '#1B4BA0',
     },
   },
 };

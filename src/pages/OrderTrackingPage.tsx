@@ -187,7 +187,7 @@ export default function OrderTrackingPage() {
   return (
     <div className="customer-shell fixed inset-0 c-page overflow-hidden" style={customerAccentStyle()}>
       <SEO
-        title={`Παρακολούθηση παραγγελίας ${formatOrderNumber(order as any)} — Fresh Delivery`}
+        title={`Παρακολούθηση παραγγελίας ${formatOrderNumber(order as any)} — EpirusEats`}
         description="Παρακολουθήστε την παραγγελία σας σε πραγματικό χρόνο, δείτε την εκτιμώμενη ώρα παράδοσης και επικοινωνήστε με τον οδηγό."
         path={`/order-tracking/${order.id}`}
         noindex
