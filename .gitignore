@@ -81,3 +81,5 @@ new.github
 .vercel
 .env.local
 .env.*.local
+
+_swap_old/

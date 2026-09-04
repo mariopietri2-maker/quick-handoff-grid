@@ -42,9 +42,15 @@ const server = http.createServer(async (req, res) => {
     if (!filePath.startsWith(normalize(DIST + sep))) throw new Error('escape');
     const body = await readFile(filePath);
     const immutable = pathname.startsWith('/assets/');
+    // version.json / native-versions.json are polled cross-origin by bundled
+    // (offline) native shells and sideloaded native apps.
+    const cors = (pathname === '/version.json' || pathname === '/native-versions.json')
+      ? { 'access-control-allow-origin': '*' }
+      : {};
     res.writeHead(200, {
       'content-type': MIME[extname(filePath).toLowerCase()] ?? 'application/octet-stream',
       'cache-control': immutable ? 'public, max-age=31536000, immutable' : 'no-cache',
+      ...cors,
     });
     res.end(body);
   } catch {

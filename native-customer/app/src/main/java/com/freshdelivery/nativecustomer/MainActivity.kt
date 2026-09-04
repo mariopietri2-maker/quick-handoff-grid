@@ -19,13 +19,17 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import com.freshdelivery.nativecustomer.ui.CustomerShell
 import com.freshdelivery.nativecustomer.ui.CustomerViewModel
 import com.freshdelivery.nativecustomer.ui.LoginScreen
 import com.freshdelivery.nativecustomer.ui.SplashScreen
 import com.freshdelivery.nativecustomer.ui.theme.FreshCustomerTheme
+import com.freshdelivery.nativecustomer.update.AppUpdateChecker
+import com.freshdelivery.nativecustomer.update.AppUpdateDialog
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
     private lateinit var paymentSheet: PaymentSheet
@@ -83,6 +87,16 @@ class MainActivity : ComponentActivity() {
                     delay(1_600)
                     splashMinElapsed = true
                 }
+                // Sideload self-update (silent unless a newer build is published).
+                val updateScope = rememberCoroutineScope()
+                val updateChecker = remember { AppUpdateChecker(applicationContext, "customerNative") }
+                val updateState by updateChecker.state.collectAsState()
+                LaunchedEffect(Unit) { updateChecker.check() }
+                AppUpdateDialog(
+                    state = updateState,
+                    onDownload = { updateScope.launch { updateChecker.download() } },
+                    onDismiss = { updateChecker.dismiss() },
+                )
                 when {
                     state.bootstrapping || !splashMinElapsed -> {
                         SplashScreen(

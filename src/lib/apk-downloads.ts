@@ -3,7 +3,9 @@ import { SITE_ORIGIN } from '@/lib/site';
 /** Public GitHub Release assets for Android debug APKs. */
 export const APK_RELEASE_TAG = 'mobile-apks-v1';
 
-/** Bumped when `npm run mobile:apk` publishes a new Capacitor build to the release. */
+/** Bumped when `npm run mobile:apk` publishes a new Capacitor build to the release.
+ *  Source of truth for /download AND dist/native-versions.json (self-update
+ *  channel polled by sideloaded native apps — stamped by run-vite-build.mjs). */
 export const APK_BUILD_VERSION = '1.0.7232800';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */

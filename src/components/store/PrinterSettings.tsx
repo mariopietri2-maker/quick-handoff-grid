@@ -95,7 +95,7 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
           />
           <p className="text-xs text-muted-foreground">
             Ο πραγματικός εκτυπωτής επιλέγεται από το διάλογο εκτύπωσης του προγράμματος περιήγησης.
-            Συμβουλή: στις ρυθμίσεις του εκτυπωτή ενεργοποιήστε τη "σιωπηλή εκτύπωση" για άμεση εκτύπωση χωρίς διάλογο.
+            Για εκτύπωση χωρίς διάλογο (kiosk mode) δες <span className="font-mono">docs/STORE_PRINTING.md</span>.
           </p>
         </div>
 

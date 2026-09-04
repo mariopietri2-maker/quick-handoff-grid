@@ -189,7 +189,7 @@ function SidebarBody({
         </div>
         {!collapsed && (
           <div className="ml-3 overflow-hidden">
-            <p className="font-heading font-extrabold text-[13.5px] leading-tight tracking-tight truncate">EPIRUS EATS</p>
+            <p className="font-heading font-extrabold text-[13.5px] leading-tight tracking-tight truncate">FRESH MEAL</p>
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground truncate leading-tight font-semibold mt-0.5">Control Center</p>
           </div>
         )}

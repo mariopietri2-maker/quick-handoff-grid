@@ -8,7 +8,8 @@ const config: CapacitorConfig = {
   appName: 'Fresh Meal',
   webDir: 'dist',
   server: {
-    url: 'https://quick-handoff-grid-8qu8.vercel.app',
+    // Primary host is Railway (freshdelivery.app); Vercel kept as fallback.
+    url: 'https://freshdelivery.app',
     cleartext: isDev,
     androidScheme: 'https',
     allowNavigation: [

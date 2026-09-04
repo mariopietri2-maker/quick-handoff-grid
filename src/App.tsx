@@ -15,6 +15,7 @@ import { RouteErrorBoundary } from "@/components/RouteErrorBoundary";
 import { MobileAppGate } from "@/components/MobileAppGate";
 import RootEntry from "@/components/RootEntry";
 import { PushBootstrap } from "@/components/PushBootstrap";
+import { AppUpdatePrompt } from "@/components/AppUpdatePrompt";
 import { PwaManifestSwitcher } from "@/components/PwaManifestSwitcher";
 import { lazyWithRetry } from "@/lib/lazyWithRetry";
 import NativePageTransition from "@/components/NativePageTransition";
@@ -87,6 +88,7 @@ const App = () => (
                   <RouteErrorBoundary>
                   <MobileAppGate>
                   <PushBootstrap />
+                  <AppUpdatePrompt />
                   <PwaManifestSwitcher />
                   <Routes>
                     <Route path="/" element={<RootEntry />} />

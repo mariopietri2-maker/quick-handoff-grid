@@ -7,8 +7,8 @@
  * Vite prefers process.env over `.env` files, so we re-apply the file values
  * before spawning `vite build`.
  */
-import { readFileSync, existsSync } from 'node:fs';
-import { spawnSync } from 'node:child_process';
+import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { spawnSync, execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -82,4 +82,67 @@ const result = spawnSync('npx', ['vite', 'build'], {
   shell: process.platform === 'win32',
 });
 
-process.exit(result.status ?? 1);
+if (result.status !== 0) {
+  process.exit(result.status ?? 1);
+}
+
+// Stamp the build identity for the auto-update check (useAppUpdate polls
+// /version.json and prompts a reload when it changes after a deploy).
+try {
+  let commit = 'unknown';
+  try {
+    commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim() || 'unknown';
+  } catch {
+    /* not a git checkout (e.g. tarball) */
+  }
+  let version = '0.0.0';
+  try {
+    version = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).version ?? version;
+  } catch {
+    /* keep default */
+  }
+  writeFileSync(
+    resolve(ROOT, 'dist', 'version.json'),
+    JSON.stringify({ app: 'fresh-meal', version, commit, builtAt: new Date().toISOString() }),
+  );
+  console.log(`[build] version.json → ${version}@${commit}`);
+
+  // Native sideload self-update channel: native apps poll
+  // /native-versions.json and compare versionName. Source of truth is
+  // src/lib/apk-downloads.ts (same constants as the /download page).
+  try {
+    const apkSrc = readFileSync(resolve(ROOT, 'src', 'lib', 'apk-downloads.ts'), 'utf8');
+    const pick = (name) => {
+      const m = apkSrc.match(new RegExp(`${name}\\s*=\\s*'([^']+)'`));
+      return m ? m[1] : null;
+    };
+    const base = pick('RELEASE_BASE');
+    const customerNative = pick('APK_NATIVE_CUSTOMER_VERSION');
+    const driverNative = pick('APK_NATIVE_DRIVER_VERSION');
+    const capac = pick('APK_BUILD_VERSION');
+    if (base && customerNative && driverNative && capac) {
+      const entry = (versionLabel, filename) => ({
+        version: versionLabel,
+        url: `${base}/${filename}`,
+      });
+      writeFileSync(
+        resolve(ROOT, 'dist', 'native-versions.json'),
+        JSON.stringify({
+          customerNative: entry(customerNative, 'fresh-customer-native-debug.apk'),
+          driverNative: entry(driverNative, 'fresh-driver-native-debug.apk'),
+          customer: entry(capac, 'fresh-customer-debug.apk'),
+          driver: entry(capac, 'fresh-driver-debug.apk'),
+        }),
+      );
+      console.log('[build] native-versions.json stamped');
+    } else {
+      console.warn('[build] native-versions.json skipped (constants not parsed)');
+    }
+  } catch (e) {
+    console.error('[build] native-versions stamp failed (non-fatal)', e);
+  }
+} catch (e) {
+  console.error('[build] version stamp failed (non-fatal)', e);
+}
+
+process.exit(0);

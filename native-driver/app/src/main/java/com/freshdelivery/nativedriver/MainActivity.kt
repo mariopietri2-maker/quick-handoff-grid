@@ -14,11 +14,19 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import com.freshdelivery.nativedriver.ui.navigation.DriverNavGraph
 import com.freshdelivery.nativedriver.ui.theme.FreshDriverTheme
 import com.freshdelivery.nativedriver.push.DriverFirebaseMessagingService
 import com.freshdelivery.nativedriver.push.StoreCallRingService
+import com.freshdelivery.nativedriver.update.AppUpdateChecker
+import com.freshdelivery.nativedriver.update.AppUpdateDialog
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
@@ -41,6 +49,16 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     DriverNavGraph()
                 }
+                // Sideload self-update (silent unless a newer build is published).
+                val updateScope = rememberCoroutineScope()
+                val updateChecker = remember { AppUpdateChecker(applicationContext, "driverNative") }
+                val updateState by updateChecker.state.collectAsState()
+                LaunchedEffect(Unit) { updateChecker.check() }
+                AppUpdateDialog(
+                    state = updateState,
+                    onDownload = { updateScope.launch { updateChecker.download() } },
+                    onDismiss = { updateChecker.dismiss() },
+                )
             }
         }
     }

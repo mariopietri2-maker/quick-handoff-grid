@@ -15,6 +15,13 @@ export type PrintOrderExtras = {
   customerPhone?: string | null;
   driverCode?: string | null;
   driverName?: string | null;
+  /** Fiscal identity from order_invoices (provider-issued). Rendered only when present. */
+  fiscal?: {
+    number?: string | null;
+    mark?: string | null;
+    uid?: string | null;
+    qrUrl?: string | null;
+  } | null;
 };
 
 function money(n: number | null | undefined) {
@@ -212,6 +219,23 @@ export function printOrderTicket(
           margin-top: 4px;
           word-break: break-all;
         }
+        .fiscal {
+          margin-top: 10px;
+          border: 2px solid #000;
+          border-radius: 6px;
+          padding: 6px;
+          text-align: center;
+          font-size: 10px;
+          font-weight: 700;
+        }
+        .fiscal .fmark {
+          font-size: 8px;
+          color: #333;
+          word-break: break-all;
+          margin-top: 4px;
+          font-weight: 600;
+        }
+        .fiscal img { max-width: 120px; margin: 6px auto 0; display: block; }
       </style>
     </head>
     <body>
@@ -286,6 +310,16 @@ export function printOrderTicket(
         <div>Ευχαριστούμε — Fresh Meal</div>
         <div class="ref">REF ${e(orderNoPlain)} · ${e(String(order.id ?? '').slice(0, 8).toUpperCase())}</div>
       </div>
+      ${
+        extras.fiscal && (extras.fiscal.mark || extras.fiscal.uid || extras.fiscal.number)
+          ? `<div class="fiscal">
+               <div>ΤΙΜΟΛΟΓΙΟ${extras.fiscal.number ? ` № ${e(String(extras.fiscal.number))}` : ''}</div>
+               ${extras.fiscal.mark ? `<div class="fmark">ΜΑΡΚ ${e(String(extras.fiscal.mark))}</div>` : ''}
+               ${extras.fiscal.uid ? `<div class="fmark">UID ${e(String(extras.fiscal.uid))}</div>` : ''}
+               ${extras.fiscal.qrUrl ? `<img src="${e(String(extras.fiscal.qrUrl))}" alt="myDATA QR" />` : ''}
+             </div>`
+          : ''
+      }
       <script>window.onload=()=>{window.print();setTimeout(()=>window.close(),250);}</script>
     </body>
     </html>
