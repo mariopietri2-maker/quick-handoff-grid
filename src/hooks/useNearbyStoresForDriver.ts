@@ -35,17 +35,9 @@ export function useNearbyStoresForDriver() {
     let validStores: NearbyStore[] = [];
     let debounceTimer: ReturnType<typeof setTimeout> | null = null;
 
-    const IOANNINA_LAT = 39.6650;
-    const IOANNINA_LNG = 20.8537;
-    const MAX_KM = 18;
-    const distKm = (lat: number, lng: number) => {
-      const toRad = (d: number) => (d * Math.PI) / 180;
-      const dLat = toRad(lat - IOANNINA_LAT);
-      const dLng = toRad(lng - IOANNINA_LNG);
-      const a = Math.sin(dLat / 2) ** 2 + Math.cos(toRad(IOANNINA_LAT)) * Math.cos(toRad(lat)) * Math.sin(dLng / 2) ** 2;
-      return 6371 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    };
-
+    // Show every active store that has coordinates (stores_public already filters
+    // is_active + not suspended). No city radius — missing pins were often just
+    // outside the old 18km box or had slightly wrong coords.
     const applyCounts = (counts: Record<string, number>) => {
       if (!mounted) return;
       setStores(validStores.map((s) => ({ ...s, pendingOrders: counts[s.id] ?? 0 })));
@@ -104,7 +96,10 @@ export function useNearbyStoresForDriver() {
           (s) =>
             s.latitude != null &&
             s.longitude != null &&
-            distKm(Number(s.latitude), Number(s.longitude)) <= MAX_KM,
+            Number.isFinite(Number(s.latitude)) &&
+            Number.isFinite(Number(s.longitude)) &&
+            // Drop obvious null-island / unset pins
+            !(Number(s.latitude) === 0 && Number(s.longitude) === 0),
         )
         .map((s) => ({
           id: s.id,

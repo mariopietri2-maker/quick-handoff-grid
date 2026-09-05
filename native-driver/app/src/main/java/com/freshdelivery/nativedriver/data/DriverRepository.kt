@@ -142,12 +142,18 @@ class DriverRepository(
     }
 
     suspend fun fetchMapStores(): List<StoreRow> {
+        // stores_public = is_active + not suspended. Require real lat/lng.
         return client.from("stores_public")
             .select(Columns.list("id", "name", "latitude", "longitude", "image_url", "cover_image_url", "is_active")) {
                 order("name", Order.ASCENDING)
-                limit(150L)
+                limit(300L)
             }.decodeList<StoreRow>()
-            .filter { (it.is_active != false) && it.latitude != null && it.longitude != null }
+            .filter {
+                (it.is_active != false) &&
+                    it.latitude != null &&
+                    it.longitude != null &&
+                    !(it.latitude == 0.0 && it.longitude == 0.0)
+            }
     }
 
     suspend fun fetchStoreActiveCounts(): Map<String, Long> {
