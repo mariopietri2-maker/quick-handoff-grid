@@ -75,21 +75,24 @@ def main() -> None:
     for path in targets:
         replace_in(path)
     # Login-specific patterns already covered by OLD_VARIANTS
-    bump_gradle("native-customer/app/build.gradle.kts", 255, "2.7.3-native")
-    bump_gradle("native-driver/app/build.gradle.kts", 266, "2.6.15-native")
+    # NOTE: version pins must always move FORWARD (see src/lib/apk-downloads.ts).
+    # Never downgrade versionCode/versionName here — Android rejects downgrades
+    # and the self-update checker compares exact versionName strings.
+    bump_gradle("native-customer/app/build.gradle.kts", 266, "2.8.3-fresh2go")
+    bump_gradle("native-driver/app/build.gradle.kts", 282, "2.6.28-fresh2go")
     apk = Path("src/lib/apk-downloads.ts")
     if apk.exists():
         t = apk.read_text(encoding="utf-8")
         t = t.replace("2.7.2-native", "2.7.3-native").replace("2.6.14-native", "2.6.15-native")
-        # also force labels if already other
+        # also force labels if already other (keep in sync with the pins above)
         t = re.sub(
             r"APK_NATIVE_DRIVER_VERSION = '[^']+'",
-            "APK_NATIVE_DRIVER_VERSION = '2.6.15-native'",
+            "APK_NATIVE_DRIVER_VERSION = '2.6.28-fresh2go'",
             t,
         )
         t = re.sub(
             r"APK_NATIVE_CUSTOMER_VERSION = '[^']+'",
-            "APK_NATIVE_CUSTOMER_VERSION = '2.7.3-native'",
+            "APK_NATIVE_CUSTOMER_VERSION = '2.8.3-fresh2go'",
             t,
         )
         apk.write_text(t, encoding="utf-8")

@@ -75,6 +75,8 @@ write_cap_config() {
     "hostname": "localhost",
     "allowNavigation": [
       "https://freshdelivery.app/*",
+      "https://fresh2go.gr/*",
+      "https://www.fresh2go.gr/*",
       "https://ojkesspghyqmjmupybva.supabase.co/*",
       "https://*.supabase.co/*",
       "https://quick-handoff-grid-production.up.railway.app/*",
@@ -127,6 +129,24 @@ patch_mapbox_token() {
     echo "systemProp.mapboxDownloadsToken=$token" >> "$gp"
   fi
   echo "==> patched Mapbox downloads token into $gp"
+}
+
+# Token-less local builds: resolve Mapbox from ~/.m2 (seeded by
+# scripts/populate-m2-from-cache.py). No-op when already present.
+ensure_local_maven() {
+  local app_dir="$1"
+  python3 - "$app_dir/build.gradle" <<'PY'
+from pathlib import Path
+import sys
+p = Path(sys.argv[1])
+t = p.read_text()
+needle = 'allprojects {\n    repositories {\n        google()\n        mavenCentral()\n'
+repl = ('allprojects {\n    repositories {\n        google()\n        mavenCentral()\n'
+        '        mavenLocal() // token-less local builds (scripts/populate-m2-from-cache.py)\n')
+if 'mavenLocal()' not in t and needle in t:
+    p.write_text(t.replace(needle, repl, 1))
+    print('mavenLocal added ->', p)
+PY
 }
 
 sync_flavor() {
@@ -194,6 +214,8 @@ PY
     if [ "$flavor" = "driver" ]; then
       patch_mapbox_token "$app_dir"
     fi
+    # Local .m2 fallback so token-less machines resolve cached Mapbox SDK
+    ensure_local_maven "$app_dir"
   fi
 
   bump_version "$app_dir"
@@ -207,8 +229,8 @@ PY
   (cd "$app_dir" && "$gradle_cmd" clean assembleDebug)
 
   mkdir -p mobile-apks
-  cp -f "$app_dir/app/build/outputs/apk/debug/app-debug.apk" "mobile-apks/fresh-${flavor}-debug.apk"
-  echo "==> wrote mobile-apks/fresh-${flavor}-debug.apk"
+  cp -f "$app_dir/app/build/outputs/apk/debug/app-debug.apk" "mobile-apks/fresh2go-${flavor}-debug.apk"
+  echo "==> wrote mobile-apks/fresh2go-${flavor}-debug.apk"
 }
 
 echo "==> APK versionCode=$VERSION_CODE versionName=$VERSION_NAME"

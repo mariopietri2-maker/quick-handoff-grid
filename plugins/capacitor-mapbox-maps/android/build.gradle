@@ -40,6 +40,8 @@ android {
 repositories {
     google()
     mavenCentral()
+    // Local fallback for token-less debug builds (see scripts/populate-m2-from-cache).
+    mavenLocal()
     maven {
         url 'https://api.mapbox.com/downloads/v2/releases/maven'
         authentication { basic(BasicAuthentication) }

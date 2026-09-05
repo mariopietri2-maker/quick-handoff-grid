@@ -11,6 +11,9 @@ dependencyResolutionManagement {
     repositories {
         google()
         mavenCentral()
+        // Local fallback: `scripts/populate-m2-from-cache` seeds ~/.m2 from a
+        // previous build so debug APKs assemble without the Mapbox token.
+        mavenLocal()
         // Mapbox Maps SDK (requires secret token with DOWNLOADS:READ scope)
         maven {
             url = uri("https://api.mapbox.com/downloads/v2/releases/maven")
