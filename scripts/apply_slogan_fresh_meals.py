@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
-"""Restore corrupted config and set slogan to Fresh Meals. Fast Delivery."""
+"""Restore corrupted config and set slogan to Fresh Food. Fast Delivery."""
 from pathlib import Path
 import re
 import subprocess
 
-NEW = "Fresh Meals. Fast Delivery."
+NEW = "Fresh Food. Fast Delivery."
 OLD_VARIANTS = [
     "Fast · Fresh · Local",
     "Fast. Fresh. Local.",

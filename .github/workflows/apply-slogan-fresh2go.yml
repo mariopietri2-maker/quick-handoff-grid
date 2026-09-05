@@ -1,9 +1,9 @@
-name: Apply Fresh Meals slogan
+name: Apply fresh2go slogan
 on:
   push:
     paths:
       - 'scripts/apply_slogan_fresh_meals.py'
-      - '.github/workflows/apply-slogan-fresh-meals.yml'
+      - '.github/workflows/apply-slogan-fresh2go.yml'
   workflow_dispatch:
 jobs:
   apply:
@@ -20,5 +20,5 @@ jobs:
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add -A
-          git commit -m "brand: Fresh Meals. Fast Delivery. (2.7.3 / 2.6.15)" || exit 0
+          git commit -m "brand: Fresh Food. Fast Delivery. (2.7.3 / 2.6.15)" || exit 0
           git push

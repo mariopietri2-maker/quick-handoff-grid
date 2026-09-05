@@ -190,7 +190,7 @@ data class PushTokenUpsert(''',
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p dist
-          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
+          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-driver-native-debug.apk
           gh release view mobile-apks-v1 >/dev/null 2>&1 || gh release create mobile-apks-v1 --title "Fresh Meal Android APKs" --notes "Native debug APKs"
-          gh release upload mobile-apks-v1 dist/fresh-driver-native-debug.apk --clobber
+          gh release upload mobile-apks-v1 dist/fresh2go-driver-native-debug.apk --clobber
           ls -lah dist/

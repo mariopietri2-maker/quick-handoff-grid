@@ -74,15 +74,15 @@ jobs:
       - name: Stage APKs and AABs
         run: |
           mkdir -p dist
-          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh-driver-native-debug.apk
+          cp native-driver/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-driver-native-debug.apk
           if [ -f native-driver/app/build/outputs/bundle/debug/app-debug.aab ]; then
-            cp native-driver/app/build/outputs/bundle/debug/app-debug.aab dist/fresh-driver-native-debug.aab
+            cp native-driver/app/build/outputs/bundle/debug/app-debug.aab dist/fresh2go-driver-native-debug.aab
           fi
           if [ -f native-customer/app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh-customer-native-debug.apk
+            cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-customer-native-debug.apk
           fi
           if [ -f native-customer/app/build/outputs/bundle/debug/app-debug.aab ]; then
-            cp native-customer/app/build/outputs/bundle/debug/app-debug.aab dist/fresh-customer-native-debug.aab
+            cp native-customer/app/build/outputs/bundle/debug/app-debug.aab dist/fresh2go-customer-native-debug.aab
           fi
           ls -lah dist/
 

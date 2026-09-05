@@ -42,6 +42,6 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew :app:assembleDebug
 ```
 
-APK: `app/build/outputs/apk/debug/app-debug.apk` → published as `fresh-driver-native-debug.apk` on release `mobile-apks-v1` (beta download page).
+APK: `app/build/outputs/apk/debug/app-debug.apk` → published as `fresh2go-driver-native-debug.apk` on release `mobile-apks-v1` (beta download page).
 
 Install **replaces** the Capacitor fresh2go Driver debug build (same app id). Uninstall the old APK first if signatures differ.

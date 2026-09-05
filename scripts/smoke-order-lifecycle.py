@@ -124,8 +124,8 @@ def step(msg: str):
 
 def main() -> int:
     stamp = f"{int(time.time())}"
-    cust_email = f"smoke-cust-{stamp}@freshdelivery.test"
-    drv_email = f"smoke-drv-{stamp}@freshdelivery.test"
+    cust_email = f"smoke-cust-{stamp}@fresh2go.test"
+    drv_email = f"smoke-drv-{stamp}@fresh2go.test"
     password = f"Smoke!{stamp}Aa"
 
     print("Creating disposable customer + driver…")

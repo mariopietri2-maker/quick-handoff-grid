@@ -5,7 +5,6 @@ import {
 } from 'lucide-react';
 import { UserMenu } from '@/components/UserMenu';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { OrderQueue } from '@/components/store/OrderQueue';
 import StoreDashboard from '@/components/store/StoreDashboard';
 import { MenuControl } from '@/components/store/MenuControl';
 import { StoreSettings } from '@/components/store/StoreSettings';

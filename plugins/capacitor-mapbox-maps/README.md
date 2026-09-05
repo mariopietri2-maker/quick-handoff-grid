@@ -1,4 +1,4 @@
-# @freshdelivery/capacitor-mapbox-maps
+# @fresh2go/capacitor-mapbox-maps
 
 Native **Mapbox Maps SDK** (Android v11) for the Capacitor driver shell.
 
@@ -17,7 +17,7 @@ Native **Mapbox Maps SDK** (Android v11) for the Capacitor driver shell.
 Already wired in the monorepo:
 
 ```json
-"@freshdelivery/capacitor-mapbox-maps": "file:plugins/capacitor-mapbox-maps"
+"@fresh2go/capacitor-mapbox-maps": "file:plugins/capacitor-mapbox-maps"
 ```
 
 After `npm install`:
@@ -48,7 +48,7 @@ MAPBOX_DOWNLOADS_TOKEN=sk....
 ## Usage (TypeScript)
 
 ```ts
-import { MapboxMaps } from '@freshdelivery/capacitor-mapbox-maps';
+import { MapboxMaps } from '@fresh2go/capacitor-mapbox-maps';
 import { Capacitor } from '@capacitor/core';
 
 async function openNativeMap() {

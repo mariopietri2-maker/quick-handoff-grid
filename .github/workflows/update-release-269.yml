@@ -18,10 +18,10 @@ jobs:
           **Driver APK** — version **2.6.9-native** (build 260)
           - Fix: N-store call card shows without needing a regular order offer
           - Supports call_role K and both
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk
 
           **Customer APK** — version **2.7.0-native** (build 252)
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk
 
           Only the latest build is kept on this release.
           EOF

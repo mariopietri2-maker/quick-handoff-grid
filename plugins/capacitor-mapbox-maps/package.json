@@ -1,5 +1,5 @@
 {
-  "name": "@freshdelivery/capacitor-mapbox-maps",
+  "name": "@fresh2go/capacitor-mapbox-maps",
   "version": "0.1.0",
   "description": "Native Mapbox Maps SDK for Capacitor (Android; web uses mapbox-gl)",
   "main": "dist/plugin.cjs.js",

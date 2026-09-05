@@ -2,7 +2,7 @@
 from pathlib import Path
 import re
 
-NEW_SLOGAN = "Fresh Meals. Fast Delivery."  # leave alone
+NEW_SLOGAN = "Fresh Food. Fast Delivery."  # leave alone
 
 REPO_MENU = '''    suspend fun searchStores(query: String): List<StoreRow> {
         val q = query.trim()

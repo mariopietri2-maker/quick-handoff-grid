@@ -1,9 +1,11 @@
 // Notification utilities used across the apps (store, driver, customer).
 import { showOsNotification, ensureNotificationPermission } from './push-notifications';
 import { loadStoreSoundPrefs } from './store-sound-prefs';
+import storeAlertUrl from '@/assets/sounds/store_alert.mp3';
 import customerNotifyUrl from '@/assets/sounds/customer_notify.mp3';
 
 let audioContext: AudioContext | null = null;
+let storeAlertAudio: HTMLAudioElement | null = null;
 let customerNotifyAudio: HTMLAudioElement | null = null;
 
 function getAudioContext(): AudioContext {
@@ -78,11 +80,31 @@ function playTones(frequencies: number[], type: OscillatorType = 'sine', duratio
 }
 
 /**
- * Play a notification chime — random short melody for new store orders.
+ * Play the store new-order alert (bundled store_alert.mp3).
+ * Falls back to the synth double ding if audio playback fails.
  * Volume is 0..1 gain peak (store sound settings).
  */
 export function playOrderSound(volume = 0.3) {
   const v = Math.max(0, Math.min(1, volume));
+  try {
+    if (typeof Audio !== 'undefined') {
+      if (!storeAlertAudio) {
+        storeAlertAudio = new Audio(storeAlertUrl);
+        storeAlertAudio.preload = 'auto';
+      }
+      const el = storeAlertAudio;
+      el.pause();
+      el.currentTime = 0;
+      el.volume = v;
+      void el.play().catch(() => {
+        // Fallback to synth double ding if autoplay is blocked mid-session.
+        playTones([1046.5, 880.0], 'sine', 0.14, 0.12, v);
+      });
+      return;
+    }
+  } catch {
+    /* fall through to synth */
+  }
   // Double ding — efood-style kitchen POS
   playTones([1046.5, 880.0], 'sine', 0.14, 0.12, v);
 }

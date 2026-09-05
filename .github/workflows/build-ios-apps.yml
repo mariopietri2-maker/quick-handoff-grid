@@ -115,10 +115,10 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p release-dist
-          cp -f fresh-customer-ios.ipa fresh-driver-ios.ipa release-dist/
-          cp -f store-bundles/fresh-customer-ios-xcode.zip store-bundles/fresh-driver-ios-xcode.zip release-dist/
-          cp -f ios-customer/build/ios-customer.xcarchive release-dist/fresh-customer-ios.xcarchive 2>/dev/null || true
-          cp -f ios-driver/build/ios-driver.xcarchive release-dist/fresh-driver-ios.xcarchive 2>/dev/null || true
+          cp -f fresh2go-customer-ios.ipa fresh2go-driver-ios.ipa release-dist/
+          cp -f store-bundles/fresh2go-customer-ios-xcode.zip store-bundles/fresh2go-driver-ios-xcode.zip release-dist/
+          cp -f ios-customer/build/ios-customer.xcarchive release-dist/fresh2go-customer-ios.xcarchive 2>/dev/null || true
+          cp -f ios-driver/build/ios-driver.xcarchive release-dist/fresh2go-driver-ios.xcarchive 2>/dev/null || true
           ls -lah release-dist/
 
       - name: Upload build artifacts

@@ -28,7 +28,7 @@ import java.io.File
  * never blocks startup. Flavor key: "driverNative".
  */
 const val VERSIONS_URL = "https://freshdelivery.app/native-versions.json"
-private const val APK_FILE_NAME = "fresh-meal-update.apk"
+private const val APK_FILE_NAME = "fresh2go-update.apk"
 
 @Serializable
 data class FlavorVersion(val version: String = "", val url: String = "")

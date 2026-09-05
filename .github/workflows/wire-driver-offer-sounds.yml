@@ -55,8 +55,8 @@ jobs:
           t = p.read_text(encoding='utf-8')
           if 'list_driver_offer_sounds_public' not in t:
               t = t.replace(
-                  "import offerChimeUrl from '@/assets/sounds/fresh_delivery.mp3';\n",
-                  "import offerChimeUrl from '@/assets/sounds/fresh_delivery.mp3';\nimport { supabase } from '@/integrations/supabase/client';\n",
+                  "import offerChimeUrl from '@/assets/sounds/driver_offer.mp3';\n",
+                  "import offerChimeUrl from '@/assets/sounds/driver_offer.mp3';\nimport { supabase } from '@/integrations/supabase/client';\n",
               )
               # after getAudio function area, inject remote url cache
               inject = '''

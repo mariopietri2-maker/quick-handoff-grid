@@ -63,8 +63,8 @@ async function ensureUser(email) {
 
 async function main() {
   // ---------- identities ----------
-  const custId = await ensureUser('e2e-cust@freshdelivery.test');
-  const drvId = await ensureUser('e2e-drv@freshdelivery.test');
+  const custId = await ensureUser('e2e-cust@fresh2go.test');
+  const drvId = await ensureUser('e2e-drv@fresh2go.test');
   log('identities:', custId.slice(0, 8), drvId.slice(0, 8));
 
   // ---------- roles / profiles ----------

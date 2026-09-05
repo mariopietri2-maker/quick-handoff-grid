@@ -28,7 +28,7 @@ jobs:
       - name: Commit and push
         run: |
           git config user.name parity-bot
-          git config user.email parity@freshdelivery.local
+          git config user.email parity@fresh2go.local
           git add -A
           git status
           git commit -m "feat(native): all phases complete — Browse+appConfig UI compile-safe" || echo Nothing to commit

@@ -6,9 +6,12 @@ export const SITE_ORIGINS = [
   'https://freshdelivery.app',
   'https://fresh-delivery-rho.vercel.app',
   'https://quick-handoff-grid-production.up.railway.app',
+  // Next primary once DNS + cert are live (allowlisted in Capacitor already).
+  'https://fresh2go.gr',
+  'https://www.fresh2go.gr',
 ] as const;
 
-/** Primary production host (Vercel). */
+/** Primary production host (live serving host). */
 export const SITE_ORIGIN = SITE_ORIGINS[0];
 
 /** Optional extra hosts still allowed for Capacitor navigation & deep links. */

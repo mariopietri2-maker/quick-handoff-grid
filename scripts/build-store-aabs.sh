@@ -205,7 +205,7 @@ copy_raw_sounds() {
   local app_dir="$2"
   mkdir -p "$app_dir/app/src/main/res/raw"
   if [ "$flavor" = "driver" ]; then
-    cp -f "$ROOT/src/assets/sounds/fresh_delivery.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3"
+    cp -f "$ROOT/src/assets/sounds/driver_offer.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3"
   fi
   if [ "$flavor" = "customer" ]; then
     cp -f "$ROOT/src/assets/sounds/customer_notify.mp3" "$app_dir/app/src/main/res/raw/customer_notify.mp3"
@@ -269,6 +269,6 @@ ls -lah store-bundles/
 sha256sum store-bundles/*.aab
 echo
 echo "Upload each .aab in Play Console → Create app → Production/Testing → Create release"
-echo "  customer: com.freshdelivery.customer  → store-bundles/fresh-customer-release.aab"
-echo "  driver:   com.freshdelivery.driver    → store-bundles/fresh-driver-release.aab"
+echo "  customer: com.freshdelivery.customer  → store-bundles/fresh2go-customer-release.aab"
+echo "  driver:   com.freshdelivery.driver    → store-bundles/fresh2go-driver-release.aab"
 echo "Enroll in Play App Signing on first upload (recommended)."

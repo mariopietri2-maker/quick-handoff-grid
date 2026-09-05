@@ -4,7 +4,7 @@ const fs = require("fs");
 
 (async () => {
   const deckPath = process.argv[2] || p.join(__dirname, "deck.html");
-  const outFile = process.argv[3] || p.join(__dirname, "fresh-delivery-presentation.pdf");
+  const outFile = process.argv[3] || p.join(__dirname, "fresh2go-presentation.pdf");
 
   const context = await chromium.launchPersistentContext(p.join(__dirname, ".pdf-tmp", "profile"), {
     executablePath: "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe",

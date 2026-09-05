@@ -60,10 +60,10 @@ jobs:
           **Latest first**
 
           1. **Driver APK** — **${DRIVER_V}** (build ${DRIVER_C})
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk
 
           2. **Customer APK** — **${CUST_V}** (build ${CUST_C})
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk
 
           Only the latest build is kept on this release.
           EOF

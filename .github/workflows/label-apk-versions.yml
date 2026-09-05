@@ -24,12 +24,12 @@ jobs:
 
           | App | Version | Build | File |
           |-----|---------|-------|------|
-          | **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | \`fresh-driver-native-debug.apk\` |
-          | **Customer** | **${CUST_NAME}** | ${CUST_CODE} | \`fresh-customer-native-debug.apk\` |
+          | **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | \`fresh2go-driver-native-debug.apk\` |
+          | **Customer** | **${CUST_NAME}** | ${CUST_CODE} | \`fresh2go-customer-native-debug.apk\` |
 
           ### Downloads
-          - Driver APK: [fresh-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk) — **v${DRIVER_NAME} (${DRIVER_CODE})**
-          - Customer APK: [fresh-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk) — **v${CUST_NAME} (${CUST_CODE})**
+          - Driver APK: [fresh2go-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk) — **v${DRIVER_NAME} (${DRIVER_CODE})**
+          - Customer APK: [fresh2go-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk) — **v${CUST_NAME} (${CUST_CODE})**
 
           AABs (Play-style debug bundles) use the same versions.
 
@@ -72,19 +72,19 @@ jobs:
           CUST_NAME=$(grep -E \'versionName\\s*=\' native-customer/app/build.gradle.kts | head -1 | sed -E \'s/.*"([^\"]+)".*/\\1/\')
           CUST_CODE=$(grep -E \'versionCode\\s*=\' native-customer/app/build.gradle.kts | head -1 | sed -E \'s/[^0-9]//g\')
           # Versioned copies next to stable names
-          cp -f dist/fresh-driver-native-debug.apk "dist/fresh-driver-native-${DRIVER_NAME}-${DRIVER_CODE}.apk" 2>/dev/null || true
-          cp -f dist/fresh-customer-native-debug.apk "dist/fresh-customer-native-${CUST_NAME}-${CUST_CODE}.apk" 2>/dev/null || true
+          cp -f dist/fresh2go-driver-native-debug.apk "dist/fresh2go-driver-native-${DRIVER_NAME}-${DRIVER_CODE}.apk" 2>/dev/null || true
+          cp -f dist/fresh2go-customer-native-debug.apk "dist/fresh2go-customer-native-${CUST_NAME}-${CUST_CODE}.apk" 2>/dev/null || true
           NOTES=$(cat <<EOF
           ## Fresh Meal — latest Android builds
 
           | App | Version | Build | File |
           |-----|---------|-------|------|
-          | **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | \`fresh-driver-native-debug.apk\` |
-          | **Customer** | **${CUST_NAME}** | ${CUST_CODE} | \`fresh-customer-native-debug.apk\` |
+          | **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | \`fresh2go-driver-native-debug.apk\` |
+          | **Customer** | **${CUST_NAME}** | ${CUST_CODE} | \`fresh2go-customer-native-debug.apk\` |
 
           ### Downloads
-          - Driver APK — **v${DRIVER_NAME} (${DRIVER_CODE})**: [fresh-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk)
-          - Customer APK — **v${CUST_NAME} (${CUST_CODE})**: [fresh-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk)
+          - Driver APK — **v${DRIVER_NAME} (${DRIVER_CODE})**: [fresh2go-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk)
+          - Customer APK — **v${CUST_NAME} (${CUST_CODE})**: [fresh2go-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk)
 
           *Only the latest build is kept on this release.*
           EOF

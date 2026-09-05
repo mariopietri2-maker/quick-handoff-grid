@@ -1,5 +1,5 @@
 {
-  "name": "fresh-delivery",
+  "name": "fresh2go",
   "private": true,
   "version": "1.0.0",
   "type": "module",
@@ -41,7 +41,7 @@
     "@capacitor/splash-screen": "^8.0.2",
     "@capacitor/status-bar": "^8.0.2",
     "@capgo/background-geolocation": "^8.3.1",
-    "@freshdelivery/capacitor-mapbox-maps": "file:plugins/capacitor-mapbox-maps",
+    "@fresh2go/capacitor-mapbox-maps": "file:plugins/capacitor-mapbox-maps",
     "@hookform/resolvers": "^3.10.0",
     "@radix-ui/react-accordion": "^1.2.11",
     "@radix-ui/react-alert-dialog": "^1.1.14",

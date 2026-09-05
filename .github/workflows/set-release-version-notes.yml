@@ -22,14 +22,14 @@ jobs:
 
 | App | Version | Build | Download |
 |-----|---------|-------|----------|
-| **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | [fresh-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk) |
-| **Customer** | **${CUST_NAME}** | ${CUST_CODE} | [fresh-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk) |
+| **Driver** | **${DRIVER_NAME}** | ${DRIVER_CODE} | [fresh2go-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk) |
+| **Customer** | **${CUST_NAME}** | ${CUST_CODE} | [fresh2go-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk) |
 
 ### Driver APK — v${DRIVER_NAME} (build ${DRIVER_CODE})
-https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk
 
 ### Customer APK — v${CUST_NAME} (build ${CUST_CODE})
-https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk
 
 Only the latest build is kept on this release."
           gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"

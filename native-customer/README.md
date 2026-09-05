@@ -37,4 +37,4 @@ echo "sdk.dir=$ANDROID_HOME" > local.properties
 ./gradlew :app:assembleDebug
 ```
 
-APK: `app/build/outputs/apk/debug/app-debug.apk` → publish as `fresh-customer-native-debug.apk` on release `mobile-apks-v1`.
+APK: `app/build/outputs/apk/debug/app-debug.apk` → publish as `fresh2go-customer-native-debug.apk` on release `mobile-apks-v1`.

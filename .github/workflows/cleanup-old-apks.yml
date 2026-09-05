@@ -17,13 +17,13 @@ jobs:
           DRIVER_CODE=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
           CUST_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           CUST_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
-          KEEP='fresh-driver-native-debug.apk|fresh-driver-native-debug.aab|fresh-customer-native-debug.apk|fresh-customer-native-debug.aab|\.png$'
+          KEEP='fresh2go-driver-native-debug.apk|fresh2go-driver-native-debug.aab|fresh2go-customer-native-debug.apk|fresh2go-customer-native-debug.aab|\.png$'
           assets=$(gh api repos/mariopietri2-maker/quick-handoff-grid/releases/tags/mobile-apks-v1 --jq '.assets[] | "\(.id)\t\(.name)"')
           while IFS=$'\t' read -r id name; do
             [ -z "${id:-}" ] && continue
             if echo "$name" | grep -Eq "$KEEP"; then echo "KEEP $name"; else echo "DELETE $name"; gh api -X DELETE "repos/mariopietri2-maker/quick-handoff-grid/releases/assets/$id" || true; fi
           done <<< "$assets"
           TITLE="Driver ${DRIVER_NAME} (${DRIVER_CODE}) · Customer ${CUST_NAME} (${CUST_CODE})"
-          NOTES=$(printf '## Fresh Meal latest Android builds\n\n**Driver APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk\n\n**Customer APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk\n\nOnly the latest build is kept on this release.' "$DRIVER_NAME" "$DRIVER_CODE" "$CUST_NAME" "$CUST_CODE")
+          NOTES=$(printf '## Fresh Meal latest Android builds\n\n**Driver APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk\n\n**Customer APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk\n\nOnly the latest build is kept on this release.' "$DRIVER_NAME" "$DRIVER_CODE" "$CUST_NAME" "$CUST_CODE")
           gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"
           echo "Release title: $TITLE"

@@ -4,8 +4,8 @@
 # from build-native-apks.yml are sideload-only.
 #
 # REQUIRED repo secrets (Settings → Secrets and variables → Actions):
-#   PLAY_CUSTOMER_KEYSTORE_B64  base64 of mobile-signing/fresh-customer-upload.jks
-#   PLAY_DRIVER_KEYSTORE_B64    base64 of mobile-signing/fresh-driver-upload.jks
+#   PLAY_CUSTOMER_KEYSTORE_B64  base64 of mobile-signing/fresh2go-customer-upload.jks
+#   PLAY_DRIVER_KEYSTORE_B64    base64 of mobile-signing/fresh2go-driver-upload.jks
 #   PLAY_STORE_PASSWORD         storePassword from mobile-signing/key.properties
 #   PLAY_KEY_PASSWORD           keyPassword from mobile-signing/key.properties
 #   MAPBOX_DOWNLOADS_TOKEN      (driver Mapbox Maps SDK Maven token)
@@ -13,11 +13,11 @@
 # Generate the keystores once on a machine with a JDK:
 #   chmod +x scripts/setup-play-signing.sh && ./scripts/setup-play-signing.sh
 # Then, e.g.:
-#   base64 mobile-signing/fresh-customer-upload.jks   # → PLAY_CUSTOMER_KEYSTORE_B64
-#   base64 mobile-signing/fresh-driver-upload.jks     # → PLAY_DRIVER_KEYSTORE_B64
+#   base64 mobile-signing/fresh2go-customer-upload.jks   # → PLAY_CUSTOMER_KEYSTORE_B64
+#   base64 mobile-signing/fresh2go-driver-upload.jks     # → PLAY_DRIVER_KEYSTORE_B64
 # BACK UP the .jks + key.properties offline. Losing them blocks Play updates.
 #
-# Alias names come from setup-play-signing.sh: fresh-customer / fresh-driver.
+# Alias names come from setup-play-signing.sh: fresh2go-customer / fresh2go-driver.
 
 name: Build Signed Play Store AABs
 
@@ -85,15 +85,15 @@ jobs:
         run: |
           set -euo pipefail
           mkdir -p mobile-signing
-          echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh-customer-upload.jks
-          echo "$PLAY_DRIVER_KEYSTORE_B64"   | base64 -d > mobile-signing/fresh-driver-upload.jks
+          echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+          echo "$PLAY_DRIVER_KEYSTORE_B64"   | base64 -d > mobile-signing/fresh2go-driver-upload.jks
           cat > mobile-signing/key.properties <<EOF
-          customerStoreFile=$(pwd)/mobile-signing/fresh-customer-upload.jks
-          customerKeyAlias=fresh-customer
+          customerStoreFile=$(pwd)/mobile-signing/fresh2go-customer-upload.jks
+          customerKeyAlias=fresh2go-customer
           customerStorePassword=$PLAY_STORE_PASSWORD
           customerKeyPassword=$PLAY_KEY_PASSWORD
-          driverStoreFile=$(pwd)/mobile-signing/fresh-driver-upload.jks
-          driverKeyAlias=fresh-driver
+          driverStoreFile=$(pwd)/mobile-signing/fresh2go-driver-upload.jks
+          driverKeyAlias=fresh2go-driver
           driverStorePassword=$PLAY_STORE_PASSWORD
           driverKeyPassword=$PLAY_KEY_PASSWORD
           EOF

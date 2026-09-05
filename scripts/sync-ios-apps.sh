@@ -246,12 +246,12 @@ sync_ios driver
 
 mkdir -p store-bundles
 # Zip projects for Mac handoff (CocoaPods install happens on the Mac).
-rm -f store-bundles/fresh-customer-ios-xcode.zip store-bundles/fresh-driver-ios-xcode.zip
+rm -f store-bundles/fresh2go-customer-ios-xcode.zip store-bundles/fresh2go-driver-ios-xcode.zip
 (
   cd "$ROOT"
-  zip -qry store-bundles/fresh-customer-ios-xcode.zip ios-customer \
+  zip -qry store-bundles/fresh2go-customer-ios-xcode.zip ios-customer \
     -x '*/Pods/*' -x '*/build/*' -x '*/DerivedData/*' -x '*.DS_Store'
-  zip -qry store-bundles/fresh-driver-ios-xcode.zip ios-driver \
+  zip -qry store-bundles/fresh2go-driver-ios-xcode.zip ios-driver \
     -x '*/Pods/*' -x '*/build/*' -x '*/DerivedData/*' -x '*.DS_Store'
 )
 ls -lah store-bundles/fresh-*-ios-xcode.zip
@@ -262,8 +262,8 @@ cat <<EOF
 ═══════════════════════════════════════════════════════════
 iOS projects prepared (v$VERSION_NAME / build $VERSION_BUILD)
 
-  store-bundles/fresh-customer-ios-xcode.zip  →  com.freshdelivery.customer
-  store-bundles/fresh-driver-ios-xcode.zip    →  com.freshdelivery.driver
+  store-bundles/fresh2go-customer-ios-xcode.zip  →  com.freshdelivery.customer
+  store-bundles/fresh2go-driver-ios-xcode.zip    →  com.freshdelivery.driver
 
 Linux cannot produce a signed App Store IPA (needs macOS + Xcode + your Apple team).
 

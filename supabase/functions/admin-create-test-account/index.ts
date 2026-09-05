@@ -25,7 +25,7 @@ Deno.serve(async (req) => {
     : "customer";
 
   const stamp = Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
-  const email = `test-${role}-${stamp}@freshdelivery.test`;
+  const email = `test-${role}-${stamp}@fresh2go.test`;
   const password = `Test!${stamp}${Math.random().toString(36).slice(2, 6)}`;
   const fullName = `Test ${role.toUpperCase()} ${stamp.slice(-4)}`;
 

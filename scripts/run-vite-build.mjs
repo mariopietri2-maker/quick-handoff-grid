@@ -60,10 +60,10 @@ if (prev && prev !== env.VITE_SUPABASE_URL) {
 }
 
 // The Capacitor Mapbox Maps plugin ships source-only (dist/ is gitignored).
-// Build it before vite so `@freshdelivery/capacitor-mapbox-maps` resolves on
+// Build it before vite so `@fresh2go/capacitor-mapbox-maps` resolves on
 // fresh clones / CI, where dist/ does not exist yet.
 if (!existsSync(resolve(MAPBOX_PLUGIN, 'dist'))) {
-  console.log('[build] Building @freshdelivery/capacitor-mapbox-maps…');
+  console.log('[build] Building @fresh2go/capacitor-mapbox-maps…');
   const plugin = spawnSync('npm', ['run', 'build'], {
     cwd: MAPBOX_PLUGIN,
     stdio: 'inherit',
@@ -103,7 +103,7 @@ try {
   }
   writeFileSync(
     resolve(ROOT, 'dist', 'version.json'),
-    JSON.stringify({ app: 'fresh-meal', version, commit, builtAt: new Date().toISOString() }),
+    JSON.stringify({ app: 'fresh2go', version, commit, builtAt: new Date().toISOString() }),
   );
   console.log(`[build] version.json → ${version}@${commit}`);
 
@@ -128,10 +128,10 @@ try {
       writeFileSync(
         resolve(ROOT, 'dist', 'native-versions.json'),
         JSON.stringify({
-          customerNative: entry(customerNative, 'fresh-customer-native-debug.apk'),
-          driverNative: entry(driverNative, 'fresh-driver-native-debug.apk'),
-          customer: entry(capac, 'fresh-customer-debug.apk'),
-          driver: entry(capac, 'fresh-driver-debug.apk'),
+          customerNative: entry(customerNative, 'fresh2go-customer-native-debug.apk'),
+          driverNative: entry(driverNative, 'fresh2go-driver-native-debug.apk'),
+          customer: entry(capac, 'fresh2go-customer-debug.apk'),
+          driver: entry(capac, 'fresh2go-driver-debug.apk'),
         }),
       );
       console.log('[build] native-versions.json stamped');

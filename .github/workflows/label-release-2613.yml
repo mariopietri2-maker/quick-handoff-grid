@@ -23,12 +23,12 @@ jobs:
           1. **Driver APK** — **2.6.13-native** (build 264)
           - Store + customer pins on pending offers
           - Branded launcher icon · name Fresh Meal Driver
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-driver-native-debug.apk
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk
 
           2. **Customer APK** — **2.7.1-native** (build 253)
           - Friendlier Ioannina address picker
           - Quick area chips · street+number search
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh-customer-native-debug.apk
+          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk
 
           Only the latest build is kept on this release.
           EOF

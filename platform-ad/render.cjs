@@ -27,7 +27,7 @@ const fs = require("fs");
   await page.waitForTimeout((seconds - 1.5) * 1000);
 
   await context.close();
-  const final = p.join(outDir, "fresh-delivery-promo.webm");
+  const final = p.join(outDir, "fresh2go-promo.webm");
   fs.copyFileSync(file, final);
   fs.rmSync(recDir, { recursive: true, force: true });
   const stat = fs.statSync(final);

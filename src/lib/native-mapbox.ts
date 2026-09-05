@@ -14,7 +14,7 @@ export async function openNativeMapboxMap(opts: {
   if (Capacitor.getPlatform() !== 'android') return false;
 
   try {
-    const { MapboxMaps } = await import('@freshdelivery/capacitor-mapbox-maps');
+    const { MapboxMaps } = await import('@fresh2go/capacitor-mapbox-maps');
     const { available } = await MapboxMaps.isNativeAvailable();
     if (!available) return false;
 

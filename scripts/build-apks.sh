@@ -163,7 +163,7 @@ sync_flavor() {
     write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
     mkdir -p "$app_dir/app/src/main/res/raw"
     if [ "$flavor" = "driver" ]; then
-      cp -f "$ROOT/src/assets/sounds/fresh_delivery.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3" 2>/dev/null || true
+      cp -f "$ROOT/src/assets/sounds/driver_offer.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3" 2>/dev/null || true
     fi
     if [ "$flavor" = "customer" ]; then
       cp -f "$ROOT/src/assets/sounds/customer_notify.mp3" "$app_dir/app/src/main/res/raw/customer_notify.mp3" 2>/dev/null || true

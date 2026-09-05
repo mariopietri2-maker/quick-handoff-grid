@@ -4,8 +4,8 @@ import { ArrowLeft, Download, FileText, Play } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { cn } from '@/lib/utils';
 
-const VIDEO_SRC = '/presentation/fresh-delivery-promo.mp4';
-const PDF_SRC = '/presentation/fresh-delivery-presentation.pdf';
+const VIDEO_SRC = '/presentation/fresh2go-promo.mp4';
+const PDF_SRC = '/presentation/fresh2go-presentation.pdf';
 
 type Tab = 'video' | 'pdf';
 
@@ -96,7 +96,7 @@ export default function PresentationPage() {
               </p>
               <a
                 href={VIDEO_SRC}
-                download="fresh-delivery-promo.mp4"
+                download="fresh2go-promo.mp4"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-heading font-semibold text-white/85 hover:bg-white/10 transition-colors"
               >
                 <Download className="h-4 w-4" />
@@ -129,7 +129,7 @@ export default function PresentationPage() {
               </a>
               <a
                 href={PDF_SRC}
-                download="fresh-delivery-presentation.pdf"
+                download="fresh2go-presentation.pdf"
                 className="inline-flex items-center gap-2 rounded-xl bg-[#FFB23D] text-[#2A1A0A] px-4 py-2.5 text-sm font-heading font-bold hover:opacity-90 transition-opacity"
               >
                 <Download className="h-4 w-4" />
