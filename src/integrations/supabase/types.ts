@@ -4410,6 +4410,7 @@ store_wallets: {
           call_id: string
           delivered_at: string
           driver_call_id: number | null
+          driver_code: string | null
           driver_name: string | null
         }[]
       }

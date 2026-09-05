@@ -8,10 +8,12 @@ import { toast } from 'sonner';
 import { playDeliverySound } from '@/lib/notifications';
 import { showOsNotification } from '@/lib/push-notifications';
 import { loadStoreSoundPrefs } from '@/lib/store-sound-prefs';
+import { formatDriverCode } from '@/lib/driver-code';
 
 interface Delivery {
   call_id: string;
   driver_call_id: number | null;
+  driver_code: string | null;
   driver_name: string | null;
   delivered_at: string;
 }
@@ -28,12 +30,18 @@ function fmtId(n: number | null | undefined): string {
   return n == null ? '—' : `#${String(n).padStart(4, '0')}`;
 }
 
+/** Driver registry ID (DRV-0005 → "DRV 5"); falls back to name if no code. */
+function driverLabel(d: Delivery | undefined): string {
+  return formatDriverCode(d?.driver_code, { fallback: d?.driver_name ?? 'Οδηγός' });
+}
+
 /**
  * N-store deliveries box (lives under the announcements panel).
  *
- * Shows the latest finished call's driver ID (a shared 1..9999 counter that
- * wraps to 1 forever) plus a short history. When a delivery completes it also
- * sends the store a text: "Οδηγός #ID — Παράδοση ολοκληρώθηκε".
+ * Shows the latest finished call's delivery number (a per-store 1..9999
+ * counter that wraps to 1 forever) plus the delivering driver's registry ID
+ * (DRV-N). When a delivery completes it also sends the store a text:
+ * "Οδηγός DRV-5 — Παράδοση ολοκληρώθηκε".
  */
 export function StoreDriverIdPanel({ storeId, storeName }: Props) {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
@@ -63,14 +71,15 @@ export function StoreDriverIdPanel({ storeId, storeName }: Props) {
       if (newest && newest.driver_call_id != null && !notified.current.has(newest.call_id)) {
         notified.current.add(newest.call_id);
         playDeliverySound(loadStoreSoundPrefs().orderVolume);
+        const label = driverLabel(newest);
         void showOsNotification({
           title: '🛵 Παράδοση ολοκληρώθηκε',
-          body: `Οδηγός ${fmtId(newest.driver_call_id)} — Η παραγγελία παραδόθηκε (${storeName})`,
+          body: `Οδηγός ${label} — Παράδοση ${fmtId(newest.driver_call_id)} (${storeName})`,
           tag: `store-delivery-${newest.call_id}`,
           vibrate: true,
         });
-        toast.success(`Οδηγός ${fmtId(newest.driver_call_id)} — Παράδοση ολοκληρώθηκε`, {
-          description: newest.driver_name ? `${newest.driver_name} παρέδωσε την παραγγελία.` : undefined,
+        toast.success(`Οδηγός ${label} — Παράδοση ολοκληρώθηκε`, {
+          description: `Παράδοση ${fmtId(newest.driver_call_id)}.`,
         });
       }
     } catch {
@@ -126,8 +135,8 @@ export function StoreDriverIdPanel({ storeId, storeName }: Props) {
               <p className="mt-1 font-mono text-[26px] font-extrabold leading-none text-emerald-700 dark:text-emerald-400 tabular-nums">
                 {fmtId(latest?.driver_call_id)}
               </p>
-              {latest?.driver_name && (
-                <p className="mt-1 text-xs font-medium text-foreground/90">{latest.driver_name}</p>
+              {latest && (
+                <p className="mt-1 text-xs font-semibold text-foreground/90">{driverLabel(latest)}</p>
               )}
               {latest?.delivered_at && (
                 <p className="text-[10px] text-muted-foreground mt-0.5">
@@ -146,7 +155,7 @@ export function StoreDriverIdPanel({ storeId, storeName }: Props) {
                   {fmtId(d.driver_call_id)}
                 </span>
                 <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-                  {d.driver_name ?? 'Οδηγός'}
+                  {driverLabel(d)}
                 </span>
                 <span className="text-[10px] text-muted-foreground shrink-0">
                   {formatDistanceToNow(new Date(d.delivered_at), { addSuffix: true, locale: el })}
