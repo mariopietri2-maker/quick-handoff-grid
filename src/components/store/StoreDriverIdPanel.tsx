@@ -16,7 +16,6 @@ interface Delivery {
   driver_code: string | null;
   driver_name: string | null;
   delivered_at: string;
-  /** accepted = in progress; closed = delivered */
   status?: string;
 }
 
@@ -26,16 +25,18 @@ interface Props {
 }
 
 const POLL_MS = 4000;
+const MAX_ROWS = 10;
 
-function fmtId(n: number | null | undefined): string {
+function fmtOrderId(n: number | null | undefined): string {
   return n == null ? '—' : `#${String(n).padStart(4, '0')}`;
 }
 
-function driverLabel(d: Delivery | undefined): string {
+/** Admin panel driver id (DRV 5), never a random uuid. */
+function driverIdLabel(d: Delivery | undefined): string {
   return formatDriverCode(d?.driver_code, { fallback: d?.driver_name ?? 'Οδηγός' });
 }
 
-/** N-store deliveries box for the store owner. */
+/** N-store box: driver ID first, then order number; max 10 rows. */
 export function StoreDriverIdPanel({ storeId, storeName }: Props) {
   const [deliveries, setDeliveries] = useState<Delivery[]>([]);
   const [active, setActive] = useState<Delivery | null>(null);
@@ -45,12 +46,14 @@ export function StoreDriverIdPanel({ storeId, storeName }: Props) {
 
   const fetchDeliveries = useCallback(async () => {
     try {
+      await (supabase as any).rpc('prune_store_old_deliveries', { p_store_id: storeId });
+
       const [{ data: done }, { data: live }] = await Promise.all([
         (supabase as any).rpc('my_store_recent_deliveries', { p_store_id: storeId }),
         (supabase as any).rpc('my_store_active_delivery', { p_store_id: storeId }),
       ]);
 
-      const rows = (done ?? []) as Delivery[];
+      const rows = ((done ?? []) as Delivery[]).slice(0, MAX_ROWS);
       const liveRow = (Array.isArray(live) ? live[0] : live) as Delivery | null | undefined;
 
       if (!bootstrapped.current) {
@@ -69,15 +72,16 @@ export function StoreDriverIdPanel({ storeId, storeName }: Props) {
       if (newest && newest.driver_call_id != null && !notified.current.has(newest.call_id)) {
         notified.current.add(newest.call_id);
         playDeliverySound(loadStoreSoundPrefs().orderVolume);
-        const label = driverLabel(newest);
+        const drv = driverIdLabel(newest);
+        const oid = fmtOrderId(newest.driver_call_id);
         void showOsNotification({
           title: '🛵 Παράδοση ολοκληρώθηκε',
-          body: `Οδηγός ${label} — Παράδοση ${fmtId(newest.driver_call_id)} (${storeName})`,
+          body: `${drv} · Παραγγελία ${oid} (${storeName})`,
           tag: `store-delivery-${newest.call_id}`,
           vibrate: true,
         });
-        toast.success(`Οδηγός ${label} — Παράδοση ολοκληρώθηκε`, {
-          description: `Παράδοση ${fmtId(newest.driver_call_id)}.`,
+        toast.success(`${drv} — παράδοση ολοκληρώθηκε`, {
+          description: `Παραγγελία ${oid}`,
         });
       }
     } catch {
@@ -116,11 +120,9 @@ export function StoreDriverIdPanel({ storeId, storeName }: Props) {
           <Truck className="h-4 w-4 text-emerald-600" />
         </div>
         <h2 className="font-heading font-bold text-sm text-foreground flex-1 min-w-0">Παραδόσεις</h2>
-        {deliveries.length > 0 && (
-          <span className="h-5 min-w-5 px-1.5 rounded-full bg-emerald-500/15 text-emerald-700 text-[10px] font-bold flex items-center justify-center">
-            {deliveries.length}
-          </span>
-        )}
+        <span className="text-[10px] text-muted-foreground tabular-nums">
+          {deliveries.length}/{MAX_ROWS}
+        </span>
       </div>
       <CardContent className="p-2.5 space-y-2">
         {loading && deliveries.length === 0 && !active ? (
@@ -138,56 +140,59 @@ export function StoreDriverIdPanel({ storeId, storeName }: Props) {
                     Σε εξέλιξη
                   </span>
                 </div>
-                <p className="text-sm font-heading font-semibold text-foreground">{driverLabel(active)}</p>
+                <p className="text-base font-heading font-extrabold text-foreground">{driverIdLabel(active)}</p>
                 <p className="text-[11px] text-muted-foreground mt-0.5">
-                  Ο οδηγός είναι σε παράδοση — ο αριθμός εμφανίζεται όταν ολοκληρώσει.
+                  Οδηγός σε παράδοση — ο αριθμός παραγγελίας εμφανίζεται όταν ολοκληρώσει.
                 </p>
               </div>
             )}
 
             {latest ? (
-              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3.5 py-3 flex gap-3 items-start">
-                <div className="h-10 w-10 rounded-xl bg-emerald-500/15 flex items-center justify-center shrink-0">
-                  <PackageCheck className="h-5 w-5 text-emerald-600" />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="text-[10px] font-heading font-bold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-400/90">
+              <div className="rounded-xl border border-emerald-500/25 bg-emerald-500/5 px-3.5 py-3 space-y-2">
+                <div className="flex items-center gap-2">
+                  <PackageCheck className="h-4 w-4 text-emerald-600 shrink-0" />
+                  <span className="text-[10px] font-heading font-bold uppercase tracking-wide text-emerald-700/80 dark:text-emerald-400/90">
                     Τελευταία παράδοση
-                  </p>
-                  <p className="mt-0.5 font-mono text-[28px] font-extrabold leading-none text-emerald-700 dark:text-emerald-400 tabular-nums">
-                    {fmtId(latest.driver_call_id)}
-                  </p>
-                  <p className="mt-1 text-xs font-semibold text-foreground/90">{driverLabel(latest)}</p>
-                  {latest.delivered_at && (
-                    <p className="text-[10px] text-muted-foreground mt-0.5">
-                      Ολοκληρώθηκε{' '}
-                      {formatDistanceToNow(new Date(latest.delivered_at), { addSuffix: true, locale: el })}
-                    </p>
-                  )}
+                  </span>
                 </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground font-heading">Οδηγός (ID)</p>
+                  <p className="font-mono text-[22px] font-extrabold leading-none text-foreground tabular-nums">
+                    {driverIdLabel(latest)}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-[10px] text-muted-foreground font-heading">Παραγγελία</p>
+                  <p className="font-mono text-[20px] font-extrabold leading-none text-emerald-700 dark:text-emerald-400 tabular-nums">
+                    {fmtOrderId(latest.driver_call_id)}
+                  </p>
+                </div>
+                {latest.delivered_at && (
+                  <p className="text-[10px] text-muted-foreground">
+                    Ολοκληρώθηκε{' '}
+                    {formatDistanceToNow(new Date(latest.delivered_at), { addSuffix: true, locale: el })}
+                  </p>
+                )}
               </div>
             ) : !active ? (
               <div className="text-center py-5 px-2">
                 <Hash className="h-8 w-8 text-muted-foreground/50 mx-auto mb-2" />
                 <p className="text-xs text-muted-foreground font-heading">Καμία παράδοση ακόμα.</p>
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Όταν ο οδηγός ολοκληρώσει κλήση, θα εμφανιστεί εδώ ο αριθμός παράδοσης.
-                </p>
               </div>
             ) : null}
 
-            {deliveries.slice(1, 6).map((d) => (
+            {deliveries.slice(1, MAX_ROWS).map((d) => (
               <div
                 key={d.call_id}
                 className="flex items-center gap-2 rounded-lg border border-border/60 bg-background px-3 py-2"
               >
-                <span className="font-mono text-[12.5px] font-bold text-foreground/90 tabular-nums">
-                  {fmtId(d.driver_call_id)}
+                <span className="font-mono text-[12.5px] font-bold text-foreground tabular-nums shrink-0">
+                  {driverIdLabel(d)}
                 </span>
-                <span className="min-w-0 flex-1 truncate text-[11px] text-muted-foreground">
-                  {driverLabel(d)}
+                <span className="font-mono text-[12px] font-semibold text-emerald-700 dark:text-emerald-400 tabular-nums shrink-0">
+                  {fmtOrderId(d.driver_call_id)}
                 </span>
-                <span className="text-[10px] text-muted-foreground shrink-0">
+                <span className="min-w-0 flex-1 truncate text-[10px] text-muted-foreground text-right">
                   {formatDistanceToNow(new Date(d.delivered_at), { addSuffix: true, locale: el })}
                 </span>
               </div>
