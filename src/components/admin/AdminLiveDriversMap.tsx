@@ -107,9 +107,14 @@ export default function AdminLiveDriversMap() {
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const list = q
-      ? rows.filter(r => (r.full_name ?? '').toLowerCase().includes(q) || (r.driver_code ?? '').toLowerCase().includes(q))
-      : rows;
+    let list = rows.filter((r) => r.is_active !== false);
+    if (q) {
+      list = list.filter(
+        (r) =>
+          (r.full_name ?? '').toLowerCase().includes(q) ||
+          (r.driver_code ?? '').toLowerCase().includes(q),
+      );
+    }
     return [...list].sort((a, b) => {
       const aOnline = !!a.shift_started_at && isDriverPresenceOnline(a.last_location_at);
       const bOnline = !!b.shift_started_at && isDriverPresenceOnline(b.last_location_at);
@@ -118,10 +123,11 @@ export default function AdminLiveDriversMap() {
     });
   }, [rows, query]);
 
-  const onlineCount = rows.filter(r => !!r.shift_started_at && isDriverPresenceOnline(r.last_location_at)).length;
-  const busyCount = rows.filter(r => r.active_order_status).length;
-  const totalEarnings = rows.reduce((s, r) => s + r.todays_earnings, 0);
-  const totalDeliveries = rows.reduce((s, r) => s + r.todays_deliveries, 0);
+  const activeRows = rows.filter((r) => r.is_active !== false);
+  const onlineCount = activeRows.filter(r => !!r.shift_started_at && isDriverPresenceOnline(r.last_location_at)).length;
+  const busyCount = activeRows.filter(r => r.active_order_status).length;
+  const totalEarnings = activeRows.reduce((s, r) => s + r.todays_earnings, 0);
+  const totalDeliveries = activeRows.reduce((s, r) => s + r.todays_deliveries, 0);
 
   return (
     <div className="space-y-4">
@@ -129,7 +135,7 @@ export default function AdminLiveDriversMap() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         <Card><CardContent className="p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground"><Activity className="h-3.5 w-3.5" />Online</div>
-          <div className="text-2xl font-bold mt-1">{onlineCount}<span className="text-sm text-muted-foreground font-normal">/{rows.length}</span></div>
+          <div className="text-2xl font-bold mt-1">{onlineCount}<span className="text-sm text-muted-foreground font-normal">/{activeRows.length}</span></div>
         </CardContent></Card>
         <Card><CardContent className="p-3">
           <div className="flex items-center gap-2 text-xs text-muted-foreground"><Bike className="h-3.5 w-3.5" />Σε παράδοση</div>

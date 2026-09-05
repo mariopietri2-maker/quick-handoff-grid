@@ -273,7 +273,12 @@ export default function AdminDriversMap({ readOnly = false }: AdminDriversMapPro
     storeMarkersRef.current.forEach(m => m.remove());
     storeMarkersRef.current = [];
 
-    stores.forEach(store => {
+    // Hide inactive stores on the map (still visible in edit mode)
+    const storesToShow = editStores
+      ? stores
+      : stores.filter((s) => s.is_active !== false);
+
+    storesToShow.forEach(store => {
       const isSelected = editStores && selectedStoreId === store.id;
       const ring = isSelected ? 'box-shadow:0 0 0 4px hsl(var(--primary)),0 2px 8px rgba(249,115,22,0.6);' : 'box-shadow:0 2px 8px rgba(249,115,22,0.4);';
       const el = document.createElement('div');
