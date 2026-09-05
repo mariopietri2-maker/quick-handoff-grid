@@ -9,10 +9,10 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 export const APK_BUILD_VERSION = '1.0.7232800';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
-export const APK_NATIVE_DRIVER_VERSION = '2.6.27-bg-offer';
+export const APK_NATIVE_DRIVER_VERSION = '2.6.15-native';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.8.2-sound-fix';
+export const APK_NATIVE_CUSTOMER_VERSION = '2.7.3-native';
 
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';

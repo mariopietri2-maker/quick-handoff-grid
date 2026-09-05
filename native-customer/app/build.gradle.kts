@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 265
-        versionName = "2.8.2-sound-fix"
+        versionCode = 255
+        versionName = "2.7.3-native"
 
         buildConfigField(
             "String",
