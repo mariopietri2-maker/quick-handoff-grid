@@ -1,0 +1,22 @@
+name: Apply driver map all stores
+on:
+  push:
+    paths:
+      - 'scripts/apply_driver_map_all_stores.py'
+      - '.github/workflows/apply-driver-map-all-stores.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_driver_map_all_stores.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/hooks/useNearbyStoresForDriver.ts native-driver/
+          git commit -m "fix(driver-map): show all active geocoded stores (fix Pizza Pan missing pin)" || exit 0
+          git push
