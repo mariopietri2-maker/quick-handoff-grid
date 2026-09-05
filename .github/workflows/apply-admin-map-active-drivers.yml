@@ -1,0 +1,22 @@
+name: Apply admin map active drivers only
+on:
+  push:
+    paths:
+      - 'scripts/apply_admin_map_active_drivers_only.py'
+      - '.github/workflows/apply-admin-map-active-drivers.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_admin_map_active_drivers_only.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/admin/AdminDriversMap.tsx
+          git commit -m "fix(admin-map): show only active on-shift drivers with fresh GPS" || exit 0
+          git push
