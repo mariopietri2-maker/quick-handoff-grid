@@ -1,0 +1,22 @@
+name: Apply order id in progress
+on:
+  push:
+    paths:
+      - 'scripts/apply_order_id_in_progress.py'
+      - '.github/workflows/apply-order-id-in-progress.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_order_id_in_progress.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/store/StoreDriverIdPanel.tsx
+          git commit -m "feat(store-N): show order id while delivery in progress" || exit 0
+          git push
