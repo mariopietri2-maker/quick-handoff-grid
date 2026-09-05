@@ -34,7 +34,7 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
 
   return (
     <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-<svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={BRAND.name} style={{ flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={BRAND.name} style={{ flexShrink: 0 }}>
         <defs>
           <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
             {cfg.stops.map((c, i) => (
@@ -75,6 +75,7 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
             />
           </rect>
         )}
+      </svg>
       {withWordmark && (
         <span
           style={{
@@ -90,7 +91,7 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
             gap: 0,
           }}
         >
-<span>{WORDMARK.prefix}</span>
+          <span>{WORDMARK.prefix}</span>
           <span style={{ color: '#F29912' }}>{WORDMARK.highlight}</span>
           {withTld && (
             <span
