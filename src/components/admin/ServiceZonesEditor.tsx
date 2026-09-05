@@ -130,6 +130,8 @@ export default function ServiceZonesEditor() {
   const dragStartRef = useRef<{ x: number; y: number } | null>(null);
   const draggedRef = useRef(false);
   const freehandPtsRef = useRef<LngLat[]>([]);
+  const strokeStartRef = useRef<LngLat | null>(null);
+  const strokeActiveRef = useRef(false);
   const lastDblClickAtRef = useRef(0);
   const prevClickAtRef = useRef(0);
   // Forwarded latest handlers, assigned after the drawing actions below.
@@ -241,6 +243,13 @@ export default function ServiceZonesEditor() {
         source: 'zone-draft',
         paint: { 'line-color': '#059669', 'line-width': 2 },
       });
+      map.addLayer({
+        id: 'draft-pts',
+        type: 'circle',
+        source: 'zone-draft',
+        filter: ['==', ['geometry-type'], 'Point'],
+        paint: { 'circle-radius': 3.5, 'circle-color': '#047857', 'circle-stroke-width': 1.5, 'circle-stroke-color': '#ffffff' },
+      });
       setMapReady(true);
     });
     mapRef.current = map;
@@ -267,6 +276,13 @@ export default function ServiceZonesEditor() {
     const onMouseDown = (e: mapboxgl.MapMouseEvent) => {
       const oe = e.originalEvent as MouseEvent;
       dragStartRef.current = { x: oe.clientX, y: oe.clientY };
+      strokeStartRef.current = [e.lngLat.lng, e.lngLat.lat];
+      // Circle: a press without a center starts one — so a single drag draws the radius too.
+      if (drawToolRef.current === 'circle' && !circleCenterRef.current) {
+        const c: LngLat = [e.lngLat.lng, e.lngLat.lat];
+        circleCenterRef.current = c;
+        setCircleCenter(c);
+      }
     };
 
     const onMouseMove = (e: mapboxgl.MapMouseEvent) => {
@@ -283,21 +299,27 @@ export default function ServiceZonesEditor() {
       }
       // Freehand polygon trace — spacing keeps the vertex count sane.
       draggedRef.current = true;
-      const pts = freehandPtsRef.current;
+      let pts = freehandPtsRef.current;
+      if (!strokeActiveRef.current) {
+        // Anchor the stroke to the exact press point so the line starts where you press.
+        const anchor = strokeStartRef.current;
+        if (anchor) pts = [...pts, anchor];
+        strokeActiveRef.current = true;
+      }
       const last = pts.length ? pts[pts.length - 1] : null;
-      if (!last || haversineKm(last[0], last[1], e.lngLat.lng, e.lngLat.lat) > 0.012) {
-        freehandPtsRef.current = [...pts, [e.lngLat.lng, e.lngLat.lat]];
-        setDraftPts(freehandPtsRef.current);
+      const pt: LngLat = [e.lngLat.lng, e.lngLat.lat];
+      if (!last || haversineKm(last[0], last[1], pt[0], pt[1]) > 0.012) {
+        pts = [...pts, pt];
+      }
+      if (pts.length !== freehandPtsRef.current.length) {
+        freehandPtsRef.current = pts;
+        setDraftPts(pts);
       }
     };
 
-    const onMouseUp = (e: mapboxgl.MapMouseEvent) => {
-      const start = dragStartRef.current;
-      if (start) {
-        const oe = e.originalEvent as MouseEvent;
-        if (pxDist(start, { x: oe.clientX, y: oe.clientY }) >= 6) draggedRef.current = true;
-      }
+    const onMouseUp = () => {
       dragStartRef.current = null;
+      strokeActiveRef.current = false;
     };
 
     const onClick = (e: mapboxgl.MapMouseEvent) => {
@@ -350,6 +372,8 @@ export default function ServiceZonesEditor() {
       map.off('contextmenu', onContextMenu);
       dragStartRef.current = null;
       freehandPtsRef.current = [];
+      strokeStartRef.current = null;
+      strokeActiveRef.current = false;
       draggedRef.current = false;
     };
   }, [drawing, mapReady]);
@@ -404,6 +428,10 @@ export default function ServiceZonesEditor() {
           properties: {},
           geometry: { type: 'Polygon', coordinates: [[...draftPts, draftPts[0]]] },
         });
+      }
+      // Visible vertex dots — makes drag-drawing feedback instant and clear.
+      for (const pt of draftPts) {
+        features.push({ type: 'Feature', properties: {}, geometry: { type: 'Point', coordinates: pt } });
       }
     }
     return { type: 'FeatureCollection', features };
@@ -499,8 +527,8 @@ export default function ServiceZonesEditor() {
     setDrawing(true);
     toast(
       tool === 'circle'
-        ? 'Κλικ για το κέντρο · σύρετε ή ρυθμίστε την ακτίνα · διπλό κλικ για ολοκλήρωση'
-        : 'Σύρετε ή κάντε κλικ για σημεία · διπλό κλικ / Enter τελειώνει · Backspace αναιρεί'
+        ? 'Πατήστε και σύρετε: κέντρο + ακτίνα σε μία κίνηση · διπλό κλικ για ολοκλήρωση'
+        : 'Σύρετε για ελεύθερο σχέδιο ή κλικ για σημεία · διπλό κλικ / Enter τελειώνει · Backspace αναιρεί'
     );
   };
 
@@ -808,7 +836,7 @@ export default function ServiceZonesEditor() {
                   <p className="text-[11px] text-muted-foreground">
                     {circleCenter
                       ? 'Σύρετε από το κέντρο ή ρυθμίστε την ακτίνα · διπλό κλικ / Enter για ολοκλήρωση.'
-                      : 'Κλικ στον χάρτη για να τοποθετήσετε το κέντρο.'}
+                      : 'Σύρετε από ένα σημείο για κέντρο + ακτίνα σε μία κίνηση.'}
                   </p>
                   {circleCenter && (
                     <div className="space-y-1.5">
