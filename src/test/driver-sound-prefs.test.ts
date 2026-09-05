@@ -39,7 +39,7 @@ describe('driver notification sounds', () => {
     resetDriverAudioForTests();
   });
 
-  it('defaults to enabled fresh2go offer chime prefs', () => {
+  it('defaults to enabled Fresh2GO.GR offer chime prefs', () => {
     const prefs = loadDriverSoundPrefs();
     expect(prefs.enabled).toBe(true);
     expect(prefs.volume).toBe(1);

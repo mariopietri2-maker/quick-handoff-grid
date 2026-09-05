@@ -1,4 +1,5 @@
 import { useId } from 'react';
+import { BRAND, WORDMARK } from './brand';
 
 export type LogoVariant = 'core' | 'driver' | 'store' | 'web' | 'ink';
 
@@ -6,6 +7,8 @@ interface LogoProps {
   variant?: LogoVariant;
   size?: number;
   withWordmark?: boolean;
+  /** Show the ".GR" TLD pill. Defaults to true when wordmark is shown. */
+  withTld?: boolean;
   className?: string;
 }
 
@@ -17,20 +20,20 @@ const CONFIG: Record<LogoVariant, { stops: string[]; bag: string; fold: string; 
   ink: { stops: ['#241A10', '#120C06'], bag: '#ffffff', fold: '#FF8A3D', dark: true },
 };
 
-const WORDMARK_ACCENT = { light: '#F29912', dark: '#FFA960' };
-
 /**
- * fresh2go brand logo. Variants map to the app sub-brands:
+ * Fresh2GO.GR brand logo. Variants map to the app sub-brands:
  * core (customer), driver, store/admin, web, ink (dark surfaces).
+ *
+ * Wordmark renders as Fresh**2GO** + .GR pill so the domain
+ * is always visible: Fresh2GO.GR.
  */
-export function Logo({ variant = 'core', size = 28, withWordmark = false, className }: LogoProps) {
+export function Logo({ variant = 'core', size = 28, withWordmark = false, withTld = true, className }: LogoProps) {
   const id = useId().replace(/:/g, '');
   const cfg = CONFIG[variant];
-  const accent = cfg.dark ? WORDMARK_ACCENT.dark : WORDMARK_ACCENT.light;
 
   return (
     <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <svg width={size} height={size} viewBox="0 0 64 64" aria-hidden="true" style={{ flexShrink: 0 }}>
+      <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={BRAND.name} style={{ flexShrink: 0 }}>
         <defs>
           <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
             {cfg.stops.map((c, i) => (
@@ -59,9 +62,31 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, classN
             lineHeight: 1,
             whiteSpace: 'nowrap',
             color: 'inherit',
+            display: 'inline-flex',
+            alignItems: 'baseline',
+            gap: 0,
           }}
         >
-          fresh2go
+          <span>{WORDMARK.prefix}</span>
+          <span style={{ color: '#F29912' }}>{WORDMARK.highlight}</span>
+          {withTld && (
+            <span
+              style={{
+                marginLeft: 5,
+                fontSize: size * 0.42,
+                fontWeight: 800,
+                letterSpacing: '0.04em',
+                padding: '2px 6px',
+                borderRadius: 999,
+                background: 'hsl(var(--c-accent, 24 100% 62%) / 0.14)',
+                color: 'hsl(var(--c-accent-dark, 24 90% 51%))',
+                border: '1px solid hsl(var(--c-accent, 24 100% 62%) / 0.35)',
+                lineHeight: 1.2,
+              }}
+            >
+              {WORDMARK.tld}
+            </span>
+          )}
         </span>
       )}
     </span>

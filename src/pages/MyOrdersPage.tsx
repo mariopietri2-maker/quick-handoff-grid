@@ -88,7 +88,7 @@ export default function MyOrdersPage() {
   return (
     <div className="customer-shell min-h-full c-page pb-4">
       <SEO
-        title="Οι παραγγελίες μου — fresh2go"
+        title="Οι παραγγελίες μου — Fresh2GO.GR"
         description="Δείτε το ιστορικό παραγγελιών σας, παρακολουθήστε ενεργές αποστολές και επαναλάβετε αγαπημένες παραγγελίες."
         path="/orders"
         noindex

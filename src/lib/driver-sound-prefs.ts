@@ -6,7 +6,7 @@ import offerChimeUrl from '@/assets/sounds/driver_offer.mp3';
  * channels as `res/raw/fresh_delivery.mp3` (raw name kept for channel compat).
  */
 export const OFFER_SOUND_ID = 'fresh_delivery' as const;
-export const OFFER_SOUND_LABEL = 'fresh2go';
+export const OFFER_SOUND_LABEL = 'Fresh2GO.GR';
 
 export interface DriverSoundPrefs {
   enabled: boolean;

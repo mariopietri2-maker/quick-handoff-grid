@@ -99,8 +99,8 @@ export default function ProfilePage() {
   return (
     <div className="customer-shell min-h-full c-page pb-4">
       <SEO
-        title="Το προφίλ μου — fresh2go"
-        description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο fresh2go."
+        title="Το προφίλ μου — Fresh2GO.GR"
+        description="Διαχειριστείτε τα στοιχεία λογαριασμού, τις διευθύνσεις και τις προτιμήσεις σας στο Fresh2GO.GR."
         path="/profile"
         noindex
       />
@@ -247,7 +247,7 @@ export default function ProfilePage() {
             <LogOut className="h-4 w-4" />
             Αποσύνδεση
           </button>
-          <p className="mt-4 text-center text-[10px] text-muted-foreground uppercase tracking-wider">fresh2go · v2.4</p>
+          <p className="mt-4 text-center text-[10px] text-muted-foreground uppercase tracking-wider">Fresh2GO.GR · v2.4</p>
         </div>
       </main>
 

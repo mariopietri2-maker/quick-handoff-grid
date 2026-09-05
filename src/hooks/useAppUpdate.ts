@@ -11,8 +11,8 @@ export interface AppVersion {
 export const APP_UPDATE_POLL_MS = 15 * 60 * 1000;
 
 /** Canonical web origin — polled by bundled (offline) native shells. */
-const REMOTE_VERSION_URL = 'https://freshdelivery.app/version.json';
-const DOWNLOAD_URL = 'https://freshdelivery.app/download';
+const REMOTE_VERSION_URL = 'https://fresh2go.gr/version.json';
+const DOWNLOAD_URL = 'https://fresh2go.gr/download';
 
 export function versionId(v: AppVersion | null): string | null {
   if (!v) return null;

@@ -2,6 +2,7 @@ import {
   LayoutDashboard, ShoppingBag, Store, Users, UserRound, Wallet, Settings2,
   ChevronLeft, ChevronRight, LogOut, Shield, UserCircle, Repeat, Bike, ShoppingCart,
 } from 'lucide-react';
+import { Logo } from '@/components/brand/Logo';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -64,7 +65,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'stores', label: 'Καταστήματα' },
       { id: 'store_registry', label: '📋 Μητρώο' },
-      { id: 'platform_mode', label: '🚚 Delivered by fresh2go & ETA' },
+      { id: 'platform_mode', label: '🚚 Delivered by Fresh2GO.GR & ETA' },
       { id: 'store_photos', label: '📷 Φωτογραφίες' },
       { id: 'store_appearance', label: '🎨 Εμφάνιση' },
       { id: 'promotions', label: 'Προωθήσεις' },
@@ -185,12 +186,9 @@ function SidebarBody({
     <>
       {/* Brand — corporate wordmark */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0 bg-gradient-to-b from-card to-muted/20">
-        <div className="h-9 w-9 rounded-xl bg-gradient-to-br from-primary via-primary to-primary/60 flex items-center justify-center shrink-0 shadow-md ring-1 ring-primary/20">
-          <Shield className="h-[18px] w-[18px] text-primary-foreground" strokeWidth={2.5} />
-        </div>
+        <Logo size={36} withWordmark />
         {!collapsed && (
-          <div className="ml-3 overflow-hidden">
-            <p className="font-heading font-extrabold text-[13.5px] leading-tight tracking-tight truncate">FRESH2GO</p>
+          <div className="ml-1 overflow-hidden">
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground truncate leading-tight font-semibold mt-0.5">Control Center</p>
           </div>
         )}

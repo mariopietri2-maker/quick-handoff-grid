@@ -1,6 +1,6 @@
 import { Helmet } from 'react-helmet-async';
 
-const SITE = 'https://freshdelivery.app';
+const SITE = 'https://fresh2go.gr';
 
 interface SEOProps {
   title: string;
@@ -25,7 +25,7 @@ export function SEO({ title, description = '', path, type = 'website', image, js
     safeDescription.length > 160
       ? safeDescription.slice(0, 157) + '…'
       : safeDescription.length < 50
-        ? safeDescription + ' Παραγγείλτε φαγητό online στο fresh2go.'.slice(0, 160 - safeDescription.length)
+        ? safeDescription + ' Παραγγείλτε φαγητό online στο Fresh2GO.GR.'.slice(0, 160 - safeDescription.length)
         : safeDescription;
   const schemas = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 

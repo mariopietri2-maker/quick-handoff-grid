@@ -93,7 +93,7 @@ function PhonePreview({
           <div className="px-3 py-2 border-b border-border/60 flex items-center gap-2">
             <div className="h-6 w-6 rounded-lg bg-primary/20" />
             <div className="flex-1">
-              <p className="text-[10px] font-bold leading-tight">fresh2go</p>
+              <p className="text-[10px] font-bold leading-tight">Fresh2GO.GR</p>
               <p className="text-[8px] text-muted-foreground">{PLACEMENT_LABEL[placement]}</p>
             </div>
           </div>

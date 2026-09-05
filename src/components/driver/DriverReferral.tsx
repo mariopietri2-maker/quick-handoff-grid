@@ -49,8 +49,8 @@ export function DriverReferral() {
   const shareCode = () => {
     if (referralCode && navigator.share) {
       navigator.share({
-        title: 'fresh2go Driver',
-        text: `Γίνε οδηγός fresh2go! Χρησιμοποίησε τον κωδικό μου: ${referralCode}`,
+        title: 'Fresh2GO.GR Driver',
+        text: `Γίνε οδηγός Fresh2GO.GR! Χρησιμοποίησε τον κωδικό μου: ${referralCode}`,
       });
     } else {
       copyCode();

@@ -812,7 +812,7 @@ export default function CustomerApp() {
                               <>
                                 <span>·</span>
                                 <span className="inline-flex items-center gap-1 font-bold text-[hsl(var(--c-accent))]">
-                                  Delivered by fresh2go
+                                  Delivered by Fresh2GO.GR
                                 </span>
                                 <span>·</span>
                                 <span>

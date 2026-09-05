@@ -4,8 +4,8 @@ import { ArrowLeft, Download, FileText, Play } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { cn } from '@/lib/utils';
 
-const VIDEO_SRC = '/presentation/fresh2go-promo.mp4';
-const PDF_SRC = '/presentation/fresh2go-presentation.pdf';
+const VIDEO_SRC = '/presentation/Fresh2GO.GR-promo.mp4';
+const PDF_SRC = '/presentation/Fresh2GO.GR-presentation.pdf';
 
 type Tab = 'video' | 'pdf';
 
@@ -15,8 +15,8 @@ export default function PresentationPage() {
   return (
     <div className="min-h-[100dvh] bg-[#1E1810] text-[#FBF3EA] relative overflow-hidden">
       <SEO
-        title="Παρουσίαση — fresh2go"
-        description="Βίντεο και PDF παρουσίαση της πλατφόρμας fresh2go."
+        title="Παρουσίαση — Fresh2GO.GR"
+        description="Βίντεο και PDF παρουσίαση της πλατφόρμας Fresh2GO.GR."
         path="/presentation"
       />
 
@@ -36,7 +36,7 @@ export default function PresentationPage() {
           <ArrowLeft className="h-4 w-4" />
           Αρχική
         </Link>
-        <p className="font-heading font-extrabold tracking-tight text-[#FFB23D]">fresh2go</p>
+        <p className="font-heading font-extrabold tracking-tight text-[#FFB23D]">Fresh2GO.GR</p>
         <span className="w-14" />
       </header>
 
@@ -96,7 +96,7 @@ export default function PresentationPage() {
               </p>
               <a
                 href={VIDEO_SRC}
-                download="fresh2go-promo.mp4"
+                download="Fresh2GO.GR-promo.mp4"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-heading font-semibold text-white/85 hover:bg-white/10 transition-colors"
               >
                 <Download className="h-4 w-4" />
@@ -109,7 +109,7 @@ export default function PresentationPage() {
             <div className="rounded-3xl border border-white/12 bg-black/40 overflow-hidden shadow-2xl shadow-black/40">
               <iframe
                 key={PDF_SRC}
-                title="fresh2go — Παρουσίαση PDF"
+                title="Fresh2GO.GR — Παρουσίαση PDF"
                 className="w-full h-[72dvh] min-h-[420px] bg-[#141009]"
                 src={`${PDF_SRC}#view=FitH`}
               />
@@ -129,7 +129,7 @@ export default function PresentationPage() {
               </a>
               <a
                 href={PDF_SRC}
-                download="fresh2go-presentation.pdf"
+                download="Fresh2GO.GR-presentation.pdf"
                 className="inline-flex items-center gap-2 rounded-xl bg-[#FFB23D] text-[#2A1A0A] px-4 py-2.5 text-sm font-heading font-bold hover:opacity-90 transition-opacity"
               >
                 <Download className="h-4 w-4" />

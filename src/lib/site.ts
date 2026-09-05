@@ -2,13 +2,12 @@
  *  host; the rest are mirrors that serve the same SPA. Keep in sync with
  *  Capacitor `allowNavigation` lists. */
 export const SITE_ORIGINS = [
+  'https://fresh2go.gr',
+  'https://www.fresh2go.gr',
   'https://quick-handoff-grid-8qu8.vercel.app',
   'https://freshdelivery.app',
   'https://fresh-delivery-rho.vercel.app',
   'https://quick-handoff-grid-production.up.railway.app',
-  // Next primary once DNS + cert are live (allowlisted in Capacitor already).
-  'https://fresh2go.gr',
-  'https://www.fresh2go.gr',
 ] as const;
 
 /** Primary production host (live serving host). */

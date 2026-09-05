@@ -23,13 +23,13 @@ export function setPwaManifest(kind: PwaManifestKind) {
     link.setAttribute('href', href);
   }
 
-  const theme = '#FF8A3D';
+  const theme = '#EA580C';
   const themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
   if (themeMeta) themeMeta.content = theme;
 
   const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
   if (appleTitle) {
-    appleTitle.content = kind === 'store' ? 'fresh2go Store' : 'fresh2go';
+    appleTitle.content = kind === 'store' ? 'Fresh2GO Store' : 'Fresh2GO';
   }
 
   const appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;

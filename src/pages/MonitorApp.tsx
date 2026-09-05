@@ -135,7 +135,7 @@ export default function MonitorApp() {
     <div className="min-h-[100dvh] bg-background text-foreground">
       <SEO
         title="Live Οδηγοί — Role M"
-        description="Ζωντανός χάρτης οδηγών fresh2go — online πλήθος και θέσεις GPS."
+        description="Ζωντανός χάρτης οδηγών Fresh2GO.GR — online πλήθος και θέσεις GPS."
         path="/m"
         noindex
       />
