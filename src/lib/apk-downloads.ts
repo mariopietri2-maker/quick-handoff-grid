@@ -71,7 +71,7 @@ export function apkLandingUrl(flavor: ApkFlavor, origin: string = SITE_ORIGIN): 
   return `${origin.replace(/\/$/, '')}/download?app=${flavor}`;
 }
 
-/** Cache-bust so Android/Chrome does not reuse a half-finished download. */
+/** Cache-bust browser downloads so a replaced release asset is not reused. */
 export function apkFileUrl(flavor: ApkFlavor): string {
   const apk = APK_DOWNLOADS[flavor];
   const v = encodeURIComponent(apk.versionLabel || String(Date.now()));
@@ -85,15 +85,19 @@ export function apkFileUrl(flavor: ApkFlavor): string {
  * system download stuck at 100% / "opening" without install.
  */
 export function startApkDownload(flavor: ApkFlavor) {
-  const url = apkFileUrl(flavor);
   const isMobile = typeof navigator !== 'undefined' &&
     /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
 
   if (isMobile) {
-    window.location.assign(url);
+    // Android's download manager can retain the query string from GitHub's
+    // redirect and leave an APK at 100% without handing it off for install.
+    // The release URL is immutable for this version, so avoid cache-busting
+    // on mobile and preserve the canonical attachment filename.
+    window.location.assign(APK_DOWNLOADS[flavor].fileUrl);
     return;
   }
 
+  const url = apkFileUrl(flavor);
   const a = document.createElement('a');
   a.href = url;
   a.rel = 'noopener noreferrer';
