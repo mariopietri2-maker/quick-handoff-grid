@@ -37,6 +37,8 @@ interface StoreMarker {
 interface DriverInfo {
   name: string;
   code: string | null;
+  is_active: boolean;
+  on_shift: boolean;
 }
 
 interface AnimState {
@@ -108,21 +110,41 @@ export default function AdminIoanninaMap() {
     let mounted = true;
 
     async function load() {
-      const [{ data: profiles }, { data: driverProfiles }, { data: storesData }] = await Promise.all([
+      const [{ data: profiles }, { data: driverProfiles }, { data: states }, { data: storesData }] = await Promise.all([
         supabase.from('profiles').select('user_id, full_name').in('role', ['driver', 'm'] as any),
-        supabase.from('driver_profiles').select('user_id, driver_code' as any),
+        supabase.from('driver_profiles').select('user_id, driver_code, is_active' as any),
+        supabase.from('driver_state').select('driver_id, shift_started_at'),
         supabase.from('stores').select('id, name, latitude, longitude, is_active'),
       ]);
 
       if (!mounted) return;
 
+      const onShift = new Set(
+        (states ?? [])
+          .filter((s: any) => !!s.shift_started_at)
+          .map((s: any) => s.driver_id as string),
+      );
+      const activeByProfile = new Map<string, boolean>();
+      (driverProfiles as any[])?.forEach((dp: any) => {
+        activeByProfile.set(dp.user_id, dp.is_active !== false);
+      });
+
       const infoMap = new Map<string, DriverInfo>();
       profiles?.forEach((p: any) => {
-        infoMap.set(p.user_id, { name: p.full_name || p.user_id.slice(0, 8), code: null });
+        const isActive = activeByProfile.get(p.user_id) ?? true;
+        infoMap.set(p.user_id, {
+          name: p.full_name || p.user_id.slice(0, 8),
+          code: null,
+          is_active: isActive,
+          on_shift: onShift.has(p.user_id),
+        });
       });
       (driverProfiles as any[])?.forEach((dp: any) => {
         const existing = infoMap.get(dp.user_id);
-        if (existing) existing.code = dp.driver_code;
+        if (existing) {
+          existing.code = dp.driver_code;
+          existing.is_active = dp.is_active !== false;
+        }
       });
       setDriverInfos(infoMap);
 
@@ -135,8 +157,21 @@ export default function AdminIoanninaMap() {
       }));
       setStores(list);
 
+      const eligible = new Set(
+        [...infoMap.entries()]
+          .filter(([, info]) => info.is_active && info.on_shift)
+          .map(([id]) => id),
+      );
+
       const locs = await supabase.from('driver_locations').select('*');
-      if (mounted && locs.data) setLocations(locs.data as DriverLocation[]);
+      if (mounted && locs.data) {
+        const filtered = (locs.data as DriverLocation[]).filter(
+          (l) =>
+            eligible.has(l.driver_id) &&
+            isDriverPresenceOnline(l.updated_at, Date.now(), ONLINE_WINDOW_MS),
+        );
+        setLocations(filtered);
+      }
     }
     load();
 
@@ -146,6 +181,12 @@ export default function AdminIoanninaMap() {
         connectedRef.current = true;
         const loc = payload.new as DriverLocation;
         if (!loc?.driver_id) return;
+        // Re-check eligibility from latest driverInfos is async; filter on presence +
+        // drop unknown/stale. Full eligibility is enforced on poll/load.
+        if (!isDriverPresenceOnline(loc.updated_at, Date.now(), ONLINE_WINDOW_MS)) {
+          setLocations((prev) => prev.filter((l) => l.driver_id !== loc.driver_id));
+          return;
+        }
         setLocations((prev) => {
           const idx = prev.findIndex((l) => l.driver_id === loc.driver_id);
           if (idx >= 0) {
@@ -163,9 +204,25 @@ export default function AdminIoanninaMap() {
 
     // Polling fallback in case realtime drops.
     const poll = setInterval(async () => {
-      const { data } = await supabase.from('driver_locations').select('*').limit(100).order('updated_at', { ascending: false });
+      const [{ data }, { data: states }, { data: dps }] = await Promise.all([
+        supabase.from('driver_locations').select('*').limit(100).order('updated_at', { ascending: false }),
+        supabase.from('driver_state').select('driver_id, shift_started_at'),
+        supabase.from('driver_profiles').select('user_id, is_active' as any),
+      ]);
       if (!mounted || !data) return;
-      setLocations(data as DriverLocation[]);
+      const onShift = new Set(
+        (states ?? []).filter((s: any) => !!s.shift_started_at).map((s: any) => s.driver_id as string),
+      );
+      const inactive = new Set(
+        (dps ?? []).filter((p: any) => p.is_active === false).map((p: any) => p.user_id as string),
+      );
+      const filtered = (data as DriverLocation[]).filter(
+        (l) =>
+          onShift.has(l.driver_id) &&
+          !inactive.has(l.driver_id) &&
+          isDriverPresenceOnline(l.updated_at, Date.now(), ONLINE_WINDOW_MS),
+      );
+      setLocations(filtered);
     }, 15000);
 
     return () => {
@@ -421,6 +478,9 @@ export default function AdminIoanninaMap() {
         };
       })
       .filter((d) => {
+        const info = driverInfos.get(d.driver_id);
+        if (info && (!info.is_active || !info.on_shift)) return false;
+        if (!d.online) return false;
         if (!q) return true;
         return d.name.toLowerCase().includes(q) || (d.code ?? '').toLowerCase().includes(q);
       })
