@@ -4402,6 +4402,17 @@ store_wallets: {
           status: string
         }[]
       }
+      my_store_recent_deliveries: {
+        Args: {
+          p_store_id: string
+        }
+        Returns: {
+          call_id: string
+          delivered_at: string
+          driver_call_id: number | null
+          driver_name: string | null
+        }[]
+      }
       tx_append: {
         Args: {
           _amount: number

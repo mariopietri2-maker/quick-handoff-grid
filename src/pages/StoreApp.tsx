@@ -27,6 +27,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { StoreCallPanel } from '@/components/store/StoreCallPanel';
 import { StoreNewsPanel } from '@/components/store/StoreNewsPanel';
+import { StoreDriverIdPanel } from '@/components/store/StoreDriverIdPanel';
 import { Switch } from '@/components/ui/switch';
 import { useStoreOrders } from '@/hooks/useOrders';
 import { useStore } from '@/hooks/useStore';
@@ -324,6 +325,7 @@ export default function StoreApp() {
           <div className="lg:grid lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-5 lg:items-start space-y-4 lg:space-y-0">
             <aside className="order-2 lg:order-1 min-w-0 lg:sticky lg:top-16">
               <StoreNewsPanel />
+              {isNStore && store && <div className="mt-3"><StoreDriverIdPanel storeId={store.id} storeName={store.name} /></div>}
             </aside>
             <div className="order-1 lg:order-2 min-w-0">
               {store.store_role === 'N' ? (
