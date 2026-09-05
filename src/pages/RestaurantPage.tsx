@@ -226,7 +226,7 @@ export default function RestaurantPage() {
       style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
       <SEO
-        title={`${store.name} — Μενού & Παραγγελία | Fresh2GO.GR`}
+        title={`${store.name} — Μενού & Παραγγελία | fresh2go`}
         description={`Παραγγείλτε online από ${store.name}. Δείτε το μενού, τιμές και διαθεσιμότητα και απολαύστε γρήγορη παράδοση στην πόρτα σας.`}
         path={`/restaurant/${store.id}`}
         type="product"
@@ -303,7 +303,7 @@ export default function RestaurantPage() {
             type="button"
             onClick={async () => {
               const url = window.location.href;
-              const shareData = { title: store.name, text: `Δες το ${store.name} στο Fresh2GO.GR`, url };
+              const shareData = { title: store.name, text: `Δες το ${store.name} στο fresh2go`, url };
               try {
                 if (navigator.share) {
                   await navigator.share(shareData);
@@ -351,7 +351,7 @@ export default function RestaurantPage() {
             {platformDelivers && (
               <>
                 <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
-                  Delivered by Fresh2GO.GR
+                  Delivered by fresh2go
                 </span>
                 <span>0.99€ παράδοση</span>
               </>

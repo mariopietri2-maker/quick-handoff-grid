@@ -84,6 +84,7 @@ import { useQueryClient } from '@tanstack/react-query';
 import { Star } from 'lucide-react';
 import { useAdminPermissions, ADMIN_SECTION_CAPABILITY } from '@/hooks/useAdminPermissions';
 import { useAlertAlerts } from '@/hooks/useAlertAlerts';
+import { useOrderNotifications } from '@/hooks/useOrderNotifications';
 
 const ALL_ADMIN_TAB_IDS = new Set([
   ...NAV_SECTIONS.flatMap((s) => s.tabs.map((t) => t.id)),
@@ -125,6 +126,7 @@ export default function AdminApp() {
   const { orders, stores, profiles, reviews, userRoles, driverProfiles, driverStates, driverLocations, driverWallets, storeWallets } = useAdminData();
   const queryClient = useQueryClient();
   const { serious: seriousAlerts, loading: alertsLoading } = useAlertAlerts();
+  const { count: orderCount, reset: resetOrderCount } = useOrderNotifications();
   const [searchParams, setSearchParams] = useSearchParams();
   const [activeSection, setActiveSectionState] = useState(() => {
     return resolveSectionParam(new URLSearchParams(window.location.search).get('section')) ?? 'overview';
@@ -607,20 +609,54 @@ export default function AdminApp() {
                 </span>
                 <span className="text-[10.5px] font-bold uppercase tracking-wider text-primary">Live</span>
               </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 relative rounded-full hover:bg-muted"
-                title={seriousAlerts.length > 0 ? `Σοβαρά προβλήματα (${seriousAlerts.length})` : 'Σοβαρά προβλήματα'}
-                onClick={() => setActiveSection('alerts')}
-              >
-                <Bell className="h-3.5 w-3.5" />
-                {!alertsLoading && seriousAlerts.length > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 inline-flex h-4 min-w-[16px] items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-semibold text-white shadow">
-                    {seriousAlerts.length > 9 ? '9+' : seriousAlerts.length}
-                  </span>
-                )}
-              </Button>
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="h-8 w-8 relative rounded-full hover:bg-muted"
+                    title={orderCount > 0 ? `Νέες παραγγελίες (${orderCount})` : 'Ειδοποιήσεις'}
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                    {orderCount > 0 && (
+                      <span className="absolute -top-1 -right-1 inline-flex h-[18px] min-w-[18px] items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white shadow-lg ring-2 ring-background">
+                        {orderCount > 9999 ? '9999+' : orderCount}
+                      </span>
+                    )}
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-2.5 py-1.5">
+                    <p className="text-xs font-semibold text-foreground">Ειδοποιήσεις</p>
+                    <p className="text-[11px] text-muted-foreground mt-0.5">
+                      {orderCount > 0
+                        ? `${orderCount} νέ${orderCount === 1 ? 'α' : 'ες'} παραγγελί${orderCount === 1 ? 'α' : 'ες'}`
+                        : 'Δεν υπάρχουν νέες παραγγελίες'}
+                    </p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={() => setActiveSection('alerts')}
+                    className="gap-2 text-xs"
+                  >
+                    <Bell className="h-3.5 w-3.5" />
+                    Σοβαρά προβλήματα
+                    {seriousAlerts.length > 0 && (
+                      <Badge variant="destructive" className="ml-auto text-[10px] h-4 px-1">
+                        {seriousAlerts.length}
+                      </Badge>
+                    )}
+                  </DropdownMenuItem>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem
+                    onClick={resetOrderCount}
+                    className="gap-2 text-xs"
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Μηδενισμός μετρητή
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               <div className="h-5 w-px bg-border mx-0.5" />
               <Button variant="ghost" size="sm" onClick={signOut} className="h-8 gap-1.5 text-[12px] text-muted-foreground hover:text-foreground">
                 <LogOut className="h-3.5 w-3.5" />

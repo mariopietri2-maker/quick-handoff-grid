@@ -3,14 +3,13 @@
  *  Capacitor `allowNavigation` lists. */
 export const SITE_ORIGINS = [
   'https://fresh2go.gr',
-  'https://www.fresh2go.gr',
   'https://quick-handoff-grid-8qu8.vercel.app',
   'https://freshdelivery.app',
   'https://fresh-delivery-rho.vercel.app',
   'https://quick-handoff-grid-production.up.railway.app',
 ] as const;
 
-/** Primary production host (live serving host). */
+/** Primary production host. */
 export const SITE_ORIGIN = SITE_ORIGINS[0];
 
 /** Optional extra hosts still allowed for Capacitor navigation & deep links. */
