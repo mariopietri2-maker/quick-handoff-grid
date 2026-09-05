@@ -1,0 +1,22 @@
+name: Apply hide inactive on admin map
+on:
+  push:
+    paths:
+      - 'scripts/apply_hide_inactive_on_map.py'
+      - '.github/workflows/apply-hide-inactive-on-map.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_hide_inactive_on_map.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/components/admin/AdminDriversMap.tsx src/components/admin/AdminLiveDriversMap.tsx
+          git commit -m "fix(admin): hide inactive drivers and stores on map and list" || exit 0
+          git push
