@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, useCallback } from 'react';
+import { useEffect, useRef, useState, useCallback, useMemo } from 'react';
 import mapboxgl from 'mapbox-gl';
 import 'mapbox-gl/dist/mapbox-gl.css';
 import { useMapboxToken } from '@/hooks/useMapboxToken';
@@ -9,7 +9,8 @@ import { Input } from '@/components/ui/input';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Trash2, MapPin, Save, Locate, Pencil, Check, X, Maximize2, Undo2 } from 'lucide-react';
+import { Slider } from '@/components/ui/slider';
+import { Plus, Trash2, MapPin, Save, Locate, Pencil, Check, X, Maximize2, Undo2, Circle } from 'lucide-react';
 import { toast } from 'sonner';
 import { geocodeAddress } from '@/lib/geocode';
 
@@ -30,9 +31,9 @@ const DEFAULT_CENTER: [number, number] = [20.8537, 39.6650]; // Ιωάννινα
 const CIRCLE_POINTS = 64;
 const EMPTY_FC: GeoJSON.FeatureCollection = { type: 'FeatureCollection', features: [] };
 
-/** Generate a GeoJSON Polygon approximating a circle (radius in km) around [lng,lat]. */
-function circlePolygon(lng: number, lat: number, radiusKm: number): GeoJSON.Feature<GeoJSON.Polygon> {
-  const coords: [number, number][] = [];
+/** Ring of a circle polygon (radius in km) around [lng,lat]. */
+function circleRing(lng: number, lat: number, radiusKm: number): LngLat[] {
+  const coords: LngLat[] = [];
   const earthRadius = 6371;
   const d = radiusKm / earthRadius;
   const latRad = (lat * Math.PI) / 180;
@@ -46,7 +47,17 @@ function circlePolygon(lng: number, lat: number, radiusKm: number): GeoJSON.Feat
     );
     coords.push([(lng2 * 180) / Math.PI, (lat2 * 180) / Math.PI]);
   }
-  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [coords] } };
+  return coords;
+}
+
+/** Generate a GeoJSON Polygon approximating a circle (radius in km) around [lng,lat]. */
+function circlePolygon(lng: number, lat: number, radiusKm: number): GeoJSON.Feature<GeoJSON.Polygon> {
+  return { type: 'Feature', properties: {}, geometry: { type: 'Polygon', coordinates: [circleRing(lng, lat, radiusKm)] } };
+}
+
+/** Clamp a radius to the DB CHECK range (0 < r <= 50 km) and round to 0.5 km steps. */
+function clampKm(r: number): number {
+  return Math.min(50, Math.max(0.5, Math.round(r * 2) / 2));
 }
 
 /** Great-circle distance in km between two [lng,lat] points. */
@@ -96,11 +107,35 @@ export default function ServiceZonesEditor() {
   // Nothing below touches the map until mapReady flips true (on 'load').
   const [mapReady, setMapReady] = useState(false);
 
-  // Drawing state — click points on the map to outline the delivery area.
+  // Drawing state — tools: polygon (click/drag) or circle (center + radius).
   const [drawing, setDrawing] = useState(false);
   const [draftPts, setDraftPts] = useState<LngLat[]>([]);
   const drawingRef = useRef(drawing);
   drawingRef.current = drawing;
+  const [drawTool, setDrawTool] = useState<'polygon' | 'circle' | null>(null);
+  const [circleCenter, setCircleCenter] = useState<LngLat | null>(null);
+  const [circleRadiusKm, setCircleRadiusKm] = useState(3);
+
+  // Live refs so map/keyboard handlers never read stale state.
+  const drawToolRef = useRef(drawTool);
+  drawToolRef.current = drawTool;
+  const draftPtsRef = useRef(draftPts);
+  draftPtsRef.current = draftPts;
+  const circleCenterRef = useRef(circleCenter);
+  circleCenterRef.current = circleCenter;
+  const circleRadiusRef = useRef(circleRadiusKm);
+  circleRadiusRef.current = circleRadiusKm;
+  const selectedIdRef = useRef(selectedId);
+  selectedIdRef.current = selectedId;
+  const dragStartRef = useRef<{ x: number; y: number } | null>(null);
+  const draggedRef = useRef(false);
+  const freehandPtsRef = useRef<LngLat[]>([]);
+  const lastDblClickAtRef = useRef(0);
+  const prevClickAtRef = useRef(0);
+  // Forwarded latest handlers, assigned after the drawing actions below.
+  const finishDrawingRef = useRef<() => void>(() => {});
+  const finishCircleRef = useRef<() => void>(() => {});
+  const drawActionsRef = useRef<{ cancel: () => void; undo: () => void }>({ cancel: () => {}, undo: () => {} });
 
   // Flexible-editing UI state
   const [renameOpen, setRenameOpen] = useState(false);
@@ -146,7 +181,9 @@ export default function ServiceZonesEditor() {
   // Switching zones cancels any in-progress drawing.
   useEffect(() => {
     setDrawing(false);
+    setDrawTool(null);
     setDraftPts([]);
+    setCircleCenter(null);
   }, [selectedId]);
 
   // Init map
@@ -214,46 +251,171 @@ export default function ServiceZonesEditor() {
     };
   }, [token]);
 
-  // While drawing: every map click drops a polygon vertex.
+  // While drawing: click drops a vertex / moves the circle center, drag freehand-draws
+  // (polygon) or adjusts the radius (circle), double-click / right-click finishes.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady || !drawing) return;
+
+    map.dragPan?.disable();
+    map.doubleClickZoom?.disable();
+    map.getCanvas().style.cursor = 'crosshair';
+
+    const pxDist = (a: { x: number; y: number }, b: { x: number; y: number }) =>
+      Math.hypot(a.x - b.x, a.y - b.y);
+
+    const onMouseDown = (e: mapboxgl.MapMouseEvent) => {
+      const oe = e.originalEvent as MouseEvent;
+      dragStartRef.current = { x: oe.clientX, y: oe.clientY };
+    };
+
+    const onMouseMove = (e: mapboxgl.MapMouseEvent) => {
+      const start = dragStartRef.current;
+      if (!start) return;
+      const oe = e.originalEvent as MouseEvent;
+      if (pxDist(start, { x: oe.clientX, y: oe.clientY }) < 6) return;
+      if (drawToolRef.current === 'circle') {
+        const center = circleCenterRef.current;
+        if (!center) return;
+        draggedRef.current = true;
+        setCircleRadiusKm(clampKm(haversineKm(center[0], center[1], e.lngLat.lng, e.lngLat.lat)));
+        return;
+      }
+      // Freehand polygon trace — spacing keeps the vertex count sane.
+      draggedRef.current = true;
+      const pts = freehandPtsRef.current;
+      const last = pts.length ? pts[pts.length - 1] : null;
+      if (!last || haversineKm(last[0], last[1], e.lngLat.lng, e.lngLat.lat) > 0.012) {
+        freehandPtsRef.current = [...pts, [e.lngLat.lng, e.lngLat.lat]];
+        setDraftPts(freehandPtsRef.current);
+      }
+    };
+
+    const onMouseUp = (e: mapboxgl.MapMouseEvent) => {
+      const start = dragStartRef.current;
+      if (start) {
+        const oe = e.originalEvent as MouseEvent;
+        if (pxDist(start, { x: oe.clientX, y: oe.clientY }) >= 6) draggedRef.current = true;
+      }
+      dragStartRef.current = null;
+    };
+
     const onClick = (e: mapboxgl.MapMouseEvent) => {
+      const now = Date.now();
+      if (draggedRef.current) {
+        draggedRef.current = false;
+        return;
+      }
+      // Ignore the trailing click of a double-click (its points arrive right before 'dblclick').
+      if (now - prevClickAtRef.current < 350 || now - lastDblClickAtRef.current < 300) {
+        prevClickAtRef.current = now;
+        return;
+      }
+      prevClickAtRef.current = now;
+      if (drawToolRef.current === 'circle') {
+        setCircleCenter([e.lngLat.lng, e.lngLat.lat]);
+        return;
+      }
       setDraftPts(prev => [...prev, [e.lngLat.lng, e.lngLat.lat]]);
     };
-    map.getCanvas().style.cursor = 'crosshair';
-    map.doubleClickZoom?.disable();
+
+    const onDoubleClick = (e: mapboxgl.MapMouseEvent) => {
+      e.preventDefault?.();
+      lastDblClickAtRef.current = Date.now();
+      if (drawToolRef.current === 'circle') finishCircleRef.current();
+      else finishDrawingRef.current();
+    };
+
+    const onContextMenu = (e: mapboxgl.MapMouseEvent) => {
+      e.preventDefault?.();
+      if (drawToolRef.current === 'circle') finishCircleRef.current();
+      else finishDrawingRef.current();
+    };
+
+    map.on('mousedown', onMouseDown);
+    map.on('mousemove', onMouseMove);
+    map.on('mouseup', onMouseUp);
     map.on('click', onClick);
+    map.on('dblclick', onDoubleClick);
+    map.on('contextmenu', onContextMenu);
     return () => {
-      map.getCanvas().style.cursor = '';
+      map.dragPan?.enable();
       map.doubleClickZoom?.enable();
+      map.getCanvas().style.cursor = '';
+      map.off('mousedown', onMouseDown);
+      map.off('mousemove', onMouseMove);
+      map.off('mouseup', onMouseUp);
       map.off('click', onClick);
+      map.off('dblclick', onDoubleClick);
+      map.off('contextmenu', onContextMenu);
+      dragStartRef.current = null;
+      freehandPtsRef.current = [];
+      draggedRef.current = false;
     };
   }, [drawing, mapReady]);
 
-  // Render the in-progress outline/fill.
+  // Keyboard shortcuts while drawing: Enter finishes, Backspace undoes, Esc cancels.
+  useEffect(() => {
+    if (!drawing) return;
+    const onKey = (e: KeyboardEvent) => {
+      const t = e.target as HTMLElement | null;
+      if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.tagName === 'SELECT' || t.isContentEditable)) return;
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        drawActionsRef.current.cancel();
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (drawToolRef.current === 'circle') finishCircleRef.current();
+        else finishDrawingRef.current();
+      } else if (e.key === 'Backspace') {
+        e.preventDefault();
+        drawActionsRef.current.undo();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawing]);
+
+  // Live preview of the in-progress shape (polygon outline/fill or circle radius).
+  const draftFeature: GeoJSON.FeatureCollection = useMemo(() => {
+    const features: GeoJSON.Feature[] = [];
+    if (drawTool === 'circle') {
+      if (circleCenter) {
+        features.push({
+          type: 'Feature',
+          properties: {},
+          geometry: {
+            type: 'Polygon',
+            coordinates: [circleRing(circleCenter[0], circleCenter[1], clampKm(circleRadiusKm))],
+          },
+        });
+      }
+    } else if (drawing) {
+      if (draftPts.length >= 2) {
+        features.push({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'LineString', coordinates: draftPts },
+        });
+      }
+      if (draftPts.length >= 3) {
+        features.push({
+          type: 'Feature',
+          properties: {},
+          geometry: { type: 'Polygon', coordinates: [[...draftPts, draftPts[0]]] },
+        });
+      }
+    }
+    return { type: 'FeatureCollection', features };
+  }, [drawing, drawTool, draftPts, circleCenter, circleRadiusKm]);
+
+  // Push the current draft onto the map.
   useEffect(() => {
     const map = mapRef.current;
     if (!map || !mapReady) return;
     const src = map.getSource('zone-draft') as mapboxgl.GeoJSONSource | undefined;
-    if (!src) return;
-    const features: GeoJSON.Feature[] = [];
-    if (draftPts.length >= 2) {
-      features.push({
-        type: 'Feature',
-        properties: {},
-        geometry: { type: 'LineString', coordinates: draftPts },
-      });
-    }
-    if (draftPts.length >= 3) {
-      features.push({
-        type: 'Feature',
-        properties: {},
-        geometry: { type: 'Polygon', coordinates: [[...draftPts, draftPts[0]]] },
-      });
-    }
-    src.setData({ type: 'FeatureCollection', features });
-  }, [draftPts, mapReady]);
+    if (src) src.setData(draftFeature);
+  }, [draftFeature, mapReady]);
 
   // Click a faint zone shape on the map to select that zone (disabled mid-draw).
   useEffect(() => {
@@ -318,44 +480,76 @@ export default function ServiceZonesEditor() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedId, zones, mapReady]);
 
-  const updateLocal = (patch: Partial<ServiceZone>) => {
-    if (!selected) return;
-    setZones(prev => prev.map(z => z.id === selected.id ? { ...z, ...patch } : z));
-  };
+  const updateLocal = useCallback((patch: Partial<ServiceZone>) => {
+    const id = selectedIdRef.current;
+    if (!id) return;
+    setZones(prev => prev.map(z => z.id === id ? { ...z, ...patch } : z));
+  }, []);
 
   // ---------- Drawing actions ----------
 
-  const startDrawing = () => {
-    if (!selectedId) {
+  const startDrawing = (tool: 'polygon' | 'circle') => {
+    if (!selectedIdRef.current) {
       toast.error('Επιλέξτε ή δημιουργήστε ζώνη πρώτα');
       return;
     }
     setDraftPts([]);
+    setCircleCenter(null);
+    setDrawTool(tool);
     setDrawing(true);
-    toast('Κλικ στον χάρτη για να προσθέσετε σημεία της ζώνης');
+    toast(
+      tool === 'circle'
+        ? 'Κλικ για το κέντρο · σύρετε ή ρυθμίστε την ακτίνα · διπλό κλικ για ολοκλήρωση'
+        : 'Σύρετε ή κάντε κλικ για σημεία · διπλό κλικ / Enter τελειώνει · Backspace αναιρεί'
+    );
   };
 
-  const undoPoint = () => setDraftPts(prev => prev.slice(0, -1));
+  const undoPoint = useCallback(() => setDraftPts(prev => prev.slice(0, -1)), []);
 
-  const cancelDrawing = () => {
+  const cancelDrawing = useCallback(() => {
     setDrawing(false);
+    setDrawTool(null);
     setDraftPts([]);
-  };
+    setCircleCenter(null);
+  }, []);
 
-  /** Close the outline: store the polygon + derive legacy center/radius metadata. */
-  const finishDrawing = () => {
-    if (!selected || draftPts.length < 3) return;
-    const ring: LngLat[] = [...draftPts, draftPts[0]];
-    const c = centroidOf(draftPts);
+  /** Commit the polygon draft: close the outline + derive legacy center/radius metadata. */
+  const finishDrawing = useCallback(() => {
+    const zone = zonesRef.current.find(z => z.id === selectedIdRef.current) ?? null;
+    const pts = draftPtsRef.current;
+    if (!zone || pts.length < 3) return;
+    const ring: LngLat[] = [...pts, pts[0]];
+    const c = centroidOf(pts);
     updateLocal({
       area: { type: 'Polygon', coordinates: [ring] },
       center_latitude: c.lat,
       center_longitude: c.lng,
-      radius_km: coveringRadiusKm(draftPts),
+      radius_km: coveringRadiusKm(pts),
     });
     cancelDrawing();
     toast.success('Το σχέδιο ολοκληρώθηκε — πατήστε Αποθήκευση');
-  };
+  }, [updateLocal, cancelDrawing]);
+
+  /** Commit a circle draft as a polygon area + legacy center/radius metadata. */
+  const finishCircle = useCallback(() => {
+    const zone = zonesRef.current.find(z => z.id === selectedIdRef.current) ?? null;
+    const center = circleCenterRef.current;
+    if (!zone || !center) return;
+    const r = clampKm(circleRadiusRef.current);
+    updateLocal({
+      area: { type: 'Polygon', coordinates: [circleRing(center[0], center[1], r)] },
+      center_latitude: center[1],
+      center_longitude: center[0],
+      radius_km: r,
+    });
+    cancelDrawing();
+    toast.success('Ο κύκλος ολοκληρώθηκε — πατήστε Αποθήκευση');
+  }, [updateLocal, cancelDrawing]);
+
+  // Forward latest handlers to refs consumed by the map/keyboard effects.
+  finishDrawingRef.current = finishDrawing;
+  finishCircleRef.current = finishCircle;
+  drawActionsRef.current = { cancel: cancelDrawing, undo: undoPoint };
 
   /** Remove the drawn shape — the zone falls back to its circle definition. */
   const clearArea = () => {
@@ -509,7 +703,7 @@ export default function ServiceZonesEditor() {
             <h2 className="font-heading font-semibold text-foreground">Ζώνες Παράδοσης</h2>
           </div>
           <p className="text-xs text-muted-foreground">
-            Μια ζώνη ανά πόλη. Σχεδιάστε την περιοχή στον χάρτη — διευθύνσεις εκτός ζώνης μπλοκάρονται αυτόματα στο checkout.
+            Μια ζώνη ανά πόλη. Σχεδιάστε την περιοχή με πολύγωνο (σύρετε ή κλικ) ή κύκλο κέντρου-ακτίνας — διευθύνσεις εκτός ζώνης μπλοκάρονται αυτόματα στο checkout.
           </p>
           <div className="flex gap-2">
             <Input
@@ -590,25 +784,62 @@ export default function ServiceZonesEditor() {
               {!drawing ? (
                 <>
                   <p className="text-[11px] text-muted-foreground">
-                    Κλικ στον χάρτη για σημεία → κλείστε το σχήμα με «Ολοκλήρωση» (τουλάχιστον 3 σημεία).
+                    Επιλέξτε μέθοδο: πολύγωνο (σύρετε στον χάρτη) ή κύκλος (κέντρο + ακτίνα). Διπλό κλικ τελειώνει το σχέδιο.
                   </p>
                   <div className="grid grid-cols-2 gap-2">
-                    <Button variant="outline" size="sm" onClick={startDrawing}>
+                    <Button variant="outline" size="sm" onClick={() => startDrawing('polygon')}>
                       <Pencil className="h-3.5 w-3.5 mr-1.5" />
-                      {selected.area ? 'Ανασχεδίαση' : 'Ξεκίνα σχέδιο'}
+                      {selected.area ? 'Ανασχεδίαση' : 'Πολύγωνο'}
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={() => startDrawing('circle')}>
+                      <Circle className="h-3.5 w-3.5 mr-1.5" />
+                      Κύκλος
                     </Button>
                     {selected.area && (
-                      <Button variant="outline" size="sm" onClick={clearArea}>
+                      <Button variant="outline" size="sm" onClick={clearArea} className="col-span-2">
                         <X className="h-3.5 w-3.5 mr-1.5" />
                         Αφαίρεση σχεδίου
                       </Button>
                     )}
                   </div>
                 </>
+              ) : drawTool === 'circle' ? (
+                <>
+                  <p className="text-[11px] text-muted-foreground">
+                    {circleCenter
+                      ? 'Σύρετε από το κέντρο ή ρυθμίστε την ακτίνα · διπλό κλικ / Enter για ολοκλήρωση.'
+                      : 'Κλικ στον χάρτη για να τοποθετήσετε το κέντρο.'}
+                  </p>
+                  {circleCenter && (
+                    <div className="space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] text-muted-foreground">
+                        <span>Ακτίνα</span>
+                        <span className="font-medium text-foreground">{clampKm(circleRadiusKm)} km</span>
+                      </div>
+                      <Slider
+                        min={0.5}
+                        max={50}
+                        step={0.5}
+                        value={[clampKm(circleRadiusKm)]}
+                        onValueChange={(v) => setCircleRadiusKm(clampKm(v[0] ?? circleRadiusKm))}
+                      />
+                    </div>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <Button size="sm" onClick={finishCircle} disabled={!circleCenter}>
+                      <Check className="h-3.5 w-3.5 mr-1" />
+                      Ολοκλήρωση
+                    </Button>
+                    <Button variant="outline" size="sm" onClick={cancelDrawing}>
+                      <X className="h-3.5 w-3.5 mr-1" />
+                      Άκυρο
+                    </Button>
+                  </div>
+                </>
               ) : (
                 <>
                   <p className="text-[11px] text-muted-foreground">
-                    Σημεία: {draftPts.length}{draftPts.length < 3 ? ' (χρειάζονται τουλάχιστον 3)' : ''} — κλικ για επόμενο.
+                    Σημεία: {draftPts.length}{draftPts.length < 3 ? ' (χρειάζονται τουλάχιστον 3)' : ''} — σύρετε ή κλικ για σημεία · διπλό κλικ / Enter τελειώνει · Backspace αναιρεί.
                   </p>
                   <div className="grid grid-cols-3 gap-2">
                     <Button size="sm" onClick={finishDrawing} disabled={draftPts.length < 3}>
