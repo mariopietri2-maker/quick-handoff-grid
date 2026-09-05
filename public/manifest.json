@@ -1,13 +1,13 @@
 {
-  "name": "Fresh2GO.GR",
+"name": "Fresh2GO",
   "short_name": "Fresh2GO",
-  "description": "Παραγγελία φαγητού online — γρήγορα, αξιόπιστα.",
+  "description": "Φρέσκο. Σε 2. Στην πόρτα σου. Παραγγελία φαγητού online — γρήγορα, αξιόπιστα.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
   "background_color": "#FFF7EC",
-  "theme_color": "#EA580C",
+"theme_color": "#FF8A3D",
   "lang": "el",
   "icons": [
     {

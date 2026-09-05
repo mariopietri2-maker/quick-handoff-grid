@@ -50,6 +50,18 @@ type StoreRow = Database['public']['Tables']['stores']['Row'] & {
   fulfilment_mode?: 'platform' | 'store' | null;
 };
 
+function BrandName({ name }: { name: string }) {
+  const lower = name.trim().toLowerCase();
+  if (lower === 'fresh2go') {
+    return (
+      <>
+        Fresh<span style={{ color: '#F29912' }}>2GO</span>
+      </>
+    );
+  }
+  return <>{name}</>;
+}
+
 export default function CustomerApp() {
   const t = useT();
   const cfg = useCustomerAppConfig();
@@ -382,9 +394,9 @@ export default function CustomerApp() {
                 )}
               </div>
               <div className="min-w-0">
-                <div className="font-heading font-black text-[15px] c-ink tracking-tight leading-none truncate">
-                  {cfg.branding.app_name}
-                </div>
+<div className="font-heading font-black text-[15px] c-ink tracking-tight leading-none truncate">
+                    <BrandName name={cfg.branding.app_name} />
+                  </div>
                 {cfg.branding.tagline && (
                   <div className="text-[10px] c-soft font-bold uppercase tracking-[0.14em] mt-1 truncate">
                     {cfg.branding.tagline}

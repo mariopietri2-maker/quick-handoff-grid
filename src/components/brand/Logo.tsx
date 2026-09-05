@@ -10,6 +10,7 @@ interface LogoProps {
   /** Show the ".GR" TLD pill. Defaults to true when wordmark is shown. */
   withTld?: boolean;
   className?: string;
+  animated?: boolean;
 }
 
 const CONFIG: Record<LogoVariant, { stops: string[]; bag: string; fold: string; dark: boolean }> = {
@@ -21,25 +22,37 @@ const CONFIG: Record<LogoVariant, { stops: string[]; bag: string; fold: string; 
 };
 
 /**
- * Fresh2GO.GR brand logo. Variants map to the app sub-brands:
+* Fresh2GO.GR brand logo. Variants map to the app sub-brands:
  * core (customer), driver, store/admin, web, ink (dark surfaces).
  *
  * Wordmark renders as Fresh**2GO** + .GR pill so the domain
  * is always visible: Fresh2GO.GR.
  */
-export function Logo({ variant = 'core', size = 28, withWordmark = false, withTld = true, className }: LogoProps) {
+export function Logo({ variant = 'core', size = 28, withWordmark = false, withTld = true, className, animated = false }: LogoProps) {
   const id = useId().replace(/:/g, '');
   const cfg = CONFIG[variant];
 
   return (
     <span className={className} style={{ display: 'inline-flex', alignItems: 'center', gap: 10 }}>
-      <svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={BRAND.name} style={{ flexShrink: 0 }}>
+<svg width={size} height={size} viewBox="0 0 64 64" role="img" aria-label={BRAND.name} style={{ flexShrink: 0 }}>
         <defs>
           <linearGradient id={`${id}-g`} x1="0" y1="0" x2="1" y2="1">
             {cfg.stops.map((c, i) => (
               <stop key={i} offset={i === 0 ? '0' : i === cfg.stops.length - 1 ? '1' : '0.55'} stopColor={c} />
             ))}
           </linearGradient>
+          {animated && (
+            <>
+              <clipPath id={`${id}-c`}>
+                <rect width="64" height="64" rx="16" />
+              </clipPath>
+              <linearGradient id={`${id}-sheen`} x1="0" y1="0" x2="1" y2="0">
+                <stop offset="0%" stopColor="#ffffff" stopOpacity="0" />
+                <stop offset="50%" stopColor="#ffffff" stopOpacity="0.55" />
+                <stop offset="100%" stopColor="#ffffff" stopOpacity="0" />
+              </linearGradient>
+            </>
+          )}
         </defs>
         <rect width="64" height="64" rx="16" fill={`url(#${id}-g)`} />
         <path
@@ -51,7 +64,17 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
         />
         <rect x="19.5" y="27" width="25" height="22" rx="6" fill={cfg.bag} />
         <path d="M23 35h18" stroke={cfg.fold} strokeWidth="2.6" strokeLinecap="round" />
-      </svg>
+        {animated && (
+          <rect width="64" height="64" fill={`url(#${id}-sheen)`} clipPath={`url(#${id}-c)`}>
+            <animateTransform
+              attributeName="transform"
+              type="translate"
+              values="-64 0; 64 0; -64 0"
+              dur="2.6s"
+              repeatCount="indefinite"
+            />
+          </rect>
+        )}
       {withWordmark && (
         <span
           style={{
@@ -67,7 +90,7 @@ export function Logo({ variant = 'core', size = 28, withWordmark = false, withTl
             gap: 0,
           }}
         >
-          <span>{WORDMARK.prefix}</span>
+<span>{WORDMARK.prefix}</span>
           <span style={{ color: '#F29912' }}>{WORDMARK.highlight}</span>
           {withTld && (
             <span

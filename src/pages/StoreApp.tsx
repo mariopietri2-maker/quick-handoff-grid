@@ -215,7 +215,7 @@ export default function StoreApp() {
                 </div>
                 <div className="min-w-0 leading-tight">
                   <p className="font-heading font-bold text-foreground truncate leading-tight">
-                    Fresh2GO.GR
+Fresh<span className="text-[#F29912]">2GO</span>
                   </p>
                   <p className="text-[11px] text-muted-foreground truncate leading-tight">
                     {view === 'portal'

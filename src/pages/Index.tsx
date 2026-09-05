@@ -38,14 +38,14 @@ function LiveTicker({ items }: { items: string[] }) {
     return () => clearInterval(t);
   }, [items.length]);
   return (
-    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-border bg-card/80 backdrop-blur-sm shadow-sm">
+    <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-white/40 bg-white/15 backdrop-blur-sm shadow-sm">
       <span className="relative flex h-2 w-2">
-        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-success opacity-70" />
-        <span className="relative inline-flex h-2 w-2 rounded-full bg-success" />
+        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-white opacity-70" />
+        <span className="relative inline-flex h-2 w-2 rounded-full bg-white" />
       </span>
-      <span key={i} className="text-xs font-medium text-foreground animate-fade-in">
-        <span className="text-primary font-semibold">Live</span>
-        <span className="text-muted-foreground"> · {items[i] ?? 'Συνδεδεμένα καταστήματα'}</span>
+      <span key={i} className="text-xs font-medium text-white animate-fade-in">
+        <span className="text-white font-semibold">Live</span>
+        <span className="text-white/75"> · {items[i] ?? 'Συνδεδεμένα καταστήματα'}</span>
       </span>
     </div>
   );
@@ -89,13 +89,13 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-        title="Fresh2GO.GR — Παραγγελία φαγητού online σε πραγματικό χρόνο"
-        description="Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα, στην πόρτα σας."
+title="Fresh2GO — Φρέσκο. Σε 2. Στην πόρτα σου."
+        description="Φρέσκο. Σε 2. Στην πόρτα σου. Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα, στην πόρτα σας."
         path="/"
-        image="https://storage.googleapis.com/gpt-engineer-file-uploads/attachments/og-images/6907eb92-746f-428e-b488-c3a1766ebcb0"
       />
+
       {/* ─── NAVBAR ─── */}
-      <nav className="sticky top-0 z-50 border-b border-border bg-background/80 backdrop-blur-xl">
+      <nav className="sticky top-0 z-50 border-b border-border bg-background/85 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <Logo withWordmark size={28} />
@@ -117,7 +117,7 @@ const Index = () => {
             </Button>
             <Button
               size="sm" variant="ghost"
-              className="hidden sm:inline-flex font-heading font-semibold"
+              className="hidden md:inline-flex font-heading font-semibold"
               onClick={() => navigate('/auth')}
             >
               Σύνδεση
@@ -134,30 +134,38 @@ const Index = () => {
         </div>
       </nav>
 
-      {/* ─── HERO ─── */}
-      <section className="relative">
-        {/* animated gradient orbs */}
-        <div aria-hidden className="absolute inset-0 overflow-hidden pointer-events-none">
-          <div className="absolute -top-32 -left-20 h-[420px] w-[420px] rounded-full opacity-40 blur-3xl"
-               style={{ background: 'radial-gradient(circle, hsl(var(--primary) / 0.35), transparent 70%)', animation: 'float 14s ease-in-out infinite' }} />
-          <div className="absolute -top-10 right-[-100px] h-[360px] w-[360px] rounded-full opacity-30 blur-3xl"
-               style={{ background: 'radial-gradient(circle, hsl(var(--accent) / 0.4), transparent 70%)', animation: 'float 18s ease-in-out infinite reverse' }} />
+      {/* ─── HERO — Fresh2GO black stage ─── */}
+      <section className="relative overflow-hidden isolate">
+        <div
+          aria-hidden
+          className="absolute inset-0 -z-10"
+          style={{ background: 'linear-gradient(165deg, #F4A125 0%, #FF8A3D 45%, #E94E8F 135%)' }}
+        />
+        <div aria-hidden className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
+          <div
+            className="absolute -top-40 -left-28 h-[520px] w-[520px] rounded-full opacity-25 blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%)', animation: 'float 14s ease-in-out infinite' }}
+          />
+          <div
+            className="absolute -top-24 right-[-120px] h-[440px] w-[440px] rounded-full opacity-20 blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(255,112,148,0.4), transparent 70%)', animation: 'float 18s ease-in-out infinite reverse' }}
+          />
           <div className="absolute inset-0 opacity-[0.05]"
-               style={{ backgroundImage: 'linear-gradient(hsl(var(--foreground)) 1px, transparent 1px), linear-gradient(90deg, hsl(var(--foreground)) 1px, transparent 1px)', backgroundSize: '48px 48px' }} />
+               style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
         </div>
 
         <div className="relative max-w-5xl mx-auto px-4 pt-16 sm:pt-24 pb-16 text-center">
-          <div className="flex justify-center mb-6 animate-fade-in">
+          <div className="flex justify-center mb-7 animate-fade-in">
             <LiveTicker items={partners} />
           </div>
 
-          <h1 className="font-heading font-extrabold text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
+          <h1 className="font-heading font-extrabold text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
               style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
             Φαγητό που φτάνει.<br />
-            <span className="text-gradient-primary">Πλατφόρμα που κινείται.</span>
+            <span className="text-[#2C1A05]">Φρέσκο. Σε 2. Στην πόρτα σου.</span>
           </h1>
 
-          <p className="text-muted-foreground text-base sm:text-lg max-w-xl mx-auto mb-10 animate-fade-in leading-relaxed"
+          <p className="text-white/85 text-base sm:text-lg max-w-xl mx-auto mb-10 animate-fade-in leading-relaxed"
              style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
             Συνδέουμε εστιατόρια, οδηγούς και πελάτες σε πραγματικό χρόνο. Διαφανείς προμήθειες,
             άμεσες πληρωμές, μηδέν χάος.
@@ -167,7 +175,7 @@ const Index = () => {
                style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
             <Button
               size="lg"
-              className="h-14 px-8 text-base font-heading font-bold gradient-primary shadow-primary text-primary-foreground rounded-xl hover-lift press-scale"
+              className="h-14 px-8 text-base font-heading font-bold bg-[#141417] text-white rounded-xl hover-lift press-scale shadow-2xl"
               onClick={() => navigate('/order')}
             >
               Παραγγελία Φαγητού
@@ -175,14 +183,14 @@ const Index = () => {
             </Button>
             <Button
               size="lg" variant="outline"
-              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale border-white/50 bg-white/10 text-white hover:bg-white/20"
               onClick={() => navigate('/auth')}
             >
               Σύνδεση
             </Button>
             <Button
               size="lg" variant="outline"
-              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card border-primary/40 text-primary hover:bg-primary/5"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale border-white/50 bg-white/10 text-white hover:bg-white/20"
               onClick={() => navigate('/driver')}
             >
               <Car className="mr-2 h-5 w-5" />
@@ -190,7 +198,7 @@ const Index = () => {
             </Button>
             <Button
               size="lg" variant="outline"
-              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale bg-card border-border text-foreground hover:bg-card/80"
+              className="h-14 px-6 text-base font-heading font-semibold rounded-xl press-scale border-white/50 bg-white/10 text-white hover:bg-white/20"
               onClick={() => navigate('/store')}
             >
               <Store className="mr-2 h-5 w-5" />
@@ -201,12 +209,12 @@ const Index = () => {
           {(isAdmin || isSupport) && (
             <div className="flex flex-wrap gap-2 justify-center mb-10 animate-fade-in" style={{ animationDelay: '0.35s', animationFillMode: 'both' }}>
               {isAdmin && (
-                <Button size="sm" variant="ghost" className="rounded-full font-heading" onClick={() => navigate('/admin')}>
+                <Button size="sm" variant="ghost" className="rounded-full font-heading text-white/90 hover:text-white hover:bg-white/15" onClick={() => navigate('/admin')}>
                   <Shield className="mr-1.5 h-3.5 w-3.5" /> Διαχείριση
                 </Button>
               )}
               {(isSupport || isAdmin) && (
-                <Button size="sm" variant="ghost" className="rounded-full font-heading" onClick={() => navigate('/support')}>
+                <Button size="sm" variant="ghost" className="rounded-full font-heading text-white/90 hover:text-white hover:bg-white/15" onClick={() => navigate('/support')}>
                   <Headphones className="mr-1.5 h-3.5 w-3.5" /> Υποστήριξη
                 </Button>
               )}
@@ -224,11 +232,11 @@ const Index = () => {
         </div>
 
         {/* Partner marquee */}
-        <div className="relative border-y border-border bg-card/40">
+        <div className="relative border-y border-white/25 bg-black/[0.12]">
           <div className="max-w-6xl mx-auto px-4 py-5 overflow-hidden">
             <div className="flex gap-10 whitespace-nowrap animate-marquee">
               {[...partners, ...partners].map((p, i) => (
-                <span key={i} className="text-sm font-heading font-semibold text-muted-foreground tracking-wide">
+                <span key={i} className="text-sm font-heading font-semibold text-white/80 tracking-wide">
                   {p}
                 </span>
               ))}
@@ -282,19 +290,24 @@ const Index = () => {
 
       {/* ─── CTA ─── */}
       <section className="px-4 py-20">
-        <div className="relative max-w-4xl mx-auto rounded-3xl gradient-primary p-10 sm:p-14 text-center overflow-hidden shadow-lg">
-          <div aria-hidden className="absolute inset-0 opacity-20"
-               style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, white 1px, transparent 1px), radial-gradient(circle at 80% 60%, white 1px, transparent 1px)', backgroundSize: '40px 40px, 60px 60px' }} />
+        <div className="relative max-w-4xl mx-auto rounded-3xl p-10 sm:p-14 text-center overflow-hidden shadow-2xl"
+             style={{ background: 'linear-gradient(150deg, #F4A125 0%, #FF8A3D 50%, #E94E8F 130%)' }}>
+          <div aria-hidden className="absolute inset-0 pointer-events-none">
+            <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-72 w-[520px] rounded-full opacity-30 blur-3xl"
+                 style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%)' }} />
+            <div className="absolute inset-0 opacity-[0.12]"
+                 style={{ backgroundImage: 'radial-gradient(circle at 20% 20%, rgba(255,255,255,0.7) 1px, transparent 1px), radial-gradient(circle at 80% 60%, rgba(255,255,255,0.7) 1px, transparent 1px)', backgroundSize: '40px 40px, 60px 60px' }} />
+          </div>
           <div className="relative">
-            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-primary-foreground mb-4 tracking-tight">
-              Ξεκίνα σήμερα
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl text-white mb-4 tracking-tight">
+              Ξεκίνα <span className="text-white/85">σήμερα</span>
             </h2>
-            <p className="text-primary-foreground/85 text-base sm:text-lg mb-8 max-w-md mx-auto">
+            <p className="text-white/85 text-base sm:text-lg mb-8 max-w-md mx-auto">
               Γίνε μέλος της κοινότητας — οδηγός, κατάστημα ή πελάτης.
             </p>
             <Button
               size="lg"
-              className="h-14 px-8 text-base font-heading font-bold bg-card text-primary hover:bg-card/90 rounded-xl press-scale shadow-lg"
+              className="h-14 px-8 text-base font-heading font-bold bg-[#141417] text-white rounded-xl press-scale shadow-2xl"
               onClick={() => navigate('/auth')}
             >
               Εγγραφή Δωρεάν
@@ -305,21 +318,21 @@ const Index = () => {
       </section>
 
       {/* ─── FOOTER ─── */}
-      <footer className="border-t border-border py-10 bg-card/30">
+      <footer className="border-t border-white/10 py-10" style={{ background: '#0B0B0D' }}>
         <div className="max-w-6xl mx-auto px-4 text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
-            <Logo withWordmark size={20} />
+            <span className="text-white"><Logo withWordmark size={20} /></span>
           </div>
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
-            <Link to="/legal/terms"   className="text-muted-foreground hover:text-primary transition-smooth">Όροι Χρήσης</Link>
-            <span className="text-border">·</span>
-            <Link to="/legal/privacy" className="text-muted-foreground hover:text-primary transition-smooth">Απόρρητο</Link>
-            <span className="text-border">·</span>
-            <Link to="/legal/refunds" className="text-muted-foreground hover:text-primary transition-smooth">Επιστροφές</Link>
-            <span className="text-border">·</span>
-            <Link to="/presentation" className="text-muted-foreground hover:text-primary transition-smooth">Παρουσίαση</Link>
+            <Link to="/legal/terms"   className="text-white/55 hover:text-[#F29912] transition-smooth">Όροι Χρήσης</Link>
+            <span className="text-white/20">·</span>
+            <Link to="/legal/privacy" className="text-white/55 hover:text-[#F29912] transition-smooth">Απόρρητο</Link>
+            <span className="text-white/20">·</span>
+            <Link to="/legal/refunds" className="text-white/55 hover:text-[#F29912] transition-smooth">Επιστροφές</Link>
+            <span className="text-white/20">·</span>
+            <Link to="/presentation" className="text-white/55 hover:text-[#F29912] transition-smooth">Παρουσίαση</Link>
           </nav>
-          <p className="text-xs text-muted-foreground">© 2026 Fresh2GO.GR · Με ❤️ για την Ελλάδα.</p>
+<p className="text-xs text-white/40">© 2026 Fresh2GO. Με ❤️ για την Ελλάδα.</p>
         </div>
       </footer>
     </div>
@@ -330,16 +343,16 @@ function StatTile({
   icon: Icon, label, countRef, display,
 }: { icon: React.ElementType; label: string; countRef: React.RefObject<HTMLSpanElement>; display: string }) {
   return (
-    <div className="group relative rounded-2xl border border-border bg-card p-4 sm:p-5 shadow-sm hover:shadow-md hover:border-primary/30 transition-smooth">
+    <div className="group relative rounded-2xl border border-white/30 bg-white/10 p-4 sm:p-5 backdrop-blur-sm hover:bg-white/20 transition-smooth">
       <div className="flex items-center gap-2 mb-2">
-        <div className="h-8 w-8 rounded-lg bg-primary/10 flex items-center justify-center">
-          <Icon className="h-4 w-4 text-primary" />
+        <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
+          <Icon className="h-4 w-4 text-white" />
         </div>
       </div>
-      <p className="font-heading font-extrabold text-2xl sm:text-3xl text-foreground tracking-tight">
+      <p className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight">
         <span ref={countRef}>{display}</span>
       </p>
-      <p className="text-xs text-muted-foreground mt-1 font-medium">{label}</p>
+      <p className="text-xs text-white/75 mt-1 font-medium">{label}</p>
     </div>
   );
 }
@@ -372,7 +385,7 @@ function StepItem({
     <div className="text-center animate-fade-in" style={{ animationDelay: `${0.12 * step}s`, animationFillMode: 'both' }}>
       <div className="relative inline-flex mb-4">
         <div className="h-16 w-16 rounded-2xl gradient-primary flex items-center justify-center shadow-primary hover:scale-110 transition-transform">
-          <Icon className="h-7 w-7 text-primary-foreground" />
+          <Icon className="h-7 w-7 text-white" />
         </div>
         <span className="absolute -top-2 -right-2 h-6 w-6 rounded-full bg-card border-2 border-primary text-primary text-xs font-heading font-extrabold flex items-center justify-center shadow-sm">
           {step}

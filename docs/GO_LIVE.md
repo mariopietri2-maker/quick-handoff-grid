@@ -79,7 +79,7 @@ delivered 200, and the order leaves `pending`.
      apex via CNAME-flattening/ALIAS or the A record if offered);
   3. Supabase Auth → URL Configuration → Site URL `https://freshdelivery.app`,
      redirect `https://freshdelivery.app/**`;
-   4. Verify HTTPS cert is issued and the app loads on the domain.
+4. Verify HTTPS cert is issued and the app loads on the domain.
 - Next primary `fresh2go.gr` (+ `www`): already allowlisted in Capacitor
   `allowNavigation`, `SITE_ORIGINS` and password-reset redirects. To switch:
   1. Registrar → point `fresh2go.gr`/`www` at Railway (same steps as above);
@@ -87,7 +87,7 @@ delivered 200, and the order leaves `pending`.
   3. move `SITE_ORIGIN`, Capacitor `server.url`, SEO/og URLs, Supabase Auth
      Site URL + redirects to `https://fresh2go.gr` (keep `freshdelivery.app`
      as fallback until installed apps update).
-- Launcher/theme: fresh2go blue palette is applied (`#1B4BA0` / `#2E6FE0`).
+- Launcher/theme: fresh2go orange palette is applied (`#FF8A3D` splash / `#F4A125`–`#E94E8F` gradient).
 
 ## 4. Automated card refunds, saved cards & alerting
 

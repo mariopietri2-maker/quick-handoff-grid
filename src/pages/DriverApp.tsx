@@ -888,7 +888,7 @@ export default function DriverApp() {
                 <Zap className="h-3.5 w-3.5 text-white" strokeWidth={2.5} />
               </div>
               <span className="font-heading font-extrabold text-[hsl(var(--driver-text))] text-[15px] tracking-tight">
-                Fresh2GO.GR
+Fresh<span className="text-[#F29912]">2GO</span>
                 {isAdmin && (
                   <span className="ml-2 px-1.5 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-primary/15 text-primary border border-primary/30">
                     Ops
