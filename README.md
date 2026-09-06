@@ -1,6 +1,6 @@
 <div align="center">
 
-# ⚡ fresh2go
+# ⚡ Fresh2GO.gr
 
 ### 🛵 Real-time food delivery marketplace for **Ioannina, Greece**
 
