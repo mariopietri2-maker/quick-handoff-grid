@@ -805,9 +805,21 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = s.copy(error = "Πάτα «Εύρεση στον χάρτη» ή «Η τοποθεσία μου» για ακριβείς συντεταγμένες")
             return
         }
+        val store = s.stores.find { it.id == storeId } ?: s.selectedStore
+        if (store == null) {
+            _state.value = s.copy(error = "Δεν βρέθηκε το κατάστημα")
+            return
+        }
+        if (store.is_active == false) {
+            _state.value = s.copy(error = "Το κατάστημα δεν δέχεται παραγγελίες αυτή τη στιγμή")
+            return
+        }
+        if (store.status_override == "closed") {
+            _state.value = s.copy(error = "Το κατάστημα είναι προσωρινά κλειστό — δοκίμασε αργότερα")
+            return
+        }
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
-            val store = s.stores.find { it.id == storeId } ?: s.selectedStore
             runCatching {
                 var distanceKm: Double? = null
                 val dLat = s.deliveryLat
@@ -1596,11 +1608,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * One 60% roll per calendar day — decides if the games section shows customers.
+     * One roll per calendar day — decides if the games section shows customers.
+     * Wheel appears with 30% probability, mystery cards with 40%. Resets at midnight.
      * When it appears it stays visible for 5 minutes only; after that it hides
      * (live via the game ticker) and does not return until the next day's roll.
      */
     private fun rollDailyGameShow(): Boolean {
+        val chance = if (_state.value.gameActive == "cards") 0.4 else 0.3
         val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
         if (prefs.getString("game_show_day", null) == todayKey()) {
             if (!prefs.getBoolean("game_show_today", false)) {
@@ -1612,7 +1626,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             gameShowUntilMs = until
             return System.currentTimeMillis() < until
         }
-        val show = Random.nextDouble() < 0.6
+        val show = Random.nextDouble() < chance
         gameShowUntilMs = if (show) System.currentTimeMillis() + GAME_SHOW_WINDOW_MS else 0L
         prefs.edit()
             .putString("game_show_day", todayKey())

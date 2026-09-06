@@ -47,11 +47,12 @@ export function persistCardClaimDay() {
 const GAME_SHOW_WINDOW_MS = 5 * 60 * 1000;
 
 /**
- * One 60% roll per calendar day. When it wins, the games section shows for
+ * One roll per calendar day. Wheel appears with 30% probability,
+ * mystery cards with 40%. When it wins, the games section shows for
  * GAME_SHOW_WINDOW_MS only; afterwards (and on any later visit that day) it
- * stays hidden until the next day's roll.
+ * stays hidden until the next day's roll (resets at midnight).
  */
-export function resolveDailyGameShow(): { show: boolean; expiresAt: number | null } {
+export function resolveDailyGameShow(active: 'wheel' | 'cards' = 'wheel'): { show: boolean; expiresAt: number | null } {
   try {
     const day = todayKey();
     if (localStorage.getItem(`${PREFIX}game_show_day`) === day) {
@@ -62,7 +63,8 @@ export function resolveDailyGameShow(): { show: boolean; expiresAt: number | nul
       const expiresAt = shownAt + GAME_SHOW_WINDOW_MS;
       return { show: Date.now() < expiresAt, expiresAt };
     }
-    const show = Math.random() < 0.6;
+    const chance = active === 'cards' ? 0.4 : 0.3;
+    const show = Math.random() < chance;
     const now = Date.now();
     localStorage.setItem(`${PREFIX}game_show_day`, day);
     localStorage.setItem(`${PREFIX}game_show_today`, String(show));
