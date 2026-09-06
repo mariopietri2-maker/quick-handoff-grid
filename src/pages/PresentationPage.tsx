@@ -8,6 +8,7 @@ import {
   CreditCard,
   Download,
   FileText,
+  Globe,
   MapPin,
   Play,
   Store,
@@ -54,18 +55,43 @@ const ROLES = [
     chip: 'bg-[#FF8A3D]/15 text-[#FFB23D] border-[#FF8A3D]/25',
     title: 'Πελάτες',
     text: 'Καταστήματα, καλάθι, πληρωμές και live εξέλιξη παραγγελίας.',
+    domain: 'fresh2go.gr',
+    href: 'https://fresh2go.gr/order',
   },
   {
     icon: Store,
     chip: 'bg-[#3E8FE0]/15 text-[#7FB5F0] border-[#3E8FE0]/30',
     title: 'Καταστήματα',
     text: 'Μενού, ωράρια, αποδοχή παραγγελιών και εικόνα πωλήσεων.',
+    domain: 'freshdelivery.app',
+    href: 'https://freshdelivery.app/store',
   },
   {
     icon: Bike,
     chip: 'bg-[#3BB98C]/15 text-[#5FD8A8] border-[#3BB98C]/30',
     title: 'Οδηγοί',
     text: 'Προσφορές δρομολογίων, πλοήγηση και δίκαια κέρδη.',
+    domain: 'freshdelivery.app',
+    href: 'https://freshdelivery.app/driver',
+  },
+];
+
+const PORTALS = [
+  {
+    title: 'fresh2go.gr',
+    subtitle: 'Η εφαρμογή πελατών',
+    text: 'Παράγγειλε από τα καταστήματα της πόλης σου με live tracking μέχρι την πόρτα.',
+    href: 'https://fresh2go.gr/order',
+    cta: 'Παράγγειλε τώρα',
+    style: 'linear-gradient(120deg, hsl(24 90% 55%), hsl(24 100% 62%) 55%, hsl(343 100% 68%))',
+  },
+  {
+    title: 'freshdelivery.app',
+    subtitle: 'Η πλευρά διανομής',
+    text: 'Οδηγοί, καταστήματα και διαχείριση — όλη η επιχείρηση σε μία οθόνη.',
+    href: 'https://freshdelivery.app/driver',
+    cta: 'Μπες στη διανομή',
+    style: 'linear-gradient(120deg, #141417, #2A2118 60%, #4A2C12)',
   },
 ];
 
@@ -166,8 +192,8 @@ export default function PresentationPage() {
               className="text-white/85 text-base sm:text-lg max-w-xl mx-auto mb-9 leading-relaxed animate-fade-in"
               style={{ animationDelay: '0.2s', animationFillMode: 'both' }}
             >
-              Μία πλατφόρμα για πελάτες, καταστήματα και οδηγούς — από το καλάθι
-              μέχρι την πόρτα, όλα live.
+              Μία πλατφόρμα, δύο πύλες: οι πελάτες στο fresh2go.gr,
+              η διανομή στο freshdelivery.app — όλα live.
             </p>
 
             <div
@@ -192,8 +218,26 @@ export default function PresentationPage() {
               </button>
             </div>
 
+            <div className="mt-7 flex flex-wrap justify-center gap-2.5 animate-fade-in"
+              style={{ animationDelay: '0.35s', animationFillMode: 'both' }}
+            >
+              {[
+                { label: 'Πελάτες → fresh2go.gr', href: 'https://fresh2go.gr/order' },
+                { label: 'Διανομή → freshdelivery.app', href: 'https://freshdelivery.app/driver' },
+              ].map((portal) => (
+                <a
+                  key={portal.label}
+                  href={portal.href}
+                  className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-black/[0.18] border border-white/25 text-xs font-heading font-semibold text-white/90 hover:bg-black/30 transition-colors"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  {portal.label}
+                </a>
+              ))}
+            </div>
+
             <div
-              className="mt-9 flex flex-wrap justify-center gap-2.5 animate-fade-in"
+              className="mt-3.5 flex flex-wrap justify-center gap-2.5 animate-fade-in"
               style={{ animationDelay: '0.4s', animationFillMode: 'both' }}
             >
               {['Promo video', 'PDF · 13 σελίδες', 'Πελάτες · Καταστήματα · Οδηγοί'].map((chip) => (
@@ -367,7 +411,14 @@ export default function PresentationPage() {
                   <role.icon className="h-5 w-5" />
                 </div>
                 <p className="font-heading font-bold text-lg mb-1.5">{role.title}</p>
-                <p className="text-sm text-white/60 leading-relaxed">{role.text}</p>
+                <p className="text-sm text-white/60 leading-relaxed mb-4">{role.text}</p>
+                <a
+                  href={role.href}
+                  className="inline-flex items-center gap-1.5 text-xs font-heading font-bold text-[#FFB23D] hover:text-white transition-colors"
+                >
+                  <Globe className="h-3.5 w-3.5" />
+                  {role.domain}
+                </a>
               </div>
             ))}
           </div>
@@ -380,6 +431,41 @@ export default function PresentationPage() {
                 <h.icon className="h-4 w-4 text-[#FFB23D]" />
                 {h.label}
               </span>
+            ))}
+          </div>
+        </section>
+
+        {/* ─── PORTALS ─── */}
+        <section className="mt-14 sm:mt-16">
+          <div className="text-center mb-10">
+            <span className="inline-block text-xs font-heading font-bold uppercase tracking-[0.18em] text-[#FFB23D] mb-3">
+              Δύο πύλες
+            </span>
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl tracking-tight">
+              Μία πλατφόρμα, δύο είσοδοι
+            </h2>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {PORTALS.map((portal) => (
+              <div key={portal.title} className="relative overflow-hidden rounded-[2rem] isolate p-8 sm:p-10">
+                <div aria-hidden className="absolute inset-0 -z-10" style={{ background: portal.style }} />
+                <p className="text-xs font-heading font-bold uppercase tracking-[0.18em] text-white/70 mb-2">
+                  {portal.subtitle}
+                </p>
+                <p className="font-heading font-extrabold text-white text-2xl sm:text-3xl tracking-tight mb-3">
+                  {portal.title}
+                </p>
+                <p className="text-white/80 text-sm sm:text-base leading-relaxed mb-7 max-w-sm">
+                  {portal.text}
+                </p>
+                <a
+                  href={portal.href}
+                  className="inline-flex items-center justify-center gap-2 h-12 px-6 text-sm font-heading font-bold bg-[#141417] text-white rounded-xl hover-lift press-scale shadow-2xl"
+                >
+                  {portal.cta}
+                  <ArrowRight className="h-4 w-4" />
+                </a>
+              </div>
             ))}
           </div>
         </section>
@@ -405,24 +491,32 @@ export default function PresentationPage() {
               Έτοιμος να το δοκιμάσεις;
             </h2>
             <p className="text-white/85 max-w-md mx-auto mb-8">
-              Παράγγειλε από τα καταστήματα της πόλης σου — ή κατέβασε την εφαρμογή.
+              Πελάτης; Παράγγειλε στο fresh2go.gr. Οδηγός ή κατάστημα;
+              Μπες στο freshdelivery.app.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
-              <Link
-                to="/order"
+              <a
+                href="https://fresh2go.gr/order"
                 className="inline-flex items-center justify-center gap-2 h-14 px-7 text-base font-heading font-bold bg-[#141417] text-white rounded-xl hover-lift press-scale shadow-2xl"
               >
-                Δες καταστήματα
+                Παράγγειλε στο fresh2go.gr
                 <ArrowRight className="h-5 w-5" />
-              </Link>
-              <Link
-                to="/download"
-                className="inline-flex items-center justify-center gap-2 px-7 py-3.5 text-base font-heading font-semibold rounded-xl press-scale border-white/50 bg-white/10 text-white hover:bg-white/20"
+              </a>
+              <a
+                href="https://freshdelivery.app/driver"
+                className="inline-flex items-center justify-center gap-2 h-14 px-7 text-base font-heading font-semibold rounded-xl press-scale border-white/50 bg-white/10 text-white hover:bg-white/20"
               >
-                <Download className="h-5 w-5" />
-                Κατέβασε την εφαρμογή
-              </Link>
+                <Bike className="h-5 w-5" />
+                Διανομή στο freshdelivery.app
+              </a>
             </div>
+            <Link
+              to="/download"
+              className="mt-5 inline-flex items-center gap-2 text-sm font-heading font-semibold text-white/75 hover:text-white transition-colors"
+            >
+              <Download className="h-4 w-4" />
+              ή κατέβασε την εφαρμογή
+            </Link>
           </div>
         </section>
       </main>
