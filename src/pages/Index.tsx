@@ -89,8 +89,8 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background text-foreground overflow-x-hidden">
       <SEO
-title="Fresh2GO — Φρέσκο. Σε 2. Στην πόρτα σου."
-        description="Φρέσκο. Σε 2. Στην πόρτα σου. Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα, στην πόρτα σας."
+title="Fresh2GO — Fast Delivery."
+        description="Fast Delivery. Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα, στην πόρτα σας."
         path="/"
       />
 
@@ -139,7 +139,7 @@ title="Fresh2GO — Φρέσκο. Σε 2. Στην πόρτα σου."
         <div
           aria-hidden
           className="absolute inset-0 -z-10"
-          style={{ background: 'linear-gradient(165deg, #F4A125 0%, #FF8A3D 45%, #E94E8F 135%)' }}
+          style={{ background: 'linear-gradient(165deg, #EA580C 0%, #F97316 42%, #FB7185 130%)' }}
         />
         <div aria-hidden className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
           <div
@@ -161,14 +161,14 @@ title="Fresh2GO — Φρέσκο. Σε 2. Στην πόρτα σου."
 
           <h1 className="font-heading font-extrabold text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
               style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-            Φαγητό που φτάνει.<br />
-            <span className="text-[#2C1A05]">Φρέσκο. Σε 2. Στην πόρτα σου.</span>
+            Fresh Meals.<br />
+            <span className="text-white">Fast Delivery.</span>
           </h1>
 
           <p className="text-white/85 text-base sm:text-lg max-w-xl mx-auto mb-10 animate-fade-in leading-relaxed"
              style={{ animationDelay: '0.2s', animationFillMode: 'both' }}>
-            Συνδέουμε εστιατόρια, οδηγούς και πελάτες σε πραγματικό χρόνο. Διαφανείς προμήθειες,
-            άμεσες πληρωμές, μηδέν χάος.
+            Φρέσκο φαγητό από τα αγαπημένα σου καταστήματα — γρήγορα στην πόρτα σου.
+            Real-time tracking, διαφανείς προμήθειες, μηδέν χάος.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14 animate-fade-in"

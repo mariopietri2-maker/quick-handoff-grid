@@ -107,7 +107,7 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     accent_hsl: '24 100% 62%',
     accent_dark_hsl: '24 90% 51%',
     logo_url: null,
-    tagline: 'Η Ήπειρος στο σπίτι σου, γρήγορα.',
+    tagline: 'Fresh Meals. Fast Delivery.',
     show_header_brand: true,
   },
   tiles: [
