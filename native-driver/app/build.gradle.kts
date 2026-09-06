@@ -52,7 +52,7 @@ android {
     }
 
     signingConfigs {
-        debug {
+        getByName("debug") {
             storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
