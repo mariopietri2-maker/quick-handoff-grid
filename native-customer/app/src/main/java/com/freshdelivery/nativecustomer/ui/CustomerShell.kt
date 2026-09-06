@@ -1385,6 +1385,17 @@ private fun MenuScreen(
     onToggleFavorite: () -> Unit = {},
 ) {
     val store = state.selectedStore
+    val menuGroups = remember(state.menu) {
+        state.menu
+            .groupBy { it.category?.trim()?.takeIf { c -> c.isNotEmpty() } ?: "Μενού" }
+            .toList()
+            .sortedBy { (cat, _) -> if (cat == "Μενού") "zzz" else cat }
+    }
+    var selectedCategory by remember(state.selectedStore?.id) { mutableStateOf<String?>(null) }
+    val visibleGroups = remember(menuGroups, selectedCategory) {
+        if (selectedCategory == null) menuGroups
+        else menuGroups.filter { it.first == selectedCategory }
+    }
     Box(Modifier.fillMaxSize().background(FreshBg)) {
         LazyColumn(Modifier.fillMaxSize()) {
             item {
@@ -1426,6 +1437,15 @@ private fun MenuScreen(
                         )
                         store?.address?.let {
                             Text(it, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        val minO = store?.min_order_amount ?: 0.0
+                        if (minO > 0) {
+                            Text(
+                                "Ελάχ. παραγγελία €%.0f".format(minO),
+                                color = Color.White.copy(alpha = 0.9f),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                         Spacer(Modifier.height(8.dp))
                         Surface(
@@ -1481,11 +1501,28 @@ private fun MenuScreen(
                     }
                 }
             } else {
-                val menuGroups = state.menu
-                    .groupBy { it.category?.trim()?.takeIf { c -> c.isNotEmpty() } ?: "Μενού" }
-                    .toList()
-                    .sortedBy { (cat, _) -> if (cat == "Μενού") "zzz" else cat }
-                menuGroups.forEach { (category, itemsInCat) ->
+                if (menuGroups.size > 1) {
+                    item(key = "cat-chips") {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .background(FreshBg)
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FreshFilterChip("Όλα", selected = selectedCategory == null) {
+                                selectedCategory = null
+                            }
+                            menuGroups.forEach { (cat, _) ->
+                                FreshFilterChip(cat, selected = selectedCategory == cat) {
+                                    selectedCategory = cat
+                                }
+                            }
+                        }
+                    }
+                }
+                visibleGroups.forEach { (category, itemsInCat) ->
                     item(key = "cat-$category") {
                         Text(
                             category,
@@ -1496,7 +1533,12 @@ private fun MenuScreen(
                         )
                     }
                     items(itemsInCat, key = { it.id }) { item ->
-                        FreshMenuRow(item = item, onAdd = { onAdd(item) })
+                        FreshMenuRow(
+                            item = item,
+                            onAdd = {
+                                if (item.is_available != false) onAdd(item)
+                            },
+                        )
                         Spacer(Modifier.height(6.dp))
                     }
                 }
@@ -1522,6 +1564,7 @@ private fun MenuScreen(
 
 @Composable
 private fun FreshMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
+    val available = item.is_available != false
     Row(
         Modifier
             .fillMaxWidth()
@@ -1529,12 +1572,31 @@ private fun FreshMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
             .shadow(3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
-            .clickable(onClick = onAdd)
+            .clickable(enabled = available, onClick = onAdd)
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(item.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    item.name,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (available) FreshInk else FreshMuted,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!available) {
+                    Surface(color = FreshChip, shape = RoundedCornerShape(8.dp)) {
+                        Text(
+                            "Μη διαθέσιμο",
+                            color = FreshMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+            }
             item.description?.takeIf { it.isNotBlank() }?.let {
                 Spacer(Modifier.height(4.dp))
                 Text(
