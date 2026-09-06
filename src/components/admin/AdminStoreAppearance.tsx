@@ -140,17 +140,13 @@ export default function AdminStoreAppearance() {
     };
     const { error } = await (supabase as any).from('stores').update(payload).eq('id', selected.id);
     if (error && /delivery_fee|delivery_free_min/i.test(error.message)) {
-      // Columns missing pre-migration: save appearance-only so nothing is lost.
-      const legacy = {
-        tagline: payload.tagline, promo_badge: payload.promo_badge,
-        cover_image_url: payload.cover_image_url, highlight_color: payload.highlight_color,
-        image_url: payload.image_url,
-      };
-      const retry = await (supabase as any).from('stores').update(legacy).eq('id', selected.id);
+      // Columns missing pre-migration: save everything except the two new fee fields.
+      const { delivery_fee: _f, delivery_free_min: _m, ...rest } = payload;
+      const retry = await (supabase as any).from('stores').update(rest).eq('id', selected.id);
       setSaving(false);
       if (retry.error) { toast.error('Αποτυχία αποθήκευσης: ' + retry.error.message); return; }
-      toast.warning('Αποθηκεύτηκε η εμφάνιση — τα delivery-πεδία θέλουν το migration.');
-      setStores((prev) => prev.map((s) => (s.id === selected.id ? { ...s, ...legacy } : s)));
+      toast.warning('Αποθηκεύτηκε — τα κόστη delivery θέλουν το migration.');
+      setStores((prev) => prev.map((s) => (s.id === selected.id ? { ...s, ...rest } : s)));
       return;
     }
     setSaving(false);

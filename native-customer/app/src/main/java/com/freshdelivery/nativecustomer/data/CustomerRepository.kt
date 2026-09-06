@@ -161,21 +161,42 @@ class CustomerRepository(
         suspend fun searchStores(query: String): List<StoreRow> {
         val q = query.trim()
         if (q.isEmpty()) return fetchStores()
-        return client.from("stores_public")
-            .select(Columns.list(
-                "id", "name", "address", "latitude", "longitude", "is_active",
-                "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
-                "covers_delivery_fee", "delivery_fee", "delivery_free_min",
-                "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
-                "fulfilment_mode",
-            )) {
-                filter {
-                    eq("is_active", true)
-                    ilike("name", "%$q%")
-                }
-                order("name", Order.ASCENDING)
-                limit(100L)
-            }.decodeList<StoreRow>()
+        val full = listOf(
+            "id", "name", "address", "latitude", "longitude", "is_active",
+            "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
+            "covers_delivery_fee", "delivery_fee", "delivery_free_min",
+            "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+            "fulfilment_mode",
+        )
+        val legacy = listOf(
+            "id", "name", "address", "latitude", "longitude", "is_active",
+            "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
+            "covers_delivery_fee",
+            "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+            "fulfilment_mode",
+        )
+        return runCatching {
+            client.from("stores_public")
+                .select(Columns.list(full)) {
+                    filter {
+                        eq("is_active", true)
+                        ilike("name", "%$q%")
+                    }
+                    order("name", Order.ASCENDING)
+                    limit(100L)
+                }.decodeList<StoreRow>()
+        }.recoverCatching {
+            // Pre-migration view without delivery_fee/delivery_free_min.
+            client.from("stores_public")
+                .select(Columns.list(legacy)) {
+                    filter {
+                        eq("is_active", true)
+                        ilike("name", "%$q%")
+                    }
+                    order("name", Order.ASCENDING)
+                    limit(100L)
+                }.decodeList<StoreRow>()
+        }.getOrThrow()
     }
     suspend fun fetchMenu(storeId: String): List<MenuItemRow> {
         return client.from("menu_items")
@@ -325,18 +346,36 @@ class CustomerRepository(
         return cleaned
     }
     suspend fun fetchStores(): List<StoreRow> {
-        return client.from("stores_public")
-            .select(Columns.list(
-                "id", "name", "address", "latitude", "longitude", "is_active",
-                "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
-                "covers_delivery_fee", "delivery_fee", "delivery_free_min",
-                "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
-                "fulfilment_mode",
-            )) {
-                filter { eq("is_active", true) }
-                order("name", Order.ASCENDING)
-                limit(200L)
-            }.decodeList<StoreRow>()
+        val full = listOf(
+            "id", "name", "address", "latitude", "longitude", "is_active",
+            "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
+            "covers_delivery_fee", "delivery_fee", "delivery_free_min",
+            "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+            "fulfilment_mode",
+        )
+        val legacy = listOf(
+            "id", "name", "address", "latitude", "longitude", "is_active",
+            "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
+            "covers_delivery_fee",
+            "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+            "fulfilment_mode",
+        )
+        return runCatching {
+            client.from("stores_public")
+                .select(Columns.list(full)) {
+                    filter { eq("is_active", true) }
+                    order("name", Order.ASCENDING)
+                    limit(200L)
+                }.decodeList<StoreRow>()
+        }.recoverCatching {
+            // Pre-migration view without delivery_fee/delivery_free_min.
+            client.from("stores_public")
+                .select(Columns.list(legacy)) {
+                    filter { eq("is_active", true) }
+                    order("name", Order.ASCENDING)
+                    limit(200L)
+                }.decodeList<StoreRow>()
+        }.getOrThrow()
     }
     suspend fun fetchStoreRatings(): Map<String, StoreRating> = emptyMap()
     suspend fun fetchFavoriteStoreIds(userId: String): Set<String> = emptySet()
