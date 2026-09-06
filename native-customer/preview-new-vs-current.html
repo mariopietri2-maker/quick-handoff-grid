@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresh2GO Native — Current vs Competitor-inspired New</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#10151b;color:#e7edf3;font-family:"Segoe UI",Roboto,Arial,sans-serif;padding:28px 20px 60px}
+h1{font-size:20px;font-weight:800} .sub{color:#93a4b3;font-size:13px;margin-top:6px;max-width:1000px;line-height:1.5}
+.grid{display:flex;flex-wrap:wrap;gap:28px;margin-top:22px;align-items:flex-start}
+.tag{font-size:11px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;color:#93a4b3;margin-bottom:10px}
+.tag b{color:#fff}
+.phone{width:300px;background:#000;border-radius:38px;padding:10px;box-shadow:0 24px 60px rgba(0,0,0,.55)}
+.screen{border-radius:30px;overflow:hidden;height:620px;display:flex;flex-direction:column;background:#FAFAF9;color:#1C1917}
+.statusbar{height:28px;display:flex;justify-content:space-between;align-items:center;padding:0 16px;font-size:10px;font-weight:700;color:#78716C;background:#fff}
+.app{flex:1;display:flex;flex-direction:column;overflow:hidden}
+.scroll{flex:1;overflow-y:auto;padding-bottom:12px}
+.hdr{padding:10px 14px 10px;background:#fff;border-bottom:1px solid #E7E5E4}
+.brandrow{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.chip{width:40px;height:40px;border-radius:50%;background:linear-gradient(135deg,#EA580C,#FB7185);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:900;font-size:18px}
+.bname{font-weight:900;font-size:17px} .bname span{color:#EA580C} .btag{font-size:11px;color:#78716C}
+.addr{display:flex;align-items:center;gap:8px}
+.pin{width:30px;height:30px;border-radius:50%;background:#FFEDD5;display:flex;align-items:center;justify-content:center;font-size:14px}
+.alabel{font-size:11px;color:#78716C} .avalue{font-weight:800;font-size:14px}
+.search{margin-top:10px;background:#fff;border:1px solid #E7E5E4;border-radius:16px;padding:10px 12px;color:#8a8580;font-size:13px;box-shadow:0 4px 10px rgba(28,25,23,.06)}
+.chips{display:flex;gap:8px;padding:10px 14px;overflow:hidden}
+.fchip{background:#fff;border-radius:16px;padding:7px 12px;font-size:12px;font-weight:600;border:1px solid #E7E5E4}
+.fchip.on{background:#EA580C;color:#fff;border-color:#EA580C;font-weight:800}
+.promo{margin:4px 14px;background:linear-gradient(90deg,#EA580C,#F97316,#FB7185);border-radius:22px;padding:16px;color:#fff;box-shadow:0 10px 24px rgba(234,88,12,.35)}
+.promo small{opacity:.85;font-weight:700} .promo b{font-size:16px;display:block} .promo span{font-size:12px;opacity:.85}
+.tiles{display:flex;gap:12px;padding:12px 14px}
+.tile{text-align:center;font-size:11px;font-weight:700;flex:1}
+.dot{width:56px;height:56px;border-radius:50%;background:#fff;display:flex;align-items:center;justify-content:center;font-size:26px;margin:0 auto 6px;box-shadow:0 4px 10px rgba(0,0,0,.08)}
+.game{margin:6px 14px;border-radius:22px;padding:14px;color:#fff;background:linear-gradient(180deg,#0E2B1D,#0A1F15);box-shadow:0 14px 30px rgba(0,0,0,.35)}
+.game .t{font-size:12px;font-weight:900;letter-spacing:1.2px;color:#FBBF24}
+.wheel{width:120px;height:120px;border-radius:50%;margin:10px auto;background:conic-gradient(#EA580C 0 60deg,#8B5CF6 60deg 120deg,#F59E0B 120deg 180deg,#14B8A6 180deg 240deg,#F43F5E 240deg 300deg,#0B8F5F 300deg 360deg);border:5px solid rgba(255,255,255,.15);display:flex;align-items:center;justify-content:center}
+.wheel b{background:linear-gradient(135deg,#0B8F5F,#14B8A6);border-radius:50%;width:56px;height:56px;display:flex;align-items:center;justify-content:center;font-size:9px}
+.cards{display:flex;gap:8px;margin-top:8px}
+.mcard{flex:1;height:74px;border-radius:14px;background:linear-gradient(135deg,#0B8F5F,#14B8A6);display:flex;align-items:center;justify-content:center;font-size:22px;color:#fff}
+.store{margin:8px 14px;background:#fff;border-radius:22px;overflow:hidden;box-shadow:0 6px 16px rgba(0,0,0,.08)}
+.store .img{height:130px;background:linear-gradient(135deg,#ffe8d1,#ffd1d1);display:flex;align-items:center;justify-content:center;font-size:40px}
+.store .bd{padding:12px} .store .nm{font-weight:800;font-size:15px}
+.meta{display:flex;gap:6px;margin-top:8px} .pill{background:#F5F5F4;border-radius:10px;padding:5px 9px;font-size:11px;font-weight:700}
+.navbar{margin-top:auto;background:#fff;border-top:1px solid #E7E5E4;display:flex;padding:8px 0 14px}
+.nav{flex:1;text-align:center;font-size:10px;color:#78716C} .nav.on{color:#EA580C;font-weight:800} .nav i{display:block;font-style:normal;font-size:17px}
+/* NEW */
+.newaddr{display:flex;align-items:center;gap:6px;font-weight:800;font-size:14px}
+.basket{width:34px;height:34px;border-radius:50%;background:#F5F5F4;display:flex;align-items:center;justify-content:center;position:relative}
+.basket b{position:absolute;top:-4px;right:-4px;background:#22c55e;color:#fff;font-size:10px;width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center}
+.vert{display:flex;gap:10px;padding:10px 14px;text-align:center}
+.v{flex:1;font-size:10px;font-weight:700} .v span{font-size:26px;display:block}
+.hero{margin:4px 14px;border-radius:18px;background:linear-gradient(100deg,#c81e1e,#EA580C);color:#fff;padding:16px;position:relative;overflow:hidden}
+.hero b{font-size:17px} .dots{text-align:center;margin-top:8px;font-size:10px;letter-spacing:3px}
+.lucky{margin:8px 14px;background:#f3e8ff;border-radius:16px;padding:12px;display:flex;gap:10px;align-items:center}
+.lucky .cd{background:#4c1d95;color:#fff;border-radius:10px;padding:6px 10px;font-weight:800}
+.hsec{padding:12px 14px 4px;font-weight:900;font-size:15px;display:flex;justify-content:space-between;align-items:center}
+.hsec a{font-size:12px;color:#EA580C;font-weight:700}
+.hscroll{display:flex;gap:10px;padding:8px 14px;overflow:hidden}
+.hcard{min-width:150px;background:#fff;border-radius:16px;overflow:hidden;box-shadow:0 6px 14px rgba(0,0,0,.08)}
+.hcard .im{height:84px;background:linear-gradient(135deg,#ffe8d1,#d1ffe8);display:flex;align-items:center;justify-content:center;font-size:32px}
+.hcard .tx{padding:8px;font-size:11px} .hcard .tx b{font-size:12px}
+.free{font-size:10px;background:#e8fdf3;color:#0B8F5F;border-radius:8px;padding:3px 6px;font-weight:800;display:inline-block;margin-top:4px}
+.probm{margin:8px 14px;background:linear-gradient(90deg,#c81e1e,#EA580C);border-radius:16px;color:#fff;padding:14px;display:flex;gap:10px;align-items:center}
+.probm .pb{background:#fff;color:#c81e1e;font-weight:900;border-radius:8px;padding:4px 10px}
+.note{font-size:12px;color:#93a4b3;max-width:300px;margin-top:10px;line-height:1.55}
+</style>
+</head>
+<body>
+<h1>Fresh2GO Native Customer — Current vs New (competitor-inspired, games kept)</h1>
+<p class="sub">Left: what ships today (<code>CustomerShell.kt / Theme.kt</code> — orange #EA580C → pink #FB7185, vertical store cards, 4 filter chips). Right: proposed redesign inspired by your competitor video — same orange flashiness, but efood-style merchandising. Both keep <b>ΡΟΔΑ ΕΚΠΤΩΣΕΩΝ</b> + <b>ΜΥΣΤΙΚΕΣ ΚΑΡΤΕΣ</b>.</p>
+<div class="grid">
+<div><div class="tag">Current — <b>as-is</b></div>
+<div class="phone"><div class="screen"><div class="statusbar"><span>9:41</span><span>5G 🔋</span></div>
+<div class="app"><div class="scroll">
+<div class="hdr"><div class="brandrow"><div class="chip">F</div><div><div class="bname">Fresh<span>2GO</span></div><div class="btag">Η Ήπειρος στο σπίτι σου, γρήγορα.</div></div></div>
+<div class="addr"><div class="pin">📍</div><div><div class="alabel">Παράδοση σε</div><div class="avalue">Ιωάννινα</div></div></div>
+<div class="search">🔍 Αναζήτηση καταστημάτων</div></div>
+<div class="chips"><div class="fchip on">Όλα</div><div class="fchip">Ανοιχτά</div><div class="fchip">Κοντά μου</div><div class="fchip">Αγαπημένα</div></div>
+<div class="promo"><small>PROMO</small><b>-20% στα σουβλάκια</b><span>με κωδικό SOUVLA20</span></div>
+<div class="tiles"><div class="tile"><div class="dot">🍔</div>Φαγητό</div><div class="tile"><div class="dot">🍕</div>Πίτσα</div><div class="tile"><div class="dot">☕</div>Καφές</div><div class="tile"><div class="dot">🍰</div>Γλυκά</div></div>
+<div class="game"><div class="t">🎁 ΡΟΔΑ ΕΚΠΤΩΣΕΩΝ</div><div class="wheel"><b>ΓΥΡΙΣΕ</b></div><div class="cards"><div class="mcard">🎁</div><div class="mcard">🎁</div><div class="mcard">🎁</div></div><div style="font-size:10px;opacity:.6;margin-top:6px">ΜΥΣΤΙΚΕΣ ΚΑΡΤΕΣ — άνοιξε μία</div></div>
+<div class="store"><div class="img">🍢</div><div class="bd"><div class="nm">Σ'αναμμένα Κάρβουνα</div><div style="font-size:12px;color:#78716C">Σουβλάκια • 15'-20'</div><div class="meta"><div class="pill">⭐ 4.8</div><div class="pill">🛵 Delivered by Fresh</div></div></div></div>
+<div class="store"><div class="img">🍔</div><div class="bd"><div class="nm">Goody's Burger House</div><div style="font-size:12px;color:#78716C">Burgers • 25'-35'</div><div class="meta"><div class="pill">⭐ 4.3</div><div class="pill">🛵 Delivered by Fresh</div></div></div></div>
+</div><div class="navbar"><div class="nav on"><i>⌂</i>Αρχική</div><div class="nav"><i>🔍</i>Αναζήτηση</div><div class="nav"><i>🧾</i>Παραγγελίες</div><div class="nav"><i>👤</i>Λογαριασμός</div></div>
+</div></div></div>
+<p class="note">Vertical list, one big card per store. No horizontal sections, no urgency timer, no pro upsell.</p></div>
+
+<div><div class="tag">New — <b>proposed (competitor layout + your colors + games)</b></div>
+<div class="phone"><div class="screen"><div class="statusbar"><span>20:30</span><span>5G 25% 🟢</span></div>
+<div class="app"><div class="scroll">
+<div class="hdr"><div style="display:flex;align-items:center;justify-content:space-between"><div class="newaddr">💼 Ανεξαρτησίας 39 ⌄</div><div style="display:flex;gap:8px"><div class="basket">🧺<b>1</b></div><div class="basket">👤</div></div></div>
+<div class="search">🔍 Αναζήτηση</div></div>
+<div class="vert"><div class="v"><span>🥙</span>Φαγητό, καφές</div><div class="v"><span>🛒</span>Supermarkets</div><div class="v"><span>🏪</span>Καταστήματα</div><div class="v"><span>🛍️</span>Takeaway</div></div>
+<div class="hero"><small>βρες τα αγαπημένα σου</small><b>supermarket</b><div class="dots">●○○○○</div></div>
+<div class="lucky"><div><b>Η Τυχερή Σακούλα</b><div style="font-size:11px;color:#6d28d9">Από 15€ Μόνο 10€ • Από 20€ 13€</div></div><div style="margin-left:auto" class="cd">18:03</div></div>
+<div class="game"><div class="t">🎁 ΡΟΔΑ ΕΚΠΤΩΣΕΩΝ — kept</div><div class="wheel"><b>ΓΥΡΙΣΕ</b></div><div class="cards"><div class="mcard">A</div><div class="mcard">B</div><div class="mcard">C</div></div><div style="font-size:10px;opacity:.6;margin-top:6px">ΜΥΣΤΙΚΕΣ ΚΑΡΤΕΣ — kept as-is</div></div>
+<div class="hsec">Φαγητό με δωρεάν delivery <a>Δες τα όλα ›</a></div>
+<div class="hscroll"><div class="hcard"><div class="im">🍔</div><div class="tx"><b>S.A.M street food</b><br>⭐ 4.9 (535) Burgers<br><span class="free">🛵 Δωρεάν διανομή</span></div></div><div class="hcard"><div class="im">🥙</div><div class="tx"><b>Σ'αναμμένα Κάρβουνα</b><br>⭐ 4.8 (4290)<br><span class="free">🛵 Δωρεάν διανομή</span></div></div></div>
+<div class="hsec">Δωρεάν delivery • meal for one</div>
+<div class="hscroll"><div class="hcard"><div class="im">🌯</div><div class="tx"><b>Γύρος χοιρινό</b><br>Από 5,14€ • -35%</div></div><div class="hcard"><div class="im">🍗</div><div class="tx"><b>Μισό κοτόπουλο</b><br>7,00€</div></div></div>
+<div class="probm"><div>🛵</div><div><b>απεριόριστο δωρεάν delivery</b><div style="font-size:11px">30 ημέρες δωρεάν δοκιμή</div></div><div style="margin-left:auto" class="pb">γίνε pro</div></div>
+<div class="hsec">Δημοφιλείς κουζίνες</div>
+<div class="vert"><div class="v"><span>🥙</span>Σουβλάκια</div><div class="v"><span>🍕</span>Pizza</div><div class="v"><span>🥞</span>Κρέπες</div><div class="v"><span>🍔</span>Burgers</div></div>
+</div><div class="navbar"><div class="nav on"><i>⌂</i>Ανακάλυψε</div><div class="nav"><i>🍴</i>Φαγητό, Καφές</div><div class="nav"><i>🥑</i>Supermarkets</div><div class="nav"><i>🛍️</i>Καταστήματα</div></div>
+</div></div></div>
+<p class="note"><b>What changed:</b> address+basket header, 4 verticals, hero carousel, urgency timer, horizontal sections, meal-for-one quick-add, pro banner, cuisine row, 4-tab nav. <b>Kept:</b> orange/pink flashy gradients, rounded 22dp, both games in same spot, FreshGreen ETA/rating logic.</p></div>
+</div>
+</body>
+</html>
