@@ -1,4 +1,4 @@
-name: Label 2.6.10
+name: Label release from gradle + sync website
 on:
   workflow_dispatch:
 permissions:
@@ -11,32 +11,47 @@ jobs:
       - name: Bump website + release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_BASE: ${{ github.server_url }}/${{ github.repository }}/releases/download/mobile-apks-v1
         run: |
           set -euo pipefail
-          sed -i "s/APK_NATIVE_DRIVER_VERSION = '2.6.9-native'/APK_NATIVE_DRIVER_VERSION = '2.6.10-native'/" src/lib/apk-downloads.ts
+          DRIVER_V=$(grep -E 'versionName\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          DRIVER_C=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          CUST_V=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          CUST_C=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          echo "Driver $DRIVER_V ($DRIVER_C) · Customer $CUST_V ($CUST_C)"
+
+          export DRIVER_V CUST_V
+          python3 - <<'PY'
+          import os, re
+          from pathlib import Path
+          p = Path("src/lib/apk-downloads.ts")
+          t = p.read_text(encoding="utf-8")
+          t = re.sub(r"APK_NATIVE_DRIVER_VERSION = '[^']*'", f"APK_NATIVE_DRIVER_VERSION = '{os.environ['DRIVER_V'].strip()}'", t)
+          t = re.sub(r"APK_NATIVE_CUSTOMER_VERSION = '[^']*'", f"APK_NATIVE_CUSTOMER_VERSION = '{os.environ['CUST_V'].strip()}'", t)
+          p.write_text(t, encoding="utf-8")
+          print("apk-downloads.ts synced to gradle versions")
+          PY
+
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add src/lib/apk-downloads.ts
-          git commit -m "chore(web): driver APK label 2.6.10-native" || true
+          git commit -m "chore(web): sync native APK labels (${DRIVER_V} / ${CUST_V})" || true
           git push || true
-          BODY=$(cat <<'EOF'
-          ## Fresh Meal latest Android builds
+          BODY=$(cat <<EOF
+          ## fresh2go latest Android builds
 
           **Latest first**
 
-          1. **Driver APK** — **2.6.10-native** (build 261)
-          - Confirm dialog before completing N-store call
-          - Store-call card without needing regular offer
-          - call_role K and both
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk
+          1. **Driver APK** — **${DRIVER_V}** (build ${DRIVER_C})
+          ${RELEASE_BASE}/fresh2go-driver-native-debug.apk
 
-          2. **Customer APK** — **2.7.0-native** (build 252)
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk
+          2. **Customer APK** — **${CUST_V}** (build ${CUST_C})
+          ${RELEASE_BASE}/fresh2go-customer-native-debug.apk
 
           Only the latest build is kept on this release.
           EOF
           )
           gh release edit mobile-apks-v1 \
             --repo "${{ github.repository }}" \
-            --title "Driver 2.6.10-native (261) · Customer 2.7.0-native (252)" \
+            --title "Driver ${DRIVER_V} (${DRIVER_C}) · Customer ${CUST_V} (${CUST_C})" \
             --notes "$BODY"
