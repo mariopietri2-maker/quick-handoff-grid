@@ -1,0 +1,22 @@
+name: Apply FreshGreenBright import
+on:
+  push:
+    paths:
+      - 'scripts/apply_import_freshgreenbright.py'
+      - '.github/workflows/apply-import-freshgreenbright.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_import_freshgreenbright.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/
+          git commit -m "fix(driver): import FreshGreenBright for login fields" || exit 0
+          git push
