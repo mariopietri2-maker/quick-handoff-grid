@@ -5,7 +5,7 @@ const isDev = process.env.CAPACITOR_DEV === '1';
 
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.customer',
-  appName: 'fresh2go',
+  appName: 'Fresh2GO',
   webDir: 'dist',
   server: {
     // Primary host is Railway (freshdelivery.app); Vercel kept as fallback.

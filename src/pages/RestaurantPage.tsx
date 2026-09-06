@@ -226,7 +226,7 @@ export default function RestaurantPage() {
       style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
       <SEO
-        title={`${store.name} — Μενού & Παραγγελία | fresh2go`}
+        title={`${store.name} — Μενού & Παραγγελία | Fresh2GO`}
         description={`Παραγγείλτε online από ${store.name}. Δείτε το μενού, τιμές και διαθεσιμότητα και απολαύστε γρήγορη παράδοση στην πόρτα σας.`}
         path={`/restaurant/${store.id}`}
         type="product"
@@ -351,7 +351,7 @@ export default function RestaurantPage() {
             {platformDelivers && (
               <>
                 <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
-                  Delivered by fresh2go
+                  Delivered by Fresh2GO
                 </span>
                 <span>0.99€ παράδοση</span>
               </>
