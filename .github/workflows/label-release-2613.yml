@@ -1,39 +1,39 @@
-name: Label release 2.6.13 / 2.7.1
+name: Label release from gradle versions
 on:
   workflow_dispatch:
-  workflow_run:
-    workflows: ["Build Native APKs"]
-    types: [completed]
 permissions:
   contents: write
 jobs:
   label:
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@v4
       - name: Update GitHub release notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_BASE: ${{ github.server_url }}/${{ github.repository }}/releases/download/mobile-apks-v1
         run: |
-          BODY=$(cat <<'EOF'
-          ## Fresh Meal latest Android builds
+          set -euo pipefail
+          DRIVER_NAME=$(grep -E 'versionName\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          DRIVER_CODE=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          CUST_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          CUST_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          echo "Driver $DRIVER_NAME ($DRIVER_CODE) · Customer $CUST_NAME ($CUST_CODE)"
+          BODY=$(cat <<EOF
+          ## fresh2go latest Android builds
 
           **Latest first**
 
-          1. **Driver APK** — **2.6.13-native** (build 264)
-          - Store + customer pins on pending offers
-          - Branded launcher icon · name Fresh Meal Driver
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk
+          1. **Driver APK** — **${DRIVER_NAME}** (build ${DRIVER_CODE})
+          ${RELEASE_BASE}/fresh2go-driver-native-debug.apk
 
-          2. **Customer APK** — **2.7.1-native** (build 253)
-          - Friendlier Ioannina address picker
-          - Quick area chips · street+number search
-          https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk
+          2. **Customer APK** — **${CUST_NAME}** (build ${CUST_CODE})
+          ${RELEASE_BASE}/fresh2go-customer-native-debug.apk
 
           Only the latest build is kept on this release.
           EOF
           )
           gh release edit mobile-apks-v1 \
             --repo "${{ github.repository }}" \
-            --title "Driver 2.6.13-native (264) · Customer 2.7.1-native (253)" \
+            --title "Driver ${DRIVER_NAME} (${DRIVER_CODE}) · Customer ${CUST_NAME} (${CUST_CODE})" \
             --notes "$BODY"
