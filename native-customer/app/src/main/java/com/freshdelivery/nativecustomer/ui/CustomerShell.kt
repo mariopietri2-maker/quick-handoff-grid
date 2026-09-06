@@ -97,6 +97,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -788,6 +789,35 @@ private fun HomeTab(
                 }
             }
         }
+
+        val recentStores = remember(state.orders, state.stores) {
+            val ids = state.orders.map { it.order.store_id }.distinct().take(8)
+            ids.mapNotNull { id -> state.stores.find { it.id == id } }
+        }
+        if (recentStores.isNotEmpty()) {
+            item {
+                DiscoverSectionHeader(title = "Παράγγειλε ξανά", action = null, onAction = {})
+            }
+            item {
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    recentStores.forEach { store ->
+                        StoreMiniCard(
+                            store = store,
+                            rating = state.storeRatings[store.id],
+                            deliveryLat = state.deliveryLat,
+                            deliveryLng = state.deliveryLng,
+                            onClick = { onOpenStore(store) },
+                        )
+                    }
+                }
+            }
+        }
+
         if (state.gameShow) {
             item {
                 when (state.gameActive) {
@@ -1761,6 +1791,54 @@ private fun CartCheckoutScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (state.cart.isEmpty()) {
+                item {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(
+                            Modifier
+                                .size(88.dp)
+                                .clip(CircleShape)
+                                .background(FreshGreenSoft),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Outlined.ShoppingBag,
+                                contentDescription = null,
+                                tint = FreshGreenDark,
+                                modifier = Modifier.size(40.dp),
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Το καλάθι είναι άδειο",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = FreshInk,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Πρόσθεσε πιάτα από ένα κατάστημα για να συνεχίσεις.",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                        )
+                        Spacer(Modifier.height(20.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = FreshGreen, contentColor = Color.White),
+                            shape = RoundedCornerShape(16.dp),
+                        ) {
+                            Text("Δες καταστήματα", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
             item {
                 Text("Τα αντικείμενά σου", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
             }
@@ -2081,6 +2159,7 @@ private fun CartCheckoutScreen(
                     Spacer(Modifier.height(32.dp))
                 }
             }
+            } // end else non-empty cart
         }
     }
 }
