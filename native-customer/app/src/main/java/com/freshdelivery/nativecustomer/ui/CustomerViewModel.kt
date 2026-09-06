@@ -1,5 +1,7 @@
 package com.freshdelivery.nativecustomer.ui
 
+import com.freshdelivery.nativecustomer.util.userFacingError
+
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -323,7 +325,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signIn(email, password) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Login failed")
+                    _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία σύνδεσης"))
                 }
                 .onSuccess { _state.value = _state.value.copy(busy = false) }
         }
@@ -338,7 +340,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signUp(email, password, fullName, phone) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Signup failed")
+                    _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία εγγραφής"))
                 }
                 .onSuccess {
                     _state.value = _state.value.copy(
@@ -364,7 +366,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     info = "Το προφίλ αποθηκεύτηκε",
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(savingProfile = false, error = e.message)
+                _state.value = _state.value.copy(savingProfile = false, error = userFacingError(e, "Αποτυχία αποθήκευσης προφίλ"))
             }
         }
     }
@@ -412,7 +414,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 persistLastAddress()
                 if (label != null) seedGeocodeCache(label, loc.latitude, loc.longitude)
             }.onFailure { e ->
-                _state.value = _state.value.copy(locating = false, error = e.message ?: "Αποτυχία τοποθεσίας")
+                _state.value = _state.value.copy(locating = false, error = userFacingError(e, "Αποτυχία τοποθεσίας"))
             }
         }
     }
@@ -599,7 +601,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     busy = false,
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = e.message)
+                _state.value = _state.value.copy(busy = false, error = userFacingError(e))
             }
         }
     }
@@ -818,6 +820,21 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = s.copy(error = "Το κατάστημα είναι προσωρινά κλειστό — δοκίμασε αργότερα")
             return
         }
+        val sLat = store.latitude
+        val sLng = store.longitude
+        val dLat0 = s.deliveryLat
+        val dLng0 = s.deliveryLng
+        if (sLat != null && sLng != null && dLat0 != null && dLng0 != null) {
+            val nearStore = haversineKm(sLat, sLng, dLat0, dLng0) < 0.05
+            val addrLooksLikeStore = !store.address.isNullOrBlank() &&
+                s.deliveryAddress.trim().equals(store.address!!.trim(), ignoreCase = true)
+            if (nearStore || addrLooksLikeStore) {
+                _state.value = s.copy(
+                    error = "Η διεύθυνση παράδοσης είναι ίδια με του καταστήματος. Επίλεξε τη διεύθυνση του σπιτιού σου.",
+                )
+                return
+            }
+        }
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching {
@@ -883,7 +900,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     refreshOrders()
                 }
   }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
+                _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία παραγγελίας"))
             }
         }
     }
@@ -920,7 +937,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         busy = false,
-                        error = e.message ?: "Αποτυχία Stripe",
+                        error = userFacingError(e, "Αποτυχία πληρωμής"),
                     )
                     openCardPaymentInBrowser(orderId)
                 }
@@ -1065,7 +1082,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     storeRatings = repo.fetchStoreRatings(),
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = userFacingError(e))
             }
         }
     }
@@ -1089,7 +1106,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 if (adding) repo.addFavoriteStore(uid, storeId) else repo.removeFavoriteStore(uid, storeId)
             }.onFailure { e ->
-                _state.value = _state.value.copy(favoriteStoreIds = cur, error = e.message)
+                _state.value = _state.value.copy(favoriteStoreIds = cur, error = userFacingError(e))
             }
         }
     }
@@ -1123,7 +1140,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 ensureDeliveryCoordsOnTrack(tracked)
                 refreshLoyalty()
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = userFacingError(e))
             }
         }
     }
@@ -1376,7 +1393,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onSuccess { list -> _state.value = _state.value.copy(tickets = list) }
                 .onFailure { e ->
                     _state.value = _state.value.copy(
-                        ticketError = e.message ?: "Δεν φορτώθηκαν τα αιτήματα",
+                        ticketError = userFacingError(e, "Δεν φορτώθηκαν τα αιτήματα"),
                     )
                 }
         }
@@ -1406,7 +1423,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             }.onFailure { e ->
                 _state.value = _state.value.copy(
                     ticketPending = false,
-                    ticketError = e.message ?: "Αποτυχία υποβολής",
+                    ticketError = userFacingError(e, "Αποτυχία υποβολής"),
                 )
             }
         }
@@ -1432,7 +1449,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         ticketLoading = false,
-                        ticketError = e.message ?: "Δεν φορτώθηκε το ticket",
+                        ticketError = userFacingError(e, "Δεν φορτώθηκε το αίτημα"),
                     )
                 }
         }
