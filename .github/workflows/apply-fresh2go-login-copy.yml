@@ -1,0 +1,22 @@
+name: Apply Fresh2GO login copy
+on:
+  push:
+    paths:
+      - 'scripts/apply_fresh2go_login_copy.py'
+      - '.github/workflows/apply-fresh2go-login-copy.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_fresh2go_login_copy.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/auth/LoginScreen.kt
+          git commit -m "brand: Fresh2GO login screen copy and warm background" || exit 0
+          git push
