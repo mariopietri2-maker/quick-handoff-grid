@@ -19,7 +19,8 @@ import { SEO } from '@/components/SEO';
 import { Logo } from '@/components/brand/Logo';
 import { cn } from '@/lib/utils';
 
-const VIDEO_SRC = '/presentation/fresh2go-promo.mp4';
+const VIDEO_WEBM_SRC = '/presentation/fresh2go-promo.webm';
+const VIDEO_MP4_SRC = '/presentation/fresh2go-promo.mp4';
 const PDF_SRC = '/presentation/fresh2go-presentation.pdf';
 
 type Tab = 'video' | 'pdf';
@@ -246,22 +247,24 @@ export default function PresentationPage() {
               style={{ boxShadow: '0 0 90px hsl(24 100% 55% / 0.18), 0 30px 60px rgba(0,0,0,0.45)' }}
             >
               <video
-                key={VIDEO_SRC}
+                key={VIDEO_WEBM_SRC}
                 className="w-full aspect-video bg-black"
-                src={VIDEO_SRC}
                 poster="/og-image.png"
                 controls
                 playsInline
                 preload="metadata"
-              />
+              >
+                <source src={VIDEO_WEBM_SRC} type="video/webm" />
+                <source src={VIDEO_MP4_SRC} type="video/mp4" />
+              </video>
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-white/55">
                 Promo ταινία · ροή παραγγελίας, ρόλοι, live παρακολούθηση.
               </p>
               <a
-                href={VIDEO_SRC}
-                download="Fresh2GO.GR-promo.mp4"
+                href={VIDEO_WEBM_SRC}
+                download="Fresh2GO.GR-promo.webm"
                 className="inline-flex items-center gap-2 rounded-xl border border-white/15 px-4 py-2.5 text-sm font-heading font-semibold text-white/85 hover:bg-white/10 transition-colors"
               >
                 <Download className="h-4 w-4" />
