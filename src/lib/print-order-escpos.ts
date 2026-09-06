@@ -97,7 +97,7 @@ export function buildOrderEscPos(
   enc.feed(1);
 
   // Ticket number
-  enc.text('─'.repeat(cols));
+  enc.text('-'.repeat(cols));
   enc.feed(1);
   enc.double(true);
   enc.bold(true);
@@ -110,7 +110,7 @@ export function buildOrderEscPos(
   if (payLabel) {
     enc.align('center');
     enc.bold(true);
-    enc.text(escpad(`${payLabel}${!isCash ? ' · ΠΛΗΡΩΘΗΚΕ' : ''}`, cols - 4, 'center').trimEnd()); 
+    enc.text(escpad(`${payLabel}${!isCash ? ' - ΠΛΗΡΩΘΗΚΕ' : ''}`, cols - 4, 'center').trimEnd()); 
     enc.bold(false);
     enc.feed(1);
   }
