@@ -64,6 +64,7 @@ import com.freshdelivery.nativedriver.BuildConfig
 import com.freshdelivery.nativedriver.R
 import com.freshdelivery.nativedriver.data.DriverPreferences
 import com.freshdelivery.nativedriver.ui.theme.FreshGreen
+import com.freshdelivery.nativedriver.ui.theme.FreshGreenBright
 
 @Composable
 fun LoginScreen(
