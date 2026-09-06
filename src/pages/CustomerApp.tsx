@@ -12,7 +12,7 @@ import {
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '@/integrations/supabase/types';
 import PromoBannerCarousel from '@/components/PromoBannerCarousel';
@@ -188,7 +188,7 @@ export default function CustomerApp() {
     return () => { cancelled = true; };
   }, [user]);
 
-  const displayAddress = deliveryAddress
+const displayAddress = deliveryAddress
     ? deliveryAddress.length > 28
       ? deliveryAddress.slice(0, 28) + '…'
       : deliveryAddress
@@ -213,6 +213,27 @@ export default function CustomerApp() {
       window.removeEventListener('customer:focus-browse', onBrowse);
       window.removeEventListener('customer:focus-home', onHome);
     };
+  }, []);
+
+  // ── Deep-link sync from URL params ──
+  useEffect(() => {
+    const onMount = () => {
+      const searchParams = useSearchParams();
+      const q = searchParams.get('q');
+      const cat = searchParams.get('cat');
+      if (q) {
+        setSearch(q);
+        setDebouncedSearch(q.trim());
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+      }
+      if (cat && cat !== 'all') {
+        setSelectedCategory(cat);
+        window.setTimeout(() => {
+          document.getElementById('browse-categories')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
+      }
+    };
+    onMount();
   }, []);
 
   useEffect(() => {

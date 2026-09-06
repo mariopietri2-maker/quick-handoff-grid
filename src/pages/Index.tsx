@@ -1,31 +1,35 @@
-import { useEffect, useRef, useState } from 'react';
-import { ArrowRight, Zap, Shield, ChartBar as BarChart3, MapPin, Users, Search, ClipboardList, Bike, CircleCheck as CheckCircle, Headphones, Activity, TrendingUp, Star, Store, Car } from 'lucide-react';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { ArrowRight, Zap, Shield, ChartBar as BarChart3, MapPin, Users, Search,
+  ClipboardList, Bike, CircleCheck as CheckCircle, Headphones, Activity, TrendingUp,
+  Star, Store, Car, CreditCard, Lock, BadgeCheck } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { Button } from '@/components/ui/button';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SEO } from '@/components/SEO';
 import { supabase } from '@/integrations/supabase/client';
+import { useStoreRatings } from '@/hooks/useStoreRatings';
 
-/* ─── tiny count-up hook ─── */
+/* ─── count-up hook (animates from previous target) ─── */
 function useCountUp(target: number, duration = 1200) {
   const [val, setVal] = useState(0);
-  const ref = useRef<HTMLSpanElement>(null);
+  const fromRef = useRef(0);
+  const rafRef = useRef(0);
   useEffect(() => {
+    const from = fromRef.current;
+    fromRef.current = target;
     if (!target) { setVal(0); return; }
     const start = performance.now();
-    const from = 0;
-    let raf = 0;
     const tick = (now: number) => {
       const p = Math.min(1, (now - start) / duration);
       const eased = 1 - Math.pow(1 - p, 3);
       setVal(Math.round(from + (target - from) * eased));
-      if (p < 1) raf = requestAnimationFrame(tick);
+      if (p < 1) rafRef.current = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    rafRef.current = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(rafRef.current);
   }, [target, duration]);
-  return { val, ref };
+  return { val };
 }
 
 
@@ -58,16 +62,21 @@ const Index = () => {
 
   const [counts, setCounts] = useState({ stores: 0, drivers: 0, orders: 0, rating: 0 });
   const [partners, setPartners] = useState<string[]>([]);
+  const [heroCover, setHeroCover] = useState<string | null>(null);
+  const [offers, setOffers] = useState<LandingOffer[]>([]);
 
   useEffect(() => {
-    (async () => {
-      const [s, d, o, r, names] = await Promise.all([
+    let cancelled = false;
+    let timer: ReturnType<typeof setInterval> | null = null;
+
+    const loadCounts = async () => {
+      const [s, d, o, r] = await Promise.all([
         (supabase as any).from('stores_public').select('id', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('driver_profiles').select('id', { count: 'exact', head: true }),
         supabase.from('orders').select('id', { count: 'exact', head: true }),
         supabase.from('reviews').select('rating'),
-        (supabase as any).from('stores_public').select('name').eq('is_active', true).order('name').limit(12),
       ]);
+      if (cancelled) return;
       const ratings = (r.data ?? []) as { rating: number }[];
       const avg = ratings.length ? ratings.reduce((a, b) => a + (b.rating ?? 0), 0) / ratings.length : 0;
       setCounts({
@@ -76,9 +85,104 @@ const Index = () => {
         orders: o.count ?? 0,
         rating: Math.round(avg * 10),
       });
-      setPartners(((names.data ?? []) as { name: string }[]).map((n) => n.name));
-    })();
+    };
+
+    const loadPartners = async () => {
+      const names = await (supabase as any).from('stores_public').select('name').eq('is_active', true).order('name').limit(12);
+      if (!cancelled) setPartners(((names.data ?? []) as { name: string }[]).map((n) => n.name));
+    };
+
+    const loadFeed = async () => {
+      const [storeRes, menuRes] = await Promise.all([
+        (supabase as any)
+          .from('stores_public')
+          .select('id, name, image_url, cover_image_url, promo_badge, covers_delivery_fee, prep_buffer_minutes, delivery_free_min')
+          .eq('is_active', true)
+          .limit(50),
+        supabase
+          .from('menu_items')
+          .select('id, name, price, image_url, store_id')
+          .eq('is_available', true)
+          .eq('is_snoozed', false)
+          .not('image_url', 'is', null)
+          .limit(24),
+      ]);
+      if (cancelled) return;
+      const rows = (storeRes.data ?? []) as StoreMeta[];
+      const storeMap = new Map(rows.map((s) => [s.id, s]));
+
+      setPartners(rows.slice(0, 12).map((s) => s.name));
+
+      let cover: string | null = null;
+      const promoted = (promoRes.data ?? []) as Pick<StoreMeta, 'image_url' | 'cover_image_url'>[];
+      const promotedCover = promoted[0]?.cover_image_url || promoted[0]?.image_url || null;
+      const anyCover = rows.find((s) => s.cover_image_url || s.image_url);
+      cover = promotedCover || (anyCover ? (anyCover.cover_image_url || anyCover.image_url) : null);
+      setHeroCover(cover);
+
+      const items = (menuRes.data ?? []) as any[];
+      const next: LandingOffer[] = [];
+      for (const m of items) {
+        const s = m?.store_id ? storeMap.get(m.store_id) : undefined;
+        if (!s) continue;
+        next.push({
+          id: m.id,
+          name: m.name,
+          price: Number(m.price ?? 0),
+          image_url: m.image_url,
+          store_id: s.id,
+          store_name: s.name,
+          promo_badge: s.promo_badge ?? null,
+          covers_delivery_fee: Boolean(s.covers_delivery_fee),
+          prep_buffer_minutes: s.prep_buffer_minutes,
+          delivery_free_min: s.delivery_free_min ?? null,
+        });
+      }
+      setOffers(next.slice(0, 12));
+    };
+
+    void loadCounts();
+    void loadPartners();
+    void loadFeed();
+    timer = setInterval(() => { void loadCounts(); }, 5000);
+
+    // Store ratings for live offers row
+    const offerIds = useMemo(() => offers.map((o) => o.store_id).filter(Boolean), [offers]);
+    const ratings = useStoreRatings(offerIds);
+
+    return () => {
+      cancelled = true;
+      if (timer) clearInterval(timer);
+    };
   }, []);
+
+  const goCategory = (cat: string) => {
+    navigate(cat && cat !== 'all' ? `/order?cat=${encodeURIComponent(cat)}` : '/order');
+  };
+
+  type StoreMeta = {
+    id: string;
+    name: string;
+    image_url: string | null;
+    cover_image_url?: string | null;
+    promo_badge?: string | null;
+    covers_delivery_fee?: boolean;
+    prep_buffer_minutes?: number | null;
+    delivery_free_min?: number | null;
+  };
+
+  type LandingOffer = {
+    id: string;
+    name: string;
+    price: number;
+    image_url: string | null;
+    store_id: string;
+    store_name: string;
+    promo_badge?: string | null;
+    covers_delivery_fee?: boolean;
+    prep_buffer_minutes?: number | null;
+    delivery_free_min?: number | null;
+  };
 
   const stores  = useCountUp(counts.stores);
   const drivers = useCountUp(counts.drivers);
@@ -152,6 +256,12 @@ title="Fresh2GO — Fast Delivery."
           />
           <div className="absolute inset-0 opacity-[0.05]"
                style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
+          {heroCover && (
+            <div aria-hidden className="absolute inset-0 -z-[5] overflow-hidden"
+                 style={{ background: 'linear-gradient(165deg, #EA580C 0%, #F97316 42%, #FB7185 130%)' }}>
+              <img src={heroCover} alt="" className="w-full h-full object-cover animate-kenburns opacity-40" />
+            </div>
+          )}
         </div>
 
         <div className="relative max-w-5xl mx-auto px-4 pt-16 sm:pt-24 pb-16 text-center">
@@ -170,6 +280,41 @@ title="Fresh2GO — Fast Delivery."
             Φρέσκο φαγητό από τα αγαπημένα σου καταστήματα — γρήγορα στην πόρτα σου.
             Real-time tracking, διαφανείς προμήθειες, μηδέν χάος.
           </p>
+
+          {/* Hero search + category chips */}
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              const q = searchInputRef.current?.value || '';
+              if (q) navigate(q ? `/order?q=${encodeURIComponent(q)}` : '/order');
+            }}
+            className="flex items-center gap-2 mb-6 max-w-lg mx-auto"
+          >
+            <Input
+              ref={searchInputRef}
+              placeholder="Ψάξε για σουβλάκι, πίτσα, καφέ…"
+              className="flex-1 bg-[hsl(var(--c-surface-muted))] border-0 rounded-full text-[15px] font-medium placeholder:text-[hsl(var(--c-text-soft))] focus-visible:ring-2 focus-visible:ring-[hsl(var(--c-text)/0.15)] focus-visible:bg-[hsl(var(--c-surface))] focus-visible:ring-offset-0"
+            />
+            <button type="submit" className="flex items-center gap-1.5 px-4 py-2 rounded-full bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] font-medium hover:bg-[hsl(var(--c-text)/0.9)] transition-colors">
+              <Search className="h-4 w-4 c-soft" strokeWidth={2.4} />
+            </button>
+          </form>
+          <div className="flex flex-wrap gap-2 justify-center mb-6">
+            {cfg.tiles.map((tile) => (
+              <button
+                key={tile.value}
+                type="button"
+                onClick={() => goCategory(tile.value)}
+                className={`px-3 py-1 rounded-full text-[12px] font-semibold transition-colors ${
+                  selectedCategory === tile.value
+                    ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))]'
+                    : 'bg-[hsl(var(--c-surface-muted))] text-[hsl(var(--c-text-soft))]'
+                }`}
+              >
+                {tile.emoji} {tile.label}
+              </button>
+            ))}
+          </div>
 
           <div className="flex flex-col sm:flex-row gap-3 justify-center mb-14 animate-fade-in"
                style={{ animationDelay: '0.3s', animationFillMode: 'both' }}>
@@ -221,20 +366,28 @@ title="Fresh2GO — Fast Delivery."
             </div>
           )}
 
+          {/* Payment trust badges row */}
+          <div className="flex items-center justify-center gap-4 mb-4">
+            <span className="text-xs font-semibold c-soft">Ασφαλής πληρωμή</span>
+            <CreditCard className="h-4 w-4 text-primary" /> <span className="text-[10px] ml-1 font-medium c-ink">Visa / Mastercard</span>
+            <Lock className="h-4 w-4 text-primary" /> <span className="text-[10px] ml-1 font-medium c-ink">2FA</span>
+            <BadgeCheck className="h-4 w-4 text-primary" /> <span className="text-[10px] ml-1 font-medium c-ink">Εγγυημένη παράδοση</span>
+          </div>
+
           {/* Live stat tiles */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4 max-w-3xl mx-auto animate-fade-in"
                style={{ animationDelay: '0.4s', animationFillMode: 'both' }}>
-            <StatTile icon={Store}      label="Καταστήματα"   countRef={stores.ref}  display={`${stores.val}`} />
-            <StatTile icon={Bike}       label="Οδηγοί"         countRef={drivers.ref} display={`${drivers.val}`} />
-            <StatTile icon={Activity}   label="Παραγγελίες"    countRef={orders.ref}  display={`${orders.val}`} />
-            <StatTile icon={Star}       label="Αξιολόγηση"     countRef={rating.ref}  display={rating.val ? `${(rating.val/10).toFixed(1)}★` : '—'} />
+            <StatTile icon={Store}      label="Καταστήματα"   display={`${stores.val}`} />
+            <StatTile icon={Bike}       label="Οδηγοί"         display={`${drivers.val}`} />
+            <StatTile icon={Activity}   label="Παραγγελίες"    display={`${orders.val}`} />
+            <StatTile icon={Star}       label="Αξιολόγηση"     display={rating.val ? `${(rating.val/10).toFixed(1)}★` : '—'} />
           </div>
         </div>
 
         {/* Partner marquee */}
         <div className="relative border-y border-white/25 bg-black/[0.12]">
           <div className="max-w-6xl mx-auto px-4 py-5 overflow-hidden">
-            <div className="flex gap-10 whitespace-nowrap animate-marquee">
+            <div className="flex gap-10 whitespace-nowrap marquee-track animate-marquee">
               {[...partners, ...partners].map((p, i) => (
                 <span key={i} className="text-sm font-heading font-semibold text-white/80 tracking-wide">
                   {p}
@@ -244,6 +397,96 @@ title="Fresh2GO — Fast Delivery."
           </div>
         </div>
       </section>
+
+      {/* Live offers row (real menu_items + ratings + ETA) */}
+      {offers.length > 0 && (
+        <section className="border-y border-border bg-card/80 py-10 sm:py-16">
+          <div className="max-w-6xl mx-auto px-4">
+            <div className="flex items-end justify-between mb-6">
+              <div>
+                <span className="inline-flex items-center gap-1.5 text-xs font-heading font-bold uppercase tracking-widest text-primary mb-2">
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-primary opacity-70" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-primary" />
+                  </span>
+                  Live προσφορές
+                </span>
+                <h2 className="font-heading font-extrabold text-3xl md:text-4xl tracking-tight">
+                  Πεινάς; Δες <span className="text-gradient-primary">τι παίζει τώρα</span>
+                </h2>
+              </div>
+              <Button size="sm" variant="ghost" className="hidden sm:inline-flex font-heading font-semibold" onClick={() => navigate('/order')}>
+                Όλα τα καταστήματα <ArrowRight className="ml-1.5 h-4 w-4" />
+              </Button>
+            </div>
+
+            <div className="flex gap-4 overflow-x-auto no-scrollbar pb-2">
+              {offers.map((offer) => {
+                const r = ratings[offer.store_id];
+                const prep = offer.prep_buffer_minutes ?? 0;
+                const etaLow = Math.min(baseEta.min + prep, etaCap);
+                const etaHigh = Math.min(baseEta.max + prep, etaCap);
+                return (
+                  <button
+                    key={offer.id}
+                    type="button"
+                    onClick={() => navigate(`/restaurant/${offer.store_id}`)}
+                    className="group w-[260px] shrink-0 text-left rounded-2xl border border-border bg-card overflow-hidden hover-lift"
+                  >
+                    <div className="relative aspect-[4/3] overflow-hidden bg-muted">
+                      {offer.image_url ? (
+                        <img src={offer.image_url} alt={offer.name} loading="lazy"
+                             className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105" />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center">
+                          <Utensils className="h-8 w-8 text-muted-foreground" />
+                        </div>
+                      )}
+                      {offer.promo_badge && (
+                        <span className="absolute top-2.5 left-2.5 text-[10px] font-extrabold uppercase tracking-wide text-white bg-primary px-2 py-0.5 rounded-md shadow">
+                          {offer.promo_badge}
+                        </span>
+                      )}
+                      <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 rounded-md bg-emerald-600/95 text-white px-2 py-1 text-[11px] font-extrabold shadow">
+                        <Clock className="h-3 w-3" />
+                        {etaLow}–{etaHigh} λεπτά
+                      </span>
+                    </div>
+                    <div className="p-4">
+                      <div className="flex items-start justify-between gap-2">
+                        <h3 className="font-heading font-bold text-foreground leading-tight truncate">{offer.name}</h3>
+                        <span className="shrink-0 font-heading font-extrabold text-primary tabular-nums">
+                          {offer.price.toFixed(2)}€
+                        </span>
+                      </div>
+                      <p className="text-sm text-muted-foreground mt-0.5 truncate">{offer.store_name}</p>
+                      <p className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px]">
+                        {r?.count > 0 ? (
+                          <span className="inline-flex items-center gap-0.5 font-semibold text-foreground">
+                            <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" /> {r.avg.toFixed(1)}
+                            <span className="font-medium text-muted-foreground">({r.count})</span>
+                          </span>
+                        ) : (
+                          <span className="font-semibold text-primary">Νέο</span>
+                        )}
+                        <span className="inline-flex items-center gap-1 font-semibold text-emerald-700">
+                          <Bike className="h-3.5 w-3.5" />
+                          {offer.covers_delivery_fee ? 'Δωρεάν παράδοση' : '0,99€ παράδοση'}
+                        </span>
+                        {offer.delivery_free_min != null && (
+                          <span className="text-muted-foreground">
+                            άνω των {offer.delivery_free_min.toFixed(0)}€
+                          </span>
+                        )}
+                      </p>
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        </section>
+      )}
 
       {/* ─── FEATURES ─── */}
       <section className="max-w-6xl mx-auto px-4 py-20 sm:py-24">
@@ -322,6 +565,14 @@ title="Fresh2GO — Fast Delivery."
         <div className="max-w-6xl mx-auto px-4 text-center space-y-4">
           <div className="flex items-center justify-center gap-2">
             <span className="text-white"><Logo withWordmark size={20} /></span>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button size="sm" variant="ghost" className="border border-white/15 bg-white/5 text-white font-heading font-semibold rounded-xl" onClick={() => navigate('/download?app=customerNative')}>
+                <Smartphone className="mr-2 h-4 w-4" /> Android
+              </Button>
+              <Button size="sm" variant="ghost" className="border border-white/15 bg-white/5 text-white font-heading font-semibold rounded-xl" onClick={() => navigate('/download')}>
+                <Smartphone className="mr-2 h-4 w-4" /> iOS
+              </Button>
+            </div>
           </div>
           <nav className="flex flex-wrap items-center justify-center gap-x-5 gap-y-2 text-sm">
             <Link to="/legal/terms"   className="text-white/55 hover:text-[#F29912] transition-smooth">Όροι Χρήσης</Link>
@@ -340,17 +591,17 @@ title="Fresh2GO — Fast Delivery."
 };
 
 function StatTile({
-  icon: Icon, label, countRef, display,
-}: { icon: React.ElementType; label: string; countRef: React.RefObject<HTMLSpanElement>; display: string }) {
+  icon: Icon, label, display,
+}: { icon: React.ElementType; label: string; display: string }) {
   return (
-    <div className="group relative rounded-2xl border border-white/30 bg-white/10 p-4 sm:p-5 backdrop-blur-sm hover:bg-white/20 transition-smooth">
+    <div className="kpi-live-tile group relative rounded-2xl border border-white/30 bg-white/10 p-4 sm:p-5 backdrop-blur-sm hover:bg-white/20 transition-smooth">
       <div className="flex items-center gap-2 mb-2">
         <div className="h-8 w-8 rounded-lg bg-white/20 flex items-center justify-center">
           <Icon className="h-4 w-4 text-white" />
         </div>
       </div>
       <p className="font-heading font-extrabold text-2xl sm:text-3xl text-white tracking-tight">
-        <span ref={countRef}>{display}</span>
+        {display}
       </p>
       <p className="text-xs text-white/75 mt-1 font-medium">{label}</p>
     </div>
