@@ -47,12 +47,18 @@ export default function AdminStoreAppearance() {
   const [saving, setSaving] = useState(false);
   const [q, setQ] = useState('');
 
+  const FULL_COLS = 'id, name, image_url, cover_image_url, tagline, promo_badge, highlight_color, is_active, covers_delivery_fee, fulfilment_mode, delivery_fee, delivery_free_min';
+  const LEGACY_COLS = 'id, name, image_url, cover_image_url, tagline, promo_badge, highlight_color, is_active';
+
   const load = async () => {
     setLoading(true);
-    const { data, error } = await (supabase as any)
-      .from('stores')
-      .select('id, name, image_url, cover_image_url, tagline, promo_badge, highlight_color, is_active, covers_delivery_fee, fulfilment_mode, delivery_fee, delivery_free_min')
-      .order('name');
+    let { data, error } = await (supabase as any).from('stores').select(FULL_COLS).order('name');
+    if (error && /delivery_fee|delivery_free_min|covers_delivery_fee|fulfilment_mode|column/i.test(error.message)) {
+      // Prod DB without the 20260907 migration yet — fall back so the screen still lists stores.
+      const retry = await (supabase as any).from('stores').select(LEGACY_COLS).order('name');
+      data = retry.data; error = retry.error;
+      if (!error) toast.warning('Το migration delivery-controls δεν έχει εφαρμοστεί ακόμα — οι νέες στήλες θα ενεργοποιηθούν μετά το push.');
+    }
     setLoading(false);
     if (error) {
       toast.error('Αποτυχία φόρτωσης: ' + error.message);
@@ -133,6 +139,20 @@ export default function AdminStoreAppearance() {
       delivery_free_min: freeMin,
     };
     const { error } = await (supabase as any).from('stores').update(payload).eq('id', selected.id);
+    if (error && /delivery_fee|delivery_free_min/i.test(error.message)) {
+      // Columns missing pre-migration: save appearance-only so nothing is lost.
+      const legacy = {
+        tagline: payload.tagline, promo_badge: payload.promo_badge,
+        cover_image_url: payload.cover_image_url, highlight_color: payload.highlight_color,
+        image_url: payload.image_url,
+      };
+      const retry = await (supabase as any).from('stores').update(legacy).eq('id', selected.id);
+      setSaving(false);
+      if (retry.error) { toast.error('Αποτυχία αποθήκευσης: ' + retry.error.message); return; }
+      toast.warning('Αποθηκεύτηκε η εμφάνιση — τα delivery-πεδία θέλουν το migration.');
+      setStores((prev) => prev.map((s) => (s.id === selected.id ? { ...s, ...legacy } : s)));
+      return;
+    }
     setSaving(false);
     if (error) {
       toast.error('Αποτυχία αποθήκευσης: ' + error.message);
