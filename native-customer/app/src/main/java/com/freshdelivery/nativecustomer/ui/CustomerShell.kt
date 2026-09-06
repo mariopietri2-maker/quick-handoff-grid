@@ -1226,6 +1226,21 @@ private fun FreshStoreCard(
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
                     )
                 }
+                val minOrd = store.min_order_amount ?: 0.0
+                if (minOrd > 0) {
+                    Surface(
+                        color = FreshChip,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text(
+                            "Ελάχ. €%.0f".format(minOrd),
+                            color = FreshMuted,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
                 val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
                 if (platformDelivers) {
                     Surface(
@@ -1343,6 +1358,8 @@ private fun StoreMiniCard(
                 buildString {
                 append(storeDeliveryEstimate(store, deliveryLat, deliveryLng))
                 storeDistanceLabel(store, deliveryLat, deliveryLng)?.let { append(" • "); append(it) }
+                    val minO = store.min_order_amount ?: 0.0
+                    if (minO > 0) append(" • Ελάχ. €%.0f".format(minO))
             },
                 color = FreshMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
