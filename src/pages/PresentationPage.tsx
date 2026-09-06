@@ -4,8 +4,8 @@ import { ArrowLeft, Download, FileText, Play } from 'lucide-react';
 import { SEO } from '@/components/SEO';
 import { cn } from '@/lib/utils';
 
-const VIDEO_SRC = '/presentation/Fresh2GO.GR-promo.mp4';
-const PDF_SRC = '/presentation/Fresh2GO.GR-presentation.pdf';
+const VIDEO_SRC = '/presentation/fresh2go-promo.mp4';
+const PDF_SRC = '/presentation/fresh2go-presentation.pdf';
 
 type Tab = 'video' | 'pdf';
 

@@ -53,7 +53,9 @@ export function isCustomerPath(path: string): boolean {
     path.startsWith('/orders') ||
     path.startsWith('/profile') ||
     path.startsWith('/auth') ||
-    path.startsWith('/legal')
+    path.startsWith('/legal') ||
+    path.startsWith('/presentation') ||
+    path.startsWith('/download')
   );
 }
 
@@ -62,7 +64,9 @@ export function isDriverPath(path: string): boolean {
     path.startsWith('/driver') ||
     path.startsWith('/m') ||
     path.startsWith('/auth') ||
-    path.startsWith('/legal')
+    path.startsWith('/legal') ||
+    path.startsWith('/presentation') ||
+    path.startsWith('/download')
   );
 }
 
