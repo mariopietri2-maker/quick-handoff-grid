@@ -1,4 +1,4 @@
-2.6.27-bg-offer
-versionCode=281
+2.6.29-fresh2go
+versionCode=283
 battery_unrestricted_prompt=1
 channel_warmup=1

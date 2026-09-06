@@ -35,6 +35,16 @@ android {
     }
 
     buildTypes {
+        // Shared debug keystore (mobile-signing/fresh2go-debug.keystore) so every
+        // CI/local debug APK shares one signature — sideload self-update can
+        // install over the existing app. Without this each CI runner generates
+        // a fresh debug key and updates fail with UPDATE_INCOMPATIBLE.
+        debug {
+            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(

@@ -7,6 +7,8 @@ on:
     paths:
       - "native-driver/**"
       - "native-customer/**"
+      - "mobile-signing/fresh2go-debug.keystore"
+      - "src/lib/apk-downloads.ts"
       - ".github/workflows/build-native-apks.yml"
 
 jobs:
@@ -47,6 +49,24 @@ jobs:
             echo "systemProp.mapboxDownloadsToken=$TOKEN"
           } >> ~/.gradle/gradle.properties
           echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+
+      - name: Verify shared debug keystore + version parity
+        run: |
+          test -f mobile-signing/fresh2go-debug.keystore || { echo "::error::missing mobile-signing/fresh2go-debug.keystore — all debug APKs must share one signature for self-update"; exit 1; }
+          keytool -list -keystore mobile-signing/fresh2go-debug.keystore -storepass android -alias androiddebugkey >/dev/null || { echo "::error::debug keystore alias/password mismatch"; exit 1; }
+          python3 - <<'PY'
+          import re, sys
+          apk = open('src/lib/apk-downloads.ts').read()
+          web_driver = re.search(r"APK_NATIVE_DRIVER_VERSION\s*=\s*'([^']+)'", apk).group(1)
+          web_customer = re.search(r"APK_NATIVE_CUSTOMER_VERSION\s*=\s*'([^']+)'", apk).group(1)
+          gradle_driver = re.search(r'versionName\s*=\s*"([^"]+)"', open('native-driver/app/build.gradle.kts').read()).group(1)
+          gradle_customer = re.search(r'versionName\s*=\s*"([^"]+)"', open('native-customer/app/build.gradle.kts').read()).group(1)
+          print(f"web driver={web_driver} gradle driver={gradle_driver}")
+          print(f"web customer={web_customer} gradle customer={gradle_customer}")
+          if web_driver != gradle_driver or web_customer != gradle_customer:
+              print("::error::versionName mismatch: bump native build.gradle.kts AND src/lib/apk-downloads.ts together, or self-update will misfire")
+              sys.exit(1)
+          PY
 
       - name: Build driver debug APK + debug AAB
         working-directory: native-driver

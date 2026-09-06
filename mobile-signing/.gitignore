@@ -1,6 +1,10 @@
 # Local Play upload keys — NEVER commit these.
 *.jks
 *.keystore
+# Exception: shared debug keystore so all CI/local debug APKs share one
+# signature — required for sideload self-update to install over the
+# existing app instead of failing with INSTALL_FAILED_UPDATE_INCOMPATIBLE.
+!fresh2go-debug.keystore
 key.properties
 *.pem
 passwords.txt

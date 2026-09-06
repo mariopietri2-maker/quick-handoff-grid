@@ -123,7 +123,9 @@ try {
     if (base && customerNative && driverNative && capac) {
       const entry = (versionLabel, filename) => ({
         version: versionLabel,
-        url: `${base}/${filename}`,
+        // ?v= busts GitHub release CDN + Android DownloadManager caches so an
+        // existing install never downloads stale bytes of the previous build.
+        url: `${base}/${filename}?v=${encodeURIComponent(versionLabel)}`,
       });
       writeFileSync(
         resolve(ROOT, 'dist', 'native-versions.json'),

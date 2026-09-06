@@ -35,6 +35,13 @@ android {
     }
 
     buildTypes {
+        // Shared debug keystore — see native-driver for rationale.
+        debug {
+            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
+        }
         release {
             isMinifyEnabled = false
             proguardFiles(
