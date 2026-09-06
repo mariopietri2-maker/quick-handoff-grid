@@ -319,8 +319,21 @@ fun LoginScreen(
 
 @Composable
 private fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedBorderColor = FreshGreen,
-    unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-    focusedLabelColor = FreshGreen,
+    focusedTextColor = Color.White,
+    unfocusedTextColor = Color.White,
+    disabledTextColor = Color(0xFFA8A29E),
+    focusedContainerColor = Color(0xFF292524),
+    unfocusedContainerColor = Color(0xFF1C1917),
+    disabledContainerColor = Color(0xFF1C1917),
     cursorColor = FreshGreen,
+    focusedBorderColor = FreshGreen,
+    unfocusedBorderColor = Color(0xFF78716C),
+    focusedLabelColor = FreshGreenBright,
+    unfocusedLabelColor = Color(0xFFD6D3D1),
+    focusedPlaceholderColor = Color(0xFFA8A29E),
+    unfocusedPlaceholderColor = Color(0xFF78716C),
+    focusedLeadingIconColor = FreshGreenBright,
+    unfocusedLeadingIconColor = Color(0xFFA8A29E),
+    focusedTrailingIconColor = Color.White,
+    unfocusedTrailingIconColor = Color(0xFFA8A29E),
 )

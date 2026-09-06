@@ -94,9 +94,23 @@ fun LoginScreen(
         }
     }
     val fieldColors = OutlinedTextFieldDefaults.colors(
-        focusedBorderColor = FreshGreen,
-        focusedLabelColor = FreshGreen,
+        focusedTextColor = Color(0xFF1C1917),
+        unfocusedTextColor = Color(0xFF1C1917),
+        disabledTextColor = Color(0xFF78716C),
+        focusedContainerColor = Color.White,
+        unfocusedContainerColor = Color.White,
+        disabledContainerColor = Color(0xFFF5F5F4),
         cursorColor = FreshGreen,
+        focusedBorderColor = FreshGreen,
+        unfocusedBorderColor = Color(0xFFD6D3D1),
+        focusedLabelColor = FreshGreenDark,
+        unfocusedLabelColor = Color(0xFF57534E),
+        focusedPlaceholderColor = Color(0xFFA8A29E),
+        unfocusedPlaceholderColor = Color(0xFFA8A29E),
+        focusedLeadingIconColor = FreshGreen,
+        unfocusedLeadingIconColor = Color(0xFF78716C),
+        focusedTrailingIconColor = Color(0xFF1C1917),
+        unfocusedTrailingIconColor = Color(0xFF78716C),
     )
     Box(
         Modifier
