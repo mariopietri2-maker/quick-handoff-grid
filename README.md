@@ -6,7 +6,7 @@
 
 **Customers** browse & order · **Multi-store owners** manage everything · **Drivers** deliver · One **admin & support** hub.
 
-[![Status](https://img.shields.io/badge/status-live-success)](https://freshdelivery.app)
+[![Status](https://img.shields.io/badge/status-live-success)](https://fresh2go.gr)
 [![Platform](https://img.shields.io/badge/Platform-Web%20%26%20Mobile-blue)](#-apps)
 [![React](https://img.shields.io/badge/React-18-61dafb?logo=react&logoColor=white)](#-stack)
 [![TypeScript](https://img.shields.io/badge/TypeScript-3178c6?logo=typescript&logoColor=white)](#-stack)
@@ -20,11 +20,11 @@
 
 ## 🚀 Live & links
 
-- 🌐 **Live:** [freshdelivery.app](https://freshdelivery.app)
+- 🌐 **Live:** [freshdelivery.app](https://fresh2go.gr)
 - 🛣️ **Mirror:** [quick-handoff-grid-production.up.railway.app](https://quick-handoff-grid-production.up.railway.app)
-- 📱 **Native apps:** Android APKs via [download page](https://freshdelivery.app/download)
+- 📱 **Native apps:** Android APKs via [download page](https://fresh2go.gr/download)
 - 🏪 **Store PWA:** installable from `/store`
-- 📊 **Product deck:** [freshdelivery.app/presentation](https://freshdelivery.app/presentation)
+- 📊 **Product deck:** [freshdelivery.app/presentation](https://fresh2go.gr/presentation)
 
 ---
 
