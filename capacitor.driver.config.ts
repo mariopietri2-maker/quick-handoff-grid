@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 /** Offline driver shell — bundles `dist/` (no remote server URL). */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.driver',
-  appName: 'fresh2go Driver',
+  appName: 'Fresh2GO Driver',
   webDir: 'dist',
   server: {
     androidScheme: 'https',

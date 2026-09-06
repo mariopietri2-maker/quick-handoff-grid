@@ -3,7 +3,7 @@ import type { CapacitorConfig } from '@capacitor/cli';
 /** Offline customer shell — bundles `dist/` (no remote server URL). */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.customer',
-  appName: 'fresh2go',
+  appName: 'Fresh2GO',
   webDir: 'dist',
   server: {
     androidScheme: 'https',
