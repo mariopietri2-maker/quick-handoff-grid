@@ -1,0 +1,22 @@
+name: Apply store min order amount
+on:
+  push:
+    paths:
+      - 'scripts/apply_store_min_order.py'
+      - '.github/workflows/apply-store-min-order.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_store_min_order.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/ native-customer/
+          git commit -m "feat: editable store min order + customer display" || exit 0
+          git push
