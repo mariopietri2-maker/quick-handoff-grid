@@ -39,6 +39,7 @@ import { showOsNotification } from '@/lib/push-notifications';
 import { toast } from 'sonner';
 import AnnouncementsBanner from '@/components/AnnouncementsBanner';
 import { StorePwaInstallBanner } from '@/components/store/StorePwaInstallBanner';
+import { tryRestorePrinter } from '@/lib/printer-devices';
 
 type ViewMode = 'portal' | 'manage' | 'create';
 
@@ -102,6 +103,12 @@ export default function StoreApp() {
   // Unlock alert audio on first interaction anywhere (autoplay policy).
   useEffect(() => {
     installAudioUnlock();
+  }, []);
+
+  // Best-effort reconnection of a previously granted USB printer on app load,
+  // so auto-print works even if the settings tab was never opened.
+  useEffect(() => {
+    void tryRestorePrinter();
   }, []);
 
   const {

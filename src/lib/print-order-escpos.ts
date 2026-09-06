@@ -69,7 +69,7 @@ export function buildOrderEscPos(
     Number(order.total_amount ?? 0) -
     Number(order.delivery_fee ?? 0) -
     Number(order.tip_amount ?? 0);
-  const payKey = String((order as any).payment_method ?? '').toLowerCase();
+  const payKey = String((order as { payment_method?: string | null }).payment_method ?? '').toLowerCase();
   const payLabel = PAYMENT_LABELS[payKey] ?? (payKey ? payKey.toUpperCase() : null);
   const isCash = payKey === 'cash';
   const fee = Number(order.delivery_fee ?? 0);
@@ -115,7 +115,7 @@ export function buildOrderEscPos(
     enc.feed(1);
   }
 
-  enc.text('─'.repeat(cols));
+  enc.text('-'.repeat(cols));
   enc.feed(1);
 
   // Items
@@ -185,7 +185,7 @@ export function buildOrderEscPos(
   const drv = extras.driverCode ?? extras.driverName;
   if (custName || custPhone || drv) {
     enc.align('left');
-    enc.text('─'.repeat(cols));
+enc.text('-'.repeat(cols));
     enc.line();
     if (custName) {
       enc.bold(true);
@@ -226,7 +226,7 @@ export function buildOrderEscPos(
 
   // Footer ref
   enc.align('center');
-  enc.text(escpad('Ευχαριστούμε — FRESH2GO.GR', cols, 'center').trimEnd());
+  enc.text(escpad('Ευχαριστούμε - FRESH2GO.GR', cols, 'center').trimEnd());
   enc.text(escpad(`REF ${orderNoPlain}`, cols, 'center').trimEnd());
   enc.text(escpad(String(order.id ?? '').slice(0, 8).toUpperCase(), cols, 'center').trimEnd());
   enc.feed(2);

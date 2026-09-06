@@ -89,7 +89,7 @@ export function AnimatedBasketLogo({
 
           {/* === FOOD ITEMS (pop up and down) === */}
 
-          {/* Tomato */}
+          {/* Burger */}
           <g>
             <animateTransform
               attributeName="transform"
@@ -106,17 +106,23 @@ export function AnimatedBasketLogo({
               dur="3.5s"
               repeatCount="indefinite"
             />
-            <circle cx="26" cy="26" r="5" fill="#E53935" />
-            <path d="M25 22c1-2 3-2 4 0" stroke="#4CAF50" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-            <ellipse cx="24.5" cy="25" rx="1" ry="0.6" fill="#EF5350" opacity="0.5" />
+            <rect x="19" y="27" width="12" height="3.5" rx="1.8" fill="#D4A056" />
+            <rect x="19" y="25.6" width="12" height="2.4" rx="1.2" fill="#6D4C41" />
+            <rect x="18.4" y="24.1" width="13.2" height="1.9" rx="0.95" fill="#FFCA28" />
+            <path d="M18 23.5c1.8-1.2 3.8 0.2 5.5-0.4s3.5 0.5 5-0.5 3.4-0.1 4.5 0.5" stroke="#66BB6A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
+            <ellipse cx="25" cy="21.6" rx="6.6" ry="2.6" fill="#E8B86D" />
+            <path d="M19.3 21.4c0.8-2 3-3 5.7-2.9s4.9 0.9 5.7 2.9c-1.8 0.5-4 0.6-5.7 0.6s-3.9-0.1-5.7-0.6z" fill="#F0C87A" opacity="0.9" />
+            <circle cx="23" cy="20" r="0.5" fill="#FFF6E5" />
+            <circle cx="26" cy="19.7" r="0.5" fill="#FFF6E5" />
+            <circle cx="28.7" cy="20.6" r="0.5" fill="#FFF6E5" />
           </g>
 
-          {/* Sandwich / Bread */}
+{/* Souvlaki on skewer */}
           <g>
             <animateTransform
               attributeName="transform"
               type="translate"
-              values="0 0; 0 -20; 0 -20; 0 0"
+              values="0 0; 0 -18; 0 -18; 0 0"
               keyTimes="0; 0.28; 0.68; 1"
               dur="3.5s"
               repeatCount="indefinite"
@@ -128,23 +134,20 @@ export function AnimatedBasketLogo({
               dur="3.5s"
               repeatCount="indefinite"
             />
-            {/* Bottom bread */}
-            <rect x="33" y="25" width="12" height="4" rx="2" fill="#D4A056" />
-            {/* Lettuce */}
-            <path d="M33 25c2-1.5 4 0 6-1s4 0.5 6-0.5" stroke="#66BB6A" strokeWidth="1.5" fill="none" strokeLinecap="round" />
-            {/* Tomato slice */}
-            <rect x="35" y="23.5" width="8" height="2" rx="1" fill="#EF5350" />
-            {/* Top bread */}
-            <ellipse cx="39" cy="22.5" rx="6.5" ry="2.5" fill="#E8B86D" />
-            <path d="M36 22.5c1-1.5 5-1.5 6 0" stroke="#F0C87A" strokeWidth="0.8" fill="none" />
+            <line x1="28.5" y1="30" x2="40.5" y2="17.5" stroke="#C99B6A" strokeWidth="1.3" strokeLinecap="round" />
+            <rect x="29.66" y="24.6" width="4.4" height="3.8" rx="1.3" fill="#A85A29" transform="rotate(-50 31.86 26.5)" />
+            <rect x="32.8" y="21.35" width="4.4" height="3.8" rx="1.3" fill="#B5733E" transform="rotate(-50 35 23.25)" />
+            <rect x="35.9" y="18.1" width="4.4" height="3.8" rx="1.3" fill="#C07A44" transform="rotate(-50 38.1 20)" />
+            <circle cx="33.8" cy="24.3" r="0.5" fill="#8D5524" />
+            <circle cx="37.2" cy="20.9" r="0.5" fill="#8D5524" />
           </g>
 
-          {/* Leaf / Greens */}
+          {/* Crepe */}
           <g>
             <animateTransform
               attributeName="transform"
               type="translate"
-              values="0 0; 0 -13; 0 -13; 0 0"
+              values="0 0; 0 -12; 0 -12; 0 0"
               keyTimes="0; 0.32; 0.66; 1"
               dur="3.5s"
               repeatCount="indefinite"
@@ -156,22 +159,13 @@ export function AnimatedBasketLogo({
               dur="3.5s"
               repeatCount="indefinite"
             />
-            <path
-              d="M18 28c-1-4 3-7 6-5s-1 6-3 7"
-              fill="#43A047"
-            />
-            <path
-              d="M18 28c0-3 2.5-5 5-4"
-              stroke="#66BB6A"
-              strokeWidth="0.8"
-              fill="none"
-            />
-            <path
-              d="M20 26.5c1.5-0.5 3 0 4.5 0.5"
-              stroke="#81C784"
-              strokeWidth="0.6"
-              fill="none"
-            />
+            <rect x="36.5" y="18.5" width="11" height="8.5" rx="3" fill="#E7C28B" transform="rotate(-30 42 22.75)" />
+            <rect x="38" y="21" width="8" height="4.5" rx="2" fill="#F0D6A4" transform="rotate(-30 42 23.25)" />
+            <line x1="37.5" y1="20.5" x2="45.5" y2="19" stroke="#B57F33" strokeWidth="0.8" strokeLinecap="round" transform="rotate(-30 41.5 19.75)" />
+            <ellipse cx="38.6" cy="16.6" rx="2.6" ry="1.4" fill="#FFF9EF" transform="rotate(-14 38.6 16.6)" />
+            <path d="M36.6 16.6l1.8-1 0.6 1.6z" fill="#E53935" transform="rotate(6 37.8 16.6)" />
+            <path d="M38.6 15.6l0.5-1 0.5 1z" fill="#43A047" transform="rotate(8 39.1 15.6)" />
+            <circle cx="37.4" cy="17.3" r="0.35" fill="#E53935" />
           </g>
 
           {/* Sparkle particles */}

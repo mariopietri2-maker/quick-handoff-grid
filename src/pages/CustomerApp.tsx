@@ -24,6 +24,7 @@ import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+import { AnimatedBasketLogo } from '@/components/brand/AnimatedBasketLogo';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
@@ -379,21 +380,8 @@ export default function CustomerApp() {
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
           {cfg.branding.show_header_brand && (
             <div className="flex items-center gap-2.5 mb-2.5 animate-fade-in">
-              <div
-                className="h-8 w-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]"
-                style={{
-                  background: cfg.branding.logo_url
-                    ? 'hsl(var(--c-surface-muted))'
-                    : 'linear-gradient(135deg, hsl(var(--c-accent)), hsl(var(--c-accent-dark)))',
-                }}
-              >
-                {cfg.branding.logo_url ? (
-                  <img src={cfg.branding.logo_url} alt="" className="h-full w-full object-contain p-1" />
-                ) : (
-                  <span className="font-heading font-black text-white text-sm leading-none">
-                    {(cfg.branding.app_name.trim().charAt(0) || 'F').toUpperCase()}
-                  </span>
-                )}
+              <div className="h-8 w-8 shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]">
+                <AnimatedBasketLogo size={32} />
               </div>
               <div className="min-w-0">
 <div className="font-heading font-black text-[15px] c-ink tracking-tight leading-none truncate">

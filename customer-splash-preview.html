@@ -3,84 +3,90 @@
 <head>
 <meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<title>Fresh2GO — Animated Basket Logo Preview</title>
+<title>Customer Native App — Animated Splash Preview</title>
 <style>
   body {
     margin: 0;
     min-height: 100vh;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: 56px;
-    flex-wrap: wrap;
+    gap: 28px;
     background: linear-gradient(160deg, #0a1120 0%, #12172b 55%, #1a1f38 100%);
     font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
     color: #fff;
   }
-  .preview-card {
-    border: 1px solid rgba(255,255,255,.08);
-    border-radius: 16px;
-    background: rgba(255,255,255,.03);
-    box-shadow: 0 20px 60px rgba(0,0,0,.45);
-    padding: 32px 40px;
+  .phone {
+    width: 280px;
+    border-radius: 40px;
+    border: 10px solid #1d2438;
+    box-shadow: 0 30px 80px rgba(0,0,0,.55), inset 0 0 0 2px rgba(255,255,255,.06);
+    background:
+      radial-gradient(120% 80% at 50% 20%, #FF8A3D 0%, #EA580C 70%, #0E2A3F 100%);
+    overflow: hidden;
+    padding: 34px 0 40px;
     text-align: center;
+    position: relative;
   }
-  .card-title {
-    text-transform: uppercase;
-    letter-spacing: .14em;
-    font-size: 10px;
-    color: rgba(255,255,255,.4);
-    font-weight: 700;
-    display: block;
-    margin-bottom: 20px;
-  }
-  .row { display: flex; align-items: center; justify-content: center; gap: 10px; }
-  .caption {
-    font-size: 9.5px;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: rgba(255,255,255,.45);
-    font-weight: 600;
-    margin-top: 8px;
-  }
-  .wordmark {
-    font-family: 'Plus Jakarta Sans', system-ui, sans-serif;
-    font-weight: 800;
-    font-size: 22px;
-    letter-spacing: -.02em;
-    line-height: 1;
-    white-space: nowrap;
-    display: inline-flex;
-    align-items: baseline;
-  }
-  .hl { color: #F29912; }
-  .tld {
-    margin-left: 5px;
-    font-size: 15px;
-    font-weight: 800;
-    letter-spacing: .04em;
-    padding: 2px 6px;
+  .phone::before {
+    content: '';
+    position: absolute;
+    top: 8px; left: 50%;
+    transform: translateX(-50%);
+    width: 70px; height: 4px;
     border-radius: 999px;
-    background: rgba(255,138,61,.14);
-    color: #ffb45e;
-    border: 1px solid rgba(255,138,61,.35);
+    background: rgba(255,255,255,.35);
   }
-  .note {
-    max-width: 520px;
-    font-size: 13px;
-    line-height: 1.6;
-    color: rgba(255,255,255,.55);
-    text-align: left;
+  .ring {
+    width: 120px; height: 120px;
+    margin: 0 auto;
+    border-radius: 999px;
+    border: 1px solid rgba(255,255,255,.25);
+    animation: ringPulse 2.4s ease-in-out infinite;
   }
-  code { color: #ffb45e; }
+  .logo-wrap {
+    width: 120px;
+    margin: -120px auto 0;
+    animation: markIn .7s cubic-bezier(.2,.9,.3,1) both;
+  }
+  .brand { font-weight: 800; font-size: 26px; letter-spacing: -.02em; margin-top: 22px; }
+  .tagline {
+    margin-top: 8px;
+    color: rgba(255,255,255,.7);
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: .32em;
+    text-transform: uppercase;
+    animation: textIn .6s ease-out .25s both;
+  }
+  .bar {
+    width: 140px; height: 2px;
+    margin: 28px auto 0;
+    border-radius: 999px;
+    background: rgba(255,255,255,.15);
+    overflow: hidden;
+  }
+  .bar > div {
+    height: 100%;
+    background: rgba(255,255,255,.9);
+    transform-origin: left;
+    animation: bar 1.3s ease-out both;
+  }
+  @keyframes ringPulse { 0%,100%{transform:scale(1);opacity:.35} 50%{transform:scale(1.08);opacity:.15} }
+  @keyframes markIn { 0%{transform:scale(.85);opacity:0} 100%{transform:scale(1);opacity:1} }
+  @keyframes textIn { 0%{opacity:0;transform:translateY(8px)} 100%{opacity:1;transform:translateY(0)} }
+  @keyframes bar { 0%{transform:scaleX(0)} 100%{transform:scaleX(1)} }
+  .caption { max-width: 560px; font-size: 13px; line-height: 1.7; color: rgba(255,255,255,.55); text-align: left; margin: 0; }
+  b { color: #ffb45e; }
 </style>
 </head>
 <body>
 
-  <div class="preview-card">
-    <span class="card-title">Admin Sidebar — top left logo</span>
-    <div class="row">
-      <svg width="36" height="36" viewBox="0 0 64 64" role="img" aria-label="Fresh2GO.GR" style="flex-shrink:0; overflow:visible">
+  <div class="phone">
+    <div class="ring"></div>
+    <div class="logo-wrap">
+      <svg width="112" height="112" viewBox="0 0 64 64" role="img" aria-label="Fresh2GO.GR" style="display:block; overflow:visible">
         <defs>
           <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stop-color="#F4A125" />
@@ -163,25 +169,17 @@
           <animateTransform attributeName="transform" type="translate" values="-64 0; 64 0; -64 0" dur="4s" repeatCount="indefinite" />
         </rect>
       </svg>
-
-      <span class="wordmark">
-        <span>Fresh</span><span class="hl">2GO</span><span class="tld">.GR</span>
-      </span>
     </div>
-    <p class="caption">Control Center</p>
+    <div class="brand">Fresh2GO.GR</div>
+    <div class="tagline">Η Ήπειρος στο σπίτι σου, γρήγορα.</div>
+    <div class="bar"><div></div></div>
   </div>
 
-  <div class="preview-card">
-    <span class="card-title">What happens every 3.5s</span>
-    <div class="note">
-      <p>1. The <b>basket lid</b> flips open (rotates back).</p>
-      <p>2. A <b style="color:#E8B86D">burger</b>, a <b style="color:#C07A44">souvlaki</b> on a skewer and a <b style="color:#F0D6A4">crepe</b> with cream &amp; strawberry pop up out of the basket one after another.</p>
-      <p>3. The lid closes and everything settles back down.</p>
-      <p>4. A subtle white <b>sheen sweep</b> and yellow <b>sparkles</b> run across the tile.</p>
-      <p>Stop/start loop repeats forever &mdash; like the app breathing.</p>
-      <p style="margin-top:14px; opacity:.75">Kept the brand gradient <code>#F4A125 &rarr; #E94E8F</code>, same wordmark &amp; "Control Center" caption &mdash; only the icon is now alive.</p>
-    </div>
-  </div>
+  <p class="caption">
+    Customer native app <b>intro</b>: 1.4s animated logo (ring pulse + basket opening with burger, souvlaki, crepe),
+    then 2s fade-out — exactly like the admin. The same logo tile is now also the <b>header brand</b> in the customer
+    app, matching the native shell.
+  </p>
 
 </body>
 </html>

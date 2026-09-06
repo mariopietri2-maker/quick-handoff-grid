@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+import { AnimatedBasketLogo } from '@/components/brand/AnimatedBasketLogo';
 
 /**
  * Polished, professional brand splash for the customer app.
@@ -9,8 +10,6 @@ export default function AppSplash() {
   const cfg = useCustomerAppConfig();
   const brand = cfg.branding.app_name || 'Fresh2GO.GR';
   const tagline = cfg.branding.tagline || 'Η Ήπειρος στο σπίτι σου, γρήγορα.';
-  const logo = cfg.branding.logo_url;
-  const initial = (brand.trim().charAt(0) || 'F').toUpperCase();
 
   const [phase, setPhase] = useState<'in' | 'out' | 'done'>(() => {
     try {
@@ -57,22 +56,10 @@ export default function AppSplash() {
           style={{ animation: 'splashRingPulse 2.4s ease-in-out infinite' }}
         />
         <div
-          className="h-[120px] w-[120px] rounded-[32px] bg-white flex items-center justify-center shadow-[0_24px_60px_-16px_hsl(0_0%_0%/0.45),inset_0_1px_0_hsl(0_0%_100%/0.9)] overflow-hidden"
+          className="rounded-[28px] shadow-[0_24px_60px_-16px_hsl(0_0%_0%/0.45)]"
           style={{ animation: 'splashMarkIn 700ms cubic-bezier(.2,.9,.3,1) both' }}
         >
-          {logo ? (
-            <img src={logo} alt="" className="h-full w-full object-contain p-3" />
-          ) : (
-            <span
-              className="font-heading font-black text-[56px] leading-none tracking-tight bg-clip-text text-transparent"
-              style={{
-                backgroundImage:
-                  'linear-gradient(135deg, hsl(var(--c-accent, 24 100% 62%)), hsl(var(--c-accent-dark, 24 90% 51%)))',
-              }}
-            >
-              {initial}
-            </span>
-          )}
+          <AnimatedBasketLogo size={112} />
         </div>
 
         <div

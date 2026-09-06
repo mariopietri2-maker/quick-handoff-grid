@@ -9,7 +9,7 @@ import {
 } from '@/components/ui/alert-dialog';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
-import { PrintTicketButton, printOrderTicket } from './PrintOrderTicket';
+import { PrintTicketButton, printOrderSafe } from './PrintOrderTicket';
 import { getPrinterPrefs } from '@/lib/printer-prefs';
 import type { OrderWithItems } from '@/hooks/useOrders';
 import { formatOrderNumber } from '@/lib/order-number';
@@ -232,16 +232,19 @@ export function OrderQueue({
       const next = printQueueRef.current.shift();
       if (!next) return;
       printRunningRef.current = true;
-      try {
-        const drv = next.driver_id ? driverCodes[next.driver_id] : null;
-        printOrderTicket(next, storeName, { driverCode: drv });
-      } catch {
-        /* ignore */
-      }
-      window.setTimeout(() => {
-        printRunningRef.current = false;
-        pump();
-      }, 700);
+      const drv = next.driver_id ? driverCodes[next.driver_id] : null;
+      void (async () => {
+        try {
+          await printOrderSafe(next, storeName, { driverCode: drv });
+        } catch {
+          /* ignore */
+        } finally {
+          window.setTimeout(() => {
+            printRunningRef.current = false;
+            pump();
+          }, 700);
+        }
+      })();
     };
     pump();
   }, [orders, storeName, driverCodes]);

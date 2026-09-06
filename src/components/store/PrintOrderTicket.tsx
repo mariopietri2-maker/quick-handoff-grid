@@ -3,26 +3,15 @@ import { Button } from '@/components/ui/button';
 import { escapeHtml } from '@/lib/escape-html';
 import { formatOrderNumber } from '@/lib/order-number';
 import type { OrderWithItems } from '@/hooks/useOrders';
+import { getPrinterPrefs } from '@/lib/printer-prefs';
+import { getPrinterState, sendToActivePrinter } from '@/lib/printer-devices';
+import {
+  buildOrderEscPos,
+  PAYMENT_LABELS,
+  type PrintOrderExtras,
+} from '@/lib/print-order-escpos';
 
-const PAYMENT_LABELS: Record<string, string> = {
-  cash: 'ΜΕΤΡΗΤΑ',
-  card: 'ΚΑΡΤΑ',
-  online: 'ONLINE',
-};
-
-export type PrintOrderExtras = {
-  customerName?: string | null;
-  customerPhone?: string | null;
-  driverCode?: string | null;
-  driverName?: string | null;
-  /** Fiscal identity from order_invoices (provider-issued). Rendered only when present. */
-  fiscal?: {
-    number?: string | null;
-    mark?: string | null;
-    uid?: string | null;
-    qrUrl?: string | null;
-  } | null;
-};
+export type { PrintOrderExtras }; // keep the old import path working
 
 function money(n: number | null | undefined) {
   return `€${Number(n ?? 0).toFixed(2)}`;
@@ -328,6 +317,28 @@ export function printOrderTicket(
   win.document.close();
 }
 
+/**
+ * Print an order through the best available path:
+ *  - direct ESC/POS (Bluetooth/USB) when the store connected a printer and
+ *    "Απευθείας" mode is enabled → silent receipt, no browser dialog,
+ *  - otherwise the classic browser print dialog.
+ */
+export async function printOrderSafe(
+  order: OrderWithItems,
+  storeName: string,
+  extras: PrintOrderExtras = {},
+): Promise<{ direct: boolean }> {
+  const prefs = getPrinterPrefs();
+  const st = getPrinterState();
+  if (prefs.enabled && prefs.mode === 'direct' && st.status === 'connected') {
+    const chunks = buildOrderEscPos(order, storeName, extras, prefs.paperWidth ?? 80);
+    await sendToActivePrinter(chunks);
+    return { direct: true };
+  }
+  printOrderTicket(order, storeName, extras);
+  return { direct: false };
+}
+
 export function PrintTicketButton({
   order,
   storeName,
@@ -344,7 +355,9 @@ export function PrintTicketButton({
       size="sm"
       onClick={(e) => {
         e.stopPropagation();
-        printOrderTicket(order, storeName, extras);
+        void printOrderSafe(order, storeName, extras).catch(() => {
+          // Silent failure — direct printing may fail if the printer was unplugged.
+        });
       }}
       className="h-8 text-xs"
     >
