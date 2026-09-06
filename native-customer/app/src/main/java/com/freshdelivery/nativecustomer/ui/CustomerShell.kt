@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -898,9 +897,14 @@ private fun storeDistanceKm(lat: Double, lng: Double, store: StoreRow): Double {
     return EARTH_RADIUS_KM * 2 * atan2(sqrt(a), sqrt(1 - a))
 }
 
-/** A store is open if it has no holiday today and today's opening_hours window covers the current time. */
+/** A store is open if the owner didn't force an override and it has no holiday
+ *  today and today's opening_hours window covers the current time. */
 private fun isStoreOpenNow(store: StoreRow): Boolean {
     if (store.is_active == false) return false
+    when (store.status_override) {
+        "open" -> return true
+        "closed" -> return false
+    }
     val today = LocalDate.now()
     val holidayDates = store.holiday_dates ?: emptyList()
     val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
@@ -965,22 +969,35 @@ private fun FreshStoreCard(
             StoreHeroImage(store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url, height = 160)
             Surface(
                 color = if (!active || !openNow) {
-                    Color.Black.copy(alpha = 0.65f)
+                    Color.Black.copy(alpha = 0.70f)
                 } else {
-                    Color.White.copy(alpha = 0.92f)
+                    FreshGreen
                 },
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(10.dp),
             ) {
-                Text(
-                    if (!active) "Κλειστό" else if (openNow) "Ανοιχτό" else "Κλειστό",
-                    color = if (!active || !openNow) Color.White else FreshGreenDark,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                )
+                Row(
+                    Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (active && openNow) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                        )
+                        Spacer(Modifier.width(5.dp))
+                    }
+                    Text(
+                        if (!active) "Κλειστό" else if (openNow) "Ανοιχτό" else "Κλειστό",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
             }
             Surface(
                 color = Color.White.copy(alpha = 0.92f),
@@ -1053,75 +1070,69 @@ private fun FreshStoreCard(
             }
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                FreshMetaPill {
-                    Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        storeDeliveryEstimate(store, deliveryLat, deliveryLng),
-                        color = FreshInk,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-                val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
-                if (store.covers_delivery_fee == true) {
-                    FreshMetaPill {
-                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
+                // Prep/flight estimate — highlighted chip
+                Surface(
+                    color = FreshGreenSoft,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Δωρεάν" + (store.delivery_free_min?.let { " από €%.2f".format(it) } ?: ""),
+                            storeDeliveryEstimate(store, deliveryLat, deliveryLng),
                             color = FreshGreenDark,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
-                } else {
-                    store.delivery_fee?.let { fee ->
-                        FreshMetaPill {
+                }
+                val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
+                if (platformDelivers) {
+                    Surface(
+                        color = FreshGreenSoft,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
                             Text(
-                                "€%.2f".format(fee),
-                                color = FreshInk,
+                                "Παράδοση Fresh2GO",
+                                color = FreshGreenDark,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        color = FreshVioletSoft,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.Store, contentDescription = null, tint = FreshViolet, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "Παράδοση καταστήματος",
+                                color = FreshViolet,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelMedium,
                             )
                         }
                     }
                 }
-                if (platformDelivers) {
-                    FreshMetaPill {
-                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "Delivered by Fresh",
-                            color = FreshGreenDark,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    }
-                } else {
-                    FreshMetaPill {
-                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Παράδοση καταστήματος", color = FreshInk, fontWeight = FontWeight.SemiBold)
-                    }
-                }
                 Spacer(Modifier.weight(1f))
                 Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
             }
         }
-    }
-}
-
-@Composable
-private fun FreshMetaPill(content: @Composable RowScope.() -> Unit) {
-    Surface(
-        color = FreshChip,
-        shape = RoundedCornerShape(10.dp),
-    ) {
-        Row(
-            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content,
-        )
     }
 }
 

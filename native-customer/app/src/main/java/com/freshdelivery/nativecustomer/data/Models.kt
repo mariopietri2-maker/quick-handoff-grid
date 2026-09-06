@@ -30,6 +30,7 @@ data class StoreRow(
     val opening_hours: kotlinx.serialization.json.JsonElement? = null,
     val holiday_dates: List<String>? = null,
     val fulfilment_mode: String? = "platform",
+    val status_override: String? = null,
 )
 
 @Serializable

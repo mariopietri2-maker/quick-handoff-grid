@@ -3027,6 +3027,7 @@ store_wallets: {
               promotion_requested_at: string | null
               promotion_starts_at: string | null
               promotion_status: string
+              status_override: string | null
               store_role: string
               suspended_at: string | null
               suspension_reason: string | null
@@ -3063,6 +3064,7 @@ store_wallets: {
               promotion_requested_at?: string | null
               promotion_starts_at?: string | null
               promotion_status?: string
+              status_override?: string | null
               store_role?: string
               suspended_at?: string | null
               suspension_reason?: string | null
@@ -3099,6 +3101,7 @@ store_wallets: {
               promotion_requested_at?: string | null
               promotion_starts_at?: string | null
               promotion_status?: string
+              status_override?: string | null
               store_role?: string
               suspended_at?: string | null
               suspension_reason?: string | null
@@ -3751,6 +3754,7 @@ store_wallets: {
           promotion_ends_at: string | null
           promotion_starts_at: string | null
           promotion_status: string | null
+          status_override: string | null
           updated_at: string | null
         }
         Insert: {
@@ -3771,6 +3775,7 @@ store_wallets: {
           promotion_ends_at?: string | null
           promotion_starts_at?: string | null
           promotion_status?: string | null
+          status_override?: string | null
           updated_at?: string | null
         }
         Update: {
@@ -3791,6 +3796,7 @@ store_wallets: {
           promotion_ends_at?: string | null
           promotion_starts_at?: string | null
           promotion_status?: string | null
+          status_override?: string | null
           updated_at?: string | null
         }
         Relationships: []

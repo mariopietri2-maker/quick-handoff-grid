@@ -166,14 +166,14 @@ class CustomerRepository(
             "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
             "covers_delivery_fee", "delivery_fee", "delivery_free_min",
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
-            "fulfilment_mode",
+            "fulfilment_mode", "status_override",
         )
         val legacy = listOf(
             "id", "name", "address", "latitude", "longitude", "is_active",
             "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
             "covers_delivery_fee",
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
-            "fulfilment_mode",
+            "fulfilment_mode", "status_override",
         )
         return runCatching {
             client.from("stores_public")
@@ -351,14 +351,14 @@ class CustomerRepository(
             "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
             "covers_delivery_fee", "delivery_fee", "delivery_free_min",
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
-            "fulfilment_mode",
+            "fulfilment_mode", "status_override",
         )
         val legacy = listOf(
             "id", "name", "address", "latitude", "longitude", "is_active",
             "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
             "covers_delivery_fee",
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
-            "fulfilment_mode",
+            "fulfilment_mode", "status_override",
         )
         return runCatching {
             client.from("stores_public")

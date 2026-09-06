@@ -83,3 +83,5 @@ new.github
 .env.*.local
 
 _swap_old/
+
+quick-handoff-grid-main/

@@ -7,6 +7,8 @@ import {
   User,
   Star,
   Utensils,
+  Bike,
+  Store,
 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
@@ -549,7 +551,7 @@ export default function CustomerApp() {
                 <div className="flex gap-3 px-4 pb-1 w-max">
                   {promotedStores.map((store) => {
                     const cover = store.cover_image_url || store.image_url;
-                    const open = isStoreOpenNow(store.opening_hours, store.holiday_dates);
+                    const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
                     const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
                     const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
                     const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
@@ -588,6 +590,19 @@ export default function CustomerApp() {
                       </div>
                       <div className={`text-[14px] font-extrabold c-ink truncate ${open ? '' : 'opacity-60'}`}>
                         {store.name}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1">
+                        {(store.fulfilment_mode ?? 'platform') !== 'store' ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                            <Bike className="h-3 w-3" />
+                            Fresh2GO
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-extrabold text-violet-800">
+                            <Store className="h-3 w-3" />
+                            Κατάστημα
+                          </span>
+                        )}
                       </div>
                       <p className={`text-[12px] c-soft mt-0.5 truncate ${open ? '' : 'opacity-60'}`}>
                         {store.tagline ? (
@@ -717,7 +732,7 @@ export default function CustomerApp() {
             ) : (
               <div className="space-y-5">
                 {filtered.map((store) => {
-                  const open = isStoreOpenNow(store.opening_hours, store.holiday_dates);
+                  const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
                   const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
                   const platformDelivers =
                     deliveryEnabled && (store.fulfilment_mode ?? 'platform') !== 'store';
@@ -812,25 +827,26 @@ export default function CustomerApp() {
                               <span className="font-semibold text-[hsl(var(--c-accent))]">Νέο</span>
                             )}
                             {deliveryEnabled && (
-                              <>
-                                <span>·</span>
-                                <span className="inline-flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {etaLow}–{etaHigh} {t('customer.min')}
-                                </span>
-                              </>
+                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 font-extrabold text-emerald-800">
+                                <Clock className="h-3 w-3" />
+                                {etaLow}–{etaHigh} {t('customer.min')}
+                              </span>
+                            )}
+                            {platformDelivers ? (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 font-extrabold text-emerald-800">
+                                <Bike className="h-3 w-3" />
+                                Παράδοση Fresh2GO
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 font-extrabold text-violet-800">
+                                <Store className="h-3 w-3" />
+                                Παράδοση καταστήματος
+                              </span>
                             )}
                             {platformDelivers && (
-                              <>
-                                <span>·</span>
-                                <span className="inline-flex items-center gap-1 font-bold text-[hsl(var(--c-accent))]">
-                                  Delivered by Fresh2GO.GR
-                                </span>
-                                <span>·</span>
-                                <span>
-                                  {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
-                                </span>
-                              </>
+                              <span className={fee === 0 ? 'font-extrabold text-emerald-800' : 'font-semibold'}>
+                                {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
+                              </span>
                             )}
                           </p>
                         </div>

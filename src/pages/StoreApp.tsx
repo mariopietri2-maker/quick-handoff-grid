@@ -19,6 +19,8 @@ import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderInges
 import StoreWalletCard from '@/components/store/StoreWalletCard';
 import StoreOrderPnl from '@/components/store/StoreOrderPnl';
 import MenuImportFromReceipt from '@/components/store/MenuImportFromReceipt';
+import { StoreOpennessToggle } from '@/components/store/StoreOpennessToggle';
+import { isStoreOpenNow } from '@/lib/store-hours';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
 import { OwnerStoresPortal } from '@/components/store/OwnerStoresPortal';
 import { Badge } from '@/components/ui/badge';
@@ -367,6 +369,14 @@ export default function StoreApp() {
               </div>
             )}
             <AnnouncementsBanner audience="store_owners" />
+            <StoreOpennessToggle
+              scheduleOpen={isStoreOpenNow(store.opening_hours, store.holiday_dates, null)}
+              statusOverride={store.status_override}
+              openingHours={store.opening_hours}
+              holidayDates={store.holiday_dates}
+              isActive={store.is_active}
+              onChange={(override) => updateStore({ status_override: override }, store.id)}
+            />
             <Button
               onClick={() => setActiveTab('external')}
               className="w-full mb-4 h-12 gradient-primary text-primary-foreground font-heading gap-2 sm:hidden"

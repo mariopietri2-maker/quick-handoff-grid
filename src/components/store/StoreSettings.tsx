@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { AlertTriangle, BellRing, Clock, Play, Volume2, VolumeX, Zap, Truck, MapPin, Save, Image as ImageIcon, Phone, Store as StoreIcon, Loader2, Sparkles } from 'lucide-react';
+import { BellRing, Clock, Play, Volume2, VolumeX, Zap, MapPin, Save, Image as ImageIcon, Phone, Store as StoreIcon, Loader2, Sparkles } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Slider } from '@/components/ui/slider';
@@ -184,28 +184,6 @@ export function StoreSettings({ storeId }: StoreSettingsProps) {
             />
           </div>
 
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
-              <Truck className="h-4 w-4 text-primary" />
-              <div>
-                <p className="text-sm font-medium">Καλύπτω delivery fee</p>
-                <p className="text-xs text-muted-foreground">0€ μεταφορικά για τον πελάτη</p>
-              </div>
-            </div>
-            <Switch
-              checked={!!(store as any).covers_delivery_fee}
-              onCheckedChange={(checked) => updateStore({ covers_delivery_fee: checked } as any, storeId)}
-            />
-          </div>
-
-          {!!(store as any).covers_delivery_fee && (
-            <div className="flex gap-2 rounded-lg border border-primary/20 bg-primary/5 p-3">
-              <AlertTriangle className="h-4 w-4 text-primary flex-shrink-0 mt-0.5" />
-              <p className="text-sm text-foreground/80">
-                Το delivery fee θα χρεωθεί από το πορτοφόλι σου σε κάθε ολοκληρωμένη παραγγελία.
-              </p>
-            </div>
-          )}
         </CardContent>
       </Card>
 

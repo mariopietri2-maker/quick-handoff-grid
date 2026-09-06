@@ -180,7 +180,9 @@ export default function RestaurantPage() {
   const storeEta = useDeliveryEta(store?.prep_buffer_minutes ?? 0);
   const etaLow = Math.min(storeEta.min, etaCap);
   const etaHigh = Math.min(storeEta.max, etaCap);
-  const storeOpen = store ? isStoreOpenNow((store as any).opening_hours, (store as any).holiday_dates) : true;
+  const storeOpen = store
+    ? isStoreOpenNow((store as any).opening_hours, (store as any).holiday_dates, (store as any).status_override)
+    : true;
   const closedLabel = store && !storeOpen ? nextOpeningLabel((store as any).opening_hours) : null;
   const platformDelivers =
     deliveryEnabled && ((store as any)?.fulfilment_mode ?? 'platform') !== 'store';

@@ -268,14 +268,18 @@ export default function CheckoutPage() {
     try {
       const { data: storeRow } = await supabase
         .from('stores')
-        .select('opening_hours, holiday_dates, is_active')
+        .select('opening_hours, holiday_dates, is_active, status_override')
         .eq('id', storeId)
         .maybeSingle();
       if (storeRow && (storeRow as any).is_active === false) {
         toast.error('Το κατάστημα δεν δέχεται παραγγελίες αυτή τη στιγμή');
         return;
       }
-      if (storeRow && !isStoreOpenNow((storeRow as any).opening_hours, (storeRow as any).holiday_dates)) {
+      if (storeRow && !isStoreOpenNow(
+        (storeRow as any).opening_hours,
+        (storeRow as any).holiday_dates,
+        (storeRow as any).status_override,
+      )) {
         toast.error('Το κατάστημα είναι κλειστό — δοκίμασε όταν ανοίξει');
         return;
       }
