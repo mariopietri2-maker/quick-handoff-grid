@@ -1,0 +1,22 @@
+name: Apply customer next polish
+on:
+  push:
+    paths:
+      - 'scripts/apply_customer_next_polish.py'
+      - '.github/workflows/apply-customer-next-polish.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_customer_next_polish.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git commit -m "feat(customer-native): offers + free delivery rails, cuisine chips, menu categories" || exit 0
+          git push
