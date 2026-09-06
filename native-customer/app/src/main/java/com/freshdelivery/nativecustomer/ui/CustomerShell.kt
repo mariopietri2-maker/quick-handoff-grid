@@ -476,7 +476,11 @@ private fun HomeTab(
     onTab: (com.freshdelivery.nativecustomer.data.CustomerTab) -> Unit = {},
     onOpenCart: () -> Unit = {},
 ) {
-    var filter by remember { mutableStateOf(HomeFilter.All) }
+    var filter by remember {
+        mutableStateOf(
+            if (state.deliveryLat != null && state.deliveryLng != null) HomeFilter.Near else HomeFilter.All,
+        )
+    }
     val base = state.visibleStores
     val hasLocation = state.deliveryLat != null && state.deliveryLng != null
     val stores = remember(filter, base, hasLocation, state.favoriteStoreIds) {
@@ -489,6 +493,7 @@ private fun HomeTab(
             HomeFilter.Open -> open
             HomeFilter.Near -> near
             HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }
+            HomeFilter.Deals -> base.filter { !it.promo_badge.isNullOrBlank() || it.covers_delivery_fee == true }
         }
     }
 
@@ -597,7 +602,7 @@ private fun HomeTab(
                                 }
                             }
                         } else null,
-                        placeholder = { Text("Αναζήτηση καταστημάτων", color = FreshMuted) },
+                        placeholder = { Text("Πίτσα, σουβλάκι, καφές…", color = FreshMuted) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -621,6 +626,7 @@ private fun HomeTab(
                 FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { filter = HomeFilter.All }
                 FreshFilterChip("Ανοιχτά", selected = filter == HomeFilter.Open) { filter = HomeFilter.Open }
                 FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { filter = HomeFilter.Near }
+                FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { filter = HomeFilter.Deals }
                 FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { filter = HomeFilter.Fav }
             }
         }
@@ -810,9 +816,10 @@ private fun HomeTab(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val heading = when (filter) {
-                    HomeFilter.All -> if (browseMode) "Όλα τα καταστήματα" else "Κοντά σου"
+                    HomeFilter.All -> if (browseMode) "Όλα τα καταστήματα" else "Για σένα"
                     HomeFilter.Open -> "Ανοιχτά τώρα"
-                    HomeFilter.Near -> "Κοντά μου"
+                    HomeFilter.Near -> "Κοντά σου"
+                    HomeFilter.Deals -> "Προσφορές & δωρεάν delivery"
                     HomeFilter.Fav -> "Αγαπημένα"
                 }
                 Text(heading, style = MaterialTheme.typography.titleLarge)
@@ -882,7 +889,7 @@ private fun FreshFilterChip(label: String, selected: Boolean, onClick: () -> Uni
     )
 }
 
-private enum class HomeFilter { All, Open, Near, Fav }
+private enum class HomeFilter { All, Open, Near, Fav, Deals }
 
 private const val EARTH_RADIUS_KM = 6371.0
 
@@ -935,6 +942,25 @@ private fun isStoreOpenNow(store: StoreRow): Boolean {
     val closeMin = toMin(close) ?: return true
     val minuteOfDay = now.hour * 60 + now.minute
     return if (closeMin > openMin) minuteOfDay in openMin until closeMin else minuteOfDay >= openMin || minuteOfDay < closeMin
+}
+
+
+private fun storeDeliveryFeeLabel(store: StoreRow): String {
+    if (store.covers_delivery_fee == true) return "Δωρεάν delivery"
+    val fee = store.delivery_fee
+    return if (fee != null && fee > 0.0) {
+        val s = if (fee % 1.0 == 0.0) fee.toInt().toString() else "%.1f".format(fee)
+        "€$s delivery"
+    } else {
+        "Delivery"
+    }
+}
+
+private fun storeDistanceLabel(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String? {
+    if (deliveryLat == null || deliveryLng == null) return null
+    val km = storeDistanceKm(deliveryLat, deliveryLng, store)
+    if (km == Double.MAX_VALUE) return null
+    return if (km < 1.0) "${(km * 1000).toInt()} m" else "%.1f km".format(km)
 }
 
 private fun storeDeliveryEstimate(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String {
@@ -1015,6 +1041,25 @@ private fun FreshStoreCard(
                     )
                 }
             }
+            val badge = store.promo_badge?.trim().orEmpty()
+            if (badge.isNotEmpty()) {
+                Surface(
+                    color = FreshGreen,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(10.dp),
+                ) {
+                    Text(
+                        badge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        maxLines = 1,
+                    )
+                }
+            }
             Surface(
                 color = Color.White.copy(alpha = 0.92f),
                 shape = RoundedCornerShape(10.dp),
@@ -1088,6 +1133,32 @@ private fun FreshStoreCard(
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
+                }
+                storeDistanceLabel(store, deliveryLat, deliveryLng)?.let { dist ->
+                    Surface(
+                        color = FreshChip,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text(
+                            dist,
+                            color = FreshMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+                Surface(
+                    color = if (store.covers_delivery_fee == true) FreshGreenSoft else FreshChip,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        storeDeliveryFeeLabel(store),
+                        color = if (store.covers_delivery_fee == true) FreshGreenDark else FreshMuted,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
                 }
                 val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
                 if (platformDelivers) {
