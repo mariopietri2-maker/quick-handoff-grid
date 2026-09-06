@@ -131,20 +131,20 @@ fun LoginScreen(
             ) {
                 Image(
                     painter = painterResource(R.drawable.ic_logo_fresh),
-                    contentDescription = "fresh2go",
+                    contentDescription = "Fresh2GO",
                     modifier = Modifier.size(68.dp),
                 )
             }
 
             Spacer(Modifier.height(18.dp))
             Text(
-                text = "fresh2go Driver",
+                text = "Fresh2GO Driver",
                 style = MaterialTheme.typography.headlineLarge,
                 fontWeight = FontWeight.Bold,
                 color = cs.onBackground,
             )
             Text(
-                text = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
+                text = "Fresh Meals. Fast Delivery.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = cs.onSurfaceVariant,
             )
@@ -292,7 +292,7 @@ fun LoginScreen(
             TextButton(
                 onClick = {
                     context.startActivity(
-                        Intent(Intent.ACTION_VIEW, Uri.parse("https://freshdelivery.app/support")),
+                        Intent(Intent.ACTION_VIEW, Uri.parse("https://fresh2go.gr/support")),
                     )
                 },
             ) {

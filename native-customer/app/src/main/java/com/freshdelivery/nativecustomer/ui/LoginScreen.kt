@@ -143,13 +143,13 @@ fun LoginScreen(
         }
         Spacer(Modifier.height(18.dp))
         Text(
-            "fresh2go",
+            "Fresh2GO",
             style = MaterialTheme.typography.displaySmall,
             color = FreshInk,
             fontWeight = FontWeight.Bold,
         )
         Text(
-            if (signupMode) "Δημιούργησε λογαριασμό" else "Η Ήπειρος στο σπίτι σου, γρήγορα.",
+            if (signupMode) "Δημιούργησε λογαριασμό" else "Fresh Meals. Fast Delivery.",
             color = FreshMuted,
             style = MaterialTheme.typography.bodyMedium,
         )
