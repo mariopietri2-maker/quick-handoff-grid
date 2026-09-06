@@ -246,10 +246,11 @@ fun LoginScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // Driver application — create a driver account, wait for approval
+            // Driver application — web /auth with apply intent creates a
+            // driver account pending admin approval (see AuthPage).
             TextButton(
                 onClick = {
-                    val uri = Uri.parse("https://freshdelivery.app/auth")
+                    val uri = Uri.parse("https://freshdelivery.app/auth?apply=driver")
                     context.startActivity(Intent(Intent.ACTION_VIEW, uri))
                 },
                 modifier = Modifier.fillMaxWidth(),
