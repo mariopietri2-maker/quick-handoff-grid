@@ -356,6 +356,8 @@ fun CustomerShell(
                     onToggleAdmin = { onToggleAdmin(true) },
                     onEditAddress = { addressOpen = true; onClearSuggestions() },
                     onUseLocation = onUseLocation,
+                    onTab = onTab,
+                    onOpenCart = { onToggleCart(true) },
                 )
                 CustomerTab.Browse -> HomeTab(
                     state, onOpenStore, onSearch,
@@ -365,6 +367,8 @@ fun CustomerShell(
                     onToggleAdmin = { onToggleAdmin(true) },
                     onEditAddress = { addressOpen = true; onClearSuggestions() },
                     onUseLocation = onUseLocation,
+                    onTab = onTab,
+                    onOpenCart = { onToggleCart(true) },
                 )
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview)
                 CustomerTab.Track -> TrackTab(state)
@@ -470,6 +474,8 @@ private fun HomeTab(
     onToggleAdmin: () -> Unit = {},
     onEditAddress: () -> Unit = {},
     onUseLocation: () -> Unit = {},
+    onTab: (com.freshdelivery.nativecustomer.data.CustomerTab) -> Unit = {},
+    onOpenCart: () -> Unit = {},
 ) {
     var filter by remember { mutableStateOf(HomeFilter.All) }
     val base = state.visibleStores
@@ -501,71 +507,9 @@ private fun HomeTab(
                     .padding(horizontal = 16.dp)
                     .padding(top = 8.dp, bottom = 4.dp),
             ) {
-                if (state.appConfig.showHeaderBrand) {
-                    val accentPair = hslTriplet(state.appConfig.accentHsl)
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier
-                                .size(40.dp)
-                                .clip(CircleShape)
-                                .background(
-                                    accentPair
-                                        ?.let { Brush.linearGradient(listOf(it.first, it.second)) }
-                                        ?: FreshGradient,
-                                ),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            val logo = state.appConfig.logoUrl
-                            if (!logo.isNullOrBlank()) {
-                                AsyncImage(
-                                    model = logo,
-                                    contentDescription = state.appConfig.appName,
-                                    contentScale = ContentScale.Crop,
-                                    modifier = Modifier
-                                        .fillMaxSize()
-                                        .clip(CircleShape),
-                                )
-                            } else {
-                                Text(
-                                    text = state.appConfig.appName.trim().take(1).uppercase().ifBlank { "F" },
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Black,
-                                    fontSize = 18.sp,
-                                )
-                            }
-                        }
-                        Spacer(Modifier.width(10.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                text = state.appConfig.appName,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                            )
-                            Text(
-                                text = state.appConfig.tagline,
-                                color = FreshMuted,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(12.dp))
-                }
+                // Competitor-style header: NO logo on top — address + basket + profile only.
+                // Brand row intentionally removed (was gated by showHeaderBrand).
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(30.dp)
-                            .clip(CircleShape)
-                            .background(FreshGreenSoft),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(
-                            Icons.Outlined.LocationOn,
-                            contentDescription = null,
-                            tint = FreshGreen,
-                            modifier = Modifier.size(16.dp),
-                        )
-                    }
-                    Spacer(Modifier.width(8.dp))
                     Column(
                         Modifier
                             .weight(1f)
@@ -577,21 +521,60 @@ private fun HomeTab(
                             style = MaterialTheme.typography.labelMedium,
                         )
                         Text(
-                            text = state.deliveryAddress.ifBlank { state.appConfig.cityLabel },
+                            text = (state.deliveryAddress.ifBlank { state.appConfig.cityLabel }) + " ⌄",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis,
                         )
                     }
-                    IconButton(onClick = onUseLocation) {
-                        Icon(Icons.Outlined.MyLocation, contentDescription = "Η τοποθεσία μου", tint = FreshGreen)
+                    // Basket with count badge (competitor top-right)
+                    Box(contentAlignment = Alignment.TopEnd) {
+                        IconButton(onClick = onOpenCart) {
+                            Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
+                        }
+                        if (state.cartCount > 0) {
+                            Surface(
+                                color = Color(0xFF22C55E),
+                                shape = CircleShape,
+                                modifier = Modifier.padding(top = 6.dp, end = 6.dp),
+                            ) {
+                                Text(
+                                    text = if (state.cartCount > 9) "9+" else "${state.cartCount}",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                )
+                            }
+                        }
+                    }
+                    IconButton(onClick = { onTab(com.freshdelivery.nativecustomer.data.CustomerTab.Profile) }) {
+                        Icon(Icons.Outlined.AccountCircle, contentDescription = "Λογαριασμός", tint = FreshInk)
                     }
                     if (state.canManageGames) {
                         IconButton(onClick = onToggleAdmin) {
                             Icon(Icons.Outlined.Tune, contentDescription = "Διαχείριση παιχνιδιών", tint = FreshMuted)
                         }
                     }
+                }
+                // Slim location row under header (keeps GPS one-tap without clutter)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.clickable(onClick = onUseLocation),
+                ) {
+                    Icon(
+                        Icons.Outlined.MyLocation,
+                        contentDescription = null,
+                        tint = FreshGreen,
+                        modifier = Modifier.size(14.dp),
+                    )
+                    Spacer(Modifier.width(4.dp))
+                    Text(
+                        "Χρήση τρέχουσας τοποθεσίας",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
                 }
                 Spacer(Modifier.height(12.dp))
                 Box(
@@ -708,7 +691,7 @@ private fun HomeTab(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(14.dp),
             ) {
-                val tiles = state.appConfig.tiles.ifEmpty {
+                val rawTiles = state.appConfig.tiles.ifEmpty {
                     listOf(
                         com.freshdelivery.nativecustomer.data.CategoryTile("Φαγητό", "🍔", "all"),
                         com.freshdelivery.nativecustomer.data.CategoryTile("Πίτσα", "🍕", "Πίτσες"),
@@ -716,6 +699,14 @@ private fun HomeTab(
                         com.freshdelivery.nativecustomer.data.CategoryTile("Γλυκά", "🍰", "Γλυκά"),
                     )
                 }
+                // Food-only launch: hide retail verticals until showRetailVerticals=true.
+                val retailLabels = setOf(
+                    "supermarkets", "super-markets", "super markets",
+                    "καταστήματα", "καταστηματα", "takeaway", "take-away",
+                    "mini market", "mini-market", "minimarket",
+                )
+                val tiles = if (state.appConfig.showRetailVerticals) rawTiles
+                else rawTiles.filter { it.label.trim().lowercase() !in retailLabels }
                 tiles.forEach { tile ->
                     Column(
                         horizontalAlignment = Alignment.CenterHorizontally,
@@ -749,6 +740,64 @@ private fun HomeTab(
                 when (state.gameActive) {
                     "wheel" -> LuckyWheelCard(state = state, onSpin = onSpinWheel)
                     else -> MysteryCardsSection(state = state, onOpenCard = onOpenCard)
+                }
+            }
+        }
+        // Competitor-style horizontal discovery (food-only; retail hidden by flag).
+        if (stores.isNotEmpty()) {
+            item {
+                DiscoverSectionHeader(title = "Φαγητό με δωρεάν delivery", action = "Δες τα όλα ›") {
+                    filter = HomeFilter.All; onSearch("")
+                }
+            }
+            item {
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    stores.take(8).forEach { store ->
+                        StoreMiniCard(
+                            store = store,
+                            rating = state.storeRatings[store.id],
+                            deliveryLat = state.deliveryLat,
+                            deliveryLng = state.deliveryLng,
+                            onClick = { onOpenStore(store) },
+                        )
+                    }
+                }
+            }
+            item {
+                DiscoverSectionHeader(title = "Δημοφιλείς κουζίνες", action = null, onAction = {})
+            }
+            item {
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(14.dp),
+                ) {
+                    listOf(
+                        "Σουβλάκια" to "🥙", "Pizza" to "🍕",
+                        "Κρέπες" to "🥞", "Burgers" to "🍔",
+                    ).forEach { (label, emoji) ->
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            modifier = Modifier.clickable { onSearch(label) },
+                        ) {
+                            Box(
+                                Modifier
+                                    .size(52.dp)
+                                    .clip(CircleShape)
+                                    .background(Color.White)
+                                    .border(0.5.dp, FreshDivider, CircleShape),
+                                contentAlignment = Alignment.Center,
+                            ) { Text(emoji, fontSize = 24.sp) }
+                            Spacer(Modifier.height(4.dp))
+                            Text(label, style = MaterialTheme.typography.labelMedium, color = FreshInk)
+                        }
+                    }
                 }
             }
         }
@@ -913,7 +962,7 @@ private fun FreshStoreCard(
             .clickable(onClick = onClick),
     ) {
         Box(Modifier.fillMaxWidth().height(160.dp)) {
-            StoreHeroImage(store.image_url, height = 160)
+            StoreHeroImage(store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url, height = 160)
             Surface(
                 color = if (!active || !openNow) {
                     Color.Black.copy(alpha = 0.65f)
@@ -974,13 +1023,26 @@ private fun FreshStoreCard(
             }
         }
         Column(Modifier.padding(14.dp)) {
-            Text(
-                store.name ?: "Κατάστημα",
-                style = MaterialTheme.typography.titleLarge,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-            store.address?.let {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    store.name ?: "Κατάστημα",
+                    style = MaterialTheme.typography.titleLarge,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                store.promo_badge?.takeIf { it.isNotBlank() }?.let {
+                    Spacer(Modifier.width(6.dp))
+                    Surface(color = FreshGreen, shape = RoundedCornerShape(8.dp)) {
+                        Text(
+                            it, color = Color.White, fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                        )
+                    }
+                }
+            }
+            (store.tagline?.takeIf { it.isNotBlank() } ?: store.address)?.let {
                 Text(
                     it,
                     style = MaterialTheme.typography.bodySmall,
@@ -1001,6 +1063,29 @@ private fun FreshStoreCard(
                     )
                 }
                 val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
+                if (store.covers_delivery_fee == true) {
+                    FreshMetaPill {
+                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Δωρεάν" + (store.delivery_free_min?.let { " από €%.2f".format(it) } ?: ""),
+                            color = FreshGreenDark,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                } else {
+                    store.delivery_fee?.let { fee ->
+                        FreshMetaPill {
+                            Text(
+                                "€%.2f".format(fee),
+                                color = FreshInk,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                    }
+                }
                 if (platformDelivers) {
                     FreshMetaPill {
                         Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
@@ -1037,6 +1122,88 @@ private fun FreshMetaPill(content: @Composable RowScope.() -> Unit) {
             verticalAlignment = Alignment.CenterVertically,
             content = content,
         )
+    }
+}
+
+@Composable
+private fun DiscoverSectionHeader(title: String, action: String?, onAction: () -> Unit = {}) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(top = 14.dp, bottom = 2.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
+        if (action != null) {
+            Text(
+                action,
+                color = FreshGreen,
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.clickable(onClick = onAction),
+            )
+        }
+    }
+}
+
+@Composable
+private fun StoreMiniCard(
+    store: StoreRow,
+    onClick: () -> Unit,
+    rating: StoreRating? = null,
+    deliveryLat: Double? = null,
+    deliveryLng: Double? = null,
+) {
+    Column(
+        Modifier
+            .width(160.dp)
+            .shadow(4.dp, RoundedCornerShape(16.dp))
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .clickable(onClick = onClick),
+    ) {
+        Box(Modifier.fillMaxWidth().height(84.dp)) {
+            StoreHeroImage(store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url, height = 84)
+            Surface(
+                color = Color.White.copy(alpha = 0.92f),
+                shape = RoundedCornerShape(8.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(6.dp),
+            ) {
+                Row(Modifier.padding(horizontal = 7.dp, vertical = 3.dp)) {
+                    Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(11.dp))
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        if ((rating?.count ?: 0) > 0) "%.1f".format(rating!!.avg) else "Νέο",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+            }
+        }
+        Column(Modifier.padding(8.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(store.name ?: "Κατάστημα", fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis, modifier = Modifier.weight(1f))
+                store.promo_badge?.takeIf { it.isNotBlank() }?.let {
+                    Surface(color = FreshGreen, shape = RoundedCornerShape(6.dp)) {
+                        Text(it, color = Color.White, fontWeight = FontWeight.Bold, fontSize = 9.sp, modifier = Modifier.padding(horizontal = 5.dp, vertical = 2.dp))
+                    }
+                }
+            }
+            Text(
+                storeDeliveryEstimate(store, deliveryLat, deliveryLng) + " • Ελάχ. 5€",
+                color = FreshMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
+            )
+            Surface(color = FreshGreenSoft, shape = RoundedCornerShape(8.dp), modifier = Modifier.padding(top = 4.dp)) {
+                Text(
+                    if (store.covers_delivery_fee == true) "🛵 Δωρεάν διανομή"
+                    else store.delivery_fee?.let { "🛵 €%.2f".format(it) } ?: "🛵 Δωρεάν διανομή",
+                    color = FreshGreenDark, fontWeight = FontWeight.Bold, fontSize = 10.sp,
+                    modifier = Modifier.padding(horizontal = 7.dp, vertical = 3.dp),
+                )
+            }
+        }
     }
 }
 

@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Switch } from '@/components/ui/switch';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { toast } from 'sonner';
 import { Loader2, Save, Store } from 'lucide-react';
 
@@ -16,6 +18,10 @@ type StoreAppearance = {
   promo_badge: string | null;
   highlight_color: string | null;
   is_active: boolean | null;
+  covers_delivery_fee: boolean | null;
+  fulfilment_mode: string | null;
+  delivery_fee: number | null;
+  delivery_free_min: number | null;
 };
 
 const emptyDraft = {
@@ -24,7 +30,13 @@ const emptyDraft = {
   cover_image_url: '',
   highlight_color: '',
   image_url: '',
+  covers_delivery_fee: false,
+  fulfilment_mode: 'platform',
+  delivery_fee: '',
+  delivery_free_min: '',
 };
+
+const BADGE_PRESETS = ['Νέο', 'Top', 'Hit', '-20%', 'Δωρεάν delivery', '2x1'];
 
 /** Admin editor for per-store customer-facing appearance (premium cards). */
 export default function AdminStoreAppearance() {
@@ -39,7 +51,7 @@ export default function AdminStoreAppearance() {
     setLoading(true);
     const { data, error } = await (supabase as any)
       .from('stores')
-      .select('id, name, image_url, cover_image_url, tagline, promo_badge, highlight_color, is_active')
+      .select('id, name, image_url, cover_image_url, tagline, promo_badge, highlight_color, is_active, covers_delivery_fee, fulfilment_mode, delivery_fee, delivery_free_min')
       .order('name');
     setLoading(false);
     if (error) {
@@ -69,8 +81,12 @@ export default function AdminStoreAppearance() {
       cover_image_url: selected.cover_image_url ?? '',
       highlight_color: selected.highlight_color ?? '',
       image_url: selected.image_url ?? '',
+      covers_delivery_fee: !!selected.covers_delivery_fee,
+      fulfilment_mode: selected.fulfilment_mode === 'store' ? 'store' : 'platform',
+      delivery_fee: selected.delivery_fee != null ? String(selected.delivery_fee) : '',
+      delivery_free_min: selected.delivery_free_min != null ? String(selected.delivery_free_min) : '',
     });
-  }, [selected?.id, selected?.tagline, selected?.promo_badge, selected?.cover_image_url, selected?.highlight_color, selected?.image_url]);
+  }, [selected?.id, selected?.tagline, selected?.promo_badge, selected?.cover_image_url, selected?.highlight_color, selected?.image_url, selected?.covers_delivery_fee, selected?.fulfilment_mode, selected?.delivery_fee, selected?.delivery_free_min]);
 
   const filtered = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -83,11 +99,27 @@ export default function AdminStoreAppearance() {
     draft.promo_badge !== (selected.promo_badge ?? '') ||
     draft.cover_image_url !== (selected.cover_image_url ?? '') ||
     draft.highlight_color !== (selected.highlight_color ?? '') ||
-    draft.image_url !== (selected.image_url ?? '')
+    draft.image_url !== (selected.image_url ?? '') ||
+    draft.covers_delivery_fee !== !!selected.covers_delivery_fee ||
+    draft.fulfilment_mode !== (selected.fulfilment_mode === 'store' ? 'store' : 'platform') ||
+    draft.delivery_fee !== (selected.delivery_fee != null ? String(selected.delivery_fee) : '') ||
+    draft.delivery_free_min !== (selected.delivery_free_min != null ? String(selected.delivery_free_min) : '')
   );
+
+  const parseNum = (v: string): number | null => {
+    const t = v.trim().replace(',', '.');
+    if (!t) return null;
+    const n = Number(t);
+    if (!Number.isFinite(n) || n < 0) return null;
+    return Math.round(n * 100) / 100;
+  };
 
   const save = async () => {
     if (!selected || !dirty) return;
+    const fee = parseNum(draft.delivery_fee);
+    const freeMin = parseNum(draft.delivery_free_min);
+    if (draft.delivery_fee.trim() && fee == null) { toast.error('Μη έγκυρο κόστος delivery'); return; }
+    if (draft.delivery_free_min.trim() && freeMin == null) { toast.error('Μη έγκυρο όριο δωρεάν delivery'); return; }
     setSaving(true);
     const payload = {
       tagline: draft.tagline.trim() || null,
@@ -95,6 +127,10 @@ export default function AdminStoreAppearance() {
       cover_image_url: draft.cover_image_url.trim() || null,
       highlight_color: draft.highlight_color.trim() || null,
       image_url: draft.image_url.trim() || null,
+      covers_delivery_fee: draft.covers_delivery_fee,
+      fulfilment_mode: draft.fulfilment_mode === 'store' ? 'store' : 'platform',
+      delivery_fee: fee,
+      delivery_free_min: freeMin,
     };
     const { error } = await (supabase as any).from('stores').update(payload).eq('id', selected.id);
     setSaving(false);
@@ -111,9 +147,9 @@ export default function AdminStoreAppearance() {
   return (
     <div className="space-y-4">
       <div>
-        <h1 className="text-2xl font-heading font-extrabold">Εμφάνιση καταστημάτων</h1>
+        <h1 className="text-2xl font-heading font-extrabold">Εμφάνιση & delivery καταστημάτων</h1>
         <p className="text-sm text-muted-foreground">
-          Tagline, promo badge, cover και accent για premium κάρτες στο customer app.
+          Tagline, badge, cover, ποιος παραδίδει (Fresh2GO/κατάστημα), δωρεάν delivery, χρέωση ανά κατάστημα.
         </p>
       </div>
 
@@ -147,6 +183,9 @@ export default function AdminStoreAppearance() {
                 <div className="text-[11px] text-muted-foreground">
                   {s.is_active === false ? 'Ανενεργό' : 'Ενεργό'}
                   {s.promo_badge ? ` · ${s.promo_badge}` : ''}
+                  {s.covers_delivery_fee ? ' · Δωρεάν' : ''}
+                  {s.delivery_fee != null ? ` · ${String(s.delivery_fee).replace('.', ',')}€` : ''}
+                  {s.fulfilment_mode === 'store' ? ' · Κατάστημα' : ''}
                 </div>
               </button>
             ))}
@@ -187,7 +226,11 @@ export default function AdminStoreAppearance() {
                       onChange={(e) => setDraft((p) => ({ ...p, promo_badge: e.target.value }))}
                       maxLength={24}
                       placeholder="π.χ. -20% · Νέο · Hit"
+                      list="badge-presets"
                     />
+                    <datalist id="badge-presets">
+                      {BADGE_PRESETS.map((b) => <option key={b} value={b} />)}
+                    </datalist>
                   </div>
                   <div className="space-y-1.5">
                     <Label>Highlight χρώμα (HSL)</Label>
@@ -225,6 +268,53 @@ export default function AdminStoreAppearance() {
                   </div>
                 </div>
 
+                <div className="rounded-xl border p-3 space-y-3 bg-muted/30">
+                  <div className="text-sm font-semibold">Delivery & εκπλήρωση</div>
+                  <div className="grid sm:grid-cols-2 gap-3">
+                    <div className="space-y-1.5">
+                      <Label>Παράδοση από</Label>
+                      <Select
+                        value={draft.fulfilment_mode}
+                        onValueChange={(v) => setDraft((p) => ({ ...p, fulfilment_mode: v }))}
+                      >
+                        <SelectTrigger><SelectValue /></SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="platform">Delivered by Fresh2GO</SelectItem>
+                          <SelectItem value="store">Παράδοση καταστήματος</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2">
+                      <div>
+                        <div className="text-sm font-medium">Δωρεάν delivery</div>
+                        <div className="text-[11px] text-muted-foreground">Badge + χρέωση 0€ στο customer</div>
+                      </div>
+                      <Switch
+                        checked={draft.covers_delivery_fee}
+                        onCheckedChange={(v) => setDraft((p) => ({ ...p, covers_delivery_fee: v }))}
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Κόστος delivery / κατάστημα (€)</Label>
+                      <Input
+                        value={draft.delivery_fee}
+                        onChange={(e) => setDraft((p) => ({ ...p, delivery_fee: e.target.value }))}
+                        inputMode="decimal"
+                        placeholder="Κενό = default πλατφόρμας"
+                      />
+                    </div>
+                    <div className="space-y-1.5">
+                      <Label>Δωρεάν από καλάθι ≥ (€)</Label>
+                      <Input
+                        value={draft.delivery_free_min}
+                        onChange={(e) => setDraft((p) => ({ ...p, delivery_free_min: e.target.value }))}
+                        inputMode="decimal"
+                        placeholder="π.χ. 15"
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 {previewCover && (
                   <div className="relative rounded-xl overflow-hidden border h-40 bg-muted/30">
                     <img
@@ -233,9 +323,24 @@ export default function AdminStoreAppearance() {
                       className="w-full h-full object-cover"
                       onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }}
                     />
-                    {draft.promo_badge && (
-                      <span className="absolute bottom-3 left-3 text-[10px] font-extrabold uppercase tracking-wide text-white bg-emerald-600 px-2 py-0.5 rounded-md">
-                        {draft.promo_badge}
+                    <div className="absolute top-3 left-3 flex gap-1.5">
+                      {draft.promo_badge && (
+                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-white bg-emerald-600 px-2 py-0.5 rounded-md">
+                          {draft.promo_badge}
+                        </span>
+                      )}
+                      {draft.covers_delivery_fee && (
+                        <span className="text-[10px] font-extrabold uppercase tracking-wide text-white bg-sky-600 px-2 py-0.5 rounded-md">
+                          Δωρεάν delivery
+                        </span>
+                      )}
+                      <span className={`text-[10px] font-extrabold uppercase tracking-wide px-2 py-0.5 rounded-md ${draft.fulfilment_mode === 'store' ? 'bg-muted text-foreground' : 'bg-orange-600 text-white'}`}>
+                        {draft.fulfilment_mode === 'store' ? 'Κατάστημα' : 'Fresh2GO'}
+                      </span>
+                    </div>
+                    {draft.delivery_fee.trim() && (
+                      <span className="absolute bottom-3 right-3 text-[11px] font-bold bg-background/90 px-2 py-0.5 rounded-md">
+                        {draft.delivery_fee.trim().replace('.', ',')}€
                       </span>
                     )}
                     {draft.highlight_color && (

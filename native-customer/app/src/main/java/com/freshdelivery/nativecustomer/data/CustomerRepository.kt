@@ -108,8 +108,16 @@ class CustomerRepository(
                 .decodeSingleOrNull<CustomerAppConfigRow>()
             val cfg = row?.published_config?.jsonObject ?: return@runCatching defaults
             val branding = cfg["branding"]?.jsonObject
+            val layout = cfg["layout"]?.jsonObject
             fun brandStr(key: String): String? =
                 branding?.get(key)?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() }
+            fun layoutBool(vararg keys: String): Boolean? {
+                keys.forEach { k ->
+                    layout?.get(k)?.jsonPrimitive?.booleanOrNull?.let { return it }
+                    cfg[k]?.jsonPrimitive?.booleanOrNull?.let { return it }
+                }
+                return null
+            }
             defaults.copy(
                 appName = brandStr("app_name") ?: defaults.appName,
                 cityLabel = brandStr("city_label") ?: defaults.cityLabel,
@@ -118,6 +126,9 @@ class CustomerRepository(
                 showHeaderBrand = branding?.get("show_header_brand")
                     ?.jsonPrimitive?.booleanOrNull ?: true,
                 accentHsl = brandStr("accent_hsl"),
+                // Food-only launch: explicit opt-in. Set customer_app_config.published_config
+                // { layout: { show_retail_verticals: true } } when supermarkets go live.
+                showRetailVerticals = layoutBool("show_retail_verticals", "showRetailVerticals") ?: false,
             )
         }.getOrDefault(defaults)
     }
@@ -153,7 +164,9 @@ class CustomerRepository(
         return client.from("stores_public")
             .select(Columns.list(
                 "id", "name", "address", "latitude", "longitude", "is_active",
-                "image_url", "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+                "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
+                "covers_delivery_fee", "delivery_fee", "delivery_free_min",
+                "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
                 "fulfilment_mode",
             )) {
                 filter {
@@ -315,7 +328,9 @@ class CustomerRepository(
         return client.from("stores_public")
             .select(Columns.list(
                 "id", "name", "address", "latitude", "longitude", "is_active",
-                "image_url", "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
+                "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
+                "covers_delivery_fee", "delivery_fee", "delivery_free_min",
+                "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
                 "fulfilment_mode",
             )) {
                 filter { eq("is_active", true) }
