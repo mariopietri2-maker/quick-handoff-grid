@@ -131,3 +131,9 @@ fun FreshTheme(content: @Composable () -> Unit) {
         content = content,
     )
 }
+
+/** Alias kept for MainActivity (expects FreshCustomerTheme). */
+@Composable
+fun FreshCustomerTheme(content: @Composable () -> Unit) {
+    FreshTheme(content)
+}
