@@ -1,0 +1,23 @@
+name: Apply customer friendly errors
+on:
+  push:
+    paths:
+      - 'scripts/apply_customer_friendly_errors.py'
+      - 'native-customer/app/src/main/java/com/freshdelivery/nativecustomer/util/UserFacingErrors.kt'
+      - '.github/workflows/apply-customer-friendly-errors.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_customer_friendly_errors.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git commit -m "feat(customer-native): friendly Greek errors, no JWT dumps" || exit 0
+          git push
