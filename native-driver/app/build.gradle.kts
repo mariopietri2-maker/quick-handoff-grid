@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 283
-        versionName = "2.6.29-fresh2go"
+        versionCode = 281
+        versionName = "2.6.27-bg-offer"
 
         buildConfigField(
             "String",
