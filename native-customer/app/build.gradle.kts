@@ -37,10 +37,7 @@ android {
     buildTypes {
         // Shared debug keystore — see native-driver for rationale.
         debug {
-            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = false
@@ -48,6 +45,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    signingConfigs {
+        debug {
+            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
         }
     }
 
