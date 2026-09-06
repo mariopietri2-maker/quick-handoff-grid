@@ -93,7 +93,9 @@ class DriverRepository(
             limit(1L)
         }.decodeList<DriverStateRow>().firstOrNull()
         if (existing != null) return existing
-        client.from("driver_state").insert(buildJsonObject { put("driver_id", userId) })
+        runCatching {
+            client.from("driver_state").insert(buildJsonObject { put("driver_id", userId) })
+        }
         return DriverStateRow(driver_id = userId)
     }
 

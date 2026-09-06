@@ -225,6 +225,11 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                             settingsLocal = _state.value.settingsLocal,
                         )
                     }
+                    is SessionStatus.RefreshFailure -> {
+                        stopPolling()
+                        _state.value = _state.value.copy(online = false)
+                    }
+                    SessionStatus.Initializing -> Unit
                     else -> Unit
                 }
             }
@@ -324,6 +329,10 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setOnline(online: Boolean) {
         val uid = _state.value.userId ?: return
+        if (online && SupabaseProvider.client.auth.currentUserOrNull() == null) {
+            _state.value = _state.value.copy(error = "Η σύνδεση δεν είναι ενεργή. Ξανασυνδέσου.")
+            return
+        }
         if (!online && _state.value.activeStoreCall != null) {
             _state.value = _state.value.copy(error = "Ολοκλήρωσε την ενεργή κλήση πρώτα")
             return
@@ -403,6 +412,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
 
     fun refreshWork() {
         val uid = _state.value.userId ?: return
+        if (!_state.value.signedIn) return
         viewModelScope.launch {
             runCatching {
                 val settings = repo.platformSettings()
