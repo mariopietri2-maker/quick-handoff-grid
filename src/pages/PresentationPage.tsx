@@ -102,9 +102,20 @@ const HIGHLIGHTS = [
   { icon: CircleCheck, label: 'Υποστήριξη & admin' },
 ];
 
+/** iOS Safari / iPadOS cannot render PDFs inside iframes — open natively instead. */
+function cannotEmbedPdf(): boolean {
+  if (typeof navigator === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const iOS = /iPad|iPhone|iPod/.test(ua);
+  const iPadOS = ua.includes('Mac') && typeof document !== 'undefined' && 'ontouchend' in document;
+  return iOS || iPadOS;
+}
+
 export default function PresentationPage() {
   const [tab, setTab] = useState<Tab>('video');
+  const [pdfFailed, setPdfFailed] = useState(false);
   const showcaseRef = useRef<HTMLDivElement>(null);
+  const showPdfFallback = cannotEmbedPdf() || pdfFailed;
 
   const scrollToShowcase = (next: Tab) => {
     setTab(next);
@@ -322,12 +333,36 @@ export default function PresentationPage() {
               className="rounded-3xl border border-white/12 bg-black/40 overflow-hidden"
               style={{ boxShadow: '0 0 90px hsl(24 100% 55% / 0.18), 0 30px 60px rgba(0,0,0,0.45)' }}
             >
-              <iframe
-                key={PDF_SRC}
-                title="Fresh2GO.GR — Παρουσίαση PDF"
-                className="w-full h-[72dvh] min-h-[420px] bg-[#141009]"
-                src={`${PDF_SRC}#view=FitH`}
-              />
+              {showPdfFallback ? (
+                <div className="flex flex-col items-center text-center px-6 py-14 sm:py-20">
+                  <div className="h-16 w-16 rounded-3xl gradient-primary shadow-primary flex items-center justify-center mb-5">
+                    <FileText className="h-8 w-8 text-white" />
+                  </div>
+                  <p className="font-heading font-extrabold text-2xl mb-2">
+                    Fresh2GO.GR — Παρουσίαση
+                  </p>
+                  <p className="text-sm text-white/60 max-w-sm mb-8">
+                    13 σελίδες · η συσκευή σου προβάλλει το PDF καλύτερα σε πλήρη οθόνη.
+                  </p>
+                  <a
+                    href={PDF_SRC}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="inline-flex items-center justify-center gap-2 h-14 px-8 text-base font-heading font-bold bg-[#FFB23D] text-[#2A1A0A] rounded-xl hover:opacity-90 transition-opacity"
+                  >
+                    <FileText className="h-5 w-5" />
+                    Προβολή PDF
+                  </a>
+                </div>
+              ) : (
+                <iframe
+                  key={PDF_SRC}
+                  title="Fresh2GO.GR — Παρουσίαση PDF"
+                  className="w-full h-[72dvh] min-h-[420px] bg-[#141009]"
+                  src={`${PDF_SRC}#view=FitH`}
+                  onError={() => setPdfFailed(true)}
+                />
+              )}
             </div>
             <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
               <p className="text-sm text-white/55">
