@@ -89,6 +89,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -103,6 +104,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.freshdelivery.nativecustomer.data.CustomerTab
 import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.data.OrderUi
@@ -492,8 +494,12 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
                 modifier = Modifier.size(48.dp),
             )
         } else {
+            val ctx = LocalContext.current
             AsyncImage(
-                model = url,
+                model = ImageRequest.Builder(ctx)
+                    .data(url)
+                    .crossfade(180)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),

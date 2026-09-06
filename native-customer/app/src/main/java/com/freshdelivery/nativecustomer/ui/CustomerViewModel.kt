@@ -195,6 +195,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var liveChatSessionJob: Job? = null
     private var ticketJob: Job? = null
     private var searchJob: Job? = null
+    private var cachedStores: List<StoreRow> = emptyList()
     private var gameShowUntilMs = 0L
 
     init {
@@ -376,13 +377,19 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         searchJob?.cancel()
         val trimmed = q.trim()
         if (trimmed.isBlank()) {
-            refreshStores()
+            if (cachedStores.isNotEmpty()) {
+                _state.value = _state.value.copy(stores = cachedStores)
+            } else {
+                refreshStores()
+            }
             return
         }
         searchJob = viewModelScope.launch {
-            delay(280)
+            delay(220)
             val results = repo.searchStores(trimmed)
-            _state.value = _state.value.copy(stores = results)
+            if (_state.value.searchQuery.trim() == trimmed) {
+                _state.value = _state.value.copy(stores = results)
+            }
         }
     }
 
@@ -1077,9 +1084,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshStores() {
         viewModelScope.launch {
             runCatching {
+                val stores = repo.fetchStores()
+                val ratings = repo.fetchStoreRatings()
+                cachedStores = stores
                 _state.value = _state.value.copy(
-                    stores = repo.fetchStores(),
-                    storeRatings = repo.fetchStoreRatings(),
+                    stores = stores,
+                    storeRatings = ratings,
                 )
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = userFacingError(e))
@@ -1138,7 +1148,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
                 refreshDriverLocation()
                 ensureDeliveryCoordsOnTrack(tracked)
-                refreshLoyalty()
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = userFacingError(e))
             }
