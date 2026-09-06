@@ -1,4 +1,4 @@
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useMobileFlavor } from '@/lib/mobileApp';
 import RoleAccessGate from '@/components/RoleAccessGate';
@@ -8,9 +8,10 @@ interface ProtectedRouteProps {
   allowedRoles?: string[];
 }
 
-export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) {
+export function ProtectedRoute({ children, allowedRoles }: { children: React.ReactNode; allowedRoles?: string[] }) {
   const { user, loading, profile, isAdmin, isSupport, isStore, isM } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
+  const location = useLocation();
 
   if (!flavorReady || loading || (user && !profile)) {
     return (
@@ -25,7 +26,15 @@ export function ProtectedRoute({ children, allowedRoles }: ProtectedRouteProps) 
 
 
   if (!user) {
-    return <Navigate to="/auth" replace />;
+    // Preserve where the user wanted to go — and, for driver-gated routes,
+    // mark the driver-apply intent so /auth creates a driver account
+    // (pending admin approval) instead of a plain customer account.
+    const params = new URLSearchParams();
+    const next = location.pathname + location.search;
+    if (next && !next.startsWith('/auth')) params.set('next', next);
+    if (allowedRoles?.includes('driver')) params.set('apply', 'driver');
+    const qs = params.toString();
+    return <Navigate to={`/auth${qs ? `?${qs}` : ''}`} replace />;
   }
 
   // Admins have access to every protected route

@@ -56,7 +56,7 @@ export default function AuthPage() {
   const [otp, setOtp] = useState('');
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp, user, profile, isAdmin, isSupport, loading } = useAuth();
+  const { signIn, signUp, user, profile, isAdmin, isSupport, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { flavor, ready: flavorReady } = useMobileFlavor();
   const isDriverShell = flavor === 'driver';
@@ -73,6 +73,27 @@ export default function AuthPage() {
     } catch { /* noop */ }
     return isDriverShell ? '/driver' : '/order';
   })();
+
+  // Driver-apply intent: explicit ?apply=driver link (shareable), the driver
+  // shell, or a preserved ?next=/driver destination. Signup with intent
+  // always creates a *driver* account pending admin approval.
+  const driverIntent = (() => {
+    try {
+      const params = new URLSearchParams(window.location.search);
+      if (params.get('apply') === 'driver') return true;
+    } catch { /* noop */ }
+    if (isDriverShell) return true;
+    return nextPath === '/driver' || nextPath.startsWith('/driver?') || nextPath.startsWith('/driver/');
+  })();
+
+  const applyDriverRole = async () => {
+    try {
+      await (supabase as any).rpc('sync_app_role', { p_app: 'driver' });
+    } catch { /* profile refresh below decides what the user sees */ }
+    try {
+      await refreshProfile();
+    } catch { /* noop */ }
+  };
 
   // Recovery link → session reset. Push / deep link ?reset=1 → OTP form.
   useEffect(() => {
@@ -267,18 +288,21 @@ export default function AuthPage() {
           toast.error('Ο κωδικός πρέπει να έχει τουλάχιστον 6 χαρακτήρες');
           return;
         }
-        const { error, session } = await signUp(emailNorm, password, fullName, 'customer');
+        const { error, session } = await signUp(emailNorm, password, fullName, driverIntent ? 'driver' : 'customer');
         if (error) {
           toast.error(error.message);
           if ((error.message || '').toLowerCase().includes('υπάρχει ήδη')) {
             setMode('login');
           }
         } else if (session) {
-          toast.success(
-            isDriverShell
-              ? 'Εγγραφή ολοκληρώθηκε. Αναμονή έγκρισης οδηγού.'
-              : 'Συνδεθήκατε! Καλώς ήρθατε.',
-          );
+          if (driverIntent) {
+            // signUp ignores role on web (shared flavor) — force the driver
+            // application so it lands in admin approvals (idempotent RPC).
+            await applyDriverRole();
+            toast.success('Η αίτηση οδηγού καταχωρήθηκε. Αναμονή έγκρισης.');
+          } else {
+            toast.success('Συνδεθήκατε! Καλώς ήρθατε.');
+          }
         } else {
           toast.error('Η εγγραφή ολοκληρώθηκε αλλά η σύνδεση απέτυχε. Δοκιμάστε Σύνδεση με τον ίδιο κωδικό.');
           setMode('login');
@@ -308,9 +332,11 @@ export default function AuthPage() {
         : mode === 'reset'
           ? 'Ορίστε νέο κωδικό για τον λογαριασμό σας'
           : isLogin
-            ? 'Μπείτε με email και κωδικό'
-            : isDriverShell
-              ? 'Δημιουργήστε λογαριασμό οδηγού (αυτόματος ρόλος · χρειάζεται έγκριση)'
+            ? driverIntent
+              ? 'Μπείτε για να συνεχίσετε την αίτηση οδηγού'
+              : 'Μπείτε με email και κωδικό'
+            : driverIntent
+              ? 'Δημιουργήστε λογαριασμό οδηγού — η αίτηση θα εγκριθεί από το admin'
               : isCustomerShell
                 ? 'Δημιουργήστε λογαριασμό πελάτη (αυτόματος ρόλος)'
                 : 'Δημιουργήστε λογαριασμό πελάτη';
@@ -318,7 +344,7 @@ export default function AuthPage() {
   return (
     <div className="min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain customer-scroll bg-[hsl(220,20%,7%)] flex flex-col">
       <SEO
-        title={isDriverShell ? 'Σύνδεση οδηγού — Fresh2GO.GR' : 'Σύνδεση & Εγγραφή — Fresh2GO.GR'}
+        title={(isDriverShell || (driverIntent && isSignup)) ? 'Εγγραφή οδηγού — Fresh2GO.GR' : 'Σύνδεση & Εγγραφή — Fresh2GO.GR'}
         description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο Fresh2GO.GR."
         path="/auth"
       />
