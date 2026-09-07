@@ -134,7 +134,7 @@ data class PromoBanner(
 )
 
 data class CustomerAppConfig(
-    val appName: String = "fresh2go",
+    val appName: String = "Fresh2GO",
     val cityLabel: String = "Ιωάννινα",
     val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
     val logoUrl: String? = null,
