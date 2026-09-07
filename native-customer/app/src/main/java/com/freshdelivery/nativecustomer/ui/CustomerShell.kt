@@ -225,6 +225,8 @@ fun CustomerShell(
             onSetDelivery = onSetDelivery,
             onUseLocation = onUseLocation,
             onGeocode = onGeocode,
+            onAddressQuery = onAddressQuery,
+            onPickSuggestion = onPickSuggestion,
             onSaveAddress = onSaveAddress,
             onSelectSaved = onSelectSaved,
             onDeleteSaved = onDeleteSaved,
@@ -2177,6 +2179,8 @@ private fun AddressPickerScreen(
     onSetDelivery: (String, Double?, Double?) -> Unit,
     onUseLocation: () -> Unit,
     onGeocode: (String) -> Unit,
+    onAddressQuery: (String) -> Unit = {},
+    onPickSuggestion: (AddressSuggestion) -> Unit = {},
     onSaveAddress: () -> Unit,
     onSelectSaved: (SavedAddressRow) -> Unit = {},
     onDeleteSaved: (String) -> Unit = {},
@@ -2220,14 +2224,43 @@ private fun AddressPickerScreen(
         ) {
             OutlinedTextField(
                 value = address,
-                onValueChange = { address = it },
+                onValueChange = {
+                    address = it
+                    onAddressQuery(it)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Οδός, αριθμός, πόλη") },
+                label = { Text("Οδός, αριθμός (Ιωάννινα)") },
                 leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshMuted) },
                 shape = RoundedCornerShape(16.dp),
                 colors = fieldColors,
             )
+            if (state.addressSuggestions.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text("Προτάσεις", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                state.addressSuggestions.forEach { s ->
+                    Surface(
+                        onClick = {
+                            address = s.label
+                            onPickSuggestion(s)
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                    ) {
+                        Row(
+                            Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(s.label, style = MaterialTheme.typography.bodyMedium, color = FreshInk)
+                        }
+                    }
+                }
+            }
             if (state.savedAddresses.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Text("Αποθηκευμένες διευθύνσεις", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)

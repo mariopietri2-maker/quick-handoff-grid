@@ -520,18 +520,32 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
         val q = address.trim()
         if (q.length < 3) return@withContext emptyList()
-        // 1) Mapbox Geocoding (autocomplete-quality, Greece bias)
-        val mapbox = runCatching {
-            val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
+        val cityBias = listOf("ιωανν", "ioannina", "γιάννεν")
+        val hasCity = cityBias.any { q.lowercase().contains(it) }
+        val queries = buildList {
+            add(q)
+            if (!hasCity) {
+                add("$q Ιωάννινα")
+                add("$q, Ιωάννινα")
+            }
+        }.distinct()
+        val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
+        val proximity = "proximity=20.8529,39.6675&bbox=20.65,39.55,21.15,39.90"
+        fun mapboxQuery(query: String): List<AddressSuggestion> = runCatching {
             val url = java.net.URL(
                 "https://api.mapbox.com/geocoding/v5/mapbox.places/" +
-                    java.net.URLEncoder.encode(q, "UTF-8") +
-                    ".json?access_token=$token&country=gr&language=el&limit=6&types=address,place,locality,neighborhood,poi",
+                    java.net.URLEncoder.encode(query, "UTF-8") +
+                    ".json?access_token=$token&country=gr&language=el&limit=6" +
+                    "&types=address,place,locality,neighborhood,poi&$proximity",
             )
             val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
                 connectTimeout = 8000
                 readTimeout = 8000
                 requestMethod = "GET"
+            }
+            if (conn.responseCode !in 200..299) {
+                conn.errorStream?.bufferedReader()?.readText()
+                return@runCatching emptyList()
             }
             val body = conn.inputStream.bufferedReader().readText()
             val root = kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject
@@ -545,19 +559,22 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 AddressSuggestion(place, lat, lng)
             }
         }.getOrElse { emptyList() }
-        if (mapbox.isNotEmpty()) return@withContext mapbox.distinctBy { it.label }
-        // 2) Android Geocoder fallback
-        runCatching {
-            @Suppress("DEPRECATION")
-            Geocoder(getApplication(), Locale.getDefault())
-                .getFromLocationName(q, 5)
-                ?.mapNotNull { a ->
-                    val line = a.getAddressLine(0) ?: return@mapNotNull null
-                    AddressSuggestion(line, a.latitude, a.longitude)
-                }
-                ?.distinctBy { it.label }
-                .orEmpty()
-        }.getOrElse { emptyList() }
+
+        val mapbox = queries.flatMap { mapboxQuery(it) }.distinctBy { it.label }
+        if (mapbox.isNotEmpty()) return@withContext mapbox
+        val geoQueries = if (hasCity) listOf(q) else listOf(q, "$q Ιωάννινα")
+        geoQueries.flatMap { gq ->
+            runCatching {
+                @Suppress("DEPRECATION")
+                Geocoder(getApplication(), Locale.getDefault())
+                    .getFromLocationName(gq, 5)
+                    ?.mapNotNull { a ->
+                        val line = a.getAddressLine(0) ?: return@mapNotNull null
+                        AddressSuggestion(line, a.latitude, a.longitude)
+                    }
+                    .orEmpty()
+            }.getOrElse { emptyList() }
+        }.distinctBy { it.label }
     }
 
     fun signOut() {
