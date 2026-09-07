@@ -517,6 +517,20 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrNull()
     }
 
+
+    /** Strict Ioannina service area — suggestions outside are dropped. */
+    private fun isIoanninaSuggestion(label: String, lat: Double, lng: Double): Boolean {
+        val inBox = lat in 39.55..39.82 && lng in 20.70..21.05
+        if (!inBox) return false
+        val l = label.lowercase()
+        val blocked = listOf(
+            "αθήνα", "athens", "θεσσαλονίκη", "thessaloniki", "πάτρα", "patra",
+            "λάρισα", "ηράκλειο", "βόλος", "καβάλα",
+        )
+        if (blocked.any { it in l }) return false
+        return true
+    }
+
     private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
         val q = address.trim()
         if (q.length < 3) return@withContext emptyList()
@@ -530,7 +544,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.distinct()
         val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
-        val proximity = "proximity=20.8529,39.6675&bbox=20.65,39.55,21.15,39.90"
+        val proximity = "proximity=20.8529,39.6675&bbox=20.70,39.55,21.05,39.82"
         fun mapboxQuery(query: String): List<AddressSuggestion> = runCatching {
             val url = java.net.URL(
                 "https://api.mapbox.com/geocoding/v5/mapbox.places/" +
@@ -560,7 +574,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             }
         }.getOrElse { emptyList() }
 
-        val mapbox = queries.flatMap { mapboxQuery(it) }.distinctBy { it.label }
+        val mapbox = queries.flatMap { mapboxQuery(it) }
+            .filter { isIoanninaSuggestion(it.label, it.lat, it.lng) }
+            .distinctBy { it.label }
         if (mapbox.isNotEmpty()) return@withContext mapbox
         val geoQueries = if (hasCity) listOf(q) else listOf(q, "$q Ιωάννινα")
         geoQueries.flatMap { gq ->
@@ -570,6 +586,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     .getFromLocationName(gq, 5)
                     ?.mapNotNull { a ->
                         val line = a.getAddressLine(0) ?: return@mapNotNull null
+                        if (!isIoanninaSuggestion(line, a.latitude, a.longitude)) return@mapNotNull null
                         AddressSuggestion(line, a.latitude, a.longitude)
                     }
                     .orEmpty()
