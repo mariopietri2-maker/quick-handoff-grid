@@ -9,7 +9,9 @@ import {
   Utensils,
   Bike,
   Store,
+  ShoppingBag,
 } from 'lucide-react';
+import { useCart } from '@/hooks/useCart';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
 import { useNavigate, Link, useSearchParams } from 'react-router-dom';
@@ -112,6 +114,7 @@ export default function CustomerApp() {
   const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { itemCount } = useCart();
   const { settings: platformSettings } = usePlatformSettings();
   const deliveryEnabled = platformSettings.delivery_enabled;
   const baseEta = useDeliveryEta(0);
@@ -336,6 +339,11 @@ const displayAddress = deliveryAddress
       }));
   }, [offerItems, stores, ratings]);
 
+  const freeDeliveryStores = useMemo(
+    () => stores.filter((s) => (s as any).covers_delivery_fee && isStoreOpenNow(s.opening_hours, s.holiday_dates, s.status_override)),
+    [stores],
+  );
+
   const categoryOptions = useMemo(() => {
     const fromMenu = Array.from(new Set(Object.values(storeCategories).flat())).sort();
     const fromTiles = cfg.tiles
@@ -437,6 +445,19 @@ const displayAddress = deliveryAddress
             </button>
             <div className="flex items-center gap-2 shrink-0">
               <LanguageToggle compact />
+              {itemCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/checkout')}
+                  className="relative h-9 w-9 rounded-full c-chip flex items-center justify-center active:scale-95 transition-transform"
+                  aria-label={`${t('customer.view_cart')} — ${itemCount}`}
+                >
+                  <ShoppingBag className="h-[18px] w-[18px] c-ink" strokeWidth={2.2} />
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-500 text-white text-[10px] font-extrabold flex items-center justify-center tabular-nums shadow-sm">
+                    {itemCount > 9 ? '9+' : itemCount}
+                  </span>
+                </button>
+              )}
               {!user ? (
                 <Link
                   to="/auth"
@@ -544,6 +565,55 @@ const displayAddress = deliveryAddress
         )}
 
         {!isSearching && selectedCategory === 'all' && cfg.games.enabled && <CustomerGames />}
+
+        {/* Free-delivery rail */}
+        {!isSearching && selectedCategory === 'all' && freeDeliveryStores.length > 0 && (
+          <section className="pt-4">
+            <div className="px-4 mb-3">
+              <h2 className="font-heading font-extrabold text-[20px] c-ink tracking-tight">
+                {t('customer.free_delivery')}
+              </h2>
+              <p className="text-[12px] c-soft mt-0.5">{t('customer.free_delivery_sub')}</p>
+            </div>
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="flex gap-3 px-4 pb-1 w-max">
+                {freeDeliveryStores.slice(0, 10).map((store) => {
+                  const cover = store.cover_image_url || store.image_url;
+                  const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const rating = ratings[store.id];
+                  return (
+                    <button
+                      key={store.id}
+                      type="button"
+                      onClick={() => navigate(`/restaurant/${store.id}`)}
+                      className="w-[160px] shrink-0 text-left"
+                    >
+                      <div className="relative h-[100px] rounded-xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))]">
+                        {cover ? (
+                          <img src={cover} alt={store.name} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Utensils className="h-7 w-7 text-[hsl(var(--c-text-muted))]" />
+                          </div>
+                        )}
+                        <span className="absolute bottom-2 left-2 text-[10px] font-extrabold text-emerald-800 bg-emerald-100/95 px-2 py-0.5 rounded-md shadow">
+                          0€ {t('customer.delivery')}
+                        </span>
+                      </div>
+                      <div className="text-[13px] font-extrabold c-ink truncate">{store.name}</div>
+                      <div className="flex items-center gap-1 mt-0.5 text-[11px] c-soft">
+                        {rating?.count > 0 && <span>★ {rating.avg.toFixed(1)}</span>}
+                        {rating?.count > 0 && <span>·</span>}
+                        <span>{etaLow}–{etaHigh} {t('customer.min')}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
 
         {/* Featured stores */}
         {cfg.sections.show_promoted &&
@@ -662,7 +732,9 @@ const displayAddress = deliveryAddress
                   ? `${t('customer.results_for')} "${debouncedSearch}"`
                   : selectedCategory !== 'all'
                     ? selectedCategory
-                    : t('customer.nearby')}
+                    : deliveryAddress
+                      ? t('customer.near_you')
+                      : t('customer.nearby')}
               </h2>
               <span className="text-[12px] c-soft font-semibold tabular-nums">
                 {filtered.length}
