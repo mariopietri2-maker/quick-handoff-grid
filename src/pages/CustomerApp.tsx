@@ -4,7 +4,6 @@ import {
   MapPin,
   Clock,
   ChevronDown,
-  User,
   Star,
   Utensils,
   Bike,
@@ -113,7 +112,7 @@ export default function CustomerApp() {
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const { itemCount } = useCart();
   const { settings: platformSettings } = usePlatformSettings();
   const deliveryEnabled = platformSettings.delivery_enabled;
@@ -469,9 +468,14 @@ const displayAddress = deliveryAddress
                 <Link
                   to="/profile"
                   aria-label="Άνοιγμα προφίλ χρήστη"
-                  className="h-9 w-9 rounded-full c-chip flex items-center justify-center"
+                  className="flex items-center gap-1.5 max-w-[140px] rounded-full c-chip py-1 pl-1 pr-3 min-h-9"
                 >
-                  <User className="h-[18px] w-[18px] c-ink" strokeWidth={2.2} />
+                  <span className="h-7 w-7 shrink-0 rounded-full gradient-primary text-white flex items-center justify-center text-[12px] font-bold">
+                    {(profile?.full_name || user.email || '?').slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="text-[13px] font-extrabold c-ink truncate">
+                    {profile?.full_name || 'Χρήστης'}
+                  </span>
                 </Link>
               )}
             </div>
