@@ -271,8 +271,8 @@ title="Fresh2GO — Fast Delivery."
 
           <h1 className="font-heading font-extrabold text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
               style={{ animationDelay: '0.1s', animationFillMode: 'both' }}>
-            Fresh Meals.<br />
-            <span className="text-white">Fast Delivery.</span>
+            Φρέσκο Φαγητό.<br />
+            <span className="text-white">Γρήγορη Παράδοση.</span>
           </h1>
 
           <p className="text-white/85 text-base sm:text-lg max-w-xl mx-auto mb-10 animate-fade-in leading-relaxed"
