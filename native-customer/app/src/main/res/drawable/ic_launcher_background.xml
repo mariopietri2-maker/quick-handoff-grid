@@ -4,7 +4,8 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
+    <!-- Solid brand orange (matches web #EA580C / logo gradient mid) -->
     <path
-        android:fillColor="#0B0F14"
+        android:fillColor="#EA580C"
         android:pathData="M0,0h108v108h-108z" />
 </vector>
