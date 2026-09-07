@@ -1,0 +1,22 @@
+name: Apply address search fix
+on:
+  push:
+    paths:
+      - 'scripts/apply_address_search_fix.py'
+      - '.github/workflows/apply-address-search-fix.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_address_search_fix.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/ src/lib/apk-downloads.ts
+          git commit -m "fix(customer-native): Ioannina address search + picker suggestions v2.8.7" || exit 0
+          git push
