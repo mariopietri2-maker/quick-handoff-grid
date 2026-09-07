@@ -740,6 +740,7 @@
     animation: none !important;
   }
 }
+.kpi-live-tile {
   position: relative;
   isolation: isolate;
   animation: kpi-glow 2.6s ease-in-out infinite;
