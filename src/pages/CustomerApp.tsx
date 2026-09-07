@@ -452,7 +452,7 @@ const displayAddress = deliveryAddress
                   aria-label={`${t('customer.view_cart')} — ${itemCount}`}
                 >
                   <ShoppingBag className="h-[18px] w-[18px] c-ink" strokeWidth={2.2} />
-                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-emerald-500 text-white text-[10px] font-extrabold flex items-center justify-center tabular-nums shadow-sm">
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-extrabold flex items-center justify-center tabular-nums shadow-sm">
                     {itemCount > 9 ? '9+' : itemCount}
                   </span>
                 </button>
@@ -601,7 +601,7 @@ const displayAddress = deliveryAddress
                             <Utensils className="h-7 w-7 text-[hsl(var(--c-text-muted))]" />
                           </div>
                         )}
-                        <span className="absolute bottom-2 left-2 text-[10px] font-extrabold text-emerald-800 bg-emerald-100/95 px-2 py-0.5 rounded-md shadow">
+                        <span className="absolute bottom-2 left-2 text-[10px] font-extrabold text-orange-800 bg-orange-100/95 px-2 py-0.5 rounded-md shadow">
                           0€ {t('customer.delivery')}
                         </span>
                       </div>
@@ -676,7 +676,7 @@ const displayAddress = deliveryAddress
                       </div>
                       <div className="mt-1 flex items-center gap-1">
                         {(store.fulfilment_mode ?? 'platform') !== 'store' ? (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-emerald-50 px-1.5 py-0.5 text-[10px] font-extrabold text-emerald-800">
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-extrabold text-orange-800">
                             <Bike className="h-3 w-3" />
                             Fresh2GO
                           </span>
@@ -858,7 +858,7 @@ const displayAddress = deliveryAddress
                           </span>
                         )}
                         {open && (
-                          <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-emerald-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
+                          <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-orange-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
                             <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                             Ανοιχτό
                           </span>
@@ -912,13 +912,13 @@ const displayAddress = deliveryAddress
                               <span className="font-semibold text-[hsl(var(--c-accent))]">Νέο</span>
                             )}
                             {deliveryEnabled && (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 font-extrabold text-emerald-800">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
                                 <Clock className="h-3 w-3" />
                                 {etaLow}–{etaHigh} {t('customer.min')}
                               </span>
                             )}
                             {platformDelivers ? (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-emerald-50 px-1.5 py-0.5 font-extrabold text-emerald-800">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
                                 <Bike className="h-3 w-3" />
                                 Παράδοση Fresh2GO
                               </span>
@@ -929,7 +929,7 @@ const displayAddress = deliveryAddress
                               </span>
                             )}
                             {platformDelivers && (
-                              <span className={fee === 0 ? 'font-extrabold text-emerald-800' : 'font-semibold'}>
+                              <span className={fee === 0 ? 'font-extrabold text-orange-800' : 'font-semibold'}>
                                 {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
                               </span>
                             )}

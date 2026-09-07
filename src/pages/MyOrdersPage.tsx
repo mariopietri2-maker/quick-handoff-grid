@@ -21,9 +21,9 @@ const statusLabels: Record<string, { label: string; color: string }> = {
   placed: { label: 'Καταχωρήθηκε', color: 'bg-info/10 text-info border-info/30' },
   accepted: { label: 'Αποδεκτή', color: 'bg-info/10 text-info border-info/30' },
   preparing: { label: 'Ετοιμάζεται', color: 'bg-warning/10 text-warning border-warning/30' },
-  ready: { label: 'Έτοιμη', color: 'bg-success/10 text-success border-success/30' },
+  ready: { label: 'Έτοιμη', color: 'bg-warning/10 text-warning border-warning/30' },
   picked_up: { label: 'Σε Μεταφορά', color: 'bg-[hsl(var(--c-accent-soft))] text-[hsl(var(--c-accent-dark))] border-[hsl(var(--c-accent))]/30' },
-  delivered: { label: 'Παραδόθηκε', color: 'bg-success/10 text-success border-success/30' },
+  delivered: { label: 'Παραδόθηκε', color: 'bg-warning/10 text-warning border-warning/30' },
   cancelled: { label: 'Ακυρωμένη', color: 'bg-destructive/10 text-destructive border-destructive/30' },
 };
 

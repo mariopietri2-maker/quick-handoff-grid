@@ -334,8 +334,8 @@ export default function RestaurantPage() {
           <div className="flex items-center gap-x-3 gap-y-1.5 mt-2.5 flex-wrap text-[13px] font-semibold c-muted">
             <RatingBadge storeId={store.id} />
             {storeOpen ? (
-              <span className="inline-flex items-center gap-1 font-bold text-emerald-600">
-                <span className="h-1.5 w-1.5 rounded-full bg-emerald-500 animate-pulse" />
+              <span className="inline-flex items-center gap-1 font-bold text-orange-600">
+                <span className="h-1.5 w-1.5 rounded-full bg-orange-500 animate-pulse" />
                 Ανοιχτό
               </span>
             ) : (
@@ -352,7 +352,7 @@ export default function RestaurantPage() {
             )}
             {platformDelivers && (
               <>
-                <span className="inline-flex items-center gap-1 font-bold text-emerald-700 dark:text-emerald-400">
+                <span className="inline-flex items-center gap-1 font-bold text-orange-700 dark:text-orange-400">
                   Delivered by fresh2go
                 </span>
                 <span>0.99€ παράδοση</span>
