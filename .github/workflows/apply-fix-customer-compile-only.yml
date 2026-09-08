@@ -1,0 +1,21 @@
+name: Apply customer compile fix only
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - 'scripts/fix_customer_compile_only.py'
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix_customer_compile_only.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git commit -m "fix(customer-native): min_order + OptIn for PromoCarousel compile" || exit 0
+          git push

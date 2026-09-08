@@ -1,6 +1,6 @@
 import { SITE_ORIGIN } from '@/lib/site';
 
-/** Public GitHub Release assets for Android debug APKs. */
+/** Public GitHub Release tag (private repo — use site proxy for downloads). */
 export const APK_RELEASE_TAG = 'mobile-apks-v1';
 
 /** Bumped when `npm run mobile:apk` publishes a new Capacitor build to the release.
@@ -14,8 +14,11 @@ export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
 /** Native Kotlin/Compose customer. */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.8.9-fresh2go';
 
-const RELEASE_BASE =
-  'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
+/**
+ * Public download base — proxied by Railway `serve-dist.mjs` at `/apk/*`
+ * so users do not need GitHub login (private repo release assets are not public).
+ */
+const RELEASE_BASE = `${SITE_ORIGIN.replace(/\/$/, '')}/apk`;
 
 export { SITE_ORIGIN };
 
@@ -65,10 +68,12 @@ export const APK_DOWNLOADS = {
 
 export type ApkFlavor = keyof typeof APK_DOWNLOADS;
 
+/** Landing URL encoded into QR codes (opens chooser page, does not start a download). */
 export function apkLandingUrl(flavor: ApkFlavor, origin: string = SITE_ORIGIN): string {
   return `${origin.replace(/\/$/, '')}/download?app=${flavor}`;
 }
 
+/** Cache-bust so Android/Chrome does not reuse a half-finished download. */
 export function apkFileUrl(flavor: ApkFlavor): string {
   const apk = APK_DOWNLOADS[flavor];
   const v = encodeURIComponent(apk.versionLabel || String(Date.now()));
@@ -76,6 +81,11 @@ export function apkFileUrl(flavor: ApkFlavor): string {
   return `${apk.fileUrl}${sep}v=${v}`;
 }
 
+/**
+ * Start an APK download only after an explicit user gesture.
+ * On mobile, navigate in the same tab — target=_blank often leaves the
+ * system download stuck at 100% / "opening" without install.
+ */
 export function startApkDownload(flavor: ApkFlavor) {
   const url = apkFileUrl(flavor);
   const isMobile = typeof navigator !== 'undefined' &&
