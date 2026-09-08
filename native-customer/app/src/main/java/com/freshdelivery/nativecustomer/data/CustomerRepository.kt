@@ -246,12 +246,20 @@ class CustomerRepository(
      * Stripe PaymentSheet payload for a pending card order.
      * Requires edge function `create-payment-sheet` deployed.
      */
+    private suspend fun getStripeEnvironment(): String {
+        val raw = client.postgrest.rpc("get_platform_settings_public")
+        val el = Json.parseToJsonElement(raw.bodyAsText()).jsonObject
+        val key = el["stripe_publishable_key"]?.jsonPrimitive?.contentOrNull ?: ""
+        return if (key.startsWith("pk_test_")) "sandbox" else "live"
+    }
+
     suspend fun createPaymentSheet(orderId: String): PaymentSheetPayload {
+        val env = getStripeEnvironment()
         val raw = client.functions.invoke(
             function = "create-payment-sheet",
             body = buildJsonObject {
                 put("orderId", orderId)
-                put("environment", "live")
+                put("environment", env)
             },
         )
         val text = raw.bodyAsText()
@@ -293,12 +301,85 @@ class CustomerRepository(
         }.getOrDefault(false)
     }
 
-    suspend fun saveMyDeliveryAddress(address: String, lat: Double?, lng: Double?) {}
-    suspend fun rememberAddressGeocode(label: String, address: String, lat: Double, lng: Double) {}
-    suspend fun suggestCachedAddresses(query: String, limit: Int): List<CachedSuggestionRow> = emptyList()
-    suspend fun deleteSavedAddress(id: String) {}
-    suspend fun setDefaultSavedAddress(userId: String, id: String) {}
-    suspend fun fetchSavedAddresses(): List<SavedAddressRow> = emptyList()
+    /**
+     * Persist the current delivery address as the user's (default) saved address.
+     * Mirrors web `SavedAddresses.handleSave` → `remember_my_delivery_address` RPC
+     * (upserts into `saved_addresses` + seeds the shared `cached_addresses` cache).
+     */
+    suspend fun saveMyDeliveryAddress(address: String, lat: Double?, lng: Double?, label: String = "Σπίτι") {
+        val addr = address.trim()
+        if (addr.length < 5) return
+        runCatching {
+            client.postgrest.rpc("remember_my_delivery_address", buildJsonObject {
+                put("p_address", addr)
+                put("p_lat", lat)
+                put("p_lng", lng)
+                put("p_label", label)
+            })
+        }
+    }
+
+    /**
+     * Seed the shared geocode cache (`cached_addresses`) so other customers and
+     * this device get instant suggestions. Mirrors web `rememberAddressGeocode`.
+     */
+    suspend fun rememberAddressGeocode(label: String, address: String, lat: Double, lng: Double) {
+        if (lat.isNaN() || lng.isNaN()) return
+        runCatching {
+            client.postgrest.rpc("remember_address_geocode", buildJsonObject {
+                put("p_q", label)
+                put("p_display", address)
+                put("p_lat", lat)
+                put("p_lng", lng)
+            })
+        }
+    }
+
+    /**
+     * Instant cross-customer address suggestions from the shared `cached_addresses`
+     * table. Mirrors web `suggestCachedAddresses` RPC.
+     */
+    suspend fun suggestCachedAddresses(query: String, limit: Int = 8): List<CachedSuggestionRow> {
+        val q = query.trim()
+        if (q.length < 3) return emptyList()
+        return runCatching {
+            client.postgrest.rpc("suggest_cached_addresses", buildJsonObject {
+                put("p_q", q)
+                put("p_limit", limit.coerceIn(1, 12))
+            }).decodeList<CachedSuggestionRow>()
+        }.getOrDefault(emptyList())
+    }
+
+    suspend fun deleteSavedAddress(id: String) {
+        runCatching {
+            client.from("saved_addresses").delete {
+                filter { eq("id", id) }
+            }
+        }
+    }
+
+    /** Two-step: clear the previous default, then set the chosen row (mirrors web). */
+    suspend fun setDefaultSavedAddress(userId: String, id: String) {
+        runCatching {
+            client.from("saved_addresses").update(buildJsonObject {
+                put("is_default", false)
+            }) { filter { eq("user_id", userId) } }
+            client.from("saved_addresses").update(buildJsonObject {
+                put("is_default", true)
+            }) { filter { eq("id", id) } }
+        }
+    }
+
+    /** Fetch the current user's saved addresses, default first (mirrors web). */
+    suspend fun fetchSavedAddresses(): List<SavedAddressRow> {
+        return runCatching {
+            client.from("saved_addresses")
+                .select(Columns.list("id", "label", "address", "latitude", "longitude", "is_default")) {
+                    order("is_default", Order.DESCENDING)
+                    order("created_at", Order.DESCENDING)
+                }.decodeList<SavedAddressRow>()
+        }.getOrDefault(emptyList())
+    }
     suspend fun placeOrder(
         storeId: String,
         items: List<CartLine>,
@@ -394,9 +475,51 @@ class CustomerRepository(
         }.getOrThrow()
     }
     suspend fun fetchStoreRatings(): Map<String, StoreRating> = emptyMap()
-    suspend fun fetchFavoriteStoreIds(userId: String): Set<String> = emptySet()
-    suspend fun addFavoriteStore(userId: String, storeId: String) {}
-    suspend fun removeFavoriteStore(userId: String, storeId: String) {}
+    suspend fun fetchStoreRatings(): Map<String, StoreRating> {
+        return runCatching {
+            client.from("store_ratings_public")
+                .select("store_id, avg_rating, review_count")
+                .order("store_id", Order.ASCENDING)
+                .limit(200L)
+                .decodeList<StoreRatingRow>()
+                .associateBy { it.store_id to StoreRating(avg = it.avg_rating ?: 0.0, count = it.review_count ?: 0) }
+        }.getOrDefault(emptyMap())
+    }
+
+    suspend fun fetchFavoriteStoreIds(userId: String): Set<String> {
+        return runCatching {
+            client.from("customer_favorites")
+                .select("store_id") {
+                    eq("user_id", userId)
+                }
+                .order("created_at", Order.DESCENDING)
+                .limit(1000L)
+                .decodeList<FavoriteRow>()
+                .map { it.store_id ?: "" }
+                .filter { it.isNotBlank() }
+        }.getOrDefault(emptySet())
+    }
+
+    suspend fun addFavoriteStore(userId: String, storeId: String) {
+        runCatching {
+            client.from("customer_favorites").insert(
+                buildJsonObject {
+                    put("user_id", userId)
+                    put("store_id", storeId)
+                    put("menu_item_id", JsonNull)
+                }
+            ) { filter { eq("user_id", userId) } }
+        }
+    }
+
+    suspend fun removeFavoriteStore(userId: String, storeId: String) {
+        runCatching {
+            client.from("customer_favorites").delete {
+                eq("user_id", userId)
+                    .and eq("store_id", storeId)
+            }
+        }
+    }
     suspend fun fetchOrders(userId: String): List<OrderUi> {
         val orders = client.from("orders")
             .select(Columns.list(
@@ -435,18 +558,109 @@ class CustomerRepository(
                     limit(1L)
                 }.decodeList<DriverLocationRow>().firstOrNull()
         }.getOrNull()
-    suspend fun fetchMyTickets(userId: String): List<SupportTicketRow> = emptyList()
-    suspend fun getMyLiveChatSession(): LiveChatSessionRow? = null
-    suspend fun ensureMyLiveChatSession(topic: String?): String? = null
-    suspend fun createTicket(userId: String, topic: String, message: String, orderId: String?) {}
-    suspend fun fetchTicketMessages(ticketId: String): List<TicketMessageRow> = emptyList()
+    suspend fun fetchMyTickets(userId: String): List<SupportTicketRow> {
+        return runCatching {
+            client.from("support_tickets")
+                .select("id, category, description, status, created_at, order_id")
+                .eq("requester_id", userId)
+                .order("created_at", Order.DESCENDING)
+                .limit(100L)
+                .decodeList<SupportTicketRow>()
+        }.getOrDefault(emptyList())
+    }
+
+    suspend fun getMyLiveChatSession(): LiveChatSessionRow? {
+        return runCatching {
+            client.postgrest.rpc("get_my_live_chat_session", {
+            }).decodeList<LiveChatSessionRow>().firstOrNull()
+        }.getOrNull()
+    }
+
+    suspend fun ensureMyLiveChatSession(topic: String?): String? {
+        val uid = client.auth.currentUserOrNull()?.id ?: return null
+        return runCatching {
+            client.postgrest.rpc("ensure_my_live_chat_session", buildJsonObject {
+                put("p_topic", topic)
+            }).decodeText() ?: null
+        }.getOrNull()
+    }
+
+    suspend fun createTicket(userId: String, topic: String, message: String, orderId: String?): List<SupportTicketRow> {
+        return runCatching {
+            client.from("support_tickets").insert(
+                buildJsonObject {
+                    put("requester_id", userId)
+                    put("category", topic)
+                    put("description", message)
+                    put("status", "open")
+                    put("order_id", orderId)
+                }
+            ).select("id, category, description, status, created_at, order_id")
+                .order("created_at", Order.DESCENDING)
+                .limit(1L)
+                .maybeSingle()
+                .decodeAs<SupportTicketRow>()
+        }.getOrDefault(emptyList())
+    }
+
+    suspend fun fetchTicketMessages(ticketId: String): List<TicketMessageRow> {
+        return runCatching {
+            client.from("ticket_messages")
+                .select("id, ticket_id, sender_id, sender_role, message, created_at")
+                .eq("ticket_id", ticketId)
+                .order("created_at", Order.ASCENDING)
+                .limit(100L)
+                .decodeList<TicketMessageRow>()
+        }.getOrDefault(emptyList())
+    }
+
     fun subscribeTicketMessages(ticketId: String): Flow<Unit> = emptyFlow()
-    suspend fun sendTicketMessage(ticketId: String, userId: String, message: String) {}
-    suspend fun unsubscribeTickets() {}
-    suspend fun fetchLiveChat(customerId: String): List<LiveChatMessageRow> = emptyList()
-    suspend fun sendLiveChatMessage(customerId: String, senderId: String, message: String, topic: String?) {}
+
+    suspend fun sendTicketMessage(ticketId: String, userId: String, message: String) {
+        runCatching {
+            client.from("ticket_messages").insert(
+                buildJsonObject {
+                    put("ticket_id", ticketId)
+                    put("sender_id", userId)
+                    put("sender_role", "customer")
+                    put("message", message)
+                }
+            )
+        }.getOrNull()
+    }
+
+    suspend fun unsubscribeTickets() {
+        runCatching { client.realtime.removeAllChannels() }
+    }
+
+    suspend fun fetchLiveChat(customerId: String): List<LiveChatMessageRow> {
+        return runCatching {
+            client.from("live_chat_messages")
+                .select("id, customer_id, driver_id, sender_id, sender_role, message, created_at, topic")
+                .or(customerId + ".eq.customer_id, " + customerId + ".eq.driver_id")
+                .order("created_at", Order.DESCENDING)
+                .limit(50L)
+                .decodeList<LiveChatMessageRow>()
+        }.getOrDefault(emptyList())
+    }
+
+    suspend fun sendLiveChatMessage(customerId: String, senderId: String, message: String, topic: String?) {
+        runCatching {
+            client.from("live_chat_messages").insert(
+                buildJsonObject {
+                    put("sender_id", senderId)
+                    put("sender_role", "customer")
+                    put("message", message)
+                    put("topic", topic ?? "")
+                }
+            )
+        }.getOrNull()
+    }
+
     fun subscribeLiveChat(customerId: String): Flow<Unit> = emptyFlow()
+
     fun subscribeLiveChatSessions(customerId: String): Flow<Unit> = emptyFlow()
+}
 }
 
 private fun buildOrderNotes(notes: String?, items: List<CartLine>): String? {

@@ -4,12 +4,23 @@ import { AnimatedBasketLogo } from '@/components/brand/AnimatedBasketLogo';
 
 /**
  * Polished, professional brand splash for the customer app.
- * Uses published branding (name, logo, tagline, accents).
+ * Uses published branding (name, logo, accents).
  */
+function SplashBrand({ brand }: { brand: string }) {
+  const idx = brand.indexOf('2GO');
+  if (idx === -1) return <>{brand}</>;
+  return (
+    <>
+      {brand.slice(0, idx)}
+      <span style={{ color: '#FFE7B8' }}>{brand.slice(idx, idx + 3)}</span>
+      {brand.slice(idx + 3)}
+    </>
+  );
+}
+
 export default function AppSplash() {
   const cfg = useCustomerAppConfig();
   const brand = cfg.branding.app_name || 'Fresh2GO.GR';
-  const tagline = cfg.branding.tagline || 'Η Ήπειρος στο σπίτι σου, γρήγορα.';
 
   const [phase, setPhase] = useState<'in' | 'out' | 'done'>(() => {
     try {
@@ -67,10 +78,7 @@ export default function AppSplash() {
           style={{ animation: 'splashTextIn 600ms ease-out 250ms both' }}
         >
           <div className="font-heading font-black text-white text-[26px] tracking-tight leading-none">
-            {brand}
-          </div>
-          <div className="mt-2 text-white/70 text-[11px] font-bold tracking-[0.32em] uppercase">
-            {tagline}
+            <SplashBrand brand={brand} />
           </div>
         </div>
 

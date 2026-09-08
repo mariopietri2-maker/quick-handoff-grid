@@ -4,6 +4,8 @@ import { useCustomerAppConfig, DEFAULT_CONFIG } from '@/hooks/useCustomerAppConf
 import {
   canClaimCardToday,
   canSpinToday,
+  GAME_DEAL_WINDOW_MS,
+  getWonAt,
   persistCardClaimDay,
   persistSpinDay,
   prizeToDeal,
@@ -38,6 +40,7 @@ export function useCustomerGames() {
   );
 
   const [dealSeconds, setDealSeconds] = useState(() => secondsToMidnight());
+  const [wonAtTs, setWonAtTs] = useState<number | null>(() => getWonAt());
   const [spinning, setSpinning] = useState(false);
   const [wheelTarget, setWheelTarget] = useState<number | null>(null);
   const [wheelResult, setWheelResult] = useState<WheelResult | null>(null);
@@ -46,8 +49,19 @@ export function useCustomerGames() {
   const [claimedCardIndex, setClaimedCardIndex] = useState<number | null>(null);
   const [openedCards, setOpenedCards] = useState<number[]>([]);
 
-  // Daily appearance (30% wheel / 40% cards) + 5-minute visibility window (mirrors the native app).
+  // Daily appearance (30% wheel / 40% cards) + 10-minute visibility window (mirrors the native app).
   const [showState, setShowState] = useState(() => resolveDailyGameShow(active));
+
+  // Separate midnight ticker for the daily re-roll (kept apart from the prize countdown).
+  const [tilMidnight, setTilMidnight] = useState(() => secondsToMidnight());
+
+  // The countdown that is shown: a won prize expires 10 minutes after it was claimed;
+  // until a prize is won it counts down the remaining game-visibility window.
+  useEffect(() => {
+    const dl = wonAtTs != null ? wonAtTs + GAME_DEAL_WINDOW_MS : showState.expiresAt;
+    if (dl == null) return;
+    setDealSeconds(Math.max(1, Math.ceil((dl - Date.now()) / 1000)));
+  }, [wonAtTs, showState.expiresAt]);
 
   useEffect(() => {
     if (showState.expiresAt == null) return;
@@ -62,7 +76,19 @@ export function useCustomerGames() {
   }, []);
 
   useEffect(() => {
+    const t = window.setInterval(() => setTilMidnight((s) => Math.max(1, s - 1)), 1000);
+    return () => window.clearInterval(t);
+  }, []);
+
+  // Countdown reached zero: prize expires, game hides.
+  useEffect(() => {
     if (dealSeconds > 1) return;
+    setShowState((s) => (s.show ? { ...s, show: false } : s));
+    setWonDeal(null);
+  }, [dealSeconds]);
+
+  useEffect(() => {
+    if (tilMidnight > 1) return;
     setSpinning(false);
     setWheelTarget(null);
     setSpinLocked(!canSpinToday());
@@ -71,9 +97,10 @@ export function useCustomerGames() {
     setClaimedCardIndex(null);
     setOpenedCards([]);
     setWonDeal(null);
+    setWonAtTs(null);
     setShowState(resolveDailyGameShow(active));
-    setDealSeconds(secondsToMidnight());
-  }, [dealSeconds, active]);
+    setTilMidnight(secondsToMidnight());
+  }, [tilMidnight, active]);
 
   const spin = useCallback(() => {
     if (!enabled || spinning || spinLocked || active !== 'wheel') return;
@@ -105,6 +132,7 @@ export function useCustomerGames() {
         freeDelivery: seg.free_delivery,
       });
       setWonDeal(deal);
+      setWonAtTs(Date.now());
       persistSpinDay();
     }, SPIN_MS);
   }, [enabled, spinning, spinLocked, active, wheelSegments]);
@@ -122,6 +150,7 @@ export function useCustomerGames() {
       setClaimedCardIndex(index);
       setOpenedCards(cards.map((_, j) => j));
       setWonDeal(deal);
+      setWonAtTs(Date.now());
       persistCardClaimDay();
     },
     [enabled, cardClaimed, active, cards],

@@ -1050,14 +1050,20 @@ private fun OfferSheet(
     var secondsLeft by remember(offer.offerId, offer.expiresAt) { mutableIntStateOf(timeoutSec) }
 
     LaunchedEffect(offer.offerId, offer.expiresAt) {
-        while (true) {
-            val left = if (expiresAt != null) {
-                Duration.between(Instant.now(), expiresAt).seconds.toInt().coerceAtLeast(0)
-            } else secondsLeft
-            secondsLeft = left
-            if (left <= 0) break
-            delay(1000)
-            if (expiresAt == null) secondsLeft = (secondsLeft - 1).coerceAtLeast(0)
+        var cancellable = true
+        LaunchedEffect(Unit) {
+            while (cancellable && offer.expiresAt != null) {
+                val remaining = Duration.between(Instant.now(), offer.expiresAt).seconds.toInt().coerceAtLeast(0)
+                secondsLeft = remaining
+                if (remaining <= 0) {
+                    cancellable = false
+                    break
+                }
+                delay(1000)
+            }
+            if (offer.expiresAt == null && cancellable) {
+                secondsLeft = (secondsLeft - 1).coerceAtLeast(0)
+            }
         }
     }
 

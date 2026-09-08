@@ -25,7 +25,7 @@ import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
-import { AnimatedBasketLogo } from '@/components/brand/AnimatedBasketLogo';
+import { Logo } from '@/components/brand/Logo';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
@@ -94,6 +94,37 @@ export default function CustomerApp() {
   const [debouncedSearch, setDebouncedSearch] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('all');
   const searchTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => {
+    try {
+      return JSON.parse(localStorage.getItem('customer_recent_searches') || '[]');
+    } catch {
+      return [];
+    }
+  });
+
+  const rememberSearch = (q: string) => {
+    const v = q.trim().toLowerCase();
+    if (!v) return;
+    setRecentSearches((prev) => {
+      const next = [q.trim(), ...prev.filter((x) => x.toLowerCase() !== v)].slice(0, 6);
+      try {
+        localStorage.setItem('customer_recent_searches', JSON.stringify(next));
+      } catch {}
+      return next;
+    });
+  };
+
+  const clearRecentSearches = () => {
+    setRecentSearches([]);
+    try {
+      localStorage.removeItem('customer_recent_searches');
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (!debouncedSearch) return;
+    rememberSearch(debouncedSearch);
+  }, [debouncedSearch]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const onSearchChange = (value: string) => {
     setSearch(value);
@@ -409,7 +440,7 @@ const displayAddress = deliveryAddress
           {cfg.branding.show_header_brand && (
             <div className="flex items-center gap-2.5 mb-2.5 animate-fade-in">
               <div className="h-8 w-8 shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]">
-                <AnimatedBasketLogo size={32} />
+                <Logo size={32} />
               </div>
               <div className="min-w-0">
 <div className="font-heading font-black text-[15px] c-ink tracking-tight leading-none truncate">
@@ -511,6 +542,37 @@ const displayAddress = deliveryAddress
               </button>
             )}
           </div>
+
+          {recentSearches.length > 0 && (
+            <div className="flex items-center gap-1.5 flex-wrap pt-2.5 pb-0.5">
+              <span className="text-[10px] font-extrabold uppercase tracking-[0.12em] c-soft mr-0.5">
+                Πρόσφατες
+              </span>
+              {recentSearches.map((q) => (
+                <button
+                  key={q}
+                  type="button"
+                  onClick={() => {
+                    setSearch(q);
+                    setDebouncedSearch(q.trim());
+                    if (searchTimer.current) clearTimeout(searchTimer.current);
+                    searchInputRef.current?.focus();
+                  }}
+                  className="px-3 h-7 rounded-full bg-[#FFF3E8] text-[#EA580C] text-[12px] font-bold active:scale-95 transition-transform"
+                >
+                  {q}
+                </button>
+              ))}
+              <button
+                type="button"
+                onClick={clearRecentSearches}
+                aria-label="Εκκαθάριση πρόσφατων αναζητήσεων"
+                className="h-7 w-7 rounded-full bg-[hsl(var(--c-border))] flex items-center justify-center c-soft text-[11px] font-bold active:scale-95 transition-transform"
+              >
+                ✕
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
@@ -681,7 +743,7 @@ const displayAddress = deliveryAddress
                             Fresh2GO
                           </span>
                         ) : (
-                          <span className="inline-flex items-center gap-0.5 rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-extrabold text-violet-800">
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-extrabold text-orange-800">
                             <Store className="h-3 w-3" />
                             Κατάστημα
                           </span>
@@ -923,7 +985,7 @@ const displayAddress = deliveryAddress
                                 Παράδοση Fresh2GO
                               </span>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 font-extrabold text-violet-800">
+                              <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
                                 <Store className="h-3 w-3" />
                                 Παράδοση καταστήματος
                               </span>

@@ -1,7 +1,5 @@
 package com.freshdelivery.nativecustomer.ui
 
-import com.freshdelivery.nativecustomer.util.userFacingError
-
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -11,6 +9,7 @@ import android.location.Geocoder
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import com.freshdelivery.nativecustomer.data.CachedSuggestionRow
 import com.freshdelivery.nativecustomer.data.CartLine
 import com.freshdelivery.nativecustomer.data.CustomerRepository
 import com.freshdelivery.nativecustomer.data.CustomerTab
@@ -73,7 +72,10 @@ enum class SupportView { Topics, Compose, MyTickets, Live, Ticket }
 private val URGENT_TOPICS = setOf("wrong_order")
 
 /** How long the games section stays visible once it appears — then it hides for the rest of the day. */
-private const val GAME_SHOW_WINDOW_MS = 5 * 60 * 1000L
+private const val GAME_SHOW_WINDOW_MS = 10 * 60 * 1000L
+
+/** A won prize stays valid 10 minutes after the customer claims it. */
+private const val GAME_DEAL_WINDOW_MS = 10 * 60 * 1000L
 
 data class PaymentSheetRequest(
     val orderId: String,
@@ -122,6 +124,8 @@ data class CustomerUiState(
     val searchQuery: String = "",
     val signupMode: Boolean = false,
     val addressSuggestions: List<AddressSuggestion> = emptyList(),
+    val cachedSuggestions: List<CachedSuggestionRow> = emptyList(),
+    val saveLabel: String = "Σπίτι",
     val savedAddresses: List<SavedAddressRow> = emptyList(),
     val feeBase: Double = 0.99,
     val feePerKm: Double = 0.0,
@@ -195,7 +199,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var liveChatSessionJob: Job? = null
     private var ticketJob: Job? = null
     private var searchJob: Job? = null
-    private var cachedStores: List<StoreRow> = emptyList()
     private var gameShowUntilMs = 0L
 
     init {
@@ -255,18 +258,29 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             val savedAddr = prefs.getString("last_delivery_address", "") ?: ""
             val savedLat = prefs.getString("last_delivery_lat", null)?.toDoubleOrNull()
             val savedLng = prefs.getString("last_delivery_lng", null)?.toDoubleOrNull()
+            // Restore the user's default saved address when there's no local address yet.
+            val saved = repo.fetchSavedAddresses()
+            val default = saved.firstOrNull { it.is_default == true }
+            var addr = savedAddr
+            var dLat = savedLat
+            var dLng = savedLng
+            if (addr.isBlank() && default != null) {
+                addr = default.address
+                dLat = default.latitude
+                dLng = default.longitude
+            }
             _state.value = _state.value.copy(
                 profile = profile,
                 feeBase = base,
                 feePerKm = perKm,
                 deliveryFee = base,
-                deliveryAddress = if (savedAddr.isNotBlank()) savedAddr else _state.value.deliveryAddress,
-                deliveryLat = savedLat ?: _state.value.deliveryLat,
-                deliveryLng = savedLng ?: _state.value.deliveryLng,
+                deliveryAddress = if (addr.isNotBlank()) addr else _state.value.deliveryAddress,
+                deliveryLat = dLat ?: _state.value.deliveryLat,
+                deliveryLng = dLng ?: _state.value.deliveryLng,
+                savedAddresses = saved,
             )
             recomputeDeliveryFee()
         }
-        refreshSavedAddresses()
         refreshFavorites()
         runCatching {
             val cfg = repo.fetchAppConfig()
@@ -326,7 +340,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signIn(email, password) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία σύνδεσης"))
+                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Login failed")
                 }
                 .onSuccess { _state.value = _state.value.copy(busy = false) }
         }
@@ -341,7 +355,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signUp(email, password, fullName, phone) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία εγγραφής"))
+                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Signup failed")
                 }
                 .onSuccess {
                     _state.value = _state.value.copy(
@@ -367,7 +381,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     info = "Το προφίλ αποθηκεύτηκε",
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(savingProfile = false, error = userFacingError(e, "Αποτυχία αποθήκευσης προφίλ"))
+                _state.value = _state.value.copy(savingProfile = false, error = e.message)
             }
         }
     }
@@ -377,19 +391,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         searchJob?.cancel()
         val trimmed = q.trim()
         if (trimmed.isBlank()) {
-            if (cachedStores.isNotEmpty()) {
-                _state.value = _state.value.copy(stores = cachedStores)
-            } else {
-                refreshStores()
-            }
+            refreshStores()
             return
         }
         searchJob = viewModelScope.launch {
-            delay(220)
+            delay(280)
             val results = repo.searchStores(trimmed)
-            if (_state.value.searchQuery.trim() == trimmed) {
-                _state.value = _state.value.copy(stores = results)
-            }
+            _state.value = _state.value.copy(stores = results)
         }
     }
 
@@ -415,23 +423,31 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     deliveryLng = loc.longitude,
                     deliveryAddress = label ?: _state.value.deliveryAddress,
                     addressSuggestions = emptyList(),
+                    cachedSuggestions = emptyList(),
                     info = "Η τοποθεσία ενημερώθηκε",
                 )
                 recomputeDeliveryFee()
                 persistLastAddress()
                 if (label != null) seedGeocodeCache(label, loc.latitude, loc.longitude)
             }.onFailure { e ->
-                _state.value = _state.value.copy(locating = false, error = userFacingError(e, "Αποτυχία τοποθεσίας"))
+                _state.value = _state.value.copy(locating = false, error = e.message ?: "Αποτυχία τοποθεσίας")
             }
         }
     }
 
-    /** Live address suggestions while typing (Mapbox). */
+    /** Live address suggestions while typing (cached shared-cache first, then Mapbox). */
     fun onAddressQuery(query: String) {
         _state.value = _state.value.copy(deliveryAddress = query)
         if (query.trim().length < 4) {
-            _state.value = _state.value.copy(addressSuggestions = emptyList())
+            _state.value = _state.value.copy(addressSuggestions = emptyList(), cachedSuggestions = emptyList())
             return
+        }
+        // Instant cached suggestions from Supabase shared cache (no Mapbox round-trip).
+        viewModelScope.launch {
+            val cached = runCatching { repo.suggestCachedAddresses(query) }.getOrNull().orEmpty()
+            if (_state.value.deliveryAddress == query) {
+                _state.value = _state.value.copy(cachedSuggestions = cached)
+            }
         }
         viewModelScope.launch {
             kotlinx.coroutines.delay(350)
@@ -446,7 +462,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun geocodeAddress(address: String) {
         if (address.isBlank()) return
         viewModelScope.launch {
-            _state.value = _state.value.copy(locating = true, error = null, addressSuggestions = emptyList())
+            _state.value = _state.value.copy(locating = true, error = null, addressSuggestions = emptyList(), cachedSuggestions = emptyList())
             val hits = runCatching { forwardGeocodeMany(address) }.getOrNull().orEmpty()
             when {
                 hits.isEmpty() -> {
@@ -460,6 +476,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         deliveryLat = h.lat,
                         deliveryLng = h.lng,
                         addressSuggestions = emptyList(),
+                        cachedSuggestions = emptyList(),
                         info = "Η διεύθυνση εντοπίστηκε στον χάρτη",
                     )
                     recomputeDeliveryFee()
@@ -517,49 +534,21 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrNull()
     }
 
-
-    /** Strict Ioannina service area — suggestions outside are dropped. */
-    private fun isIoanninaSuggestion(label: String, lat: Double, lng: Double): Boolean {
-        val inBox = lat in 39.55..39.82 && lng in 20.70..21.05
-        if (!inBox) return false
-        val l = label.lowercase()
-        val blocked = listOf(
-            "αθήνα", "athens", "θεσσαλονίκη", "thessaloniki", "πάτρα", "patra",
-            "λάρισα", "ηράκλειο", "βόλος", "καβάλα",
-        )
-        if (blocked.any { it in l }) return false
-        return true
-    }
-
     private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
         val q = address.trim()
         if (q.length < 3) return@withContext emptyList()
-        val cityBias = listOf("ιωανν", "ioannina", "γιάννεν")
-        val hasCity = cityBias.any { q.lowercase().contains(it) }
-        val queries = buildList {
-            add(q)
-            if (!hasCity) {
-                add("$q Ιωάννινα")
-                add("$q, Ιωάννινα")
-            }
-        }.distinct()
-        val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
-        val proximity = "proximity=20.8529,39.6675&bbox=20.70,39.55,21.05,39.82"
-        fun mapboxQuery(query: String): List<AddressSuggestion> = runCatching {
+        // 1) Mapbox Geocoding (autocomplete-quality, Greece bias)
+        val mapbox = runCatching {
+            val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
             val url = java.net.URL(
                 "https://api.mapbox.com/geocoding/v5/mapbox.places/" +
-                    java.net.URLEncoder.encode(query, "UTF-8") +
-                    ".json?access_token=$token&country=gr&language=el&limit=6" +
-                    "&types=address,place,locality,neighborhood,poi&$proximity",
+                    java.net.URLEncoder.encode(q, "UTF-8") +
+                    ".json?access_token=$token&country=gr&language=el&limit=6&types=address,place,locality,neighborhood,poi",
             )
             val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
                 connectTimeout = 8000
                 readTimeout = 8000
                 requestMethod = "GET"
-            }
-            if (conn.responseCode !in 200..299) {
-                conn.errorStream?.bufferedReader()?.readText()
-                return@runCatching emptyList()
             }
             val body = conn.inputStream.bufferedReader().readText()
             val root = kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject
@@ -573,25 +562,19 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 AddressSuggestion(place, lat, lng)
             }
         }.getOrElse { emptyList() }
-
-        val mapbox = queries.flatMap { mapboxQuery(it) }
-            .filter { isIoanninaSuggestion(it.label, it.lat, it.lng) }
-            .distinctBy { it.label }
-        if (mapbox.isNotEmpty()) return@withContext mapbox
-        val geoQueries = if (hasCity) listOf(q) else listOf(q, "$q Ιωάννινα")
-        geoQueries.flatMap { gq ->
-            runCatching {
-                @Suppress("DEPRECATION")
-                Geocoder(getApplication(), Locale.getDefault())
-                    .getFromLocationName(gq, 5)
-                    ?.mapNotNull { a ->
-                        val line = a.getAddressLine(0) ?: return@mapNotNull null
-                        if (!isIoanninaSuggestion(line, a.latitude, a.longitude)) return@mapNotNull null
-                        AddressSuggestion(line, a.latitude, a.longitude)
-                    }
-                    .orEmpty()
-            }.getOrElse { emptyList() }
-        }.distinctBy { it.label }
+        if (mapbox.isNotEmpty()) return@withContext mapbox.distinctBy { it.label }
+        // 2) Android Geocoder fallback
+        runCatching {
+            @Suppress("DEPRECATION")
+            Geocoder(getApplication(), Locale.getDefault())
+                .getFromLocationName(q, 5)
+                ?.mapNotNull { a ->
+                    val line = a.getAddressLine(0) ?: return@mapNotNull null
+                    AddressSuggestion(line, a.latitude, a.longitude)
+                }
+                ?.distinctBy { it.label }
+                .orEmpty()
+        }.getOrElse { emptyList() }
     }
 
     fun signOut() {
@@ -642,7 +625,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     busy = false,
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = userFacingError(e))
+                _state.value = _state.value.copy(busy = false, error = e.message)
             }
         }
     }
@@ -739,6 +722,11 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    /** Choose which label the next saved address gets (Σπίτι / Δουλειά / Άλλο). */
+    fun setSaveLabel(label: String) {
+        _state.value = _state.value.copy(saveLabel = label)
+    }
+
     fun saveAddress() {
         val s = _state.value
         persistLastAddress()
@@ -748,7 +736,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         val lng = s.deliveryLng
         viewModelScope.launch {
             runCatching {
-                repo.saveMyDeliveryAddress(addr, lat, lng)
+                repo.saveMyDeliveryAddress(addr, lat, lng, s.saveLabel)
                 if (lat != null && lng != null) repo.rememberAddressGeocode(addr, addr, lat, lng)
                 refreshSavedAddresses()
             }
@@ -813,6 +801,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             deliveryLat = lat,
             deliveryLng = lng,
             addressSuggestions = emptyList(),
+            cachedSuggestions = emptyList(),
         )
         recomputeDeliveryFee()
         persistLastAddress()
@@ -861,21 +850,6 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = s.copy(error = "Το κατάστημα είναι προσωρινά κλειστό — δοκίμασε αργότερα")
             return
         }
-        val sLat = store.latitude
-        val sLng = store.longitude
-        val dLat0 = s.deliveryLat
-        val dLng0 = s.deliveryLng
-        if (sLat != null && sLng != null && dLat0 != null && dLng0 != null) {
-            val nearStore = haversineKm(sLat, sLng, dLat0, dLng0) < 0.05
-            val addrLooksLikeStore = !store.address.isNullOrBlank() &&
-                s.deliveryAddress.trim().equals(store.address!!.trim(), ignoreCase = true)
-            if (nearStore || addrLooksLikeStore) {
-                _state.value = s.copy(
-                    error = "Η διεύθυνση παράδοσης είναι ίδια με του καταστήματος. Επίλεξε τη διεύθυνση του σπιτιού σου.",
-                )
-                return
-            }
-        }
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching {
@@ -918,7 +892,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     addressSuggestions = emptyList(),
                     paymentMethod = "cash",
                     info = if (wasCard) {
-                        "Παραγγελία καταχωρήθηκε. Ολοκλήρωσε την πληρωμή με κάρτα στο browser."
+                        "Παραγγελία καταχωρίστηκε! Παρακολούθησε την παράδοση."
                     } else {
                         "Η παραγγελία καταχωρήθηκε! Παρακολούθησε την παράδοση."
                     },
@@ -926,13 +900,14 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     tab = CustomerTab.Track,
                 )
                 if (placed != null) {
-                    autoOpenTrack(
-                        orderId = placed,
-                        storeId = storeId,
-                        storeName = storeName,
-                        storeLat = store?.latitude,
-                        storeLng = store?.longitude,
-                    )
+autoOpenTrack(
+            orderId = placed,
+            storeId = storeId,
+            storeName = storeName,
+            storeLat = store?.latitude,
+            storeLng = store?.longitude,
+            wasCard = wasCard,
+        )
                     if (wasCard) {
                         launchNativePaymentSheet(placed)
                     }
@@ -941,7 +916,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     refreshOrders()
                 }
   }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία παραγγελίας"))
+                _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
             }
         }
     }
@@ -978,7 +953,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         busy = false,
-                        error = userFacingError(e, "Αποτυχία πληρωμής"),
+                        error = e.message ?: "Αποτυχία Stripe",
                     )
                     openCardPaymentInBrowser(orderId)
                 }
@@ -1027,15 +1002,17 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         storeName: String?,
         storeLat: Double?,
         storeLng: Double?,
+        wasCard: Boolean,
     ) {
         // Optimistically show the new order's map right away; the next
         // refreshOrders() replaces it with the authoritative server row.
         val s = _state.value
+        val status = if (wasCard) "pending" else "placed"
         val hint = OrderUi(
             order = OrderRow(
                 id = orderId,
                 store_id = storeId,
-                status = "placed",
+                status = status,
                 delivery_address = s.deliveryAddress,
                 delivery_latitude = s.deliveryLat,
                 delivery_longitude = s.deliveryLng,
@@ -1118,15 +1095,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshStores() {
         viewModelScope.launch {
             runCatching {
-                val stores = repo.fetchStores()
-                val ratings = repo.fetchStoreRatings()
-                cachedStores = stores
                 _state.value = _state.value.copy(
-                    stores = stores,
-                    storeRatings = ratings,
+                    stores = repo.fetchStores(),
+                    storeRatings = repo.fetchStoreRatings(),
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = userFacingError(e))
+                _state.value = _state.value.copy(error = e.message)
             }
         }
     }
@@ -1150,7 +1124,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 if (adding) repo.addFavoriteStore(uid, storeId) else repo.removeFavoriteStore(uid, storeId)
             }.onFailure { e ->
-                _state.value = _state.value.copy(favoriteStoreIds = cur, error = userFacingError(e))
+                _state.value = _state.value.copy(favoriteStoreIds = cur, error = e.message)
             }
         }
     }
@@ -1182,8 +1156,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
                 refreshDriverLocation()
                 ensureDeliveryCoordsOnTrack(tracked)
+                refreshLoyalty()
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = userFacingError(e))
+                _state.value = _state.value.copy(error = e.message)
             }
         }
     }
@@ -1272,6 +1247,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 ),
                 appliedDeal = deal,
             )
+            persistWonAt()
             persistSpinDay()
         }
     }
@@ -1290,6 +1266,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             openedCards = s.cards.indices.toSet(),
             appliedDeal = prizeToDeal(card.prize),
         )
+        persistWonAt()
         persistCardClaimDay()
     }
 
@@ -1436,7 +1413,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onSuccess { list -> _state.value = _state.value.copy(tickets = list) }
                 .onFailure { e ->
                     _state.value = _state.value.copy(
-                        ticketError = userFacingError(e, "Δεν φορτώθηκαν τα αιτήματα"),
+                        ticketError = e.message ?: "Δεν φορτώθηκαν τα αιτήματα",
                     )
                 }
         }
@@ -1466,7 +1443,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             }.onFailure { e ->
                 _state.value = _state.value.copy(
                     ticketPending = false,
-                    ticketError = userFacingError(e, "Αποτυχία υποβολής"),
+                    ticketError = e.message ?: "Αποτυχία υποβολής",
                 )
             }
         }
@@ -1492,7 +1469,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         ticketLoading = false,
-                        ticketError = userFacingError(e, "Δεν φορτώθηκε το αίτημα"),
+                        ticketError = e.message ?: "Δεν φορτώθηκε το ticket",
                     )
                 }
         }
@@ -1670,7 +1647,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     /**
      * One roll per calendar day — decides if the games section shows customers.
      * Wheel appears with 30% probability, mystery cards with 40%. Resets at midnight.
-     * When it appears it stays visible for 5 minutes only; after that it hides
+     * When it appears it stays visible for 10 minutes only; after that it hides
      * (live via the game ticker) and does not return until the next day's roll.
      */
     private fun rollDailyGameShow(): Boolean {
@@ -1703,6 +1680,23 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             java.time.LocalDate.now().plusDays(1).atStartOfDay(),
         ).seconds.toInt().coerceAtLeast(1)
 
+    /** Deadline of the currently-won prize (10 minutes after it was claimed), or 0 if none. */
+    private fun gameDealDeadlineMs(): Long {
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        val wonAt = prefs.getLong("won_at", 0L)
+        return if (wonAt > 0L) wonAt + GAME_DEAL_WINDOW_MS else 0L
+    }
+
+    private fun persistWonAt() {
+        getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+            .edit().putLong("won_at", System.currentTimeMillis()).apply()
+    }
+
+    private fun clearWonAt() {
+        getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+            .edit().remove("won_at").apply()
+    }
+
     private fun startGameTicker() {
         gameTickerJob?.cancel()
         gameTickerJob = viewModelScope.launch {
@@ -1710,7 +1704,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 delay(1_000)
                 val s = _state.value
                 if (!s.signedIn) continue
-                if (s.dealSeconds <= 0) {
+                val now = System.currentTimeMillis()
+                if (secondsToMidnight() <= 1) {
+                    clearWonAt()
                     _state.value = s.copy(
                         dealSeconds = secondsToMidnight(),
                         spinning = false,
@@ -1723,15 +1719,34 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         appliedDeal = null,
                         gameShow = if (s.gameEnabled) rollDailyGameShow() else false,
                     )
-                } else {
-                    val expired = gameShowUntilMs > 0 && System.currentTimeMillis() >= gameShowUntilMs
-                    if (expired) {
-                        gameShowUntilMs = 0L
-                        _state.value = s.copy(dealSeconds = s.dealSeconds - 1, gameShow = false)
-                    } else {
-                        _state.value = s.copy(dealSeconds = s.dealSeconds - 1)
-                    }
+                    continue
                 }
+                // Countdown shown to the customer: a won prize expires 10 minutes after
+                // it was claimed; before that the games visibility window.
+                val dealDeadline = gameDealDeadlineMs()
+                val countdownDeadline = if (dealDeadline > 0L) dealDeadline else gameShowUntilMs
+                val remaining = if (countdownDeadline <= 0L) 1
+                else ((countdownDeadline - now) / 1000).toInt().coerceAtLeast(1)
+                val showExpired = gameShowUntilMs > 0L && now >= gameShowUntilMs
+                if (showExpired) gameShowUntilMs = 0L
+                var updated = s.copy(
+                    dealSeconds = remaining,
+                    gameShow = if (showExpired) false else s.gameShow,
+                )
+                val dealExpired = dealDeadline > 0L && now >= dealDeadline
+                if (dealExpired) {
+                    clearWonAt()
+                    updated = updated.copy(
+                        appliedDeal = null,
+                        spinning = false,
+                        wheelPendingTarget = null,
+                        wheelResult = null,
+                        cardClaimed = false,
+                        claimedCardIndex = null,
+                        openedCards = emptySet(),
+                    )
+                }
+                _state.value = updated
             }
         }
     }

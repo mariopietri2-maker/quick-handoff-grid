@@ -145,6 +145,8 @@ class MainActivity : ComponentActivity() {
                             onClearSuggestions = vm::clearAddressSuggestions,
                             onSelectSaved = vm::selectSavedAddress,
                             onDeleteSaved = vm::deleteSavedAddress,
+                            onSetDefaultSaved = vm::setDefaultSavedAddress,
+                            onSetSaveLabel = vm::setSaveLabel,
                             onSaveProfile = vm::saveProfile,
                             onClearMessages = vm::clearMessages,
                             onSpinWheel = vm::spinWheel,

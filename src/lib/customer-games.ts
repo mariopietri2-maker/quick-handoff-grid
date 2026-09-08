@@ -44,7 +44,10 @@ export function persistCardClaimDay() {
 }
 
 /** How long the games section stays visible once it appears — then it hides for the rest of the day. */
-const GAME_SHOW_WINDOW_MS = 5 * 60 * 1000;
+const GAME_SHOW_WINDOW_MS = 10 * 60 * 1000;
+
+/** A won prize stays valid 10 minutes after the customer claims it. */
+export const GAME_DEAL_WINDOW_MS = 10 * 60 * 1000;
 
 /**
  * One roll per calendar day. Wheel appears with 30% probability,
@@ -105,10 +108,24 @@ export function setWonDeal(deal: GameDeal | null) {
   try {
     if (deal) {
       localStorage.setItem(`${PREFIX}won_deal`, JSON.stringify(deal));
+      localStorage.setItem(`${PREFIX}won_at`, String(Date.now()));
     } else {
       localStorage.removeItem(`${PREFIX}won_deal`);
+      localStorage.removeItem(`${PREFIX}won_at`);
     }
   } catch {}
+}
+
+/** When the currently-won prize was claimed (ms epoch), or null if none. */
+export function getWonAt(): number | null {
+  try {
+    const v = localStorage.getItem(`${PREFIX}won_at`);
+    if (!v) return null;
+    const n = parseInt(v, 10);
+    return Number.isFinite(n) ? n : null;
+  } catch {
+    return null;
+  }
 }
 
 export function prizeToDeal(prize: string): GameDeal | null {

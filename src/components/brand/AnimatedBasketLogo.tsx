@@ -142,7 +142,7 @@ export function AnimatedBasketLogo({
             <circle cx="37.2" cy="20.9" r="0.5" fill="#8D5524" />
           </g>
 
-          {/* Crepe */}
+          {/* Crepe with strawberry */}
           <g>
             <animateTransform
               attributeName="transform"

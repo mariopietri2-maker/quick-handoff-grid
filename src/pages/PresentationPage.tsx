@@ -83,7 +83,7 @@ const PORTALS = [
     text: 'Παράγγειλε από τα καταστήματα της πόλης σου με live tracking μέχρι την πόρτα.',
     href: 'https://fresh2go.gr/order',
     cta: 'Παράγγειλε τώρα',
-    style: 'linear-gradient(120deg, hsl(24 90% 55%), hsl(24 100% 62%) 55%, hsl(343 100% 68%))',
+    style: 'linear-gradient(120deg, hsl(24 90% 55%), hsl(24 100% 62%) 55%, hsl(20 85% 45%))',
   },
   {
     title: 'freshdelivery.app',
@@ -140,7 +140,7 @@ export default function PresentationPage() {
         />
         <div
           className="absolute bottom-[-120px] right-[-80px] h-[420px] w-[420px] rounded-full opacity-30 blur-3xl"
-          style={{ background: 'radial-gradient(circle, hsl(343 100% 68% / 0.22), transparent 70%)' }}
+          style={{ background: 'radial-gradient(circle, hsl(24 100% 62% / 0.35), transparent 70%)' }}
         />
       </div>
 
@@ -510,7 +510,7 @@ export default function PresentationPage() {
           <div
             aria-hidden
             className="absolute inset-0 -z-10"
-            style={{ background: 'linear-gradient(120deg, hsl(24 90% 55%), hsl(24 100% 62%) 48%, hsl(343 100% 68%))' }}
+            style={{ background: 'linear-gradient(120deg, hsl(24 90% 55%), hsl(24 100% 62%) 48%, hsl(20 85% 45%))' }}
           />
           <div
             aria-hidden

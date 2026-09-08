@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Gift } from 'lucide-react';
 import { useCustomerGames } from '@/hooks/useCustomerGames';
 import type { WheelSegmentConfig, MysteryCardConfig } from '@/hooks/useCustomerAppConfig';
@@ -6,29 +6,94 @@ import { formatDealTime } from '@/lib/customer-games';
 
 const WHEEL_RADIUS = 58;
 
+const CONFETTI_COLORS = ['#F4A125', '#FF8A3D', '#C2410C', '#FFCA28', '#FFE7B8'];
+
+function ConfettiBurst({ onDone }: { onDone: () => void }) {
+  const pieces = useMemo(
+    () =>
+      Array.from({ length: 18 }, () => ({
+        left: 36 + Math.random() * 28,
+        delay: Math.random() * 140,
+        color: CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)],
+        rot: Math.round(Math.random() * 360),
+      })),
+    [],
+  );
+
+  useEffect(() => {
+    const t = setTimeout(onDone, 1000);
+    return () => clearTimeout(t);
+  }, [onDone]);
+
+  return (
+    <div className="pointer-events-none fixed inset-x-0 bottom-20 z-[60]" aria-hidden>
+      {pieces.map((p, i) => (
+        <span
+          key={i}
+          className="confetti-piece"
+          style={{
+            left: `${p.left}%`,
+            animationDelay: `${p.delay}ms`,
+            background: p.color,
+            '--r': `${p.rot}deg`,
+          } as React.CSSProperties}
+        />
+      ))}
+      <style>{`
+        .confetti-piece {
+          position: absolute; bottom: 0; width: 8px; height: 12px; border-radius: 2px; opacity: 0;
+          animation: cg-confetti-fall 850ms cubic-bezier(.2,.7,.3,1) both;
+        }
+        @keyframes cg-confetti-fall {
+          0% { transform: translateY(0) rotate(var(--r)); opacity: 1; }
+          100% { transform: translateY(150px) rotate(calc(var(--r) + 520deg)); opacity: 0; }
+        }
+      `}</style>
+    </div>
+  );
+}
+
 export default function CustomerGames() {
   const g = useCustomerGames();
+  const [burst, setBurst] = useState(0);
+  const lastFired = useRef<{ wheel: string | null; card: boolean }>({ wheel: null, card: false });
+
+  useEffect(() => {
+    if (!g.enabled || !g.show) return;
+    const wheelKey = g.wheelResult ? `${g.wheelResult.label}|${g.wheelResult.code}` : null;
+    const cardWon = g.cardClaimed && g.claimedCardIndex != null && !lastFired.current.card;
+    if ((wheelKey && wheelKey !== lastFired.current.wheel) || cardWon) {
+      if (wheelKey) lastFired.current.wheel = wheelKey;
+      if (g.cardClaimed && g.claimedCardIndex != null) lastFired.current.card = true;
+      setBurst((b) => b + 1);
+    }
+  }, [g.enabled, g.show, g.wheelResult, g.cardClaimed, g.claimedCardIndex]);
 
   if (!g.enabled || !g.show) return null;
 
-  return g.active === 'wheel' ? (
-    <LuckyWheel
-      segments={g.wheelSegments}
-      spinning={g.spinning}
-      wheelTarget={g.wheelTarget}
-      wheelResult={g.wheelResult}
-      spinLocked={g.spinLocked}
-      dealSeconds={g.dealSeconds}
-      onSpin={g.spin}
-    />
-  ) : (
-    <MysteryCards
-      cards={g.cards}
-      cardClaimed={g.cardClaimed}
-      claimedCardIndex={g.claimedCardIndex}
-      openedCards={g.openedCards}
-      onOpenCard={g.openCard}
-    />
+  return (
+    <>
+      {burst > 0 && <ConfettiBurst key={burst} onDone={() => setBurst(0)} />}
+      {g.active === 'wheel' ? (
+        <LuckyWheel
+          segments={g.wheelSegments}
+          spinning={g.spinning}
+          wheelTarget={g.wheelTarget}
+          wheelResult={g.wheelResult}
+          spinLocked={g.spinLocked}
+          dealSeconds={g.dealSeconds}
+          onSpin={g.spin}
+        />
+      ) : (
+        <MysteryCards
+          cards={g.cards}
+          cardClaimed={g.cardClaimed}
+          claimedCardIndex={g.claimedCardIndex}
+          openedCards={g.openedCards}
+          onOpenCard={g.openCard}
+        />
+      )}
+    </>
   );
 }
 

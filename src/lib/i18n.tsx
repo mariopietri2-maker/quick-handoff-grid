@@ -48,10 +48,6 @@ const translations: Record<string, Record<Lang, string>> = {
   'customer.schedule': { el: 'Προγραμματισμός', en: 'Schedule' },
   'customer.today': { el: 'Σήμερα', en: 'Today' },
   'customer.tomorrow': { el: 'Αύριο', en: 'Tomorrow' },
-  'customer.free_delivery': { el: 'Δωρεάν delivery', en: 'Free delivery' },
-  'customer.free_delivery_sub': { el: 'Καταστήματα χωρίς κόστος παράδοσης', en: 'Stores with no delivery fee' },
-  'customer.popular_cuisines': { el: 'Δημοφιλείς κουζίνες', en: 'Popular cuisines' },
-  'customer.near_you': { el: 'Κοντά σου', en: 'Near you' },
 
   // Categories
   'cat.all': { el: 'Όλα', en: 'All' },
