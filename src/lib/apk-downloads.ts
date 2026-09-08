@@ -1,6 +1,6 @@
 import { SITE_ORIGIN } from '@/lib/site';
 
-/** Public GitHub Release tag (private repo — use site proxy for downloads). */
+/** Public GitHub Release assets for Android debug APKs. */
 export const APK_RELEASE_TAG = 'mobile-apks-v1';
 
 /** Bumped when `npm run mobile:apk` publishes a new Capacitor build to the release.
@@ -14,11 +14,8 @@ export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
 /** Native Kotlin/Compose customer. */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.8.9-fresh2go';
 
-/**
- * Public download base — proxied by Railway `serve-dist.mjs` at `/apk/*`
- * so users do not need GitHub login (private repo release assets are not public).
- */
-const RELEASE_BASE = `${SITE_ORIGIN.replace(/\/$/, '')}/apk`;
+const RELEASE_BASE =
+  'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
 
 export { SITE_ORIGIN };
 
