@@ -96,8 +96,9 @@ function ApkCard({ flavor, highlighted }: { flavor: ApkFlavor; highlighted: bool
         onClick={() => startApkDownload(flavor)}
       >
         <Download className="h-4 w-4 mr-2" />
-        Κατέβασε {apk.title} · {apk.sizeLabel}
+        Κατέβασε · v{apk.versionLabel}
       </Button>
+      <p className="mt-2 text-[11px] text-muted-foreground">{apk.sizeLabel}</p>
     </article>
   );
 }
@@ -195,7 +196,8 @@ export default function DownloadAppPage() {
             Δοκιμαστικά APK & PWA
           </h1>
           <p className="mt-3 text-muted-foreground text-sm sm:text-base max-w-lg mx-auto leading-relaxed">
-            Capacitor και Native για πελάτη και οδηγό, plus Store PWA χωρίς APK.
+            Κατέβασε το <strong className="text-foreground">Native Πελάτης</strong> (τελευταίο build) ή οδηγό.
+            Store είναι PWA — χωρίς APK.
           </p>
           <p className="mt-2 text-xs text-muted-foreground/80 font-mono">
             Native driver v{APK_NATIVE_DRIVER_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Capacitor v{APK_BUILD_VERSION}
@@ -203,9 +205,12 @@ export default function DownloadAppPage() {
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
-          <StorePwaCard highlighted={params.get('app') === 'store'} />
+          <ApkCard
+            flavor="customerNative"
+            highlighted={focus === 'customerNative' || focus == null}
+          />
           <ApkCard flavor="driverNative" highlighted={focus === 'driverNative'} />
-          <ApkCard flavor="customerNative" highlighted={focus === 'customerNative'} />
+          <StorePwaCard highlighted={params.get('app') === 'store'} />
           <ApkCard flavor="driver" highlighted={focus === 'driver'} />
           <ApkCard flavor="customer" highlighted={focus === 'customer'} />
         </div>

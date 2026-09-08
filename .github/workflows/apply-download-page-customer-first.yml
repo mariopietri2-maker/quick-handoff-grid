@@ -1,0 +1,22 @@
+name: Apply download page customer first
+on:
+  push:
+    paths:
+      - 'scripts/apply_download_page_customer_first.py'
+      - '.github/workflows/apply-download-page-customer-first.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_download_page_customer_first.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/pages/DownloadAppPage.tsx
+          git commit -m "web: customer native first on /download + version on button" || exit 0
+          git push

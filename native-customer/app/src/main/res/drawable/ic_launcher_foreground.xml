@@ -4,48 +4,39 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!-- Brand green disc (safe zone) -->
+    <!--
+      Fresh2GO bag logo — adaptive safe zone (~center 66dp).
+      White bag + orange fold, matches website mark.
+    -->
+    <!-- Soft white plate behind bag for contrast on any mask -->
     <path
-        android:fillColor="#059669"
-        android:pathData="M54,16c21,0 38,17 38,38s-17,38 -38,38 -38,-17 -38,-38 17,-38 38,-38z" />
-    <!-- Basket handle arch (behind food) -->
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.12"
+        android:pathData="M28,30h52c6,0 10,4 10,10v36c0,6 -4,10 -10,10H28c-6,0 -10,-4 -10,-10V40c0,-6 4,-10 10,-10z" />
+
+    <!-- Handle -->
     <path
-        android:strokeColor="#0B0F14"
-        android:strokeWidth="4"
+        android:fillColor="#00000000"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
+        android:pathData="M42,48c0,-11 24,-11 24,0" />
+
+    <!-- Bag body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,48h40c4,0 7,3 7,7v24c0,5 -4,9 -9,9H36c-5,0 -9,-4 -9,-9V55c0,-4 3,-7 7,-7z" />
+
+    <!-- Fold line -->
+    <path
         android:fillColor="#00000000"
-        android:pathData="M42 58 Q54 39 66 58" />
-    <!-- Apple (red) -->
+        android:strokeColor="#FF8A3D"
+        android:strokeWidth="3.5"
+        android:strokeLineCap="round"
+        android:pathData="M40,60h28" />
+
+    <!-- Small accent dot (brand cue) -->
     <path
-        android:fillColor="#DC2626"
-        android:pathData="M48,43 a7,7 0 1 0 0,14 a7,7 0 1 0 0,-14" />
-    <!-- Apple leaf -->
-    <path
-        android:fillColor="#22C55E"
-        android:pathData="M48,42 q-4,-4 -7,-1 q3,4 7,1z" />
-    <!-- Banana (yellow) -->
-    <path
-        android:fillColor="#FACC15"
-        android:pathData="M60,52 q4,-7 11,-8 q-2,9 -9,10 z" />
-    <!-- Carrot (orange) -->
-    <path
-        android:fillColor="#F97316"
-        android:pathData="M58,48 L61,39 L64,48 Z" />
-    <path
-        android:fillColor="#16A34A"
-        android:pathData="M60.5,40 q-2,-4 -5,-4 q1,4 5,4z M61,40 q4,-4 6,-3 q-2,3 -6,3z" />
-    <!-- Basket body (wicker) -->
-    <path
-        android:fillColor="#F5EDDC"
-        android:pathData="M40 60 L68 60 Q70 60 70 62 L68 76 Q67.5 79 65 79 L43 79 Q40.5 79 40 76 L38 62 Q38 60 40 60 Z" />
-    <!-- Basket weave lines -->
-    <path
-        android:strokeColor="#D9C79A"
-        android:strokeWidth="1.6"
-        android:fillColor="#00000000"
-        android:pathData="M41 68 L67 68 M40 73 L68 73 M48 61 L47 79 M58 61 L59 79" />
-    <!-- Basket rim (band) -->
-    <path
-        android:fillColor="#E8D9B0"
-        android:pathData="M38 57 L70 57 L70 63 L38 63 Z" />
+        android:fillColor="#FF8A3D"
+        android:pathData="M54,72m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
 </vector>

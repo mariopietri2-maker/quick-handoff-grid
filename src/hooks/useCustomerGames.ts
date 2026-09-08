@@ -46,8 +46,8 @@ export function useCustomerGames() {
   const [claimedCardIndex, setClaimedCardIndex] = useState<number | null>(null);
   const [openedCards, setOpenedCards] = useState<number[]>([]);
 
-  // Daily 60% appearance + 5-minute visibility window (mirrors the native app).
-  const [showState, setShowState] = useState(() => resolveDailyGameShow());
+  // Daily appearance (30% wheel / 40% cards) + 5-minute visibility window (mirrors the native app).
+  const [showState, setShowState] = useState(() => resolveDailyGameShow(active));
 
   useEffect(() => {
     if (showState.expiresAt == null) return;
@@ -71,9 +71,9 @@ export function useCustomerGames() {
     setClaimedCardIndex(null);
     setOpenedCards([]);
     setWonDeal(null);
-    setShowState(resolveDailyGameShow());
+    setShowState(resolveDailyGameShow(active));
     setDealSeconds(secondsToMidnight());
-  }, [dealSeconds]);
+  }, [dealSeconds, active]);
 
   const spin = useCallback(() => {
     if (!enabled || spinning || spinLocked || active !== 'wheel') return;

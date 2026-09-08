@@ -727,8 +727,19 @@
   100% { box-shadow: 0 0 0 0 hsl(var(--driver-accent) / 0); }
 }
 
-/* Live KPI tiles — soft sweep + breathing glow while there is real activity */
-.kpi-live-tile {
+/* Marquee: pause on hover, stop under reduced-motion */
+.marquee-track {
+  animation-play-state: running;
+  will-change: transform;
+}
+.marquee-track:hover {
+  animation-play-state: paused;
+}
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
+  }
+}
   position: relative;
   isolation: isolate;
   animation: kpi-glow 2.6s ease-in-out infinite;

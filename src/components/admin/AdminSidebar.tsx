@@ -2,7 +2,7 @@ import {
   LayoutDashboard, ShoppingBag, Store, Users, UserRound, Wallet, Settings2,
   ChevronLeft, ChevronRight, LogOut, Shield, UserCircle, Repeat, Bike, ShoppingCart,
 } from 'lucide-react';
-import { Logo } from '@/components/brand/Logo';
+import { AnimatedBasketLogo } from '@/components/brand/AnimatedBasketLogo';
 import { cn } from '@/lib/utils';
 import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
@@ -186,7 +186,7 @@ function SidebarBody({
     <>
       {/* Brand — Fresh2GO wordmark */}
       <div className="h-16 flex items-center px-4 border-b border-border shrink-0 bg-gradient-to-b from-card to-muted/20">
-<Logo size={36} withWordmark />
+<AnimatedBasketLogo size={36} withWordmark />
         {!collapsed && (
           <div className="ml-1 overflow-hidden">
             <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground truncate leading-tight font-semibold mt-0.5">Control Center</p>

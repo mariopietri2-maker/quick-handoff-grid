@@ -105,7 +105,7 @@ function LuckyWheel(props: {
             style={{
               background: spinLocked
                 ? 'linear-gradient(180deg, #52635B, #3A4A42)'
-                : 'linear-gradient(180deg, #0B8F5F, #10B981)',
+                : 'linear-gradient(180deg, #D97706, #F59E0B)',
             }}
           >
             <span className="text-[10px] font-black leading-tight text-center">
@@ -211,10 +211,10 @@ function MysteryCardFace(props: {
         }}
       >
         <div
-          className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-2xl text-white shadow-[0_10px_24px_-10px_rgba(11,143,95,0.6)]"
+          className="absolute inset-0 flex flex-col items-center justify-center gap-1 rounded-2xl text-white shadow-[0_10px_24px_-10px_rgba(217,119,6,0.6)]"
           style={{
             backfaceVisibility: 'hidden',
-            background: 'linear-gradient(135deg, #0B8F5F, #14B8A6)',
+            background: 'linear-gradient(135deg, #D97706, #F59E0B)',
           }}
         >
           <span className="text-[24px] font-black leading-none">{card.tag}</span>

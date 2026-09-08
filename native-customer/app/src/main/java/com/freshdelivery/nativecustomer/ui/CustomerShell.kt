@@ -6,11 +6,17 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -20,6 +26,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -90,6 +99,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
@@ -98,11 +108,13 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.ImageRequest
 import com.freshdelivery.nativecustomer.data.CustomerTab
 import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.data.OrderUi
@@ -223,6 +235,8 @@ fun CustomerShell(
             onSetDelivery = onSetDelivery,
             onUseLocation = onUseLocation,
             onGeocode = onGeocode,
+            onAddressQuery = onAddressQuery,
+            onPickSuggestion = onPickSuggestion,
             onSaveAddress = onSaveAddress,
             onSelectSaved = onSelectSaved,
             onDeleteSaved = onDeleteSaved,
@@ -300,6 +314,7 @@ fun CustomerShell(
                     FreshCartBar(
                         count = state.cartCount,
                         total = state.cartSubtotal,
+                        minOrder = (state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore)?.min_order_amount ?: 0.0,
                         onClick = { onToggleCart(true) },
                     )
                 }
@@ -379,50 +394,97 @@ fun CustomerShell(
 }
 
 @Composable
-private fun FreshCartBar(count: Int, total: Double, onClick: () -> Unit) {
-    Box(
+private fun FreshCartBar(
+    count: Int,
+    total: Double,
+    onClick: () -> Unit,
+    minOrder: Double = 0.0,
+) {
+    val needMore = minOrder > 0 && total < minOrder
+    val progress = if (minOrder > 0) (total / minOrder).toFloat().coerceIn(0f, 1f) else 1f
+    Column(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .shadow(12.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
-            .background(FreshGradient)
-            .clickable(onClick = onClick),
+            .padding(horizontal = 12.dp, vertical = 8.dp),
     ) {
-        Row(
+        if (needMore) {
+            Surface(
+                color = Color.White,
+                shape = RoundedCornerShape(14.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(bottom = 8.dp)
+                    .shadow(4.dp, RoundedCornerShape(14.dp)),
+            ) {
+                Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
+                    Text(
+                        "Ακόμα €%.2f για ελάχιστη παραγγελία".format(minOrder - total),
+                        color = FreshInk,
+                        fontWeight = FontWeight.SemiBold,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                    Spacer(Modifier.height(6.dp))
+                    Box(
+                        Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(FreshChip),
+                    ) {
+                        Box(
+                            Modifier
+                                .fillMaxWidth(progress)
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp))
+                                .background(FreshGreen),
+                        )
+                    }
+                }
+            }
+        }
+        Box(
             Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 18.dp, vertical = 14.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically,
+                .shadow(12.dp, RoundedCornerShape(20.dp))
+                .clip(RoundedCornerShape(20.dp))
+                .background(FreshGradient)
+                .clickable(onClick = onClick),
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Box(
-                    Modifier
-                        .size(26.dp)
-                        .clip(CircleShape)
-                        .background(Color.White),
-                    contentAlignment = Alignment.Center,
-                ) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 18.dp, vertical = 14.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Box(
+                        Modifier
+                            .size(26.dp)
+                            .clip(CircleShape)
+                            .background(Color.White),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        Text(
+                            "$count",
+                            color = FreshGreen,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp,
+                        )
+                    }
+                    Spacer(Modifier.width(12.dp))
                     Text(
-                        "$count",
-                        color = FreshGreen,
+                        if (needMore) "Συνέχεια παραγγελίας" else "Προβολή καλαθιού",
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
-                        fontSize = 13.sp,
                     )
                 }
-                Spacer(Modifier.width(12.dp))
                 Text(
-                    "Προβολή καλαθιού",
+                    "€" + "%.2f".format(total),
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
                 )
             }
-            Text(
-                "€" + "%.2f".format(total),
-                color = Color.White,
-                fontWeight = FontWeight.Bold,
-            )
         }
     }
 }
@@ -444,8 +506,12 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
                 modifier = Modifier.size(48.dp),
             )
         } else {
+            val ctx = LocalContext.current
             AsyncImage(
-                model = url,
+                model = ImageRequest.Builder(ctx)
+                    .data(url)
+                    .crossfade(180)
+                    .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
                 modifier = Modifier.fillMaxSize(),
@@ -477,7 +543,11 @@ private fun HomeTab(
     onTab: (com.freshdelivery.nativecustomer.data.CustomerTab) -> Unit = {},
     onOpenCart: () -> Unit = {},
 ) {
-    var filter by remember { mutableStateOf(HomeFilter.All) }
+    var filter by remember {
+        mutableStateOf(
+            if (state.deliveryLat != null && state.deliveryLng != null) HomeFilter.Near else HomeFilter.All,
+        )
+    }
     val base = state.visibleStores
     val hasLocation = state.deliveryLat != null && state.deliveryLng != null
     val stores = remember(filter, base, hasLocation, state.favoriteStoreIds) {
@@ -490,6 +560,7 @@ private fun HomeTab(
             HomeFilter.Open -> open
             HomeFilter.Near -> near
             HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }
+            HomeFilter.Deals -> base.filter { !it.promo_badge.isNullOrBlank() || it.covers_delivery_fee == true }
         }
     }
 
@@ -598,7 +669,7 @@ private fun HomeTab(
                                 }
                             }
                         } else null,
-                        placeholder = { Text("Αναζήτηση καταστημάτων", color = FreshMuted) },
+                        placeholder = { Text("Πίτσα, σουβλάκι, καφές…", color = FreshMuted) },
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(18.dp),
                         colors = OutlinedTextFieldDefaults.colors(
@@ -622,119 +693,20 @@ private fun HomeTab(
                 FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { filter = HomeFilter.All }
                 FreshFilterChip("Ανοιχτά", selected = filter == HomeFilter.Open) { filter = HomeFilter.Open }
                 FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { filter = HomeFilter.Near }
+                FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { filter = HomeFilter.Deals }
                 FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { filter = HomeFilter.Fav }
             }
         }
 
-        // Phase1: admin appConfig brand / promo / tiles
-        state.appConfig.promos.firstOrNull()?.let { promo ->
-            item {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .shadow(10.dp, RoundedCornerShape(24.dp))
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(FreshGradient),
-                ) {
-                    Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color.White.copy(alpha = 0.22f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(Icons.Outlined.LocalOffer, contentDescription = null, tint = Color.White)
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                promo.tag,
-                                color = Color.White.copy(alpha = 0.85f),
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                            Text(
-                                promo.title,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                promo.subtitle,
-                                color = Color.White.copy(alpha = 0.8f),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        if (promo.code.isNotBlank()) {
-                            Surface(
-                                color = Color.White,
-                                shape = RoundedCornerShape(10.dp),
-                            ) {
-                                Text(
-                                    promo.code,
-                                    color = FreshGreenDark,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                )
-                            }
-                        }
-                    }
-                }
+
+        // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
+        val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
+        if (enabledPromos.isNotEmpty()) {
+            item(key = "promo-carousel") {
+                PromoCarousel(promos = enabledPromos)
             }
         }
-        item {
-            Row(
-                Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                val rawTiles = state.appConfig.tiles.ifEmpty {
-                    listOf(
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Φαγητό", "🍔", "all"),
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Πίτσα", "🍕", "Πίτσες"),
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Καφές", "☕", "Καφέδες"),
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Γλυκά", "🍰", "Γλυκά"),
-                    )
-                }
-                // Food-only launch: hide retail verticals until showRetailVerticals=true.
-                val retailLabels = setOf(
-                    "supermarkets", "super-markets", "super markets",
-                    "καταστήματα", "καταστηματα", "takeaway", "take-away",
-                    "mini market", "mini-market", "minimarket",
-                )
-                val tiles = if (state.appConfig.showRetailVerticals) rawTiles
-                else rawTiles.filter { it.label.trim().lowercase() !in retailLabels }
-                tiles.forEach { tile ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onSearch(if (tile.category == "all") "" else tile.category) },
-                    ) {
-                        Box(
-                            Modifier
-                                .size(58.dp)
-                                .shadow(4.dp, CircleShape)
-                                .clip(CircleShape)
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(tile.emoji, fontSize = 26.sp)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            tile.label,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = FreshInk,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-            }
-        }
+
         if (state.gameShow) {
             item {
                 when (state.gameActive) {
@@ -743,12 +715,70 @@ private fun HomeTab(
                 }
             }
         }
-        // Competitor-style horizontal discovery (food-only; retail hidden by flag).
+        // Fresh2GO discovery rails (efood density, own style)
         if (stores.isNotEmpty()) {
-            item {
-                DiscoverSectionHeader(title = "Φαγητό με δωρεάν delivery", action = "Δες τα όλα ›") {
-                    filter = HomeFilter.All; onSearch("")
+            val freeDelivery = stores.filter { it.covers_delivery_fee == true }.ifEmpty {
+                stores.filter { (it.delivery_fee ?: 0.0) <= 0.0 }
+            }
+            val withOffers = stores.filter { !it.promo_badge.isNullOrBlank() }
+            val nearFirst = if (hasLocation) {
+                stores.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, it) }
+            } else stores
+
+            if (withOffers.isNotEmpty()) {
+                item {
+                    DiscoverSectionHeader(title = "Προσφορές τώρα", action = "Όλες ›") {
+                        filter = HomeFilter.Deals; onSearch("")
+                    }
                 }
+                item {
+                    Row(
+                        Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        withOffers.take(10).forEach { store ->
+                            StoreMiniCard(
+                                store = store,
+                                rating = state.storeRatings[store.id],
+                                deliveryLat = state.deliveryLat,
+                                deliveryLng = state.deliveryLng,
+                                onClick = { onOpenStore(store) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            if (freeDelivery.isNotEmpty()) {
+                item {
+                    DiscoverSectionHeader(title = "Δωρεάν delivery", action = "Δες τα όλα ›") {
+                        filter = HomeFilter.Deals; onSearch("")
+                    }
+                }
+                item {
+                    Row(
+                        Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        freeDelivery.take(10).forEach { store ->
+                            StoreMiniCard(
+                                store = store,
+                                rating = state.storeRatings[store.id],
+                                deliveryLat = state.deliveryLat,
+                                deliveryLng = state.deliveryLng,
+                                onClick = { onOpenStore(store) },
+                            )
+                        }
+                    }
+                }
+            }
+
+            item {
+                DiscoverSectionHeader(title = "Κοντά σου", action = null, onAction = {})
             }
             item {
                 Row(
@@ -757,7 +787,7 @@ private fun HomeTab(
                         .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(10.dp),
                 ) {
-                    stores.take(8).forEach { store ->
+                    nearFirst.take(8).forEach { store ->
                         StoreMiniCard(
                             store = store,
                             rating = state.storeRatings[store.id],
@@ -768,34 +798,42 @@ private fun HomeTab(
                     }
                 }
             }
+
             item {
-                DiscoverSectionHeader(title = "Δημοφιλείς κουζίνες", action = null, onAction = {})
+                DiscoverSectionHeader(title = "Τι θα φας σήμερα;", action = null, onAction = {})
             }
             item {
+                val cuisineHints = listOf(
+                    "Σουβλάκι" to "🥙",
+                    "Πίτσα" to "🍕",
+                    "Burger" to "🍔",
+                    "Κρέπα" to "🥞",
+                    "Καφές" to "☕",
+                    "Γλυκό" to "🍰",
+                    "Σαλάτα" to "🥗",
+                    "Ζυμαρικά" to "🍝",
+                )
                 Row(
                     Modifier
                         .horizontalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp, vertical = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(14.dp),
                 ) {
-                    listOf(
-                        "Σουβλάκια" to "🥙", "Pizza" to "🍕",
-                        "Κρέπες" to "🥞", "Burgers" to "🍔",
-                    ).forEach { (label, emoji) ->
+                    cuisineHints.forEach { (label, emoji) ->
                         Column(
                             horizontalAlignment = Alignment.CenterHorizontally,
                             modifier = Modifier.clickable { onSearch(label) },
                         ) {
                             Box(
                                 Modifier
-                                    .size(52.dp)
+                                    .size(56.dp)
+                                    .shadow(3.dp, CircleShape)
                                     .clip(CircleShape)
-                                    .background(Color.White)
-                                    .border(0.5.dp, FreshDivider, CircleShape),
+                                    .background(Color.White),
                                 contentAlignment = Alignment.Center,
-                            ) { Text(emoji, fontSize = 24.sp) }
+                            ) { Text(emoji, fontSize = 26.sp) }
                             Spacer(Modifier.height(4.dp))
-                            Text(label, style = MaterialTheme.typography.labelMedium, color = FreshInk)
+                            Text(label, style = MaterialTheme.typography.labelMedium, color = FreshInk, fontWeight = FontWeight.SemiBold)
                         }
                     }
                 }
@@ -811,9 +849,10 @@ private fun HomeTab(
                 verticalAlignment = Alignment.CenterVertically,
             ) {
                 val heading = when (filter) {
-                    HomeFilter.All -> if (browseMode) "Όλα τα καταστήματα" else "Κοντά σου"
+                    HomeFilter.All -> if (browseMode) "Όλα τα καταστήματα" else "Για σένα"
                     HomeFilter.Open -> "Ανοιχτά τώρα"
-                    HomeFilter.Near -> "Κοντά μου"
+                    HomeFilter.Near -> "Κοντά σου"
+                    HomeFilter.Deals -> "Προσφορές & δωρεάν delivery"
                     HomeFilter.Fav -> "Αγαπημένα"
                 }
                 Text(heading, style = MaterialTheme.typography.titleLarge)
@@ -883,7 +922,7 @@ private fun FreshFilterChip(label: String, selected: Boolean, onClick: () -> Uni
     )
 }
 
-private enum class HomeFilter { All, Open, Near, Fav }
+private enum class HomeFilter { All, Open, Near, Fav, Deals }
 
 private const val EARTH_RADIUS_KM = 6371.0
 
@@ -898,9 +937,14 @@ private fun storeDistanceKm(lat: Double, lng: Double, store: StoreRow): Double {
     return EARTH_RADIUS_KM * 2 * atan2(sqrt(a), sqrt(1 - a))
 }
 
-/** A store is open if it has no holiday today and today's opening_hours window covers the current time. */
+/** A store is open if the owner didn't force an override and it has no holiday
+ *  today and today's opening_hours window covers the current time. */
 private fun isStoreOpenNow(store: StoreRow): Boolean {
     if (store.is_active == false) return false
+    when (store.status_override) {
+        "open" -> return true
+        "closed" -> return false
+    }
     val today = LocalDate.now()
     val holidayDates = store.holiday_dates ?: emptyList()
     val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
@@ -931,6 +975,25 @@ private fun isStoreOpenNow(store: StoreRow): Boolean {
     val closeMin = toMin(close) ?: return true
     val minuteOfDay = now.hour * 60 + now.minute
     return if (closeMin > openMin) minuteOfDay in openMin until closeMin else minuteOfDay >= openMin || minuteOfDay < closeMin
+}
+
+
+private fun storeDeliveryFeeLabel(store: StoreRow): String {
+    if (store.covers_delivery_fee == true) return "Δωρεάν delivery"
+    val fee = store.delivery_fee
+    return if (fee != null && fee > 0.0) {
+        val s = if (fee % 1.0 == 0.0) fee.toInt().toString() else "%.1f".format(fee)
+        "€$s delivery"
+    } else {
+        "Delivery"
+    }
+}
+
+private fun storeDistanceLabel(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String? {
+    if (deliveryLat == null || deliveryLng == null) return null
+    val km = storeDistanceKm(deliveryLat, deliveryLng, store)
+    if (km == Double.MAX_VALUE) return null
+    return if (km < 1.0) "${(km * 1000).toInt()} m" else "%.1f km".format(km)
 }
 
 private fun storeDeliveryEstimate(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String {
@@ -965,22 +1028,35 @@ private fun FreshStoreCard(
             StoreHeroImage(store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url, height = 160)
             Surface(
                 color = if (!active || !openNow) {
-                    Color.Black.copy(alpha = 0.65f)
+                    Color.Black.copy(alpha = 0.70f)
                 } else {
-                    Color.White.copy(alpha = 0.92f)
+                    FreshGreen
                 },
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .align(Alignment.TopStart)
                     .padding(10.dp),
             ) {
-                Text(
-                    if (!active) "Κλειστό" else if (openNow) "Ανοιχτό" else "Κλειστό",
-                    color = if (!active || !openNow) Color.White else FreshGreenDark,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.labelMedium,
-                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                )
+                Row(
+                    Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (active && openNow) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                        )
+                        Spacer(Modifier.width(5.dp))
+                    }
+                    Text(
+                        if (!active) "Κλειστό" else if (openNow) "Ανοιχτό" else "Κλειστό",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                }
             }
             Surface(
                 color = Color.White.copy(alpha = 0.92f),
@@ -995,6 +1071,25 @@ private fun FreshStoreCard(
                         contentDescription = null,
                         tint = FreshRose,
                         modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                    )
+                }
+            }
+            val badge = store.promo_badge?.trim().orEmpty()
+            if (badge.isNotEmpty()) {
+                Surface(
+                    color = FreshGreen,
+                    shape = RoundedCornerShape(10.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomStart)
+                        .padding(10.dp),
+                ) {
+                    Text(
+                        badge,
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                        maxLines = 1,
                     )
                 }
             }
@@ -1053,75 +1148,110 @@ private fun FreshStoreCard(
             }
             Spacer(Modifier.height(10.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), verticalAlignment = Alignment.CenterVertically) {
-                FreshMetaPill {
-                    Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(4.dp))
-                    Text(
-                        storeDeliveryEstimate(store, deliveryLat, deliveryLng),
-                        color = FreshInk,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                }
-                val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
-                if (store.covers_delivery_fee == true) {
-                    FreshMetaPill {
-                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
+                // Prep/flight estimate — highlighted chip
+                Surface(
+                    color = FreshGreenSoft,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(14.dp))
                         Spacer(Modifier.width(4.dp))
                         Text(
-                            "Δωρεάν" + (store.delivery_free_min?.let { " από €%.2f".format(it) } ?: ""),
+                            storeDeliveryEstimate(store, deliveryLat, deliveryLng),
                             color = FreshGreenDark,
                             fontWeight = FontWeight.Bold,
                             style = MaterialTheme.typography.labelMedium,
                         )
                     }
-                } else {
-                    store.delivery_fee?.let { fee ->
-                        FreshMetaPill {
+                }
+                storeDistanceLabel(store, deliveryLat, deliveryLng)?.let { dist ->
+                    Surface(
+                        color = FreshChip,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text(
+                            dist,
+                            color = FreshMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+                Surface(
+                    color = if (store.covers_delivery_fee == true) FreshGreenSoft else FreshChip,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        storeDeliveryFeeLabel(store),
+                        color = if (store.covers_delivery_fee == true) FreshGreenDark else FreshMuted,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                    )
+                }
+                val minOrd = store.min_order_amount ?: 0.0
+                if (minOrd > 0) {
+                    Surface(
+                        color = FreshChip,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Text(
+                            "Ελάχ. €%.0f".format(minOrd),
+                            color = FreshMuted,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
+                }
+                val platformDelivers = (store.fulfilment_mode ?: "platform") != "store"
+                if (platformDelivers) {
+                    Surface(
+                        color = FreshGreenSoft,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
                             Text(
-                                "€%.2f".format(fee),
-                                color = FreshInk,
+                                "Παράδοση Fresh2GO",
+                                color = FreshGreenDark,
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                    }
+                } else {
+                    Surface(
+                        color = FreshVioletSoft,
+                        shape = RoundedCornerShape(12.dp),
+                    ) {
+                        Row(
+                            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.Store, contentDescription = null, tint = FreshViolet, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                            Text(
+                                "Παράδοση καταστήματος",
+                                color = FreshViolet,
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelMedium,
                             )
                         }
                     }
                 }
-                if (platformDelivers) {
-                    FreshMetaPill {
-                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text(
-                            "Delivered by Fresh",
-                            color = FreshGreenDark,
-                            fontWeight = FontWeight.Bold,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                    }
-                } else {
-                    FreshMetaPill {
-                        Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
-                        Spacer(Modifier.width(4.dp))
-                        Text("Παράδοση καταστήματος", color = FreshInk, fontWeight = FontWeight.SemiBold)
-                    }
-                }
                 Spacer(Modifier.weight(1f))
                 Icon(Icons.Outlined.ChevronRight, contentDescription = null, tint = FreshMuted)
             }
         }
-    }
-}
-
-@Composable
-private fun FreshMetaPill(content: @Composable RowScope.() -> Unit) {
-    Surface(
-        color = FreshChip,
-        shape = RoundedCornerShape(10.dp),
-    ) {
-        Row(
-            Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            content = content,
-        )
     }
 }
 
@@ -1192,7 +1322,12 @@ private fun StoreMiniCard(
                 }
             }
             Text(
-                storeDeliveryEstimate(store, deliveryLat, deliveryLng) + " • Ελάχ. 5€",
+                buildString {
+                append(storeDeliveryEstimate(store, deliveryLat, deliveryLng))
+                storeDistanceLabel(store, deliveryLat, deliveryLng)?.let { append(" • "); append(it) }
+                    val minO = store.min_order_amount ?: 0.0
+                    if (minO > 0) append(" • Ελάχ. €%.0f".format(minO))
+            },
                 color = FreshMuted, fontSize = 11.sp, maxLines = 1, overflow = TextOverflow.Ellipsis,
             )
             Surface(color = FreshGreenSoft, shape = RoundedCornerShape(8.dp), modifier = Modifier.padding(top = 4.dp)) {
@@ -1217,6 +1352,17 @@ private fun MenuScreen(
     onToggleFavorite: () -> Unit = {},
 ) {
     val store = state.selectedStore
+    val menuGroups = remember(state.menu) {
+        state.menu
+            .groupBy { it.category?.trim()?.takeIf { c -> c.isNotEmpty() } ?: "Μενού" }
+            .toList()
+            .sortedBy { (cat, _) -> if (cat == "Μενού") "zzz" else cat }
+    }
+    var selectedCategory by remember(state.selectedStore?.id) { mutableStateOf<String?>(null) }
+    val visibleGroups = remember(menuGroups, selectedCategory) {
+        if (selectedCategory == null) menuGroups
+        else menuGroups.filter { it.first == selectedCategory }
+    }
     Box(Modifier.fillMaxSize().background(FreshBg)) {
         LazyColumn(Modifier.fillMaxSize()) {
             item {
@@ -1258,6 +1404,15 @@ private fun MenuScreen(
                         )
                         store?.address?.let {
                             Text(it, color = Color.White.copy(alpha = 0.85f), style = MaterialTheme.typography.bodyMedium)
+                        }
+                        val minO = store?.min_order_amount ?: 0.0
+                        if (minO > 0) {
+                            Text(
+                                "Ελάχ. παραγγελία €%.0f".format(minO),
+                                color = Color.White.copy(alpha = 0.9f),
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.SemiBold,
+                            )
                         }
                         Spacer(Modifier.height(8.dp))
                         Surface(
@@ -1313,9 +1468,46 @@ private fun MenuScreen(
                     }
                 }
             } else {
-                items(state.menu, key = { it.id }) { item ->
-                    FreshMenuRow(item = item, onAdd = { onAdd(item) })
-                    Spacer(Modifier.height(6.dp))
+                if (menuGroups.size > 1) {
+                    stickyHeader(key = "cat-chips") {
+                        Row(
+                            Modifier
+                                .fillMaxWidth()
+                                .background(FreshBg)
+                                .horizontalScroll(rememberScrollState())
+                                .padding(horizontal = 16.dp, vertical = 8.dp),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        ) {
+                            FreshFilterChip("Όλα", selected = selectedCategory == null) {
+                                selectedCategory = null
+                            }
+                            menuGroups.forEach { (cat, _) ->
+                                FreshFilterChip(cat, selected = selectedCategory == cat) {
+                                    selectedCategory = cat
+                                }
+                            }
+                        }
+                    }
+                }
+                visibleGroups.forEach { (category, itemsInCat) ->
+                    item(key = "cat-$category") {
+                        Text(
+                            category,
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = FreshInk,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                        )
+                    }
+                    items(itemsInCat, key = { it.id }) { item ->
+                        FreshMenuRow(
+                            item = item,
+                            onAdd = {
+                                if (item.is_available != false) onAdd(item)
+                            },
+                        )
+                        Spacer(Modifier.height(6.dp))
+                    }
                 }
                 item { Spacer(Modifier.height(100.dp)) }
             }
@@ -1330,6 +1522,7 @@ private fun MenuScreen(
                 FreshCartBar(
                     count = state.cartCount,
                     total = state.cartSubtotal,
+                    minOrder = (state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore)?.min_order_amount ?: 0.0,
                     onClick = onOpenCart,
                 )
             }
@@ -1339,6 +1532,7 @@ private fun MenuScreen(
 
 @Composable
 private fun FreshMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
+    val available = item.is_available != false
     Row(
         Modifier
             .fillMaxWidth()
@@ -1346,12 +1540,31 @@ private fun FreshMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
             .shadow(3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
-            .clickable(onClick = onAdd)
+            .clickable(enabled = available, onClick = onAdd)
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
-            Text(item.name, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    item.name,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    color = if (available) FreshInk else FreshMuted,
+                    modifier = Modifier.weight(1f),
+                )
+                if (!available) {
+                    Surface(color = FreshChip, shape = RoundedCornerShape(8.dp)) {
+                        Text(
+                            "Μη διαθέσιμο",
+                            color = FreshMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelSmall,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                        )
+                    }
+                }
+            }
             item.description?.takeIf { it.isNotBlank() }?.let {
                 Spacer(Modifier.height(4.dp))
                 Text(
@@ -1467,6 +1680,54 @@ private fun CartCheckoutScreen(
                 .padding(horizontal = 16.dp),
             verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
+            if (state.cart.isEmpty()) {
+                item {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 40.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Box(
+                            Modifier
+                                .size(88.dp)
+                                .clip(CircleShape)
+                                .background(FreshGreenSoft),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Outlined.ShoppingBag,
+                                contentDescription = null,
+                                tint = FreshGreenDark,
+                                modifier = Modifier.size(40.dp),
+                            )
+                        }
+                        Spacer(Modifier.height(16.dp))
+                        Text(
+                            "Το καλάθι είναι άδειο",
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleLarge,
+                            color = FreshInk,
+                        )
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Πρόσθεσε πιάτα από ένα κατάστημα για να συνεχίσεις.",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodyMedium,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(horizontal = 24.dp),
+                        )
+                        Spacer(Modifier.height(20.dp))
+                        Button(
+                            onClick = onBack,
+                            colors = ButtonDefaults.buttonColors(containerColor = FreshGreen, contentColor = Color.White),
+                            shape = RoundedCornerShape(16.dp),
+                        ) {
+                            Text("Δες καταστήματα", fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            } else {
             item {
                 Text("Τα αντικείμενά σου", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
             }
@@ -1720,16 +1981,52 @@ private fun CartCheckoutScreen(
                     if (!state.error.isNullOrBlank()) {
                         Text(state.error!!, color = MaterialTheme.colorScheme.error)
                     }
+                    val cartMin = (state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore)?.min_order_amount ?: 0.0
+                    if (cartMin > 0 && state.cartSubtotal < cartMin) {
+                        Spacer(Modifier.height(12.dp))
+                        Surface(
+                            color = FreshGreenSoft,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth(),
+                        ) {
+                            Column(Modifier.padding(14.dp)) {
+                                Text(
+                                    "Ελάχιστη παραγγελία €%.2f — ακόμα €%.2f".format(cartMin, cartMin - state.cartSubtotal),
+                                    color = FreshGreenDark,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                )
+                                Spacer(Modifier.height(8.dp))
+                                Box(
+                                    Modifier
+                                        .fillMaxWidth()
+                                        .height(8.dp)
+                                        .clip(RoundedCornerShape(4.dp))
+                                        .background(Color.White.copy(alpha = 0.7f)),
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .fillMaxWidth((state.cartSubtotal / cartMin).toFloat().coerceIn(0f, 1f))
+                                            .height(8.dp)
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(FreshGreen),
+                                    )
+                                }
+                            }
+                        }
+                    }
                     Spacer(Modifier.height(16.dp))
+                    val canPlace = !state.busy && state.cart.isNotEmpty() && address.isNotBlank() &&
+                        (cartMin <= 0 || state.cartSubtotal >= cartMin)
                     Box(
                         Modifier
                             .fillMaxWidth()
                             .height(58.dp)
                             .shadow(12.dp, RoundedCornerShape(29.dp))
                             .clip(RoundedCornerShape(29.dp))
-                            .background(if (state.busy || state.cart.isEmpty() || address.isBlank()) FreshChipGradient else FreshGradient)
+                            .background(if (!canPlace) FreshChipGradient else FreshGradient)
                             .clickable(
-                                enabled = !state.busy && state.cart.isNotEmpty() && address.isNotBlank(),
+                                enabled = canPlace,
                                 onClick = onPlaceOrder,
                             ),
                         contentAlignment = Alignment.Center,
@@ -1738,15 +2035,20 @@ private fun CartCheckoutScreen(
                             CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
                         } else {
                             Text(
-                                "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal),
+                                if (cartMin > 0 && state.cartSubtotal < cartMin) {
+                                    "Πρόσθεσε προϊόντα · ακόμα €" + "%.2f".format(cartMin - state.cartSubtotal)
+                                } else {
+                                    "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal)
+                                },
                                 fontWeight = FontWeight.Bold,
-                                color = if (state.cart.isEmpty() || address.isBlank()) FreshMuted else Color.White,
+                                color = if (!canPlace) FreshMuted else Color.White,
                             )
                         }
                     }
                     Spacer(Modifier.height(32.dp))
                 }
             }
+            } // end else non-empty cart
         }
     }
 }
@@ -1758,6 +2060,8 @@ private fun AddressPickerScreen(
     onSetDelivery: (String, Double?, Double?) -> Unit,
     onUseLocation: () -> Unit,
     onGeocode: (String) -> Unit,
+    onAddressQuery: (String) -> Unit = {},
+    onPickSuggestion: (AddressSuggestion) -> Unit = {},
     onSaveAddress: () -> Unit,
     onSelectSaved: (SavedAddressRow) -> Unit = {},
     onDeleteSaved: (String) -> Unit = {},
@@ -1801,14 +2105,43 @@ private fun AddressPickerScreen(
         ) {
             OutlinedTextField(
                 value = address,
-                onValueChange = { address = it },
+                onValueChange = {
+                    address = it
+                    onAddressQuery(it)
+                },
                 modifier = Modifier.fillMaxWidth(),
                 singleLine = true,
-                label = { Text("Οδός, αριθμός, πόλη") },
+                label = { Text("Οδός, αριθμός (Ιωάννινα)") },
                 leadingIcon = { Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshMuted) },
                 shape = RoundedCornerShape(16.dp),
                 colors = fieldColors,
             )
+            if (state.addressSuggestions.isNotEmpty()) {
+                Spacer(Modifier.height(8.dp))
+                Text("Προτάσεις", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                state.addressSuggestions.forEach { s ->
+                    Surface(
+                        onClick = {
+                            address = s.label
+                            onPickSuggestion(s)
+                        },
+                        shape = RoundedCornerShape(12.dp),
+                        color = Color.White,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                    ) {
+                        Row(
+                            Modifier.padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(18.dp))
+                            Spacer(Modifier.width(8.dp))
+                            Text(s.label, style = MaterialTheme.typography.bodyMedium, color = FreshInk)
+                        }
+                    }
+                }
+            }
             if (state.savedAddresses.isNotEmpty()) {
                 Spacer(Modifier.height(12.dp))
                 Text("Αποθηκευμένες διευθύνσεις", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
@@ -2793,6 +3126,178 @@ private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Υποβολή") }
+        }
+    }
+}
+
+
+
+@Composable
+private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.PromoBanner>) {
+    val pagerState = rememberPagerState(pageCount = { promos.size })
+    LaunchedEffect(promos.size) {
+        if (promos.size <= 1) return@LaunchedEffect
+        while (true) {
+            delay(4200)
+            val next = (pagerState.currentPage + 1) % promos.size
+            runCatching { pagerState.animateScrollToPage(next) }
+        }
+    }
+    val infinite = rememberInfiniteTransition(label = "promoMotion")
+    val sheen by infinite.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "sheen",
+    )
+    val bob by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "bob",
+    )
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().height(156.dp),
+            pageSpacing = 12.dp,
+        ) { page ->
+            val promo = promos[page]
+            val gradient = when (promo.gradient) {
+                "dark" -> Brush.linearGradient(
+                    listOf(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF334155)),
+                )
+                else -> Brush.linearGradient(
+                    listOf(Color(0xFFEA580C), Color(0xFFF97316), Color(0xFFFB7185)),
+                )
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        val offset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        val scale = 1f - (kotlin.math.abs(offset) * 0.06f).coerceIn(0f, 0.12f)
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = 1f - (kotlin.math.abs(offset) * 0.25f).coerceIn(0f, 0.35f)
+                    }
+                    .shadow(14.dp, RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(gradient),
+            ) {
+                val img = promo.imageUrl
+                if (!img.isNullOrBlank()) {
+                    AsyncImage(
+                        model = img,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
+                }
+                // animated sheen
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            translationX = sheen * size.width * 0.55f
+                            alpha = 0.18f
+                        }
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color.Transparent, Color.White, Color.Transparent),
+                            ),
+                        ),
+                )
+                Row(
+                    Modifier.fillMaxSize().padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (img.isNullOrBlank()) {
+                        Box(
+                            Modifier
+                                .size(48.dp)
+                                .graphicsLayer { translationY = (bob - 0.5f) * 8f }
+                                .clip(RoundedCornerShape(16.dp))
+                                .background(Color.White.copy(alpha = 0.22f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(
+                                Icons.Outlined.LocalOffer,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp),
+                            )
+                        }
+                        Spacer(Modifier.width(14.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        if (promo.tag.isNotBlank()) {
+                            Text(
+                                promo.tag,
+                                color = Color.White.copy(alpha = 0.9f),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                        Text(
+                            promo.title,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        if (promo.subtitle.isNotBlank()) {
+                            Text(
+                                promo.subtitle,
+                                color = Color.White.copy(alpha = 0.92f),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        if (promo.code.isNotBlank()) {
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.White.copy(alpha = 0.2f))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                            ) {
+                                Text(
+                                    promo.code,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        if (promos.size > 1) {
+            Row(
+                Modifier.fillMaxWidth().padding(top = 10.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                repeat(promos.size) { i ->
+                    val on = pagerState.currentPage == i
+                    Box(
+                        Modifier
+                            .padding(horizontal = 3.dp)
+                            .height(6.dp)
+                            .width(if (on) 18.dp else 6.dp)
+                            .clip(RoundedCornerShape(99.dp))
+                            .background(
+                                if (on) Color(0xFFEA580C) else Color.Gray.copy(alpha = 0.35f),
+                            ),
+                    )
+                }
+            }
         }
     }
 }

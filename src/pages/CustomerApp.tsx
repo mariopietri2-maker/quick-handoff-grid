@@ -4,13 +4,16 @@ import {
   MapPin,
   Clock,
   ChevronDown,
-  User,
   Star,
   Utensils,
+  Bike,
+  Store,
+  ShoppingBag,
 } from 'lucide-react';
+import { useCart } from '@/hooks/useCart';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, Link } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '@/integrations/supabase/types';
 import PromoBannerCarousel from '@/components/PromoBannerCarousel';
@@ -22,6 +25,7 @@ import { useStoreRatings } from '@/hooks/useStoreRatings';
 import { useT } from '@/lib/i18n';
 import { LanguageToggle } from '@/components/LanguageToggle';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+import { AnimatedBasketLogo } from '@/components/brand/AnimatedBasketLogo';
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from '@/components/ui/sheet';
 import { SEO } from '@/components/SEO';
 import { OfferRow } from '@/components/customer/OfferRow';
@@ -108,7 +112,8 @@ export default function CustomerApp() {
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
+  const { itemCount } = useCart();
   const { settings: platformSettings } = usePlatformSettings();
   const deliveryEnabled = platformSettings.delivery_enabled;
   const baseEta = useDeliveryEta(0);
@@ -185,7 +190,7 @@ export default function CustomerApp() {
     return () => { cancelled = true; };
   }, [user]);
 
-  const displayAddress = deliveryAddress
+const displayAddress = deliveryAddress
     ? deliveryAddress.length > 28
       ? deliveryAddress.slice(0, 28) + '…'
       : deliveryAddress
@@ -210,6 +215,27 @@ export default function CustomerApp() {
       window.removeEventListener('customer:focus-browse', onBrowse);
       window.removeEventListener('customer:focus-home', onHome);
     };
+  }, []);
+
+  // ── Deep-link sync from URL params ──
+  useEffect(() => {
+    const onMount = () => {
+      const searchParams = useSearchParams();
+      const q = searchParams.get('q');
+      const cat = searchParams.get('cat');
+      if (q) {
+        setSearch(q);
+        setDebouncedSearch(q.trim());
+        if (searchTimer.current) clearTimeout(searchTimer.current);
+      }
+      if (cat && cat !== 'all') {
+        setSelectedCategory(cat);
+        window.setTimeout(() => {
+          document.getElementById('browse-categories')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }, 350);
+      }
+    };
+    onMount();
   }, []);
 
   useEffect(() => {
@@ -312,6 +338,11 @@ export default function CustomerApp() {
       }));
   }, [offerItems, stores, ratings]);
 
+  const freeDeliveryStores = useMemo(
+    () => stores.filter((s) => (s as any).covers_delivery_fee && isStoreOpenNow(s.opening_hours, s.holiday_dates, s.status_override)),
+    [stores],
+  );
+
   const categoryOptions = useMemo(() => {
     const fromMenu = Array.from(new Set(Object.values(storeCategories).flat())).sort();
     const fromTiles = cfg.tiles
@@ -377,21 +408,8 @@ export default function CustomerApp() {
         <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
           {cfg.branding.show_header_brand && (
             <div className="flex items-center gap-2.5 mb-2.5 animate-fade-in">
-              <div
-                className="h-8 w-8 rounded-xl overflow-hidden flex items-center justify-center shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]"
-                style={{
-                  background: cfg.branding.logo_url
-                    ? 'hsl(var(--c-surface-muted))'
-                    : 'linear-gradient(135deg, hsl(var(--c-accent)), hsl(var(--c-accent-dark)))',
-                }}
-              >
-                {cfg.branding.logo_url ? (
-                  <img src={cfg.branding.logo_url} alt="" className="h-full w-full object-contain p-1" />
-                ) : (
-                  <span className="font-heading font-black text-white text-sm leading-none">
-                    {(cfg.branding.app_name.trim().charAt(0) || 'F').toUpperCase()}
-                  </span>
-                )}
+              <div className="h-8 w-8 shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]">
+                <AnimatedBasketLogo size={32} />
               </div>
               <div className="min-w-0">
 <div className="font-heading font-black text-[15px] c-ink tracking-tight leading-none truncate">
@@ -426,6 +444,19 @@ export default function CustomerApp() {
             </button>
             <div className="flex items-center gap-2 shrink-0">
               <LanguageToggle compact />
+              {itemCount > 0 && (
+                <button
+                  type="button"
+                  onClick={() => navigate('/checkout')}
+                  className="relative h-9 w-9 rounded-full c-chip flex items-center justify-center active:scale-95 transition-transform"
+                  aria-label={`${t('customer.view_cart')} — ${itemCount}`}
+                >
+                  <ShoppingBag className="h-[18px] w-[18px] c-ink" strokeWidth={2.2} />
+                  <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] px-1 rounded-full bg-orange-500 text-white text-[10px] font-extrabold flex items-center justify-center tabular-nums shadow-sm">
+                    {itemCount > 9 ? '9+' : itemCount}
+                  </span>
+                </button>
+              )}
               {!user ? (
                 <Link
                   to="/auth"
@@ -437,9 +468,14 @@ export default function CustomerApp() {
                 <Link
                   to="/profile"
                   aria-label="Άνοιγμα προφίλ χρήστη"
-                  className="h-9 w-9 rounded-full c-chip flex items-center justify-center"
+                  className="flex items-center gap-1.5 max-w-[140px] rounded-full c-chip py-1 pl-1 pr-3 min-h-9"
                 >
-                  <User className="h-[18px] w-[18px] c-ink" strokeWidth={2.2} />
+                  <span className="h-7 w-7 shrink-0 rounded-full gradient-primary text-white flex items-center justify-center text-[12px] font-bold">
+                    {(profile?.full_name || user.email || '?').slice(0, 1).toUpperCase()}
+                  </span>
+                  <span className="text-[13px] font-extrabold c-ink truncate">
+                    {profile?.full_name || 'Χρήστης'}
+                  </span>
                 </Link>
               )}
             </div>
@@ -534,6 +570,55 @@ export default function CustomerApp() {
 
         {!isSearching && selectedCategory === 'all' && cfg.games.enabled && <CustomerGames />}
 
+        {/* Free-delivery rail */}
+        {!isSearching && selectedCategory === 'all' && freeDeliveryStores.length > 0 && (
+          <section className="pt-4">
+            <div className="px-4 mb-3">
+              <h2 className="font-heading font-extrabold text-[20px] c-ink tracking-tight">
+                {t('customer.free_delivery')}
+              </h2>
+              <p className="text-[12px] c-soft mt-0.5">{t('customer.free_delivery_sub')}</p>
+            </div>
+            <div className="overflow-x-auto no-scrollbar">
+              <div className="flex gap-3 px-4 pb-1 w-max">
+                {freeDeliveryStores.slice(0, 10).map((store) => {
+                  const cover = store.cover_image_url || store.image_url;
+                  const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
+                  const rating = ratings[store.id];
+                  return (
+                    <button
+                      key={store.id}
+                      type="button"
+                      onClick={() => navigate(`/restaurant/${store.id}`)}
+                      className="w-[160px] shrink-0 text-left"
+                    >
+                      <div className="relative h-[100px] rounded-xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))]">
+                        {cover ? (
+                          <img src={cover} alt={store.name} className="w-full h-full object-cover" loading="lazy" />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Utensils className="h-7 w-7 text-[hsl(var(--c-text-muted))]" />
+                          </div>
+                        )}
+                        <span className="absolute bottom-2 left-2 text-[10px] font-extrabold text-orange-800 bg-orange-100/95 px-2 py-0.5 rounded-md shadow">
+                          0€ {t('customer.delivery')}
+                        </span>
+                      </div>
+                      <div className="text-[13px] font-extrabold c-ink truncate">{store.name}</div>
+                      <div className="flex items-center gap-1 mt-0.5 text-[11px] c-soft">
+                        {rating?.count > 0 && <span>★ {rating.avg.toFixed(1)}</span>}
+                        {rating?.count > 0 && <span>·</span>}
+                        <span>{etaLow}–{etaHigh} {t('customer.min')}</span>
+                      </div>
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          </section>
+        )}
+
         {/* Featured stores */}
         {cfg.sections.show_promoted &&
           !isSearching &&
@@ -549,7 +634,7 @@ export default function CustomerApp() {
                 <div className="flex gap-3 px-4 pb-1 w-max">
                   {promotedStores.map((store) => {
                     const cover = store.cover_image_url || store.image_url;
-                    const open = isStoreOpenNow(store.opening_hours, store.holiday_dates);
+                    const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
                     const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
                     const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
                     const etaHigh = Math.min(baseEta.max + (store.prep_buffer_minutes ?? 0), etaCap);
@@ -588,6 +673,19 @@ export default function CustomerApp() {
                       </div>
                       <div className={`text-[14px] font-extrabold c-ink truncate ${open ? '' : 'opacity-60'}`}>
                         {store.name}
+                      </div>
+                      <div className="mt-1 flex items-center gap-1">
+                        {(store.fulfilment_mode ?? 'platform') !== 'store' ? (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-orange-50 px-1.5 py-0.5 text-[10px] font-extrabold text-orange-800">
+                            <Bike className="h-3 w-3" />
+                            Fresh2GO
+                          </span>
+                        ) : (
+                          <span className="inline-flex items-center gap-0.5 rounded-md bg-violet-50 px-1.5 py-0.5 text-[10px] font-extrabold text-violet-800">
+                            <Store className="h-3 w-3" />
+                            Κατάστημα
+                          </span>
+                        )}
                       </div>
                       <p className={`text-[12px] c-soft mt-0.5 truncate ${open ? '' : 'opacity-60'}`}>
                         {store.tagline ? (
@@ -638,7 +736,9 @@ export default function CustomerApp() {
                   ? `${t('customer.results_for')} "${debouncedSearch}"`
                   : selectedCategory !== 'all'
                     ? selectedCategory
-                    : t('customer.nearby')}
+                    : deliveryAddress
+                      ? t('customer.near_you')
+                      : t('customer.nearby')}
               </h2>
               <span className="text-[12px] c-soft font-semibold tabular-nums">
                 {filtered.length}
@@ -717,7 +817,7 @@ export default function CustomerApp() {
             ) : (
               <div className="space-y-5">
                 {filtered.map((store) => {
-                  const open = isStoreOpenNow(store.opening_hours, store.holiday_dates);
+                  const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
                   const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
                   const platformDelivers =
                     deliveryEnabled && (store.fulfilment_mode ?? 'platform') !== 'store';
@@ -758,7 +858,7 @@ export default function CustomerApp() {
                           </span>
                         )}
                         {open && (
-                          <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-emerald-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
+                          <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-orange-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
                             <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                             Ανοιχτό
                           </span>
@@ -812,25 +912,26 @@ export default function CustomerApp() {
                               <span className="font-semibold text-[hsl(var(--c-accent))]">Νέο</span>
                             )}
                             {deliveryEnabled && (
-                              <>
-                                <span>·</span>
-                                <span className="inline-flex items-center gap-1">
-                                  <Clock className="h-3 w-3" />
-                                  {etaLow}–{etaHigh} {t('customer.min')}
-                                </span>
-                              </>
+                              <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
+                                <Clock className="h-3 w-3" />
+                                {etaLow}–{etaHigh} {t('customer.min')}
+                              </span>
+                            )}
+                            {platformDelivers ? (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
+                                <Bike className="h-3 w-3" />
+                                Παράδοση Fresh2GO
+                              </span>
+                            ) : (
+                              <span className="inline-flex items-center gap-1 rounded-md bg-violet-50 px-1.5 py-0.5 font-extrabold text-violet-800">
+                                <Store className="h-3 w-3" />
+                                Παράδοση καταστήματος
+                              </span>
                             )}
                             {platformDelivers && (
-                              <>
-                                <span>·</span>
-                                <span className="inline-flex items-center gap-1 font-bold text-[hsl(var(--c-accent))]">
-                                  Delivered by Fresh2GO.GR
-                                </span>
-                                <span>·</span>
-                                <span>
-                                  {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
-                                </span>
-                              </>
+                              <span className={fee === 0 ? 'font-extrabold text-orange-800' : 'font-semibold'}>
+                                {fee === 0 ? `0€ ${t('customer.delivery')}` : `${fee.toFixed(2)}€`}
+                              </span>
                             )}
                           </p>
                         </div>

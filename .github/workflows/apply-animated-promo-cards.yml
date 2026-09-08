@@ -1,0 +1,22 @@
+name: Apply animated promo cards
+on:
+  push:
+    paths:
+      - 'scripts/apply_animated_promo_cards.py'
+      - '.github/workflows/apply-animated-promo-cards.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_animated_promo_cards.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git commit -m "feat(customer-native): animated promo cards (3 defaults + motion)" || exit 0
+          git push

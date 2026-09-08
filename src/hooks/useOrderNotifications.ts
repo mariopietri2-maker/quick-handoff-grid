@@ -43,13 +43,14 @@ export function useOrderNotifications(pollMs = 15_000) {
       try {
         const { data } = await supabase
           .from('orders' as any)
-          .select('id')
+          .select('id, created_at')
           .gt('created_at', sinceRef.current)
           .order('created_at', { ascending: true });
 
         if (mounted && Array.isArray(data) && data.length > 0) {
           setCount((prev) => Math.min(prev + data.length, 9999));
-          const newest = data[data.length - 1];
+          const rows = data as { created_at?: string | null }[];
+          const newest = rows[rows.length - 1];
           if (newest?.created_at) {
             sinceRef.current = newest.created_at;
             writeSince(sinceRef.current);

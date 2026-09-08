@@ -268,14 +268,18 @@ export default function CheckoutPage() {
     try {
       const { data: storeRow } = await supabase
         .from('stores')
-        .select('opening_hours, holiday_dates, is_active')
+        .select('opening_hours, holiday_dates, is_active, status_override')
         .eq('id', storeId)
         .maybeSingle();
       if (storeRow && (storeRow as any).is_active === false) {
         toast.error('Το κατάστημα δεν δέχεται παραγγελίες αυτή τη στιγμή');
         return;
       }
-      if (storeRow && !isStoreOpenNow((storeRow as any).opening_hours, (storeRow as any).holiday_dates)) {
+      if (storeRow && !isStoreOpenNow(
+        (storeRow as any).opening_hours,
+        (storeRow as any).holiday_dates,
+        (storeRow as any).status_override,
+      )) {
         toast.error('Το κατάστημα είναι κλειστό — δοκίμασε όταν ανοίξει');
         return;
       }
@@ -590,19 +594,19 @@ export default function CheckoutPage() {
         </Card>
 
         {/* Promo Code */}
-        <Card className={`rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)] ${appliedPromo ? 'border-success/30' : ''}`}>
+        <Card className={`rounded-3xl border-border/60 shadow-[0_4px_18px_-8px_hsl(0_0%_0%/0.10)] ${appliedPromo ? 'border-warning/30' : ''}`}>
           <CardContent className="p-4 space-y-3">
             <div className="flex items-center gap-2">
               <Tag className="h-5 w-5 text-primary" />
               <h2 className="font-heading font-semibold text-foreground">Κωδικός Προσφοράς</h2>
             </div>
             {appliedPromo ? (
-              <div className="flex items-center justify-between bg-success/5 rounded-lg p-3">
+              <div className="flex items-center justify-between bg-warning/5 rounded-lg p-3">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-5 w-5 text-success" />
+                  <CheckCircle2 className="h-5 w-5 text-warning" />
                   <div>
                     <p className="font-heading font-semibold text-foreground text-sm">{appliedPromo.code}</p>
-                    <p className="text-xs text-success">
+                    <p className="text-xs text-warning">
                       {appliedPromo.discount_type === 'percentage'
                         ? `${appliedPromo.discount_value}% έκπτωση`
                         : `${appliedPromo.discount_value.toFixed(2)}€ έκπτωση`}
@@ -646,8 +650,8 @@ export default function CheckoutPage() {
             </div>
             {discount > 0 && (
               <div className="flex justify-between text-sm">
-                <span className="text-success">Έκπτωση</span>
-                <span className="text-success">-{discount.toFixed(2)}€</span>
+                <span className="text-warning">Έκπτωση</span>
+                <span className="text-warning">-{discount.toFixed(2)}€</span>
               </div>
             )}
             {deliveryEnabled && (

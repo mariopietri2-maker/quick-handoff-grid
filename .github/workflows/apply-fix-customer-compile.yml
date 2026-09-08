@@ -1,0 +1,22 @@
+name: Apply fix customer compile APK
+on:
+  push:
+    paths:
+      - 'scripts/fix_customer_compile_apk.py'
+      - '.github/workflows/apply-fix-customer-compile.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix_customer_compile_apk.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/ .github/workflows/build-native-apks.yml
+          git commit -m "fix(customer-native): min_order_amount + PromoCarousel compile + fail hard on APK" || exit 0
+          git push

@@ -30,7 +30,7 @@ import { cn } from '@/lib/utils';
 const statusConfig: Record<string, { label: string; color: string }> = {
   open: { label: 'Ανοιχτό', color: 'bg-red-500/10 text-red-600 border-red-500/20' },
   in_progress: { label: 'Σε εξέλιξη', color: 'bg-yellow-500/10 text-yellow-700 border-yellow-500/20' },
-  resolved: { label: 'Επιλύθηκε', color: 'bg-green-500/10 text-green-700 border-green-500/20' },
+  resolved: { label: 'Επιλύθηκε', color: 'bg-orange-500/10 text-orange-700 border-orange-500/20' },
 };
 
 const PRIORITY_ORDER: Record<string, number> = { sos: 0, high: 1, normal: 2, low: 3 };

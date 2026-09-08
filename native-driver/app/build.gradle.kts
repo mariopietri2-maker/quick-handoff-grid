@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 281
-        versionName = "2.6.27-bg-offer"
+        versionCode = 282
+        versionName = "2.6.30-fresh2go"
 
         buildConfigField(
             "String",
@@ -40,10 +40,7 @@ android {
         // install over the existing app. Without this each CI runner generates
         // a fresh debug key and updates fail with UPDATE_INCOMPATIBLE.
         debug {
-            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = false
@@ -51,6 +48,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
         }
     }
 

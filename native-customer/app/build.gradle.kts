@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 268
-        versionName = "2.8.5-fresh2go"
+        versionCode = 272
+        versionName = "2.8.9-fresh2go"
 
         buildConfigField(
             "String",
@@ -35,12 +35,8 @@ android {
     }
 
     buildTypes {
-        // Shared debug keystore — see native-driver for rationale.
         debug {
-            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
-            storePassword = "android"
-            keyAlias = "androiddebugkey"
-            keyPassword = "android"
+            signingConfig = signingConfigs.getByName("debug")
         }
         release {
             isMinifyEnabled = false
@@ -48,6 +44,15 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
+        }
+    }
+
+    signingConfigs {
+        getByName("debug") {
+            storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
+            storePassword = "android"
+            keyAlias = "androiddebugkey"
+            keyPassword = "android"
         }
     }
 

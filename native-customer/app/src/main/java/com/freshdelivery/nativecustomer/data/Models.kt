@@ -30,6 +30,7 @@ data class StoreRow(
     val opening_hours: kotlinx.serialization.json.JsonElement? = null,
     val holiday_dates: List<String>? = null,
     val fulfilment_mode: String? = "platform",
+    val status_override: String? = null,
 )
 
 @Serializable
@@ -129,11 +130,13 @@ data class PromoBanner(
     val title: String = "",
     val subtitle: String = "",
     val code: String = "",
+    val gradient: String = "hero",
     val enabled: Boolean = true,
+    val imageUrl: String? = null,
 )
 
 data class CustomerAppConfig(
-    val appName: String = "fresh2go",
+    val appName: String = "Fresh2GO",
     val cityLabel: String = "Ιωάννινα",
     val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
     val logoUrl: String? = null,
@@ -147,7 +150,32 @@ data class CustomerAppConfig(
         CategoryTile("Καφές", "☕", "Καφέδες"),
         CategoryTile("Γλυκά", "🍰", "Γλυκά"),
     ),
-    val promos: List<PromoBanner> = emptyList(),
+    val promos: List<PromoBanner> = listOf(
+        PromoBanner(
+            tag = "NEW",
+            title = "Δωρεάν παράδοση",
+            subtitle = "στην πρώτη σου παραγγελία",
+            code = "WELCOME",
+            gradient = "hero",
+            enabled = true,
+        ),
+        PromoBanner(
+            tag = "HOT",
+            title = "Fresh Meals. Fast Delivery.",
+            subtitle = "Ιωάννινα · σε 10–15′",
+            code = "FRESH",
+            gradient = "hero",
+            enabled = true,
+        ),
+        PromoBanner(
+            tag = "OFFER",
+            title = "Προσφορές κάθε μέρα",
+            subtitle = "δες τα καταστήματα με badge",
+            code = "DEALS",
+            gradient = "dark",
+            enabled = true,
+        ),
+    ),
     /** Food-only launch flag: when false, retail verticals (Supermarkets/Καταστήματα/Takeaway) stay hidden. Flip to true when you sign supply. */
     val showRetailVerticals: Boolean = false,
     val games: GameConfig = defaultGameConfig(),

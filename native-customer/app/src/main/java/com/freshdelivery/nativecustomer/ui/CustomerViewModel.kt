@@ -1,5 +1,7 @@
 package com.freshdelivery.nativecustomer.ui
 
+import com.freshdelivery.nativecustomer.util.userFacingError
+
 import android.app.Application
 import android.content.Intent
 import android.net.Uri
@@ -193,6 +195,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var liveChatSessionJob: Job? = null
     private var ticketJob: Job? = null
     private var searchJob: Job? = null
+    private var cachedStores: List<StoreRow> = emptyList()
     private var gameShowUntilMs = 0L
 
     init {
@@ -323,7 +326,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signIn(email, password) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Login failed")
+                    _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία σύνδεσης"))
                 }
                 .onSuccess { _state.value = _state.value.copy(busy = false) }
         }
@@ -338,7 +341,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching { repo.signUp(email, password, fullName, phone) }
                 .onFailure { e ->
-                    _state.value = _state.value.copy(busy = false, error = e.message ?: "Signup failed")
+                    _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία εγγραφής"))
                 }
                 .onSuccess {
                     _state.value = _state.value.copy(
@@ -364,7 +367,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     info = "Το προφίλ αποθηκεύτηκε",
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(savingProfile = false, error = e.message)
+                _state.value = _state.value.copy(savingProfile = false, error = userFacingError(e, "Αποτυχία αποθήκευσης προφίλ"))
             }
         }
     }
@@ -374,13 +377,19 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         searchJob?.cancel()
         val trimmed = q.trim()
         if (trimmed.isBlank()) {
-            refreshStores()
+            if (cachedStores.isNotEmpty()) {
+                _state.value = _state.value.copy(stores = cachedStores)
+            } else {
+                refreshStores()
+            }
             return
         }
         searchJob = viewModelScope.launch {
-            delay(280)
+            delay(220)
             val results = repo.searchStores(trimmed)
-            _state.value = _state.value.copy(stores = results)
+            if (_state.value.searchQuery.trim() == trimmed) {
+                _state.value = _state.value.copy(stores = results)
+            }
         }
     }
 
@@ -412,7 +421,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 persistLastAddress()
                 if (label != null) seedGeocodeCache(label, loc.latitude, loc.longitude)
             }.onFailure { e ->
-                _state.value = _state.value.copy(locating = false, error = e.message ?: "Αποτυχία τοποθεσίας")
+                _state.value = _state.value.copy(locating = false, error = userFacingError(e, "Αποτυχία τοποθεσίας"))
             }
         }
     }
@@ -508,21 +517,49 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }.getOrNull()
     }
 
+
+    /** Strict Ioannina service area — suggestions outside are dropped. */
+    private fun isIoanninaSuggestion(label: String, lat: Double, lng: Double): Boolean {
+        val inBox = lat in 39.55..39.82 && lng in 20.70..21.05
+        if (!inBox) return false
+        val l = label.lowercase()
+        val blocked = listOf(
+            "αθήνα", "athens", "θεσσαλονίκη", "thessaloniki", "πάτρα", "patra",
+            "λάρισα", "ηράκλειο", "βόλος", "καβάλα",
+        )
+        if (blocked.any { it in l }) return false
+        return true
+    }
+
     private suspend fun forwardGeocodeMany(address: String): List<AddressSuggestion> = withContext(Dispatchers.IO) {
         val q = address.trim()
         if (q.length < 3) return@withContext emptyList()
-        // 1) Mapbox Geocoding (autocomplete-quality, Greece bias)
-        val mapbox = runCatching {
-            val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
+        val cityBias = listOf("ιωανν", "ioannina", "γιάννεν")
+        val hasCity = cityBias.any { q.lowercase().contains(it) }
+        val queries = buildList {
+            add(q)
+            if (!hasCity) {
+                add("$q Ιωάννινα")
+                add("$q, Ιωάννινα")
+            }
+        }.distinct()
+        val token = com.freshdelivery.nativecustomer.BuildConfig.MAPBOX_TOKEN
+        val proximity = "proximity=20.8529,39.6675&bbox=20.70,39.55,21.05,39.82"
+        fun mapboxQuery(query: String): List<AddressSuggestion> = runCatching {
             val url = java.net.URL(
                 "https://api.mapbox.com/geocoding/v5/mapbox.places/" +
-                    java.net.URLEncoder.encode(q, "UTF-8") +
-                    ".json?access_token=$token&country=gr&language=el&limit=6&types=address,place,locality,neighborhood,poi",
+                    java.net.URLEncoder.encode(query, "UTF-8") +
+                    ".json?access_token=$token&country=gr&language=el&limit=6" +
+                    "&types=address,place,locality,neighborhood,poi&$proximity",
             )
             val conn = (url.openConnection() as java.net.HttpURLConnection).apply {
                 connectTimeout = 8000
                 readTimeout = 8000
                 requestMethod = "GET"
+            }
+            if (conn.responseCode !in 200..299) {
+                conn.errorStream?.bufferedReader()?.readText()
+                return@runCatching emptyList()
             }
             val body = conn.inputStream.bufferedReader().readText()
             val root = kotlinx.serialization.json.Json.parseToJsonElement(body).jsonObject
@@ -536,19 +573,25 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 AddressSuggestion(place, lat, lng)
             }
         }.getOrElse { emptyList() }
-        if (mapbox.isNotEmpty()) return@withContext mapbox.distinctBy { it.label }
-        // 2) Android Geocoder fallback
-        runCatching {
-            @Suppress("DEPRECATION")
-            Geocoder(getApplication(), Locale.getDefault())
-                .getFromLocationName(q, 5)
-                ?.mapNotNull { a ->
-                    val line = a.getAddressLine(0) ?: return@mapNotNull null
-                    AddressSuggestion(line, a.latitude, a.longitude)
-                }
-                ?.distinctBy { it.label }
-                .orEmpty()
-        }.getOrElse { emptyList() }
+
+        val mapbox = queries.flatMap { mapboxQuery(it) }
+            .filter { isIoanninaSuggestion(it.label, it.lat, it.lng) }
+            .distinctBy { it.label }
+        if (mapbox.isNotEmpty()) return@withContext mapbox
+        val geoQueries = if (hasCity) listOf(q) else listOf(q, "$q Ιωάννινα")
+        geoQueries.flatMap { gq ->
+            runCatching {
+                @Suppress("DEPRECATION")
+                Geocoder(getApplication(), Locale.getDefault())
+                    .getFromLocationName(gq, 5)
+                    ?.mapNotNull { a ->
+                        val line = a.getAddressLine(0) ?: return@mapNotNull null
+                        if (!isIoanninaSuggestion(line, a.latitude, a.longitude)) return@mapNotNull null
+                        AddressSuggestion(line, a.latitude, a.longitude)
+                    }
+                    .orEmpty()
+            }.getOrElse { emptyList() }
+        }.distinctBy { it.label }
     }
 
     fun signOut() {
@@ -599,7 +642,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     busy = false,
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = e.message)
+                _state.value = _state.value.copy(busy = false, error = userFacingError(e))
             }
         }
     }
@@ -805,9 +848,36 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = s.copy(error = "Πάτα «Εύρεση στον χάρτη» ή «Η τοποθεσία μου» για ακριβείς συντεταγμένες")
             return
         }
+        val store = s.stores.find { it.id == storeId } ?: s.selectedStore
+        if (store == null) {
+            _state.value = s.copy(error = "Δεν βρέθηκε το κατάστημα")
+            return
+        }
+        if (store.is_active == false) {
+            _state.value = s.copy(error = "Το κατάστημα δεν δέχεται παραγγελίες αυτή τη στιγμή")
+            return
+        }
+        if (store.status_override == "closed") {
+            _state.value = s.copy(error = "Το κατάστημα είναι προσωρινά κλειστό — δοκίμασε αργότερα")
+            return
+        }
+        val sLat = store.latitude
+        val sLng = store.longitude
+        val dLat0 = s.deliveryLat
+        val dLng0 = s.deliveryLng
+        if (sLat != null && sLng != null && dLat0 != null && dLng0 != null) {
+            val nearStore = haversineKm(sLat, sLng, dLat0, dLng0) < 0.05
+            val addrLooksLikeStore = !store.address.isNullOrBlank() &&
+                s.deliveryAddress.trim().equals(store.address!!.trim(), ignoreCase = true)
+            if (nearStore || addrLooksLikeStore) {
+                _state.value = s.copy(
+                    error = "Η διεύθυνση παράδοσης είναι ίδια με του καταστήματος. Επίλεξε τη διεύθυνση του σπιτιού σου.",
+                )
+                return
+            }
+        }
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
-            val store = s.stores.find { it.id == storeId } ?: s.selectedStore
             runCatching {
                 var distanceKm: Double? = null
                 val dLat = s.deliveryLat
@@ -871,7 +941,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     refreshOrders()
                 }
   }.onFailure { e ->
-                _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
+                _state.value = _state.value.copy(busy = false, error = userFacingError(e, "Αποτυχία παραγγελίας"))
             }
         }
     }
@@ -908,7 +978,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         busy = false,
-                        error = e.message ?: "Αποτυχία Stripe",
+                        error = userFacingError(e, "Αποτυχία πληρωμής"),
                     )
                     openCardPaymentInBrowser(orderId)
                 }
@@ -1048,12 +1118,15 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     fun refreshStores() {
         viewModelScope.launch {
             runCatching {
+                val stores = repo.fetchStores()
+                val ratings = repo.fetchStoreRatings()
+                cachedStores = stores
                 _state.value = _state.value.copy(
-                    stores = repo.fetchStores(),
-                    storeRatings = repo.fetchStoreRatings(),
+                    stores = stores,
+                    storeRatings = ratings,
                 )
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = userFacingError(e))
             }
         }
     }
@@ -1077,7 +1150,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching {
                 if (adding) repo.addFavoriteStore(uid, storeId) else repo.removeFavoriteStore(uid, storeId)
             }.onFailure { e ->
-                _state.value = _state.value.copy(favoriteStoreIds = cur, error = e.message)
+                _state.value = _state.value.copy(favoriteStoreIds = cur, error = userFacingError(e))
             }
         }
     }
@@ -1109,9 +1182,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 _state.value = _state.value.copy(orders = orders, trackingOrder = tracked)
                 refreshDriverLocation()
                 ensureDeliveryCoordsOnTrack(tracked)
-                refreshLoyalty()
             }.onFailure { e ->
-                _state.value = _state.value.copy(error = e.message)
+                _state.value = _state.value.copy(error = userFacingError(e))
             }
         }
     }
@@ -1364,7 +1436,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onSuccess { list -> _state.value = _state.value.copy(tickets = list) }
                 .onFailure { e ->
                     _state.value = _state.value.copy(
-                        ticketError = e.message ?: "Δεν φορτώθηκαν τα αιτήματα",
+                        ticketError = userFacingError(e, "Δεν φορτώθηκαν τα αιτήματα"),
                     )
                 }
         }
@@ -1394,7 +1466,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             }.onFailure { e ->
                 _state.value = _state.value.copy(
                     ticketPending = false,
-                    ticketError = e.message ?: "Αποτυχία υποβολής",
+                    ticketError = userFacingError(e, "Αποτυχία υποβολής"),
                 )
             }
         }
@@ -1420,7 +1492,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 .onFailure { e ->
                     _state.value = _state.value.copy(
                         ticketLoading = false,
-                        ticketError = e.message ?: "Δεν φορτώθηκε το ticket",
+                        ticketError = userFacingError(e, "Δεν φορτώθηκε το αίτημα"),
                     )
                 }
         }
@@ -1596,11 +1668,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     /**
-     * One 60% roll per calendar day — decides if the games section shows customers.
+     * One roll per calendar day — decides if the games section shows customers.
+     * Wheel appears with 30% probability, mystery cards with 40%. Resets at midnight.
      * When it appears it stays visible for 5 minutes only; after that it hides
      * (live via the game ticker) and does not return until the next day's roll.
      */
     private fun rollDailyGameShow(): Boolean {
+        val chance = if (_state.value.gameActive == "cards") 0.4 else 0.3
         val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
         if (prefs.getString("game_show_day", null) == todayKey()) {
             if (!prefs.getBoolean("game_show_today", false)) {
@@ -1612,7 +1686,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             gameShowUntilMs = until
             return System.currentTimeMillis() < until
         }
-        val show = Random.nextDouble() < 0.6
+        val show = Random.nextDouble() < chance
         gameShowUntilMs = if (show) System.currentTimeMillis() + GAME_SHOW_WINDOW_MS else 0L
         prefs.edit()
             .putString("game_show_day", todayKey())

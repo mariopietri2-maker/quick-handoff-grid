@@ -126,6 +126,7 @@ export function useStore() {
         | 'address'
         | 'phone'
         | 'image_url'
+        | 'status_override'
       > & {
         cover_image_url?: string | null;
         tagline?: string | null;

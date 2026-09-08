@@ -10,7 +10,7 @@ export const BRAND = {
   legalName: 'Fresh2GO.GR',
   domain: 'fresh2go.gr',
   siteUrl: 'https://fresh2go.gr',
-  tagline: 'Fresh Meals. Fast Delivery.',
+  tagline: 'Φρέσκο Φαγητό. Γρήγορη Παράδοση.',
   description:
     'Η πλατφόρμα delivery που συνδέει πελάτες, εστιατόρια και οδηγούς σε πραγματικό χρόνο. Γρήγορα, αξιόπιστα.',
   themeColor: '#EA580C',

@@ -349,7 +349,7 @@ export default function OrderTrackingPage() {
                 {driverPhone && (
                   <a
                     href={`tel:${driverPhone}`}
-                    className="h-11 w-11 rounded-full bg-success/15 text-success flex items-center justify-center active:scale-95 transition-transform"
+                    className="h-11 w-11 rounded-full bg-warning/15 text-warning flex items-center justify-center active:scale-95 transition-transform"
                   >
                     <Phone className="h-5 w-5" />
                   </a>
@@ -486,7 +486,7 @@ export default function OrderTrackingPage() {
                 </div>
               )}
               {isDelivered && hasReviewed && (
-                <div className="mt-4 rounded-2xl bg-success/5 border border-success/20 p-4 text-center">
+                <div className="mt-4 rounded-2xl bg-warning/5 border border-warning/20 p-4 text-center">
                   <Star className="h-6 w-6 fill-warning text-warning mx-auto mb-1" />
                   <p className="font-heading text-sm text-foreground">Ευχαριστούμε για την κριτική!</p>
                 </div>
