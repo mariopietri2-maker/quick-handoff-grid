@@ -6,17 +6,17 @@ import { fileURLToPath } from 'node:url';
 const DIST = join(fileURLToPath(new URL('.', import.meta.url)), '..', 'dist');
 const PORT = Number(process.env.PORT || 8080);
 
-/** Private-repo release assets are not public — proxy them through this host. */
-const APK_PROXY = {
-  'fresh2go-customer-native-debug.apk':
-    'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk',
-  'fresh2go-driver-native-debug.apk':
-    'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk',
-  'fresh2go-customer-debug.apk':
-    'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-debug.apk',
-  'fresh2go-driver-debug.apk':
-    'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-debug.apk',
-};
+const GH_OWNER = 'mariopietri2-maker';
+const GH_REPO = 'quick-handoff-grid';
+const GH_TAG = 'mobile-apks-v1';
+
+/** Allowed public filenames → must exist on the mobile-apks-v1 release. */
+const APK_NAMES = new Set([
+  'fresh2go-customer-native-debug.apk',
+  'fresh2go-driver-native-debug.apk',
+  'fresh2go-customer-debug.apk',
+  'fresh2go-driver-debug.apk',
+]);
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -45,40 +45,77 @@ const MIME = {
   '.webmanifest': 'application/manifest+json',
 };
 
-function githubAuthHeaders() {
-  const token =
+function githubToken() {
+  return (
     process.env.GH_APK_TOKEN ||
     process.env.GITHUB_TOKEN ||
     process.env.GH_TOKEN ||
-    '';
-  if (!token) return {};
-  return {
-    authorization: `Bearer ${token}`,
-    // Required so GitHub returns the asset bytes, not the HTML download page.
-    accept: 'application/octet-stream',
-    'user-agent': 'fresh2go-apk-proxy',
-  };
+    ''
+  );
 }
 
-async function proxyApk(filename, req, res) {
-  const upstream = APK_PROXY[filename];
-  if (!upstream) {
+/** Cache asset id lookups for a few minutes. */
+let assetCache = { at: 0, map: /** @type {Record<string, number>} */ ({}) };
+
+async function resolveAssetId(filename) {
+  const now = Date.now();
+  if (now - assetCache.at < 5 * 60 * 1000 && assetCache.map[filename]) {
+    return assetCache.map[filename];
+  }
+  const token = githubToken();
+  const res = await fetch(
+    `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/tags/${GH_TAG}`,
+    {
+      headers: {
+        accept: 'application/vnd.github+json',
+        authorization: `Bearer ${token}`,
+        'user-agent': 'fresh2go-apk-proxy',
+      },
+    },
+  );
+  if (!res.ok) throw new Error(`release meta ${res.status}`);
+  const data = await res.json();
+  const map = {};
+  for (const a of data.assets || []) {
+    map[a.name] = a.id;
+  }
+  assetCache = { at: now, map };
+  return map[filename] || null;
+}
+
+async function proxyApk(filename, res) {
+  if (!APK_NAMES.has(filename)) {
     res.writeHead(404, { 'content-type': 'text/plain' });
     res.end('unknown apk');
     return;
   }
-  const headers = githubAuthHeaders();
-  if (!headers.authorization) {
-    console.error('APK proxy: set GH_APK_TOKEN (or GITHUB_TOKEN) on Railway so private release assets can be fetched');
+  const token = githubToken();
+  if (!token) {
+    console.error('APK proxy: set GH_APK_TOKEN on Railway');
     res.writeHead(503, { 'content-type': 'text/plain; charset=utf-8' });
     res.end('APK proxy not configured (missing GH_APK_TOKEN)');
     return;
   }
   try {
-    const upstreamRes = await fetch(upstream, {
-      headers,
-      redirect: 'follow',
-    });
+    const assetId = await resolveAssetId(filename);
+    if (!assetId) {
+      res.writeHead(404, { 'content-type': 'text/plain' });
+      res.end('apk not on release');
+      return;
+    }
+    // Private repos: must use the assets API + Accept: application/octet-stream
+    // (browser_download_url returns 404 without a session cookie).
+    const upstreamRes = await fetch(
+      `https://api.github.com/repos/${GH_OWNER}/${GH_REPO}/releases/assets/${assetId}`,
+      {
+        headers: {
+          accept: 'application/octet-stream',
+          authorization: `Bearer ${token}`,
+          'user-agent': 'fresh2go-apk-proxy',
+        },
+        redirect: 'follow',
+      },
+    );
     if (!upstreamRes.ok) {
       console.error('APK proxy upstream', filename, upstreamRes.status);
       res.writeHead(upstreamRes.status === 404 ? 404 : 502, { 'content-type': 'text/plain' });
@@ -111,11 +148,10 @@ const server = http.createServer(async (req, res) => {
     const url = new URL(req.url ?? '/', 'http://internal');
     let pathname = decodeURIComponent(url.pathname);
 
-    // Public APK proxy — QR + download buttons hit /apk/*.apk on this host
     if (pathname.startsWith('/apk/')) {
       const name = pathname.slice('/apk/'.length).replace(/[^a-zA-Z0-9._-]/g, '');
-      if (name.endsWith('.apk') && APK_PROXY[name]) {
-        await proxyApk(name, req, res);
+      if (name.endsWith('.apk')) {
+        await proxyApk(name, res);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain' });
