@@ -13,6 +13,7 @@ import { Loader2, UserCog, Search, KeyRound, Ban, MessageSquare, Mail } from 'lu
 import { useQuery } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { useAuth } from '@/hooks/useAuth';
+import { SITE_ORIGIN } from '@/lib/site';
 
 export default function RemoteUserActions() {
   const { user: me } = useAuth();
@@ -44,15 +45,40 @@ export default function RemoteUserActions() {
 
   const sendPasswordReset = async (user: any) => {
     setBusy(true);
-    await (supabase.rpc as any)('log_admin_action', {
-      p_action: 'password_reset_sent',
-      p_target_type: 'user',
-      p_target_id: user.user_id,
-      p_description: `Έστειλε password reset σε ${user.full_name || user.user_id.slice(0, 8)}`,
-    });
-    setBusy(false);
-    toast.success('Password reset καταγράφηκε στο audit log');
-    setActionDialog(null);
+    try {
+      const redirectTo = `${SITE_ORIGIN.replace(/\/$/, '')}/auth?reset=1`;
+      const { data, error } = await supabase.functions.invoke('admin-send-password-reset', {
+        body: { user_id: user.user_id, redirectTo },
+      });
+      if (error) {
+        toast.error('Αποτυχία password reset: ' + (error.message || 'unknown'));
+        setBusy(false);
+        return;
+      }
+      if (data?.error) {
+        toast.error('Αποτυχία: ' + (data.detail || data.error));
+        setBusy(false);
+        return;
+      }
+
+      await (supabase.rpc as any)('log_admin_action', {
+        p_action: 'password_reset_sent',
+        p_target_type: 'user',
+        p_target_id: user.user_id,
+        p_description: `Έστειλε password reset σε ${user.full_name || user.user_id.slice(0, 8)}${data?.email_masked ? ` (${data.email_masked})` : ''}`,
+      });
+
+      toast.success(
+        data?.email_masked
+          ? `Στάλθηκε επαναφορά σε ${data.email_masked} (email / push OTP)`
+          : 'Στάλθηκε password reset (email / push OTP)',
+      );
+      setActionDialog(null);
+    } catch (e: any) {
+      toast.error(e?.message || 'Σφάλμα δικτύου');
+    } finally {
+      setBusy(false);
+    }
   };
 
   const sendMessage = async (user: any) => {
@@ -60,7 +86,6 @@ export default function RemoteUserActions() {
     if (!msgTitle.trim()) return toast.error('Γράψε τίτλο');
     setBusy(true);
 
-    // Drivers get a real inbox notification; others are audit-logged for now
     if (user.role === 'driver') {
       const { error } = await (supabase as any).from('driver_notifications').insert({
         driver_id: user.user_id,
@@ -217,7 +242,10 @@ export default function RemoteUserActions() {
               </div>
 
               {actionDialog === 'reset' && (
-                <p className="text-sm text-muted-foreground">Ο χρήστης θα λάβει email για να επαναφέρει το password του.</p>
+                <p className="text-sm text-muted-foreground">
+                  Θα σταλεί πραγματικά OTP στο app (push) και recovery link/email αν είναι ρυθμισμένο το mailer.
+                  Ο χρήστης ανοίγει /auth?reset=1 και βάζει τον κωδικό.
+                </p>
               )}
               {actionDialog === 'message' && (
                 <div className="space-y-3">
