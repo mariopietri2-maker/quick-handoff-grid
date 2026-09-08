@@ -12,7 +12,7 @@ export const APK_BUILD_VERSION = '1.0.9051235';
 export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.8.7-fresh2go';
+export const APK_NATIVE_CUSTOMER_VERSION = '2.8.8-fresh2go';
 
 const RELEASE_BASE =
   'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
@@ -34,7 +34,7 @@ export const APK_DOWNLOADS = {
   customerNative: {
     id: 'customerNative' as const,
     title: 'Πελάτης Native',
-    subtitle: 'Καλάθι · Mapbox · FCM',
+    subtitle: 'Καλάθι · Mapbox · FCM · promo carousel',
     filename: 'fresh2go-customer-native-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh2go-customer-native-debug.apk`,
     sizeLabel: '~21 MB',
