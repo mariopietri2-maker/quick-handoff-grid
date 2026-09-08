@@ -22,8 +22,24 @@ export class RouteErrorBoundary extends Component<{ children: ReactNode }, State
       reloadForStaleChunk(error);
       return;
     }
-    // One-shot recovery for known realtime subscribe races after deploys.
+    // Invalid hook call (#321) — usually a stale dual-React bundle after deploy.
+    // One hard reload often recovers; avoid infinite loops via session flag.
     const msg = error?.message ?? '';
+    if (
+      msg.includes('Minified React error #321') ||
+      msg.includes('Invalid hook call') ||
+      msg.includes('error-decoder.html?invariant=321')
+    ) {
+      try {
+        const key = 'fd_hook321_recover';
+        if (!sessionStorage.getItem(key)) {
+          sessionStorage.setItem(key, '1');
+          window.location.reload();
+          return;
+        }
+      } catch { /* ignore */ }
+    }
+    // One-shot recovery for known realtime subscribe races after deploys.
     if (msg.includes("cannot add 'postgres_changes'") || msg.includes('after \'subscribe()\'')) {
       try {
         const key = 'fd_realtime_recover';
