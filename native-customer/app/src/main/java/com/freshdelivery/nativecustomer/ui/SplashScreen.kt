@@ -42,7 +42,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 /**
- * Launch splash — website-style basket logo:
+ * Launch splash — Fresh2GO logo (animated basket brand mark):
  * lid opens, burger / souvlaki / crepe pop up, soft loading dots (no scan bar).
  */
 @Composable

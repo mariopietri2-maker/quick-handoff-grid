@@ -66,7 +66,8 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
 import com.freshdelivery.nativecustomer.ui.theme.FreshRose
 import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 
-private val LoginGradient = Brush.linearGradient(listOf(FreshGreen, FreshViolet))
+private val LoginGradient = Brush.linearGradient(listOf(Color(0xFFF4A125), Color(0xFFFF8A3D), Color(0xFFE94E8F)))
+private val LoginBrandGradient = LoginGradient
 
 @Composable
 fun LoginScreen(
@@ -128,18 +129,12 @@ fun LoginScreen(
     ) {
         Box(
             Modifier
-                .size(72.dp)
-                .shadow(14.dp, CircleShape)
-                .clip(CircleShape)
-                .background(LoginGradient),
+                .size(88.dp)
+                .shadow(18.dp, RoundedCornerShape(22.dp))
+                .clip(RoundedCornerShape(22.dp)),
             contentAlignment = Alignment.Center,
         ) {
-            Icon(
-                Icons.Outlined.Storefront,
-                contentDescription = null,
-                tint = Color.White,
-                modifier = Modifier.size(34.dp),
-            )
+            Fresh2GoBagMark(size = 88.dp)
         }
         Spacer(Modifier.height(18.dp))
         Text(
