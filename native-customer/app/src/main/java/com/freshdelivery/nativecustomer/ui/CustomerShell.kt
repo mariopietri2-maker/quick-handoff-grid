@@ -6,6 +6,13 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.animation.core.FastOutSlowInEasing
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -3124,33 +3131,63 @@ private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
 }
 
 
+
 @Composable
 private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.PromoBanner>) {
     val pagerState = rememberPagerState(pageCount = { promos.size })
     LaunchedEffect(promos.size) {
         if (promos.size <= 1) return@LaunchedEffect
         while (true) {
-            delay(4000)
+            delay(4200)
             val next = (pagerState.currentPage + 1) % promos.size
-            pagerState.animateScrollToPage(next)
+            runCatching { pagerState.animateScrollToPage(next) }
         }
     }
+    val infinite = rememberInfiniteTransition(label = "promoMotion")
+    val sheen by infinite.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(2800, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "sheen",
+    )
+    val bob by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1600, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "bob",
+    )
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth().height(148.dp),
-            pageSpacing = 10.dp,
+            modifier = Modifier.fillMaxWidth().height(156.dp),
+            pageSpacing = 12.dp,
         ) { page ->
             val promo = promos[page]
-            val gradient = if (promo.gradient == "dark") {
-                Brush.linearGradient(listOf(Color(0xFF1E293B), Color(0xFF0F172A)))
-            } else {
-                FreshGradient
+            val gradient = when (promo.gradient) {
+                "dark" -> Brush.linearGradient(
+                    listOf(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF334155)),
+                )
+                else -> Brush.linearGradient(
+                    listOf(Color(0xFFEA580C), Color(0xFFF97316), Color(0xFFFB7185)),
+                )
             }
             Box(
                 Modifier
                     .fillMaxSize()
-                    .shadow(10.dp, RoundedCornerShape(24.dp))
+                    .graphicsLayer {
+                        val offset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        val scale = 1f - (kotlin.math.abs(offset) * 0.06f).coerceIn(0f, 0.12f)
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = 1f - (kotlin.math.abs(offset) * 0.25f).coerceIn(0f, 0.35f)
+                    }
+                    .shadow(14.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
                     .background(gradient),
             ) {
@@ -3162,8 +3199,22 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize(),
                     )
-                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
                 }
+                // animated sheen
+                Box(
+                    Modifier
+                        .fillMaxSize()
+                        .graphicsLayer {
+                            translationX = sheen * size.width * 0.55f
+                            alpha = 0.18f
+                        }
+                        .background(
+                            Brush.horizontalGradient(
+                                listOf(Color.Transparent, Color.White, Color.Transparent),
+                            ),
+                        ),
+                )
                 Row(
                     Modifier.fillMaxSize().padding(18.dp),
                     verticalAlignment = Alignment.CenterVertically,
@@ -3171,20 +3222,26 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                     if (img.isNullOrBlank()) {
                         Box(
                             Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(14.dp))
+                                .size(48.dp)
+                                .graphicsLayer { translationY = (bob - 0.5f) * 8f }
+                                .clip(RoundedCornerShape(16.dp))
                                 .background(Color.White.copy(alpha = 0.22f)),
                             contentAlignment = Alignment.Center,
                         ) {
-                            Icon(Icons.Outlined.LocalOffer, contentDescription = null, tint = Color.White)
+                            Icon(
+                                Icons.Outlined.LocalOffer,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(26.dp),
+                            )
                         }
-                        Spacer(Modifier.width(12.dp))
+                        Spacer(Modifier.width(14.dp))
                     }
                     Column(Modifier.weight(1f)) {
                         if (promo.tag.isNotBlank()) {
                             Text(
                                 promo.tag,
-                                color = Color.White.copy(alpha = 0.85f),
+                                color = Color.White.copy(alpha = 0.9f),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelMedium,
                             )
@@ -3198,18 +3255,25 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                         if (promo.subtitle.isNotBlank()) {
                             Text(
                                 promo.subtitle,
-                                color = Color.White.copy(alpha = 0.9f),
+                                color = Color.White.copy(alpha = 0.92f),
                                 style = MaterialTheme.typography.bodySmall,
                             )
                         }
                         if (promo.code.isNotBlank()) {
-                            Spacer(Modifier.height(6.dp))
-                            Text(
-                                promo.code,
-                                color = Color.White,
-                                fontWeight = FontWeight.ExtraBold,
-                                style = MaterialTheme.typography.labelLarge,
-                            )
+                            Spacer(Modifier.height(8.dp))
+                            Box(
+                                Modifier
+                                    .clip(RoundedCornerShape(8.dp))
+                                    .background(Color.White.copy(alpha = 0.2f))
+                                    .padding(horizontal = 10.dp, vertical = 4.dp),
+                            ) {
+                                Text(
+                                    promo.code,
+                                    color = Color.White,
+                                    fontWeight = FontWeight.ExtraBold,
+                                    style = MaterialTheme.typography.labelLarge,
+                                )
+                            }
                         }
                     }
                 }
@@ -3217,7 +3281,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
         }
         if (promos.size > 1) {
             Row(
-                Modifier.fillMaxWidth().padding(top = 8.dp),
+                Modifier.fillMaxWidth().padding(top = 10.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
                 repeat(promos.size) { i ->
@@ -3225,10 +3289,11 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                     Box(
                         Modifier
                             .padding(horizontal = 3.dp)
-                            .size(if (on) 8.dp else 6.dp)
-                            .clip(CircleShape)
+                            .height(6.dp)
+                            .width(if (on) 18.dp else 6.dp)
+                            .clip(RoundedCornerShape(99.dp))
                             .background(
-                                if (on) FreshGreen else Color.Gray.copy(alpha = 0.35f),
+                                if (on) Color(0xFFEA580C) else Color.Gray.copy(alpha = 0.35f),
                             ),
                     )
                 }

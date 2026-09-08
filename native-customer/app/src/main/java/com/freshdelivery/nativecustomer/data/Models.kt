@@ -150,7 +150,32 @@ data class CustomerAppConfig(
         CategoryTile("Καφές", "☕", "Καφέδες"),
         CategoryTile("Γλυκά", "🍰", "Γλυκά"),
     ),
-    val promos: List<PromoBanner> = emptyList(),
+    val promos: List<PromoBanner> = listOf(
+        PromoBanner(
+            tag = "NEW",
+            title = "Δωρεάν παράδοση",
+            subtitle = "στην πρώτη σου παραγγελία",
+            code = "WELCOME",
+            gradient = "hero",
+            enabled = true,
+        ),
+        PromoBanner(
+            tag = "HOT",
+            title = "Fresh Meals. Fast Delivery.",
+            subtitle = "Ιωάννινα · σε 10–15′",
+            code = "FRESH",
+            gradient = "hero",
+            enabled = true,
+        ),
+        PromoBanner(
+            tag = "OFFER",
+            title = "Προσφορές κάθε μέρα",
+            subtitle = "δες τα καταστήματα με badge",
+            code = "DEALS",
+            gradient = "dark",
+            enabled = true,
+        ),
+    ),
     /** Food-only launch flag: when false, retail verticals (Supermarkets/Καταστήματα/Takeaway) stay hidden. Flip to true when you sign supply. */
     val showRetailVerticals: Boolean = false,
     val games: GameConfig = defaultGameConfig(),
