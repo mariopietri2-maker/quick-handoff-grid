@@ -1,0 +1,23 @@
+name: Apply brand logo login splash
+on:
+  push:
+    paths:
+      - 'scripts/apply_brand_logo_login_splash.py'
+      - 'native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/BrandMark.kt'
+      - '.github/workflows/apply-brand-logo-login-splash.yml'
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/apply_brand_logo_login_splash.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          git commit -m "brand(customer-native): Fresh2GO bag logo on login (+ splash brand mark)" || exit 0
+          git push
