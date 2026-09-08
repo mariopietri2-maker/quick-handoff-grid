@@ -143,6 +143,7 @@ export default function CustomerApp() {
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user, profile } = useAuth();
   const { itemCount } = useCart();
   const { settings: platformSettings } = usePlatformSettings();
@@ -250,24 +251,20 @@ const displayAddress = deliveryAddress
 
   // ── Deep-link sync from URL params ──
   useEffect(() => {
-    const onMount = () => {
-      const searchParams = useSearchParams();
-      const q = searchParams.get('q');
-      const cat = searchParams.get('cat');
-      if (q) {
-        setSearch(q);
-        setDebouncedSearch(q.trim());
-        if (searchTimer.current) clearTimeout(searchTimer.current);
-      }
-      if (cat && cat !== 'all') {
-        setSelectedCategory(cat);
-        window.setTimeout(() => {
-          document.getElementById('browse-categories')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }, 350);
-      }
-    };
-    onMount();
-  }, []);
+    const q = searchParams.get('q');
+    const cat = searchParams.get('cat');
+    if (q) {
+      setSearch(q);
+      setDebouncedSearch(q.trim());
+      if (searchTimer.current) clearTimeout(searchTimer.current);
+    }
+    if (cat && cat !== 'all') {
+      setSelectedCategory(cat);
+      window.setTimeout(() => {
+        document.getElementById('browse-categories')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 350);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     let cancelled = false;
