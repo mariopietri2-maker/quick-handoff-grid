@@ -5,26 +5,38 @@
     android:viewportWidth="108"
     android:viewportHeight="108">
     <!--
-      Static Fresh2GO bag mark (same as web Logo core / favicon).
-      Drawn in adaptive-icon safe zone (~66dp center).
-      Not animated.
+      Fresh2GO bag logo — adaptive safe zone (~center 66dp).
+      White bag + orange fold, matches website mark.
     -->
-    <!-- Bag body -->
+    <!-- Soft white plate behind bag for contrast on any mask -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M36,46h36c3.3,0 6,2.7 6,6v22c0,4.4 -3.6,8 -8,8H38c-4.4,0 -8,-3.6 -8,-8V52c0,-3.3 2.7,-6 6,-6z" />
-    <!-- Handle arch -->
+        android:fillAlpha="0.12"
+        android:pathData="M28,30h52c6,0 10,4 10,10v36c0,6 -4,10 -10,10H28c-6,0 -10,-4 -10,-10V40c0,-6 4,-10 10,-10z" />
+
+    <!-- Handle -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="4.5"
+        android:strokeWidth="5"
         android:strokeLineCap="round"
-        android:pathData="M44,46c0,-8 20,-8 20,0" />
+        android:pathData="M42,48c0,-11 24,-11 24,0" />
+
+    <!-- Bag body -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M34,48h40c4,0 7,3 7,7v24c0,5 -4,9 -9,9H36c-5,0 -9,-4 -9,-9V55c0,-4 3,-7 7,-7z" />
+
     <!-- Fold line -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FF8A3D"
-        android:strokeWidth="3.2"
+        android:strokeWidth="3.5"
         android:strokeLineCap="round"
-        android:pathData="M42,56h24" />
+        android:pathData="M40,60h28" />
+
+    <!-- Small accent dot (brand cue) -->
+    <path
+        android:fillColor="#FF8A3D"
+        android:pathData="M54,72m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
 </vector>

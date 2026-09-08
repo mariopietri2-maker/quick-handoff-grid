@@ -1,4 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
     <color name="ic_launcher_background">#EA580C</color>
+    <color name="brand_orange">#EA580C</color>
+    <color name="brand_pink">#E94E8F</color>
 </resources>
