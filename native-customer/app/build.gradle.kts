@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 271
-        versionName = "2.8.8-fresh2go"
+        versionCode = 272
+        versionName = "2.8.9-fresh2go"
 
         buildConfigField(
             "String",
@@ -35,7 +35,6 @@ android {
     }
 
     buildTypes {
-        // Shared debug keystore — see native-driver for rationale.
         debug {
             signingConfig = signingConfigs.getByName("debug")
         }
