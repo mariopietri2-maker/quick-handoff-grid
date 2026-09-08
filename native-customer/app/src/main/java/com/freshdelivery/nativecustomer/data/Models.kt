@@ -130,7 +130,9 @@ data class PromoBanner(
     val title: String = "",
     val subtitle: String = "",
     val code: String = "",
+    val gradient: String = "hero",
     val enabled: Boolean = true,
+    val imageUrl: String? = null,
 )
 
 data class CustomerAppConfig(

@@ -118,6 +118,21 @@ class CustomerRepository(
                 }
                 return null
             }
+            val promosJson = cfg["promos"]?.jsonArray
+            val promos = promosJson?.mapNotNull { el ->
+                val o = el.jsonObject
+                val enabled = o["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+                if (!enabled) return@mapNotNull null
+                PromoBanner(
+                    tag = o["tag"]?.jsonPrimitive?.contentOrNull.orEmpty().ifBlank { "NEW" },
+                    title = o["title"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    subtitle = o["subtitle"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    code = o["code"]?.jsonPrimitive?.contentOrNull.orEmpty(),
+                    gradient = o["gradient"]?.jsonPrimitive?.contentOrNull ?: "hero",
+                    enabled = true,
+                    imageUrl = o["image_url"]?.jsonPrimitive?.contentOrNull?.takeIf { it.isNotBlank() },
+                )
+            }?.filter { it.title.isNotBlank() }.orEmpty()
             defaults.copy(
                 appName = brandStr("app_name") ?: defaults.appName,
                 cityLabel = brandStr("city_label") ?: defaults.cityLabel,
@@ -126,6 +141,7 @@ class CustomerRepository(
                 showHeaderBrand = branding?.get("show_header_brand")
                     ?.jsonPrimitive?.booleanOrNull ?: true,
                 accentHsl = brandStr("accent_hsl"),
+                promos = promos.ifEmpty { defaults.promos },
                 // Food-only launch: explicit opt-in. Set customer_app_config.published_config
                 // { layout: { show_retail_verticals: true } } when supermarkets go live.
                 showRetailVerticals = layoutBool("show_retail_verticals", "showRetailVerticals") ?: false,

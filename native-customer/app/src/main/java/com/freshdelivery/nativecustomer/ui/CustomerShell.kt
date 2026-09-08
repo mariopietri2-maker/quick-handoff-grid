@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.rememberPagerState
+import kotlinx.coroutines.delay
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
@@ -688,141 +691,12 @@ private fun HomeTab(
             }
         }
 
-        // Phase1: admin appConfig brand / promo / tiles
-        state.appConfig.promos.firstOrNull()?.let { promo ->
-            item {
-                Box(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 6.dp)
-                        .shadow(10.dp, RoundedCornerShape(24.dp))
-                        .clip(RoundedCornerShape(24.dp))
-                        .background(FreshGradient),
-                ) {
-                    Row(Modifier.padding(18.dp), verticalAlignment = Alignment.CenterVertically) {
-                        Box(
-                            Modifier
-                                .size(44.dp)
-                                .clip(RoundedCornerShape(14.dp))
-                                .background(Color.White.copy(alpha = 0.22f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Icon(Icons.Outlined.LocalOffer, contentDescription = null, tint = Color.White)
-                        }
-                        Spacer(Modifier.width(12.dp))
-                        Column(Modifier.weight(1f)) {
-                            Text(
-                                promo.tag,
-                                color = Color.White.copy(alpha = 0.85f),
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.labelMedium,
-                            )
-                            Text(
-                                promo.title,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold,
-                                style = MaterialTheme.typography.titleMedium,
-                            )
-                            Text(
-                                promo.subtitle,
-                                color = Color.White.copy(alpha = 0.8f),
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                        }
-                        if (promo.code.isNotBlank()) {
-                            Surface(
-                                color = Color.White,
-                                shape = RoundedCornerShape(10.dp),
-                            ) {
-                                Text(
-                                    promo.code,
-                                    color = FreshGreenDark,
-                                    fontWeight = FontWeight.Bold,
-                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-                                )
-                            }
-                        }
-                    }
-                }
-            }
-        }
-        item {
-            Row(
-                Modifier
-                    .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(14.dp),
-            ) {
-                val rawTiles = state.appConfig.tiles.ifEmpty {
-                    listOf(
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Φαγητό", "🍔", "all"),
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Πίτσα", "🍕", "Πίτσες"),
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Καφές", "☕", "Καφέδες"),
-                        com.freshdelivery.nativecustomer.data.CategoryTile("Γλυκά", "🍰", "Γλυκά"),
-                    )
-                }
-                // Food-only launch: hide retail verticals until showRetailVerticals=true.
-                val retailLabels = setOf(
-                    "supermarkets", "super-markets", "super markets",
-                    "καταστήματα", "καταστηματα", "takeaway", "take-away",
-                    "mini market", "mini-market", "minimarket",
-                )
-                val tiles = if (state.appConfig.showRetailVerticals) rawTiles
-                else rawTiles.filter { it.label.trim().lowercase() !in retailLabels }
-                tiles.forEach { tile ->
-                    Column(
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(16.dp))
-                            .clickable { onSearch(if (tile.category == "all") "" else tile.category) },
-                    ) {
-                        Box(
-                            Modifier
-                                .size(58.dp)
-                                .shadow(4.dp, CircleShape)
-                                .clip(CircleShape)
-                                .background(Color.White),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(tile.emoji, fontSize = 26.sp)
-                        }
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            tile.label,
-                            style = MaterialTheme.typography.labelMedium,
-                            color = FreshInk,
-                            fontWeight = FontWeight.SemiBold,
-                        )
-                    }
-                }
-            }
-        }
 
-        val recentStores = remember(state.orders, state.stores) {
-            val ids = state.orders.map { it.order.store_id }.distinct().take(8)
-            ids.mapNotNull { id -> state.stores.find { it.id == id } }
-        }
-        if (recentStores.isNotEmpty()) {
-            item {
-                DiscoverSectionHeader(title = "Παράγγειλε ξανά", action = null, onAction = {})
-            }
-            item {
-                Row(
-                    Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    recentStores.forEach { store ->
-                        StoreMiniCard(
-                            store = store,
-                            rating = state.storeRatings[store.id],
-                            deliveryLat = state.deliveryLat,
-                            deliveryLng = state.deliveryLng,
-                            onClick = { onOpenStore(store) },
-                        )
-                    }
-                }
+        // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
+        val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
+        if (enabledPromos.isNotEmpty()) {
+            item(key = "promo-carousel") {
+                PromoCarousel(promos = enabledPromos)
             }
         }
 
@@ -3245,6 +3119,120 @@ private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
                 shape = RoundedCornerShape(12.dp),
                 modifier = Modifier.fillMaxWidth(),
             ) { Text("Υποβολή") }
+        }
+    }
+}
+
+
+@Composable
+private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.PromoBanner>) {
+    val pagerState = rememberPagerState(pageCount = { promos.size })
+    LaunchedEffect(promos.size) {
+        if (promos.size <= 1) return@LaunchedEffect
+        while (true) {
+            delay(4000)
+            val next = (pagerState.currentPage + 1) % promos.size
+            pagerState.animateScrollToPage(next)
+        }
+    }
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+        HorizontalPager(
+            state = pagerState,
+            modifier = Modifier.fillMaxWidth().height(148.dp),
+            pageSpacing = 10.dp,
+        ) { page ->
+            val promo = promos[page]
+            val gradient = if (promo.gradient == "dark") {
+                Brush.linearGradient(listOf(Color(0xFF1E293B), Color(0xFF0F172A)))
+            } else {
+                FreshGradient
+            }
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .shadow(10.dp, RoundedCornerShape(24.dp))
+                    .clip(RoundedCornerShape(24.dp))
+                    .background(gradient),
+            ) {
+                val img = promo.imageUrl
+                if (!img.isNullOrBlank()) {
+                    AsyncImage(
+                        model = img,
+                        contentDescription = null,
+                        contentScale = ContentScale.Crop,
+                        modifier = Modifier.fillMaxSize(),
+                    )
+                    Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.35f)))
+                }
+                Row(
+                    Modifier.fillMaxSize().padding(18.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (img.isNullOrBlank()) {
+                        Box(
+                            Modifier
+                                .size(44.dp)
+                                .clip(RoundedCornerShape(14.dp))
+                                .background(Color.White.copy(alpha = 0.22f)),
+                            contentAlignment = Alignment.Center,
+                        ) {
+                            Icon(Icons.Outlined.LocalOffer, contentDescription = null, tint = Color.White)
+                        }
+                        Spacer(Modifier.width(12.dp))
+                    }
+                    Column(Modifier.weight(1f)) {
+                        if (promo.tag.isNotBlank()) {
+                            Text(
+                                promo.tag,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontWeight = FontWeight.Bold,
+                                style = MaterialTheme.typography.labelMedium,
+                            )
+                        }
+                        Text(
+                            promo.title,
+                            color = Color.White,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.titleMedium,
+                        )
+                        if (promo.subtitle.isNotBlank()) {
+                            Text(
+                                promo.subtitle,
+                                color = Color.White.copy(alpha = 0.9f),
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        if (promo.code.isNotBlank()) {
+                            Spacer(Modifier.height(6.dp))
+                            Text(
+                                promo.code,
+                                color = Color.White,
+                                fontWeight = FontWeight.ExtraBold,
+                                style = MaterialTheme.typography.labelLarge,
+                            )
+                        }
+                    }
+                }
+            }
+        }
+        if (promos.size > 1) {
+            Row(
+                Modifier.fillMaxWidth().padding(top = 8.dp),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                repeat(promos.size) { i ->
+                    val on = pagerState.currentPage == i
+                    Box(
+                        Modifier
+                            .padding(horizontal = 3.dp)
+                            .size(if (on) 8.dp else 6.dp)
+                            .clip(CircleShape)
+                            .background(
+                                if (on) FreshGreen else Color.Gray.copy(alpha = 0.35f),
+                            ),
+                    )
+                }
+            }
         }
     }
 }

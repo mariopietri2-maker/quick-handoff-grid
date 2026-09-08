@@ -326,12 +326,33 @@ export default function CustomerAppCustomization() {
                     <Input placeholder="Κωδικός κουπονιού" value={p.code} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, code: e.target.value }; setDraft({ ...draft, promos }); }} />
                     <Input className="col-span-2" placeholder="Τίτλος" value={p.title} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, title: e.target.value }; setDraft({ ...draft, promos }); }} />
                     <Input className="col-span-2" placeholder="Υπότιτλος" value={p.subtitle} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, subtitle: e.target.value }; setDraft({ ...draft, promos }); }} />
-                    <Input className="col-span-2" placeholder="Εικόνα URL (προαιρετικό)" value={p.image_url ?? ''} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, image_url: e.target.value || null }; setDraft({ ...draft, promos }); }} />
-                    {p.image_url && (
-                      <div className="col-span-2 h-24 rounded-lg overflow-hidden border bg-muted/30">
-                        <img src={p.image_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-                      </div>
-                    )}
+                    <div className="col-span-2 space-y-2" data-promo-upload>
+                      <Label className="text-xs">Εικόνα banner (upload ή URL)</Label>
+                      <Input
+                        type="file"
+                        accept="image/png,image/jpeg,image/webp"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          const ext = file.name.split('.').pop() || 'jpg';
+                          const path = `promo-${Date.now()}-${i}.${ext}`;
+                          const { error: upErr } = await supabase.storage.from('app-branding').upload(path, file, { cacheControl: '3600', upsert: false });
+                          if (upErr) { toast.error('Upload: ' + upErr.message); return; }
+                          const { data: pub } = supabase.storage.from('app-branding').getPublicUrl(path);
+                          const promos = [...draft.promos];
+                          promos[i] = { ...p, image_url: pub.publicUrl };
+                          setDraft({ ...draft, promos });
+                          toast.success('Εικόνα ανέβηκε — Δημοσίευση για live');
+                        }}
+                      />
+                      <Input className="col-span-2" placeholder="ή επικόλλησε URL εικόνας" value={p.image_url ?? ''} onChange={e => { const promos = [...draft.promos]; promos[i] = { ...p, image_url: e.target.value || null }; setDraft({ ...draft, promos }); }} />
+                      {p.image_url && (
+                        <div className="h-24 rounded-lg overflow-hidden border bg-muted/30 relative">
+                          <img src={p.image_url} alt="" className="w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                          <Button size="sm" variant="secondary" className="absolute top-1 right-1 h-7 text-xs" onClick={() => { const promos = [...draft.promos]; promos[i] = { ...p, image_url: null }; setDraft({ ...draft, promos }); }}>Αφαίρεση</Button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
               ))}
