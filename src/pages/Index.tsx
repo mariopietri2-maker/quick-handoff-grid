@@ -54,7 +54,7 @@ function LiveTicker({ items }: { items: string[] }) {
 
 const Index = () => {
   const navigate = useNavigate();
-  const { isAdmin, isSupport } = useAuth();
+  const { user, isAdmin, isSupport } = useAuth();
 
   const [counts, setCounts] = useState({ stores: 0, drivers: 0, orders: 0, rating: 0 });
   const [partners, setPartners] = useState<string[]>([]);
@@ -120,7 +120,7 @@ title="Fresh2GO — Fast Delivery."
               className="hidden md:inline-flex font-heading font-semibold"
               onClick={() => navigate('/auth')}
             >
-              Σύνδεση
+              {user ? 'Κατάλογος μου' : 'Σύνδεση/Εγγραφή'}
             </Button>
             <Button
               size="sm"
