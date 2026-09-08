@@ -180,7 +180,7 @@ class CustomerRepository(
         val full = listOf(
             "id", "name", "address", "latitude", "longitude", "is_active",
             "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
-            "covers_delivery_fee", "delivery_fee", "delivery_free_min",
+            "covers_delivery_fee", "delivery_fee", "delivery_free_min", "min_order_amount",
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
             "fulfilment_mode", "status_override",
         )
@@ -365,7 +365,7 @@ class CustomerRepository(
         val full = listOf(
             "id", "name", "address", "latitude", "longitude", "is_active",
             "image_url", "cover_image_url", "tagline", "promo_badge", "highlight_color",
-            "covers_delivery_fee", "delivery_fee", "delivery_free_min",
+            "covers_delivery_fee", "delivery_fee", "delivery_free_min", "min_order_amount",
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
             "fulfilment_mode", "status_override",
         )

@@ -25,6 +25,7 @@ data class StoreRow(
     val covers_delivery_fee: Boolean? = false,
     val delivery_fee: Double? = null,
     val delivery_free_min: Double? = null,
+    val min_order_amount: Double? = null,
     val prep_buffer_minutes: Int? = 0,
     val busy_mode: Boolean? = false,
     val opening_hours: kotlinx.serialization.json.JsonElement? = null,

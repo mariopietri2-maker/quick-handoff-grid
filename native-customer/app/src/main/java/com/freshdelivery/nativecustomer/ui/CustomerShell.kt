@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 package com.freshdelivery.nativecustomer.ui
 
 import androidx.activity.compose.BackHandler
@@ -105,6 +106,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -3206,7 +3208,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                     Modifier
                         .fillMaxSize()
                         .graphicsLayer {
-                            translationX = sheen * size.width * 0.55f
+                            translationX = sheen * 400f
                             alpha = 0.18f
                         }
                         .background(
