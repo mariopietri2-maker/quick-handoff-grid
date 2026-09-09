@@ -795,7 +795,7 @@ private fun HomeTab(
             if (withOffers.isNotEmpty()) {
                 item {
                     DiscoverSectionHeader(title = "Προσφορές τώρα", action = "Όλες ›") {
-                        filter = HomeFilter.Deals; onSearch("")
+                        applyFilter(HomeFilter.Deals); onSearch("")
                     }
                 }
                 item {
@@ -821,7 +821,7 @@ private fun HomeTab(
             if (freeDelivery.isNotEmpty()) {
                 item {
                     DiscoverSectionHeader(title = "Δωρεάν delivery", action = "Δες τα όλα ›") {
-                        filter = HomeFilter.Deals; onSearch("")
+                        applyFilter(HomeFilter.Deals); onSearch("")
                     }
                 }
                 item {
