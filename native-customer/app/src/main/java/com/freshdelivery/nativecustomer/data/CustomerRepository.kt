@@ -173,8 +173,23 @@ class CustomerRepository(
     suspend fun unsubscribeAll() {
         runCatching { client.realtime.removeAllChannels() }
     }
-    suspend fun upsertPushToken(userId: String, token: String) {}
-        suspend fun searchStores(query: String): List<StoreRow> {
+    suspend fun upsertPushToken(userId: String, token: String) {
+        if (token.isBlank()) return
+        runCatching {
+            client.from("push_tokens").upsert(
+                buildJsonObject {
+                    put("user_id", userId)
+                    put("token", token)
+                    put("platform", "android")
+                    put("app", "customer")
+                }
+            ) {
+                onConflict = "token"
+            }
+        }
+    }
+
+    suspend fun searchStores(query: String): List<StoreRow> {
         val q = query.trim()
         if (q.isEmpty()) return fetchStores()
         val full = listOf(
@@ -474,29 +489,34 @@ class CustomerRepository(
                 }.decodeList<StoreRow>()
         }.getOrThrow()
     }
-    suspend fun fetchStoreRatings(): Map<String, StoreRating> = emptyMap()
     suspend fun fetchStoreRatings(): Map<String, StoreRating> {
         return runCatching {
             client.from("store_ratings_public")
-                .select("store_id, avg_rating, review_count")
-                .order("store_id", Order.ASCENDING)
-                .limit(200L)
+                .select(Columns.list("store_id", "avg_rating", "review_count")) {
+                    order("store_id", Order.ASCENDING)
+                    limit(200L)
+                }
                 .decodeList<StoreRatingRow>()
-                .associateBy { it.store_id to StoreRating(avg = it.avg_rating ?: 0.0, count = it.review_count ?: 0) }
+                .associate { row ->
+                    row.store_id to StoreRating(
+                        avg = row.avg_rating ?: 0.0,
+                        count = row.review_count ?: 0,
+                    )
+                }
         }.getOrDefault(emptyMap())
     }
 
     suspend fun fetchFavoriteStoreIds(userId: String): Set<String> {
         return runCatching {
             client.from("customer_favorites")
-                .select("store_id") {
-                    eq("user_id", userId)
+                .select(Columns.list("store_id")) {
+                    filter { eq("user_id", userId) }
+                    order("created_at", Order.DESCENDING)
+                    limit(1000L)
                 }
-                .order("created_at", Order.DESCENDING)
-                .limit(1000L)
                 .decodeList<FavoriteRow>()
-                .map { it.store_id ?: "" }
-                .filter { it.isNotBlank() }
+                .mapNotNull { it.store_id?.takeIf { id -> id.isNotBlank() } }
+                .toSet()
         }.getOrDefault(emptySet())
     }
 
@@ -508,15 +528,17 @@ class CustomerRepository(
                     put("store_id", storeId)
                     put("menu_item_id", JsonNull)
                 }
-            ) { filter { eq("user_id", userId) } }
+            )
         }
     }
 
     suspend fun removeFavoriteStore(userId: String, storeId: String) {
         runCatching {
             client.from("customer_favorites").delete {
-                eq("user_id", userId)
-                    .and eq("store_id", storeId)
+                filter {
+                    eq("user_id", userId)
+                    eq("store_id", storeId)
+                }
             }
         }
     }
