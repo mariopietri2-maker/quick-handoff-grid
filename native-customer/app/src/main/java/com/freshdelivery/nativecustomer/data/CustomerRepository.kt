@@ -206,7 +206,21 @@ class CustomerRepository(
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
             "fulfilment_mode", "status_override",
         )
+        // Prefer name match; fall back to tagline. Never throw — caller keeps local filter.
         return runCatching {
+            client.from("stores_public")
+                .select(Columns.list(full)) {
+                    filter {
+                        eq("is_active", true)
+                        or {
+                            ilike("name", "%$q%")
+                            ilike("tagline", "%$q%")
+                        }
+                    }
+                    order("name", Order.ASCENDING)
+                    limit(100L)
+                }.decodeList<StoreRow>()
+        }.recoverCatching {
             client.from("stores_public")
                 .select(Columns.list(full)) {
                     filter {
@@ -217,7 +231,6 @@ class CustomerRepository(
                     limit(100L)
                 }.decodeList<StoreRow>()
         }.recoverCatching {
-            // Pre-migration view without delivery_fee/delivery_free_min.
             client.from("stores_public")
                 .select(Columns.list(legacy)) {
                     filter {
@@ -227,7 +240,7 @@ class CustomerRepository(
                     order("name", Order.ASCENDING)
                     limit(100L)
                 }.decodeList<StoreRow>()
-        }.getOrThrow()
+        }.getOrDefault(emptyList())
     }
     suspend fun fetchMenu(storeId: String): List<MenuItemRow> {
         return client.from("menu_items")
