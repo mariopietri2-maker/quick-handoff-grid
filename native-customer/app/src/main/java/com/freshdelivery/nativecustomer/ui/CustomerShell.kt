@@ -382,6 +382,7 @@ fun CustomerShell(
                     onUseLocation = onUseLocation,
                     onTab = onTab,
                     onOpenCart = { onToggleCart(true) },
+                    onToggleFavorite = onToggleFavorite,
                 )
                 CustomerTab.Browse -> BrowseTab(
                     state = state,
@@ -389,6 +390,7 @@ fun CustomerShell(
                     onOpenStore = onOpenStore,
                     onBackToHome = { onTab(CustomerTab.Home) },
                     onOpenCart = { onToggleCart(true) },
+                    onToggleFavorite = onToggleFavorite,
                 )
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview, onBackToHome = { onTab(CustomerTab.Home) })
                 CustomerTab.Track -> TrackTab(state)
@@ -547,6 +549,7 @@ private fun HomeTab(
     onUseLocation: () -> Unit = {},
     onTab: (com.freshdelivery.nativecustomer.data.CustomerTab) -> Unit = {},
     onOpenCart: () -> Unit = {},
+    onToggleFavorite: (String) -> Unit = {},
 ) {
     var filter by remember {
         mutableStateOf(
@@ -984,6 +987,7 @@ private fun HomeTab(
                 deliveryLat = state.deliveryLat,
                 deliveryLng = state.deliveryLng,
                 onClick = { onOpenStore(store) },
+                onToggleFavorite = { onToggleFavorite(store.id) },
             )
         }
     }
@@ -1101,6 +1105,7 @@ private fun FreshStoreCard(
     isFavorite: Boolean = false,
     deliveryLat: Double? = null,
     deliveryLng: Double? = null,
+    onToggleFavorite: (() -> Unit)? = null,
 ) {
     val openNow = isStoreOpenNow(store)
     val active = store.is_active != false
@@ -1152,16 +1157,21 @@ private fun FreshStoreCard(
                 shape = RoundedCornerShape(10.dp),
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(10.dp),
+                    .padding(10.dp)
+                    .then(
+                        if (onToggleFavorite != null) {
+                            Modifier.clickable(
+                                onClick = { onToggleFavorite.invoke() },
+                            )
+                        } else Modifier
+                    ),
             ) {
-                if (isFavorite) {
-                    Icon(
-                        Icons.Filled.Favorite,
-                        contentDescription = null,
-                        tint = FreshRose,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
-                    )
-                }
+                Icon(
+                    if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                    contentDescription = if (isFavorite) "Αφαίρεση αγαπημένου" else "Προσθήκη αγαπημένου",
+                    tint = if (isFavorite) FreshRose else FreshMuted,
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 6.dp),
+                )
             }
             val badge = store.promo_badge?.trim().orEmpty()
             if (badge.isNotEmpty()) {
@@ -2458,6 +2468,7 @@ private fun BrowseTab(
     onOpenStore: (StoreRow) -> Unit,
     onBackToHome: () -> Unit,
     onOpenCart: () -> Unit,
+    onToggleFavorite: (String) -> Unit = {},
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember {
@@ -2741,6 +2752,7 @@ private fun BrowseTab(
                             if (query.isNotBlank()) pushRecent(query)
                             onOpenStore(store)
                         },
+                        onToggleFavorite = { onToggleFavorite(store.id) },
                     )
                 }
             }
@@ -3309,7 +3321,15 @@ private fun ProfileTab(
             style = MaterialTheme.typography.bodySmall,
             modifier = Modifier.fillMaxWidth(),
         )
-        Spacer(Modifier.height(16.dp))
+        Spacer(Modifier.height(20.dp))
+        Text(
+            "Fresh2GO · v${com.freshdelivery.nativecustomer.BuildConfig.VERSION_NAME}",
+            color = FreshMuted,
+            style = MaterialTheme.typography.labelMedium,
+            modifier = Modifier.fillMaxWidth(),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Spacer(Modifier.height(8.dp))
     }
 }
 
