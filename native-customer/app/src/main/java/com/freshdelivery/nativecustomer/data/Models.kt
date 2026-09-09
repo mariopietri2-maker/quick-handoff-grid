@@ -29,7 +29,373 @@ data class StoreRow(
     val prep_buffer_minutes: Int? = 0,
     val busy_mode: Boolean? = false,
     val opening_hours: kotlinx.serialization.json.JsonElement? = null,
-    val holiday_dates: List[String]? = null,
+    val holiday_dates: List<String>? = null,
     val fulfilment_mode: String? = "platform",
     val status_override: String? = null,
 )
+
+@Serializable
+data class MenuItemRow(
+    val id: String,
+    val store_id: String,
+    val name: String,
+    val price: Double,
+    val description: String? = null,
+    val category: String? = null,
+    val is_available: Boolean? = true,
+    val image_url: String? = null,
+)
+
+@Serializable
+data class MenuModifierRow(
+    val id: String,
+    val menu_item_id: String,
+    val group_name: String,
+    val option_name: String,
+    val price_delta: Double = 0.0,
+    val is_required: Boolean = false,
+    val is_multi: Boolean = false,
+    val sort_order: Int = 0,
+)
+
+data class CartLine(
+    val menuItemId: String,
+    val name: String,
+    val price: Double,
+    val quantity: Int,
+    /** Human-readable selected options (shown to kitchen via notes / name suffix). */
+    val modifierLabel: String = "",
+    val selectedModifierIds: List<String> = emptyList(),
+)
+
+@Serializable
+data class OrderRow(
+    val id: String,
+    val store_id: String,
+    val status: String,
+    val delivery_address: String? = null,
+    val delivery_latitude: Double? = null,
+    val delivery_longitude: Double? = null,
+    val total_amount: Double? = null,
+    val driver_id: String? = null,
+    val created_at: String? = null,
+    val store_order_number: Int? = null,
+)
+
+@Serializable
+data class DriverLocationRow(
+    val driver_id: String,
+    val latitude: Double,
+    val longitude: Double,
+    val updated_at: String? = null,
+)
+
+@Serializable
+data class ProfileRow(
+    val id: String,
+    val full_name: String? = null,
+    val phone: String? = null,
+)
+
+@Serializable
+data class PushTokenUpsert(
+    val user_id: String,
+    val token: String,
+    val platform: String = "android",
+    val app: String = "customer",
+)
+
+@Serializable
+data class PlatformFees(
+    val platform_service_fee: Double? = 0.99,
+    val customer_base_fee: Double? = null,
+    val customer_per_km_fee: Double? = null,
+)
+
+data class OrderUi(
+    val order: OrderRow,
+    val storeName: String?,
+    val storeLat: Double? = null,
+    val storeLng: Double? = null,
+)
+
+/** Mirrors web customer_app_config.published_config (Capacitor admin branding). */
+data class CategoryTile(
+    val label: String,
+    val emoji: String,
+    val category: String = "all",
+)
+
+data class PromoBanner(
+    val tag: String = "NEW",
+    val title: String = "",
+    val subtitle: String = "",
+    val code: String = "",
+    val gradient: String = "hero",
+    val enabled: Boolean = true,
+    val imageUrl: String? = null,
+)
+
+data class CustomerAppConfig(
+    val appName: String = "fresh2go",
+    val cityLabel: String = "Ιωάννινα",
+    val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
+    val logoUrl: String? = null,
+    /** Show logo/wordmark chip in the home header (web `branding.show_header_brand`). */
+    val showHeaderBrand: Boolean = true,
+    /** Brand accent as CSS HSL triplet, e.g. "218 78% 48%" (web `branding.accent_hsl`). */
+    val accentHsl: String? = null,
+    val tiles: List<CategoryTile> = listOf(
+        CategoryTile("Φαγητό", "🍔", "all"),
+        CategoryTile("Πίτσα", "🍕", "Πίτσες"),
+        CategoryTile("Καφές", "☕", "Καφέδες"),
+        CategoryTile("Γλυκά", "🍰", "Γλυκά"),
+    ),
+    val promos: List<PromoBanner> = listOf(
+        PromoBanner(
+            tag = "1+1",
+            title = "Pizza Pan · 1+1",
+            subtitle = "Αγόρασε 1 πάρε 1 δώρο",
+            code = "PIZZAPAN",
+            gradient = "hero",
+            enabled = true,
+        ),
+        PromoBanner(
+            tag = "HOT",
+            title = "Fresh Meals. Fast Delivery.",
+            subtitle = "Ιωάννινα · φρέσκο & γρήγορα",
+            code = "FRESH",
+            gradient = "hero",
+            enabled = true,
+        ),
+        PromoBanner(
+            tag = "OFFER",
+            title = "Προσφορές κάθε μέρα",
+            subtitle = "δες τα καταστήματα με badge",
+            code = "DEALS",
+            gradient = "dark",
+            enabled = true,
+        ),
+        PromoBanner(
+            tag = "NEW",
+            title = "Νέα καταστήματα",
+            subtitle = "ανακάλυψε τι υπάρχει κοντά σου",
+            code = "DISCOVER",
+            gradient = "dark",
+            enabled = true,
+        ),
+    ),
+    /** Food-only launch flag: when false, retail verticals (Supermarkets/Καταστήματα/Takeaway) stay hidden. Flip to true when you sign supply. */
+    val showRetailVerticals: Boolean = false,
+    val games: GameConfig = defaultGameConfig(),
+)
+
+@Serializable
+data class CustomerAppConfigRow(
+    val published_config: JsonElement? = null,
+)
+
+/** Next-wave: public store ratings (view or table). */
+@Serializable
+data class StoreRatingRow(
+    val store_id: String,
+    val avg_rating: Double? = 0.0,
+    val review_count: Int? = 0,
+)
+
+data class StoreRating(val avg: Double = 0.0, val count: Int = 0)
+
+@Serializable
+data class FavoriteRow(
+    val id: String = "",
+    val store_id: String? = null,
+    val menu_item_id: String? = null,
+)
+
+@Serializable
+data class CustomerWalletRow(
+    val balance: Double? = 0.0,
+    val lifetime_credit: Double? = 0.0,
+)
+
+@Serializable
+data class CustomerWalletLedgerRow(
+    val id: String,
+    val amount: Double,
+    val type: String? = null,
+    val description: String? = null,
+    val created_at: String? = null,
+)
+
+/** One segment of the lucky discount wheel (mirrors web WHEEL_SEGS). */
+data class WheelSegment(
+    val label: String,
+    val sub: String,
+    val color: Long,
+    val pct: Int? = null,
+    val freeDelivery: Boolean = false,
+)
+
+/** Fixed 6-segment wheel. Order matches the web conic-gradient. */
+val WHEEL_SEGMENTS: List<WheelSegment> = listOf(
+    WheelSegment("10%", "FRESH10", 0xFFF97316, pct = 10),
+    WheelSegment("15%", "FRESH15", 0xFFEA580C, pct = 15),
+    WheelSegment("20%", "FRESH20", 0xFFFF8A3D, pct = 20),
+    WheelSegment("ΔΩΡΕΑΝ", "ΠΑΡΑΔΟΣΗ", 0xFFC2410C, freeDelivery = true),
+    WheelSegment("25%", "FRESH25", 0xFFF4A125, pct = 25),
+    WheelSegment("5%", "FRESH5", 0xFFFFB03A, pct = 5),
+)
+
+/** Result of a finished wheel spin (what the user sees in the banner). */
+data class GamePrize(
+    val label: String,
+    val code: String,
+    val pct: Int? = null,
+    val freeDelivery: Boolean = false,
+)
+
+/** Discount that has been applied to the cart until the game cycle resets. */
+data class GameDeal(
+    val code: String,
+    val pct: Int? = null,
+    val freeDelivery: Boolean = false,
+    val label: String,
+)
+
+/** A mystery card as configured by the admin panel. */
+data class MysteryCardDef(
+    val tag: String,
+    val name: String,
+    val prize: String,
+    val enabled: Boolean = true,
+)
+
+fun defaultMysteryCards(): List<MysteryCardDef> = listOf(
+    MysteryCardDef("A", "Μυστική κάρτα 1", "10% έκπτωση"),
+    MysteryCardDef("B", "Μυστική κάρτα 2", "Δωρεάν παράδοση"),
+    MysteryCardDef("C", "Μυστική κάρτα 3", "15% έκπτωση"),
+)
+
+/** Games section of the published customer_app_config (mirrors web `games`). */
+data class GameConfig(
+    val enabled: Boolean = true,
+    val active: String = "wheel",
+    val wheelSegments: List<WheelSegment> = WHEEL_SEGMENTS,
+    val cards: List<MysteryCardDef> = defaultMysteryCards(),
+)
+
+fun defaultGameConfig(): GameConfig = GameConfig()
+
+/** Parse a "#RRGGBB" / "0xFFRRGGBB" hex color into a packed ARGB Long. */
+fun parseSegmentColor(hex: String?): Long {
+    if (hex.isNullOrBlank()) return 0xFFEA580CL
+    val h = hex.removePrefix("#").removePrefix("0x")
+    val v = h.toLongOrNull(16) ?: return 0xFFEA580CL
+    return if (h.length <= 6) 0xFF000000L or v else v
+}
+
+/** One message in the customer's live support chat channel (live_chat_messages). */
+@Serializable
+data class LiveChatMessageRow(
+    val id: String = "",
+    val customer_id: String? = null,
+    val order_id: String? = null,
+    val sender_id: String? = null,
+    val sender_role: String? = null,
+    val topic: String? = null,
+    val message: String? = null,
+    val created_at: String? = null,
+)
+
+/** The customer's live chat session (live_chat_sessions) — only support can close it. */
+@Serializable
+data class LiveChatSessionRow(
+    val id: String? = null,
+    val status: String? = "open",
+    val topic: String? = null,
+    val closed_at: String? = null,
+)
+
+/** A customer support ticket (support_tickets) — the non-urgent async queue. */
+@Serializable
+data class SupportTicketRow(
+    val id: String = "",
+    val category: String? = null,
+    val description: String? = null,
+    val status: String? = "open",
+    val created_at: String? = null,
+    val order_id: String? = null,
+)
+
+/** One message in a ticket thread (ticket_messages). */
+@Serializable
+data class TicketMessageRow(
+    val id: String = "",
+    val ticket_id: String? = null,
+    val sender_id: String? = null,
+    val sender_role: String? = null,
+    val message: String? = null,
+    val created_at: String? = null,
+)
+
+/** Row from the shared `suggest_cached_addresses` RPC (cross-customer geocode cache). */
+@Serializable
+data class CachedSuggestionRow(
+    val display_address: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+)
+
+/** A personally saved delivery address (saved_addresses). */
+@Serializable
+data class SavedAddressRow(
+    val id: String,
+    val label: String? = null,
+    val address: String,
+    val latitude: Double? = null,
+    val longitude: Double? = null,
+    val is_default: Boolean? = false,
+)
+
+/**
+ * Streak loyalty status returned by the `get_loyalty_status` RPC
+ * (customer_rewards + streak_milestones). Mirrors the web RewardsCard.
+ */
+@Serializable
+data class LoyaltyStatus(
+    val points: Long = 0,
+    val tier: String = "bronze",
+    val lifetime_points: Long = 0,
+    val current_streak: Int = 0,
+    val best_streak: Int = 0,
+    val streak_last_delivered: String? = null,
+    val next_milestone_day: Int = 3,
+    val next_milestone_bonus: Int = 50,
+    val next_milestone_label: String = "Ember",
+    val is_at_milestone: Boolean = false,
+) {
+    companion object {
+        /** Defensive parse of the RPC's JSONB object (handles missing/malformed fields). */
+        fun fromJson(el: JsonElement): LoyaltyStatus {
+            val obj = el.jsonObject
+            fun str(key: String): String? = obj[key].orNull()?.jsonPrimitive?.contentOrNull
+            fun longValue(key: String): Long? = str(key)?.toLongOrNull()
+            fun intValue(key: String): Int? = str(key)?.toIntOrNull()
+            fun boolValue(key: String): Boolean? = str(key)?.toBooleanStrictOrNull()
+            return LoyaltyStatus(
+                points = longValue("points") ?: 0,
+                tier = str("tier") ?: "bronze",
+                lifetime_points = longValue("lifetime_points") ?: 0,
+                current_streak = intValue("current_streak") ?: 0,
+                best_streak = intValue("best_streak") ?: 0,
+                streak_last_delivered = str("streak_last_delivered"),
+                next_milestone_day = intValue("next_milestone_day") ?: 3,
+                next_milestone_bonus = intValue("next_milestone_bonus") ?: 50,
+                next_milestone_label = str("next_milestone_label") ?: "Ember",
+                is_at_milestone = boolValue("is_at_milestone") ?: false,
+            )
+        }
+
+        private fun JsonElement?.orNull(): JsonElement? = this?.takeIf { it !is kotlinx.serialization.json.JsonNull }
+    }
+}
