@@ -62,6 +62,8 @@ import androidx.compose.material.icons.outlined.Remove
 import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.RestaurantMenu
 import androidx.compose.material.icons.outlined.Search
+import androidx.compose.material.icons.outlined.SearchOff
+import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.ShoppingBag
 import androidx.compose.material.icons.outlined.Star
 import androidx.compose.material.icons.outlined.Store
@@ -379,15 +381,11 @@ fun CustomerShell(
                     onTab = onTab,
                     onOpenCart = { onToggleCart(true) },
                 )
-                CustomerTab.Browse -> HomeTab(
-                    state, onOpenStore, onSearch,
-                    browseMode = true,
-                    onSpinWheel = onSpinWheel,
-                    onOpenCard = onOpenCard,
-                    onToggleAdmin = { onToggleAdmin(true) },
-                    onEditAddress = { addressOpen = true; onClearSuggestions() },
-                    onUseLocation = onUseLocation,
-                    onTab = onTab,
+                CustomerTab.Browse -> BrowseTab(
+                    state = state,
+                    onSearch = onSearch,
+                    onOpenStore = onOpenStore,
+                    onBackToHome = { onTab(CustomerTab.Home) },
                     onOpenCart = { onToggleCart(true) },
                 )
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview, onBackToHome = { onTab(CustomerTab.Home) })
@@ -2357,6 +2355,339 @@ private fun StatusPill(status: String) {
 }
 
 @Composable
+
+private data class BrowseCategory(
+    val id: String,
+    val label: String,
+    val emoji: String,
+    val keywords: List<String>,
+)
+
+private val BROWSE_CATEGORIES = listOf(
+    BrowseCategory("pizza", "Πίτσα", "🍕", listOf("πίτσα", "πιτσα", "pizza", "pan")),
+    BrowseCategory("souvlaki", "Σουβλάκι", "🥙", listOf("σουβλ", "souvl", "γύρο", "gyro", "kebab")),
+    BrowseCategory("burger", "Burger", "🍔", listOf("burger", "μπέργκερ", "μπεργκερ", "hamburger")),
+    BrowseCategory("crepe", "Κρέπες", "🥞", listOf("κρέπ", "κρεπ", "crepe", "crêpe")),
+    BrowseCategory("coffee", "Καφές", "☕", listOf("καφέ", "καφε", "coffee", "espresso", "freddo")),
+    BrowseCategory("sweet", "Γλυκά", "🍰", listOf("γλυκ", "sweet", "dessert", "παγωτ", "cake")),
+    BrowseCategory("healthy", "Υγιεινά", "🥗", listOf("υγιειν", "salad", "σαλάτ", "healthy", "bowl")),
+    BrowseCategory("asian", "Ασιατικό", "🍜", listOf("ασιατ", "sushi", "σουσι", "noodles", "wok", "asian")),
+    BrowseCategory("italian", "Ιταλικό", "🍝", listOf("ιταλικ", "pasta", "pasta", "italian", "risotto")),
+    BrowseCategory("chicken", "Κοτόπουλο", "🍗", listOf("κοτόπ", "κοτοπ", "chicken", "σχάρας")),
+)
+
+private val POPULAR_SEARCH_TERMS = listOf(
+    "Πίτσα", "Σουβλάκι", "Burger", "Κρέπα", "Καφές", "Γλυκά", "Σαλάτα", "Sushi",
+)
+
+private fun storeMatchesBrowseQuery(store: StoreRow, query: String): Boolean {
+    if (query.isBlank()) return true
+    val hay = listOfNotNull(store.name, store.tagline, store.promo_badge, store.address)
+        .joinToString(" ")
+        .lowercase()
+    return query.lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }.all { hay.contains(it) }
+}
+
+private fun storeMatchesCategory(store: StoreRow, cat: BrowseCategory): Boolean {
+    val hay = listOfNotNull(store.name, store.tagline, store.promo_badge)
+        .joinToString(" ")
+        .lowercase()
+    return cat.keywords.any { hay.contains(it) }
+}
+
+@Composable
+private fun BrowseTab(
+    state: CustomerUiState,
+    onSearch: (String) -> Unit,
+    onOpenStore: (StoreRow) -> Unit,
+    onBackToHome: () -> Unit,
+    onOpenCart: () -> Unit,
+) {
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val prefs = remember {
+        context.getSharedPreferences("fresh_customer", android.content.Context.MODE_PRIVATE)
+    }
+    var recent by remember {
+        mutableStateOf(
+            prefs.getString("recent_searches", "")
+                ?.split("|")
+                ?.map { it.trim() }
+                ?.filter { it.isNotEmpty() }
+                ?.take(8)
+                ?: emptyList(),
+        )
+    }
+    var selectedCategoryId by remember { mutableStateOf<String?>(null) }
+    val selectedCategory = BROWSE_CATEGORIES.firstOrNull { it.id == selectedCategoryId }
+    val query = state.searchQuery
+    val showingResults = query.isNotBlank() || selectedCategory != null
+
+    fun pushRecent(term: String) {
+        val t = term.trim()
+        if (t.isEmpty()) return
+        val next = (listOf(t) + recent.filter { !it.equals(t, ignoreCase = true) }).take(8)
+        recent = next
+        prefs.edit().putString("recent_searches", next.joinToString("|")).apply()
+    }
+
+    fun applySearch(term: String) {
+        selectedCategoryId = null
+        onSearch(term)
+        if (term.isNotBlank()) pushRecent(term)
+    }
+
+    val results = remember(state.stores, state.visibleStores, query, selectedCategoryId) {
+        val base = if (query.isNotBlank()) state.stores else state.visibleStores.ifEmpty { state.stores }
+        when {
+            selectedCategory != null -> base.filter { storeMatchesCategory(it, selectedCategory) }
+            query.isNotBlank() -> base.filter { storeMatchesBrowseQuery(it, query) }
+            else -> emptyList()
+        }
+    }
+
+    LazyColumn(
+        Modifier
+            .fillMaxSize()
+            .background(FreshBg),
+        contentPadding = PaddingValues(bottom = 28.dp),
+    ) {
+        item {
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .statusBarsPadding()
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 8.dp, bottom = 4.dp),
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    IconButton(
+                        onClick = onBackToHome,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.White)
+                            .shadow(3.dp, RoundedCornerShape(14.dp)),
+                    ) {
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Αρχική", tint = FreshInk)
+                    }
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        "Αναζήτηση",
+                        style = MaterialTheme.typography.headlineMedium,
+                        modifier = Modifier.weight(1f),
+                    )
+                    if (state.cartCount > 0) {
+                        IconButton(onClick = onOpenCart) {
+                            Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
+                        }
+                    }
+                }
+                Spacer(Modifier.height(12.dp))
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .shadow(4.dp, RoundedCornerShape(18.dp))
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(Color.White),
+                ) {
+                    OutlinedTextField(
+                        value = state.searchQuery,
+                        onValueChange = {
+                            selectedCategoryId = null
+                            onSearch(it)
+                        },
+                        singleLine = true,
+                        placeholder = { Text("Κατάστημα, πίτσα, σουβλάκι…", color = FreshMuted) },
+                        leadingIcon = {
+                            Icon(Icons.Outlined.Search, contentDescription = null, tint = FreshMuted)
+                        },
+                        trailingIcon = if (state.searchQuery.isNotEmpty() || selectedCategory != null) {
+                            {
+                                IconButton(onClick = {
+                                    selectedCategoryId = null
+                                    onSearch("")
+                                }) {
+                                    Icon(Icons.Outlined.Close, contentDescription = "Clear", tint = FreshMuted)
+                                }
+                            }
+                        } else null,
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(18.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            unfocusedContainerColor = Color.Transparent,
+                            focusedContainerColor = Color.Transparent,
+                            unfocusedBorderColor = Color.Transparent,
+                            focusedBorderColor = Color.Transparent,
+                            cursorColor = FreshGreen,
+                        ),
+                    )
+                }
+            }
+        }
+
+        if (!showingResults) {
+            if (recent.isNotEmpty()) {
+                item {
+                    Text(
+                        "Πρόσφατες",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
+                item {
+                    Row(
+                        Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        recent.forEach { term ->
+                            FilterChip(
+                                selected = false,
+                                onClick = { applySearch(term) },
+                                label = { Text(term) },
+                                leadingIcon = {
+                                    Icon(Icons.Outlined.History, contentDescription = null, modifier = Modifier.size(16.dp))
+                                },
+                                shape = RoundedCornerShape(14.dp),
+                            )
+                        }
+                    }
+                }
+            }
+            item {
+                Text(
+                    "Δημοφιλή",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 14.dp, bottom = 8.dp),
+                )
+            }
+            item {
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    POPULAR_SEARCH_TERMS.forEach { term ->
+                        FilterChip(
+                            selected = false,
+                            onClick = { applySearch(term) },
+                            label = { Text(term, fontWeight = FontWeight.Medium) },
+                            shape = RoundedCornerShape(14.dp),
+                            colors = FilterChipDefaults.filterChipColors(
+                                containerColor = FreshGreenSoft.copy(alpha = 0.55f),
+                            ),
+                        )
+                    }
+                }
+            }
+            item {
+                Text(
+                    "Κατηγορίες",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.Bold,
+                    modifier = Modifier.padding(horizontal = 16.dp).padding(top = 18.dp, bottom = 10.dp),
+                )
+            }
+            item {
+                val rows = BROWSE_CATEGORIES.chunked(2)
+                Column(
+                    Modifier.padding(horizontal = 16.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    rows.forEach { row ->
+                        Row(
+                            Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        ) {
+                            row.forEach { cat ->
+                                Surface(
+                                    onClick = {
+                                        onSearch("")
+                                        selectedCategoryId = cat.id
+                                    },
+                                    color = Color.White,
+                                    shape = RoundedCornerShape(18.dp),
+                                    shadowElevation = 3.dp,
+                                    modifier = Modifier.weight(1f),
+                                ) {
+                                    Row(
+                                        Modifier.padding(horizontal = 14.dp, vertical = 16.dp),
+                                        verticalAlignment = Alignment.CenterVertically,
+                                    ) {
+                                        Text(cat.emoji, style = MaterialTheme.typography.titleLarge)
+                                        Spacer(Modifier.width(10.dp))
+                                        Text(cat.label, fontWeight = FontWeight.SemiBold, color = FreshInk)
+                                    }
+                                }
+                            }
+                            if (row.size == 1) Spacer(Modifier.weight(1f))
+                        }
+                    }
+                }
+            }
+        } else {
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 10.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        when {
+                            selectedCategory != null -> "${selectedCategory.emoji} ${selectedCategory.label}"
+                            else -> "Αποτελέσματα"
+                        },
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.weight(1f),
+                    )
+                    Text(
+                        "${results.size}",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.labelLarge,
+                    )
+                }
+            }
+            if (results.isEmpty()) {
+                item {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(Icons.Outlined.SearchOff, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(40.dp))
+                        Spacer(Modifier.height(10.dp))
+                        Text("Δεν βρέθηκαν καταστήματα.", color = FreshMuted)
+                    }
+                }
+            } else {
+                items(results, key = { it.id }) { store ->
+                    FreshStoreCard(
+                        store = store,
+                        rating = state.storeRatings[store.id],
+                        isFavorite = state.favoriteStoreIds.contains(store.id),
+                        deliveryLat = state.deliveryLat,
+                        deliveryLng = state.deliveryLng,
+                        onClick = {
+                            if (query.isNotBlank()) pushRecent(query)
+                            onOpenStore(store)
+                        },
+                    )
+                }
+            }
+        }
+    }
+}
+
 private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
