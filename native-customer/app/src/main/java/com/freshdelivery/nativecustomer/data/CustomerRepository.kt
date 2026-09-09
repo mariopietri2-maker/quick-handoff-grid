@@ -206,8 +206,8 @@ class CustomerRepository(
             "prep_buffer_minutes", "busy_mode", "opening_hours", "holiday_dates",
             "fulfilment_mode", "status_override",
         )
-        // Prefer name match; fall back to tagline. Never throw — caller keeps local filter.
-        return runCatching {
+        // 1) Stores by name / tagline
+        val byName = runCatching {
             client.from("stores_public")
                 .select(Columns.list(full)) {
                     filter {
@@ -241,7 +241,56 @@ class CustomerRepository(
                     limit(100L)
                 }.decodeList<StoreRow>()
         }.getOrDefault(emptyList())
+
+        // 2) Stores that sell a matching menu item (dish search)
+        val menuStoreIds = runCatching {
+            client.from("menu_items")
+                .select(Columns.list("store_id")) {
+                    filter {
+                        eq("is_available", true)
+                        ilike("name", "%$q%")
+                    }
+                    limit(80L)
+                }.decodeList<kotlinx.serialization.json.JsonObject>()
+                .mapNotNull { it["store_id"]?.jsonPrimitive?.contentOrNull }
+                .distinct()
+        }.getOrDefault(emptyList())
+
+        val byMenu = if (menuStoreIds.isEmpty()) {
+            emptyList()
+        } else {
+            runCatching {
+                client.from("stores_public")
+                    .select(Columns.list(full)) {
+                        filter {
+                            eq("is_active", true)
+                            isIn("id", menuStoreIds)
+                        }
+                        order("name", Order.ASCENDING)
+                        limit(100L)
+                    }.decodeList<StoreRow>()
+            }.recoverCatching {
+                client.from("stores_public")
+                    .select(Columns.list(legacy)) {
+                        filter {
+                            eq("is_active", true)
+                            isIn("id", menuStoreIds)
+                        }
+                        order("name", Order.ASCENDING)
+                        limit(100L)
+                    }.decodeList<StoreRow>()
+            }.getOrDefault(emptyList())
+        }
+
+        // Name hits first, then menu-only stores
+        val seen = linkedSetOf<String>()
+        val merged = mutableListOf<StoreRow>()
+        for (s in byName + byMenu) {
+            if (seen.add(s.id)) merged.add(s)
+        }
+        return merged
     }
+
     suspend fun fetchMenu(storeId: String): List<MenuItemRow> {
         return client.from("menu_items")
             .select(Columns.list(
