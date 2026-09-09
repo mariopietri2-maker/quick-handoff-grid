@@ -281,7 +281,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             )
             recomputeDeliveryFee()
         }
-        refreshFavorites()
+        runCatching { refreshFavorites() }
         runCatching {
             val cfg = repo.fetchAppConfig()
             _state.value = _state.value.copy(appConfig = cfg).applyGameConfig(cfg.games)
@@ -290,11 +290,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { repo.canManageGames() }
                 .onSuccess { can -> _state.value = _state.value.copy(canManageGames = can) }
         }
-        registerFcm(userId)
-        refreshAll()
-        startRealtime(userId)
-        startPolling()
-        startGameTicker()
+        runCatching { registerFcm(userId) }
+        // Never let post-login data load take down the session.
+        runCatching { refreshAll() }
+        runCatching { startRealtime(userId) }
+        runCatching { startPolling() }
+        runCatching { startGameTicker() }
     }
 
     private fun startRealtime(userId: String) {
