@@ -31,6 +31,8 @@ import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.delay
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
@@ -569,11 +571,32 @@ private fun HomeTab(
             HomeFilter.Open -> open
             HomeFilter.Near -> near
             HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }
-            HomeFilter.Deals -> base.filter { !it.promo_badge.isNullOrBlank() || it.covers_delivery_fee == true }
+            // Promo badge, free delivery, or any visible discount tag.
+            HomeFilter.Deals -> base.filter {
+                !it.promo_badge.isNullOrBlank() ||
+                    it.covers_delivery_fee == true ||
+                    (it.delivery_fee != null && it.delivery_fee <= 0.0)
+            }
+        }
+    }
+    val listState = rememberLazyListState()
+    val scope = rememberCoroutineScope()
+    // Discovery rails only on the default "Όλα" feed — chips jump straight to the store list.
+    val showDiscovery = filter == HomeFilter.All && state.searchQuery.isBlank()
+
+    fun applyFilter(next: HomeFilter) {
+        filter = next
+        scope.launch {
+            // Let the list recompose without discovery rails, then pin the store section under the chips.
+            kotlinx.coroutines.delay(80)
+            // item 0 = top header, item 1 = filter chips, item 2 = store-list-header when discovery is hidden
+            val target = if (showDiscovery && next == HomeFilter.All) 2 else 2
+            runCatching { listState.animateScrollToItem(target) }
         }
     }
 
     LazyColumn(
+        state = listState,
         modifier = Modifier
             .fillMaxSize()
             .background(FreshBg),
@@ -733,24 +756,25 @@ private fun HomeTab(
                     .padding(horizontal = 16.dp, vertical = 8.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { filter = HomeFilter.All }
-                FreshFilterChip("Ανοιχτά", selected = filter == HomeFilter.Open) { filter = HomeFilter.Open }
-                FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { filter = HomeFilter.Near }
-                FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { filter = HomeFilter.Deals }
-                FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { filter = HomeFilter.Fav }
+                FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }
+                FreshFilterChip("Ανοιχτά", selected = filter == HomeFilter.Open) { applyFilter(HomeFilter.Open) }
+                FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { applyFilter(HomeFilter.Near) }
+                FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { applyFilter(HomeFilter.Deals) }
+                FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { applyFilter(HomeFilter.Fav) }
             }
         }
 
 
         // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
+        // Hidden when a chip filter is active so the store list is right under the chips.
         val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
-        if (enabledPromos.isNotEmpty()) {
+        if (showDiscovery && enabledPromos.isNotEmpty()) {
             item(key = "promo-carousel") {
                 PromoCarousel(promos = enabledPromos)
             }
         }
 
-        if (state.gameShow) {
+        if (showDiscovery && state.gameShow) {
             item {
                 when (state.gameActive) {
                     "wheel" -> LuckyWheelCard(state = state, onSpin = onSpinWheel)
@@ -758,8 +782,8 @@ private fun HomeTab(
                 }
             }
         }
-        // Fresh2GO discovery rails (efood density, own style)
-        if (stores.isNotEmpty()) {
+        // Fresh2GO discovery rails (efood density, own style) — only on the default feed
+        if (showDiscovery && stores.isNotEmpty()) {
             val freeDelivery = stores.filter { it.covers_delivery_fee == true }.ifEmpty {
                 stores.filter { (it.delivery_fee ?: 0.0) <= 0.0 }
             }
@@ -882,12 +906,12 @@ private fun HomeTab(
                 }
             }
         }
-        item {
+        item(key = "store-list-header") {
             Row(
                 Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 16.dp)
-                    .padding(top = 16.dp, bottom = 4.dp),
+                    .padding(top = 12.dp, bottom = 4.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
@@ -898,11 +922,33 @@ private fun HomeTab(
                     HomeFilter.Deals -> "Προσφορές & δωρεάν delivery"
                     HomeFilter.Fav -> "Αγαπημένα"
                 }
-                Text(heading, style = MaterialTheme.typography.titleLarge)
+                Column(Modifier.weight(1f)) {
+                    Text(heading, style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+                    if (filter == HomeFilter.Deals) {
+                        Text(
+                            "Καταστήματα με badge προσφοράς ή δωρεάν delivery",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    } else if (filter == HomeFilter.Open) {
+                        Text(
+                            "Μόνο όσα δέχονται παραγγελία τώρα",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    } else if (filter == HomeFilter.Near) {
+                        Text(
+                            if (hasLocation) "Ταξινόμηση από την πιο κοντινή" else "Όρισε διεύθυνση για απόσταση",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                    }
+                }
                 Text(
-                    "${stores.size} καταστήματα",
-                    color = FreshMuted,
-                    style = MaterialTheme.typography.bodySmall,
+                    "${stores.size}",
+                    color = FreshGreen,
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
                 )
             }
         }
