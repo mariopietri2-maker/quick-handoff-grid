@@ -551,6 +551,12 @@ private fun HomeTab(
             if (state.deliveryLat != null && state.deliveryLng != null) HomeFilter.Near else HomeFilter.All,
         )
     }
+    // While the user is searching, force "Όλα" so Open/Near/Deals don't hide matches.
+    LaunchedEffect(state.searchQuery) {
+        if (state.searchQuery.isNotBlank() && filter != HomeFilter.All) {
+            filter = HomeFilter.All
+        }
+    }
     val base = state.visibleStores
     val hasLocation = state.deliveryLat != null && state.deliveryLng != null
     val stores = remember(filter, base, hasLocation, state.favoriteStoreIds) {
@@ -711,6 +717,10 @@ private fun HomeTab(
                             unfocusedBorderColor = Color.Transparent,
                             focusedBorderColor = Color.Transparent,
                             cursorColor = FreshGreen,
+                            focusedTextColor = FreshInk,
+                            unfocusedTextColor = FreshInk,
+                            focusedPlaceholderColor = FreshMuted,
+                            unfocusedPlaceholderColor = FreshMuted,
                         ),
                     )
                 }
@@ -2522,6 +2532,10 @@ private fun BrowseTab(
                             unfocusedBorderColor = Color.Transparent,
                             focusedBorderColor = Color.Transparent,
                             cursorColor = FreshGreen,
+                            focusedTextColor = FreshInk,
+                            unfocusedTextColor = FreshInk,
+                            focusedPlaceholderColor = FreshMuted,
+                            unfocusedPlaceholderColor = FreshMuted,
                         ),
                     )
                 }
