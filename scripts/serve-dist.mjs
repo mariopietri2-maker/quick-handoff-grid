@@ -138,6 +138,31 @@ async function proxyApk(filename, res) {
   }
 }
 
+/** Serve an APK straight from dist/apk (staged by run-vite-build.mjs from the
+ *  committed mobile-apks/*.apk). Falls back to the GitHub release proxy only if
+ *  the file isn't staged locally, so downloads work without GH_APK_TOKEN. */
+async function serveApk(filename, res) {
+  if (!APK_NAMES.has(filename)) {
+    res.writeHead(404, { 'content-type': 'text/plain' });
+    res.end('unknown apk');
+    return;
+  }
+  const stagedPath = join(DIST, 'apk', filename);
+  try {
+    const buf = await readFile(stagedPath);
+    res.writeHead(200, {
+      'content-type': 'application/vnd.android.package-archive',
+      'content-length': String(buf.length),
+      'content-disposition': `attachment; filename="${filename}"`,
+      'cache-control': 'public, max-age=300',
+      'access-control-allow-origin': '*',
+    });
+    res.end(buf);
+  } catch {
+    await proxyApk(filename, res);
+  }
+}
+
 const server = http.createServer(async (req, res) => {
   const sendIndex = async () => {
     const body = await readFile(join(DIST, 'index.html'));
@@ -151,7 +176,7 @@ const server = http.createServer(async (req, res) => {
     if (pathname.startsWith('/apk/')) {
       const name = pathname.slice('/apk/'.length).replace(/[^a-zA-Z0-9._-]/g, '');
       if (name.endsWith('.apk')) {
-        await proxyApk(name, res);
+        await serveApk(name, res);
         return;
       }
       res.writeHead(404, { 'content-type': 'text/plain' });
