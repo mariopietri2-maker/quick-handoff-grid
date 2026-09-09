@@ -34,177 +34,11 @@ jobs:
             > native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
           git show $GOOD:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt \
             > native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
-          text = path.read_text()
-          if "animateFloatAsState" not in text:
-              text = text.replace(
-                  "import androidx.compose.animation.core.animateFloat\n",
-                  "import androidx.compose.animation.core.animateFloat\nimport androidx.compose.animation.core.animateFloatAsState\n",
-              )
-          if "MutableInteractionSource" not in text:
-              text = text.replace(
-                  "import androidx.compose.foundation.clickable\n",
-                  "import androidx.compose.foundation.clickable\nimport androidx.compose.foundation.interaction.MutableInteractionSource\nimport androidx.compose.foundation.interaction.collectIsPressedAsState\n",
-              )
-          old_badge = """                    Box(contentAlignment = Alignment.TopEnd) {
-                        IconButton(onClick = onOpenCart) {
-                            Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
-                        }
-                        if (state.cartCount > 0) {
-                            Surface(
-                                color = Color(0xFFEA580C),
-                                shape = CircleShape,
-                                modifier = Modifier.padding(top = 6.dp, end = 6.dp),
-                            ) {
-                                Text(
-                                    text = if (state.cartCount > 9) "9+" else "${state.cartCount}",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-                                )
-                            }
-                        }
-                    }"""
-          new_badge = """                    Box(contentAlignment = Alignment.TopEnd) {
-                        IconButton(onClick = onOpenCart) {
-                            Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
-                        }
-                        if (state.cartCount > 0) {
-                            val cartPulse = rememberInfiniteTransition(label = "cartPulse")
-                            val cartScale by cartPulse.animateFloat(
-                                initialValue = 1f,
-                                targetValue = 1.18f,
-                                animationSpec = infiniteRepeatable(
-                                    animation = tween(700, easing = FastOutSlowInEasing),
-                                    repeatMode = RepeatMode.Reverse,
-                                ),
-                                label = "cartScale",
-                            )
-                            Surface(
-                                color = Color(0xFFEA580C),
-                                shape = CircleShape,
-                                modifier = Modifier
-                                    .padding(top = 6.dp, end = 6.dp)
-                                    .graphicsLayer {
-                                        scaleX = cartScale
-                                        scaleY = cartScale
-                                    },
-                            ) {
-                                Text(
-                                    text = if (state.cartCount > 9) "9+" else "${state.cartCount}",
-                                    color = Color.White,
-                                    fontWeight = FontWeight.Bold,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
-                                )
-                            }
-                        }
-                    }"""
-          if old_badge not in text:
-              raise SystemExit("cart badge block missing")
-          text = text.replace(old_badge, new_badge)
-          old_card = """@Composable
-private fun FreshStoreCard(
-    store: StoreRow,
-    onClick: () -> Unit,
-    rating: StoreRating? = null,
-    isFavorite: Boolean = false,
-    deliveryLat: Double? = null,
-    deliveryLng: Double? = null,
-    onToggleFavorite: (() -> Unit)? = null,
-) {
-    val openNow = isStoreOpenNow(store)
-    val active = store.is_active != false
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(6.dp, RoundedCornerShape(22.dp))
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White)
-            .clickable(onClick = onClick),
-    ) {"""
-          new_card = """@Composable
-private fun FreshStoreCard(
-    store: StoreRow,
-    onClick: () -> Unit,
-    rating: StoreRating? = null,
-    isFavorite: Boolean = false,
-    deliveryLat: Double? = null,
-    deliveryLng: Double? = null,
-    onToggleFavorite: (() -> Unit)? = null,
-) {
-    val openNow = isStoreOpenNow(store)
-    val active = store.is_active != false
-    val interaction = remember { MutableInteractionSource() }
-    val pressed by interaction.collectIsPressedAsState()
-    val pressScale by animateFloatAsState(
-        targetValue = if (pressed) 0.97f else 1f,
-        animationSpec = tween(120, easing = FastOutSlowInEasing),
-        label = "storePress",
-    )
-    val openPulse = rememberInfiniteTransition(label = "openPulse")
-    val openDotScale by openPulse.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.55f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(900, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "openDot",
-    )
-    Column(
-        Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
-            .graphicsLayer {
-                scaleX = pressScale
-                scaleY = pressScale
-            }
-            .shadow(6.dp, RoundedCornerShape(22.dp))
-            .clip(RoundedCornerShape(22.dp))
-            .background(Color.White)
-            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
-    ) {"""
-          if old_card not in text:
-              raise SystemExit("store card missing")
-          text = text.replace(old_card, new_card)
-          old_dot = """                    if (active && openNow) {
-                        Box(
-                            Modifier
-                                .size(6.dp)
-                                .clip(CircleShape)
-                                .background(Color.White),
-                        )
-                        Spacer(Modifier.width(5.dp))
-                    }"""
-          new_dot = """                    if (active && openNow) {
-                        Box(
-                            Modifier
-                                .size(6.dp)
-                                .graphicsLayer {
-                                    scaleX = openDotScale
-                                    scaleY = openDotScale
-                                    alpha = 0.55f + (openDotScale - 1f) * 0.6f
-                                }
-                                .clip(CircleShape)
-                                .background(Color.White),
-                        )
-                        Spacer(Modifier.width(5.dp))
-                    }"""
-          if old_dot not in text:
-              raise SystemExit("open dot missing")
-          text = text.replace(old_dot, new_dot)
-          path.write_text(text)
-          print("patched", path, "lines", len(text.splitlines()))
-          PY
+          python3 scripts/apply_clean_store_cards.py
           git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
                   native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt
           if ! git diff --cached --quiet; then
-            git commit -m "ui(native-customer): restore full home UI + alive motion"
+            git commit -m "ui(native-customer): restore full home UI + clean store cards"
             git push origin HEAD || true
           fi
 
@@ -238,8 +72,8 @@ private fun FreshStoreCard(
 
       - name: Verify shared debug keystore + version parity
         run: |
-          test -f mobile-signing/fresh2go-debug.keystore || { echo "::error::missing mobile-signing/fresh2go-debug.keystore — all debug APKs must share one signature for self-update"; exit 1; }
-          keytool -list -keystore mobile-signing/fresh2go-debug.keystore -storepass android -alias androiddebugkey >/dev/null || { echo "::error::debug keystore alias/password mismatch"; exit 1; }
+          test -f mobile-signing/fresh2go-debug.keystore || { echo "::error::missing mobile-signing/fresh2go-debug.keystore"; exit 1; }
+          keytool -list -keystore mobile-signing/fresh2go-debug.keystore -storepass android -alias androiddebugkey >/dev/null
           python3 - <<'PY'
           import re, sys
           apk = open('src/lib/apk-downloads.ts').read()
@@ -250,7 +84,7 @@ private fun FreshStoreCard(
           print(f"web driver={web_driver} gradle driver={gradle_driver}")
           print(f"web customer={web_customer} gradle customer={gradle_customer}")
           if web_driver != gradle_driver or web_customer != gradle_customer:
-              print("::error::versionName mismatch: bump native build.gradle.kts AND src/lib/apk-downloads.ts together, or self-update will misfire")
+              print("::error::versionName mismatch")
               sys.exit(1)
           PY
 
@@ -308,7 +142,6 @@ private fun FreshStoreCard(
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view mobile-apks-v1 >/dev/null 2>&1 || \
-            gh release create mobile-apks-v1 --title "Fresh Meal Android APKs + AABs" --notes "Native debug APKs and debug AABs. GitHub release only (not website)."
+            gh release create mobile-apks-v1 --title "Fresh Meal Android APKs + AABs" --notes "Native debug APKs and debug AABs."
           gh release upload mobile-apks-v1 dist/* --clobber
-          echo "Published to GitHub release mobile-apks-v1:"
           ls dist/
