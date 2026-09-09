@@ -66,7 +66,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
 import com.freshdelivery.nativecustomer.ui.theme.FreshRose
 import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 
-private val LoginGradient = Brush.linearGradient(listOf(Color(0xFFF4A125), Color(0xFFFF8A3D), Color(0xFFE94E8F)))
+private val LoginGradient = Brush.linearGradient(listOf(Color(0xFFF4A125), Color(0xFFFF8A3D), Color(0xFFC2410C)))
 private val LoginBrandGradient = LoginGradient
 
 @Composable

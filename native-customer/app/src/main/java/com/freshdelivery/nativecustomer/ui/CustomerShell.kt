@@ -30,6 +30,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -42,6 +43,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.filled.Favorite
+import androidx.compose.material.icons.filled.Star
 import androidx.compose.material.icons.outlined.AccountCircle
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ChevronRight
@@ -203,6 +205,8 @@ fun CustomerShell(
     onClearSuggestions: () -> Unit = {},
     onSelectSaved: (SavedAddressRow) -> Unit = {},
     onDeleteSaved: (String) -> Unit = {},
+    onSetDefaultSaved: (String) -> Unit = {},
+    onSetSaveLabel: (String) -> Unit = {},
     onSaveProfile: (String, String) -> Unit = { _, _ -> },
     onClearMessages: () -> Unit = {},
     onSpinWheel: () -> Unit = {},
@@ -249,6 +253,8 @@ fun CustomerShell(
             onSaveAddress = onSaveAddress,
             onSelectSaved = onSelectSaved,
             onDeleteSaved = onDeleteSaved,
+            onSetDefaultSaved = onSetDefaultSaved,
+            onSetSaveLabel = onSetSaveLabel,
             snackbar = snackbar,
         )
         return
@@ -651,7 +657,7 @@ private fun HomeTab(
                         }
                         if (state.cartCount > 0) {
                             Surface(
-                                color = Color(0xFF22C55E),
+                                color = Color(0xFFEA580C),
                                 shape = CircleShape,
                                 modifier = Modifier.padding(top = 6.dp, end = 6.dp),
                             ) {
@@ -2164,6 +2170,8 @@ private fun AddressPickerScreen(
     onSaveAddress: () -> Unit,
     onSelectSaved: (SavedAddressRow) -> Unit = {},
     onDeleteSaved: (String) -> Unit = {},
+    onSetDefaultSaved: (String) -> Unit = {},
+    onSetSaveLabel: (String) -> Unit = {},
     snackbar: SnackbarHostState? = null,
 ) {
     var address by remember(state.deliveryAddress) { mutableStateOf(state.deliveryAddress) }
@@ -2281,6 +2289,13 @@ private fun AddressPickerScreen(
                                     overflow = TextOverflow.Ellipsis,
                                 )
                             }
+                            IconButton(onClick = { if (sa.is_default != true) onSetDefaultSaved(sa.id) }) {
+                                Icon(
+                                    imageVector = if (sa.is_default == true) Icons.Filled.Star else Icons.Outlined.Star,
+                                    contentDescription = if (sa.is_default == true) "Προεπιλεγμένη" else "Ορισμός προεπιλογής",
+                                    tint = if (sa.is_default == true) FreshAmber else FreshMuted,
+                                )
+                            }
                             IconButton(onClick = { onDeleteSaved(sa.id) }) {
                                 Icon(Icons.Outlined.Delete, contentDescription = "Διαγραφή", tint = FreshRose)
                             }
@@ -2328,6 +2343,19 @@ private fun AddressPickerScreen(
                 style = MaterialTheme.typography.bodySmall,
                 color = if (pinned) FreshGreen else MaterialTheme.colorScheme.error,
             )
+            Spacer(Modifier.height(16.dp))
+            Text("Ετικέτα αποθήκευσης", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+            Spacer(Modifier.height(6.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                listOf("Σπίτι", "Δουλειά", "Άλλο").forEach { lbl ->
+                    FilterChip(
+                        selected = state.saveLabel == lbl,
+                        onClick = { onSetSaveLabel(lbl) },
+                        label = { Text(lbl) },
+                        shape = RoundedCornerShape(16.dp),
+                    )
+                }
+            }
             Spacer(Modifier.height(16.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 if (state.deliveryAddress.isNotBlank()) {
@@ -2419,8 +2447,6 @@ private fun StatusPill(status: String) {
         )
     }
 }
-
-@Composable
 
 private data class BrowseCategory(
     val id: String,
@@ -2760,6 +2786,7 @@ private fun BrowseTab(
     }
 }
 
+@Composable
 private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
@@ -3369,8 +3396,8 @@ private fun StreakLoyaltyCard(state: CustomerUiState) {
             .background(
                 Brush.verticalGradient(
                     listOf(
-                        Color(0xFF123A2C),
-                        Color(0xFF0A2218),
+                        Color(0xFF33170C),
+                        Color(0xFF1A0B05),
                     ),
                 ),
             )
@@ -3389,7 +3416,7 @@ private fun StreakLoyaltyCard(state: CustomerUiState) {
                     )
                     Text(
                         "Παράγγειλε κάθε μέρα, κέρδισε μπόνους",
-                        color = Color(0xFF9FC6B2),
+                        color = Color(0xFFF0C9A5),
                         style = MaterialTheme.typography.bodySmall,
                     )
                 }
@@ -3425,7 +3452,7 @@ private fun StreakLoyaltyCard(state: CustomerUiState) {
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Surface(
-                color = Color(0xFF1D5440),
+                color = Color(0xFF7C2D12),
                 shape = RoundedCornerShape(12.dp),
             ) {
                 Row(
@@ -3460,7 +3487,7 @@ private fun StreakLoyaltyCard(state: CustomerUiState) {
             ) {
                 Text(
                     "Επόμενο ορόσημο: $nextLabel (+$nextBonus)",
-                    color = Color(0xFF9FC6B2),
+                    color = Color(0xFFF0C9A5),
                     style = MaterialTheme.typography.bodySmall,
                     fontWeight = FontWeight.SemiBold,
                 )
@@ -3479,7 +3506,7 @@ private fun StreakLoyaltyCard(state: CustomerUiState) {
                     .height(8.dp)
                     .clip(RoundedCornerShape(4.dp)),
                 color = Color(0xFFF7B955),
-                trackColor = Color(0xFF1D5440),
+                trackColor = Color(0xFF7C2D12),
             )
             Spacer(Modifier.height(6.dp))
             Text(
@@ -3487,17 +3514,17 @@ private fun StreakLoyaltyCard(state: CustomerUiState) {
                     "$daysToBonus μέρες ακόμα για μπόνους $nextBonus πόντων!"
                 else
                     "🎉 Μόλις έφτασες το ορόσημο $nextLabel!",
-                color = Color(0xFF9FC6B2),
+                color = Color(0xFFF0C9A5),
                 style = MaterialTheme.typography.bodySmall,
             )
         }
 
         Spacer(Modifier.height(10.dp))
-        HorizontalDivider(color = Color(0xFF1D5440))
+        HorizontalDivider(color = Color(0xFF7C2D12))
         Spacer(Modifier.height(8.dp))
         Text(
             "Ρεκόρ: $bestStreak μέρες · Χάσε μία μέρα και η σειρά μηδενίζεται.",
-            color = Color(0xFF7FA893),
+            color = Color(0xFFD9B493),
             style = MaterialTheme.typography.bodySmall,
         )
     }
@@ -3648,7 +3675,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                     listOf(Color(0xFF0F172A), Color(0xFF1E293B), Color(0xFF334155)),
                 )
                 else -> Brush.linearGradient(
-                    listOf(Color(0xFFEA580C), Color(0xFFF97316), Color(0xFFFB7185)),
+                    listOf(Color(0xFFEA580C), Color(0xFFF97316), Color(0xFFC2410C)),
                 )
             }
             Box(

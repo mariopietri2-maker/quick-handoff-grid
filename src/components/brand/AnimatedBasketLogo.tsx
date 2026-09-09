@@ -30,7 +30,7 @@ export function AnimatedBasketLogo({
           <linearGradient id={`${id}-bg`} x1="0" y1="0" x2="1" y2="1">
             <stop offset="0%" stopColor="#F4A125" />
             <stop offset="55%" stopColor="#FF8A3D" />
-            <stop offset="100%" stopColor="#E94E8F" />
+            <stop offset="100%" stopColor="#EA580C" />
           </linearGradient>
           <linearGradient id={`${id}-bag`} x1="0" y1="0" x2="0" y2="1">
             <stop offset="0%" stopColor="#FFFFFF" />

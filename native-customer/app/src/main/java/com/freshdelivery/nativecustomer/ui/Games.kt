@@ -115,7 +115,7 @@ fun LuckyWheelCard(
             .padding(horizontal = 16.dp, vertical = 8.dp)
             .shadow(18.dp, RoundedCornerShape(26.dp))
             .clip(RoundedCornerShape(26.dp))
-            .background(Brush.verticalGradient(listOf(Color(0xFF0E2B1D), Color(0xFF0A1F15))))
+            .background(Brush.verticalGradient(listOf(Color(0xFF33170C), Color(0xFF1A0B05))))
             .padding(14.dp),
     ) {
         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -298,7 +298,7 @@ fun LuckyWheelCard(
                 ) {
                     Text(
                         res.label,
-                        color = Color(0xFF0E2B1D),
+                        color = Color(0xFF431407),
                         fontWeight = FontWeight.ExtraBold,
                         fontSize = 12.sp,
                         textAlign = TextAlign.Center,
@@ -630,10 +630,10 @@ private fun AdminCardRow(
     onPrize: (String) -> Unit,
 ) {
     val dotBrush = when (card.tag) {
-        "A" -> Brush.linearGradient(listOf(Color(0xFF0B8F5F), Color(0xFF14B8A6)))
-        "B" -> Brush.linearGradient(listOf(Color(0xFF8B5CF6), Color(0xFF6366F1)))
+        "A" -> Brush.linearGradient(listOf(Color(0xFFEA580C), Color(0xFFF97316)))
+        "B" -> Brush.linearGradient(listOf(Color(0xFFFF8A3D), Color(0xFFF4A125)))
         "C" -> Brush.linearGradient(listOf(Color(0xFFF59E0B), Color(0xFFF97316)))
-        else -> Brush.linearGradient(listOf(Color(0xFF0B8F5F), Color(0xFF14B8A6)))
+        else -> Brush.linearGradient(listOf(Color(0xFFC2410C), Color(0xFFEA580C)))
     }
     Column(
         Modifier

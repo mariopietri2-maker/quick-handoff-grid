@@ -34,7 +34,7 @@ fun Fresh2GoBagMark(
                 colors = listOf(
                     Color(0xFFF4A125),
                     Color(0xFFFF8A3D),
-                    Color(0xFFE94E8F),
+                    Color(0xFFEA580C),
                 ),
                 start = Offset.Zero,
                 end = Offset(w, h),

@@ -231,11 +231,11 @@ data class WheelSegment(
 /** Fixed 6-segment wheel. Order matches the web conic-gradient. */
 val WHEEL_SEGMENTS: List<WheelSegment> = listOf(
     WheelSegment("10%", "FRESH10", 0xFFF97316, pct = 10),
-    WheelSegment("15%", "FRESH15", 0xFFF59E0B, pct = 15),
-    WheelSegment("20%", "FRESH20", 0xFF10B981, pct = 20),
-    WheelSegment("ΔΩΡΕΑΝ", "ΠΑΡΑΔΟΣΗ", 0xFF14B8A6, freeDelivery = true),
-    WheelSegment("25%", "FRESH25", 0xFF8B5CF6, pct = 25),
-    WheelSegment("5%", "FRESH5", 0xFFEF4444, pct = 5),
+    WheelSegment("15%", "FRESH15", 0xFFEA580C, pct = 15),
+    WheelSegment("20%", "FRESH20", 0xFFFF8A3D, pct = 20),
+    WheelSegment("ΔΩΡΕΑΝ", "ΠΑΡΑΔΟΣΗ", 0xFFC2410C, freeDelivery = true),
+    WheelSegment("25%", "FRESH25", 0xFFF4A125, pct = 25),
+    WheelSegment("5%", "FRESH5", 0xFFFFB03A, pct = 5),
 )
 
 /** Result of a finished wheel spin (what the user sees in the banner). */
@@ -280,9 +280,9 @@ fun defaultGameConfig(): GameConfig = GameConfig()
 
 /** Parse a "#RRGGBB" / "0xFFRRGGBB" hex color into a packed ARGB Long. */
 fun parseSegmentColor(hex: String?): Long {
-    if (hex.isNullOrBlank()) return 0xFF10B981L
+    if (hex.isNullOrBlank()) return 0xFFEA580CL
     val h = hex.removePrefix("#").removePrefix("0x")
-    val v = h.toLongOrNull(16) ?: return 0xFF10B981L
+    val v = h.toLongOrNull(16) ?: return 0xFFEA580CL
     return if (h.length <= 6) 0xFF000000L or v else v
 }
 

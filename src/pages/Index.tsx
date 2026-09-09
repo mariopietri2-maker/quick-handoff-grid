@@ -139,7 +139,7 @@ title="Fresh2GO — Φρέσκο Φαγητό. Γρήγορη Παράδοση."
         <div
           aria-hidden
           className="absolute inset-0 -z-10"
-          style={{ background: 'linear-gradient(165deg, #EA580C 0%, #F97316 42%, #FB7185 130%)' }}
+          style={{ background: 'linear-gradient(165deg, #EA580C 0%, #F97316 42%, #EA580C 130%)' }}
         />
         <div aria-hidden className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
           <div
@@ -291,7 +291,7 @@ title="Fresh2GO — Φρέσκο Φαγητό. Γρήγορη Παράδοση."
       {/* ─── CTA ─── */}
       <section className="px-4 py-20">
         <div className="relative max-w-4xl mx-auto rounded-3xl p-10 sm:p-14 text-center overflow-hidden shadow-2xl"
-             style={{ background: 'linear-gradient(150deg, #F4A125 0%, #FF8A3D 50%, #E94E8F 130%)' }}>
+             style={{ background: 'linear-gradient(150deg, #F4A125 0%, #FF8A3D 50%, #EA580C 130%)' }}>
           <div aria-hidden className="absolute inset-0 pointer-events-none">
             <div className="absolute -top-24 left-1/2 -translate-x-1/2 h-72 w-[520px] rounded-full opacity-30 blur-3xl"
                  style={{ background: 'radial-gradient(circle, rgba(255,255,255,0.3), transparent 70%)' }} />

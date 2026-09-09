@@ -159,7 +159,7 @@ export default function PresentationPage() {
           <div
             aria-hidden
             className="absolute inset-0 -z-10"
-            style={{ background: 'linear-gradient(165deg, #EA580C 0%, #F97316 42%, #FB7185 130%)' }}
+            style={{ background: 'linear-gradient(165deg, #EA580C 0%, #F97316 42%, #EA580C 130%)' }}
           />
           <div aria-hidden className="absolute inset-0 -z-10 pointer-events-none overflow-hidden">
             <div

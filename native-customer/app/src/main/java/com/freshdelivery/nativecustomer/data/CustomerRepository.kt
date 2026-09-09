@@ -325,8 +325,13 @@ class CustomerRepository(
      */
     private suspend fun getStripeEnvironment(): String {
         val raw = client.postgrest.rpc("get_platform_settings_public")
-        val el = Json.parseToJsonElement(raw.bodyAsText()).jsonObject
-        val key = el["stripe_publishable_key"]?.jsonPrimitive?.contentOrNull ?: ""
+        val key = runCatching {
+            raw.decodeList<JsonObject>()
+                .firstOrNull()
+                ?.get("stripe_publishable_key")
+                ?.jsonPrimitive
+                ?.contentOrNull
+        }.getOrNull().orEmpty()
         return if (key.startsWith("pk_test_")) "sandbox" else "live"
     }
 

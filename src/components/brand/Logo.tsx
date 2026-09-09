@@ -14,7 +14,7 @@ interface LogoProps {
 }
 
 const CONFIG: Record<LogoVariant, { stops: string[]; bag: string; fold: string; dark: boolean }> = {
-  core: { stops: ['#F4A125', '#FF8A3D', '#E94E8F'], bag: '#ffffff', fold: '#FF8A3D', dark: false },
+  core: { stops: ['#F4A125', '#FF8A3D', '#EA580C'], bag: '#ffffff', fold: '#FF8A3D', dark: false },
   driver: { stops: ['#3BB98C', '#1E7A5C'], bag: '#ffffff', fold: '#1E7A5C', dark: false },
   store: { stops: ['#3E8FE0', '#1B5FA8'], bag: '#ffffff', fold: '#257AD0', dark: false },
   web: { stops: ['#FFF3E4', '#FFE0BE'], bag: '#F29912', fold: '#FFE0BE', dark: true },

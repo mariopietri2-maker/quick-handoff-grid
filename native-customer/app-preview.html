@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh2GO — App Preview</title>
+<style>
+  :root{
+    --orange:#EA580C; --bright:#F97316; --light:#F4A125; --mid:#FF8A3D; --deep:#C2410C;
+    --peach:#FFEDD5; --ink:#1C1917; --muted:#78716C; --bg:#FAFAF9; --surface:#fff; --chip:#F5F5F4; --divider:#E7E5E4;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Segoe UI', system-ui, -apple-system, Roboto, Arial, sans-serif;
+    background:linear-gradient(160deg,#1c1917 0%, #3a2a1a 100%);
+    min-height:100vh; display:flex; flex-wrap:wrap; gap:32px; align-items:center; justify-content:center; padding:40px 20px;
+  }
+  .stage{display:flex; flex-direction:column; align-items:center; gap:14px;}
+  .phone{
+    width:375px; height:760px; background:var(--bg); border-radius:44px; overflow:hidden; position:relative;
+    box-shadow:0 30px 60px rgba(0,0,0,.55), 0 0 0 10px #0d0d0d, 0 0 0 12px #2a2a2a;
+    display:flex; flex-direction:column;
+  }
+  .screen-area{flex:1; overflow-y:auto; position:relative; scrollbar-width:none;} .screen-area::-webkit-scrollbar{display:none;}
+  .statusbar{height:38px; display:flex; align-items:center; justify-content:space-between; padding:0 22px; color:var(--ink); font-size:13px; font-weight:600;}
+  /* header */
+  .appbar{display:flex; align-items:center; padding:6px 16px 12px; gap:10px;}
+  .brandrow{display:flex; align-items:center; gap:9px; flex:1;}
+  .bagmark{width:34px; height:34px; border-radius:9px; background:linear-gradient(135deg,var(--light),var(--mid),var(--orange)); display:flex; align-items:center; justify-content:center; flex:none;}
+  .bagmark svg{width:20px; height:20px;}
+  .brandrow .name{font-weight:800; font-size:20px; letter-spacing:-.3px; color:var(--ink);}
+  .brandrow .sub{font-size:11px; color:var(--muted); margin-top:-1px;}
+  .pill-btn{background:var(--peach); color:var(--orange); border-radius:999px; padding:7px 12px; font-size:12px; font-weight:700;}
+  /* search */
+  .search{margin:0 16px 14px; display:flex; align-items:center; gap:8px; background:var(--surface); border:1px solid var(--divider); border-radius:16px; padding:11px 14px; color:var(--muted); font-size:14px;}
+  .search .dot{width:8px; height:8px; border-radius:50%; background:var(--orange);}
+  /* banner */
+  .banner{margin:0 16px 16px; padding:16px; border-radius:22px; color:#fff; background:linear-gradient(135deg,var(--orange),var(--bright),var(--orange)); box-shadow:0 10px 24px rgba(234,88,12,.35);}
+  .banner h3{font-size:17px; font-weight:800;} .banner p{font-size:12px; opacity:.92; margin-top:3px;}
+  .banner .cta{margin-top:12px; display:inline-block; background:#fff; color:var(--orange); font-weight:800; font-size:12px; padding:7px 13px; border-radius:999px;}
+  /* section title */
+  .sec-title{display:flex; align-items:center; justify-content:space-between; padding:0 16px; margin:6px 0 10px;}
+  .sec-title h4{font-size:16px; font-weight:800; color:var(--ink);}
+  .sec-title span{font-size:12px; color:var(--orange); font-weight:700;}
+  /* chips */
+  .chips{display:flex; gap:8px; padding:0 16px; overflow-x:auto; margin-bottom:14px; scrollbar-width:none;} .chips::-webkit-scrollbar{display:none;}
+  .chip{flex:none; border:1px solid var(--divider); background:#fff; border-radius:999px; padding:8px 14px; font-size:13px; font-weight:600; color:var(--ink);}
+  .chip.active{background:var(--orange); color:#fff; border-color:var(--orange);}
+  /* category tiles */
+  .cats{display:flex; gap:10px; padding:0 16px; overflow-x:auto; margin-bottom:18px; scrollbar-width:none;} .cats::-webkit-scrollbar{display:none;}
+  .cat{flex:none; width:80px; text-align:center;}
+  .cat .tile{width:80px; height:80px; border-radius:20px; display:flex; align-items:center; justify-content:center; font-size:32px;}
+  .cat span{font-size:12px; font-weight:600; color:var(--ink); display:block; margin-top:6px;}
+  /* store cards */
+  .stores{padding:0 16px 90px;}
+  .card{background:#fff; border:1px solid var(--divider); border-radius:20px; padding:12px; margin-bottom:12px; display:flex; gap:12px; align-items:center;}
+  .card .thumb{width:64px; height:64px; border-radius:16px; background:linear-gradient(135deg,var(--light),var(--mid)); flex:none; display:flex; align-items:center; justify-content:center; font-size:28px;}
+  .card .info{flex:1; min-width:0;}
+  .card .name{font-weight:800; font-size:15px; color:var(--ink);}
+  .card .meta{font-size:12px; color:var(--muted); margin-top:3px;}
+  .card .rating{font-size:12px; color:var(--ink); font-weight:700; display:flex; align-items:center; gap:3px; margin-top:4px;}
+  .star{color:#FFB03A;}
+  .badge{font-size:11px; font-weight:700; border-radius:8px; padding:3px 7px;}
+  .offer{background:var(--peach); color:var(--orange);}
+  .heart{color:#ddd; margin-left:auto; flex:none;}
+  /* bottom nav */
+  .nav{position:absolute; bottom:0; left:0; right:0; height:72px; background:rgba(255,255,255,.96); backdrop-filter:blur(8px); border-top:1px solid var(--divider); display:flex;}
+  .nav .item{flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; color:var(--muted); font-size:11px; font-weight:600;}
+  .nav .item.active{color:var(--orange);}
+  .nav .item svg{width:22px; height:22px;}
+  .backbar{display:flex; align-items:center; gap:10px; padding:12px 16px;}
+  .backbar h4{font-size:17px; font-weight:800; color:var(--ink);}
+  /* right panel */
+  .notes{width:330px; color:#e7e5e4;}
+  .notes h2{font-size:18px; color:#fff; margin-bottom:14px;}
+  .notes h3{font-size:15px; color:#fff; margin:14px 0 8px;}
+  .swatch{display:flex; align-items:center; gap:8px; margin:8px 0; font-size:13px;}
+  .swatch .c{width:26px; height:26px; border-radius:8px; border:1px solid rgba(255,255,255,.2);}
+  .notes p{font-size:13px; line-height:1.6; color:#cbd5d1;}
+  .screen{display:none; height:100%;} .screen.show{display:block;}
+  .menu-item{display:flex; gap:10px; padding:12px 16px; border-bottom:1px solid var(--divider); align-items:center;}
+  .menu-item .add{background:var(--orange); color:#fff; width:30px; height:30px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:20px; font-weight:800;}
+  .cartbadge{background:var(--orange); color:#fff; border-radius:999px; font-size:11px; padding:2px 7px; font-weight:700;}
+</style>
+</head>
+<body>
+
+<div class="stage">
+  <div class="phone">
+    <div class="statusbar">
+      <span>9:41</span>
+      <span>5G &nbsp; 100%</span>
+    </div>
+
+    <!-- ============ HOME ============ -->
+    <div class="screen-area">
+      <div class="screen show" id="s-home">
+        <div class="appbar">
+          <div class="brandrow">
+            <div class="bagmark">
+              <svg viewBox="0 0 64 64"><path d="M26 28 Q32 20 38 28" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round"/><rect x="19.5" y="27" width="25" height="22" rx="6" fill="#fff"/><path d="M23 35 H41" stroke="#FF8A3D" stroke-width="2.2" stroke-linecap="round"/></svg>
+            </div>
+            <div>
+              <div class="name">Fresh2GO</div>
+              <div class="sub">Ιωάννινα · Παράδοση</div>
+            </div>
+          </div>
+          <span class="pill-btn">2.9.1</span>
+        </div>
+
+        <div class="search"><span class="dot"></span> Αναζήτηση καταστημάτων ή πιάτων…</div>
+
+        <div class="banner">
+          <h3>Καλωσήρθες! 🧡</h3>
+          <p>Δωρεάν παράδοση σήμερα σε επιλεγμένα</p>
+          <div class="cta">Δες τις προσφορές</div>
+        </div>
+
+        <div class="chips">
+          <div class="chip active">Όλα</div><div class="chip">Ανοιχτά</div><div class="chip">Κοντά μου</div><div class="chip">Κορυφαία</div><div class="chip">Προσφορές</div>
+        </div>
+
+        <div class="cats">
+          <div class="cat"><div class="tile" style="background:#FFE4C4;">🍕</div><span>Πίτσα</span></div>
+          <div class="cat"><div class="tile" style="background:#FFEDD5;">🥙</div><span>Σουβλάκι</span></div>
+          <div class="cat"><div class="tile" style="background:#FFF1D6;">🍔</div><span>Burger</span></div>
+          <div class="cat"><div class="tile" style="background:#FFE8CC;">🍜</div><span>Ζυμαρικά</span></div>
+          <div class="cat"><div class="tile" style="background:#FFF4E0;">🍰</div><span>Γλυκά</span></div>
+          <div class="cat"><div class="tile" style="background:#FFEADD;">☕</div><span>Καφές</span></div>
+        </div>
+
+        <div class="sec-title"><h4>Κοντά σου</h4><span>Δες όλα</span></div>
+
+        <div class="stores">
+          <div class="card">
+            <div class="thumb">🍕</div>
+            <div class="info">
+              <div class="name">Pizza Roma</div>
+              <div class="meta">Ιταλική · 15-25 min · €2.00</div>
+              <div class="rating"><span class="star">★</span> 4.8 (312) &nbsp; <span class="badge offer">-20%</span></div>
+            </div>
+            <span class="heart">♡</span>
+          </div>
+          <div class="card">
+            <div class="thumb">🥙</div>
+            <div class="info">
+              <div class="name">Souvlaki GR</div>
+              <div class="meta">Ψησταριά · 20-30 min · €1.50</div>
+              <div class="rating"><span class="star">★</span> 4.6 (198) &nbsp; <span class="badge offer">Δωρεάν παρ.</span></div>
+            </div>
+            <span class="heart">♥</span>
+          </div>
+          <div class="card">
+            <div class="thumb">🍔</div>
+            <div class="info">
+              <div class="name">Burger Lab</div>
+              <div class="meta">Burgers · 25-35 min · €2.50</div>
+              <div class="rating"><span class="star">★</span> 4.9 (421)</div>
+            </div>
+            <span class="heart">♡</span>
+          </div>
+          <div class="card">
+            <div class="thumb">🍣</div>
+            <div class="info">
+              <div class="name">Sushi Now</div>
+              <div class="meta">Ασιατική · 30-40 min · €3.00</div>
+              <div class="rating"><span class="star">★</span> 4.7 (156) &nbsp; <span class="badge offer">Δωρεάν παρ.</span></div>
+            </div>
+            <span class="heart">♡</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ ORDERS ============ -->
+      <div class="screen" id="s-orders">
+        <div class="backbar"><h4>Οι παραγγελίες μου</h4></div>
+        <div class="stores">
+          <div class="card">
+            <div class="thumb">🍕</div>
+            <div class="info">
+              <div class="name">Pizza Roma</div>
+              <div class="meta">#2841 · Σήμερα 20:15</div>
+              <div class="rating"><span class="star">★</span> <span style="color:var(--orange);">Σε εξέλιξη</span></div>
+            </div>
+          </div>
+          <div class="card">
+            <div class="thumb">🥙</div>
+            <div class="info">
+              <div class="name">Souvlaki GR</div>
+              <div class="meta">#2839 · Χθες 21:02</div>
+              <div class="rating"><span class="star">★</span> <span style="color:var(--deep);">Παραδόθηκε</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ============ PROFILE ============ -->
+      <div class="screen" id="s-profile">
+        <div class="backbar"><h4>Προφίλ</h4></div>
+        <div style="padding:0 16px;">
+          <div class="card">
+            <div class="thumb" style="font-size:26px;">👤</div>
+            <div class="info">
+              <div class="name">Μάριος</div>
+              <div class="meta">marios@email.gr</div>
+            </div>
+          </div>
+          <div class="card"><div class="info"><div class="name">Πορτοφόλι</div><div class="meta">Κουπόνια &amp; προσφορές</div></div><span class="pill-btn">€0.00</span></div>
+          <div class="card"><div class="info"><div class="name">Υποστήριξη</div><div class="meta">Ζωντανή συνομιλία &amp; εισιτήρια</div></div></div>
+          <div class="card"><div class="info"><div class="name">Έκδοση εφαρμογής</div><div class="meta">Fresh2GO 2.9.1 (274)</div></div></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- bottom nav -->
+    <div class="nav">
+      <div class="item active" onclick="go('home',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-2v9h-5v-6h-4v6H5v-9H3z"/></svg>Αρχική</div>
+      <div class="item" onclick="go('orders',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 6-7 4-7-4z"/><path d="M6 9v11h12V9"/></svg>Παραγγελίες</div>
+      <div class="item" onclick="go('profile',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></svg>Προφίλ</div>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <h2>Fresh2GO — Customer App</h2>
+  <p>Kotlin + Jetpack Compose, native Android. Το brand είναι πλέον ενιαίο σε <b style="color:var(--orange)">πορτοκαλί</b> (χωρίς ροζ), όπως και στο website.</p>
+
+  <h3>Χρώματα</h3>
+  <div class="swatch"><span class="c" style="background:#EA580C;"></span> Primary — #EA580C</div>
+  <div class="swatch"><span class="c" style="background:#F97316;"></span> Bright — #F97316</div>
+  <div class="swatch"><span class="c" style="background:#F4A125;"></span> Light — #F4A125</div>
+  <div class="swatch"><span class="c" style="background:#FF8A3D;"></span> Mid — #FF8A3D</div>
+  <div class="swatch"><span class="c" style="background:#C2410C;"></span> Deep — #C2410C</div>
+  <div class="swatch"><span class="c" style="background:#FFEDD5;"></span> Soft peach — #FFEDD5</div>
+
+  <h3>Screens</h3>
+  <p>Αρχική (αναζήτηση, κατηγορίες, καταστήματα) · Παραγγελίες · Προφίλ · Καλάθι · Επιλογή διεύθυνσης (ετικέτες Σπίτι/Δουλειά/Άλλο + προεπιλογή ⭐) · Live παρακολούθηση.</p>
+</div>
+
+<script>
+  function go(id, el){
+    document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));
+    document.getElementById('s-'+id).classList.add('show');
+    document.querySelectorAll('.nav .item').forEach(i=>i.classList.remove('active'));
+    el.classList.add('active');
+  }
+</script>
+</body>
+</html>

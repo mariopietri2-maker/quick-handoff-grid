@@ -22,8 +22,8 @@ val FreshTeal = Color(0xFFF97316)       // bright brand orange
 val FreshTealDark = Color(0xFFEA580C)
 val FreshTealSoft = Color(0xFFFFF7ED)
 val FreshGold = Color(0xFFFBBF24)
-val FreshViolet = Color(0xFFFB7185)     // soft pink accent in gradient
-val FreshVioletSoft = Color(0xFFFFE4E6)
+val FreshViolet = Color(0xFFF97316)     // warm orange secondary accent
+val FreshVioletSoft = Color(0xFFFFEDD5)
 val FreshAmber = Color(0xFFF59E0B)
 val FreshAmberSoft = Color(0xFFFFF4E5)
 val FreshRose = Color(0xFFF43F5E)
@@ -36,7 +36,7 @@ val FreshChip = Color(0xFFF5F5F4)
 val FreshDivider = Color(0xFFE7E5E4)
 
 val LoginGradient = Brush.linearGradient(
-    listOf(Color(0xFFEA580C), Color(0xFFF97316), Color(0xFFFB7185)),
+    listOf(Color(0xFFEA580C), Color(0xFFF97316), Color(0xFFC2410C)),
 )
 
 private val FreshColors = lightColorScheme(

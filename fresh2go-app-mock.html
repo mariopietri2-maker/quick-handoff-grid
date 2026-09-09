@@ -1,0 +1,243 @@
+﻿<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh2GO — App (mobile)</title>
+<style>
+:root{
+  --orange:#EA580C; --bright:#F97316; --light:#F4A125; --mid:#FF8A3D; --deep:#C2410C;
+  --peach:#FFEDD5; --cream:#FFF7ED; --ink:#1C1917; --muted:#888079; --bg:#FAFAF9;
+  --line:#EFE9E3; --grad:linear-gradient(135deg,var(--light),var(--mid),var(--orange));
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Segoe UI',system-ui,Roboto,Arial,sans-serif;background:linear-gradient(160deg,#191613,#3a2a1a);min-height:100vh;display:flex;align-items:center;justify-content:center;padding:30px;color:var(--ink)}
+.phone{width:388px;height:800px;background:var(--bg);border-radius:48px;overflow:hidden;position:relative;display:flex;flex-direction:column;box-shadow:0 30px 70px rgba(0,0,0,.6),0 0 0 10px #0d0d0d,0 0 0 12px #2a2a2a}
+.statusbar{height:40px;display:flex;align-items:center;justify-content:space-between;padding:0 24px;font-size:13px;font-weight:600;background:var(--bg);flex:none}
+.content{flex:1;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;overflow-y:auto;background:var(--bg);display:none;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.show{display:block}
+.nav{flex:none;height:76px;background:#fff;border-top:1px solid var(--line);display:flex;padding-top:6px}
+.nav .item{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--muted);font-size:11px;font-weight:600}
+.nav .item.active{color:var(--orange)}
+.nav .item svg{width:23px;height:23px}
+.appbar{display:flex;align-items:center;padding:6px 16px 10px;gap:10px}
+.bag{width:34px;height:34px;border-radius:10px;background:var(--grad);display:flex;align-items:center;justify-content:center;flex:none}
+.bag svg{width:20px;height:20px}
+.brand{flex:1}
+.brand .n{font-weight:800;font-size:19px;letter-spacing:-.3px}
+.brand .l{font-size:12px;color:var(--muted);display:flex;align-items:center;gap:3px}
+.search{margin:0 16px 14px;display:flex;align-items:center;gap:8px;background:#fff;border:1px solid var(--line);border-radius:16px;padding:11px 13px;color:var(--muted);font-size:14px}
+.search .d{width:8px;height:8px;border-radius:50%;background:var(--orange)}
+.banner{margin:0 16px 14px;padding:15px;border-radius:20px;color:#fff;background:var(--grad);box-shadow:0 10px 22px rgba(234,88,12,.3)}
+.banner b{font-size:16px;display:block}
+.banner p{font-size:12px;opacity:.92;margin-top:2px}
+.sechead{display:flex;align-items:center;justify-content:space-between;padding:4px 16px 10px}
+.sechead h4{font-size:16px;font-weight:800}
+.sechead span{font-size:12px;color:var(--orange);font-weight:700;cursor:pointer}
+.chips{display:flex;gap:8px;padding:0 16px 14px;overflow-x:auto;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:#fff;border-radius:999px;padding:7px 14px;font-size:13px;font-weight:600;color:var(--ink)}
+.chip.on{background:var(--orange);color:#fff;border-color:var(--orange)}
+.store{background:#fff;border:1px solid var(--line);border-radius:18px;padding:12px;margin:0 16px 12px;display:flex;gap:12px;align-items:center}
+.store .th{width:58px;height:58px;border-radius:14px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:28px;flex:none}
+.store .inf{flex:1;min-width:0}
+.store .nm{font-weight:800;font-size:15px}
+.store .mt{font-size:12px;color:var(--muted);margin-top:2px}
+.store .rt{font-size:12px;font-weight:700;margin-top:4px;display:flex;align-items:center;gap:6px}
+.star{color:#FFB03A}
+.deal{background:var(--peach);color:var(--orange);font-size:11px;font-weight:700;padding:2px 7px;border-radius:7px}
+.hb{color:#d9d2c9;font-size:20px}
+/* games teaser single */
+.gteaser{background:#1C1917;border-radius:20px;padding:18px;margin:0 16px 16px;color:#fff;display:flex;align-items:center;gap:14px}
+.gteaser .art{font-size:44px}
+.gteaser .k{font-size:11px;color:#f0b68a;font-weight:700;letter-spacing:.5px}
+.gteaser b{font-size:17px;display:block;margin:4px 0 10px}
+.gteaser .play{display:inline-block;background:var(--orange);color:#fff;font-weight:800;font-size:13px;padding:8px 16px;border-radius:999px;cursor:pointer}
+/* segmented */
+.seg{display:flex;background:#fff;border:1px solid var(--line);border-radius:14px;padding:4px;margin:0 16px 14px}
+.seg .sb{flex:1;text-align:center;padding:9px;border-radius:10px;font-weight:700;font-size:14px;color:var(--muted);cursor:pointer}
+.seg .sb.on{background:var(--orange);color:#fff}
+/* games tab full */
+.games-wrap{padding:0 16px 20px}
+.gpanel{background:#fff;border:1px solid var(--line);border-radius:22px;padding:22px;text-align:center;margin-bottom:16px}
+.gpanel h4{font-size:19px}
+.gpanel .hint{color:var(--muted);font-size:12.5px;margin:5px 0 18px}
+.wheel-zone{display:flex;flex-direction:column;align-items:center;gap:16px}
+.wheel-wrap{position:relative;width:230px;height:230px}
+.wheel{position:absolute;inset:0;border-radius:50%;transition:transform 4.2s cubic-bezier(.15,.9,.2,1);box-shadow:0 6px 24px rgba(234,88,12,.3),inset 0 0 0 9px #fff,inset 0 0 0 11px var(--line)}
+.seg2{position:absolute;top:0;left:0;right:0;bottom:0}
+.seg2 .txt{position:absolute;top:17px;left:50%;transform:translateX(-50%);color:#fff;font-weight:800;font-size:14px;text-shadow:0 1px 2px rgba(0,0,0,.25);white-space:nowrap}
+.wheel-center{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:48px;height:48px;border-radius:50%;background:#fff;box-shadow:0 2px 8px rgba(0,0,0,.15);display:flex;align-items:center;justify-content:center}
+.wheel-center svg{width:24px;height:24px}
+.pointer{position:absolute;top:-12px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:13px solid transparent;border-right:13px solid transparent;border-top:22px solid var(--orange);z-index:5}
+.spin-btn{background:var(--grad);color:#fff;border:none;border-radius:999px;padding:12px 28px;font-weight:800;font-size:14px;cursor:pointer;box-shadow:0 8px 18px rgba(234,88,12,.35)}
+.spin-btn:disabled{opacity:.55}
+.result{min-height:24px;font-weight:700;color:var(--orange);font-size:13.5px}
+.cards-zone{display:flex;gap:12px;justify-content:center}
+.mcard{width:98px;height:132px;perspective:650px;cursor:pointer;position:relative}
+.mcard .inner{position:absolute;inset:0;transition:transform .5s;transform-style:preserve-3d}
+.mcard.flip .inner{transform:rotateY(180deg)}
+.mcard .face{position:absolute;inset:0;border-radius:15px;backface-visibility:hidden;display:flex;align-items:center;justify-content:center;font-weight:800}
+.mcard .front{background:var(--grad);color:#fff;font-size:30px}
+.mcard .back{background:#fff;border:2px solid var(--orange);transform:rotateY(180deg);flex-direction:column;gap:4px;font-size:11px;padding:8px;text-align:center}
+.mcard .back b{font-size:17px;color:var(--orange)}
+.listitem{background:#fff;border:1px solid var(--line);border-radius:16px;padding:13px;margin:0 16px 10px;display:flex;gap:12px;align-items:center}
+.listitem .th{width:50px;height:50px;border-radius:12px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:24px;flex:none}
+.listitem .nm{font-weight:800;font-size:14.5px}
+.listitem .mt{font-size:12px;color:var(--muted);margin-top:2px}
+.status{font-size:12px;font-weight:700;margin-left:auto}
+.titlebar{display:flex;align-items:center;padding:14px 16px}
+.titlebar h4{font-size:18px;font-weight:800}
+.avatar{width:70px;height:70px;border-radius:999px;background:var(--grad);display:flex;align-items:center;justify-content:center;font-size:34px;color:#fff;margin:0 auto;box-shadow:0 8px 20px rgba(234,88,12,.3)}
+.profile-card{text-align:center;padding:20px 16px}
+.profile-card .nm{font-weight:800;font-size:19px;margin-top:12px}
+.profile-card .mt{color:var(--muted);font-size:13px}
+.menu-row{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px 16px;margin:0 16px 10px;display:flex;align-items:center;gap:12px;font-weight:700;font-size:14px}
+.menu-row .e{font-size:19px}
+.menu-row .val{margin-left:auto;color:var(--muted);font-weight:600}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="statusbar"><span>9:41</span><span>5G ⚡</span></div>
+  <div class="content">
+
+    <!-- HOME -->
+    <div class="screen show" id="s-home">
+      <div class="appbar">
+        <span class="bag"><svg viewBox="0 0 64 64"><path d="M26 28 Q32 20 38 28" stroke="#fff" stroke-width="3.2" fill="none" stroke-linecap="round"/><rect x="19.5" y="27" width="25" height="22" rx="6" fill="#fff"/><path d="M23 35 H41" stroke="#FF8A3D" stroke-width="2.2" stroke-linecap="round"/></svg></span>
+        <div class="brand"><div class="n">Fresh2GO</div><div class="l">📍 Ιωάννινα ▾</div></div>
+        <span style="background:var(--peach);color:var(--orange);border-radius:999px;padding:6px 11px;font-size:11px;font-weight:800">2.9.1</span>
+      </div>
+      <div class="search"><span class="d"></span> Πίτσα, σουβλάκι, καφές…</div>
+
+      <div class="banner"><b>🧡 Καλωσήρθες!</b><p>Δωρεάν παράδοση σήμερα σε επιλεγμένα</p></div>
+
+      <div class="sechead"><h4>🎁 Παίξε &amp; κέρδισε</h4><span onclick="go('games',this)">Όλα →</span></div>
+      <div class="gteaser">
+        <div class="art">🎰</div>
+        <div style="flex:1">
+          <div class="k">ΣΗΜΕΡΙΝΟ ΠΑΙΧΝΙΔΙ</div>
+          <b>Ρόδα της τύχης</b>
+          <span class="play" onclick="go('games',this)">Παίξε →</span>
+        </div>
+      </div>
+
+      <div class="sechead"><h4>Κατηγορίες</h4></div>
+      <div class="chips"><div class="chip on">Όλα</div><div class="chip">🍕 Πίτσα</div><div class="chip">🥙 Σουβλάκι</div><div class="chip">🍔 Burgers</div><div class="chip">🍝 Ζυμαρικά</div><div class="chip">🍣 Sushi</div><div class="chip">☕ Καφές</div><div class="chip">🍰 Γλυκά</div></div>
+
+      <div class="sechead"><h4>Κοντά σου</h4><span>Δες όλα →</span></div>
+      <div class="store"><div class="th">🍕</div><div class="inf"><div class="nm">Pizza Roma</div><div class="mt">Ιταλική · 15–25 min · €2.00</div><div class="rt"><span class="star">★ 4.8</span><span class="deal">-20%</span></div></div><span class="hb">♡</span></div>
+      <div class="store"><div class="th">🥙</div><div class="inf"><div class="nm">Souvlaki GR</div><div class="mt">Ψησταριά · 20–30 min · €1.50</div><div class="rt"><span class="star">★ 4.6</span><span class="deal">Δωρεάν παρ.</span></div></div><span class="hb">♥</span></div>
+      <div class="store"><div class="th">🍔</div><div class="inf"><div class="nm">Burger Lab</div><div class="mt">Burgers · 25–35 min · €2.50</div><div class="rt"><span class="star">★ 4.9</span></div></div><span class="hb">♡</span></div>
+      <div class="store"><div class="th">🍣</div><div class="inf"><div class="nm">Sushi Now</div><div class="mt">Ασιατική · 30–40 min · €3.00</div><div class="rt"><span class="star">★ 4.7</span><span class="deal">Δωρεάν παρ.</span></div></div><span class="hb">♡</span></div>
+    </div>
+
+    <!-- GAMES -->
+    <div class="screen" id="s-games">
+      <div class="titlebar"><h4>🎁 Παιχνίδια</h4></div>
+      <div class="seg">
+        <div class="sb on" id="sg-wheel" onclick="switchGame('wheel',this)">🎰 Ρόδα</div>
+        <div class="sb" id="sg-cards" onclick="switchGame('cards',this)">🃏 Κάρτες</div>
+      </div>
+      <div class="games-wrap">
+        <div class="gpanel" id="p-wheel">
+          <h4>Ρόδα της τύχης</h4>
+          <div class="hint">1 στριφογύρισμα την ημέρα · κέρδισε έκπτωση ή δωρεάν παράδοση</div>
+          <div class="wheel-zone">
+            <div class="wheel-wrap"><div class="wheel" id="wheel"></div><div class="pointer"></div><div class="wheel-center"><svg viewBox="0 0 64 64"><path d="M26 28 Q32 20 38 28" stroke="#EA580C" stroke-width="3.2" fill="none" stroke-linecap="round"/><rect x="19.5" y="27" width="25" height="22" rx="6" fill="#EA580C"/></svg></div></div>
+            <button class="spin-btn" id="spinBtn" onclick="spin()">🎰 Γύρισε τη ρόδα</button>
+            <div class="result" id="wheelResult"></div>
+          </div>
+        </div>
+        <div class="gpanel" id="p-cards" style="display:none">
+          <h4>Μυστικές κάρτες</h4>
+          <div class="hint">Διάλεξε 1 κάρτα την ημέρα · πίσω της κρύβεται δώρο</div>
+          <div class="cards-zone" id="cardsZone">
+            <div class="mcard" onclick="pickCard(0)"><div class="inner"><div class="face front">?</div><div class="face back"><b>10%</b>έκπτωση</div></div></div>
+            <div class="mcard" onclick="pickCard(1)"><div class="inner"><div class="face front">?</div><div class="face back"><b>Δωρεάν</b>παράδοση</div></div></div>
+            <div class="mcard" onclick="pickCard(2)"><div class="inner"><div class="face front">?</div><div class="face back"><b>15%</b>έκπτωση</div></div></div>
+          </div>
+          <div class="result" id="cardResult" style="margin-top:14px"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="screen" id="s-orders">
+      <div class="titlebar"><h4>Οι παραγγελίες μου</h4></div>
+      <div class="listitem"><div class="th">🍕</div><div class="inf"><div class="nm">Pizza Roma</div><div class="mt">#2841 · Σήμερα 20:15</div></div><span class="status" style="color:var(--orange)">Σε εξέλιξη</span></div>
+      <div class="listitem"><div class="th">🥙</div><div class="inf"><div class="nm">Souvlaki GR</div><div class="mt">#2839 · Χθες 21:02</div></div><span class="status" style="color:var(--deep)">Παραδόθηκε</span></div>
+      <div class="listitem"><div class="th">🍔</div><div class="inf"><div class="nm">Burger Lab</div><div class="mt">#2831 · 10 Σεπ</div></div><span class="status" style="color:var(--deep)">Παραδόθηκε</span></div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="screen" id="s-profile">
+      <div class="titlebar"><h4>Προφίλ</h4></div>
+      <div class="profile-card">
+        <div class="avatar">👤</div>
+        <div class="nm">Μάριος</div>
+        <div class="mt">marios@email.gr</div>
+      </div>
+      <div class="menu-row"><span class="e">👛</span> Πορτοφόλι <span class="val">€0.00</span></div>
+      <div class="menu-row"><span class="e">🎧</span> Υποστήριξη <span class="val"></span></div>
+      <div class="menu-row"><span class="e">🎁</span> Οι νίκες μου <span class="val"></span></div>
+      <div class="menu-row"><span class="e">ℹ️</span> Έκδοση εφαρμογής <span class="val">2.9.1 (274)</span></div>
+    </div>
+  </div>
+
+  <div class="nav">
+    <div class="item active" onclick="go('home',this)"><svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 3l9 8h-2v9h-5v-6h-4v6H5v-9H3z"/></svg>Αρχική</div>
+    <div class="item" onclick="go('orders',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 3h12l1 6-7 4-7-4z"/><path d="M6 9v11h12V9"/></svg>Παραγγελίες</div>
+    <div class="item" onclick="go('games',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="8" width="18" height="13" rx="2"/><path d="M3 10h18M12 8v13"/></svg>Παιχνίδια</div>
+    <div class="item" onclick="go('profile',this)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="4"/><path d="M4 20c1-4 4-6 8-6s7 2 8 6"/></svg>Προφίλ</div>
+  </div>
+</div>
+
+<script>
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('show'));
+  document.getElementById('s-'+id).classList.add('show');
+  const map={home:0,orders:1,games:2,profile:3};
+  document.querySelectorAll('.nav .item').forEach((i,k)=>i.classList.toggle('active', k===map[id]));
+}
+function switchGame(mode, el){
+  document.getElementById('p-wheel').style.display = mode==='wheel' ? 'block' : 'none';
+  document.getElementById('p-cards').style.display = mode==='cards' ? 'block' : 'none';
+  document.getElementById('sg-wheel').classList.toggle('on', mode==='wheel');
+  document.getElementById('sg-cards').classList.toggle('on', mode==='cards');
+}
+const colors=['#FFB03A','#FF8A3D','#EA580C','#F97316','#C2410C','#F4A125','#FF8A3D','#EA580C'];
+const labels=['5%','10%','ΔΩΡΕΑΝ','15%','20%','5%','25%','10%'];
+const wheel=document.getElementById('wheel');
+let g='conic-gradient(';
+colors.forEach((c,i)=>{g+=c+' '+(i*45)+'deg '+(i*45+45)+'deg'+(i<colors.length-1?',':'');});
+g+=')'; wheel.style.background=g;
+labels.forEach((l,i)=>{const s=document.createElement('div');s.className='seg2';s.style.transform='rotate('+(i*45+22.5)+'deg)';const t=document.createElement('div');t.className='txt';t.textContent=l;s.appendChild(t);wheel.appendChild(s);});
+let rot=0,spinning=false;
+function spin(){
+  if(spinning)return; spinning=true;
+  document.getElementById('spinBtn').disabled=true;
+  document.getElementById('wheelResult').textContent='';
+  const target=Math.floor(Math.random()*labels.length);
+  rot+=360*6+(360-(target*45+22.5));
+  wheel.style.transform='rotate('+rot+'deg)';
+  setTimeout(()=>{spinning=false;
+    const l=labels[target];
+    document.getElementById('wheelResult').textContent = l==='ΔΩΡΕΑΝ' ? 'ΔΩΡΕΑΝ ΠΑΡΑΔΟΣΗ! 🎉' : 'Κέρδισες '+l+' έκπτωση! Κωδικός εφαρμόστηκε. 🎉';
+  },4300);
+}
+let cardPicked=false;
+function pickCard(i){
+  if(cardPicked)return;
+  cardPicked=true;
+  const c=document.getElementById('cardsZone').children[i];
+  c.classList.add('flip');
+  const prize=c.querySelector('.back b').textContent;
+  document.getElementById('cardResult').textContent='Κέρδισες: '+prize+'! 🎉';
+}
+</script>
+</body>
+</html>
