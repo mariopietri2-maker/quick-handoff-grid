@@ -86,6 +86,32 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
+// Stage Android APKs so the website hosts them at /apk/... (see
+// src/lib/apk-downloads.ts RELEASE_BASE). No-op when no builds are present,
+// so fresh git deploys / CI that never ran build-apks.sh still succeed.
+try {
+  const { readdirSync, copyFileSync, mkdirSync, statSync } = await import('node:fs');
+  const srcDir = resolve(ROOT, 'mobile-apks');
+  const dstDir = resolve(ROOT, 'dist', 'apk');
+  if (existsSync(srcDir)) {
+    mkdirSync(dstDir, { recursive: true });
+    let staged = 0;
+    for (const f of readdirSync(srcDir)) {
+      if (!f.endsWith('.apk')) continue;
+      const from = resolve(srcDir, f);
+      const to = resolve(dstDir, f);
+      copyFileSync(from, to);
+      staged += 1;
+      console.log(`[build] staged /apk/${f} (${(statSync(to).size / 1048576).toFixed(1)} MB)`);
+    }
+    if (staged > 0) console.log(`[build] staged ${staged} apk file(s) into dist/apk`);
+  } else {
+    console.log('[build] mobile-apks/ not found — skipping apk staging');
+  }
+} catch (e) {
+  console.error('[build] apk staging failed (non-fatal)', e);
+}
+
 // Stamp the build identity for the auto-update check (useAppUpdate polls
 // /version.json and prompts a reload when it changes after a deploy).
 try {

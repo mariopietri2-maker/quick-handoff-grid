@@ -16,6 +16,4 @@ native-customer
 .git
 .github
 docs/screenshots
-*.apk
-*.aab
 classes.jar

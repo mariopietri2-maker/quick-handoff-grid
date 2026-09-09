@@ -43,7 +43,10 @@ android-driver/
 ios-customer/
 ios-driver/
 capacitor.config.shared.ts.bak
-mobile-apks/
+# APK binaries ARE committed so fresh2go.gr/apk/... can serve them from the
+# Vercel git build (run-vite-build.mjs stages mobile-apks/*.apk -> dist/apk/).
+mobile-apks/*
+!mobile-apks/*.apk
 store-bundles/
 *.aab
 

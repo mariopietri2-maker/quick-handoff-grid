@@ -200,6 +200,11 @@ export default function DownloadAppPage() {
           <p className="mt-2 text-xs text-muted-foreground/80 font-mono">
             Native driver v{APK_NATIVE_DRIVER_VERSION} · Native customer v{APK_NATIVE_CUSTOMER_VERSION} · Capacitor v{APK_BUILD_VERSION}
           </p>
+          <div className="mt-3 inline-flex items-center gap-2 rounded-full border border-primary/25 bg-primary/5 px-4 py-1.5 text-sm">
+            <span className="font-heading font-bold uppercase tracking-wider text-primary text-[10px]">Capacitor build</span>
+            <span className="font-mono font-bold text-foreground text-base leading-none">v{APK_BUILD_VERSION}</span>
+            <span className="text-muted-foreground text-xs">— current APK</span>
+          </div>
         </div>
 
         <div className="grid sm:grid-cols-2 gap-5 sm:gap-6">
