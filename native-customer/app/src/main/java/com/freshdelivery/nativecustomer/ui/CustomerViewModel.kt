@@ -1577,33 +1577,32 @@ autoOpenTrack(
     private fun startLiveChatSubscription(customerId: String) {
         liveChatJob?.cancel()
         liveChatJob = viewModelScope.launch {
-            runCatching { repo.subscribeLiveChat(customerId) }
-                .onSuccess { flow ->
-                    _state.value = _state.value.copy(liveChatSubscribed = true)
-                    flow.collect { _ -> refreshLiveChat(customerId) }
-                }
-                .onFailure { e ->
-                    _state.value = _state.value.copy(
-                        liveChatSubscribed = false,
-                        liveChatError = e.message ?: "Δεν συνδέθηκε το chat",
-                    )
-                }
+            runCatching {
+                val flow = repo.subscribeLiveChat(customerId)
+                _state.value = _state.value.copy(liveChatSubscribed = true, liveChatError = null)
+                flow.collect { _ -> refreshLiveChat(customerId) }
+            }.onFailure { e ->
+                _state.value = _state.value.copy(
+                    liveChatSubscribed = false,
+                    liveChatError = e.message ?: "Δεν συνδέθηκε το chat",
+                )
+            }
         }
         liveChatSessionJob?.cancel()
         liveChatSessionJob = viewModelScope.launch {
-            runCatching { repo.subscribeLiveChatSessions(customerId) }
-                .onSuccess { flow ->
-                    flow.collect { _ ->
-                        val session = runCatching { repo.getMyLiveChatSession() }.getOrNull()
-                        if (session != null) {
-                            _state.value = _state.value.copy(
-                                liveChatSessionId = session.id,
-                                liveChatClosed = session.status == "closed",
-                                liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: _state.value.liveChatTopic,
-                            )
-                        }
+            runCatching {
+                val flow = repo.subscribeLiveChatSessions(customerId)
+                flow.collect { _ ->
+                    val session = runCatching { repo.getMyLiveChatSession() }.getOrNull()
+                    if (session != null) {
+                        _state.value = _state.value.copy(
+                            liveChatSessionId = session.id,
+                            liveChatClosed = session.status == "closed",
+                            liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: _state.value.liveChatTopic,
+                        )
                     }
                 }
+            }
         }
     }
 
