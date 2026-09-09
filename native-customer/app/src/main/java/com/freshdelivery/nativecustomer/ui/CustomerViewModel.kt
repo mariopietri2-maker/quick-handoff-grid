@@ -206,6 +206,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var ticketJob: Job? = null
     private var searchJob: Job? = null
     private var gameShowUntilMs = 0L
+    /** Full store list for local search when the network query is empty/fails. */
+    private var allStoresCache: List<StoreRow> = emptyList()
 
     init {
         _state.value = _state.value.copy(gameShow = rollDailyGameShow())
@@ -398,13 +400,42 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         searchJob?.cancel()
         val trimmed = q.trim()
         if (trimmed.isBlank()) {
+            // Restore full catalogue (from cache if available for instant UI).
+            if (allStoresCache.isNotEmpty()) {
+                _state.value = _state.value.copy(stores = allStoresCache)
+            }
             refreshStores()
             return
         }
+        // Instant local filter so typing always feels responsive.
+        val local = filterStoresLocal(
+            if (allStoresCache.isNotEmpty()) allStoresCache else _state.value.stores,
+            trimmed,
+        )
+        _state.value = _state.value.copy(stores = local)
         searchJob = viewModelScope.launch {
-            delay(280)
-            val results = repo.searchStores(trimmed)
-            _state.value = _state.value.copy(stores = results)
+            delay(220)
+            runCatching { repo.searchStores(trimmed) }
+                .onSuccess { remote ->
+                    // Prefer remote when it finds matches; otherwise keep local.
+                    if (remote.isNotEmpty()) {
+                        _state.value = _state.value.copy(stores = remote)
+                    }
+                }
+                .onFailure {
+                    // Keep local results — search must not hard-fail the UI.
+                }
+        }
+    }
+
+    private fun filterStoresLocal(source: List<StoreRow>, query: String): List<StoreRow> {
+        val tokens = query.lowercase().split(Regex("\\s+")).filter { it.isNotBlank() }
+        if (tokens.isEmpty()) return source
+        return source.filter { store ->
+            val hay = listOfNotNull(store.name, store.tagline, store.promo_badge, store.address)
+                .joinToString(" ")
+                .lowercase()
+            tokens.all { hay.contains(it) }
         }
     }
 
@@ -1102,8 +1133,13 @@ autoOpenTrack(
     fun refreshStores() {
         viewModelScope.launch {
             runCatching {
+                val list = repo.fetchStores()
+                allStoresCache = list
+                // Don't clobber an active search with the full catalogue.
+                val q = _state.value.searchQuery.trim()
+                val shown = if (q.isBlank()) list else filterStoresLocal(list, q)
                 _state.value = _state.value.copy(
-                    stores = repo.fetchStores(),
+                    stores = shown,
                     storeRatings = repo.fetchStoreRatings(),
                 )
             }.onFailure { e ->
