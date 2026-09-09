@@ -390,9 +390,9 @@ fun CustomerShell(
                     onTab = onTab,
                     onOpenCart = { onToggleCart(true) },
                 )
-                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview)
+                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview, onBackToHome = { onTab(CustomerTab.Home) })
                 CustomerTab.Track -> TrackTab(state)
-                CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport)
+                CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
     }
@@ -2362,6 +2362,7 @@ private fun OrdersTab(
     onTrack: (OrderUi?) -> Unit,
     onRefresh: () -> Unit,
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
+    onBackToHome: () -> Unit = {},
 ) {
     LazyColumn(
         Modifier
@@ -2379,7 +2380,20 @@ private fun OrdersTab(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("Παραγγελίες", style = MaterialTheme.typography.headlineMedium)
+                Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                    IconButton(
+                        onClick = onBackToHome,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .clip(RoundedCornerShape(14.dp))
+                            .background(Color.White)
+                            .shadow(3.dp, RoundedCornerShape(14.dp)),
+                    ) {
+                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Αρχική", tint = FreshInk)
+                    }
+                    Spacer(Modifier.width(8.dp))
+                    Text("Παραγγελίες", style = MaterialTheme.typography.headlineMedium)
+                }
                 IconButton(
                     onClick = onRefresh,
                     modifier = Modifier
@@ -2711,6 +2725,7 @@ private fun ProfileTab(
     onSaveProfile: (String, String) -> Unit,
     onSignOut: () -> Unit,
     onOpenSupport: () -> Unit = {},
+    onBackToHome: () -> Unit = {},
 ) {
     var fullName by remember(state.profile?.full_name) {
         mutableStateOf(state.profile?.full_name ?: "")
@@ -2740,10 +2755,23 @@ private fun ProfileTab(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            Text(
-                "Λογαριασμός",
-                style = MaterialTheme.typography.headlineMedium,
-            )
+            Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.weight(1f)) {
+                IconButton(
+                    onClick = onBackToHome,
+                    modifier = Modifier
+                        .size(40.dp)
+                        .clip(RoundedCornerShape(14.dp))
+                        .background(Color.White)
+                        .shadow(3.dp, RoundedCornerShape(14.dp)),
+                ) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Αρχική", tint = FreshInk)
+                }
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Λογαριασμός",
+                    style = MaterialTheme.typography.headlineMedium,
+                )
+            }
             TextButton(onClick = onSignOut) {
                 Icon(Icons.Outlined.Logout, contentDescription = null, tint = FreshRose, modifier = Modifier.size(18.dp))
                 Spacer(Modifier.width(4.dp))
