@@ -583,27 +583,36 @@ class CustomerRepository(
     suspend fun fetchMyTickets(userId: String): List<SupportTicketRow> {
         return runCatching {
             client.from("support_tickets")
-                .select("id, category, description, status, created_at, order_id")
-                .eq("requester_id", userId)
-                .order("created_at", Order.DESCENDING)
-                .limit(100L)
+                .select(Columns.list("id", "category", "description", "status", "created_at", "order_id")) {
+                    filter { eq("requester_id", userId) }
+                    order("created_at", Order.DESCENDING)
+                    limit(100L)
+                }
                 .decodeList<SupportTicketRow>()
         }.getOrDefault(emptyList())
     }
 
     suspend fun getMyLiveChatSession(): LiveChatSessionRow? {
         return runCatching {
-            client.postgrest.rpc("get_my_live_chat_session", {
-            }).decodeList<LiveChatSessionRow>().firstOrNull()
+            client.postgrest.rpc("get_my_live_chat_session")
+                .decodeList<LiveChatSessionRow>()
+                .firstOrNull()
         }.getOrNull()
     }
 
+    /** Open or resume the customer's live-chat session; returns session id. */
     suspend fun ensureMyLiveChatSession(topic: String?): String? {
-        val uid = client.auth.currentUserOrNull()?.id ?: return null
         return runCatching {
-            client.postgrest.rpc("ensure_my_live_chat_session", buildJsonObject {
-                put("p_topic", topic)
-            }).decodeText() ?: null
+            val response = client.postgrest.rpc(
+                "ensure_my_live_chat_session",
+                buildJsonObject { put("p_topic", topic ?: "") },
+            )
+            runCatching { response.decodeAs<String>() }
+                .getOrElse {
+                    runCatching { response.decodeList<String>().firstOrNull() }.getOrNull()
+                }
+                ?.trim()
+                ?.trim('"')
         }.getOrNull()
     }
 
@@ -615,75 +624,102 @@ class CustomerRepository(
                     put("category", topic)
                     put("description", message)
                     put("status", "open")
-                    put("order_id", orderId)
+                    if (orderId != null) put("order_id", orderId) else put("order_id", JsonNull)
                 }
-            ).select("id, category, description, status, created_at, order_id")
-                .order("created_at", Order.DESCENDING)
-                .limit(1L)
-                .maybeSingle()
-                .decodeAs<SupportTicketRow>()
+            )
+            fetchMyTickets(userId)
         }.getOrDefault(emptyList())
     }
 
     suspend fun fetchTicketMessages(ticketId: String): List<TicketMessageRow> {
         return runCatching {
             client.from("ticket_messages")
-                .select("id, ticket_id, sender_id, sender_role, message, created_at")
-                .eq("ticket_id", ticketId)
-                .order("created_at", Order.ASCENDING)
-                .limit(100L)
+                .select(Columns.list("id", "ticket_id", "sender_id", "sender_role", "message", "created_at")) {
+                    filter { eq("ticket_id", ticketId) }
+                    order("created_at", Order.ASCENDING)
+                    limit(200L)
+                }
                 .decodeList<TicketMessageRow>()
         }.getOrDefault(emptyList())
     }
 
-    fun subscribeTicketMessages(ticketId: String): Flow<Unit> = emptyFlow()
+    suspend fun subscribeTicketMessages(ticketId: String): Flow<Unit> {
+        val channel = client.channel("customer-ticket-$ticketId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "ticket_messages"
+            filter("ticket_id", FilterOperator.EQ, ticketId)
+        }
+        channel.subscribe()
+        return flow.map { }
+    }
 
     suspend fun sendTicketMessage(ticketId: String, userId: String, message: String) {
-        runCatching {
-            client.from("ticket_messages").insert(
-                buildJsonObject {
-                    put("ticket_id", ticketId)
-                    put("sender_id", userId)
-                    put("sender_role", "customer")
-                    put("message", message)
-                }
-            )
-        }.getOrNull()
+        client.from("ticket_messages").insert(
+            buildJsonObject {
+                put("ticket_id", ticketId)
+                put("sender_id", userId)
+                put("sender_role", "customer")
+                put("message", message)
+            }
+        )
     }
 
     suspend fun unsubscribeTickets() {
         runCatching { client.realtime.removeAllChannels() }
     }
 
+    /** History for this customer's support channel (oldest → newest). */
     suspend fun fetchLiveChat(customerId: String): List<LiveChatMessageRow> {
         return runCatching {
             client.from("live_chat_messages")
-                .select("id, customer_id, driver_id, sender_id, sender_role, message, created_at, topic")
-                .or(customerId + ".eq.customer_id, " + customerId + ".eq.driver_id")
-                .order("created_at", Order.DESCENDING)
-                .limit(50L)
+                .select(
+                    Columns.list(
+                        "id", "customer_id", "sender_id", "sender_role",
+                        "message", "created_at", "topic",
+                    ),
+                ) {
+                    filter { eq("customer_id", customerId) }
+                    order("created_at", Order.ASCENDING)
+                    limit(200L)
+                }
                 .decodeList<LiveChatMessageRow>()
         }.getOrDefault(emptyList())
     }
 
+    /** Insert a customer message — customer_id is required by RLS / channel rule. */
     suspend fun sendLiveChatMessage(customerId: String, senderId: String, message: String, topic: String?) {
-        runCatching {
-            client.from("live_chat_messages").insert(
-                buildJsonObject {
-                    put("sender_id", senderId)
-                    put("sender_role", "customer")
-                    put("message", message)
-                    put("topic", topic ?? "")
-                }
-            )
-        }.getOrNull()
+        client.from("live_chat_messages").insert(
+            buildJsonObject {
+                put("customer_id", customerId)
+                put("sender_id", senderId)
+                put("sender_role", "customer")
+                put("message", message)
+                if (!topic.isNullOrBlank()) put("topic", topic)
+            },
+        )
     }
 
-    fun subscribeLiveChat(customerId: String): Flow<Unit> = emptyFlow()
+    suspend fun subscribeLiveChat(customerId: String): Flow<Unit> {
+        val channel = client.channel("customer-live-chat-$customerId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "live_chat_messages"
+            filter("customer_id", FilterOperator.EQ, customerId)
+        }
+        channel.subscribe()
+        return flow.map { }
+    }
 
-    fun subscribeLiveChatSessions(customerId: String): Flow<Unit> = emptyFlow()
+    suspend fun subscribeLiveChatSessions(customerId: String): Flow<Unit> {
+        val channel = client.channel("customer-live-session-$customerId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "live_chat_sessions"
+            filter("customer_id", FilterOperator.EQ, customerId)
+        }
+        channel.subscribe()
+        return flow.map { }
+    }
 }
-}
+
 
 private fun buildOrderNotes(notes: String?, items: List<CartLine>): String? {
     val modLines = items.mapNotNull { line ->
