@@ -4,39 +4,32 @@
     android:height="108dp"
     android:viewportWidth="108"
     android:viewportHeight="108">
-    <!--
-      Fresh2GO bag logo — adaptive safe zone (~center 66dp).
-      White bag + orange fold, matches website mark.
-    -->
-    <!-- Soft white plate behind bag for contrast on any mask -->
+    <!-- Fresh2GO static bag — large mark in adaptive safe zone -->
+    <!-- Soft plate -->
     <path
         android:fillColor="#FFFFFF"
-        android:fillAlpha="0.12"
-        android:pathData="M28,30h52c6,0 10,4 10,10v36c0,6 -4,10 -10,10H28c-6,0 -10,-4 -10,-10V40c0,-6 4,-10 10,-10z" />
-
+        android:fillAlpha="0.18"
+        android:pathData="M24,28h60c7,0 12,5 12,12v40c0,7 -5,12 -12,12H24c-7,0 -12,-5 -12,-12V40c0,-7 5,-12 12,-12z" />
     <!-- Handle -->
     <path
         android:fillColor="#00000000"
         android:strokeColor="#FFFFFF"
-        android:strokeWidth="5"
+        android:strokeWidth="6"
         android:strokeLineCap="round"
-        android:pathData="M42,48c0,-11 24,-11 24,0" />
-
+        android:pathData="M40,46c0,-13 28,-13 28,0" />
     <!-- Bag body -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M34,48h40c4,0 7,3 7,7v24c0,5 -4,9 -9,9H36c-5,0 -9,-4 -9,-9V55c0,-4 3,-7 7,-7z" />
-
-    <!-- Fold line -->
+        android:pathData="M32,46h44c5,0 9,4 9,9v26c0,6 -5,11 -11,11H34c-6,0 -11,-5 -11,-11V55c0,-5 4,-9 9,-9z" />
+    <!-- Fold -->
     <path
         android:fillColor="#00000000"
-        android:strokeColor="#FF8A3D"
-        android:strokeWidth="3.5"
+        android:strokeColor="#EA580C"
+        android:strokeWidth="4"
         android:strokeLineCap="round"
-        android:pathData="M40,60h28" />
-
-    <!-- Small accent dot (brand cue) -->
+        android:pathData="M38,60h32" />
+    <!-- Brand dot -->
     <path
-        android:fillColor="#FF8A3D"
-        android:pathData="M54,72m-2.5,0a2.5,2.5 0,1 1,5 0a2.5,2.5 0,1 1,-5 0" />
+        android:fillColor="#EA580C"
+        android:pathData="M54,74m-3.2,0a3.2,3.2 0,1 1,6.4 0a3.2,3.2 0,1 1,-6.4 0" />
 </vector>
