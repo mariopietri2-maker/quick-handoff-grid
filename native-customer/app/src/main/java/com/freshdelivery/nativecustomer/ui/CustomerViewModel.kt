@@ -1651,30 +1651,50 @@ autoOpenTrack(
     }
 
     /**
-     * One roll per calendar day — decides if the games section shows customers.
-     * Wheel appears with 30% probability, mystery cards with 40%. Resets at midnight.
-     * When it appears it stays visible for 10 minutes only; after that it hides
-     * (live via the game ticker) and does not return until the next day's roll.
+     * Once per calendar day, under the promo card, roll which game appears:
+     *   - 30% lucky wheel (roulette)
+     *   - 40% mystery cards
+     *   - 30% nothing
+     * Exactly one game at a time. If it appears, it stays for [GAME_SHOW_WINDOW_MS]
+     * (15 minutes), then hides until the next day's roll.
      */
     private fun rollDailyGameShow(): Boolean {
-        val chance = if (_state.value.gameActive == "cards") 0.4 else 0.3
         val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
-        if (prefs.getString("game_show_day", null) == todayKey()) {
+        val day = todayKey()
+        if (prefs.getString("game_show_day", null) == day) {
             if (!prefs.getBoolean("game_show_today", false)) {
                 gameShowUntilMs = 0L
                 return false
+            }
+            // Restore which game was rolled for today.
+            val active = prefs.getString("game_active_today", null)
+            if (active == "wheel" || active == "cards") {
+                _state.value = _state.value.copy(gameActive = active)
             }
             val shownAt = prefs.getLong("game_shown_at", 0L)
             val until = shownAt + GAME_SHOW_WINDOW_MS
             gameShowUntilMs = until
             return System.currentTimeMillis() < until
         }
-        val show = Random.nextDouble() < chance
-        gameShowUntilMs = if (show) System.currentTimeMillis() + GAME_SHOW_WINDOW_MS else 0L
+        // Fresh daily roll: 0.00–0.30 wheel, 0.30–0.70 cards, else none.
+        val roll = Random.nextDouble()
+        val active: String?
+        val show: Boolean
+        when {
+            roll < 0.30 -> { active = "wheel"; show = true }
+            roll < 0.70 -> { active = "cards"; show = true }
+            else -> { active = null; show = false }
+        }
+        val now = System.currentTimeMillis()
+        gameShowUntilMs = if (show) now + GAME_SHOW_WINDOW_MS else 0L
+        if (active != null) {
+            _state.value = _state.value.copy(gameActive = active)
+        }
         prefs.edit()
-            .putString("game_show_day", todayKey())
+            .putString("game_show_day", day)
             .putBoolean("game_show_today", show)
-            .putLong("game_shown_at", System.currentTimeMillis())
+            .putString("game_active_today", active)
+            .putLong("game_shown_at", now)
             .apply()
         return show
     }
