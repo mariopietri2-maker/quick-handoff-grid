@@ -580,28 +580,38 @@ private fun HomeTab(
                     .padding(horizontal = 16.dp)
                     .padding(top = 8.dp, bottom = 4.dp),
             ) {
-                // Competitor-style header: NO logo on top — address + basket + profile only.
-                // Brand row intentionally removed (was gated by showHeaderBrand).
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Column(
-                        Modifier
-                            .weight(1f)
-                            .clickable(onClick = onEditAddress),
+                // Brand row: logo + Fresh2GO (top-left) · cart + profile (top-right)
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.weight(1f),
                     ) {
-                        Text(
-                            "Παράδοση σε",
-                            color = FreshMuted,
-                            style = MaterialTheme.typography.labelMedium,
-                        )
-                        Text(
-                            text = (state.deliveryAddress.ifBlank { state.appConfig.cityLabel }) + " ⌄",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis,
-                        )
+                        Fresh2GoBagMark(size = 36.dp)
+                        Spacer(Modifier.width(10.dp))
+                        Column {
+                            Text(
+                                buildAnnotatedString {
+                                    withStyle(SpanStyle(color = FreshInk, fontWeight = FontWeight.Black)) {
+                                        append("Fresh")
+                                    }
+                                    withStyle(SpanStyle(color = Color(0xFFF4A125), fontWeight = FontWeight.Black)) {
+                                        append("2GO")
+                                    }
+                                },
+                                style = MaterialTheme.typography.titleMedium,
+                                maxLines = 1,
+                            )
+                            Text(
+                                "Fresh Meals. Fast Delivery.",
+                                color = FreshMuted,
+                                style = MaterialTheme.typography.labelSmall,
+                                maxLines = 1,
+                            )
+                        }
                     }
-                    // Basket with count badge (competitor top-right)
                     Box(contentAlignment = Alignment.TopEnd) {
                         IconButton(onClick = onOpenCart) {
                             Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
@@ -630,6 +640,26 @@ private fun HomeTab(
                             Icon(Icons.Outlined.Tune, contentDescription = "Διαχείριση παιχνιδιών", tint = FreshMuted)
                         }
                     }
+                }
+                Spacer(Modifier.height(10.dp))
+                // Address under brand
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .clickable(onClick = onEditAddress),
+                ) {
+                    Text(
+                        "Παράδοση σε",
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    Text(
+                        text = (state.deliveryAddress.ifBlank { state.appConfig.cityLabel }) + " ⌄",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                    )
                 }
                 // Slim location row under header (keeps GPS one-tap without clutter)
                 Row(
