@@ -78,7 +78,7 @@ private val URGENT_TOPICS = setOf(
 )
 
 /** How long the games section stays visible once it appears — then it hides for the rest of the day. */
-private const val GAME_SHOW_WINDOW_MS = 10 * 60 * 1000L
+private const val GAME_SHOW_WINDOW_MS = 15 * 60 * 1000L
 
 /** A won prize stays valid 10 minutes after the customer claims it. */
 private const val GAME_DEAL_WINDOW_MS = 10 * 60 * 1000L
