@@ -69,7 +69,13 @@ data class AddressSuggestion(
 enum class SupportView { Topics, Compose, MyTickets, Live, Ticket }
 
 /** Topics that skip the async ticket queue and open the urgent live chat instead (mirrors web). */
-private val URGENT_TOPICS = setOf("wrong_order")
+private val URGENT_TOPICS = setOf(
+    "late_delivery",
+    "missing_items",
+    "wrong_order",
+    "address_issue",
+    "driver_issue",
+)
 
 /** How long the games section stays visible once it appears — then it hides for the rest of the day. */
 private const val GAME_SHOW_WINDOW_MS = 10 * 60 * 1000L
