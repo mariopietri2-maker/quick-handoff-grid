@@ -21,6 +21,192 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Restore full CustomerShell + Games and apply alive motion
+        run: |
+          set -e
+          git config user.email "fresh2go-bot@users.noreply.github.com"
+          git config user.name "fresh2go-bot"
+          GOOD=549cdf5dc7793abb27f3fcb1f5e4497fd851bc58
+          git show $GOOD:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
+            > native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          git show $GOOD:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt \
+            > native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt
+          python3 - <<'PY'
+          from pathlib import Path
+          path = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
+          text = path.read_text()
+          if "animateFloatAsState" not in text:
+              text = text.replace(
+                  "import androidx.compose.animation.core.animateFloat\n",
+                  "import androidx.compose.animation.core.animateFloat\nimport androidx.compose.animation.core.animateFloatAsState\n",
+              )
+          if "MutableInteractionSource" not in text:
+              text = text.replace(
+                  "import androidx.compose.foundation.clickable\n",
+                  "import androidx.compose.foundation.clickable\nimport androidx.compose.foundation.interaction.MutableInteractionSource\nimport androidx.compose.foundation.interaction.collectIsPressedAsState\n",
+              )
+          old_badge = """                    Box(contentAlignment = Alignment.TopEnd) {
+                        IconButton(onClick = onOpenCart) {
+                            Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
+                        }
+                        if (state.cartCount > 0) {
+                            Surface(
+                                color = Color(0xFFEA580C),
+                                shape = CircleShape,
+                                modifier = Modifier.padding(top = 6.dp, end = 6.dp),
+                            ) {
+                                Text(
+                                    text = if (state.cartCount > 9) "9+" else "${state.cartCount}",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                )
+                            }
+                        }
+                    }"""
+          new_badge = """                    Box(contentAlignment = Alignment.TopEnd) {
+                        IconButton(onClick = onOpenCart) {
+                            Icon(Icons.Outlined.ShoppingBag, contentDescription = "Καλάθι", tint = FreshInk)
+                        }
+                        if (state.cartCount > 0) {
+                            val cartPulse = rememberInfiniteTransition(label = "cartPulse")
+                            val cartScale by cartPulse.animateFloat(
+                                initialValue = 1f,
+                                targetValue = 1.18f,
+                                animationSpec = infiniteRepeatable(
+                                    animation = tween(700, easing = FastOutSlowInEasing),
+                                    repeatMode = RepeatMode.Reverse,
+                                ),
+                                label = "cartScale",
+                            )
+                            Surface(
+                                color = Color(0xFFEA580C),
+                                shape = CircleShape,
+                                modifier = Modifier
+                                    .padding(top = 6.dp, end = 6.dp)
+                                    .graphicsLayer {
+                                        scaleX = cartScale
+                                        scaleY = cartScale
+                                    },
+                            ) {
+                                Text(
+                                    text = if (state.cartCount > 9) "9+" else "${state.cartCount}",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp),
+                                )
+                            }
+                        }
+                    }"""
+          if old_badge not in text:
+              raise SystemExit("cart badge block missing")
+          text = text.replace(old_badge, new_badge)
+          old_card = """@Composable
+private fun FreshStoreCard(
+    store: StoreRow,
+    onClick: () -> Unit,
+    rating: StoreRating? = null,
+    isFavorite: Boolean = false,
+    deliveryLat: Double? = null,
+    deliveryLng: Double? = null,
+    onToggleFavorite: (() -> Unit)? = null,
+) {
+    val openNow = isStoreOpenNow(store)
+    val active = store.is_active != false
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .shadow(6.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color.White)
+            .clickable(onClick = onClick),
+    ) {"""
+          new_card = """@Composable
+private fun FreshStoreCard(
+    store: StoreRow,
+    onClick: () -> Unit,
+    rating: StoreRating? = null,
+    isFavorite: Boolean = false,
+    deliveryLat: Double? = null,
+    deliveryLng: Double? = null,
+    onToggleFavorite: (() -> Unit)? = null,
+) {
+    val openNow = isStoreOpenNow(store)
+    val active = store.is_active != false
+    val interaction = remember { MutableInteractionSource() }
+    val pressed by interaction.collectIsPressedAsState()
+    val pressScale by animateFloatAsState(
+        targetValue = if (pressed) 0.97f else 1f,
+        animationSpec = tween(120, easing = FastOutSlowInEasing),
+        label = "storePress",
+    )
+    val openPulse = rememberInfiniteTransition(label = "openPulse")
+    val openDotScale by openPulse.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.55f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(900, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "openDot",
+    )
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .graphicsLayer {
+                scaleX = pressScale
+                scaleY = pressScale
+            }
+            .shadow(6.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
+            .background(Color.White)
+            .clickable(interactionSource = interaction, indication = null, onClick = onClick),
+    ) {"""
+          if old_card not in text:
+              raise SystemExit("store card missing")
+          text = text.replace(old_card, new_card)
+          old_dot = """                    if (active && openNow) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .clip(CircleShape)
+                                .background(Color.White),
+                        )
+                        Spacer(Modifier.width(5.dp))
+                    }"""
+          new_dot = """                    if (active && openNow) {
+                        Box(
+                            Modifier
+                                .size(6.dp)
+                                .graphicsLayer {
+                                    scaleX = openDotScale
+                                    scaleY = openDotScale
+                                    alpha = 0.55f + (openDotScale - 1f) * 0.6f
+                                }
+                                .clip(CircleShape)
+                                .background(Color.White),
+                        )
+                        Spacer(Modifier.width(5.dp))
+                    }"""
+          if old_dot not in text:
+              raise SystemExit("open dot missing")
+          text = text.replace(old_dot, new_dot)
+          path.write_text(text)
+          print("patched", path, "lines", len(text.splitlines()))
+          PY
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
+                  native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt
+          if ! git diff --cached --quiet; then
+            git commit -m "ui(native-customer): restore full home UI + alive motion"
+            git push origin HEAD || true
+          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4
