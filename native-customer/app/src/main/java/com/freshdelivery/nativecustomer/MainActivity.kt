@@ -3,7 +3,7 @@ package com.freshdelivery.nativecustomer
 import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.rememberLauncherForActivityResult
+importnimport androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -38,7 +38,6 @@ class MainActivity : ComponentActivity() {
 
     override fun onResume() {
         super.onResume()
-        // After "Install unknown apps" settings, continue download automatically.
         lifecycleScope.launch {
             runCatching { updateChecker.resumeAfterSettings() }
         }
@@ -53,6 +52,7 @@ class MainActivity : ComponentActivity() {
                 is PaymentSheetResult.Canceled -> "Η πληρωμή ακυρώθηκε"
                 else -> null
             }
+            // ViewModel is recreated in compose - use a static holder
             PaymentSheetBridge.onResult(ok, msg)
         }
         enableEdgeToEdge()
@@ -93,6 +93,7 @@ class MainActivity : ComponentActivity() {
                     delay(1_600)
                     splashMinElapsed = true
                 }
+                // Sideload self-update (silent unless a newer build is published).
                 val updateScope = rememberCoroutineScope()
                 val updateState by updateChecker.state.collectAsState()
                 LaunchedEffect(Unit) { updateChecker.check() }
@@ -122,29 +123,7 @@ class MainActivity : ComponentActivity() {
                     else -> {
                         CustomerShell(
                             state = state,
-                            onTab = vm::setTab,
-                            onOpenStore = vm::openStore,
-                            onBackFromStore = vm::closeStore,
-                            onAdd = vm::addToCart,
-                            onOpenCart = vm::openCart,
-                            onCloseCart = vm::closeCart,
-                            onUpdateQty = vm::updateCartQty,
-                            onSetAddress = vm::setDeliveryAddress,
-                            onSetNotes = vm::setNotes,
-                            onSetTip = vm::setTip,
-                            onSetPayment = vm::setPaymentMethod,
-                            onPlaceOrder = vm::placeOrder,
-                            onTrack = vm::trackOrder,
-                            onRefresh = vm::refreshAll,
-                            onSignOut = vm::signOut,
-                            onSaveProfile = vm::saveProfile,
-                            onSearch = vm::setSearchQuery,
-                            onLocate = vm::locateMe,
-                            onPickSuggestion = vm::pickSuggestion,
-                            onToggleFavorite = vm::toggleFavorite,
-                            onOpenSupport = vm::openSupport,
-                            onCloseSupport = vm::closeSupport,
-                            onSubmitReview = vm::submitReview,
+                            vm = vm,
                         )
                     }
                 }
@@ -153,9 +132,12 @@ class MainActivity : ComponentActivity() {
     }
 }
 
+/** Bridges PaymentSheet callback (Activity) into the ViewModel without holding a hard ref. */
 object PaymentSheetBridge {
+    @Volatile
     var handler: ((Boolean, String?) -> Unit)? = null
-    fun onResult(ok: Boolean, msg: String?) {
-        handler?.invoke(ok, msg)
+
+    fun onResult(ok: Boolean, message: String?) {
+        handler?.invoke(ok, message)
     }
 }
