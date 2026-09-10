@@ -1,7 +1,15 @@
 #!/usr/bin/env python3
-"""Performance pass: Coil decode sizes + LazyColumn contentType on store list."""
+"""Performance pass: Coil decode sizes + LazyColumn contentType + search debounce."""
 from pathlib import Path
 import sys
+
+# --- ViewModel search remote debounce ---
+vm = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt")
+if vm.exists():
+    vt = vm.read_text()
+    if "delay(220)" in vt:
+        vm.write_text(vt.replace("delay(220)", "delay(280)"))
+        print("search debounce -> 280ms")
 
 path = Path("native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt")
 if not path.exists():
