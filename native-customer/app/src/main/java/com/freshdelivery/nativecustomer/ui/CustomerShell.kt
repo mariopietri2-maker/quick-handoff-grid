@@ -508,16 +508,26 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
         Modifier
             .fillMaxWidth()
             .height(height.dp)
-            .background(FreshChip),
+            .background(
+                Brush.linearGradient(listOf(Color(0xFFFFE3C7), Color(0xFFFFC895))),
+            ),
         contentAlignment = Alignment.Center,
     ) {
         if (url.isNullOrBlank()) {
-            Icon(
-                Icons.Outlined.Store,
-                contentDescription = null,
-                tint = FreshMuted,
-                modifier = Modifier.size(48.dp),
-            )
+            Box(
+                Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.75f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.Store,
+                    contentDescription = null,
+                    tint = FreshGreen,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
         } else {
             val ctx = LocalContext.current
             AsyncImage(
@@ -530,12 +540,17 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
                 modifier = Modifier.fillMaxSize(),
             )
         }
+        // Top + bottom scrim so the open/closed badge and rating stay readable
+        // over any photo.
         Box(
             Modifier
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f)),
+                        0f to Color.Black.copy(alpha = 0.28f),
+                        0.32f to Color.Transparent,
+                        0.62f to Color.Transparent,
+                        1f to Color.Black.copy(alpha = 0.34f),
                     ),
                 ),
         )
@@ -1172,7 +1187,7 @@ private fun FreshStoreCard(
                     modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),
                 ) {
                     Text(
-                        badge,
+                        "🔥 $badge",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelSmall,
@@ -3546,6 +3561,15 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
         ),
         label = "bob",
     )
+    val pulse by infinite.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(820, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "promoPulse",
+    )
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         HorizontalPager(
             state = pagerState,
@@ -3659,6 +3683,32 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                                 )
                             }
                         }
+                    }
+                }
+                Surface(
+                    color = Color.White,
+                    shape = RoundedCornerShape(999.dp),
+                    modifier = Modifier
+                        .align(Alignment.BottomEnd)
+                        .padding(12.dp)
+                        .graphicsLayer {
+                            scaleX = pulse
+                            scaleY = pulse
+                        }
+                        .shadow(8.dp, RoundedCornerShape(999.dp)),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text("🔥", fontSize = 13.sp)
+                        Spacer(Modifier.width(5.dp))
+                        Text(
+                            "ΠΡΟΣΦΟΡΑ",
+                            color = FreshGreen,
+                            fontWeight = FontWeight.Black,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
                     }
                 }
             }
