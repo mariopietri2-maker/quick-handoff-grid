@@ -11,7 +11,10 @@ export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
 /** Native Kotlin/Compose customer. */
 export const APK_NATIVE_CUSTOMER_VERSION = '2.9.14-fresh2go';
 
+/** Website hosts Capacitor APKs; native APKs are published on GitHub Releases. */
 const RELEASE_BASE = 'https://fresh2go.gr/apk';
+const GH_RELEASE_BASE =
+  'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
 
 export { SITE_ORIGIN };
 
@@ -21,7 +24,7 @@ export const APK_DOWNLOADS = {
     title: 'Οδηγός Native',
     subtitle: 'Kotlin + Compose · Mapbox · FCM · background ring',
     filename: 'fresh2go-driver-native-debug.apk',
-    fileUrl: `${RELEASE_BASE}/fresh2go-driver-native-debug.apk`,
+    fileUrl: `${GH_RELEASE_BASE}/fresh2go-driver-native-debug.apk`,
     sizeLabel: '~87 MB',
     versionLabel: APK_NATIVE_DRIVER_VERSION,
     badge: 'Native',
@@ -31,8 +34,8 @@ export const APK_DOWNLOADS = {
     title: 'Πελάτης Native',
     subtitle: 'Καλάθι · Mapbox · FCM · promo carousel',
     filename: 'fresh2go-customer-native-debug.apk',
-    fileUrl: `${RELEASE_BASE}/fresh2go-customer-native-debug.apk`,
-    sizeLabel: '~21 MB',
+    fileUrl: `${GH_RELEASE_BASE}/fresh2go-customer-native-debug.apk`,
+    sizeLabel: '~35 MB',
     versionLabel: APK_NATIVE_CUSTOMER_VERSION,
     badge: 'Native',
   },
