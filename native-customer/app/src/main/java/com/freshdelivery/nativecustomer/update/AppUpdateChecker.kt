@@ -34,8 +34,6 @@ import java.io.File
  */
 private val VERSIONS_URLS = listOf(
     "https://fresh2go.gr/native-versions.json",
-    "https://freshdelivery.app/native-versions.json",
-    "https://quick-handoff-grid-8qu8.vercel.app/native-versions.json",
     "https://quick-handoff-grid-production.up.railway.app/native-versions.json",
 )
 private const val APK_FILE_NAME = "fresh2go-update.apk"

@@ -105,7 +105,6 @@ jobs:
 
       - name: Build customer debug APK + debug AAB
         id: customer
-        continue-on-error: true
         working-directory: native-customer
         run: |
           echo "sdk.dir=$ANDROID_HOME" > local.properties
@@ -118,9 +117,11 @@ jobs:
           if [ -f native-driver/app/build/outputs/bundle/debug/app-debug.aab ]; then
             cp native-driver/app/build/outputs/bundle/debug/app-debug.aab dist/fresh2go-driver-native-debug.aab
           fi
-          if [ -f native-customer/app/build/outputs/apk/debug/app-debug.apk ]; then
-            cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-customer-native-debug.apk
+          if [ ! -f native-customer/app/build/outputs/apk/debug/app-debug.apk ]; then
+            echo "::error::customer APK missing - compile failed"
+            exit 1
           fi
+          cp native-customer/app/build/outputs/apk/debug/app-debug.apk dist/fresh2go-customer-native-debug.apk
           if [ -f native-customer/app/build/outputs/bundle/debug/app-debug.aab ]; then
             cp native-customer/app/build/outputs/bundle/debug/app-debug.aab dist/fresh2go-customer-native-debug.aab
           fi
