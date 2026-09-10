@@ -28,6 +28,12 @@ jobs:
             python3 scripts/apply_autoupdate_fix.py
           fi
 
+      - name: Order again (efood parity)
+        run: |
+          if [ -f scripts/apply_order_again.py ]; then
+            python3 scripts/apply_order_again.py
+          fi
+
       - name: Apply customer performance pass
         run: |
           if [ -f scripts/apply_customer_perf_pass.py ]; then
