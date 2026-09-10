@@ -12,11 +12,8 @@ export const APK_BUILD_VERSION = '1.0.9091500';
 export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.9.11-fresh2go';
+export const APK_NATIVE_CUSTOMER_VERSION = '2.9.12-fresh2go';
 
-// APKs are served from the website (fresh2go.gr/apk/...) so no GitHub host is
-// involved. run-vite-build.mjs stages committed mobile-apks/*.apk into dist/apk/
-// on every deploy.
 const RELEASE_BASE = 'https://fresh2go.gr/apk';
 
 export { SITE_ORIGIN };
@@ -67,12 +64,10 @@ export const APK_DOWNLOADS = {
 
 export type ApkFlavor = keyof typeof APK_DOWNLOADS;
 
-/** Landing URL encoded into QR codes (opens chooser page, does not start a download). */
 export function apkLandingUrl(flavor: ApkFlavor, origin: string = SITE_ORIGIN): string {
   return `${origin.replace(/\/$/, '')}/download?app=${flavor}`;
 }
 
-/** Cache-bust so Android/Chrome does not reuse a half-finished download. */
 export function apkFileUrl(flavor: ApkFlavor): string {
   const apk = APK_DOWNLOADS[flavor];
   const v = encodeURIComponent(apk.versionLabel || String(Date.now()));
@@ -80,11 +75,6 @@ export function apkFileUrl(flavor: ApkFlavor): string {
   return `${apk.fileUrl}${sep}v=${v}`;
 }
 
-/**
- * Start an APK download only after an explicit user gesture.
- * On mobile, navigate in the same tab — target=_blank often leaves the
- * system download stuck at 100% / "opening" without install.
- */
 export function startApkDownload(flavor: ApkFlavor) {
   const url = apkFileUrl(flavor);
   const isMobile = typeof navigator !== 'undefined' &&
