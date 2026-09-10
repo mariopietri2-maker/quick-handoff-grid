@@ -37,15 +37,13 @@ class CustomerFirebaseMessagingService : FirebaseMessagingService() {
         ) {
             return
         }
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val manager = getSystemService(NotificationManager::class.java)
-            val channel = NotificationChannel(
-                channelId,
-                "Order updates",
-                NotificationManager.IMPORTANCE_HIGH,
-            )
-            manager.createNotificationChannel(channel)
-        }
+        val manager = getSystemService(NotificationManager::class.java)
+        val channel = NotificationChannel(
+            channelId,
+            "Order updates",
+            NotificationManager.IMPORTANCE_HIGH,
+        )
+        manager.createNotificationChannel(channel)
         val contentIntent = PendingIntent.getActivity(
             this,
             0,

@@ -21,26 +21,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Restore full CustomerShell + Games and apply alive motion
-        run: |
-          set -e
-          git config user.email "fresh2go-bot@users.noreply.github.com"
-          git config user.name "fresh2go-bot"
-          GOOD=549cdf5dc7793abb27f3fcb1f5e4497fd851bc58
-          git show $GOOD:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
-            > native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
-          git show $GOOD:native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt \
-            > native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt
-          python3 scripts/apply_clean_store_cards.py
-          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt \
-                  native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/Games.kt
-          if ! git diff --cached --quiet; then
-            git commit -m "ui(native-customer): restore full home UI + clean store cards"
-            git push origin HEAD || true
-          fi
 
       - name: Set up JDK 17
         uses: actions/setup-java@v4

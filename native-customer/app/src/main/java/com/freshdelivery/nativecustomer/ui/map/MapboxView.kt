@@ -13,7 +13,7 @@ import androidx.compose.ui.layout.ContentScale
 import coil.compose.SubcomposeAsyncImage
 import com.freshdelivery.nativecustomer.BuildConfig
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+
 
 data class MapMarker(
     val lat: Double,
@@ -89,7 +89,8 @@ private fun buildStaticMapUrl(
             "https://api.mapbox.com/styles/v1/mapbox/streets-v12/static/$centerLng,$centerLat,13.2,0/800x1200@2x"
     }
 
-    val encodedToken = URLEncoder.encode(token, StandardCharsets.UTF_8)
+    @Suppress("DEPRECATION")
+    val encodedToken = URLEncoder.encode(token, "UTF-8")
     return if (markers.size > 1) {
         "$path?padding=80&access_token=$encodedToken"
     } else {

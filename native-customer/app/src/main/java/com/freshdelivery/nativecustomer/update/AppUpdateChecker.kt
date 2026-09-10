@@ -135,9 +135,7 @@ class AppUpdateChecker(
         val info = pending ?: return
         _state.value = UpdateUiState.Downloading(null)
         try {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
-                !appContext.packageManager.canRequestPackageInstalls()
-            ) {
+            if (!appContext.packageManager.canRequestPackageInstalls()) {
                 // Needs "install unknown apps" — send to Settings once, keep the offer open.
                 val settingsIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:${appContext.packageName}")

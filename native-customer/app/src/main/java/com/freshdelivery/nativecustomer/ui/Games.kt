@@ -1,5 +1,6 @@
 package com.freshdelivery.nativecustomer.ui
 
+import java.util.Locale
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.FastOutSlowInEasing
@@ -703,5 +704,5 @@ private fun AdminCardRow(
 private fun formatDealTime(seconds: Int): String {
     val m = seconds / 60
     val s = seconds % 60
-    return String.format("%02d:%02d", m, s)
+    return String.format(Locale.ROOT, "%02d:%02d", m, s)
 }
