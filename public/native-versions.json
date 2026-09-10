@@ -1,0 +1,22 @@
+{
+  "customerNative": {
+    "version": "2.9.12-fresh2go",
+    "url": "https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk",
+    "sha256": "2a3965b757878ed97f11c8b165b1de96a5caf196ecfba22258fe9ba90fa0d3bf"
+  },
+  "driverNative": {
+    "version": "2.6.30-fresh2go",
+    "url": "https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk",
+    "sha256": "2c8cbf8e0763c3765eb9fee257d5f2c981f81fc22ba48f2b73b1fb250475e06c"
+  },
+  "customer": {
+    "version": "1.0.9091500",
+    "url": "https://fresh2go.gr/apk/fresh2go-customer-debug.apk?v=1.0.9091500",
+    "sha256": "790e1702fd4fd66341806b499b0da79738c7f8f81214b1dd9104830679b63131"
+  },
+  "driver": {
+    "version": "1.0.9091500",
+    "url": "https://fresh2go.gr/apk/fresh2go-driver-debug.apk?v=1.0.9091500",
+    "sha256": "f51ea32e44d711b343781922b065f2ad91f6baf7fa340000e1ea97e9fbd45701"
+  }
+}
