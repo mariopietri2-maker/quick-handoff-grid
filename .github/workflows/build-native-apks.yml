@@ -22,6 +22,12 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Fix auto-update loop
+        run: |
+          if [ -f scripts/apply_autoupdate_fix.py ]; then
+            python3 scripts/apply_autoupdate_fix.py
+          fi
+
       - name: Apply customer performance pass
         run: |
           if [ -f scripts/apply_customer_perf_pass.py ]; then
