@@ -39,7 +39,7 @@ private val VERSIONS_URLS = listOf(
 private const val APK_FILE_NAME = "fresh2go-update.apk"
 
 @Serializable
-data class FlavorVersion(val version: String = "", val url: String = "")
+data class FlavorVersion(val version: String = "", val url: String = "", val sha256: String = "")
 
 @Serializable
 data class NativeVersions(
@@ -47,7 +47,7 @@ data class NativeVersions(
     val driverNative: FlavorVersion = FlavorVersion(),
 )
 
-data class UpdateInfo(val version: String, val url: String)
+data class UpdateInfo(val version: String, val url: String, val sha256: String = "")
 
 sealed interface UpdateUiState {
     data object Idle : UpdateUiState
@@ -94,7 +94,11 @@ class AppUpdateChecker(
             if (latestVersion.isNotBlank() && latest.url.isNotBlank() &&
                 installedVersion != null && latestVersion != installedVersion
             ) {
-                pending = UpdateInfo(latestVersion, cacheBustedUrl(latest.url.trim(), latestVersion))
+                pending = UpdateInfo(
+                    latestVersion,
+                    cacheBustedUrl(latest.url.trim(), latestVersion),
+                    latest.sha256.trim(),
+                )
                 _state.value = UpdateUiState.Available(pending!!)
             } else {
                 pending = null
@@ -239,6 +243,25 @@ class AppUpdateChecker(
                 _state.value = UpdateUiState.Failed("Το αρχείο ενημέρωσης είναι άδειο. Δοκιμάστε ξανά.")
                 return
             }
+            // Fail closed: never install a download whose SHA-256 we cannot
+            // verify against the manifest (a tampered/corrupt APK must never
+            // reach the installer, even on a compromised CDN or Wi-Fi).
+            val expected = pending?.sha256.orEmpty()
+            if (expected.isBlank()) {
+                runCatching { file.delete() }
+                _state.value = UpdateUiState.Failed(
+                    "Η ενημέρωση δεν έχει checksum. Δοκιμάστε ξανά αργότερα.",
+                )
+                return
+            }
+            val actual = sha256(file)
+            if (actual == null || !actual.equals(expected, ignoreCase = true)) {
+                runCatching { file.delete() }
+                _state.value = UpdateUiState.Failed(
+                    "Η λήψη δεν επαληθεύτηκε (checksum). Δοκιμάστε ξανά.",
+                )
+                return
+            }
             val uri = FileProvider.getUriForFile(
                 appContext,
                 "${appContext.packageName}.fileprovider",
@@ -261,6 +284,21 @@ class AppUpdateChecker(
                     (e.localizedMessage ?: ""),
             )
         }
+    }
+
+    private fun sha256(file: File): String? = try {
+        val md = java.security.MessageDigest.getInstance("SHA-256")
+        file.inputStream().use { input ->
+            val buffer = ByteArray(64 * 1024)
+            while (true) {
+                val n = input.read(buffer)
+                if (n < 0) break
+                md.update(buffer, 0, n)
+            }
+        }
+        md.digest().joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
+    } catch (_: Exception) {
+        null
     }
 
     companion object {

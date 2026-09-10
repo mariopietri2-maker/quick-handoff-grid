@@ -1808,7 +1808,10 @@ autoOpenTrack(
                         openedCards = emptySet(),
                     )
                 }
-                _state.value = updated
+                // Only publish when something actually changed — the countdown, an
+                // expired deal, or a hidden roll. Skipping no-op ticks stops the
+                // 1 Hz full-app recomposition while the games UI is not visible.
+                if (updated != s) _state.value = updated
             }
         }
     }

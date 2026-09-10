@@ -57,7 +57,7 @@ fun MapboxView(
             contentScale = ContentScale.Crop,
             loading = {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = Color(0xFF06C167))
+                    CircularProgressIndicator(color = Color(0xFFEA580C))
                 }
             },
             error = {

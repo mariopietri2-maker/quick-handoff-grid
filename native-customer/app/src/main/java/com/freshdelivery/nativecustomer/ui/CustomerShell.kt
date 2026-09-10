@@ -234,12 +234,15 @@ fun CustomerShell(
             onClearMessages()
         }
     }
-    BackHandler(enabled = addressOpen || state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen) {
-        if (addressOpen) addressOpen = false
-        else if (state.supportOpen) onCloseSupport()
-        else if (state.adminOpen) onToggleAdmin(false)
-        else if (state.showCart) onToggleCart(false)
-        else onCloseStore()
+    BackHandler(enabled = addressOpen || state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen || state.tab == CustomerTab.Track) {
+        when {
+            addressOpen -> addressOpen = false
+            state.supportOpen -> onCloseSupport()
+            state.adminOpen -> onToggleAdmin(false)
+            state.showCart -> onToggleCart(false)
+            state.selectedStore != null -> onCloseStore()
+            state.tab == CustomerTab.Track -> onTab(CustomerTab.Home)
+        }
     }
     if (addressOpen) {
         AddressPickerScreen(
@@ -290,6 +293,14 @@ fun CustomerShell(
             isFavorite = state.favoriteStoreIds.contains(state.selectedStore.id),
             onToggleFavorite = { onToggleFavorite(state.selectedStore.id) },
         )
+        state.modifierPickerItem?.let { item ->
+            ModifierPickerDialog(
+                item = item,
+                modifiers = state.menuModifiers[item.id].orEmpty(),
+                onDismiss = onDismissModifiers,
+                onConfirm = { selected -> onConfirmModifiers(item, selected) },
+            )
+        }
         return
     }
     if (state.adminOpen) {
@@ -310,15 +321,6 @@ fun CustomerShell(
         Triple(CustomerTab.Orders, "Παραγγελίες", Icons.Outlined.Receipt),
         Triple(CustomerTab.Profile, "Λογαριασμός", Icons.Outlined.AccountCircle),
     )
-
-    state.modifierPickerItem?.let { item ->
-        ModifierPickerDialog(
-            item = item,
-            modifiers = state.menuModifiers[item.id].orEmpty(),
-            onDismiss = onDismissModifiers,
-            onConfirm = { selected -> onConfirmModifiers(item, selected) },
-        )
-    }
 
     Scaffold(
         containerColor = FreshBg,
@@ -399,7 +401,7 @@ fun CustomerShell(
                     onToggleFavorite = onToggleFavorite,
                 )
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview, onBackToHome = { onTab(CustomerTab.Home) })
-                CustomerTab.Track -> TrackTab(state)
+                CustomerTab.Track -> TrackTab(state, onBack = { onTab(CustomerTab.Home) })
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
@@ -2893,7 +2895,7 @@ private fun OrdersTab(
 }
 
 @Composable
-private fun TrackTab(state: CustomerUiState) {
+private fun TrackTab(state: CustomerUiState, onBack: () -> Unit = {}) {
     val order = state.trackingOrder
 
     // Live driver pin + store + delivery pin. Order in the list also picks
@@ -2935,6 +2937,22 @@ private fun TrackTab(state: CustomerUiState) {
                 centerLng = centerLng,
                 markers = markers,
             )
+            Surface(
+                onClick = onBack,
+                shape = CircleShape,
+                color = Color.White,
+                modifier = Modifier
+                    .padding(10.dp)
+                    .statusBarsPadding()
+                    .shadow(3.dp, CircleShape),
+            ) {
+                Icon(
+                    Icons.AutoMirrored.Outlined.ArrowBack,
+                    contentDescription = "Αρχική",
+                    tint = FreshInk,
+                    modifier = Modifier.padding(10.dp).size(22.dp),
+                )
+            }
         }
         Column(
             Modifier
@@ -3569,7 +3587,7 @@ private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             (1..5).forEach { star ->
                 Icon(
-                    imageVector = if (star <= rating) Icons.Outlined.Star else Icons.Outlined.Star,
+                    imageVector = if (star <= rating) Icons.Filled.Star else Icons.Outlined.Star,
                     contentDescription = null,
                     tint = if (star <= rating) FreshAmber else FreshMuted,
                     modifier = Modifier

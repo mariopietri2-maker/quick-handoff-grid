@@ -8,6 +8,7 @@
  * before spawning `vite build`.
  */
 import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { createHash } from 'node:crypto';
 import { spawnSync, execSync } from 'node:child_process';
 import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -147,11 +148,25 @@ try {
     const driverNative = pick('APK_NATIVE_DRIVER_VERSION');
     const capac = pick('APK_BUILD_VERSION');
     if (base && customerNative && driverNative && capac) {
+      // sha256 of the staged APK (dist/apk/<filename>, copied just above), so
+      // native self-update can verify download integrity before installing.
+      // Falls back to empty string when the file is absent (manifest still
+      // valid — the app refuses to install an update without a hash).
+      const sha256Of = (filename) => {
+        try {
+          const p = resolve(ROOT, 'dist', 'apk', filename);
+          if (!existsSync(p)) return '';
+          return createHash('sha256').update(readFileSync(p)).digest('hex');
+        } catch {
+          return '';
+        }
+      };
       const entry = (versionLabel, filename) => ({
         version: versionLabel,
         // ?v= busts GitHub release CDN + Android DownloadManager caches so an
         // existing install never downloads stale bytes of the previous build.
         url: `${base}/${filename}?v=${encodeURIComponent(versionLabel)}`,
+        sha256: sha256Of(filename),
       });
       writeFileSync(
         resolve(ROOT, 'dist', 'native-versions.json'),
