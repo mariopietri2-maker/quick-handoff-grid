@@ -12,7 +12,7 @@ export const APK_BUILD_VERSION = '1.0.9091500';
 export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.9.5-fresh2go';
+export const APK_NATIVE_CUSTOMER_VERSION = '2.9.6-fresh2go';
 
 // APKs are served from the website (fresh2go.gr/apk/...) so no GitHub host is
 // involved. run-vite-build.mjs stages committed mobile-apks/*.apk into dist/apk/

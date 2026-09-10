@@ -508,16 +508,26 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
         Modifier
             .fillMaxWidth()
             .height(height.dp)
-            .background(FreshChip),
+            .background(
+                Brush.linearGradient(listOf(Color(0xFFFFE3C7), Color(0xFFFFC895))),
+            ),
         contentAlignment = Alignment.Center,
     ) {
         if (url.isNullOrBlank()) {
-            Icon(
-                Icons.Outlined.Store,
-                contentDescription = null,
-                tint = FreshMuted,
-                modifier = Modifier.size(48.dp),
-            )
+            Box(
+                Modifier
+                    .size(64.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.75f)),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    Icons.Outlined.Store,
+                    contentDescription = null,
+                    tint = FreshGreen,
+                    modifier = Modifier.size(32.dp),
+                )
+            }
         } else {
             val ctx = LocalContext.current
             AsyncImage(
@@ -535,7 +545,10 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
                 .fillMaxSize()
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f)),
+                        0f to Color.Black.copy(alpha = 0.28f),
+                        0.32f to Color.Transparent,
+                        0.62f to Color.Transparent,
+                        1f to Color.Black.copy(alpha = 0.34f),
                     ),
                 ),
         )
@@ -1119,33 +1132,44 @@ private fun FreshStoreCard(
     val avg = rating?.avg ?: 0.0
     val count = rating?.count ?: 0
     val eta = storeDeliveryEstimate(store, deliveryLat, deliveryLng)
+    val dist = storeDistanceLabel(store, deliveryLat, deliveryLng)
+    val feeLabel = storeDeliveryFeeLabel(store)
+    val freeDelivery = store.covers_delivery_fee == true
 
     Column(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 7.dp)
-            .shadow(5.dp, RoundedCornerShape(20.dp))
-            .clip(RoundedCornerShape(20.dp))
+            .shadow(6.dp, RoundedCornerShape(22.dp))
+            .clip(RoundedCornerShape(22.dp))
             .background(Color.White)
             .clickable(onClick = onClick),
     ) {
-        Box(Modifier.fillMaxWidth().height(148.dp)) {
+        Box(Modifier.fillMaxWidth().height(160.dp)) {
             StoreHeroImage(
                 store.cover_image_url?.takeIf { it.isNotBlank() } ?: store.image_url,
-                height = 148,
+                height = 160,
             )
             Surface(
                 color = if (!active || !openNow) Color.Black.copy(alpha = 0.72f) else FreshGreen,
                 shape = RoundedCornerShape(9.dp),
                 modifier = Modifier.align(Alignment.TopStart).padding(10.dp),
             ) {
-                Text(
-                    if (!active || !openNow) "Κλειστό" else "Ανοιχτό",
-                    color = Color.White,
-                    fontWeight = FontWeight.Bold,
-                    style = MaterialTheme.typography.labelSmall,
-                    modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
-                )
+                Row(
+                    Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    if (active && openNow) {
+                        Box(Modifier.size(6.dp).clip(CircleShape).background(Color.White))
+                        Spacer(Modifier.width(5.dp))
+                    }
+                    Text(
+                        if (!active || !openNow) "Κλειστό" else "Ανοιχτό",
+                        color = Color.White,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
             }
             Surface(
                 color = Color.White.copy(alpha = 0.92f),
@@ -1172,13 +1196,41 @@ private fun FreshStoreCard(
                     modifier = Modifier.align(Alignment.BottomStart).padding(10.dp),
                 ) {
                     Text(
-                        badge,
+                        "🔥 $badge",
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelSmall,
                         modifier = Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
                         maxLines = 1,
                     )
+                }
+            }
+            // Rating pill over the photo (Deliveroo/Uber-style) — right side.
+            Surface(
+                color = Color.White.copy(alpha = 0.94f),
+                shape = RoundedCornerShape(999.dp),
+                modifier = Modifier.align(Alignment.BottomEnd).padding(10.dp),
+            ) {
+                Row(
+                    Modifier.padding(horizontal = 9.dp, vertical = 4.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(13.dp))
+                    Spacer(Modifier.width(3.dp))
+                    Text(
+                        if (count > 0) "%.1f".format(avg) else "Νέο",
+                        color = FreshInk,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                    )
+                    if (count > 0) {
+                        Text(
+                            " ($count)",
+                            color = FreshMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelSmall,
+                        )
+                    }
                 }
             }
         }
@@ -1200,35 +1252,65 @@ private fun FreshStoreCard(
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(9.dp))
             Row(
                 verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Star, contentDescription = null, tint = FreshAmber, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(3.dp))
-                    Text(
-                        if (count > 0) "%.1f".format(avg) else "Νέο",
-                        color = FreshInk,
-                        fontWeight = FontWeight.Bold,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
+                Surface(color = FreshGreenSoft, shape = RoundedCornerShape(12.dp)) {
+                    Row(
+                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(14.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text(eta, color = FreshGreenDark, fontWeight = FontWeight.Bold, style = MaterialTheme.typography.labelMedium)
+                    }
                 }
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(14.dp))
-                    Spacer(Modifier.width(3.dp))
-                    Text(eta, color = FreshMuted, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.labelMedium)
+                Surface(
+                    color = if (freeDelivery) FreshGreenSoft else FreshChip,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Row(
+                        Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        if (freeDelivery) {
+                            Icon(Icons.Outlined.DirectionsBike, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(14.dp))
+                            Spacer(Modifier.width(4.dp))
+                        }
+                        Text(
+                            feeLabel,
+                            color = if (freeDelivery) FreshGreenDark else FreshMuted,
+                            fontWeight = FontWeight.Bold,
+                            style = MaterialTheme.typography.labelMedium,
+                        )
+                    }
+                }
+                if (dist != null) {
+                    Surface(color = FreshChip, shape = RoundedCornerShape(12.dp)) {
+                        Text(
+                            dist,
+                            color = FreshMuted,
+                            fontWeight = FontWeight.SemiBold,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
                 }
                 val minOrd = store.min_order_amount ?: 0.0
                 if (minOrd > 0) {
-                    Text(
-                        "ελάχ. €%.0f".format(minOrd),
-                        color = FreshMuted,
-                        fontWeight = FontWeight.Medium,
-                        style = MaterialTheme.typography.labelMedium,
-                    )
+                    Surface(color = FreshChip, shape = RoundedCornerShape(12.dp)) {
+                        Text(
+                            "ελάχ. €%.0f".format(minOrd),
+                            color = FreshMuted,
+                            fontWeight = FontWeight.Medium,
+                            style = MaterialTheme.typography.labelMedium,
+                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        )
+                    }
                 }
+                Spacer(Modifier.weight(1f))
             }
         }
     }
