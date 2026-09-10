@@ -3,22 +3,18 @@ import { SITE_ORIGIN } from '@/lib/site';
 /** Public website path that hosts the Android debug APKs (fresh2go.gr). */
 export const APK_RELEASE_TAG = 'mobile-apks-v1';
 
-/** Bumped to the current Capacitor build version.
- *  Source of truth for /download AND dist/native-versions.json (self-update
- *  channel polled by sideloaded native apps — stamped by run-vite-build.mjs). */
 export const APK_BUILD_VERSION = '1.0.9091500';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
 export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.9.12-fresh2go';
+export const APK_NATIVE_CUSTOMER_VERSION = '2.9.13-fresh2go';
 
 const RELEASE_BASE = 'https://fresh2go.gr/apk';
 
 export { SITE_ORIGIN };
 
-/** Latest native builds listed first. */
 export const APK_DOWNLOADS = {
   driverNative: {
     id: 'driverNative' as const,
@@ -79,12 +75,10 @@ export function startApkDownload(flavor: ApkFlavor) {
   const url = apkFileUrl(flavor);
   const isMobile = typeof navigator !== 'undefined' &&
     /Android|iPhone|iPad|Mobile/i.test(navigator.userAgent);
-
   if (isMobile) {
     window.location.assign(url);
     return;
   }
-
   const a = document.createElement('a');
   a.href = url;
   a.rel = 'noopener noreferrer';
