@@ -615,6 +615,7 @@ private fun HomeTab(
             Column(
                 Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(horizontal = 16.dp)
                     .padding(top = 8.dp, bottom = 4.dp),
             ) {
@@ -2430,6 +2431,7 @@ private fun BrowseTab(
             Column(
                 Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(horizontal = 16.dp)
                     .padding(top = 8.dp, bottom = 4.dp),
             ) {
@@ -2686,6 +2688,7 @@ private fun OrdersTab(
             Row(
                 Modifier
                     .fillMaxWidth()
+                    .statusBarsPadding()
                     .padding(vertical = 12.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
@@ -3052,6 +3055,7 @@ private fun ProfileTab(
         Modifier
             .fillMaxSize()
             .background(FreshBg)
+            .statusBarsPadding()
             .verticalScroll(rememberScrollState())
             .padding(horizontal = 16.dp)
             .navigationBarsPadding()
