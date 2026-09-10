@@ -1002,25 +1002,61 @@ private fun HomeTab(
         }
         if (stores.isEmpty()) {
             item {
-                Column(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(32.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                ) {
-                    Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
-                    Spacer(Modifier.height(10.dp))
-                    Text(
-                        if (filter == HomeFilter.Near && !hasLocation) {
-                            "Ορισμός διεύθυνσης για εγγύτητα"
-                        } else if (filter == HomeFilter.Fav) {
-                            "Δεν έχεις αγαπημένα ακόμα."
-                        } else {
-                            "Δεν βρέθηκαν καταστήματα."
-                        },
-                        color = FreshMuted,
-                        style = MaterialTheme.typography.bodyMedium,
-                    )
+                if (state.stores.isEmpty()) {
+                    // Still fetching from Supabase — show shimmer placeholders
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 16.dp, vertical = 8.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        repeat(3) {
+                            Surface(
+                                shape = RoundedCornerShape(18.dp),
+                                color = Color(0xFFE8EEF2),
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(160.dp),
+                            ) {
+                                Box(Modifier.padding(14.dp)) {
+                                    Column {
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFFD6DEE6),
+                                            modifier = Modifier.size(width = 120.dp, height = 16.dp),
+                                        ) {}
+                                        Spacer(Modifier.height(8.dp))
+                                        Surface(
+                                            shape = RoundedCornerShape(8.dp),
+                                            color = Color(0xFFD6DEE6),
+                                            modifier = Modifier.size(width = 80.dp, height = 12.dp),
+                                        ) {}
+                                    }
+                                }
+                            }
+                        }
+                    }
+                } else {
+                    Column(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(32.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                    ) {
+                        Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
+                        Spacer(Modifier.height(10.dp))
+                        Text(
+                            if (filter == HomeFilter.Near && !hasLocation) {
+                                "Ορισμός διεύθυνσης για εγγύτητα"
+                            } else if (filter == HomeFilter.Fav) {
+                                "Δεν έχεις αγαπημένα ακόμα."
+                            } else {
+                                "Δεν βρέθηκαν καταστήματα."
+                            },
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
                 }
             }
         }

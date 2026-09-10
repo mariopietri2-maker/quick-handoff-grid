@@ -5,13 +5,18 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import coil.compose.SubcomposeAsyncImage
 import com.freshdelivery.nativecustomer.BuildConfig
+import kotlinx.coroutines.delay
 import java.net.URLEncoder
 
 
@@ -33,6 +38,9 @@ private const val DEFAULT_LNG = 20.8537
  *  - Store  #F97316  as soon as tracking opens
  *  - Delivery #10B981 at geocoded / GPS address
  *  - Driver #7C6CFF only after accept (driverLocation set)
+ *
+ * Debounced 500 ms: rapid driver location pings within the window
+ * are collapsed into a single image request.
  */
 @Composable
 fun MapboxView(
@@ -45,8 +53,10 @@ fun MapboxView(
     val lat = centerLat ?: DEFAULT_LAT
     val lng = centerLng ?: DEFAULT_LNG
 
-    val url = remember(lat, lng, markers) {
-        buildStaticMapUrl(token, lat, lng, markers)
+    var url by remember { mutableStateOf("") }
+    LaunchedEffect(lat, lng, markers) {
+        delay(500)
+        url = buildStaticMapUrl(token, lat, lng, markers)
     }
 
     Box(modifier.background(Color(0xFFE8EEF2))) {
