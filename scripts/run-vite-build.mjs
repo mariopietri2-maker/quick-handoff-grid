@@ -60,9 +60,6 @@ if (prev && prev !== env.VITE_SUPABASE_URL) {
   console.log(`[build] Supabase project: ${url}`);
 }
 
-// The Capacitor Mapbox Maps plugin ships source-only (dist/ is gitignored).
-// Build it before vite so `@fresh2go/capacitor-mapbox-maps` resolves on
-// fresh clones / CI, where dist/ does not exist yet.
 if (!existsSync(resolve(MAPBOX_PLUGIN, 'dist'))) {
   console.log('[build] Building @fresh2go/capacitor-mapbox-maps…');
   const plugin = spawnSync('npm', ['run', 'build'], {
@@ -87,9 +84,6 @@ if (result.status !== 0) {
   process.exit(result.status ?? 1);
 }
 
-// Stage Android APKs so the website hosts them at /apk/... (see
-// src/lib/apk-downloads.ts RELEASE_BASE). No-op when no builds are present,
-// so fresh git deploys / CI that never ran build-apks.sh still succeed.
 try {
   const { readdirSync, copyFileSync, mkdirSync, statSync } = await import('node:fs');
   const srcDir = resolve(ROOT, 'mobile-apks');
@@ -113,14 +107,12 @@ try {
   console.error('[build] apk staging failed (non-fatal)', e);
 }
 
-// Stamp the build identity for the auto-update check (useAppUpdate polls
-// /version.json and prompts a reload when it changes after a deploy).
 try {
   let commit = 'unknown';
   try {
     commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim() || 'unknown';
   } catch {
-    /* not a git checkout (e.g. tarball) */
+    /* not a git checkout */
   }
   let version = '0.0.0';
   try {
@@ -134,25 +126,26 @@ try {
   );
   console.log(`[build] version.json → ${version}@${commit}`);
 
-  // Native sideload self-update channel: native apps poll
-  // /native-versions.json and compare versionName. Source of truth is
-  // src/lib/apk-downloads.ts (same constants as the /download page).
   try {
     const apkSrc = readFileSync(resolve(ROOT, 'src', 'lib', 'apk-downloads.ts'), 'utf8');
     const pick = (name) => {
       const m = apkSrc.match(new RegExp(`${name}\\s*=\\s*'([^']+)'`));
       return m ? m[1] : null;
     };
-    const base = pick('RELEASE_BASE');
+    const base = pick('RELEASE_BASE') || 'https://fresh2go.gr/apk';
     const customerNative = pick('APK_NATIVE_CUSTOMER_VERSION');
     const driverNative = pick('APK_NATIVE_DRIVER_VERSION');
     const capac = pick('APK_BUILD_VERSION');
-    if (base && customerNative && driverNative && capac) {
-      // sha256 of the staged APK (dist/apk/<filename>, copied just above), so
-      // native self-update can verify download integrity before installing.
-      // Falls back to empty string when the file is absent (manifest still
-      // valid — the app refuses to install an update without a hash).
+    if (customerNative && driverNative && capac) {
+      // Native APKs are published to GitHub Releases. Website mobile-apks/
+      // often lagged, which caused auto-update loops (same old binary).
+      const GH_RELEASE = 'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
+      let nativeSha = {};
+      try {
+        nativeSha = JSON.parse(readFileSync(resolve(ROOT, 'scripts', 'native-apk-sha256.json'), 'utf8'));
+      } catch { /* optional */ }
       const sha256Of = (filename) => {
+        if (nativeSha[filename]) return nativeSha[filename];
         try {
           const p = resolve(ROOT, 'dist', 'apk', filename);
           if (!existsSync(p)) return '';
@@ -161,23 +154,23 @@ try {
           return '';
         }
       };
-      const entry = (versionLabel, filename) => ({
+      const entry = (versionLabel, filename, { github } = {}) => ({
         version: versionLabel,
-        // ?v= busts GitHub release CDN + Android DownloadManager caches so an
-        // existing install never downloads stale bytes of the previous build.
-        url: `${base}/${filename}?v=${encodeURIComponent(versionLabel)}`,
+        url: github
+          ? `${GH_RELEASE}/${filename}?v=${encodeURIComponent(versionLabel)}`
+          : `${base}/${filename}?v=${encodeURIComponent(versionLabel)}`,
         sha256: sha256Of(filename),
       });
       writeFileSync(
         resolve(ROOT, 'dist', 'native-versions.json'),
         JSON.stringify({
-          customerNative: entry(customerNative, 'fresh2go-customer-native-debug.apk'),
-          driverNative: entry(driverNative, 'fresh2go-driver-native-debug.apk'),
+          customerNative: entry(customerNative, 'fresh2go-customer-native-debug.apk', { github: true }),
+          driverNative: entry(driverNative, 'fresh2go-driver-native-debug.apk', { github: true }),
           customer: entry(capac, 'fresh2go-customer-debug.apk'),
           driver: entry(capac, 'fresh2go-driver-debug.apk'),
         }),
       );
-      console.log('[build] native-versions.json stamped');
+      console.log('[build] native-versions.json stamped (native → GitHub Releases)');
     } else {
       console.warn('[build] native-versions.json skipped (constants not parsed)');
     }
