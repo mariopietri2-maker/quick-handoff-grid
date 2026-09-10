@@ -34,6 +34,12 @@ jobs:
             python3 scripts/apply_order_again.py
           fi
 
+      - name: Heavy promo campaign
+        run: |
+          if [ -f scripts/apply_heavy_promo_campaign.py ]; then
+            python3 scripts/apply_heavy_promo_campaign.py
+          fi
+
       - name: Apply customer performance pass
         run: |
           if [ -f scripts/apply_customer_perf_pass.py ]; then
