@@ -3546,16 +3546,6 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
         ),
         label = "bob",
     )
-    // Slow Ken Burns zoom + pan so each promo card feels "alive" like a video.
-    val kenBurns by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(9_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "kenBurns",
-    )
     Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
         HorizontalPager(
             state = pagerState,
@@ -3591,14 +3581,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                         model = img,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                val zoom = 1.05f + kenBurns * 0.13f
-                                scaleX = zoom
-                                scaleY = zoom
-                                translationX = (kenBurns - 0.5f) * 14f
-                            },
+                        modifier = Modifier.fillMaxSize(),
                     )
                     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
                 }
