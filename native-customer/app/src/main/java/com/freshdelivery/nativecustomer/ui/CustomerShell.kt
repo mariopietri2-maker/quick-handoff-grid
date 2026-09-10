@@ -927,6 +927,30 @@ private fun HomeTab(
                     }
                 }
             }
+
+            item {
+                DiscoverSectionHeader(
+                    title = "Νέες γεύσεις — ζωντανά",
+                    action = "Δοκίμασε ›",
+                    onAction = { onSearch(demoStoreCards.first().cuisine) },
+                )
+            }
+            item {
+                val order = remember { demoStoreCards.shuffled() }
+                Row(
+                    Modifier
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                ) {
+                    order.forEach { demo ->
+                        AnimatedDemoStoreCard(
+                            store = demo,
+                            onClick = { onSearch(demo.cuisine) },
+                        )
+                    }
+                }
+            }
         }
         item(key = "store-list-header") {
             Row(
@@ -1114,6 +1138,148 @@ private fun storeDeliveryEstimate(store: StoreRow, deliveryLat: Double?, deliver
     if (km == Double.MAX_VALUE) return "25–35'"
     val minutes = (18 + km * 4).toInt().coerceIn(20, 75)
     return "${minutes - 5}–${minutes + 5}'"
+}
+
+private data class DemoStoreCardData(
+    val name: String,
+    val cuisine: String,
+    val emoji: String,
+    val tagline: String,
+    val badge: String,
+    val eta: String,
+    val colors: List<Color>,
+)
+
+private val demoStoreCards = listOf(
+    DemoStoreCardData("Το Σουβλάκι του Πέτρου", "Σουβλάκι", "🥙", "Κλασικό με πίτα από τον φούρνο", "🔥 Νέο", "25–35'", listOf(Color(0xFFEA580C), Color(0xFFFB7185))),
+    DemoStoreCardData("Pizza Roma", "Πίτσα", "🍕", "Ζυμάρι 48 ωρών στο ξυλόφουρνο", "-20%", "20–30'", listOf(Color(0xFFF97316), Color(0xFFF43F5E))),
+    DemoStoreCardData("Burger Lab", "Burger", "🍔", "Double smash με τυρί τσένταρ", "ΣΧΕΔΟΝ", "25–35'", listOf(Color(0xFFC2410C), Color(0xFFFB923C))),
+    DemoStoreCardData("Η Γλυκιά Κρέπα", "Κρέπα", "🥞", "Γλυκές & αλμυρές κρέπες", "Νέο", "20–30'", listOf(Color(0xFFF59E0B), Color(0xFFF472B6))),
+    DemoStoreCardData("Coffee Corner", "Καφές", "☕", "Φίλτρου, freddo, εσπρέσο", "Δωρεάν delivery", "15–25'", listOf(Color(0xFFB45309), Color(0xFFEA580C))),
+    DemoStoreCardData("Sweet Tooth", "Γλυκό", "🍰", "Χειροποίητα γλυκά της ημέρας", "Λαχταριστό", "20–30'", listOf(Color(0xFFE11D48), Color(0xFFF9A8D4))),
+    DemoStoreCardData("Fresh Bowl", "Σαλάτα", "🥗", "Bowl πλούσιο σε πρωτεΐνη", "Νέο", "15–25'", listOf(Color(0xFF16A34A), Color(0xFF86EFAC))),
+    DemoStoreCardData("Trattoria Mia", "Ζυμαρικά", "🍝", "Φρέσκα ζυμαρικά al dente", "-15%", "25–40'", listOf(Color(0xFFEA580C), Color(0xFFFDE047))),
+    DemoStoreCardData("Sushi Time", "Σούσι", "🍣", "Φρέσκο ψάρι & ειδικά rolls", "Νέο", "30–45'", listOf(Color(0xFF0D9488), Color(0xFF99F6E4))),
+    DemoStoreCardData("Τα Παραδοσιακά", "Παραδοσιακά", "🍲", "Ντόπιες συνταγές στο σπίτι", "Οικογενειακό", "30–45'", listOf(Color(0xFF9A3412), Color(0xFFFFB23D))),
+)
+
+@Composable
+private fun AnimatedDemoStoreCard(store: DemoStoreCardData, onClick: () -> Unit) {
+    val infinite = rememberInfiniteTransition(label = "demoMotion")
+    val sheen by infinite.animateFloat(
+        initialValue = -1f,
+        targetValue = 2f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(3200, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart,
+        ),
+        label = "demoSheen",
+    )
+    val bob by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "demoBob",
+    )
+    // Slow zoetrope zoom+pan so the emoji feels "alive" like a video card.
+    val kenBurns by infinite.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(10_000, easing = LinearEasing),
+            repeatMode = RepeatMode.Reverse,
+        ),
+        label = "demoKenBurns",
+    )
+    Column(
+        Modifier
+            .width(168.dp)
+            .shadow(4.dp, RoundedCornerShape(18.dp))
+            .clip(RoundedCornerShape(18.dp))
+            .background(Color.White)
+            .clickable(onClick = onClick),
+    ) {
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(104.dp)
+                .background(Brush.linearGradient(store.colors)),
+        ) {
+            Text(
+                store.emoji,
+                fontSize = 40.sp,
+                modifier = Modifier
+                    .align(Alignment.Center)
+                    .graphicsLayer {
+                        val zoom = 1f + kenBurns * 0.18f
+                        scaleX = zoom
+                        scaleY = zoom
+                        rotationZ = (kenBurns - 0.5f) * 6f
+                        translationY = (bob - 0.5f) * 10f
+                    },
+            )
+            Surface(
+                color = Color.White.copy(alpha = 0.95f),
+                shape = RoundedCornerShape(7.dp),
+                modifier = Modifier.align(Alignment.TopStart).padding(6.dp),
+            ) {
+                Text(
+                    store.badge,
+                    color = Color(0xFFEA580C),
+                    fontWeight = FontWeight.ExtraBold,
+                    fontSize = 9.sp,
+                    modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp),
+                )
+            }
+            // animated sheen sweep
+            Box(
+                Modifier
+                    .fillMaxSize()
+                    .graphicsLayer {
+                        translationX = sheen * 300f
+                        alpha = 0.20f
+                    }
+                    .background(
+                        Brush.horizontalGradient(
+                            listOf(Color.Transparent, Color.White, Color.Transparent),
+                        ),
+                    ),
+            )
+        }
+        Column(Modifier.padding(10.dp)) {
+            Text(
+                store.name,
+                fontWeight = FontWeight.Bold,
+                fontSize = 13.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Text(
+                store.tagline,
+                color = FreshMuted,
+                fontSize = 11.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp),
+            )
+            Row(
+                Modifier.padding(top = 6.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Icon(Icons.Outlined.Timer, contentDescription = null, tint = FreshGreenDark, modifier = Modifier.size(12.dp))
+                Spacer(Modifier.width(3.dp))
+                Text(
+                    store.eta,
+                    color = FreshGreenDark,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 11.sp,
+                )
+            }
+        }
+    }
 }
 
 @Composable
