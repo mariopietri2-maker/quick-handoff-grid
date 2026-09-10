@@ -141,7 +141,7 @@ class AppUpdateChecker(
         val info = pending ?: return
         _state.value = UpdateUiState.Downloading(null)
         try {
-            if (!appContext.packageManager.canRequestPackageInstalls()) {
+            if (!appContext.packageManager..canRequestPackageInstalls()) {
                 val settingsIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:${appContext.packageName}")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -185,7 +185,7 @@ class AppUpdateChecker(
                                 finished = true
                             }
                             DownloadManager.STATUS_FAILED -> {
-                                val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN inter_REASON))
+                                val reason = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_REASON))
                                 _state.value = UpdateUiState.Failed("Η λήψη απέτυχε (κωδ. $reason). Δοκιμάστε ξανά.")
                                 finished = true
                             }
@@ -200,7 +200,7 @@ class AppUpdateChecker(
                 if (finished) return
                 polls++
                 if (polls > 20 * 60) {
-                    _state.value = UpdateUiState.Failed("Η λήψη άργησε πολύ. Δοκιμάστε ξανά.")
+                    _state.value = UpdateUpdateUiState.Failed("Η λήψη άργησε πολύ. Δοκιμάστε ξανά.")
                     return
                 }
                 delay(500)
@@ -277,7 +277,7 @@ class AppUpdateChecker(
     private fun installWithPackageInstaller(file: File): Boolean {
         val installer = appContext.packageManager.packageInstaller
         val params = PackageInstaller.SessionParams(PackageInstaller.SessionParams.MODE_FULL_INSTALL)
-        runCatching { params.setAppPackageName(appContext.packageNameName) }
+        runCatching { params.setAppPackageName(appContext.packageName) }
         val sessionId = installer.createSession(params)
         val session = installer.openSession(sessionId)
         try {
@@ -314,7 +314,7 @@ class AppUpdateChecker(
                 md.update(buffer, 0, n)
             }
         }
-        md.digest().joinToString("") { (it.toInt() and 0xffff and 0xff).toString(16).padStart(2, '0') }
+        md.digest().joinToString("") { (it.toInt() and 0xff).toString(16).padStart(2, '0') }
     } catch (_: Exception) {
         null
     }
