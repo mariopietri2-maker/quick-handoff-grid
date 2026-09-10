@@ -14,13 +14,11 @@ import com.stripe.android.paymentsheet.PaymentSheetResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.lifecycle.lifecycleScope
 import com.freshdelivery.nativecustomer.ui.CustomerShell
 import com.freshdelivery.nativecustomer.ui.CustomerViewModel
 import com.freshdelivery.nativecustomer.ui.LoginScreen
@@ -36,6 +34,15 @@ class MainActivity : ComponentActivity() {
     private var paymentOrderId: String? = null
 
     private val vm: CustomerViewModel by viewModels()
+    private val updateChecker by lazy { AppUpdateChecker(applicationContext, "customerNative") }
+
+    override fun onResume() {
+        super.onResume()
+        // After "Install unknown apps" settings, continue download automatically.
+        lifecycleScope.launch {
+            runCatching { updateChecker.resumeAfterSettings() }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,7 +53,6 @@ class MainActivity : ComponentActivity() {
                 is PaymentSheetResult.Canceled -> "Η πληρωμή ακυρώθηκε"
                 else -> null
             }
-            // ViewModel is recreated in compose - use a static holder
             PaymentSheetBridge.onResult(ok, msg)
         }
         enableEdgeToEdge()
@@ -87,9 +93,7 @@ class MainActivity : ComponentActivity() {
                     delay(1_600)
                     splashMinElapsed = true
                 }
-                // Sideload self-update (silent unless a newer build is published).
                 val updateScope = rememberCoroutineScope()
-                val updateChecker = remember { AppUpdateChecker(applicationContext, "customerNative") }
                 val updateState by updateChecker.state.collectAsState()
                 LaunchedEffect(Unit) { updateChecker.check() }
                 AppUpdateDialog(
@@ -118,19 +122,14 @@ class MainActivity : ComponentActivity() {
                     else -> {
                         CustomerShell(
                             state = state,
-                            onTab = vm::selectTab,
+                            onTab = vm::setTab,
                             onOpenStore = vm::openStore,
-                            onCloseStore = vm::closeStore,
-                            onToggleFavorite = vm::toggleFavorite,
-                            onAddToCart = vm::addToCart,
-                            onConfirmModifiers = vm::confirmModifiers,
-                            onDismissModifiers = vm::dismissModifierPicker,
-                            onSubmitReview = vm::submitReview,
-                            onAddressQuery = vm::onAddressQuery,
-                            onUpdateQty = vm::updateQty,
-                            onToggleCart = vm::toggleCart,
-                            onSetDelivery = vm::setDelivery,
-                            onSaveAddress = vm::saveAddress,
+                            onBackFromStore = vm::closeStore,
+                            onAdd = vm::addToCart,
+                            onOpenCart = vm::openCart,
+                            onCloseCart = vm::closeCart,
+                            onUpdateQty = vm::updateCartQty,
+                            onSetAddress = vm::setDeliveryAddress,
                             onSetNotes = vm::setNotes,
                             onSetTip = vm::setTip,
                             onSetPayment = vm::setPaymentMethod,
@@ -138,32 +137,14 @@ class MainActivity : ComponentActivity() {
                             onTrack = vm::trackOrder,
                             onRefresh = vm::refreshAll,
                             onSignOut = vm::signOut,
-                            onSearch = vm::setSearchQuery,
-                            onUseLocation = vm::useCurrentLocation,
-                            onGeocode = vm::geocodeAddress,
-                            onPickSuggestion = vm::pickAddressSuggestion,
-                            onClearSuggestions = vm::clearAddressSuggestions,
-                            onSelectSaved = vm::selectSavedAddress,
-                            onDeleteSaved = vm::deleteSavedAddress,
-                            onSetDefaultSaved = vm::setDefaultSavedAddress,
-                            onSetSaveLabel = vm::setSaveLabel,
                             onSaveProfile = vm::saveProfile,
-                            onClearMessages = vm::clearMessages,
-                            onSpinWheel = vm::spinWheel,
-                            onOpenCard = vm::openMysteryCard,
-                            onGameSelect = vm::selectGame,
-                            onCardToggle = vm::toggleCard,
-                            onCardPrize = vm::setCardPrize,
-                            onToggleAdmin = vm::toggleAdmin,
+                            onSearch = vm::setSearchQuery,
+                            onLocate = vm::locateMe,
+                            onPickSuggestion = vm::pickSuggestion,
+                            onToggleFavorite = vm::toggleFavorite,
                             onOpenSupport = vm::openSupport,
                             onCloseSupport = vm::closeSupport,
-                            onSelectSupportTopic = vm::selectSupportTopic,
-                            onClearSupportTopic = vm::clearSupportTopic,
-                            onSendLiveChat = vm::sendLiveChatMessage,
-                            onShowMyTickets = vm::openMyTickets,
-                            onOpenTicket = vm::openTicket,
-                            onSubmitTicket = vm::submitTicket,
-                            onSendTicket = vm::sendTicketMessage,
+                            onSubmitReview = vm::submitReview,
                         )
                     }
                 }
@@ -172,10 +153,9 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-/** Bridges Activity PaymentSheet callbacks to the current ViewModel. */
 object PaymentSheetBridge {
-    @Volatile var handler: ((Boolean, String?) -> Unit)? = null
-    fun onResult(success: Boolean, message: String?) {
-        handler?.invoke(success, message)
+    var handler: ((Boolean, String?) -> Unit)? = null
+    fun onResult(ok: Boolean, msg: String?) {
+        handler?.invoke(ok, msg)
     }
 }
