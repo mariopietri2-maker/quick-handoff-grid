@@ -5,15 +5,10 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
-import com.stripe.android.PaymentConfiguration
-import com.stripe.android.paymentsheet.PaymentSheet
-import com.stripe.android.paymentsheet.PaymentSheetResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.lifecycle.lifecycleScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -28,6 +23,9 @@ import com.freshdelivery.nativecustomer.ui.SplashScreen
 import com.freshdelivery.nativecustomer.ui.theme.FreshCustomerTheme
 import com.freshdelivery.nativecustomer.update.AppUpdateChecker
 import com.freshdelivery.nativecustomer.update.AppUpdateDialog
+import com.stripe.android.PaymentConfiguration
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -36,6 +34,14 @@ class MainActivity : ComponentActivity() {
     private var paymentOrderId: String? = null
 
     private val vm: CustomerViewModel by viewModels()
+    private val updateChecker by lazy { AppUpdateChecker(applicationContext, "customerNative") }
+
+    override fun onResume() {
+        super.onResume()
+        lifecycleScope.launch {
+            runCatching { updateChecker.resumeAfterSettings() }
+        }
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -46,23 +52,21 @@ class MainActivity : ComponentActivity() {
                 is PaymentSheetResult.Canceled -> "Η πληρωμή ακυρώθηκε"
                 else -> null
             }
-            // ViewModel is recreated in compose - use a static holder
             PaymentSheetBridge.onResult(ok, msg)
         }
         enableEdgeToEdge()
         setContent {
             FreshCustomerTheme {
                 val state by vm.state.collectAsState()
-                LaunchedEffect(Unit) {
-                    PaymentSheetBridge.handler = { ok, msg -> vm.onPaymentSheetResult(ok, msg) }
+                PaymentSheetBridge.handler = { success, message ->
+                    vm.onPaymentSheetResult(success, message)
                 }
-                LaunchedEffect(state.paymentSheetRequest?.orderId) {
+                LaunchedEffect(state.paymentSheetRequest) {
                     val req = state.paymentSheetRequest ?: return@LaunchedEffect
-                    runCatching {
-                        PaymentConfiguration.init(this@MainActivity, req.publishableKey)
-                    }
+                    paymentOrderId = req.orderId
+                    PaymentConfiguration.init(applicationContext, req.publishableKey)
                     val config = PaymentSheet.Configuration(
-                        merchantDisplayName = "fresh2go",
+                        merchantDisplayName = "Fresh2GO",
                         customer = if (req.customerId != null && req.ephemeralKey != null) {
                             PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey)
                         } else null,
@@ -87,9 +91,7 @@ class MainActivity : ComponentActivity() {
                     delay(1_600)
                     splashMinElapsed = true
                 }
-                // Sideload self-update (silent unless a newer build is published).
                 val updateScope = rememberCoroutineScope()
-                val updateChecker = remember { AppUpdateChecker(applicationContext, "customerNative") }
                 val updateState by updateChecker.state.collectAsState()
                 LaunchedEffect(Unit) { updateChecker.check() }
                 AppUpdateDialog(
