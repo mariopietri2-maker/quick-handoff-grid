@@ -1,0 +1,656 @@
+﻿<!DOCTYPE html>
+<html lang="el">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fresh2GO — Το νέο σημείο παραγγελίας στα Ιωάννινα</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --primary: #ff5a1f;
+    --primary-dark: #e04510;
+    --accent: #ffc233;
+    --darker: #0b0f19;
+    --card: rgba(255,255,255,0.07);
+    --card-border: rgba(255,255,255,0.12);
+    --text: #eef2f7;
+    --text-dim: #9aa7b8;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    background: var(--darker);
+    color: var(--text);
+    line-height: 1.6;
+    overflow-x: hidden;
+  }
+
+  /* ═══════════════ TOP BAR ═══════════════ */
+  .topbar {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: .9rem 2rem;
+    background: rgba(11,15,25,0.85);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid var(--card-border);
+  }
+
+  .logo { display: flex; align-items: center; gap: .6rem; font-weight: 900; font-size: 1.2rem; letter-spacing: -.02em; }
+  .logo img, .logo svg { width: 36px; height: 36px; display: block; flex-shrink: 0; }
+  .logo b { color: #fff; }
+  .logo span { color: var(--primary); }
+  .logo small { font-weight: 700; color: var(--text-dim); }
+
+  .topbar a.btn { border: 1px solid var(--card-border); background: var(--card); color: var(--text); padding: .55rem 1.2rem; border-radius: 10px; font-size: .9rem; font-weight: 700; text-decoration: none; transition: background .2s; }
+  .topbar a.btn:hover { background: rgba(255,90,31,0.2); border-color: var(--primary); }
+
+  /* ═══════════════ HERO ═══════════════ */
+  .hero {
+    position: relative;
+    min-height: 92vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+    padding: 4rem 2rem;
+    background:
+      radial-gradient(ellipse 85% 60% at 50% 0%, rgba(255,90,31,0.28) 0%, transparent 60%),
+      radial-gradient(ellipse 60% 50% at 85% 100%, rgba(255,194,51,0.14) 0%, transparent 50%),
+      var(--darker);
+  }
+
+  .hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cdefs%3E%3Cpattern id='g' width='60' height='60' patternUnits='userSpaceOnUse'%3E%3Ccircle cx='30' cy='30' r='1' fill='rgba(255,255,255,0.05)'/%3E%3C/pattern%3E%3C/defs%3E%3Crect fill='url(%23g)' width='60' height='60'/%3E%3C/svg%3E");
+    pointer-events: none;
+  }
+
+  .hero-content { position: relative; z-index: 1; max-width: 860px; }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: .55rem;
+    background: rgba(255,90,31,0.15);
+    border: 1px solid rgba(255,90,31,0.35);
+    color: var(--primary);
+    font-size: .85rem;
+    font-weight: 700;
+    letter-spacing: .05em;
+    padding: .5rem 1.2rem;
+    border-radius: 999px;
+    margin-bottom: 1.8rem;
+  }
+
+  .badge::before { content: ''; width: 9px; height: 9px; border-radius: 50%; background: var(--primary); }
+
+  h1 { font-size: clamp(3rem, 7vw, 5.6rem); font-weight: 900; line-height: 1.02; letter-spacing: -0.03em; margin-bottom: 1.2rem; }
+  h1 span { background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .hero p { font-size: 1.25rem; color: var(--text-dim); max-width: 600px; margin: 0 auto 2.8rem; }
+
+  .btn-group { display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap; }
+  .btn { display: inline-flex; align-items: center; gap: .6rem; padding: .95rem 2rem; border-radius: 13px; font-size: 1.05rem; font-weight: 700; text-decoration: none; transition: transform .15s, box-shadow .2s; border: none; }
+  .btn:hover { transform: translateY(-2px); }
+  .btn-primary { background: linear-gradient(135deg, var(--primary), var(--primary-dark)); color: #fff; box-shadow: 0 4px 24px rgba(255,90,31,0.35); }
+  .btn-primary:hover { box-shadow: 0 8px 32px rgba(255,90,31,0.5); }
+  .btn-secondary { background: var(--card); color: var(--text); border: 1px solid var(--card-border); }
+
+  .hero-emojis { display: flex; align-items: center; justify-content: center; gap: clamp(1rem, 3vw, 2.5rem); margin-bottom: 1.5rem; }
+  .hero-emoji { font-size: clamp(3rem, 6vw, 4.5rem); display: block; filter: drop-shadow(0 8px 24px rgba(255,90,31,0.35)); }
+  .hero-emoji--center { font-size: clamp(4rem, 8vw, 6rem); }
+  .hero-emoji--left, .hero-emoji--right { font-size: clamp(2.2rem, 4.5vw, 3.5rem); opacity: 0.85; }
+
+  .scroll-hint { position: absolute; bottom: 2rem; left: 50%; transform: translateX(-50%); color: var(--text-dim); font-size: .85rem; }
+
+  .trust-strip { margin-top: 2.2rem; display: flex; justify-content: center; flex-wrap: wrap; gap: .6rem; }
+  .trust-chip { display: inline-flex; align-items: center; gap: .5rem; background: rgba(16,185,129,0.14); border: 1px solid rgba(16,185,129,0.35); color: #4ade80; font-weight: 800; font-size: .95rem; padding: .6rem 1.3rem; border-radius: 999px; }
+  .trust-chip svg { flex-shrink: 0; }
+  .trust-chip small { font-weight: 600; color: var(--text-dim); font-size: .85rem; }
+
+  /* ═══════════════ SECTIONS ═══════════════ */
+  section { padding: 5rem 2rem; }
+  .section-inner { max-width: 1100px; margin: 0 auto; }
+.section-label {
+    font-size: .8rem;
+    font-weight: 800;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--primary);
+    margin-bottom: .6rem;
+    text-align: center;
+  }
+
+  .back-wrap { display: contents; }
+  .section-title { font-size: clamp(1.9rem, 3.5vw, 2.7rem); font-weight: 900; letter-spacing: -0.02em; margin-bottom: .6rem; text-align: center; }
+  .section-subtitle { color: var(--text-dim); max-width: 600px; margin: 0 auto 3rem; text-align: center; font-size: 1.05rem; }
+
+  /* ═══════════════ HOW IT WORKS ═══════════════ */
+  .how-section { background: radial-gradient(ellipse 70% 50% at 50% 0%, rgba(255,90,31,0.12) 0%, transparent 60%); }
+  .how-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1.4rem; }
+  .how-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 2.2rem 1.6rem; text-align: center; transition: transform .2s, border-color .2s; position: relative; }
+  .how-card:hover { transform: translateY(-5px); border-color: rgba(255,90,31,0.4); }
+  .how-step { width: 44px; height: 44px; margin: 0 auto 1rem; border-radius: 50%; background: linear-gradient(135deg, var(--primary), var(--accent)); color: #fff; font-weight: 900; font-size: 1.3rem; display: flex; align-items: center; justify-content: center; }
+  .how-emoji { font-size: 2.4rem; display: block; margin-bottom: .8rem; }
+  .how-card h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: .5rem; }
+  .how-card p { color: var(--text-dim); font-size: .93rem; }
+
+  /* ═══════════════ BENEFITS ═══════════════ */
+  .features-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1.4rem; }
+  .feature-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 2rem 1.6rem; text-align: center; transition: transform .2s, border-color .2s; }
+  .feature-card:hover { transform: translateY(-5px); border-color: rgba(255,90,31,0.4); }
+  .feature-icon { width: 58px; height: 58px; margin: 0 auto 1rem; border-radius: 16px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+  .feature-card h3 { font-size: 1.2rem; font-weight: 800; margin-bottom: .5rem; }
+  .feature-card p { color: var(--text-dim); font-size: .93rem; }
+
+  /* ═══════════════ RESTAURANTS ═══════════════ */
+  .stores-section { background: radial-gradient(ellipse 60% 40% at 50% 100%, rgba(255,194,51,0.10) 0%, transparent 55%); }
+  .stores-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 1.2rem; }
+  .store-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 16px; padding: 1.4rem; text-align: center; transition: transform .2s, border-color .2s; }
+  .store-card:hover { transform: translateY(-3px); border-color: rgba(255,90,31,0.4); }
+  .store-emoji { font-size: 2.2rem; display: block; margin-bottom: .4rem; }
+  .store-card h4 { font-weight: 800; font-size: .95rem; }
+
+  /* ═══════════════ STATS ═══════════════ */
+  .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 1.4rem; }
+  .stat-card { background: var(--card); border: 1px solid var(--card-border); border-radius: 18px; padding: 2rem 1.2rem; text-align: center; transition: transform .2s, border-color .2s; }
+  .stat-card:hover { transform: translateY(-5px); border-color: rgba(255,90,31,0.4); }
+  .stat-emoji { font-size: 2rem; margin-bottom: .5rem; display: block; }
+  .stat-number { font-size: 2.5rem; font-weight: 900; line-height: 1.1; background: linear-gradient(135deg, var(--primary), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .stat-label { color: var(--text-dim); font-size: .92rem; margin-top: .35rem; font-weight: 500; }
+
+  /* ═══════════════ CTA / QR ═══════════════ */
+  .cta-section { text-align: center; padding: 6rem 2rem; background: radial-gradient(ellipse 75% 55% at 50% 100%, rgba(255,90,31,0.22) 0%, transparent 60%), var(--darker); }
+  .cta-emoji { font-size: 3.5rem; display: block; margin-bottom: 1rem; }
+  .cta-section h2 { font-size: clamp(2rem, 4vw, 3rem); font-weight: 900; margin-bottom: .8rem; letter-spacing: -0.02em; }
+  .cta-section p { color: var(--text-dim); font-size: 1.15rem; margin-bottom: 2.5rem; max-width: 520px; margin-left: auto; margin-right: auto; }
+
+  .qr-wrap { display: flex; justify-content: center; margin-bottom: 2.5rem; }
+  .qr-card {
+    display: inline-flex;
+    align-items: center;
+    gap: 1.4rem;
+    background: #fff;
+    border-radius: 18px;
+    padding: 1.1rem 1.6rem;
+    text-align: left;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.35);
+  }
+  .qr-card img { width: 130px; height: 130px; display: block; border-radius: 8px; }
+  .qr-text { color: #1a202c; }
+  .qr-text .t1 { font-weight: 800; font-size: 1.05rem; color: #0b0f19; line-height: 1.3; }
+  .qr-text .t2 { font-size: .85rem; color: #4a5568; margin-top: .3rem; }
+  .qr-text .t3 { display: inline-flex; align-items: center; gap: 0; margin-top: .7rem; background: #fff; color: #1a202c; font-size: .8rem; font-weight: 700; padding: .4rem .8rem; border-radius: 8px; border: 1.5px solid #EA580C; }
+
+  @media (max-width: 640px) {
+    .qr-card { flex-direction: column; text-align: center; gap: .8rem; }
+  }
+
+  /* ═══════════════ FOOTER ═══════════════ */
+  footer { text-align: center; padding: 2.5rem 2rem; border-top: 1px solid var(--card-border); color: var(--text-dim); font-size: .9rem; }
+  footer a { color: var(--primary); text-decoration: none; font-weight: 600; }
+  footer a:hover { text-decoration: underline; }
+  .footer-logo { display: inline-flex; align-items: center; justify-content: center; gap: .6rem; font-weight: 900; font-size: 1.25rem; letter-spacing: .02em; margin-bottom: .5rem; }
+  .footer-logo svg { width: 30px; height: 30px; display: block; }
+  .footer-logo b { color: #fff; }
+  .footer-logo span { color: var(--primary); }
+  .footer-logo small { font-weight: 700; color: var(--text-dim); }
+
+  /* ═══════════════ PRINT (A5, premium full-bleed) ═══════════════ */
+  .print-logo { display: none; }
+
+  @media print {
+    @page { size: A5 portrait; margin: 0; }
+
+    * { box-sizing: border-box; -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    .topbar, .scroll-hint, .hero::before { display: none !important; }
+    .print-logo { display: flex; position: static; align-items: center; justify-content: center; gap: 2.5mm; margin-bottom: 10mm; font-weight: 900; font-size: 12pt; letter-spacing: .01em; }
+    .print-logo svg { width: 9.5mm; height: 9.5mm; display: block; }
+    .print-logo b { color: #fff; }
+    .print-logo span { color: #FFC233; }
+    .print-logo small { font-weight: 700; color: rgba(255,255,255,.5); }
+
+    html, body { background: #070b12 !important; }
+    body { font-size: 8.5pt; color: #f1f5f9; }
+
+    section { padding: 2.5mm 7mm 1.5mm; page-break-inside: avoid; background: transparent !important; }
+    .section-inner { max-width: none; }
+    .section-label { font-size: 6.5pt; letter-spacing: .18em; color: #FFC233; margin-bottom: .8mm; }
+    .section-title { font-size: 13pt; margin-bottom: .5mm; }
+    .section-subtitle { font-size: 8pt; color: rgba(241,245,249,.6); margin-bottom: 2.5mm; }
+    .how-section .section-subtitle, .stores-section .section-subtitle { display: none; }
+
+    .back-wrap { display: flex; flex-direction: column; height: 210mm; box-sizing: border-box; padding: 4mm 0 1mm; zoom: 0.9; }
+    .back-wrap footer { margin-top: auto; }
+    .back-wrap section { flex: none; }
+
+    /* ── PAGE 1 · HERO (full A5 front) ──────────────── */
+    .hero {
+      position: relative;
+      min-height: auto;
+      height: 210mm;
+      box-sizing: border-box;
+      padding: 24mm 16mm 14mm;
+      page-break-after: always;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      background:
+        radial-gradient(130% 90% at 50% -12%, rgba(255,138,61,.28) 0%, transparent 52%),
+        radial-gradient(110% 70% at 95% 115%, rgba(255,194,51,.10) 0%, transparent 50%),
+        linear-gradient(180deg, #0d1220 0%, #070b12 70%) !important;
+    }
+    .hero-content { max-width: 128mm; padding: 0; }
+    .badge { font-size: 7pt; padding: .4rem 1rem; margin-bottom: 4mm; border-color: rgba(255,194,51,.35); color: #FFC233; }
+    .hero-emojis { display: flex; align-items: center; justify-content: center; gap: 4mm; margin-bottom: 3mm; }
+    .hero-emoji { font-size: 23mm; }
+    .hero-emoji--center { font-size: 23mm; }
+    .hero-emoji--left, .hero-emoji--right { font-size: 16mm; opacity: 0.85; animation: none; }
+    h1 { font-size: 38pt; line-height: 1.04; margin-bottom: 4mm; }
+    h1 span { color: #FFC233 !important; -webkit-text-fill-color: #FFC233 !important; }
+    .hero p { font-size: 11pt; color: rgba(241,245,249,.72); max-width: 118mm; margin-bottom: 7mm; }
+    .btn { padding: .7rem 1.2rem; font-size: 9.5pt; border-radius: 4mm; }
+    .btn-primary { box-shadow: none; }
+    .trust-chip { font-size: 8pt; padding: .4rem .85rem; }
+    .trust-strip { margin-top: 7mm; gap: 3mm; }
+
+    /* ── PAGE 2 · BACK (steps + benefits + stores + CTA/QR) ── */
+    .steps-block, .features-grid, .stores-grid { page-break-inside: avoid; }
+
+    .how-grid { grid-template-columns: repeat(3, 1fr); gap: 2mm; }
+    .how-card { background: rgba(255,255,255,.05); border: .4pt solid rgba(255,255,255,.10); border-radius: 3mm; padding: 2.5mm 2mm; text-align: center; }
+    .how-step { width: 6mm; height: 6mm; font-size: 9.5pt; margin: 0 auto 1.5mm; border-radius: 50%; background: linear-gradient(135deg, #FF8A3D, #E94E8F); line-height: 6mm; }
+    .how-emoji { font-size: 6mm; margin-bottom: 1mm; }
+    .how-card h3 { font-size: 9pt; margin-bottom: .5mm; }
+    .how-card p { font-size: 6.5pt; color: rgba(241,245,249,.6); line-height: 1.35; }
+
+    .features-grid { grid-template-columns: repeat(2, 1fr); gap: 1.2mm 4mm; }
+    .feature-card { background: none; border: none; padding: 0; margin: 0; border-radius: 0; }
+    .feature-card p { display: none; }
+    .feature-card { display: flex; align-items: center; gap: 2.5mm; }
+    .feature-icon { width: auto; height: auto; background: none !important; font-size: 5mm; margin: 0; flex-shrink: 0; }
+    .feature-card h3 { font-size: 8pt; font-weight: 700; }
+
+    .stores-grid { grid-template-columns: repeat(4, 1fr); gap: 1.2mm; }
+    .store-card { background: rgba(255,255,255,.05); border: .4pt solid rgba(255,255,255,.10); border-radius: 2.5mm; padding: 1.5mm 1mm; text-align: center; }
+    .store-emoji { font-size: 5mm; display: inline-block; margin-right: 1mm; margin-bottom: 0; }
+    .store-card h4 { display: inline; font-size: 6.5pt; font-weight: 700; }
+
+    .cta-section { padding: 2.5mm 7mm 1.5mm; text-align: center; }
+    .cta-emoji { display: none; }
+    .cta-section h2 { font-size: 16pt; margin-bottom: 1mm; }
+    .cta-section p { font-size: 7.5pt; color: rgba(241,245,249,.6); margin-bottom: 2.5mm; }
+    .qr-wrap { margin: 0 0 2.5mm; }
+    .qr-card { padding: 1.5mm 3mm; background: #fff; box-shadow: none; border: none; border-radius: 3mm; gap: 3mm; }
+    .qr-card img { width: 17mm; height: 17mm; }
+    .qr-text .t1 { font-size: 8.5pt; }
+    .qr-text .t2 { font-size: 6.5pt; color: #475569; }
+    .qr-text .t3 { padding: .4rem .8rem; background: #fff; border: 1.5pt solid #EA580C; }
+
+    footer { padding: .5mm 0 2mm; color: rgba(241,245,249,.55); font-size: 6.5pt; border-top: .4pt solid rgba(255,255,255,.10); }
+    .footer-logo { margin-bottom: .5mm; }
+    .footer-logo b { color: #fff; }
+    .footer-logo small { color: rgba(241,245,249,.55); }
+  }
+
+  /* ═══════════════ RESPONSIVE ═══════════════ */
+  @media (max-width: 640px) {
+    section { padding: 3.5rem 1.25rem; }
+    .features-grid, .apps-grid, .how-grid { grid-template-columns: 1fr; }
+    .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    .topbar { padding: .8rem 1.25rem; }
+  }
+</style>
+</head>
+<body>
+
+<!-- ═══════════════ TOP BAR ═══════════════ -->
+<header class="topbar">
+  <div class="logo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Fresh2GO">
+      <defs>
+        <linearGradient id="fd-fav" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#F4A125"/>
+          <stop offset=".55" stop-color="#FF8A3D"/>
+          <stop offset="1" stop-color="#E94E8F"/>
+        </linearGradient>
+        <linearGradient id="fd-bag" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFFFF"/>
+          <stop offset="1" stop-color="#F0EDE8"/>
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="16" fill="url(#fd-fav)"/>
+      <g transform="translate(0 -16)">
+        <rect x="19" y="27" width="12" height="3.5" rx="1.8" fill="#D4A056"/>
+        <rect x="19" y="25.6" width="12" height="2.4" rx="1.2" fill="#6D4C41"/>
+        <rect x="18.4" y="24.1" width="13.2" height="1.9" rx="0.95" fill="#FFCA28"/>
+        <path d="M18 23.5c1.8-1.2 3.8 0.2 5.5-0.4s3.5 0.5 5-0.5 3.4-0.1 4.5 0.5" stroke="#66BB6A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="25" cy="21.6" rx="6.6" ry="2.6" fill="#E8B86D"/>
+        <path d="M19.3 21.4c0.8-2 3-3 5.7-2.9s4.9 0.9 5.7 2.9c-1.8 0.5-4 0.6-5.7 0.6s-3.9-0.1-5.7-0.6z" fill="#F0C87A" opacity="0.9"/>
+        <circle cx="23" cy="20" r="0.5" fill="#FFF6E5"/>
+        <circle cx="26" cy="19.7" r="0.5" fill="#FFF6E5"/>
+        <circle cx="28.7" cy="20.6" r="0.5" fill="#FFF6E5"/>
+      </g>
+      <g transform="translate(0 -18)">
+        <line x1="28.5" y1="30" x2="40.5" y2="17.5" stroke="#C99B6A" stroke-width="1.3" stroke-linecap="round"/>
+        <rect x="29.66" y="24.6" width="4.4" height="3.8" rx="1.3" fill="#A85A29" transform="rotate(-50 31.86 26.5)"/>
+        <rect x="32.8" y="21.35" width="4.4" height="3.8" rx="1.3" fill="#B5733E" transform="rotate(-50 35 23.25)"/>
+        <rect x="35.9" y="18.1" width="4.4" height="3.8" rx="1.3" fill="#C07A44" transform="rotate(-50 38.1 20)"/>
+        <circle cx="33.8" cy="24.3" r="0.5" fill="#8D5524"/>
+        <circle cx="37.2" cy="20.9" r="0.5" fill="#8D5524"/>
+      </g>
+      <g transform="translate(0 -12)">
+        <rect x="36.5" y="18.5" width="11" height="8.5" rx="3" fill="#E7C28B" transform="rotate(-30 42 22.75)"/>
+        <rect x="38" y="21" width="8" height="4.5" rx="2" fill="#F0D6A4" transform="rotate(-30 42 23.25)"/>
+        <line x1="37.5" y1="20.5" x2="45.5" y2="19" stroke="#B57F33" stroke-width="0.8" stroke-linecap="round" transform="rotate(-30 41.5 19.75)"/>
+        <ellipse cx="38.6" cy="16.6" rx="2.6" ry="1.4" fill="#FFF9EF" transform="rotate(-14 38.6 16.6)"/>
+        <path d="M36.6 16.6l1.8-1 0.6 1.6z" fill="#E53935" transform="rotate(6 37.8 16.6)"/>
+        <path d="M38.6 15.6l0.5-1 0.5 1z" fill="#43A047" transform="rotate(8 39.1 15.6)"/>
+        <circle cx="37.4" cy="17.3" r="0.35" fill="#E53935"/>
+      </g>
+      <rect x="16" y="30" width="32" height="20" rx="5" fill="url(#fd-bag)"/>
+      <line x1="22" y1="34" x2="42" y2="34" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="22" y1="38" x2="42" y2="38" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="22" y1="42" x2="42" y2="42" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="22" y1="46" x2="42" y2="46" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <rect x="14" y="28" width="36" height="5" rx="2.5" fill="#FF8A3D"/>
+      <path d="M24 28c0-7.5 16-7.5 16 0" stroke="#FF8A3D" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <g transform="rotate(-55 32 28)">
+        <rect x="13" y="24" width="38" height="5" rx="2.5" fill="#F4A125"/>
+        <rect x="13" y="24" width="38" height="3" rx="1.5" fill="#FFB74D" opacity="0.7"/>
+      </g>
+    </svg>
+    <div><b>Fresh2</b><span>GO</span><small>&nbsp;.GR</small></div>
+  </div>
+  <a class="btn" href="https://fresh2go.gr/order">Παραγγελία →</a>
+</header>
+
+<!-- ═══════════════ HERO ═══════════════ -->
+<section class="hero">
+  <div class="hero-content">
+    <div class="print-logo">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Fresh2GO">
+        <defs>
+          <linearGradient id="fd-fav-pl" x1="0" y1="0" x2="1" y2="1">
+            <stop offset="0" stop-color="#F4A125"/>
+            <stop offset=".55" stop-color="#FF8A3D"/>
+            <stop offset="1" stop-color="#E94E8F"/>
+          </linearGradient>
+          <linearGradient id="fd-bag-pl" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#FFFFFF"/>
+            <stop offset="1" stop-color="#F0EDE8"/>
+          </linearGradient>
+        </defs>
+        <rect width="64" height="64" rx="16" fill="url(#fd-fav-pl)"/>
+        <g transform="translate(0 -16)">
+          <rect x="19" y="27" width="12" height="3.5" rx="1.8" fill="#D4A056"/>
+          <rect x="19" y="25.6" width="12" height="2.4" rx="1.2" fill="#6D4C41"/>
+          <rect x="18.4" y="24.1" width="13.2" height="1.9" rx="0.95" fill="#FFCA28"/>
+          <path d="M18 23.5c1.8-1.2 3.8 0.2 5.5-0.4s3.5 0.5 5-0.5 3.4-0.1 4.5 0.5" stroke="#66BB6A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+          <ellipse cx="25" cy="21.6" rx="6.6" ry="2.6" fill="#E8B86D"/>
+          <path d="M19.3 21.4c0.8-2 3-3 5.7-2.9s4.9 0.9 5.7 2.9c-1.8 0.5-4 0.6-5.7 0.6s-3.9-0.1-5.7-0.6z" fill="#F0C87A" opacity="0.9"/>
+          <circle cx="23" cy="20" r="0.5" fill="#FFF6E5"/>
+          <circle cx="26" cy="19.7" r="0.5" fill="#FFF6E5"/>
+          <circle cx="28.7" cy="20.6" r="0.5" fill="#FFF6E5"/>
+        </g>
+        <g transform="translate(0 -18)">
+          <line x1="28.5" y1="30" x2="40.5" y2="17.5" stroke="#C99B6A" stroke-width="1.3" stroke-linecap="round"/>
+          <rect x="29.66" y="24.6" width="4.4" height="3.8" rx="1.3" fill="#A85A29" transform="rotate(-50 31.86 26.5)"/>
+          <rect x="32.8" y="21.35" width="4.4" height="3.8" rx="1.3" fill="#B5733E" transform="rotate(-50 35 23.25)"/>
+          <rect x="35.9" y="18.1" width="4.4" height="3.8" rx="1.3" fill="#C07A44" transform="rotate(-50 38.1 20)"/>
+          <circle cx="33.8" cy="24.3" r="0.5" fill="#8D5524"/>
+          <circle cx="37.2" cy="20.9" r="0.5" fill="#8D5524"/>
+        </g>
+        <g transform="translate(0 -12)">
+          <rect x="36.5" y="18.5" width="11" height="8.5" rx="3" fill="#E7C28B" transform="rotate(-30 42 22.75)"/>
+          <rect x="38" y="21" width="8" height="4.5" rx="2" fill="#F0D6A4" transform="rotate(-30 42 23.25)"/>
+          <line x1="37.5" y1="20.5" x2="45.5" y2="19" stroke="#B57F33" stroke-width="0.8" stroke-linecap="round" transform="rotate(-30 41.5 19.75)"/>
+          <ellipse cx="38.6" cy="16.6" rx="2.6" ry="1.4" fill="#FFF9EF" transform="rotate(-14 38.6 16.6)"/>
+          <path d="M36.6 16.6l1.8-1 0.6 1.6z" fill="#E53935" transform="rotate(6 37.8 16.6)"/>
+          <path d="M38.6 15.6l0.5-1 0.5 1z" fill="#43A047" transform="rotate(8 39.1 15.6)"/>
+          <circle cx="37.4" cy="17.3" r="0.35" fill="#E53935"/>
+        </g>
+        <rect x="16" y="30" width="32" height="20" rx="5" fill="url(#fd-bag-pl)"/>
+        <line x1="22" y1="34" x2="42" y2="34" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="22" y1="38" x2="42" y2="38" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="22" y1="42" x2="42" y2="42" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="22" y1="46" x2="42" y2="46" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+        <rect x="14" y="28" width="36" height="5" rx="2.5" fill="#FF8A3D"/>
+        <path d="M24 28c0-7.5 16-7.5 16 0" stroke="#FF8A3D" stroke-width="3" fill="none" stroke-linecap="round"/>
+        <g transform="rotate(-55 32 28)">
+          <rect x="13" y="24" width="38" height="5" rx="2.5" fill="#F4A125"/>
+          <rect x="13" y="24" width="38" height="3" rx="1.5" fill="#FFB74D" opacity="0.7"/>
+        </g>
+      </svg>
+      <div><b>Fresh2</b><span>GO</span><small>&nbsp;.GR</small></div>
+    </div>
+    <div class="badge">Νέο! Τώρα στα Ιωάννινα</div>
+    <div class="hero-emojis">
+      <span class="hero-emoji hero-emoji--left">🍔</span>
+      <span class="hero-emoji hero-emoji--center">🍕</span>
+      <span class="hero-emoji hero-emoji--right">🥞</span>
+    </div>
+    <h1>Όλα τα Ιωάννινα,<br><span>σε ένα καλάθι.</span></h1>
+    <p>Το Fresh2GO είναι ο νέος τρόπος να παραγγέλνεις φαγητό από τα καλύτερα εστιατόρια της πόλης σου — εύκολα και γρήγορα.</p>
+    <div class="btn-group">
+      <a href="https://fresh2go.gr/download" class="btn btn-secondary">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+        Κατέβασε την Εφαρμογή
+      </a>
+    </div>
+    <div class="trust-strip">
+      <span class="trust-chip">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Οι χαμηλότερες χρεώσεις στην αγορά
+      </span>
+      <span class="trust-chip">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg>
+        Χωρίς κρυφές χρεώσεις
+      </span>
+    </div>
+  </div>
+  <div class="scroll-hint">Πώς δουλεύει; ↓</div>
+</section>
+
+<!-- ═══════════════ HOW IT WORKS ═══════════════ -->
+<div class="back-wrap">
+<section class="how-section">
+  <div class="section-inner">
+    <div class="section-label">Πώς δουλεύει</div>
+    <h2 class="section-title">3 βήματα για νόστιμο φαγητό</h2>
+    <p class="section-subtitle">Πολύ πιο απλό από όσο νομίζεις.</p>
+    <div class="how-grid">
+      <div class="how-card">
+        <div class="how-step">1</div>
+        <span class="how-emoji">🔍</span>
+        <h3>Διάλεξε</h3>
+        <p>Ξεφύλλισε εστιατόρια και μενού της πόλης σου, όλα μαζί σε ένα μέρος.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-step">2</div>
+        <span class="how-emoji">🛒</span>
+        <h3>Πρόσθεσε</h3>
+        <p>Φτιάξε το καλάθι σου με ό,τι σου άνοιξε την όρεξη. Ό,τι κι αν διαλέξεις.</p>
+      </div>
+      <div class="how-card">
+        <div class="how-step">3</div>
+        <span class="how-emoji">💳</span>
+        <h3>Πλήρωσε</h3>
+        <p>Με κάρτα ή μετρητά — γρήγορα, με ασφάλεια και χωρίς φασαρία.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ BENEFITS ═══════════════ -->
+<section>
+  <div class="section-inner">
+    <div class="section-label">Γιατί Fresh2GO</div>
+    <h2 class="section-title">Προτιμάς έτσι.</h2>
+    <p class="section-subtitle">Τα Ιωάννινα δοκίμασαν και αγάπησαν την πλατφόρμα μας.</p>
+    <div class="features-grid">
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(255,90,31,0.14);">⚡</div>
+        <h3>Παραγγέλνεις στο λεπτό</h3>
+        <p>Χωρίς τηλέφωνα, χωρίς αναμονή. Ό,τι θέλεις, σε δευτερόλεπτα.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(255,194,51,0.14);">🍔</div>
+        <h3>Όλα τα φαγητά, ένα μέρος</h3>
+        <p>Από σουβλάκι και πίτσα μέχρι υγιεινά — όλα τα αγαπημένα σου σε ένα σημείο.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(16,185,129,0.14);">💸</div>
+        <h3>Οι χαμηλότερες χρεώσεις</h3>
+        <p>Περισσότερα λεφτά στην τσέπη σου. Οι χαμηλότερες χρεώσεις υπηρεσίας στην αγορά — χωρίς κρυφά κόστη.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(16,185,129,0.14);">🔒</div>
+        <h3>Ασφαλείς πληρωμές</h3>
+        <p>Πλήρωσε με κάρτα ή μετρητά — με πλήρη ασφάλεια και διαφάνεια.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(99,91,255,0.14);">🔁</div>
+        <h3>Επαναπαραγγελία σε 1 κλικ</h3>
+        <p>Το αγαπημένο σου μενού; Το ξαναπαραγγέλνεις με ένα κλικ.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(244,63,94,0.14);">📱</div>
+        <h3>Παντού &amp; πάντα</h3>
+        <p>Από τον browser ή την εφαρμογή — σε κινητό, tablet ή υπολογιστή.</p>
+      </div>
+      <div class="feature-card">
+        <div class="feature-icon" style="background:rgba(139,92,246,0.14);">💌</div>
+        <h3>Νέα εστιατόρια κάθε μέρα</h3>
+        <p>Η γεύση νέων συνεργατών έρχεται διαρκώς στα Ιωάννινα.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ RESTAURANTS ═══════════════ -->
+<section class="stores-section">
+  <div class="section-inner">
+    <div class="section-label">Εστιατόρια</div>
+    <h2 class="section-title">Τα αγαπημένα σου, μαζί</h2>
+    <p class="section-subtitle">Συνεργαζόμαστε με τα καλύτερα εστιατόρια των Ιωαννίνων — και μεγαλώνουμε συνεχώς.</p>
+    <div class="stores-grid">
+      <div class="store-card"><span class="store-emoji">🥙</span><h4>Σουβλάκι</h4></div>
+      <div class="store-card"><span class="store-emoji">🍕</span><h4>Πίτσα</h4></div>
+      <div class="store-card"><span class="store-emoji">🍔</span><h4>Μπέργκερ</h4></div>
+      <div class="store-card"><span class="store-emoji">🥗</span><h4>Υγιεινά</h4></div>
+      <div class="store-card"><span class="store-emoji">🍜</span><h4>Ασιατική</h4></div>
+      <div class="store-card"><span class="store-emoji">🍰</span><h4>Γλυκά</h4></div>
+      <div class="store-card"><span class="store-emoji">☕</span><h4>Καφές</h4></div>
+      <div class="store-card"><span class="store-emoji">➕</span><h4>Και ακόμα…</h4></div>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ CTA ═══════════════ -->
+<section class="cta-section">
+  <div class="section-inner">
+    <span class="cta-emoji">🍕</span>
+    <h2>Λαχτάρησες;</h2>
+    <p>Παράγγειλε τώρα από τα καλύτερα εστιατόρια των Ιωαννίνων — από τον browser ή από το κινητό σου.</p>
+    <div class="qr-wrap">
+      <div class="qr-card">
+        <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAARgAAAEYAQMAAAC9QHvPAAAABlBMVEX///8AAABVwtN+AAAACXBIWXMAAA7EAAAOxAGVKw4bAAABx0lEQVRoge2aPXaDQAyE5YqSI/goHI2rcRQfweVWKCuNtODEwbyw6UYFBu9HI+mNfmyREzYr7Ck3ted6nR71qss9TlYyn5jFXTk9B62nWm72dRGpTPGTgUwfZlQ7tVhYRGAeC+cfZM4zQ17Nz5bbZP6FEcvhsapEzWqzt/Ei855JTVgrI+Fn++qdbpD5M6MwMGPxGuf39zgh04N5tbHluS7yi5H5zsDPqRUjXGuZnN4uZDoxJaMgrhLB493UDTIHTKhuehv5XI/suakBmcvMHN0XMjkmNa90MakVMj0Yy/DM8323FrrhcSHzkbEcRidW+wRJXu666QaZq8ysP6bgVuPs9uG6QeaIadMZvC3Q3ps2bxcyPZh5wV4xZ2FUOom+N+JF5pjJycvc+lK/3M+uwGQ6ML6raXOuYqvQZrQJ8SLTgYl+bG0asu1yUzfIHDNR1+DhVuMyn/O3GzLXmGaxD1/bJmF7l8wxM8OhutvT7vI5axyZy8zikZhQ3UZ0EY2U1505mQtM/kaW2xvkOT63XoLMWcYntex74y0yvZnIZ41/IMDQb5A5ZEITBtQ7TLv5/43YMZK5zoTL9zXO9wzYfWF2IHOZOWFfvkIrrYiCd6QAAAAASUVORK5CYII=" alt="Σκάναρε για να κατεβάσεις την εφαρμογή Fresh2GO" width="130" height="130">
+        <div class="qr-text">
+          <div class="t1">Σκάναρέ με 👆</div>
+          <div class="t2">Κατέβασε την εφαρμογή<br>Fresh2GO στο κινητό σου</div>
+          <div class="t3">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4z"/></svg>
+            Fresh2<span style="color:#EA580C;font-weight:800">GO</span>.GR
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="btn-group">
+      <a href="https://fresh2go.gr/order" class="btn btn-primary">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+        Ξεκίνα την Παραγγελία
+      </a>
+      <a href="https://fresh2go.gr/download" class="btn btn-secondary">
+        <svg width="20" height="20" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+        Κατέβασε την Εφαρμογή
+      </a>
+    </div>
+  </div>
+</section>
+
+<!-- ═══════════════ FOOTER ═══════════════ -->
+<footer>
+  <div class="footer-logo">
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none" role="img" aria-label="Fresh2GO">
+      <defs>
+        <linearGradient id="fd-fav-foot" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0" stop-color="#F4A125"/>
+          <stop offset=".55" stop-color="#FF8A3D"/>
+          <stop offset="1" stop-color="#E94E8F"/>
+        </linearGradient>
+        <linearGradient id="fd-bag-foot" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#FFFFFF"/>
+          <stop offset="1" stop-color="#F0EDE8"/>
+        </linearGradient>
+      </defs>
+      <rect width="64" height="64" rx="16" fill="url(#fd-fav-foot)"/>
+      <g transform="translate(0 -16)">
+        <rect x="19" y="27" width="12" height="3.5" rx="1.8" fill="#D4A056"/>
+        <rect x="19" y="25.6" width="12" height="2.4" rx="1.2" fill="#6D4C41"/>
+        <rect x="18.4" y="24.1" width="13.2" height="1.9" rx="0.95" fill="#FFCA28"/>
+        <path d="M18 23.5c1.8-1.2 3.8 0.2 5.5-0.4s3.5 0.5 5-0.5 3.4-0.1 4.5 0.5" stroke="#66BB6A" stroke-width="1.5" fill="none" stroke-linecap="round"/>
+        <ellipse cx="25" cy="21.6" rx="6.6" ry="2.6" fill="#E8B86D"/>
+        <path d="M19.3 21.4c0.8-2 3-3 5.7-2.9s4.9 0.9 5.7 2.9c-1.8 0.5-4 0.6-5.7 0.6s-3.9-0.1-5.7-0.6z" fill="#F0C87A" opacity="0.9"/>
+        <circle cx="23" cy="20" r="0.5" fill="#FFF6E5"/>
+        <circle cx="26" cy="19.7" r="0.5" fill="#FFF6E5"/>
+        <circle cx="28.7" cy="20.6" r="0.5" fill="#FFF6E5"/>
+      </g>
+      <g transform="translate(0 -18)">
+        <line x1="28.5" y1="30" x2="40.5" y2="17.5" stroke="#C99B6A" stroke-width="1.3" stroke-linecap="round"/>
+        <rect x="29.66" y="24.6" width="4.4" height="3.8" rx="1.3" fill="#A85A29" transform="rotate(-50 31.86 26.5)"/>
+        <rect x="32.8" y="21.35" width="4.4" height="3.8" rx="1.3" fill="#B5733E" transform="rotate(-50 35 23.25)"/>
+        <rect x="35.9" y="18.1" width="4.4" height="3.8" rx="1.3" fill="#C07A44" transform="rotate(-50 38.1 20)"/>
+        <circle cx="33.8" cy="24.3" r="0.5" fill="#8D5524"/>
+        <circle cx="37.2" cy="20.9" r="0.5" fill="#8D5524"/>
+      </g>
+      <g transform="translate(0 -12)">
+        <rect x="36.5" y="18.5" width="11" height="8.5" rx="3" fill="#E7C28B" transform="rotate(-30 42 22.75)"/>
+        <rect x="38" y="21" width="8" height="4.5" rx="2" fill="#F0D6A4" transform="rotate(-30 42 23.25)"/>
+        <line x1="37.5" y1="20.5" x2="45.5" y2="19" stroke="#B57F33" stroke-width="0.8" stroke-linecap="round" transform="rotate(-30 41.5 19.75)"/>
+        <ellipse cx="38.6" cy="16.6" rx="2.6" ry="1.4" fill="#FFF9EF" transform="rotate(-14 38.6 16.6)"/>
+        <path d="M36.6 16.6l1.8-1 0.6 1.6z" fill="#E53935" transform="rotate(6 37.8 16.6)"/>
+        <path d="M38.6 15.6l0.5-1 0.5 1z" fill="#43A047" transform="rotate(8 39.1 15.6)"/>
+        <circle cx="37.4" cy="17.3" r="0.35" fill="#E53935"/>
+      </g>
+      <rect x="16" y="30" width="32" height="20" rx="5" fill="url(#fd-bag-foot)"/>
+      <line x1="22" y1="34" x2="42" y2="34" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="22" y1="38" x2="42" y2="38" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="22" y1="42" x2="42" y2="42" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="22" y1="46" x2="42" y2="46" stroke="#E8D5B8" stroke-width="1.2" stroke-linecap="round"/>
+      <rect x="14" y="28" width="36" height="5" rx="2.5" fill="#FF8A3D"/>
+      <path d="M24 28c0-7.5 16-7.5 16 0" stroke="#FF8A3D" stroke-width="3" fill="none" stroke-linecap="round"/>
+      <g transform="rotate(-55 32 28)">
+        <rect x="13" y="24" width="38" height="5" rx="2.5" fill="#F4A125"/>
+        <rect x="13" y="24" width="38" height="3" rx="1.5" fill="#FFB74D" opacity="0.7"/>
+      </g>
+    </svg>
+    <div><b>Fresh2</b><span>GO</span><small>&nbsp;.GR</small></div>
+  </div>
+</footer>
+</div>
+
+</body>
+</html>
