@@ -88,3 +88,9 @@ new.github
 _swap_old/
 
 quick-handoff-grid-main/
+
+# Android release signing — never commit keys
+native-customer/keystore/
+*.jks
+*.keystore
+keystore-password*

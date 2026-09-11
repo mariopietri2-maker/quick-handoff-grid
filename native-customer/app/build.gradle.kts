@@ -10,6 +10,14 @@ android {
     namespace = "com.freshdelivery.nativecustomer"
     compileSdk = 35
 
+    val releaseKeystore = rootProject.file("keystore/release.jks")
+    val releasePasswordFile = rootProject.file("keystore/keystore-password.txt")
+    val releaseStorePassword = if (releasePasswordFile.exists()) {
+        releasePasswordFile.readText().trim()
+    } else {
+        System.getenv("RELEASE_STORE_PASSWORD") ?: ""
+    }
+
     defaultConfig {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
@@ -34,25 +42,37 @@ android {
         )
     }
 
-    buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-        }
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-        }
-    }
-
     signingConfigs {
         getByName("debug") {
             storeFile = rootProject.file("../mobile-signing/fresh2go-debug.keystore")
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+        }
+        if (releaseKeystore.exists() && releaseStorePassword.isNotBlank()) {
+            create("release") {
+                storeFile = releaseKeystore
+                storePassword = releaseStorePassword
+                keyAlias = "fresh2go"
+                keyPassword = releaseStorePassword
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        release {
+            isMinifyEnabled = false
+            isShrinkResources = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            if (signingConfigs.names.contains("release")) {
+                signingConfig = signingConfigs.getByName("release")
+            }
         }
     }
 
