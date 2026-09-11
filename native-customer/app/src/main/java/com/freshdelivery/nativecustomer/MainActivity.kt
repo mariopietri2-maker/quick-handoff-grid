@@ -34,12 +34,16 @@ class MainActivity : ComponentActivity() {
     private var paymentOrderId: String? = null
 
     private val vm: CustomerViewModel by viewModels()
-    private val updateChecker by lazy { AppUpdateChecker(applicationContext, "customerNative") }
+    // Sideload self-update only for debug builds (fresh2go.gr). The Play release
+    // build has no REQUEST_INSTALL_PACKAGES and must not self-update (Play policy).
+    private val updateChecker by lazy {
+        if (BuildConfig.DEBUG) AppUpdateChecker(applicationContext, "customerNative") else null
+    }
 
     override fun onResume() {
         super.onResume()
         lifecycleScope.launch {
-            runCatching { updateChecker.resumeAfterSettings() }
+            runCatching { updateChecker?.resumeAfterSettings() }
         }
     }
 
@@ -92,13 +96,16 @@ class MainActivity : ComponentActivity() {
                     splashMinElapsed = true
                 }
                 val updateScope = rememberCoroutineScope()
-                val updateState by updateChecker.state.collectAsState()
-                LaunchedEffect(Unit) { updateChecker.check() }
-                AppUpdateDialog(
-                    state = updateState,
-                    onDownload = { updateScope.launch { updateChecker.download() } },
-                    onDismiss = { updateChecker.dismiss() },
-                )
+                val checker = updateChecker
+                if (checker != null) {
+                    val updateState by checker.state.collectAsState()
+                    LaunchedEffect(Unit) { checker.check() }
+                    AppUpdateDialog(
+                        state = updateState,
+                        onDownload = { updateScope.launch { checker.download() } },
+                        onDismiss = { checker.dismiss() },
+                    )
+                }
                 when {
                     state.bootstrapping || !splashMinElapsed -> {
                         SplashScreen(

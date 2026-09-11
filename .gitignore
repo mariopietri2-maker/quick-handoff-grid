@@ -49,6 +49,8 @@ mobile-apks/*
 !mobile-apks/*.apk
 store-bundles/
 *.aab
+# Kotlin compiler session cache
+native-customer/.kotlin/
 
 # Play upload keys (generate with scripts/setup-play-signing.sh)
 mobile-signing/*.jks
@@ -89,7 +91,7 @@ _swap_old/
 
 quick-handoff-grid-main/
 
-# Android release signing — never commit keys
+# Android release signing ï¿½ never commit keys
 native-customer/keystore/
 *.jks
 *.keystore
