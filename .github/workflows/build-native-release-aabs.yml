@@ -1,9 +1,9 @@
 # Build SIGNED Play Store AABs for the NATIVE (Kotlin + Compose) apps.
-# The GitHub release play-store-aabs-v1 contains Capacitor (WebView) AABs —
+# The GitHub release play-store-aabs-v1 contains Capacitor (WebView) AABs -
 # this workflow produces the true native builds, signed with the same Play
 # upload keystores already enrolled in Google Play App Signing.
 #
-# REQUIRED repo secrets (Settings → Secrets and variables → Actions):
+# REQUIRED repo secrets (Settings > Secrets and variables > Actions):
 #   PLAY_CUSTOMER_KEYSTORE_B64  base64 of mobile-signing/fresh2go-customer-upload.jks
 #   PLAY_DRIVER_KEYSTORE_B64    base64 of mobile-signing/fresh2go-driver-upload.jks
 #   PLAY_STORE_PASSWORD         storePassword from mobile-signing/key.properties
@@ -18,7 +18,7 @@ on:
   workflow_dispatch:
     inputs:
       version_code:
-        description: "Android versionCode — MUST be higher than the last version in Play Console (currently 7232800)."
+        description: "Android versionCode - MUST be higher than the last version in Play Console (currently 7232800)."
         required: false
         default: "7233000"
       version_name:
@@ -60,7 +60,7 @@ jobs:
         run: |
           TOKEN="${MAPBOX_DOWNLOADS_TOKEN:-}"
           if [ -z "$TOKEN" ]; then
-            echo "::warning::MAPBOX_DOWNLOADS_TOKEN secret not set — driver build may fail resolving Mapbox Maps SDK"
+            echo "::warning::MAPBOX_DOWNLOADS_TOKEN secret not set - driver build may fail resolving Mapbox Maps SDK"
           fi
           mkdir -p ~/.gradle
           {
@@ -78,7 +78,7 @@ jobs:
           set -euo pipefail
           for v in PLAY_CUSTOMER_KEYSTORE_B64 PLAY_DRIVER_KEYSTORE_B64 PLAY_STORE_PASSWORD PLAY_KEY_PASSWORD; do
             if [ -z "${!v:-}" ]; then
-              echo "::error::Missing secret ${v} — add it in Settings → Secrets and variables → Actions"
+              echo "::error::Missing secret ${v} - add it in Settings > Secrets and variables > Actions"
               exit 1
             fi
           done
@@ -98,7 +98,7 @@ jobs:
           CODE_INT=$((10#$CODE + 0))
           MIN=7233000
           if [ "$CODE_INT" -lt "$MIN" ]; then
-            echo "::error::versionCode $CODE_INT is below Play's current 7232800 — use $MIN or higher"
+            echo "::error::versionCode $CODE_INT is below Play's current 7232800 - use $MIN or higher"
             exit 1
           fi
           NAME="${VERSION_NAME_INPUT:-1.0.${CODE}}"
@@ -177,7 +177,7 @@ PY
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           gh release view native-play-aabs-v1 >/dev/null 2>&1 || \
-            gh release create native-play-aabs-v1 --title "Fresh2GO Native Play Store AABs (signed)" --notes "Native Kotlin + Compose AABs signed with the Play upload keystores. Upload each in Play Console → Internal testing or Production."
+            gh release create native-play-aabs-v1 --title "Fresh2GO Native Play Store AABs (signed)" --notes "Native Kotlin + Compose AABs signed with the Play upload keystores. Upload each in Play Console > Internal testing or Production."
           gh release upload native-play-aabs-v1 store-bundles/*.aab --clobber
           echo "Published to GitHub release native-play-aabs-v1:"
           ls -lah store-bundles/
