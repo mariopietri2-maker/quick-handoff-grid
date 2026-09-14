@@ -555,7 +555,7 @@ const displayAddress = deliveryAddress
                     if (searchTimer.current) clearTimeout(searchTimer.current);
                     searchInputRef.current?.focus();
                   }}
-                  className="px-3 h-7 rounded-full bg-[#FFF3E8] text-[#EA580C] text-[12px] font-bold active:scale-95 transition-transform"
+                  className="px-3 h-7 rounded-full bg-[#FFEDD5] text-[#EA580C] text-[12px] font-bold active:scale-95 transition-transform"
                 >
                   {q}
                 </button>

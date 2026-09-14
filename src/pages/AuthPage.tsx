@@ -120,7 +120,7 @@ export default function AuthPage() {
   // Keep showing the form during password recovery even if a session exists.
   if (!flavorReady || (loading && !isAuthBypass) || (user && !profile && !isAuthBypass)) {
     return (
-      <div className="min-h-[100dvh] bg-[hsl(220,20%,7%)] flex items-center justify-center">
+      <div className={`min-h-[100dvh] bg-[hsl(var(--auth-bg))] flex items-center justify-center ${isCustomerShell ? 'auth-root customer-auth' : 'auth-root'}`}>
         <div className="h-8 w-8 rounded-full border-2 border-primary border-t-transparent animate-spin" />
       </div>
     );
@@ -342,7 +342,7 @@ export default function AuthPage() {
                 : 'Δημιουργήστε λογαριασμό πελάτη';
 
   return (
-    <div className="min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain customer-scroll bg-[hsl(220,20%,7%)] flex flex-col">
+    <div className={`min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain customer-scroll bg-[hsl(var(--auth-bg))] flex flex-col ${isCustomerShell ? 'auth-root customer-auth' : 'auth-root'}`}>
       <SEO
         title={(isDriverShell || (driverIntent && isSignup)) ? 'Εγγραφή οδηγού — Fresh2GO.GR' : 'Σύνδεση & Εγγραφή — Fresh2GO.GR'}
         description="Συνδεθείτε ή δημιουργήστε λογαριασμό στο Fresh2GO.GR."
@@ -354,7 +354,7 @@ export default function AuthPage() {
           <button
             type="button"
             onClick={() => navigate('/order')}
-            className="text-sm font-semibold text-[hsl(220,10%,70%)] hover:text-white px-2 py-1"
+            className="text-sm font-semibold text-[hsl(var(--auth-dim))] hover:text-[hsl(var(--auth-text))] px-2 py-1"
           >
             ← Πίσω
           </button>
@@ -365,25 +365,25 @@ export default function AuthPage() {
           variant={isDriverShell ? 'driver' : isCustomerShell ? 'core' : 'ink'}
           withWordmark
           size={26}
-          className="text-[hsl(220,14%,96%)]"
+          className="text-[hsl(var(--auth-text))]"
         />
         <span className="w-14" aria-hidden />
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <Card className="w-full max-w-md shadow-[var(--shadow-lg)] border-[hsl(220,20%,14%)] bg-[hsl(220,20%,10%)] animate-scale-in">
+        <Card className="w-full max-w-md shadow-[var(--shadow-lg)] border-[hsl(var(--auth-border))] bg-[hsl(var(--auth-card))] animate-scale-in">
           <CardHeader className="text-center pb-2">
-            <CardTitle className="font-heading text-2xl text-[hsl(220,14%,96%)]">{title}</CardTitle>
-            <p className="text-sm text-[hsl(220,10%,55%)] mt-1">{subtitle}</p>
+            <CardTitle className="font-heading text-2xl text-[hsl(var(--auth-text))]">{title}</CardTitle>
+            <p className="text-sm text-[hsl(var(--auth-muted))] mt-1">{subtitle}</p>
             {(mode === 'login' || mode === 'signup') && (
-              <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[hsl(220,20%,14%)] p-1">
+              <div className="mt-4 grid grid-cols-2 gap-2 rounded-lg bg-[hsl(var(--auth-border))] p-1">
                 <button
                   type="button"
                   onClick={() => setMode('login')}
                   className={`h-10 rounded-md font-heading text-sm transition-colors ${
                     isLogin
-                      ? 'bg-foreground text-background'
-                      : 'text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)]'
+                      ? 'bg-[hsl(var(--auth-accent))] text-[hsl(var(--auth-accent-fg))]'
+                      : 'text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))]'
                   }`}
                 >
                   Σύνδεση
@@ -393,8 +393,8 @@ export default function AuthPage() {
                   onClick={() => setMode('signup')}
                   className={`h-10 rounded-md font-heading text-sm transition-colors ${
                     isSignup
-                      ? 'bg-foreground text-background'
-                      : 'text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)]'
+                      ? 'bg-[hsl(var(--auth-accent))] text-[hsl(var(--auth-accent-fg))]'
+                      : 'text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))]'
                   }`}
                 >
                   Εγγραφή
@@ -406,9 +406,9 @@ export default function AuthPage() {
             {mode === 'forgot' ? (
               <form onSubmit={handleForgot} className="space-y-4" autoComplete="on">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="font-heading text-[hsl(220,14%,96%)]">Email</Label>
+                  <Label htmlFor="email" className="font-heading text-[hsl(var(--auth-text))]">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="email"
                       name="email"
@@ -417,7 +417,7 @@ export default function AuthPage() {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       maxLength={255}
                     />
@@ -425,7 +425,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
+                  className="w-full h-12 font-heading text-lg bg-[hsl(var(--auth-accent))] text-[hsl(var(--auth-accent-fg))] press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -440,7 +440,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode('login')}
-                  className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
+                  className="w-full text-center text-sm font-semibold text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] pt-1"
                 >
                   Πίσω στη σύνδεση
                 </button>
@@ -448,9 +448,9 @@ export default function AuthPage() {
             ) : mode === 'otp' ? (
               <form onSubmit={handleOtpReset} className="space-y-4" autoComplete="on">
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="font-heading text-[hsl(220,14%,96%)]">Email</Label>
+                  <Label htmlFor="email" className="font-heading text-[hsl(var(--auth-text))]">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="email"
                       name="email"
@@ -459,14 +459,14 @@ export default function AuthPage() {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       maxLength={255}
                     />
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="otp" className="font-heading text-[hsl(220,14%,96%)]">Κωδικός (6 ψηφία)</Label>
+                  <Label htmlFor="otp" className="font-heading text-[hsl(var(--auth-text))]">Κωδικός (6 ψηφία)</Label>
                   <Input
                     id="otp"
                     name="otp"
@@ -476,15 +476,15 @@ export default function AuthPage() {
                     placeholder="123456"
                     value={otp}
                     onChange={(e) => setOtp(e.target.value.replace(/\D/g, '').slice(0, 6))}
-                    className="bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40 tracking-[0.3em] text-center text-lg"
+                    className="bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40 tracking-[0.3em] text-center text-lg"
                     required
                     maxLength={6}
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="font-heading text-[hsl(220,14%,96%)]">Νέος κωδικός</Label>
+                  <Label htmlFor="password" className="font-heading text-[hsl(var(--auth-text))]">Νέος κωδικός</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="password"
                       name="password"
@@ -493,14 +493,14 @@ export default function AuthPage() {
                       placeholder="Τουλάχιστον 6 χαρακτήρες"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-11 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 pr-11 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,18%)]"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] hover:bg-[hsl(var(--auth-input-border))]"
                       aria-label={showPassword ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού'}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -508,9 +508,9 @@ export default function AuthPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="font-heading text-[hsl(220,14%,96%)]">Επιβεβαίωση</Label>
+                  <Label htmlFor="confirmPassword" className="font-heading text-[hsl(var(--auth-text))]">Επιβεβαίωση</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
@@ -519,14 +519,14 @@ export default function AuthPage() {
                       placeholder="Επαναλάβετε τον κωδικό"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-11 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 pr-11 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,18%)]"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] hover:bg-[hsl(var(--auth-input-border))]"
                       aria-label={showConfirmPassword ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού'}
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -535,7 +535,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
+                  className="w-full h-12 font-heading text-lg bg-[hsl(var(--auth-accent))] text-[hsl(var(--auth-accent-fg))] press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -550,7 +550,7 @@ export default function AuthPage() {
                 <button
                   type="button"
                   onClick={() => setMode('forgot')}
-                  className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
+                  className="w-full text-center text-sm font-semibold text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] pt-1"
                 >
                   Ξανά αποστολή κωδικού
                 </button>
@@ -558,9 +558,9 @@ export default function AuthPage() {
             ) : mode === 'reset' ? (
               <form onSubmit={handleResetPassword} className="space-y-4" autoComplete="on">
                 <div className="space-y-2">
-                  <Label htmlFor="password" className="font-heading text-[hsl(220,14%,96%)]">Νέος κωδικός</Label>
+                  <Label htmlFor="password" className="font-heading text-[hsl(var(--auth-text))]">Νέος κωδικός</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="password"
                       name="password"
@@ -569,14 +569,14 @@ export default function AuthPage() {
                       placeholder="Τουλάχιστον 6 χαρακτήρες"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-11 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 pr-11 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,18%)]"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] hover:bg-[hsl(var(--auth-input-border))]"
                       aria-label={showPassword ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού'}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -584,9 +584,9 @@ export default function AuthPage() {
                   </div>
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="confirmPassword" className="font-heading text-[hsl(220,14%,96%)]">Επιβεβαίωση</Label>
+                  <Label htmlFor="confirmPassword" className="font-heading text-[hsl(var(--auth-text))]">Επιβεβαίωση</Label>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="confirmPassword"
                       name="confirmPassword"
@@ -595,14 +595,14 @@ export default function AuthPage() {
                       placeholder="Επαναλάβετε τον κωδικό"
                       value={confirmPassword}
                       onChange={(e) => setConfirmPassword(e.target.value)}
-                      className="pl-10 pr-11 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 pr-11 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowConfirmPassword((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,18%)]"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] hover:bg-[hsl(var(--auth-input-border))]"
                       aria-label={showConfirmPassword ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού'}
                     >
                       {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -611,7 +611,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
+                  className="w-full h-12 font-heading text-lg bg-[hsl(var(--auth-accent))] text-[hsl(var(--auth-accent-fg))] press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -628,9 +628,9 @@ export default function AuthPage() {
               <form onSubmit={handleSubmit} className="space-y-4" autoComplete="on">
                 {isSignup && (
                   <div className="space-y-2">
-                    <Label htmlFor="fullName" className="font-heading text-[hsl(220,14%,96%)]">Ονοματεπώνυμο</Label>
+                    <Label htmlFor="fullName" className="font-heading text-[hsl(var(--auth-text))]">Ονοματεπώνυμο</Label>
                     <div className="relative">
-                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                      <User className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                       <Input
                         id="fullName"
                         name="fullName"
@@ -639,7 +639,7 @@ export default function AuthPage() {
                         placeholder="Το όνομά σας"
                         value={fullName}
                         onChange={(e) => setFullName(e.target.value)}
-                        className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                        className="pl-10 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                         required
                         maxLength={120}
                       />
@@ -647,9 +647,9 @@ export default function AuthPage() {
                   </div>
                 )}
                 <div className="space-y-2">
-                  <Label htmlFor="email" className="font-heading text-[hsl(220,14%,96%)]">Email</Label>
+                  <Label htmlFor="email" className="font-heading text-[hsl(var(--auth-text))]">Email</Label>
                   <div className="relative">
-                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Mail className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="email"
                       name="email"
@@ -658,7 +658,7 @@ export default function AuthPage() {
                       placeholder="you@example.com"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      className="pl-10 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       maxLength={255}
                     />
@@ -666,7 +666,7 @@ export default function AuthPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-2">
-                    <Label htmlFor="password" className="font-heading text-[hsl(220,14%,96%)]">Κωδικός</Label>
+                    <Label htmlFor="password" className="font-heading text-[hsl(var(--auth-text))]">Κωδικός</Label>
                     {isLogin && (
                       <button
                         type="button"
@@ -678,7 +678,7 @@ export default function AuthPage() {
                     )}
                   </div>
                   <div className="relative">
-                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(220,10%,55%)]" />
+                    <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-[hsl(var(--auth-muted))]" />
                     <Input
                       id="password"
                       name="password"
@@ -687,14 +687,14 @@ export default function AuthPage() {
                       placeholder="Τουλάχιστον 6 χαρακτήρες"
                       value={password}
                       onChange={(e) => setPassword(e.target.value)}
-                      className="pl-10 pr-11 bg-[hsl(220,20%,14%)] border-[hsl(220,20%,18%)] text-[hsl(220,14%,96%)] placeholder:text-[hsl(220,10%,40%)] focus-visible:ring-primary/40"
+                      className="pl-10 pr-11 bg-[hsl(var(--auth-border))] border-[hsl(var(--auth-input-border))] text-[hsl(var(--auth-text))] placeholder:text-[hsl(var(--auth-placeholder))] focus-visible:ring-primary/40"
                       required
                       minLength={6}
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword((v) => !v)}
-                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] hover:bg-[hsl(220,20%,18%)]"
+                      className="absolute right-2 top-1/2 -translate-y-1/2 h-8 w-8 inline-flex items-center justify-center rounded-md text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] hover:bg-[hsl(var(--auth-input-border))]"
                       aria-label={showPassword ? 'Απόκρυψη κωδικού' : 'Εμφάνιση κωδικού'}
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
@@ -703,7 +703,7 @@ export default function AuthPage() {
                 </div>
                 <Button
                   type="submit"
-                  className="w-full h-12 font-heading text-lg bg-foreground text-background press-scale"
+                  className="w-full h-12 font-heading text-lg bg-[hsl(var(--auth-accent))] text-[hsl(var(--auth-accent-fg))] press-scale"
                   disabled={submitting}
                 >
                   {submitting ? (
@@ -717,7 +717,7 @@ export default function AuthPage() {
                   <button
                     type="button"
                     onClick={() => navigate(shellHome === '/' ? '/order' : shellHome)}
-                    className="w-full text-center text-sm font-semibold text-[hsl(220,10%,55%)] hover:text-[hsl(220,14%,96%)] pt-1"
+                    className="w-full text-center text-sm font-semibold text-[hsl(var(--auth-muted))] hover:text-[hsl(var(--auth-text))] pt-1"
                   >
                     Συνέχεια χωρίς λογαριασμό
                   </button>
