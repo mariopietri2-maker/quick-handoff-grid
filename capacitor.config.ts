@@ -23,12 +23,12 @@ const config: CapacitorConfig = {
     ],
   },
   android: {
-    backgroundColor: '#F2F7FF',
+    backgroundColor: '#FAFAF9',
     webContentsDebuggingEnabled: isDev,
     allowMixedContent: isDev,
   },
   ios: {
-    backgroundColor: '#F2F7FF',
+    backgroundColor: '#FAFAF9',
     contentInset: 'never',
     scrollEnabled: false,
   },
@@ -36,11 +36,11 @@ const config: CapacitorConfig = {
     CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#F2F7FF',
+      backgroundColor: '#FAFAF9',
       overlaysWebView: true,
     },
     SplashScreen: {
-      backgroundColor: '#1B4BA0',
+      backgroundColor: '#EA580C',
     },
   },
 };

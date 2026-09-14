@@ -1,41 +1,42 @@
 {
-  "appId": "com.freshdelivery.customer",
-  "appName": "Fresh",
-  "webDir": "dist",
-  "server": {
-    "url": "https://quick-handoff-grid-8qu8.vercel.app",
-    "cleartext": false,
-    "androidScheme": "https",
-    "allowNavigation": [
-      "https://quick-handoff-grid-8qu8.vercel.app/*",
-      "https://freshdelivery.app/*",
-      "https://*.vercel.app/*",
-      "https://ojkesspghyqmjmupybva.supabase.co/*",
-      "https://*.supabase.co/*",
-      "https://api.mapbox.com/*"
-    ]
-  },
-  "android": {
-    "backgroundColor": "#F2F8F4",
-    "webContentsDebuggingEnabled": false,
-    "allowMixedContent": false
-  },
-  "ios": {
-    "backgroundColor": "#F2F8F4",
-    "contentInset": "never",
-    "scrollEnabled": false
-  },
-  "plugins": {
-    "CapacitorHttp": {
-      "enabled": true
-    },
-    "StatusBar": {
-      "style": "DARK",
-      "backgroundColor": "#F2F8F4",
-      "overlaysWebView": true
-    },
-    "SplashScreen": {
-      "backgroundColor": "#0FB876"
-    }
-  }
+	"appId": "com.freshdelivery.customer",
+	"appName": "fresh2go",
+	"webDir": "dist",
+	"server": {
+		"url": "https://fresh2go.gr",
+		"cleartext": false,
+		"androidScheme": "https",
+		"allowNavigation": [
+			"https://fresh2go.gr/*",
+			"https://quick-handoff-grid-8qu8.vercel.app/*",
+			"https://freshdelivery.app/*",
+			"https://*.vercel.app/*",
+			"https://ojkesspghyqmjmupybva.supabase.co/*",
+			"https://*.supabase.co/*",
+			"https://api.mapbox.com/*"
+		]
+	},
+	"android": {
+		"backgroundColor": "#FAFAF9",
+		"webContentsDebuggingEnabled": false,
+		"allowMixedContent": false
+	},
+	"ios": {
+		"backgroundColor": "#FAFAF9",
+		"contentInset": "never",
+		"scrollEnabled": false
+	},
+	"plugins": {
+		"CapacitorHttp": {
+			"enabled": true
+		},
+		"StatusBar": {
+			"style": "DARK",
+			"backgroundColor": "#FAFAF9",
+			"overlaysWebView": true
+		},
+		"SplashScreen": {
+			"backgroundColor": "#EA580C"
+		}
+	}
 }

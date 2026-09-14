@@ -1,0 +1,122 @@
+<!doctype html>
+<html lang="el">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Fresh2GO — Customer Brand Preview</title>
+<style>
+  :root {
+    --bg: #FAFAF9;
+    --surface: #ffffff;
+    --muted: #F5F5F4;
+    --border: #E7E5E4;
+    --ink: #1C1917;
+    --ink-muted: #78716C;
+    --ink-soft: #A8A29E;
+    --accent: #EA580C;
+    --accent-dark: #C2410C;
+    --accent-bright: #F97316;
+    --peach: #FFEDD5;
+    --radius: 16px;
+    --shadow: 0 4px 14px hsl(21 90% 48% / 0.25);
+    font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--ink); font-size: 14px; -webkit-font-smoothing: antialiased; }
+  .container { max-width: 400px; margin: 0 auto; padding: 16px; display: flex; flex-direction: column; gap: 14px; }
+  .section-label { font-size: 11px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--ink-soft); margin-top: 6px; }
+
+  /* Splash */
+  .splash { border-radius: var(--radius); color: #fff; padding: 48px 20px; text-align: center;
+    background: radial-gradient(120% 80% at 50% 20%, hsl(34 100% 57%) 0%, hsl(25 95% 53%) 50%, hsl(18 88% 40%) 100%); }
+  .splash .logo { font-size: 30px; font-weight: 900; letter-spacing: -.02em; }
+  .splash .logo span { display: block; font-size: 14px; font-weight: 700; margin-top: 4px; opacity: .95; }
+
+  /* Hero */
+  .hero { border-radius: var(--radius); padding: 18px 16px; color: #fff;
+    background: linear-gradient(120deg, hsl(21 90% 48%), hsl(25 95% 53%) 50%, hsl(18 88% 40%)); }
+  .hero h1 { font-size: 20px; font-weight: 800; }
+  .hero p { font-size: 12px; opacity: .95; margin-top: 4px; }
+
+  /* Login card */
+  .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 20px;
+    box-shadow: 0 10px 30px hsl(220 10% 10% / 0.06); }
+  .card h2 { font-size: 22px; text-align: center; font-weight: 800; }
+  .card .sub { font-size: 13px; text-align: center; color: var(--ink-muted); margin: 6px 0 16px; }
+  .tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; background: var(--muted); padding: 4px; border-radius: 10px; margin-bottom: 16px; }
+  .tabs button { border: none; cursor: pointer; height: 38px; border-radius: 8px; font-weight: 700; font-size: 14px; }
+  .tabs .active { background: var(--accent); color: #fff; }
+  .tabs .idle { background: transparent; color: var(--ink-muted); }
+  .field { margin-bottom: 14px; }
+  .field label { display: block; font-weight: 700; font-size: 13px; margin-bottom: 6px; }
+  .input-wrap { position: relative; }
+  .input-wrap .icon { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: var(--ink-soft); font-size: 14px; }
+  .input-wrap input { width: 100%; height: 44px; padding: 0 12px 0 36px; border-radius: 10px;
+    background: var(--muted); border: 1px solid var(--border); color: var(--ink); font-size: 15px; outline: none; }
+  .input-wrap input::placeholder { color: var(--ink-soft); }
+  .cta { width: 100%; height: 46px; border: none; border-radius: 10px; cursor: pointer; font-size: 16px; font-weight: 800; color: #fff;
+    background: linear-gradient(120deg, var(--accent), var(--accent-bright) 48%, var(--accent-dark)); box-shadow: var(--shadow); }
+
+  /* Home cards */
+  .card-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .menu-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 12px; }
+  .menu-card .thumb { height: 64px; border-radius: 10px; background: var(--peach); display: flex; align-items: center; justify-content: center; font-size: 26px; }
+  .menu-card h3 { font-size: 14px; font-weight: 800; margin-top: 8px; }
+  .menu-card p { font-size: 12px; color: var(--ink-muted); }
+  .chip { display: inline-block; background: var(--peach); color: var(--accent-dark); font-size: 11px; font-weight: 800;
+    padding: 3px 10px; border-radius: 999px; }
+
+  /* Bottom tabs */
+  .bottom-tabs { position: sticky; bottom: 0; display: grid; grid-template-columns: repeat(5, 1fr);
+    background: var(--surface); border: 1px solid var(--border); border-radius: 14px 14px 0 0; padding: 6px 0 10px; }
+  .tab { display: flex; flex-direction: column; align-items: center; gap: 2px; font-size: 11px; color: var(--ink-muted); }
+  .tab .dot { font-size: 18px; }
+  .tab.active { color: var(--accent); font-weight: 700; }
+  .badge { background: var(--accent); color: #fff; border-radius: 999px; font-size: 10px; font-weight: 800; padding: 1px 7px; }
+</style>
+</head>
+<body>
+  <div class="container">
+
+    <div class="section-label">Splash — native gradient</div>
+    <div class="splash">
+      <div class="logo">Fresh2GO<span>Fresh Meals. Fast Delivery.</span></div>
+    </div>
+
+    <div class="section-label">Hero / store header</div>
+    <div class="hero"><h1>Καλώς ήρθες! 👋</h1><p>Παράδοση σε 30′ · Δωρεάν πάνω από 15€</p></div>
+
+    <div class="section-label">Login — light-stone + orange</div>
+    <div class="card">
+      <h2>Σύνδεση / Εγγραφή</h2>
+      <p class="sub">Σύνδεση με email</p>
+      <div class="tabs"><button class="active">Σύνδεση</button><button class="idle">Εγγραφή</button></div>
+      <div class="field">
+        <label for="em">Email</label>
+        <div class="input-wrap"><span class="icon">✉</span><input id="em" placeholder="you@example.com"></div>
+      </div>
+      <div class="field">
+        <label for="pw">Κωδικός</label>
+        <div class="input-wrap"><span class="icon">🔒</span><input id="pw" type="password" placeholder="Τουλάχιστον 6 χαρακτήρες"></div>
+      </div>
+      <button class="cta">Σύνδεση</button>
+    </div>
+
+    <div class="section-label">Home cards + chips</div>
+    <div class="card-row">
+      <div class="menu-card"><div class="thumb">🍔</div><h3>Classic Burger</h3><p>με πατάτες &amp; σως</p><span class="chip">8,50 €</span></div>
+      <div class="menu-card"><div class="thumb">🥗</div><h3>Greek Salad</h3><p>φέτα από Αμύνταιο</p><span class="chip">6,90 €</span></div>
+    </div>
+
+    <div class="section-label">Bottom tabs</div>
+    <div class="bottom-tabs">
+      <div class="tab active"><span class="dot">🏠</span>Αρχική</div>
+      <div class="tab"><span class="dot">🍽</span>Κατάστημα</div>
+      <div class="tab"><span class="dot">🛒</span><span class="badge">3</span></div>
+      <div class="tab"><span class="dot">👤</span>Profil</div>
+      <div class="tab"><span class="dot">ℹ️</span>Βοήθεια</div>
+    </div>
+
+  </div>
+</body>
+</html>
