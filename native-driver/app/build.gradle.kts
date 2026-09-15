@@ -48,9 +48,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            if (!System.getenv("PLAY_STORE_PASSWORD").isNullOrBlank()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
         }
     }
 
@@ -60,12 +57,6 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
-        }
-        create("release") {
-            storeFile = rootProject.file(System.getenv("PLAY_KEYSTORE_FILE") ?: "keystore/release.jks")
-            storePassword = System.getenv("PLAY_STORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("PLAY_KEY_ALIAS") ?: "fresh2go"
-            keyPassword = System.getenv("PLAY_KEY_PASSWORD") ?: System.getenv("PLAY_STORE_PASSWORD") ?: ""
         }
     }
 

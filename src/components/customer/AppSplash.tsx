@@ -48,7 +48,7 @@ export default function AppSplash() {
       }`}
       style={{
         background:
-          'radial-gradient(120% 80% at 50% 20%, hsl(34 100% 57%) 0%, hsl(25 95% 53%) 50%, hsl(18 88% 40%) 100%)',
+          'radial-gradient(120% 80% at 50% 20%, hsl(var(--c-accent, 24 100% 62%)) 0%, hsl(var(--c-accent-dark, 24 90% 51%)) 70%, hsl(24 70% 34%) 100%)',
       }}
       aria-hidden
     >

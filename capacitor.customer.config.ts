@@ -21,12 +21,12 @@ const config: CapacitorConfig = {
   },
   android: {
     path: 'android-customer',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#fff7ec',
     webContentsDebuggingEnabled: process.env.CAPACITOR_DEV === '1',
   },
   ios: {
     path: 'ios-customer',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#fff7ec',
     contentInset: 'never',
     scrollEnabled: false,
   },
@@ -34,11 +34,11 @@ const config: CapacitorConfig = {
     CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#0f172a',
+      backgroundColor: '#fff7ec',
       overlaysWebView: true,
     },
     SplashScreen: {
-      backgroundColor: '#0f172a',
+      backgroundColor: '#fff7ec',
       launchAutoHide: true,
       launchShowDuration: 400,
       launchFadeOutDuration: 280,

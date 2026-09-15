@@ -18,7 +18,6 @@ dependencies {
     implementation project(':capacitor-splash-screen')
     implementation project(':capacitor-status-bar')
     implementation project(':capgo-background-geolocation')
-    implementation project(':fresh2go-capacitor-mapbox-maps')
     implementation project(':capacitor-browser')
 
 }

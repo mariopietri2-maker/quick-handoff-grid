@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
@@ -235,15 +234,12 @@ fun CustomerShell(
             onClearMessages()
         }
     }
-    BackHandler(enabled = addressOpen || state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen || state.tab == CustomerTab.Track) {
-        when {
-            addressOpen -> addressOpen = false
-            state.supportOpen -> onCloseSupport()
-            state.adminOpen -> onToggleAdmin(false)
-            state.showCart -> onToggleCart(false)
-            state.selectedStore != null -> onCloseStore()
-            state.tab == CustomerTab.Track -> onTab(CustomerTab.Home)
-        }
+    BackHandler(enabled = addressOpen || state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen) {
+        if (addressOpen) addressOpen = false
+        else if (state.supportOpen) onCloseSupport()
+        else if (state.adminOpen) onToggleAdmin(false)
+        else if (state.showCart) onToggleCart(false)
+        else onCloseStore()
     }
     if (addressOpen) {
         AddressPickerScreen(
@@ -294,14 +290,6 @@ fun CustomerShell(
             isFavorite = state.favoriteStoreIds.contains(state.selectedStore.id),
             onToggleFavorite = { onToggleFavorite(state.selectedStore.id) },
         )
-        state.modifierPickerItem?.let { item ->
-            ModifierPickerDialog(
-                item = item,
-                modifiers = state.menuModifiers[item.id].orEmpty(),
-                onDismiss = onDismissModifiers,
-                onConfirm = { selected -> onConfirmModifiers(item, selected) },
-            )
-        }
         return
     }
     if (state.adminOpen) {
@@ -323,9 +311,17 @@ fun CustomerShell(
         Triple(CustomerTab.Profile, "Λογαριασμός", Icons.Outlined.AccountCircle),
     )
 
+    state.modifierPickerItem?.let { item ->
+        ModifierPickerDialog(
+            item = item,
+            modifiers = state.menuModifiers[item.id].orEmpty(),
+            onDismiss = onDismissModifiers,
+            onConfirm = { selected -> onConfirmModifiers(item, selected) },
+        )
+    }
+
     Scaffold(
         containerColor = FreshBg,
-        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             Column {
@@ -403,7 +399,7 @@ fun CustomerShell(
                     onToggleFavorite = onToggleFavorite,
                 )
                 CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview, onBackToHome = { onTab(CustomerTab.Home) })
-                CustomerTab.Track -> TrackTab(state, onBack = { onTab(CustomerTab.Home) })
+                CustomerTab.Track -> TrackTab(state)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
@@ -1004,61 +1000,25 @@ private fun HomeTab(
         }
         if (stores.isEmpty()) {
             item {
-                if (state.stores.isEmpty()) {
-                    // Still fetching from Supabase — show shimmer placeholders
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 16.dp, vertical = 8.dp),
-                        verticalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        repeat(3) {
-                            Surface(
-                                shape = RoundedCornerShape(18.dp),
-                                color = Color(0xFFE8EEF2),
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .height(160.dp),
-                            ) {
-                                Box(Modifier.padding(14.dp)) {
-                                    Column {
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = Color(0xFFD6DEE6),
-                                            modifier = Modifier.size(width = 120.dp, height = 16.dp),
-                                        ) {}
-                                        Spacer(Modifier.height(8.dp))
-                                        Surface(
-                                            shape = RoundedCornerShape(8.dp),
-                                            color = Color(0xFFD6DEE6),
-                                            modifier = Modifier.size(width = 80.dp, height = 12.dp),
-                                        ) {}
-                                    }
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    Column(
-                        Modifier
-                            .fillMaxWidth()
-                            .padding(32.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                    ) {
-                        Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
-                        Spacer(Modifier.height(10.dp))
-                        Text(
-                            if (filter == HomeFilter.Near && !hasLocation) {
-                                "Ορισμός διεύθυνσης για εγγύτητα"
-                            } else if (filter == HomeFilter.Fav) {
-                                "Δεν έχεις αγαπημένα ακόμα."
-                            } else {
-                                "Δεν βρέθηκαν καταστήματα."
-                            },
-                            color = FreshMuted,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                    }
+                Column(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
+                    Spacer(Modifier.height(10.dp))
+                    Text(
+                        if (filter == HomeFilter.Near && !hasLocation) {
+                            "Ορισμός διεύθυνσης για εγγύτητα"
+                        } else if (filter == HomeFilter.Fav) {
+                            "Δεν έχεις αγαπημένα ακόμα."
+                        } else {
+                            "Δεν βρέθηκαν καταστήματα."
+                        },
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
                 }
             }
         }
@@ -3099,7 +3059,7 @@ private fun OrdersTab(
 }
 
 @Composable
-private fun TrackTab(state: CustomerUiState, onBack: () -> Unit = {}) {
+private fun TrackTab(state: CustomerUiState) {
     val order = state.trackingOrder
 
     // Live driver pin + store + delivery pin. Order in the list also picks
@@ -3141,22 +3101,6 @@ private fun TrackTab(state: CustomerUiState, onBack: () -> Unit = {}) {
                 centerLng = centerLng,
                 markers = markers,
             )
-            Surface(
-                onClick = onBack,
-                shape = CircleShape,
-                color = Color.White,
-                modifier = Modifier
-                    .padding(10.dp)
-                    .statusBarsPadding()
-                    .shadow(3.dp, CircleShape),
-            ) {
-                Icon(
-                    Icons.AutoMirrored.Outlined.ArrowBack,
-                    contentDescription = "Αρχική",
-                    tint = FreshInk,
-                    modifier = Modifier.padding(10.dp).size(22.dp),
-                )
-            }
         }
         Column(
             Modifier
@@ -3791,7 +3735,7 @@ private fun ReviewStarsRow(onSubmit: (Int, String) -> Unit) {
         Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
             (1..5).forEach { star ->
                 Icon(
-                    imageVector = if (star <= rating) Icons.Filled.Star else Icons.Outlined.Star,
+                    imageVector = if (star <= rating) Icons.Outlined.Star else Icons.Outlined.Star,
                     contentDescription = null,
                     tint = if (star <= rating) FreshAmber else FreshMuted,
                     modifier = Modifier

@@ -1,0 +1,331 @@
+<!DOCTYPE html>
+<html lang="el" dir="ltr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fresh2GO - Φυλλάδιο Α5</title>
+  <style>
+    @page {
+      size: A5;
+      margin: 15mm;
+      @top-center { content: none; }
+      @bottom-center { content: none; }
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: 'DM Sans', sans-serif;
+      background: white;
+      color: #141417;
+      width: 148mm;
+      height: 210mm;
+    }
+    
+    /* Front Side */
+    .front {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      background: linear-gradient(135deg, #FF8A3D 0%, #F29912 100%);
+      clip-path: inset(0);
+    }
+    
+    .front .logo {
+      position: absolute;
+      top: 20mm;
+      left: 15mm;
+      width: 40mm;
+      height: auto;
+    }
+    
+    .front .tagline {
+      position: absolute;
+      top: 20mm;
+      right: 15mm;
+      text-align: right;
+      font-size: 11px;
+      color: white;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    
+    .front .headline {
+      position: absolute;
+      top: 55mm;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      color: white;
+      font-size: 18px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+    
+    .front .subhead {
+      position: absolute;
+      top: 75mm;
+      left: 50%;
+      transform: translateX(-50%);
+      text-align: center;
+      color: rgba(255,255,255,0.9);
+      font-size: 13px;
+      line-height: 1.6;
+    }
+    
+    .front .features {
+      position: absolute;
+      top: 110mm;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15mm;
+      flex-direction: column;
+      align-items: center;
+    }
+    
+    .front .feature {
+      text-align: center;
+      color: white;
+      font-size: 11px;
+    }
+    
+    .front .feature-icon {
+      width: 24px;
+      height: 24px;
+      margin: 0 auto 5px;
+      background: rgba(255,255,255,0.2);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 14px;
+    }
+    
+    .front .order-btn {
+      position: absolute;
+      bottom: 20mm;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 12px 28px;
+      background: white;
+      color: #FF8A3D;
+      font-size: 12px;
+      font-weight: bold;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-decoration: none;
+      border-radius: 25px;
+      transition: all 0.3s ease;
+    }
+    
+    .front .order-btn:hover {
+      background: #F29912;
+      color: white;
+    }
+    
+    /* Back Side */
+    .back {
+      width: 100%;
+      height: 100%;
+      position: relative;
+      padding: 15mm;
+      background: white;
+    }
+    
+    .back .section {
+      margin-bottom: 25mm;
+    }
+    
+    .back .section-title {
+      color: #FF8A3D;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12mm;
+      padding-bottom: 8mm;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .back .contact {
+      font-size: 12px;
+      line-height: 1.8;
+      color: #333;
+    }
+    
+    .back .contact .phone {
+      color: #FF8A3D;
+      font-weight: bold;
+      font-size: 13px;
+    }
+    
+    .back .contact .email {
+      color: #666;
+    }
+    
+    .back .contact .address {
+      margin-top: 8mm;
+      padding-top: 8mm;
+      border-top: 1px solid #eee;
+    }
+    
+    .back .menu {
+      font-size: 11px;
+      color: #666;
+      line-height: 1.6;
+    }
+    
+    .back .menu span {
+      color: #FF8A3D;
+      font-weight: bold;
+    }
+    
+    .back .qr-code {
+      position: absolute;
+      bottom: 20mm;
+      right: 15mm;
+      width: 30mm;
+      height: 30mm;
+      background: #FF8A3D;
+      border-radius: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      color: white;
+    }
+    
+    .back .qr-code svg {
+      width: 20mm;
+      height: 20mm;
+    }
+    
+    .back .socials {
+      position: absolute;
+      bottom: 20mm;
+      left: 15mm;
+      display: flex;
+      gap: 10px;
+    }
+    
+    .back .social {
+      width: 20px;
+      height: 20px;
+      background: #f0f0f0;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 12px;
+      color: #333;
+    }
+    
+    @media print {
+      body { background: white; }
+      .front, .back { 
+        -webkit-print-color-adjust: exact; 
+        print-color-adjust: exact; 
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- ΦΛΥΛΛΙΔΙΟ ΑΡΚΤΟΣ (Front) -->
+  <div class="front">
+    <!-- Logo -->
+    <svg class="logo" viewBox="0 0 200 62">
+      <rect width="200" height="62" fill="url(#logoGrad)"/>
+      <defs>
+        <linearGradient id="logoGrad" x1="0" y1="0" x2="200" y2="62">
+          <stop offset="0%" stop-color="#FF8A3D"/>
+          <stop offset="50%" stop-color="#F29912"/>
+          <stop offset="100%" stop-color="#E94E8F"/>
+        </linearGradient>
+      </defs>
+      <text x="50%" y="50%" fill="white" font-family="Plus Jakarta Sans, sans-serif" font-size="24" font-weight="bold" text-anchor="middle">Fresh2GO</text>
+    </svg>
+    
+    <!-- Tagline -->
+    <div class="tagline">ΦRESH MEALS. FAST DELIVERY.</div>
+    
+    <!-- Headline -->
+    <div class="headline">ΠΕΡΙΕΧΕΤΑΙ ΣΤΟ ΠΑΡΑΜΟΥΝΙ ΣΑΣ</div>
+    
+    <!-- Subhead -->
+    <div class="subhead">Τα φρέσκια γαстроνομικά προϊόντα της Fresh2GO φέρνουν τον πεινازي σας στην πόρτα. Γρήγορα. Ασφαλή. Διαδεδομένα.</div>
+    
+    <!-- Features -->
+    <div class="features">
+      <div class="feature">
+        <div class="feature-icon">🚗</div>
+        <div>Γρήγορη παράδοση</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">🍽️</div>
+        <div>Ε\piλογή εστιατορίων</div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">📱</div>
+        <div>Ρεαλ-τακ επιλογή</div>
+      </div>
+    </div>
+    
+    <!-- Order Button -->
+    <a href="https://fresh2go.gr" class="order-btn">ΔΙΑΒΑΣΕ ΤΙΣ ΤΡΟΠΕΣ ΜΑΣ</a>
+  </div>
+
+  <!-- ΦΛΥΛΛΙΔΙΟ ΟΠΙΣΌ (Back) -->
+  <div class="back">
+    <!-- About Section -->
+    <div class="section">
+      <div class="section-title">Περίεργομας Fresh2GO</div>
+      <div class="contact">
+        <div class="phone">📞 24210 72474</div>
+        <div>Ηλικία λειτουργίας: 24/7</div>
+        <div class="email">✉️ info@fresh2go.gr</div>
+        <div class="address">Διεύθυνση: Αθηναίων 50, 104 34 Αθήνα</div>
+      </div>
+    </div>
+    
+    <!-- Menu Section -->
+    <div class="section">
+      <div class="section-title">Τρόποι Διασκέδασης</div>
+      <div class="menu">
+        <span>Πizza & Σαλατάδες</span><br>
+        <span>Πasta & Γυρό</span><br>
+        <span>Δέღτροι & Πίνες</span><br>
+        <span>Διάσημες προσ्फόρες</span>
+      </div>
+    </div>
+    
+    <!-- QR Code -->
+    <div class="qr-code">
+      Scan για να φτάσεις γρήγορα<br>
+      <svg viewBox="0 0 100 100">
+        <rect x="10" y="10" width="80" height="80" fill="#fff"/>
+        <path d="M 30 30 L 70 30 L 70 70 L 30 70 Z M 30 50 L 70 50 M 50 30 L 50 70" fill="none" stroke="#fff" stroke-width="2"/>
+      </svg>
+    </div>
+    
+    <!-- Social Media -->
+    <div class="socials">
+      <div class="social">📱</div>
+      <div class="social">📸</div>
+      <div class="social">🐦</div>
+    </div>
+    
+    <!-- Footer -->
+    <div style="position: absolute; bottom: 15mm; left: 15mm; right: 15mm; font-size: 10px; color: #999; text-align: center;">
+      Fresh2GO — Φρέσκο. Σε 2. Στην πόρτα σου.<br>
+      https://fresh2go.gr
+    </div>
+  </div>
+
+</body>
+</html>

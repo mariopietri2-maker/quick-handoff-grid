@@ -32,10 +32,10 @@ export default function CustomerFloatingCart() {
         <button
           type="button"
           onClick={() => navigate('/checkout')}
-          className="pointer-events-auto w-full h-[52px] rounded-xl bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] flex items-center justify-between px-4 shadow-[0_8px_28px_-6px_hsl(0_0%_0%/0.45)] active:scale-[0.985] transition-transform"
+          className="pointer-events-auto w-full h-[52px] rounded-2xl text-white bg-[linear-gradient(120deg,hsl(24_90%_55%),hsl(343_100%_64%))] flex items-center justify-between px-4 shadow-[0_12px_30px_-8px_hsl(24_100%_55%/0.55)] active:scale-[0.985] transition-transform"
         >
           <div className="flex items-center gap-3 min-w-0">
-            <span className="h-7 min-w-7 px-2 rounded-md bg-[hsl(var(--c-bg))] text-[hsl(var(--c-text))] text-[13px] font-extrabold flex items-center justify-center tabular-nums">
+            <span className="h-7 min-w-7 px-2 rounded-md bg-white/20 text-white text-[13px] font-extrabold flex items-center justify-center tabular-nums">
               {itemCount}
             </span>
             <span className="font-heading font-bold text-[14px] truncate">

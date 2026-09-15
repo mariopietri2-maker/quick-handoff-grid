@@ -29,8 +29,5 @@ project(':capacitor-status-bar').projectDir = new File('../node_modules/@capacit
 include ':capgo-background-geolocation'
 project(':capgo-background-geolocation').projectDir = new File('../node_modules/@capgo/background-geolocation/android')
 
-include ':fresh2go-capacitor-mapbox-maps'
-project(':fresh2go-capacitor-mapbox-maps').projectDir = new File('../plugins/capacitor-mapbox-maps/android')
-
 include ':capacitor-browser'
 project(':capacitor-browser').projectDir = new File('../node_modules/@capacitor/browser/android')

@@ -56,10 +56,11 @@ type StoreRow = Database['public']['Tables']['stores']['Row'] & {
 
 function BrandName({ name }: { name: string }) {
   const lower = name.trim().toLowerCase();
-  if (lower === 'fresh2go') {
+  if (lower === 'fresh2go' || lower.startsWith('fresh2go')) {
     return (
       <>
-        Fresh<span style={{ color: '#F29912' }}>2GO</span>
+        Fresh2<span style={{ color: '#F97316' }}>GO</span>
+        {lower !== 'fresh2go' ? <>{name.trim().slice(7)}</> : null}
       </>
     );
   }
@@ -555,7 +556,7 @@ const displayAddress = deliveryAddress
                     if (searchTimer.current) clearTimeout(searchTimer.current);
                     searchInputRef.current?.focus();
                   }}
-                  className="px-3 h-7 rounded-full bg-[#FFEDD5] text-[#EA580C] text-[12px] font-bold active:scale-95 transition-transform"
+                  className="px-3 h-7 rounded-full bg-[#FFF3E8] text-[#EA580C] text-[12px] font-bold active:scale-95 transition-transform"
                 >
                   {q}
                 </button>
@@ -592,10 +593,10 @@ const displayAddress = deliveryAddress
                 >
                   <span
                     className={`h-14 w-14 rounded-full flex items-center justify-center text-2xl emoji transition-colors ${
-                      active
-                        ? 'bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] ring-2 ring-[hsl(var(--c-text))] ring-offset-2 ring-offset-[hsl(var(--c-bg))]'
-                        : 'bg-[hsl(var(--c-surface-muted))]'
-                    }`}
+                        active
+                          ? 'c-cat-active'
+                          : 'bg-[hsl(var(--c-surface-muted))]'
+                      }`}
                   >
                     {cat.emoji}
                   </span>
@@ -652,7 +653,7 @@ const displayAddress = deliveryAddress
                       onClick={() => navigate(`/restaurant/${store.id}`)}
                       className="w-[160px] shrink-0 text-left"
                     >
-                      <div className="relative h-[100px] rounded-xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))]">
+                      <div className="relative h-[100px] rounded-2xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))] shadow-[0_10px_22px_-14px_hsl(25_39%_18%/0.25)]">
                         {cover ? (
                           <img src={cover} alt={store.name} className="w-full h-full object-cover" loading="lazy" />
                         ) : (
@@ -704,7 +705,7 @@ const displayAddress = deliveryAddress
                       onClick={() => navigate(`/restaurant/${store.id}`)}
                       className="w-[200px] shrink-0 text-left"
                     >
-                      <div className="relative h-[120px] rounded-xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))]">
+                      <div className="relative h-[120px] rounded-2xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))] shadow-[0_12px_26px_-14px_hsl(25_39%_18%/0.28)]">
                         {cover ? (
                           <img
                             src={cover}
@@ -722,6 +723,11 @@ const displayAddress = deliveryAddress
                         {!open && (
                           <span className="absolute top-2 left-2 text-[10px] font-extrabold uppercase tracking-wide text-white bg-neutral-600/95 px-2 py-0.5 rounded-md shadow">
                             Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
+                          </span>
+                        )}
+                        {open && (
+                          <span className="absolute bottom-2 right-2 text-[10px] font-extrabold c-ink bg-white/95 px-2 py-0.5 rounded-md shadow">
+                            {etaLow}–{etaHigh}′
                           </span>
                         )}
                         {cfg.sections.show_store_badges && store.promo_badge && (
@@ -857,7 +863,7 @@ const displayAddress = deliveryAddress
               <div className="space-y-5">
                 {[1, 2, 3].map((i) => (
                   <div key={i} className="animate-pulse">
-                    <div className="aspect-[16/10] bg-[hsl(var(--c-surface-muted))] rounded-xl mb-2.5" />
+                    <div className="aspect-[16/10] bg-[hsl(var(--c-surface-muted))] rounded-[20px] mb-2.5" />
                     <div className="h-4 bg-[hsl(var(--c-surface-muted))] rounded w-2/3 mb-1.5" />
                     <div className="h-3 bg-[hsl(var(--c-surface-muted))] rounded w-1/2" />
                   </div>
@@ -895,7 +901,7 @@ const displayAddress = deliveryAddress
                       className="w-full text-left group"
                     >
                       <div
-                        className={`relative aspect-[16/10] rounded-xl overflow-hidden mb-2.5 bg-[hsl(var(--c-surface-muted))] transition-all duration-300 ${
+                        className={`relative aspect-[16/10] rounded-[20px] overflow-hidden mb-2.5 bg-[hsl(var(--c-surface-muted))] shadow-[0_14px_30px_-16px_hsl(25_39%_18%/0.3)] transition-all duration-300 ${
                           open ? '' : 'grayscale opacity-70'
                         }`}
                       >

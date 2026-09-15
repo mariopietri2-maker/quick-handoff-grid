@@ -17,12 +17,12 @@
 		]
 	},
 	"android": {
-		"backgroundColor": "#FAFAF9",
+		"backgroundColor": "#fff7ec",
 		"webContentsDebuggingEnabled": false,
 		"allowMixedContent": false
 	},
 	"ios": {
-		"backgroundColor": "#FAFAF9",
+		"backgroundColor": "#fff7ec",
 		"contentInset": "never",
 		"scrollEnabled": false
 	},
@@ -32,11 +32,14 @@
 		},
 		"StatusBar": {
 			"style": "DARK",
-			"backgroundColor": "#FAFAF9",
+			"backgroundColor": "#fff7ec",
 			"overlaysWebView": true
 		},
 		"SplashScreen": {
-			"backgroundColor": "#EA580C"
+			"backgroundColor": "#fff7ec",
+			"launchAutoHide": true,
+			"launchShowDuration": 400,
+			"launchFadeOutDuration": 280
 		}
 	}
 }

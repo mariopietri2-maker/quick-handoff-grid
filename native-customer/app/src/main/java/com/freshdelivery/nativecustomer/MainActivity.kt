@@ -5,10 +5,15 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import com.stripe.android.PaymentConfiguration
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.lifecycle.lifecycleScope
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -23,9 +28,6 @@ import com.freshdelivery.nativecustomer.ui.SplashScreen
 import com.freshdelivery.nativecustomer.ui.theme.FreshCustomerTheme
 import com.freshdelivery.nativecustomer.update.AppUpdateChecker
 import com.freshdelivery.nativecustomer.update.AppUpdateDialog
-import com.stripe.android.PaymentConfiguration
-import com.stripe.android.paymentsheet.PaymentSheet
-import com.stripe.android.paymentsheet.PaymentSheetResult
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -34,18 +36,6 @@ class MainActivity : ComponentActivity() {
     private var paymentOrderId: String? = null
 
     private val vm: CustomerViewModel by viewModels()
-    // Sideload self-update only for debug builds (fresh2go.gr). The Play release
-    // build has no REQUEST_INSTALL_PACKAGES and must not self-update (Play policy).
-    private val updateChecker by lazy {
-        if (BuildConfig.DEBUG) AppUpdateChecker(applicationContext, "customerNative") else null
-    }
-
-    override fun onResume() {
-        super.onResume()
-        lifecycleScope.launch {
-            runCatching { updateChecker?.resumeAfterSettings() }
-        }
-    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -56,21 +46,23 @@ class MainActivity : ComponentActivity() {
                 is PaymentSheetResult.Canceled -> "Η πληρωμή ακυρώθηκε"
                 else -> null
             }
+            // ViewModel is recreated in compose - use a static holder
             PaymentSheetBridge.onResult(ok, msg)
         }
         enableEdgeToEdge()
         setContent {
             FreshCustomerTheme {
                 val state by vm.state.collectAsState()
-                PaymentSheetBridge.handler = { success, message ->
-                    vm.onPaymentSheetResult(success, message)
+                LaunchedEffect(Unit) {
+                    PaymentSheetBridge.handler = { ok, msg -> vm.onPaymentSheetResult(ok, msg) }
                 }
-                LaunchedEffect(state.paymentSheetRequest) {
+                LaunchedEffect(state.paymentSheetRequest?.orderId) {
                     val req = state.paymentSheetRequest ?: return@LaunchedEffect
-                    paymentOrderId = req.orderId
-                    PaymentConfiguration.init(applicationContext, req.publishableKey)
+                    runCatching {
+                        PaymentConfiguration.init(this@MainActivity, req.publishableKey)
+                    }
                     val config = PaymentSheet.Configuration(
-                        merchantDisplayName = "Fresh2GO",
+                        merchantDisplayName = "fresh2go",
                         customer = if (req.customerId != null && req.ephemeralKey != null) {
                             PaymentSheet.CustomerConfiguration(req.customerId, req.ephemeralKey)
                         } else null,
@@ -95,17 +87,16 @@ class MainActivity : ComponentActivity() {
                     delay(1_600)
                     splashMinElapsed = true
                 }
+                // Sideload self-update (silent unless a newer build is published).
                 val updateScope = rememberCoroutineScope()
-                val checker = updateChecker
-                if (checker != null) {
-                    val updateState by checker.state.collectAsState()
-                    LaunchedEffect(Unit) { checker.check() }
-                    AppUpdateDialog(
-                        state = updateState,
-                        onDownload = { updateScope.launch { checker.download() } },
-                        onDismiss = { checker.dismiss() },
-                    )
-                }
+                val updateChecker = remember { AppUpdateChecker(applicationContext, "customerNative") }
+                val updateState by updateChecker.state.collectAsState()
+                LaunchedEffect(Unit) { updateChecker.check() }
+                AppUpdateDialog(
+                    state = updateState,
+                    onDownload = { updateScope.launch { updateChecker.download() } },
+                    onDismiss = { updateChecker.dismiss() },
+                )
                 when {
                     state.bootstrapping || !splashMinElapsed -> {
                         SplashScreen(

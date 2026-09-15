@@ -45,6 +45,13 @@ write_cap_config() {
   local app_name="$4"
   local assets="$app_dir/app/src/main/assets"
   local geo_plugin=''
+  # First-paint background — must match the web shell's body colour so
+  # splash -> webview paints as one seamless surface (cream customer shell,
+  # warm off-white driver shell). Src: src/index.css .customer-shell/--driver-bg.
+  local bg_color='#fff7ec'
+  if [ "$flavor" = "driver" ]; then
+    bg_color='#faf8f5'
+  fi
   # Driver: no foreground OS sound — in-app fresh2go chime owns it.
   # Customer / others: keep badge+sound+alert for order updates.
   local push_presentation='["badge", "sound", "alert"]'
@@ -86,13 +93,13 @@ write_cap_config() {
   },
   "android": {
     "path": "$app_dir",
-    "backgroundColor": "#0f172a",
+    "backgroundColor": "$bg_color",
     "webContentsDebuggingEnabled": true
   },
   "plugins": {
     "CapacitorHttp": { "enabled": true },
-    "StatusBar": { "style": "DARK", "backgroundColor": "#0f172a", "overlaysWebView": true },
-    "SplashScreen": { "backgroundColor": "#0f172a", "launchAutoHide": true, "launchShowDuration": 400, "launchFadeOutDuration": 280 },
+    "StatusBar": { "style": "DARK", "backgroundColor": "$bg_color", "overlaysWebView": true },
+    "SplashScreen": { "backgroundColor": "$bg_color", "launchAutoHide": true, "launchShowDuration": 400, "launchFadeOutDuration": 280 },
     "Keyboard": { "resize": "body", "resizeOnFullScreen": true }$geo_plugin,
     "PushNotifications": { "presentationOptions": $push_presentation }
   }

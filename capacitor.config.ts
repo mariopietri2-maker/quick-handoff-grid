@@ -23,12 +23,14 @@ const config: CapacitorConfig = {
     ],
   },
   android: {
-    backgroundColor: '#FAFAF9',
+    /* Cream = the customer shell's first paint (src/index.css --c-bg / #fff7ec),
+       so splash -> status bar -> webview is one seamless surface. */
+    backgroundColor: '#fff7ec',
     webContentsDebuggingEnabled: isDev,
     allowMixedContent: isDev,
   },
   ios: {
-    backgroundColor: '#FAFAF9',
+    backgroundColor: '#fff7ec',
     contentInset: 'never',
     scrollEnabled: false,
   },
@@ -36,11 +38,14 @@ const config: CapacitorConfig = {
     CapacitorHttp: { enabled: true },
     StatusBar: {
       style: 'DARK',
-      backgroundColor: '#FAFAF9',
+      backgroundColor: '#fff7ec',
       overlaysWebView: true,
     },
     SplashScreen: {
-      backgroundColor: '#EA580C',
+      backgroundColor: '#fff7ec',
+      launchAutoHide: true,
+      launchShowDuration: 400,
+      launchFadeOutDuration: 280,
     },
   },
 };

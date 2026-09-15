@@ -6,6 +6,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { SEO } from '@/components/SEO';
 import { supabase } from '@/integrations/supabase/client';
+import promoHero1 from '@/assets/promo-hero-1.jpg';
+import promoHero2 from '@/assets/promo-hero-2.jpg';
+import promoHero3 from '@/assets/promo-hero-3.jpg';
 
 /* ─── tiny count-up hook ─── */
 function useCountUp(target: number, duration = 1200) {
@@ -154,9 +157,15 @@ title="Fresh2GO — Φρέσκο Φαγητό. Γρήγορη Παράδοση."
                style={{ backgroundImage: 'linear-gradient(rgba(255,255,255,0.5) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.5) 1px, transparent 1px)', backgroundSize: '56px 56px' }} />
         </div>
 
-        <div className="relative max-w-5xl mx-auto px-4 pt-16 sm:pt-24 pb-16 text-center">
+        <div className="relative max-w-5xl mx-auto px-4 pt-20 sm:pt-28 pb-16 text-center">
           <div className="flex justify-center mb-7 animate-fade-in">
             <LiveTicker items={partners} />
+          </div>
+
+          <div className="mb-4 animate-fade-in" style={{ animationDelay: '0.05s', animationFillMode: 'both' }}>
+            <span className="font-heading font-extrabold text-white text-5xl sm:text-6xl md:text-7xl lg:text-8xl tracking-tight leading-none">
+              Fresh<span style={{ color: '#FFE7B8' }}>2GO</span>
+            </span>
           </div>
 
           <h1 className="font-heading font-extrabold text-white text-4xl sm:text-5xl md:text-6xl lg:text-7xl leading-[1.05] tracking-tight mb-6 animate-fade-in"
@@ -241,6 +250,43 @@ title="Fresh2GO — Φρέσκο Φαγητό. Γρήγορη Παράδοση."
                 </span>
               ))}
             </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ─── VIDEO PROMO CAROUSEL ─── */}
+      <section className="relative py-16 sm:py-20 overflow-hidden bg-background">
+        <div className="max-w-6xl mx-auto px-4">
+          <div className="text-center mb-10">
+            <span className="inline-block text-xs font-heading font-bold uppercase tracking-widest text-primary mb-3">
+              Promo
+            </span>
+            <h2 className="font-heading font-extrabold text-3xl md:text-4xl tracking-tight">
+              Δες το <span className="text-gradient-primary">Fresh2GO</span> σε δράση
+            </h2>
+          </div>
+          <div className="relative max-w-4xl mx-auto rounded-3xl overflow-hidden shadow-2xl ring-1 ring-black/5">
+            <video
+              className="w-full aspect-video object-cover"
+              src="/presentation/fresh2go-promo.mp4"
+              poster="/og-image.png"
+              autoPlay
+              muted
+              loop
+              playsInline
+            />
+            <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent pointer-events-none" />
+          </div>
+          <div className="flex justify-center gap-4 mt-8">
+            {[promoHero1, promoHero2, promoHero3].map((img, i) => (
+              <div
+                key={i}
+                className="relative w-40 h-28 sm:w-56 sm:h-36 rounded-2xl overflow-hidden shadow-lg ring-1 ring-black/5 hover:scale-105 transition-transform duration-300"
+              >
+                <img src={img} alt={`Promo ${i + 1}`} className="w-full h-full object-cover" loading="lazy" />
+                <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent" />
+              </div>
+            ))}
           </div>
         </div>
       </section>

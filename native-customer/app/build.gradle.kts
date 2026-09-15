@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 35
-        versionCode = 288
-        versionName = "2.9.15-fresh2go"
+        versionCode = 282
+        versionName = "2.9.9-fresh2go"
 
         buildConfigField(
             "String",
@@ -44,9 +44,6 @@ android {
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
             )
-            if (!System.getenv("PLAY_STORE_PASSWORD").isNullOrBlank()) {
-                signingConfig = signingConfigs.getByName("release")
-            }
         }
     }
 
@@ -56,12 +53,6 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
-        }
-        create("release") {
-            storeFile = rootProject.file(System.getenv("PLAY_KEYSTORE_FILE") ?: "keystore/release.jks")
-            storePassword = System.getenv("PLAY_STORE_PASSWORD") ?: ""
-            keyAlias = System.getenv("PLAY_KEY_ALIAS") ?: "fresh2go"
-            keyPassword = System.getenv("PLAY_KEY_PASSWORD") ?: System.getenv("PLAY_STORE_PASSWORD") ?: ""
         }
     }
 
@@ -84,7 +75,6 @@ dependencies {
     implementation(composeBom)
 
     implementation("androidx.core:core-ktx:1.15.0")
-    implementation("androidx.security:security-crypto:1.1.0-alpha06")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
