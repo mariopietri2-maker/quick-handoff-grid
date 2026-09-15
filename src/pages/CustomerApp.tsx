@@ -664,11 +664,22 @@ const displayAddress = deliveryAddress
                         <span className="absolute bottom-2 left-2 text-[10px] font-extrabold text-orange-800 bg-orange-100/95 px-2 py-0.5 rounded-md shadow">
                           0€ {t('customer.delivery')}
                         </span>
+                        <div className="absolute top-1.5 left-1.5">
+                          {rating?.count > 0 ? (
+                            <span className="inline-flex items-center gap-0.5 rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-extrabold text-[hsl(var(--c-accent-dark))] shadow">
+                              <Star className="h-2.5 w-2.5 fill-[hsl(var(--c-accent))] text-[hsl(var(--c-accent))]" />
+                              {rating.avg.toFixed(1)}
+                              <span className="font-bold text-[hsl(var(--c-text-muted))]">({rating.count})</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-extrabold text-[hsl(var(--c-accent-dark))] shadow">
+                              Νέο
+                            </span>
+                          )}
+                        </div>
                       </div>
                       <div className="text-[13px] font-extrabold c-ink truncate">{store.name}</div>
                       <div className="flex items-center gap-1 mt-0.5 text-[11px] c-soft">
-                        {rating?.count > 0 && <span>★ {rating.avg.toFixed(1)}</span>}
-                        {rating?.count > 0 && <span>·</span>}
                         <span>{etaLow}–{etaHigh} {t('customer.min')}</span>
                       </div>
                     </button>
@@ -725,11 +736,24 @@ const displayAddress = deliveryAddress
                             Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
                           </span>
                         )}
-                        {open && (
+{open && (
                           <span className="absolute bottom-2 right-2 text-[10px] font-extrabold c-ink bg-white/95 px-2 py-0.5 rounded-md shadow">
                             {etaLow}–{etaHigh}′
                           </span>
                         )}
+                        <div className="absolute top-2 right-2">
+                          {ratings[store.id]?.count > 0 ? (
+                            <span className="inline-flex items-center gap-0.5 rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-extrabold text-[hsl(var(--c-accent-dark))] shadow">
+                              <Star className="h-2.5 w-2.5 fill-[hsl(var(--c-accent))] text-[hsl(var(--c-accent))]" />
+                              {ratings[store.id].avg.toFixed(1)}
+                              <span className="font-bold text-[hsl(var(--c-text-muted))]">({ratings[store.id].count})</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-extrabold text-[hsl(var(--c-accent-dark))] shadow">
+                              Νέο
+                            </span>
+                          )}
+                        </div>
                         {cfg.sections.show_store_badges && store.promo_badge && (
                           <span className="absolute bottom-2 left-2 text-[10px] font-extrabold uppercase tracking-wide text-white bg-[hsl(var(--c-accent))] px-2 py-0.5 rounded-md shadow">
                             {store.promo_badge}
@@ -757,9 +781,6 @@ const displayAddress = deliveryAddress
                           <>{store.tagline}</>
                         ) : (
                           <>
-                            {ratings[store.id]?.count > 0 && (
-                              <>★ {ratings[store.id].avg.toFixed(1)} · </>
-                            )}
                             {deliveryEnabled && (
                               <>
                                 {etaLow}–{etaHigh} {t('customer.min')}
@@ -934,8 +955,19 @@ const displayAddress = deliveryAddress
                             style={{ background: `hsl(${highlight})` }}
                           />
                         )}
-                        <div className="absolute top-2.5 left-2.5">
+                        <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5">
                           <FavoriteButton storeId={store.id} size="sm" />
+                          {rating?.count > 0 ? (
+                            <span className="inline-flex items-center gap-0.5 rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-extrabold text-[hsl(var(--c-accent-dark))] shadow">
+                              <Star className="h-3 w-3 fill-[hsl(var(--c-accent))] text-[hsl(var(--c-accent))]" />
+                              {rating.avg.toFixed(1)}
+                              <span className="font-bold text-[hsl(var(--c-text-muted))]">({rating.count})</span>
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center rounded-md bg-white/95 px-1.5 py-0.5 text-[10px] font-extrabold text-[hsl(var(--c-accent-dark))] shadow">
+                              Νέο
+                            </span>
+                          )}
                         </div>
                         {store.busy_mode && (
                           <div className="absolute top-10 right-2.5 bg-[hsl(var(--c-text)/0.9)] text-[hsl(var(--c-bg))] rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide">
@@ -967,15 +999,6 @@ const displayAddress = deliveryAddress
                             <p className={`text-[12px] c-soft mt-0.5 truncate ${open ? '' : 'opacity-60'}`}>{store.tagline}</p>
                           )}
                           <p className={`text-[13px] mt-1 flex flex-wrap items-center gap-x-1.5 gap-y-0.5 ${open ? 'c-soft' : 'opacity-60 c-soft'}`}>
-                            {rating?.count > 0 ? (
-                              <span className="inline-flex items-center gap-0.5 font-semibold c-ink">
-                                <Star className="h-3 w-3 fill-[hsl(var(--c-text))] text-[hsl(var(--c-text))]" />
-                                {rating.avg.toFixed(1)}
-                                <span className="font-medium c-soft">({rating.count})</span>
-                              </span>
-                            ) : (
-                              <span className="font-semibold text-[hsl(var(--c-accent))]">Νέο</span>
-                            )}
                             {deliveryEnabled && (
                               <span className="inline-flex items-center gap-1 rounded-md bg-orange-50 px-1.5 py-0.5 font-extrabold text-orange-800">
                                 <Clock className="h-3 w-3" />

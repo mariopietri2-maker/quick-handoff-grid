@@ -564,8 +564,8 @@ export default function CheckoutPage() {
                 disabled={!cardEnabled}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'card'
-                    ? 'border-foreground bg-foreground text-background shadow-sm'
-                    : 'border-border bg-card text-muted-foreground hover:border-foreground/40 hover:text-foreground'
+                    ? 'border-[hsl(var(--c-text))] bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] shadow-sm'
+                    : 'border-border bg-card text-muted-foreground hover:border-[hsl(var(--c-text)/0.4)] hover:text-foreground'
                 } ${!cardEnabled ? 'opacity-50 cursor-not-allowed' : ''}`}
               >
                 <CreditCard className="h-5 w-5" />
@@ -577,8 +577,8 @@ export default function CheckoutPage() {
                 onClick={() => setPaymentMethod('cash')}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
                   paymentMethod === 'cash'
-                    ? 'border-foreground bg-foreground text-background shadow-sm'
-                    : 'border-border bg-card text-muted-foreground hover:border-foreground/40 hover:text-foreground'
+                    ? 'border-[hsl(var(--c-text))] bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] shadow-sm'
+                    : 'border-border bg-card text-muted-foreground hover:border-[hsl(var(--c-text)/0.4)] hover:text-foreground'
                 }`}
               >
                 <Banknote className="h-5 w-5" />

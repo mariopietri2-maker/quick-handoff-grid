@@ -13,6 +13,7 @@ import { SEO } from '@/components/SEO';
 import { customerAccentStyle } from '@/lib/customer-theme';
 import { formatOrderNumber } from '@/lib/order-number';
 import { useDriverProximityAlert } from '@/hooks/useCustomerOrderNotifications';
+import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 
 const OrderCheckout = lazy(() =>
   import('@/components/OrderCheckout').then((m) => ({ default: m.OrderCheckout })),
@@ -47,6 +48,7 @@ const STATUS_HEADLINE: Record<string, { emoji: string; title: string; sub: strin
 export default function OrderTrackingPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const cfg = useCustomerAppConfig();
   const [order, setOrder] = useState<OrderRow | null>(null);
   const [items, setItems] = useState<OrderItemRow[]>([]);
   const [storeName, setStoreName] = useState('');
@@ -152,15 +154,15 @@ export default function OrderTrackingPage() {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="h-8 w-8 border-4 border-primary border-t-transparent rounded-full animate-spin" />
+      <div className="customer-shell min-h-[100dvh] c-page flex items-center justify-center">
+        <div className="h-10 w-10 rounded-full border-4 border-[hsl(var(--c-accent))] border-t-transparent animate-spin" />
       </div>
     );
   }
   if (!order) {
     return (
-      <div className="min-h-screen bg-background flex items-center justify-center">
-        <p className="text-muted-foreground font-heading">Η παραγγελία δεν βρέθηκε</p>
+      <div className="customer-shell min-h-[100dvh] c-page flex items-center justify-center px-6">
+        <p className="c-soft font-heading font-semibold">Η παραγγελία δεν βρέθηκε</p>
       </div>
     );
   }
@@ -185,7 +187,7 @@ export default function OrderTrackingPage() {
 
 
   return (
-    <div className="customer-shell fixed inset-0 c-page overflow-hidden" style={customerAccentStyle()}>
+    <div className="customer-shell fixed inset-0 c-page overflow-hidden" style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}>
       <SEO
         title={`Παρακολούθηση παραγγελίας ${formatOrderNumber(order as any)} — Fresh2GO.GR`}
         description="Παρακολουθήστε την παραγγελία σας σε πραγματικό χρόνο, δείτε την εκτιμώμενη ώρα παράδοσης και επικοινωνήστε με τον οδηγό."
