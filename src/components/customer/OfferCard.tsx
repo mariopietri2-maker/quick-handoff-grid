@@ -134,7 +134,7 @@ export function OfferCard({ item, variant = 'default' }: { item: OfferItem; vari
           </div>
           <span className="text-[10.5px] font-bold text-[hsl(var(--c-text))] truncate flex-1">{item.store_name}</span>
           {item.store_rating_avg && item.store_rating_avg > 0 && (
-            <span className="text-[10px] font-bold text-[hsl(150,55%,38%)] flex items-center gap-0.5">
+            <span className="text-[10px] font-bold text-[hsl(var(--c-accent-dark))] flex items-center gap-0.5">
               <Star className="h-2.5 w-2.5 fill-current" strokeWidth={0} />
               {item.store_rating_avg.toFixed(1)}
             </span>
