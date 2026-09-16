@@ -3,34 +3,33 @@
   "appName": "fresh2go",
   "webDir": "dist",
   "server": {
+    "url": "https://fresh2go.gr/order",
     "androidScheme": "https",
-    "hostname": "localhost",
     "allowNavigation": [
-      "https://freshdelivery.app/*",
       "https://fresh2go.gr/*",
       "https://www.fresh2go.gr/*",
+      "https://quick-handoff-grid-8qu8.vercel.app/*",
+      "https://freshdelivery.app/*",
+      "https://*.vercel.app/*",
       "https://ojkesspghyqmjmupybva.supabase.co/*",
       "https://*.supabase.co/*",
-      "https://quick-handoff-grid-production.up.railway.app/*",
-      "https://fresh-delivery-rho.vercel.app/*",
-      "https://api.mapbox.com/*"
+      "https://api.mapbox.com/*",
+      "https://quick-handoff-grid-production.up.railway.app/*"
     ]
   },
   "android": {
-    "path": "android",
     "backgroundColor": "#fff7ec",
-    "webContentsDebuggingEnabled": false
+    "allowMixedContent": false
   },
   "plugins": {
-    "CapacitorHttp": { "enabled": true },
-    "StatusBar": { "style": "DARK", "backgroundColor": "#fff7ec", "overlaysWebView": true },
-    "SplashScreen": { "backgroundColor": "#fff7ec", "launchAutoHide": true, "launchShowDuration": 400, "launchFadeOutDuration": 280 },
-    "Keyboard": { "resize": "body", "resizeOnFullScreen": true },
-    "Geolocation": {},
-    "BackgroundGeolocation": {
-      "notificationTitle": "fresh2go — τοποθεσία",
-      "notificationText": "Ζωντανή παρακολούθηση παραγγελίας"
+    "CapacitorHttp": {
+      "enabled": true
     },
-    "PushNotifications": { "presentationOptions": ["badge", "sound", "alert"] }
+    "SplashScreen": {
+      "backgroundColor": "#fff7ec",
+      "launchAutoHide": true,
+      "launchShowDuration": 400,
+      "launchFadeOutDuration": 280
+    }
   }
 }

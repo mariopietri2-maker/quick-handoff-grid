@@ -9,6 +9,20 @@ export function markNativeDocument() {
   const platform = Capacitor.getPlatform();
   if (platform === 'android') root.classList.add('is-android');
   if (platform === 'ios') root.classList.add('is-ios');
+
+  // Customer Capacitor APK must never sit on the marketing Index.
+  // Old APKs still open https://fresh2go.gr/ — bounce to /order before React paints.
+  try {
+    const path = window.location.pathname || '/';
+    if (path === '/' || path === '') {
+      const appId = (window as unknown as { Capacitor?: { getConfig?: () => { appId?: string } } })
+        .Capacitor?.getConfig?.()?.appId ?? '';
+      const isDriver = appId.includes('driver');
+      window.location.replace(isDriver ? '/driver' : '/order');
+    }
+  } catch {
+    /* ignore */
+  }
 }
 
 async function hideSplash() {
