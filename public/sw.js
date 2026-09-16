@@ -1,5 +1,5 @@
 /* fresh2go — minimal service worker for PWA installability (store + web). */
-const CACHE = 'fresh-pwa-v4';
+const CACHE = 'fresh-pwa-v5';
 const PRECACHE = [
   '/',
   '/store',
