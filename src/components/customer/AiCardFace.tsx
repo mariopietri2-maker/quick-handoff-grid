@@ -81,7 +81,12 @@ export function AiCardFace({
   className,
 }: AiCardFaceProps) {
   const src = heroCardImage(card);
-  const accent = card.accent_hsl;
+  // NO_GREEN_ACCENT — customer brand is orange; ignore green admin accents
+  const rawAccent = card.accent_hsl;
+  const accent =
+    rawAccent && !/\b(1[2-6]\d)\s+\d+%\s+\d+%/.test(rawAccent.replace(/,/g, ' '))
+      ? rawAccent
+      : undefined;
   const motion = card.motion ?? 'kenburns';
 
   return (
