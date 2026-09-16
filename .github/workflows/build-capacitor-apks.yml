@@ -29,18 +29,32 @@ jobs:
           node-version: "22"
           cache: npm
 
-      - name: Set up JDK 21
+      - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
           distribution: temurin
-          java-version: "21"
+          java-version: "17"
 
-      - name: Setup Android SDK
+      - name: Setup Android commandline tools
         uses: android-actions/setup-android@v3
+        with:
+          packages: ''
+          accept-android-sdk-licenses: true
 
       - name: Install SDK packages
         run: |
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          set -euo pipefail
+          echo "ANDROID_HOME=${ANDROID_HOME:-}"
+          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
+          command -v sdkmanager || true
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          for pkgs in "platforms;android-35 build-tools;35.0.0 platform-tools" "platforms;android-34 build-tools;34.0.0 platform-tools"; do
+            if sdkmanager --install $pkgs; then
+              echo "Installed: $pkgs"
+              break
+            fi
+            echo "Failed: $pkgs — trying fallback"
+          done
 
       - name: Mapbox downloads token
         env:
