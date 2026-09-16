@@ -9,7 +9,8 @@ const config: CapacitorConfig = {
   webDir: 'dist',
   server: {
     // Primary host is Railway (freshdelivery.app); Vercel kept as fallback.
-    url: 'https://fresh2go.gr',
+    url: 'https://fresh2go.gr/order',
+    // Always open customer shell — never marketing Index at /
     cleartext: isDev,
     androidScheme: 'https',
     allowNavigation: [
