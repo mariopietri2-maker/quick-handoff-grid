@@ -42,9 +42,6 @@ const translations: Record<string, Record<Lang, string>> = {
   'customer.filter_under_30': { el: 'Κάτω από 30 λεπ', en: 'Under 30 min' },
   'customer.filter_top': { el: 'Κορυφαία', en: 'Top rated' },
   'customer.clear_filters': { el: 'Καθαρισμός', en: 'Clear' },
-  'customer.categories': { el: 'Κατηγορίες', en: 'Categories' },
-  'customer.delivery_time': { el: 'Χρόνος Παράδοσης', en: 'Delivery time' },
-  'customer.asap': { el: 'Άμεσα', en: 'ASAP' },
   'customer.schedule': { el: 'Προγραμματισμός', en: 'Schedule' },
   'customer.today': { el: 'Σήμερα', en: 'Today' },
   'customer.tomorrow': { el: 'Αύριο', en: 'Tomorrow' },
@@ -88,9 +85,9 @@ const I18nContext = createContext<I18nContextValue>({
 
 export function I18nProvider({ children }: { children: ReactNode }) {
   const [lang, setLangState] = useState<Lang>(() => {
+    // Fresh2GO is Ioannina-first: default Greek. Only honor an explicit user choice.
     const stored = typeof window !== 'undefined' ? localStorage.getItem('app-lang') : null;
     if (stored === 'en' || stored === 'el') return stored;
-    if (typeof navigator !== 'undefined' && navigator.language?.toLowerCase().startsWith('en')) return 'en';
     return 'el';
   });
 
