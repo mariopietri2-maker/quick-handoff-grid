@@ -1,11 +1,13 @@
 import type { CapacitorConfig } from '@capacitor/cli';
 
-/** Offline customer shell — bundles `dist/` (no remote server URL). */
+/** Customer shell — opens live /order (stores), never marketing Index. */
 const config: CapacitorConfig = {
   appId: 'com.freshdelivery.customer',
   appName: 'fresh2go',
   webDir: 'dist',
   server: {
+    // Always open customer stores — never marketing Index
+    url: 'https://fresh2go.gr/order',
     androidScheme: 'https',
     hostname: 'localhost',
     allowNavigation: [
@@ -42,18 +44,6 @@ const config: CapacitorConfig = {
       launchAutoHide: true,
       launchShowDuration: 400,
       launchFadeOutDuration: 280,
-    },
-    Keyboard: {
-      resize: 'body',
-      resizeOnFullScreen: true,
-    },
-    PushNotifications: {
-      presentationOptions: ['badge', 'sound', 'alert'],
-    },
-    Geolocation: {},
-    BackgroundGeolocation: {
-      notificationTitle: 'fresh2go — τοποθεσία',
-      notificationText: 'Ζωντανή παρακολούθηση παραγγελίας',
     },
   },
 };
