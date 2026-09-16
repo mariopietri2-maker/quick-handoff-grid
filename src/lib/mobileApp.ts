@@ -86,11 +86,32 @@ export async function resolveMobileFlavor(): Promise<MobileAppFlavor> {
         try {
           const info = await CapApp.getInfo();
           cachedFlavor = flavorFromAppId(info.id);
-          return cachedFlavor;
+          if (cachedFlavor !== 'shared') return cachedFlavor;
         } catch {
-          cachedFlavor = 'shared';
+          /* fall through to config / UA fallbacks */
+        }
+        // Some WebView builds fail getInfo(); still avoid marketing Index.
+        try {
+          const cfgId =
+            (window as unknown as { Capacitor?: { getConfig?: () => { appId?: string }; config?: { appId?: string } } })
+              .Capacitor?.getConfig?.()?.appId ||
+            (window as unknown as { Capacitor?: { config?: { appId?: string } } }).Capacitor?.config?.appId;
+          const fromCfg = flavorFromAppId(cfgId);
+          if (fromCfg !== 'shared') {
+            cachedFlavor = fromCfg;
+            return cachedFlavor;
+          }
+        } catch {
+          /* ignore */
+        }
+        const ua = typeof navigator !== 'undefined' ? navigator.userAgent : '';
+        if (/Fresh2GO-Driver|com\.freshdelivery\.driver/i.test(ua)) {
+          cachedFlavor = 'driver';
           return cachedFlavor;
         }
+        // Customer Capacitor shell (appId com.freshdelivery.customer) — default native to customer.
+        cachedFlavor = 'customer';
+        return cachedFlavor;
       }
       cachedFlavor = 'shared';
       return cachedFlavor;

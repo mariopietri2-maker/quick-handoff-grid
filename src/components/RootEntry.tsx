@@ -1,5 +1,6 @@
 import { Suspense } from 'react';
 import { Navigate } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useAuth } from '@/hooks/useAuth';
 import { mobileHomePath, useMobileFlavor } from '@/lib/mobileApp';
 import { lazyWithRetry } from '@/lib/lazyWithRetry';
@@ -40,6 +41,11 @@ export default function RootEntry() {
       if (profile.role === 'store') return <Navigate to="/store" replace />;
       return <Navigate to="/order" replace />;
     }
+  }
+
+  // Never show marketing landing inside a native WebView shell.
+  if (Capacitor.isNativePlatform()) {
+    return <Navigate to="/order" replace />;
   }
 
   return (
