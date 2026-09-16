@@ -99,12 +99,11 @@ if css.exists():
             css.write_text(ct.replace(marker, marker + inject))
             print("CSS no-green injected")
         else:
-            css.write_text(ct + inject)
+            css.write_text(ct + "\n" + inject)
             print("CSS no-green appended")
     else:
         print("CSS already no-green")
 
-# Default language Greek
 i18n = Path("src/lib/i18n.tsx")
 if i18n.exists():
     it = i18n.read_text()
@@ -116,4 +115,3 @@ if i18n.exists():
     if old in it:
         i18n.write_text(it.replace(old, new))
         print("i18n default el")
-"
