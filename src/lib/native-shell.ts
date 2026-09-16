@@ -10,16 +10,27 @@ export function markNativeDocument() {
   if (platform === 'android') root.classList.add('is-android');
   if (platform === 'ios') root.classList.add('is-ios');
 
-  // Customer Capacitor APK must never sit on the marketing Index.
-  // Old APKs still open https://fresh2go.gr/ — bounce to /order before React paints.
+  // Customer Capacitor must not stay on marketing Index.
+  // Delay + one-shot guard — immediate location.replace() crashes some OEM WebViews.
   try {
     const path = window.location.pathname || '/';
-    if (path === '/' || path === '') {
-      const appId = (window as unknown as { Capacitor?: { getConfig?: () => { appId?: string } } })
-        .Capacitor?.getConfig?.()?.appId ?? '';
-      const isDriver = appId.includes('driver');
-      window.location.replace(isDriver ? '/driver' : '/order');
-    }
+    if (path !== '/' && path !== '') return;
+    const key = 'f2g_boot_redir_v1';
+    if (sessionStorage.getItem(key) === '1') return;
+    sessionStorage.setItem(key, '1');
+    const appId =
+      (window as unknown as { Capacitor?: { getConfig?: () => { appId?: string } } }).Capacitor
+        ?.getConfig?.()?.appId ?? '';
+    const target = appId.includes('driver') ? '/driver' : '/order';
+    window.setTimeout(() => {
+      try {
+        if ((window.location.pathname || '/') === '/' || (window.location.pathname || '/') === '') {
+          window.location.replace(target);
+        }
+      } catch {
+        /* ignore */
+      }
+    }, 80);
   } catch {
     /* ignore */
   }
@@ -39,7 +50,6 @@ async function initKeyboard() {
     const { Keyboard, KeyboardResize } = await import('@capacitor/keyboard');
     await Keyboard.setResizeMode({ mode: KeyboardResize.Body });
     await Keyboard.setScroll({ isDisabled: false });
-    // Keep accessory bar on iOS so "Done" is available.
     if (Capacitor.getPlatform() === 'ios') {
       await Keyboard.setAccessoryBarVisible({ isVisible: true });
     }
