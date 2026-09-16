@@ -1,9 +1,11 @@
 import { useNavigate, useLocation } from 'react-router-dom';
+import { Capacitor } from '@capacitor/core';
 import { useCart } from '@/hooks/useCart';
 import { useT } from '@/lib/i18n';
 
 /**
- * Uber Eats–style floating cart CTA above the bottom tabs.
+ * Uber Eats–style floating cart CTA. In the Capacitor app it floats above the
+ * bottom tabs; on the desktop web app (no tab bar) it sits at the bottom edge.
  * Shown on tab routes when the cart has items.
  */
 export default function CustomerFloatingCart() {
@@ -11,6 +13,8 @@ export default function CustomerFloatingCart() {
   const navigate = useNavigate();
   const location = useLocation();
   const t = useT();
+
+  const isNative = Capacitor.isNativePlatform();
 
   // Restaurant / checkout have their own cart UI
   if (
@@ -26,7 +30,11 @@ export default function CustomerFloatingCart() {
   return (
     <div
       className="fixed left-0 right-0 z-[55] pointer-events-none"
-      style={{ bottom: 'calc(var(--customer-tab-h, 58px) + var(--app-safe-bottom))' }}
+      style={{
+        bottom: isNative
+          ? 'calc(var(--customer-tab-h, 58px) + var(--app-safe-bottom))'
+          : 'calc(12px + var(--app-safe-bottom))',
+      }}
     >
       <div className="max-w-2xl mx-auto px-3 pb-2">
         <button

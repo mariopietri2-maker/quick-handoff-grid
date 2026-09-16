@@ -1,5 +1,6 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
+import { Capacitor } from '@capacitor/core';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useCart } from '@/hooks/useCart';
 import { customerAccentStyle } from '@/lib/customer-theme';
@@ -8,12 +9,15 @@ import CustomerFloatingCart from '@/components/customer/CustomerFloatingCart';
 
 /**
  * Shared customer shell (Uber Eats–style):
- * scrollable viewport + floating cart + persistent bottom tabs.
+ * scrollable viewport + floating cart. Persistent bottom tabs only in the
+ * Capacitor app — the desktop web app intentionally has no bottom bar.
  */
 export default function CustomerLayout() {
   const cfg = useCustomerAppConfig();
   const location = useLocation();
   const { itemCount } = useCart();
+
+  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
     if (location.pathname !== '/order') return;
@@ -32,8 +36,12 @@ export default function CustomerLayout() {
   }, [location.pathname, location.hash]);
 
   const padBottom = itemCount > 0
-    ? 'pb-[calc(9rem+var(--app-safe-bottom))]'
-    : 'pb-[calc(6rem+var(--app-safe-bottom))]';
+    ? isNative
+      ? 'pb-[calc(9rem+var(--app-safe-bottom))]'
+      : 'pb-[calc(8rem+var(--app-safe-bottom))]'
+    : isNative
+      ? 'pb-[calc(6rem+var(--app-safe-bottom))]'
+      : 'pb-[calc(5rem+var(--app-safe-bottom))]';
 
   return (
     <div
@@ -45,7 +53,7 @@ export default function CustomerLayout() {
         <Outlet />
       </div>
       <CustomerFloatingCart />
-      <CustomerBottomNav />
+      {isNative && <CustomerBottomNav />}
     </div>
   );
 }
