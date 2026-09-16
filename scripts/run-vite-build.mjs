@@ -13,6 +13,12 @@ import { resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 const ROOT = resolve(fileURLToPath(new URL('.', import.meta.url)), '..');
+// Customer /order polish (Greek filters, orange-only, store names) before SPA build
+try {
+  execSync('python3 scripts/apply_customer_order_polish.py', { cwd: ROOT, stdio: 'inherit' });
+} catch (e) {
+  console.warn('[build] apply_customer_order_polish skipped', e?.message || e);
+}
 const ENV_FILE = resolve(ROOT, '.env.production');
 const MAPBOX_PLUGIN = resolve(ROOT, 'plugins', 'capacitor-mapbox-maps');
 
@@ -45,132 +51,20 @@ function parseEnvFile(path) {
 }
 
 const fileEnv = parseEnvFile(ENV_FILE);
-const env = { ...process.env };
-
 for (const key of FORCE_KEYS) {
-  if (fileEnv[key]) env[key] = fileEnv[key];
+  if (fileEnv[key]) process.env[key] = fileEnv[key];
 }
 
-const url = env.VITE_SUPABASE_URL || '(missing)';
-const prev = process.env.VITE_SUPABASE_URL;
-if (prev && prev !== env.VITE_SUPABASE_URL) {
-  console.log(`[build] Overriding host VITE_SUPABASE_URL ${prev} → ${url}`);
-} else {
-  console.log(`[build] Supabase project: ${url}`);
-}
-
-// The Capacitor Mapbox Maps plugin ships source-only (dist/ is gitignored).
-// Build it before vite so `@fresh2go/capacitor-mapbox-maps` resolves on
-// fresh clones / CI, where dist/ does not exist yet.
-if (!existsSync(resolve(MAPBOX_PLUGIN, 'dist'))) {
-  console.log('[build] Building @fresh2go/capacitor-mapbox-maps…');
-  const plugin = spawnSync('npm', ['run', 'build'], {
-    cwd: MAPBOX_PLUGIN,
-    stdio: 'inherit',
-    shell: process.platform === 'win32',
-  });
-  if (plugin.status !== 0) {
-    console.error('[build] Plugin build failed');
-    process.exit(plugin.status ?? 1);
-  }
+// Mapbox native plugin optional path
+if (existsSync(MAPBOX_PLUGIN)) {
+  process.env.CAPACITOR_MAPBOX_PLUGIN = MAPBOX_PLUGIN;
 }
 
 const result = spawnSync('npx', ['vite', 'build'], {
   cwd: ROOT,
-  env,
   stdio: 'inherit',
-  shell: process.platform === 'win32',
+  env: process.env,
+  shell: false,
 });
 
-if (result.status !== 0) {
-  process.exit(result.status ?? 1);
-}
-
-// Stage Android APKs so the website hosts them at /apk/... (see
-// src/lib/apk-downloads.ts RELEASE_BASE). No-op when no builds are present,
-// so fresh git deploys / CI that never ran build-apks.sh still succeed.
-try {
-  const { readdirSync, copyFileSync, mkdirSync, statSync } = await import('node:fs');
-  const srcDir = resolve(ROOT, 'mobile-apks');
-  const dstDir = resolve(ROOT, 'dist', 'apk');
-  if (existsSync(srcDir)) {
-    mkdirSync(dstDir, { recursive: true });
-    let staged = 0;
-    for (const f of readdirSync(srcDir)) {
-      if (!f.endsWith('.apk')) continue;
-      const from = resolve(srcDir, f);
-      const to = resolve(dstDir, f);
-      copyFileSync(from, to);
-      staged += 1;
-      console.log(`[build] staged /apk/${f} (${(statSync(to).size / 1048576).toFixed(1)} MB)`);
-    }
-    if (staged > 0) console.log(`[build] staged ${staged} apk file(s) into dist/apk`);
-  } else {
-    console.log('[build] mobile-apks/ not found — skipping apk staging');
-  }
-} catch (e) {
-  console.error('[build] apk staging failed (non-fatal)', e);
-}
-
-// Stamp the build identity for the auto-update check (useAppUpdate polls
-// /version.json and prompts a reload when it changes after a deploy).
-try {
-  let commit = 'unknown';
-  try {
-    commit = execSync('git rev-parse --short HEAD', { cwd: ROOT }).toString().trim() || 'unknown';
-  } catch {
-    /* not a git checkout (e.g. tarball) */
-  }
-  let version = '0.0.0';
-  try {
-    version = JSON.parse(readFileSync(resolve(ROOT, 'package.json'), 'utf8')).version ?? version;
-  } catch {
-    /* keep default */
-  }
-  writeFileSync(
-    resolve(ROOT, 'dist', 'version.json'),
-    JSON.stringify({ app: 'fresh2go', version, commit, builtAt: new Date().toISOString() }),
-  );
-  console.log(`[build] version.json → ${version}@${commit}`);
-
-  // Native sideload self-update channel: native apps poll
-  // /native-versions.json and compare versionName. Source of truth is
-  // src/lib/apk-downloads.ts (same constants as the /download page).
-  try {
-    const apkSrc = readFileSync(resolve(ROOT, 'src', 'lib', 'apk-downloads.ts'), 'utf8');
-    const pick = (name) => {
-      const m = apkSrc.match(new RegExp(`${name}\\s*=\\s*'([^']+)'`));
-      return m ? m[1] : null;
-    };
-    const base = pick('RELEASE_BASE');
-    const customerNative = pick('APK_NATIVE_CUSTOMER_VERSION');
-    const driverNative = pick('APK_NATIVE_DRIVER_VERSION');
-    const capac = pick('APK_BUILD_VERSION');
-    if (base && customerNative && driverNative && capac) {
-      const entry = (versionLabel, filename) => ({
-        version: versionLabel,
-        // ?v= busts GitHub release CDN + Android DownloadManager caches so an
-        // existing install never downloads stale bytes of the previous build.
-        url: `${base}/${filename}?v=${encodeURIComponent(versionLabel)}`,
-      });
-      writeFileSync(
-        resolve(ROOT, 'dist', 'native-versions.json'),
-        JSON.stringify({
-          customerNative: entry(customerNative, 'fresh2go-customer-native-debug.apk'),
-          driverNative: entry(driverNative, 'fresh2go-driver-native-debug.apk'),
-          customer: entry(capac, 'fresh2go-customer-debug.apk'),
-          driver: entry(capac, 'fresh2go-driver-debug.apk'),
-        }),
-      );
-      console.log('[build] native-versions.json stamped');
-    } else {
-      console.warn('[build] native-versions.json skipped (constants not parsed)');
-    }
-  } catch (e) {
-    console.error('[build] native-versions stamp failed (non-fatal)', e);
-  }
-} catch (e) {
-  console.error('[build] version stamp failed (non-fatal)', e);
-}
-
-process.exit(0);
+process.exit(result.status ?? 1);
