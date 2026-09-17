@@ -13,7 +13,6 @@ function shouldForceCustomerHome(): boolean {
   return false;
 }
 
-/** Sync class markers so native CSS applies before first paint. */
 export function markNativeDocument() {
   const shell = shouldForceCustomerHome();
   if (!shell && !Capacitor.isNativePlatform()) return;
@@ -35,7 +34,11 @@ export function markNativeDocument() {
     const appId =
       (window as unknown as { Capacitor?: { getConfig?: () => { appId?: string } } }).Capacitor
         ?.getConfig?.()?.appId ?? '';
-    const target = appId.includes('driver') ? '/driver' : '/order';
+    const target = appId.includes('driver')
+      ? '/driver'
+      : appId.includes('store')
+        ? '/store'
+        : '/order';
     window.location.replace(target);
   } catch {
     /* ignore */
@@ -47,7 +50,7 @@ async function hideSplash() {
     const { SplashScreen } = await import('@capacitor/splash-screen');
     await SplashScreen.hide({ fadeOutDuration: 280 });
   } catch {
-    /* plugin optional / already hidden */
+    /* plugin optional */
   }
 }
 
@@ -67,12 +70,13 @@ async function initKeyboard() {
 export function initNativeBackButton() {
   if (!Capacitor.isNativePlatform()) return () => {};
 
-  const rootPaths = new Set(['/', '/order', '/driver', '/auth']);
+  const rootPaths = new Set(['/', '/order', '/driver', '/store', '/auth']);
 
   const sub = App.addListener('backButton', ({ canGoBack }) => {
     try {
       const path = window.location.pathname;
-      const atRoot = rootPaths.has(path) || path === '/order/' || path === '/driver/';
+      const atRoot =
+        rootPaths.has(path) || path === '/order/' || path === '/driver/' || path === '/store/';
       if (!atRoot && (canGoBack || window.history.length > 1)) {
         window.history.back();
         return;

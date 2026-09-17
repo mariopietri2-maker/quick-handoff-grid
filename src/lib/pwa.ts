@@ -2,17 +2,39 @@ import { Capacitor } from '@capacitor/core';
 
 const MANIFEST_SELECTOR = 'link[rel="manifest"]';
 
-export type PwaManifestKind = 'default' | 'store';
+export type PwaManifestKind = 'default' | 'store' | 'customer' | 'driver';
 
 const MANIFEST_HREF: Record<PwaManifestKind, string> = {
   default: '/manifest.json',
   store: '/manifest-store.json',
+  customer: '/manifest-customer.json',
+  driver: '/manifest-driver.json',
 };
 
-/** Swap the document manifest (and related meta) for role-specific install. */
+const THEME: Record<PwaManifestKind, string> = {
+  default: '#FF8A3D',
+  store: '#EA580C',
+  customer: '#FF8A3D',
+  driver: '#FF8A3D',
+};
+
+const APPLE_TITLE: Record<PwaManifestKind, string> = {
+  default: 'Fresh2GO',
+  store: 'Fresh2GO Store',
+  customer: 'Fresh2GO',
+  driver: 'Fresh2GO Driver',
+};
+
+const APPLE_ICON: Record<PwaManifestKind, string> = {
+  default: '/icons/app-192.png',
+  store: '/icons/store-192.png',
+  customer: '/icons/app-192.png',
+  driver: '/icons/app-192.png',
+};
+
 export function setPwaManifest(kind: PwaManifestKind) {
   if (typeof document === 'undefined') return;
-  const href = MANIFEST_HREF[kind];
+  const href = MANIFEST_HREF[kind] || MANIFEST_HREF.default;
   let link = document.querySelector(MANIFEST_SELECTOR) as HTMLLinkElement | null;
   if (!link) {
     link = document.createElement('link');
@@ -23,18 +45,17 @@ export function setPwaManifest(kind: PwaManifestKind) {
     link.setAttribute('href', href);
   }
 
-  const theme = '#EA580C';
   const themeMeta = document.querySelector('meta[name="theme-color"]') as HTMLMetaElement | null;
-  if (themeMeta) themeMeta.content = theme;
+  if (themeMeta) themeMeta.content = THEME[kind] || THEME.default;
 
   const appleTitle = document.querySelector('meta[name="apple-mobile-web-app-title"]') as HTMLMetaElement | null;
   if (appleTitle) {
-    appleTitle.content = kind === 'store' ? 'Fresh2GO Store' : 'Fresh2GO';
+    appleTitle.content = APPLE_TITLE[kind] || APPLE_TITLE.default;
   }
 
   const appleIcon = document.querySelector('link[rel="apple-touch-icon"]') as HTMLLinkElement | null;
   if (appleIcon) {
-    appleIcon.href = kind === 'store' ? '/icons/store-180.png' : '/icons/app-192.png';
+    appleIcon.href = APPLE_ICON[kind] || APPLE_ICON.default;
   }
 }
 
@@ -46,7 +67,6 @@ export function isNativeShell(): boolean {
   }
 }
 
-/** Register the service worker on web only (never inside Capacitor APKs). */
 export async function registerStorePwa(): Promise<ServiceWorkerRegistration | null> {
   if (typeof window === 'undefined') return null;
   if (isNativeShell()) return null;
@@ -70,7 +90,11 @@ const listeners = new Set<() => void>();
 
 function notifyInstallListeners() {
   listeners.forEach((fn) => {
-    try { fn(); } catch { /* noop */ }
+    try {
+      fn();
+    } catch {
+      /* noop */
+    }
   });
 }
 
@@ -115,5 +139,7 @@ export async function promptPwaInstall(): Promise<'accepted' | 'dismissed' | 'un
 
 export function subscribePwaInstallAvailability(cb: () => void): () => void {
   listeners.add(cb);
-  return () => { listeners.delete(cb); };
+  return () => {
+    listeners.delete(cb);
+  };
 }
