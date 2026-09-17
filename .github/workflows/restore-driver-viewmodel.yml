@@ -1,5 +1,8 @@
 name: Restore DriverViewModel
 on:
+  push:
+    paths:
+      - ".github/workflows/restore-driver-viewmodel.yml"
   workflow_dispatch:
 jobs:
   restore:
@@ -9,17 +12,16 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 20
+          fetch-depth: 30
       - name: Restore ViewModel from pre-placeholder commit
         run: |
           set -euo pipefail
-          # Commit before PLACEHOLDER push
           git show 44a5ebcce5c6dbd1772ab10e9e790ecf91206bb7:native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt > native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
-          # Apply accept-error visibility fix
           python3 <<'PY'
 from pathlib import Path
 p = Path('native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt')
 t = p.read_text()
+assert 'class DriverViewModel' in t
 old = '''            }.onFailure { e ->
                 _state.value = _state.value.copy(
                     busy = false,
@@ -43,14 +45,13 @@ new = '''            }.onFailure { e ->
                 refreshWork()
             }'''
 if old not in t:
-    print('WARN: acceptStoreCall pattern not found')
-else:
-    t = t.replace(old, new, 1)
-    print('patched acceptStoreCall errors')
+    raise SystemExit('acceptStoreCall pattern not found')
+t = t.replace(old, new, 1)
 p.write_text(t)
+print('patched ok', len(t))
 PY
           git config user.email "ci@fresh2go.gr"
           git config user.name "fresh2go-ci"
           git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/DriverViewModel.kt
-          git commit -m "restore(native-driver): DriverViewModel + show store-call accept errors" || echo "no change"
+          git commit -m "restore(native-driver): DriverViewModel + show store-call accept errors"
           git push origin HEAD:main
