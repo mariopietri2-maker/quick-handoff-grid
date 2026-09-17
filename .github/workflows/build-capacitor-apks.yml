@@ -1,21 +1,21 @@
-# Build Capacitor customer + driver debug APKs (includes Mapbox plugin for driver)
+# Customer Capacitor debug APK — committed android/ + live https://fresh2go.gr/order
 name: Build Capacitor APKs
 
 on:
   workflow_dispatch:
   push:
     paths:
-      - "plugins/capacitor-mapbox-maps/**"
       - "scripts/build-apks.sh"
       - "package.json"
-      - "capacitor.driver.config.ts"
+      - "capacitor.config.ts"
       - "capacitor.customer.config.ts"
       - ".github/workflows/build-capacitor-apks.yml"
+      - "android/**"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 60
+    timeout-minutes: 45
     permissions:
       contents: write
 
@@ -35,107 +35,67 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android commandline tools
+      - name: Setup Android SDK
         uses: android-actions/setup-android@v3
-        with:
-          packages: ''
-          accept-android-sdk-licenses: true
 
       - name: Install SDK packages
         run: |
           set -euo pipefail
-          echo "ANDROID_HOME=${ANDROID_HOME:-}"
-          echo "ANDROID_SDK_ROOT=${ANDROID_SDK_ROOT:-}"
-          command -v sdkmanager || true
           yes | sdkmanager --licenses >/dev/null 2>&1 || true
-          for pkgs in "platforms;android-35 build-tools;35.0.0 platform-tools" "platforms;android-34 build-tools;34.0.0 platform-tools"; do
-            if sdkmanager --install $pkgs; then
-              echo "Installed: $pkgs"
-              break
-            fi
-            echo "Failed: $pkgs — trying fallback"
-          done
-
-      - name: Mapbox downloads token
-        env:
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
-        run: |
-          TOKEN="${MAPBOX_DOWNLOADS_TOKEN:-}"
-          if [ -z "$TOKEN" ]; then
-            echo "::warning::MAPBOX_DOWNLOADS_TOKEN secret not set — Mapbox SDK resolve may fail"
-          fi
-          mkdir -p ~/.gradle
-          {
-            echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN"
-            echo "systemProp.mapboxDownloadsToken=$TOKEN"
-          } >> ~/.gradle/gradle.properties
-          echo "MAPBOX_DOWNLOADS_TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" \
+            || sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
 
       - name: Install npm deps
         run: npm ci
 
-      - name: Scaffold Android projects (android-customer / android-driver)
+      - name: Vite build
+        run: npm run build
+
+      - name: Cap sync android
         run: |
           set -euo pipefail
-          for flavor in customer driver; do
-            if [ -f "android-$flavor/build.gradle" ] && [ -f "android-$flavor/app/build.gradle" ]; then
-              echo "==> android-$flavor already scaffolded"
-              continue
-            fi
-            if [ -d "android-$flavor" ]; then
-              echo "==> android-$flavor exists but incomplete — removing"
-              rm -rf "android-$flavor"
-            fi
-            echo "==> cap add android ($flavor)"
-            cp -f capacitor.config.ts capacitor.config.ts.bak
-            cp -f "capacitor.$flavor.config.ts" capacitor.config.ts
-            npx cap add android || {
-              echo "::error::cap add android failed for $flavor"
-              exit 1
-            }
-            mv -f capacitor.config.ts.bak capacitor.config.ts
-          done
-          ls -d android-* 2>/dev/null || true
+          npx cap sync android || npx cap copy android
 
-      - name: Add Mapbox Maven repo to scaffolded android projects
+      - name: Embed server.url /order
         run: |
           set -euo pipefail
-          for dir in android-customer android-driver; do
-            gradle="$dir/build.gradle"
-            if ! grep -q 'api.mapbox.com' "$gradle" 2>/dev/null; then
-              python3 scripts/patch-mapbox-maven.py "$gradle"
-            else
-              echo "mapbox repo already present in $gradle"
-            fi
-          done
+          mkdir -p android/app/src/main/assets
+          python3 -c 'import json; from pathlib import Path; cfg={"appId":"com.freshdelivery.customer","appName":"fresh2go","webDir":"dist","server":{"url":"https://fresh2go.gr/order","androidScheme":"https","hostname":"localhost","allowNavigation":["https://fresh2go.gr/*","https://www.fresh2go.gr/*","https://freshdelivery.app/*","https://ojkesspghyqmjmupybva.supabase.co/*","https://*.supabase.co/*","https://api.mapbox.com/*"]},"android":{"backgroundColor":"#fff7ec"},"plugins":{"CapacitorHttp":{"enabled":True},"SplashScreen":{"backgroundColor":"#fff7ec","launchAutoHide":True,"launchShowDuration":400}}}; Path("android/app/src/main/assets/capacitor.config.json").write_text(json.dumps(cfg,indent=2)+"\n"); print("config ok")'
 
-      - name: Build Capacitor APKs
-        env:
-          MAPBOX_DOWNLOADS_TOKEN: ${{ secrets.MAPBOX_DOWNLOADS_TOKEN }}
+      - name: Bump versionCode
         run: |
-          chmod +x scripts/build-apks.sh
-          ./scripts/build-apks.sh
+          CODE=$(date -u +%-m%d%H%M)
+          python3 - android/app/build.gradle "$CODE" <<'PY'
+import re, sys
+path, code = sys.argv[1], sys.argv[2]
+text = open(path).read()
+text = re.sub(r"versionCode\s+\d+", f"versionCode {code}", text, count=1)
+text = re.sub(r'versionName\s+"[^"]*"', f'versionName "1.0.{code}"', text, count=1)
+open(path, "w").write(text)
+print("version", code)
+PY
 
-      - name: Stage artifacts
+      - name: Assemble debug APK
         run: |
-          mkdir -p dist
-          cp -f mobile-apks/*.apk dist/ 2>/dev/null || true
-          ls -lah dist/ mobile-apks/ || true
-          sha256sum dist/*.apk mobile-apks/*.apk 2>/dev/null || true
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android && ./gradlew clean assembleDebug --stacktrace
 
-      - name: Upload APKs to mobile-apks-v1 release
-        if: ${{ github.event_name == 'push' || github.event_name == 'workflow_dispatch' }}
+      - name: Package and upload APK
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          gh release upload mobile-apks-v1 mobile-apks/*.apk --clobber
+          set -euo pipefail
+          mkdir -p mobile-apks
+          cp -f android/app/build/outputs/apk/debug/app-debug.apk mobile-apks/fresh2go-customer-debug.apk
+          ls -lah mobile-apks/
+          sha256sum mobile-apks/*.apk
+          gh release upload mobile-apks-v1 mobile-apks/fresh2go-customer-debug.apk --clobber
 
-      - name: Upload APKs
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: capacitor-debug-apks
-          path: |
-            mobile-apks/*.apk
-            dist/*.apk
-          if-no-files-found: warn
+          name: capacitor-customer-debug-apk
+          path: mobile-apks/*.apk
+          if-no-files-found: error
           retention-days: 14
