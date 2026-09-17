@@ -1,0 +1,26 @@
+name: Apply critical fixes
+on:
+  push:
+    paths:
+      - "scripts/fix_patches/**"
+      - ".github/workflows/apply-critical-fixes.yml"
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 50
+      - name: Apply patches
+        run: |
+          set -euo pipefail
+          python3 scripts/fix_patches/apply_web_role_fixes.py
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add -A
+          git status
+          git commit -m "fix: restore ViewModel + store role routing (CustomerApp/AuthPage)" || exit 0
+          git push origin HEAD:main
