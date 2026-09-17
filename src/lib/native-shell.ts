@@ -1,36 +1,42 @@
 import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 
+function shouldForceCustomerHome(): boolean {
+  try {
+    if (Capacitor.isNativePlatform()) return true;
+    if (typeof window !== 'undefined' && (window as unknown as { Capacitor?: unknown }).Capacitor) return true;
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    if (/;\s*wv\)/i.test(ua)) return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 /** Sync class markers so native CSS applies before first paint. */
 export function markNativeDocument() {
-  if (!Capacitor.isNativePlatform()) return;
+  const shell = shouldForceCustomerHome();
+  if (!shell && !Capacitor.isNativePlatform()) return;
+
   const root = document.documentElement;
   root.classList.add('is-native');
-  const platform = Capacitor.getPlatform();
-  if (platform === 'android') root.classList.add('is-android');
-  if (platform === 'ios') root.classList.add('is-ios');
+  try {
+    const platform = Capacitor.getPlatform();
+    if (platform === 'android') root.classList.add('is-android');
+    if (platform === 'ios') root.classList.add('is-ios');
+  } catch {
+    root.classList.add('is-android');
+  }
 
-  // Customer Capacitor must not stay on marketing Index.
-  // Delay + one-shot guard — immediate location.replace() crashes some OEM WebViews.
   try {
     const path = window.location.pathname || '/';
     if (path !== '/' && path !== '') return;
-    const key = 'f2g_boot_redir_v1';
-    if (sessionStorage.getItem(key) === '1') return;
-    sessionStorage.setItem(key, '1');
+    if (!shell) return;
     const appId =
       (window as unknown as { Capacitor?: { getConfig?: () => { appId?: string } } }).Capacitor
         ?.getConfig?.()?.appId ?? '';
     const target = appId.includes('driver') ? '/driver' : '/order';
-    window.setTimeout(() => {
-      try {
-        if ((window.location.pathname || '/') === '/' || (window.location.pathname || '/') === '') {
-          window.location.replace(target);
-        }
-      } catch {
-        /* ignore */
-      }
-    }, 80);
+    window.location.replace(target);
   } catch {
     /* ignore */
   }
@@ -58,11 +64,6 @@ async function initKeyboard() {
   }
 }
 
-/**
- * Android system back:
- * - pop in-app history when possible
- * - minimize on root customer/driver homes
- */
 export function initNativeBackButton() {
   if (!Capacitor.isNativePlatform()) return () => {};
 
@@ -89,7 +90,6 @@ export function initNativeBackButton() {
   };
 }
 
-/** Boot native chrome: classes, splash, keyboard, back. Status bar is separate. */
 export async function initNativeShell() {
   markNativeDocument();
   if (!Capacitor.isNativePlatform()) return () => {};

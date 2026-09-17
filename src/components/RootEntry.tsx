@@ -15,6 +15,20 @@ function BootSpinner() {
   );
 }
 
+/** True inside Capacitor OR a plain Android WebView APK shell. */
+function isAppShell(): boolean {
+  try {
+    if (Capacitor.isNativePlatform()) return true;
+    if (typeof window !== 'undefined' && (window as unknown as { Capacitor?: unknown }).Capacitor) return true;
+    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
+    // Android WebView UA contains "; wv)"
+    if (/;\s*wv\)/i.test(ua)) return true;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
 /**
  * `/` entry: never paint the marketing landing while we still might redirect
  * to a role home (mobile shells, or a returning logged-in user on web).
@@ -22,19 +36,20 @@ function BootSpinner() {
 export default function RootEntry() {
   const { user, profile, loading, isAdmin, isSupport } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
+  const appShell = isAppShell();
 
-  // Mobile shells (env or Capacitor appId) — sync redirect, no flash of Index.
   if (flavorReady && (flavor === 'customer' || flavor === 'driver')) {
     return <Navigate to={mobileHomePath(flavor)} replace />;
   }
 
-  // Wait for session / native flavor before deciding — avoids marketing flash.
   if (!flavorReady || loading || (user && !profile)) {
+    if (appShell && flavorReady && flavor === 'shared') {
+      return <Navigate to="/order" replace />;
+    }
     return <BootSpinner />;
   }
 
   if (user && profile) {
-    // Admins/support keep the landing (role switcher + app links live there).
     if (!isAdmin && !isSupport) {
       if (profile.role === 'm') return <Navigate to="/driver" replace />;
       if (profile.role === 'driver') return <Navigate to="/driver" replace />;
@@ -43,8 +58,7 @@ export default function RootEntry() {
     }
   }
 
-  // Never show marketing landing inside a native WebView shell.
-  if (Capacitor.isNativePlatform()) {
+  if (appShell) {
     return <Navigate to="/order" replace />;
   }
 
