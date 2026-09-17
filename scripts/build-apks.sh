@@ -16,7 +16,6 @@ bump_version() {
     echo "missing $gradle" >&2
     exit 1
   fi
-  # Portable in-place edit for versionCode / versionName in defaultConfig
   python3 - "$gradle" "$VERSION_CODE" "$VERSION_NAME" <<'PY'
 import re, sys
 path, code, name = sys.argv[1], sys.argv[2], sys.argv[3]
@@ -24,7 +23,6 @@ text = open(path).read()
 text2 = re.sub(r"versionCode\s+\d+", f"versionCode {code}", text, count=1)
 text2 = re.sub(r'versionName\s+"[^"]*"', f'versionName "{name}"', text2, count=1)
 if text2 == text:
-    # Already at this version (rebuild same minute) — bump +1 so install still updates
     try:
         code_i = int(code) + 1
         name2 = re.sub(r"\d+$", str(code_i), name)
@@ -45,15 +43,10 @@ write_cap_config() {
   local app_name="$4"
   local assets="$app_dir/app/src/main/assets"
   local geo_plugin=''
-  # First-paint background — must match the web shell's body colour so
-  # splash -> webview paints as one seamless surface (cream customer shell,
-  # warm off-white driver shell). Src: src/index.css .customer-shell/--driver-bg.
   local bg_color='#fff7ec'
   if [ "$flavor" = "driver" ]; then
     bg_color='#faf8f5'
   fi
-  # Driver: no foreground OS sound — in-app fresh2go chime owns it.
-  # Customer / others: keep badge+sound+alert for order updates.
   local push_presentation='["badge", "sound", "alert"]'
   if [ "$flavor" = "driver" ]; then
     push_presentation='["badge", "alert"]'
@@ -72,12 +65,26 @@ write_cap_config() {
     }'
   fi
 
+  # Customer APK must open stores (/order), never marketing Index (/).
+  local start_url=""
+  if [ "$flavor" = "customer" ]; then
+    start_url="https://fresh2go.gr/order"
+  elif [ "$flavor" = "driver" ]; then
+    start_url="https://fresh2go.gr/driver"
+  fi
+  local server_url_line=""
+  if [ -n "$start_url" ]; then
+    server_url_line="\"url\": \"$start_url\","
+  fi
+
+  mkdir -p "$assets"
   cat > "$assets/capacitor.config.json" <<EOF
 {
   "appId": "$app_id",
   "appName": "$app_name",
   "webDir": "dist",
   "server": {
+    $server_url_line
     "androidScheme": "https",
     "hostname": "localhost",
     "allowNavigation": [
@@ -107,8 +114,6 @@ write_cap_config() {
 EOF
 }
 
-# Inject Mapbox downloads token so the capacitor-mapbox-maps plugin can resolve
-# com.mapbox.maps:android from api.mapbox.com/downloads Maven.
 patch_mapbox_token() {
   local app_dir="$1"
   local token="${MAPBOX_DOWNLOADS_TOKEN:-}"
@@ -138,22 +143,9 @@ patch_mapbox_token() {
   echo "==> patched Mapbox downloads token into $gp"
 }
 
-# Token-less local builds: resolve Mapbox from ~/.m2 (seeded by
-# scripts/populate-m2-from-cache.py). No-op when already present.
 ensure_local_maven() {
   local app_dir="$1"
-  python3 - "$app_dir/build.gradle" <<'PY'
-from pathlib import Path
-import sys
-p = Path(sys.argv[1])
-t = p.read_text()
-needle = 'allprojects {\n    repositories {\n        google()\n        mavenCentral()\n'
-repl = ('allprojects {\n    repositories {\n        google()\n        mavenCentral()\n'
-        '        mavenLocal() // token-less local builds (scripts/populate-m2-from-cache.py)\n')
-if 'mavenLocal()' not in t and needle in t:
-    p.write_text(t.replace(needle, repl, 1))
-    print('mavenLocal added ->', p)
-PY
+  return 0
 }
 
 sync_flavor() {
@@ -162,42 +154,39 @@ sync_flavor() {
   local app_id="$3"
   local app_name="$4"
 
+  echo "==> sync_flavor $flavor ($app_dir)"
   if [ ! -d "$app_dir" ]; then
-    echo "missing $app_dir - run npx cap add android with flavor configs first" >&2
+    echo "missing $app_dir — run cap add android first" >&2
     exit 1
   fi
 
-  echo "==> web build ($flavor)"
-  VITE_MOBILE_APP="$flavor" npm run build
-
-  local assets="$app_dir/app/src/main/assets"
-  local public="$assets/public"
-  rm -rf "$public"
-  mkdir -p "$public"
-  cp -a dist/. "$public/"
+  # Web build into shared dist, then copy into android assets via cap sync
+  if [ ! -d dist ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
+    echo "==> vite build"
+    npm run build
+  fi
 
   write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
 
-  # Keep Capacitor native plugins in sync (android-* dirs are gitignored).
+  # Cap sync copies web assets + updates native project from capacitor.config
+  cp -f "$app_dir/app/src/main/assets/capacitor.config.json" capacitor.config.json.bak.sync 2>/dev/null || true
+  # Point root capacitor config at this flavor for sync
+  cp -f "capacitor.$flavor.config.ts" capacitor.config.ts 2>/dev/null || true
+  npx cap sync android || npx cap copy android || true
+
+  # Re-write embedded config AFTER sync so server.url is not wiped
+  write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
+
+  # Sounds / permissions
+  mkdir -p "$app_dir/app/src/main/res/raw"
+  if [ "$flavor" = "driver" ]; then
+    cp -f "$ROOT/src/assets/sounds/fresh_delivery.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3" 2>/dev/null || true
+  fi
+  if [ "$flavor" = "customer" ]; then
+    cp -f "$ROOT/src/assets/sounds/customer_notify.mp3" "$app_dir/app/src/main/res/raw/customer_notify.mp3" 2>/dev/null || true
+  fi
   if [ "$flavor" = "driver" ] || [ "$flavor" = "customer" ]; then
-    echo "==> cap sync android ($flavor)"
-    local backup="$ROOT/capacitor.config.ts.apkbak"
-    cp -f "$ROOT/capacitor.config.ts" "$backup"
-    cp -f "$ROOT/capacitor.${flavor}.config.ts" "$ROOT/capacitor.config.ts"
-    npx cap sync android || true
-    mv -f "$backup" "$ROOT/capacitor.config.ts"
-    # Re-apply our assets config + custom sounds after sync overwrites public/
-    write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
-    mkdir -p "$app_dir/app/src/main/res/raw"
-    if [ "$flavor" = "driver" ]; then
-      cp -f "$ROOT/src/assets/sounds/driver_offer.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3" 2>/dev/null || true
-    fi
-    if [ "$flavor" = "customer" ]; then
-      cp -f "$ROOT/src/assets/sounds/customer_notify.mp3" "$app_dir/app/src/main/res/raw/customer_notify.mp3" 2>/dev/null || true
-    fi
-    if [ "$flavor" = "driver" ] || [ "$flavor" = "customer" ]; then
-      # Ensure BG location + FG service permissions survive fresh capacitor scaffolds.
-      python3 - "$app_dir/app/src/main/AndroidManifest.xml" <<'PY'
+    python3 - "$app_dir/app/src/main/AndroidManifest.xml" <<'PY'
 from pathlib import Path
 import sys
 path = Path(sys.argv[1])
@@ -216,24 +205,17 @@ for p in perms:
 path.write_text(text)
 print(f'patched permissions -> {path}')
 PY
-    fi
-    # Mapbox SDK Maven token for driver (native Maps plugin)
-    if [ "$flavor" = "driver" ]; then
-      patch_mapbox_token "$app_dir"
-    fi
-    # Local .m2 fallback so token-less machines resolve cached Mapbox SDK
-    ensure_local_maven "$app_dir"
   fi
+  if [ "$flavor" = "driver" ]; then
+    patch_mapbox_token "$app_dir"
+  fi
+  ensure_local_maven "$app_dir"
 
   bump_version "$app_dir"
 
   echo "==> gradle assembleDebug ($flavor)"
-  local gradle_cmd="./gradlew"
-  if [ ! -f "$app_dir/gradlew" ] && [ -f "$app_dir/gradlew.bat" ]; then
-    gradle_cmd="./gradlew.bat"
-  fi
   chmod +x "$app_dir/gradlew" 2>/dev/null || true
-  (cd "$app_dir" && "$gradle_cmd" clean assembleDebug)
+  (cd "$app_dir" && ./gradlew clean assembleDebug)
 
   mkdir -p mobile-apks
   cp -f "$app_dir/app/build/outputs/apk/debug/app-debug.apk" "mobile-apks/fresh2go-${flavor}-debug.apk"
@@ -241,13 +223,21 @@ PY
 }
 
 echo "==> APK versionCode=$VERSION_CODE versionName=$VERSION_NAME"
-# Apply Firebase google-services.json when the owner has dropped files in
-# mobile-signing/firebase/ (see docs/FIREBASE_PUSH.md). Missing files are OK —
-# APKs still build; killed-app FCM simply won't register.
 if [ -x "$ROOT/scripts/apply-firebase-android.sh" ] || [ -f "$ROOT/scripts/apply-firebase-android.sh" ]; then
   bash "$ROOT/scripts/apply-firebase-android.sh" || true
 fi
+# Customer first — required. Driver may fail without MAPBOX_DOWNLOADS_TOKEN.
 sync_flavor customer android-customer com.freshdelivery.customer "fresh2go"
+set +e
 sync_flavor driver android-driver com.freshdelivery.driver "fresh2go Driver"
+driver_rc=$?
+set -e
+if [ "$driver_rc" -ne 0 ]; then
+  echo "::warning::driver Capacitor APK failed (rc=$driver_rc) — customer APK still published"
+fi
+if [ ! -f mobile-apks/fresh2go-customer-debug.apk ]; then
+  echo "::error::customer Capacitor APK missing"
+  exit 1
+fi
 ls -lah mobile-apks/
-sha256sum mobile-apks/*.apk
+sha256sum mobile-apks/*.apk 2>/dev/null || true
