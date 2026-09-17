@@ -65,16 +65,13 @@ write_cap_config() {
     }'
   fi
 
-  # Customer APK must open stores (/order), never marketing Index (/).
+  # Customer must open /order; driver /driver — never marketing Index.
   local start_url=""
-  if [ "$flavor" = "customer" ]; then
-    start_url="https://fresh2go.gr/order"
-  elif [ "$flavor" = "driver" ]; then
-    start_url="https://fresh2go.gr/driver"
-  fi
-  local server_url_line=""
+  if [ "$flavor" = "customer" ]; then start_url="https://fresh2go.gr/order"; fi
+  if [ "$flavor" = "driver" ]; then start_url="https://fresh2go.gr/driver"; fi
+  local server_url_json=""
   if [ -n "$start_url" ]; then
-    server_url_line="\"url\": \"$start_url\","
+    server_url_json="\"url\": \"$start_url\","
   fi
 
   mkdir -p "$assets"
@@ -84,7 +81,7 @@ write_cap_config() {
   "appName": "$app_name",
   "webDir": "dist",
   "server": {
-    $server_url_line
+    $server_url_json
     "androidScheme": "https",
     "hostname": "localhost",
     "allowNavigation": [
@@ -156,11 +153,10 @@ sync_flavor() {
 
   echo "==> sync_flavor $flavor ($app_dir)"
   if [ ! -d "$app_dir" ]; then
-    echo "missing $app_dir — run cap add android first" >&2
+    echo "missing $app_dir — scaffold first" >&2
     exit 1
   fi
 
-  # Web build into shared dist, then copy into android assets via cap sync
   if [ ! -d dist ] || [ -z "$(ls -A dist 2>/dev/null)" ]; then
     echo "==> vite build"
     npm run build
@@ -168,16 +164,16 @@ sync_flavor() {
 
   write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
 
-  # Cap sync copies web assets + updates native project from capacitor.config
-  cp -f "$app_dir/app/src/main/assets/capacitor.config.json" capacitor.config.json.bak.sync 2>/dev/null || true
-  # Point root capacitor config at this flavor for sync
-  cp -f "capacitor.$flavor.config.ts" capacitor.config.ts 2>/dev/null || true
-  npx cap sync android || npx cap copy android || true
-
-  # Re-write embedded config AFTER sync so server.url is not wiped
+  if [ -f "capacitor.$flavor.config.ts" ]; then
+    cp -f "capacitor.$flavor.config.ts" capacitor.config.ts
+  fi
+  if command -v npx >/dev/null 2>&1; then
+    echo "==> cap sync android ($flavor)"
+    npx cap sync android || true
+  fi
+  # Re-apply after sync so server.url is not wiped
   write_cap_config "$flavor" "$app_dir" "$app_id" "$app_name"
 
-  # Sounds / permissions
   mkdir -p "$app_dir/app/src/main/res/raw"
   if [ "$flavor" = "driver" ]; then
     cp -f "$ROOT/src/assets/sounds/fresh_delivery.mp3" "$app_dir/app/src/main/res/raw/fresh_delivery.mp3" 2>/dev/null || true
@@ -190,6 +186,8 @@ sync_flavor() {
 from pathlib import Path
 import sys
 path = Path(sys.argv[1])
+if not path.exists():
+    raise SystemExit(0)
 text = path.read_text()
 perms = [
   'android.permission.ACCESS_BACKGROUND_LOCATION',
@@ -226,14 +224,13 @@ echo "==> APK versionCode=$VERSION_CODE versionName=$VERSION_NAME"
 if [ -x "$ROOT/scripts/apply-firebase-android.sh" ] || [ -f "$ROOT/scripts/apply-firebase-android.sh" ]; then
   bash "$ROOT/scripts/apply-firebase-android.sh" || true
 fi
-# Customer first — required. Driver may fail without MAPBOX_DOWNLOADS_TOKEN.
 sync_flavor customer android-customer com.freshdelivery.customer "fresh2go"
 set +e
 sync_flavor driver android-driver com.freshdelivery.driver "fresh2go Driver"
-driver_rc=$?
+drv=$?
 set -e
-if [ "$driver_rc" -ne 0 ]; then
-  echo "::warning::driver Capacitor APK failed (rc=$driver_rc) — customer APK still published"
+if [ "$drv" -ne 0 ]; then
+  echo "::warning::driver Capacitor APK failed (rc=$drv) — continuing with customer"
 fi
 if [ ! -f mobile-apks/fresh2go-customer-debug.apk ]; then
   echo "::error::customer Capacitor APK missing"
