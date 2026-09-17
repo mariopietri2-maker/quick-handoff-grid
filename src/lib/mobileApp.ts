@@ -1,18 +1,15 @@
 /**
- * Mobile app flavor helpers (Capacitor customer / driver shells).
+ * Mobile app flavor helpers (Capacitor customer / driver / store shells).
  *
- * Build-time: set VITE_MOBILE_APP=customer|driver when bundling offline APKs.
- * Runtime: Capacitor App.getInfo().id is com.freshdelivery.customer|driver.
- *
- * Production APKs may load the shared Vercel URL, so VITE_MOBILE_APP is often unset —
- * always resolve via Capacitor appId on native.
+ * Build-time: set VITE_MOBILE_APP=customer|driver|store when bundling offline APKs.
+ * Runtime: Capacitor App.getInfo().id is com.freshdelivery.customer|driver|store.
  */
 
 import { useEffect, useState } from 'react';
 import { Capacitor } from '@capacitor/core';
 import { App as CapApp } from '@capacitor/app';
 
-export type MobileAppFlavor = 'customer' | 'driver' | 'shared';
+export type MobileAppFlavor = 'customer' | 'driver' | 'store' | 'shared';
 
 const ENV_FLAVOR = (import.meta.env.VITE_MOBILE_APP as string | undefined)?.toLowerCase();
 
@@ -21,26 +18,32 @@ let resolvePromise: Promise<MobileAppFlavor> | null = null;
 
 export function flavorFromAppId(appId: string | undefined | null): MobileAppFlavor {
   if (!appId) return 'shared';
-  if (appId.includes('driver')) return 'driver';
-  if (appId.includes('customer')) return 'customer';
+  const id = appId.toLowerCase();
+  if (id.includes('driver')) return 'driver';
+  if (id.includes('store')) return 'store';
+  if (id.includes('customer')) return 'customer';
   return 'shared';
 }
 
-/** Sync build-time flavor only (may be 'shared' on remote-loaded APKs). */
+function isKnownEnvFlavor(v: string | undefined | null): v is MobileAppFlavor {
+  return v === 'customer' || v === 'driver' || v === 'store';
+}
+
 export function envMobileFlavor(): MobileAppFlavor {
-  if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') return ENV_FLAVOR;
+  if (isKnownEnvFlavor(ENV_FLAVOR)) return ENV_FLAVOR;
   return cachedFlavor ?? 'shared';
 }
 
-/** Preferred landing path for this mobile shell (skips marketing Index). */
 export function mobileHomePath(flavor: MobileAppFlavor): string {
   if (flavor === 'driver') return '/driver';
+  if (flavor === 'store') return '/store';
   if (flavor === 'customer') return '/order';
   return '/';
 }
 
 export function mobileAuthAllowedRoles(flavor: MobileAppFlavor): string[] | null {
   if (flavor === 'driver') return ['driver', 'm'];
+  if (flavor === 'store') return ['store'];
   if (flavor === 'customer') return ['customer'];
   return null;
 }
@@ -70,13 +73,19 @@ export function isDriverPath(path: string): boolean {
   );
 }
 
-/**
- * Resolve the effective shell flavor (env → Capacitor appId → shared).
- * Result is cached for the session.
- */
+export function isStorePath(path: string): boolean {
+  return (
+    path.startsWith('/store') ||
+    path.startsWith('/auth') ||
+    path.startsWith('/legal') ||
+    path.startsWith('/presentation') ||
+    path.startsWith('/download')
+  );
+}
+
 export async function resolveMobileFlavor(): Promise<MobileAppFlavor> {
   if (cachedFlavor) return cachedFlavor;
-  if (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') {
+  if (isKnownEnvFlavor(ENV_FLAVOR)) {
     cachedFlavor = ENV_FLAVOR;
     return cachedFlavor;
   }
@@ -88,9 +97,8 @@ export async function resolveMobileFlavor(): Promise<MobileAppFlavor> {
           cachedFlavor = flavorFromAppId(info.id);
           if (cachedFlavor !== 'shared') return cachedFlavor;
         } catch {
-          /* fall through to config / UA fallbacks */
+          /* fall through */
         }
-        // Some WebView builds fail getInfo(); still avoid marketing Index.
         try {
           const cfgId =
             (window as unknown as { Capacitor?: { getConfig?: () => { appId?: string }; config?: { appId?: string } } })
@@ -109,7 +117,27 @@ export async function resolveMobileFlavor(): Promise<MobileAppFlavor> {
           cachedFlavor = 'driver';
           return cachedFlavor;
         }
-        // Customer Capacitor shell (appId com.freshdelivery.customer) — default native to customer.
+        if (/Fresh2GO-Store|com\.freshdelivery\.store/i.test(ua)) {
+          cachedFlavor = 'store';
+          return cachedFlavor;
+        }
+        try {
+          const path = window.location.pathname || '/';
+          if (path.startsWith('/store')) {
+            cachedFlavor = 'store';
+            return cachedFlavor;
+          }
+          if (path.startsWith('/driver')) {
+            cachedFlavor = 'driver';
+            return cachedFlavor;
+          }
+          if (path.startsWith('/order')) {
+            cachedFlavor = 'customer';
+            return cachedFlavor;
+          }
+        } catch {
+          /* ignore */
+        }
         cachedFlavor = 'customer';
         return cachedFlavor;
       }
@@ -120,9 +148,8 @@ export async function resolveMobileFlavor(): Promise<MobileAppFlavor> {
   return resolvePromise;
 }
 
-/** React hook — waits for Capacitor appId when env flavor is shared. */
 export function useMobileFlavor(): { flavor: MobileAppFlavor; ready: boolean } {
-  const env = (ENV_FLAVOR === 'customer' || ENV_FLAVOR === 'driver') ? ENV_FLAVOR : null;
+  const env = isKnownEnvFlavor(ENV_FLAVOR) ? ENV_FLAVOR : null;
   const [flavor, setFlavor] = useState<MobileAppFlavor>(env ?? cachedFlavor ?? 'shared');
   const [ready, setReady] = useState(() => !!env || !!cachedFlavor || !Capacitor.isNativePlatform());
 

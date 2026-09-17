@@ -1,10 +1,14 @@
-/* fresh2go — minimal service worker for PWA installability (store + web). */
-const CACHE = 'fresh-pwa-v5';
+/* fresh2go — PWA service worker (customer / store / driver). */
+const CACHE = 'fresh-pwa-v6';
 const PRECACHE = [
   '/',
+  '/order',
   '/store',
+  '/driver',
   '/manifest.json',
   '/manifest-store.json',
+  '/manifest-customer.json',
+  '/manifest-driver.json',
   '/icons/store-192.png',
   '/icons/store-512.png',
   '/icons/app-192.png',
@@ -33,21 +37,27 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(req.url);
   if (url.origin !== self.location.origin) return;
 
-  // SPA navigations: network first, fall back to cached shell
   if (req.mode === 'navigate') {
     event.respondWith(
       fetch(req)
         .then((res) => {
           const copy = res.clone();
-          caches.open(CACHE).then((c) => c.put('/', copy)).catch(() => {});
+          caches.open(CACHE).then((c) => c.put(url.pathname || '/', copy)).catch(() => {});
           return res;
         })
-        .catch(() => caches.match('/') || caches.match('/store')),
+        .catch(async () => {
+          const path = url.pathname || '/';
+          const candidates = [path, '/order', '/store', '/driver', '/'];
+          for (const p of candidates) {
+            const hit = await caches.match(p);
+            if (hit) return hit;
+          }
+          return caches.match('/');
+        }),
     );
     return;
   }
 
-  // Static assets: stale-while-revalidate
   event.respondWith(
     caches.match(req).then((cached) => {
       const networked = fetch(req)

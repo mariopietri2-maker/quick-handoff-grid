@@ -15,13 +15,11 @@ function BootSpinner() {
   );
 }
 
-/** True inside Capacitor OR a plain Android WebView APK shell. */
 function isAppShell(): boolean {
   try {
     if (Capacitor.isNativePlatform()) return true;
     if (typeof window !== 'undefined' && (window as unknown as { Capacitor?: unknown }).Capacitor) return true;
     const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-    // Android WebView UA contains "; wv)"
     if (/;\s*wv\)/i.test(ua)) return true;
   } catch {
     /* ignore */
@@ -29,16 +27,12 @@ function isAppShell(): boolean {
   return false;
 }
 
-/**
- * `/` entry: never paint the marketing landing while we still might redirect
- * to a role home (mobile shells, or a returning logged-in user on web).
- */
 export default function RootEntry() {
   const { user, profile, loading, isAdmin, isSupport } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
   const appShell = isAppShell();
 
-  if (flavorReady && (flavor === 'customer' || flavor === 'driver')) {
+  if (flavorReady && (flavor === 'customer' || flavor === 'driver' || flavor === 'store')) {
     return <Navigate to={mobileHomePath(flavor)} replace />;
   }
 

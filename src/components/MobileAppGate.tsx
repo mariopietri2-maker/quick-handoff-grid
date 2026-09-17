@@ -2,6 +2,7 @@ import { Navigate, useLocation } from 'react-router-dom';
 import {
   isCustomerPath,
   isDriverPath,
+  isStorePath,
   mobileHomePath,
   useMobileFlavor,
 } from '@/lib/mobileApp';
@@ -14,12 +15,7 @@ function BootSpinner() {
   );
 }
 
-/**
- * Keeps customer/driver native shells on their intended routes.
- *
- * Important: redirects happen at render time via <Navigate>, so the marketing
- * Index at `/` never paints for one frame before a useEffect redirect.
- */
+/** Keeps customer / driver / store native shells on their intended routes. */
 export function MobileAppGate({ children }: { children: React.ReactNode }) {
   const location = useLocation();
   const { flavor, ready } = useMobileFlavor();
@@ -43,8 +39,12 @@ export function MobileAppGate({ children }: { children: React.ReactNode }) {
 
   if (flavor === 'driver') {
     if (!isDriverPath(path)) {
-      // `/` and other foreign routes go straight to /driver.
-      // ProtectedRoute shows a spinner, then DriverApp or /auth — never Index.
+      return <Navigate to={home} replace />;
+    }
+  }
+
+  if (flavor === 'store') {
+    if (path === '/' || !isStorePath(path)) {
       return <Navigate to={home} replace />;
     }
   }
