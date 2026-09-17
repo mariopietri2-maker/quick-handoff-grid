@@ -8,9 +8,7 @@ const config: CapacitorConfig = {
   appName: 'fresh2go',
   webDir: 'dist',
   server: {
-    // Primary host is Railway (freshdelivery.app); Vercel kept as fallback.
     url: 'https://fresh2go.gr/order',
-    // Always open customer shell — never marketing Index at /
     cleartext: isDev,
     androidScheme: 'https',
     allowNavigation: [
@@ -24,16 +22,9 @@ const config: CapacitorConfig = {
     ],
   },
   android: {
-    /* Cream = the customer shell's first paint (src/index.css --c-bg / #fff7ec),
-       so splash -> status bar -> webview is one seamless surface. */
+    path: 'android',
     backgroundColor: '#fff7ec',
     webContentsDebuggingEnabled: isDev,
-    allowMixedContent: isDev,
-  },
-  ios: {
-    backgroundColor: '#fff7ec',
-    contentInset: 'never',
-    scrollEnabled: false,
   },
   plugins: {
     CapacitorHttp: { enabled: true },

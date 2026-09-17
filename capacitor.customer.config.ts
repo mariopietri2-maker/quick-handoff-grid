@@ -22,7 +22,7 @@ const config: CapacitorConfig = {
     ],
   },
   android: {
-    path: 'android-customer',
+    path: 'android',
     backgroundColor: '#fff7ec',
     webContentsDebuggingEnabled: process.env.CAPACITOR_DEV === '1',
   },

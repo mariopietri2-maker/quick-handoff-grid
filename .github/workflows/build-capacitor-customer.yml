@@ -1,0 +1,103 @@
+# Customer Capacitor APK only — uses committed android/ + live /order start URL
+name: Build Capacitor Customer APK
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "capacitor.config.ts"
+      - "capacitor.customer.config.ts"
+      - "scripts/build-apks.sh"
+      - ".github/workflows/build-capacitor-customer.yml"
+      - "android/**"
+
+jobs:
+  build-customer:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Install SDK packages
+        run: |
+          set -euo pipefail
+          yes | sdkmanager --licenses >/dev/null 2>&1 || true
+          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools" \
+            || sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "platform-tools"
+
+      - name: Install npm deps
+        run: npm ci
+
+      - name: Vite build
+        run: npm run build
+
+      - name: Cap sync android
+        run: |
+          set -euo pipefail
+          npx cap sync android || npx cap copy android
+
+      - name: Embed server.url /order (never marketing /)
+        run: |
+          set -euo pipefail
+          mkdir -p android/app/src/main/assets
+          python3 -c 'import json; from pathlib import Path; cfg={"appId":"com.freshdelivery.customer","appName":"fresh2go","webDir":"dist","server":{"url":"https://fresh2go.gr/order","androidScheme":"https","hostname":"localhost","allowNavigation":["https://fresh2go.gr/*","https://www.fresh2go.gr/*","https://freshdelivery.app/*","https://ojkesspghyqmjmupybva.supabase.co/*","https://*.supabase.co/*","https://api.mapbox.com/*"]},"android":{"backgroundColor":"#fff7ec"},"plugins":{"CapacitorHttp":{"enabled":True},"SplashScreen":{"backgroundColor":"#fff7ec","launchAutoHide":True,"launchShowDuration":400}}}; Path("android/app/src/main/assets/capacitor.config.json").write_text(json.dumps(cfg,indent=2)+"\n"); print(open("android/app/src/main/assets/capacitor.config.json").read()[:200])'
+
+      - name: Bump versionCode
+        run: |
+          CODE=$(date -u +%-m%d%H%M)
+          python3 - android/app/build.gradle "$CODE" <<'PY'
+import re, sys
+path, code = sys.argv[1], sys.argv[2]
+text = open(path).read()
+text = re.sub(r"versionCode\s+\d+", f"versionCode {code}", text, count=1)
+text = re.sub(r'versionName\s+"[^"]*"', f'versionName "1.0.{code}"', text, count=1)
+open(path, "w").write(text)
+print("version", code)
+PY
+
+      - name: Assemble debug APK
+        run: |
+          set -euo pipefail
+          chmod +x android/gradlew
+          cd android && ./gradlew clean assembleDebug --stacktrace
+
+      - name: Package APK
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-apks
+          cp -f android/app/build/outputs/apk/debug/app-debug.apk mobile-apks/fresh2go-customer-debug.apk
+          ls -lah mobile-apks/
+          sha256sum mobile-apks/*.apk
+
+      - name: Upload to mobile-apks-v1 release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release upload mobile-apks-v1 mobile-apks/fresh2go-customer-debug.apk --clobber
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: capacitor-customer-debug-apk
+          path: mobile-apks/*.apk
+          if-no-files-found: error
+          retention-days: 14
