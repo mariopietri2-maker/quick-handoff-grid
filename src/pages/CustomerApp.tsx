@@ -13,7 +13,7 @@ import {
 import { useCart } from '@/hooks/useCart';
 import { Input } from '@/components/ui/input';
 import { supabase } from '@/integrations/supabase/client';
-import { useNavigate, Link, useSearchParams } from 'react-router-dom';
+import { useNavigate, Link, useSearchParams, Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import type { Database } from '@/integrations/supabase/types';
 import PromoBannerCarousel from '@/components/PromoBannerCarousel';
@@ -145,7 +145,7 @@ export default function CustomerApp() {
   const [filterFast, setFilterFast] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
-  const { user, profile } = useAuth();
+  const { user, profile, isStore } = useAuth();
   const { itemCount } = useCart();
   const { settings: platformSettings } = usePlatformSettings();
   const deliveryEnabled = platformSettings.delivery_enabled;
@@ -419,6 +419,11 @@ const displayAddress = deliveryAddress
       ratings,
     ],
   );
+
+  // Store owners must not see customer shell
+  if (isStore || profile?.role === 'store') {
+    return <Navigate to="/store" replace />;
+  }
 
   return (
     <div className="c-page min-h-full relative">

@@ -18,6 +18,7 @@ function roleHome(opts: {
   isAdmin: boolean;
   isSupport: boolean;
   role: string;
+  isStore?: boolean;
   nextPath: string;
   flavor: MobileAppFlavor;
 }): string {
@@ -25,7 +26,7 @@ function roleHome(opts: {
   if (opts.isSupport && opts.flavor === 'shared') return '/support';
   if (opts.role === 'm') return '/driver';
   if (opts.role === 'driver') return '/driver';
-  if (opts.role === 'store' || opts.flavor === 'store') return '/store';
+  if (opts.role === 'store' || opts.isStore || opts.flavor === 'store') return '/store';
   if (opts.flavor === 'driver') return '/driver';
   if (opts.flavor === 'customer') return '/order';
   return opts.nextPath || '/order';
@@ -55,7 +56,7 @@ export default function AuthPage() {
   const [otp, setOtp] = useState('');
   const [fullName, setFullName] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const { signIn, signUp, user, profile, isAdmin, isSupport, loading, refreshProfile } = useAuth();
+  const { signIn, signUp, user, profile, isAdmin, isSupport, isStore, loading, refreshProfile } = useAuth();
   const navigate = useNavigate();
   const { flavor, ready: flavorReady } = useMobileFlavor();
   const isDriverShell = flavor === 'driver';
@@ -123,7 +124,7 @@ export default function AuthPage() {
   if (user && profile && !isAuthBypass) {
     return (
       <Navigate
-        to={roleHome({ isAdmin, isSupport, role: profile.role, nextPath, flavor })}
+        to={roleHome({ isAdmin, isSupport, role: profile.role, isStore, nextPath, flavor })}
         replace
       />
     );
