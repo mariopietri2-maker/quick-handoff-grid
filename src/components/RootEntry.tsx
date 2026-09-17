@@ -28,7 +28,7 @@ function isAppShell(): boolean {
 }
 
 export default function RootEntry() {
-  const { user, profile, loading, isAdmin, isSupport } = useAuth();
+  const { user, profile, loading, isAdmin, isSupport, isStore } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
   const appShell = isAppShell();
 
@@ -47,7 +47,7 @@ export default function RootEntry() {
     if (!isAdmin && !isSupport) {
       if (profile.role === 'm') return <Navigate to="/driver" replace />;
       if (profile.role === 'driver') return <Navigate to="/driver" replace />;
-      if (profile.role === 'store') return <Navigate to="/store" replace />;
+      if (profile.role === 'store' || isStore) return <Navigate to="/store" replace />;
       return <Navigate to="/order" replace />;
     }
   }

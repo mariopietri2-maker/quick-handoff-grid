@@ -7,13 +7,14 @@ import { useMobileFlavor } from '@/lib/mobileApp';
 /** Keeps <link rel="manifest"> aligned with role / route / native flavor. */
 export function PwaManifestSwitcher() {
   const { pathname } = useLocation();
-  const { profile } = useAuth();
+  const { profile, isStore } = useAuth();
   const { flavor } = useMobileFlavor();
 
   useEffect(() => {
     let kind: PwaManifestKind = 'default';
     if (
       flavor === 'store' ||
+      isStore ||
       profile?.role === 'store' ||
       pathname === '/store' ||
       pathname.startsWith('/store/')
@@ -30,7 +31,7 @@ export function PwaManifestSwitcher() {
       kind = 'driver';
     }
     setPwaManifest(kind);
-  }, [pathname, profile?.role, flavor]);
+  }, [pathname, profile?.role, isStore, flavor]);
 
   return null;
 }
