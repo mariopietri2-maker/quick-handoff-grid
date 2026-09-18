@@ -15,44 +15,47 @@ function BootSpinner() {
   );
 }
 
-function isAppShell(): boolean {
+/** True only inside a real Capacitor native binary — not mobile Chrome / PWA. */
+function isCapacitorNative(): boolean {
   try {
-    if (Capacitor.isNativePlatform()) return true;
-    if (typeof window !== 'undefined' && (window as unknown as { Capacitor?: unknown }).Capacitor) return true;
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-    if (/;\s*wv\)/i.test(ua)) return true;
+    return Capacitor.isNativePlatform();
   } catch {
-    /* ignore */
+    return false;
   }
-  return false;
 }
 
 export default function RootEntry() {
   const { user, profile, loading, isAdmin, isSupport, isStore } = useAuth();
   const { flavor, ready: flavorReady } = useMobileFlavor();
-  const appShell = isAppShell();
+  const native = isCapacitorNative();
 
+  // Dedicated app flavors always go to their home (customer/driver/store shells).
   if (flavorReady && (flavor === 'customer' || flavor === 'driver' || flavor === 'store')) {
     return <Navigate to={mobileHomePath(flavor)} replace />;
   }
 
   if (!flavorReady || loading || (user && !profile)) {
-    if (appShell && flavorReady && flavor === 'shared') {
-      return <Navigate to="/order" replace />;
-    }
     return <BootSpinner />;
   }
 
+  // Logged-in role homes (web + native).
   if (user && profile) {
     if (!isAdmin && !isSupport) {
       if (profile.role === 'm') return <Navigate to="/driver" replace />;
       if (profile.role === 'driver') return <Navigate to="/driver" replace />;
       if (profile.role === 'store' || isStore) return <Navigate to="/store" replace />;
-      return <Navigate to="/order" replace />;
+      // Customers: native customer app → /order; browser keeps marketing home.
+      if (native) return <Navigate to="/order" replace />;
+      return (
+        <Suspense fallback={<BootSpinner />}>
+          <Index />
+        </Suspense>
+      );
     }
   }
 
-  if (appShell) {
+  // Anonymous browser → marketing homepage. Native Capacitor only → /order.
+  if (native) {
     return <Navigate to="/order" replace />;
   }
 

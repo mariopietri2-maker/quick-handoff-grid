@@ -2,15 +2,12 @@ import { Capacitor } from '@capacitor/core';
 import { App } from '@capacitor/app';
 
 function shouldForceCustomerHome(): boolean {
+  // Browsers and PWAs must keep marketing /. Only real Capacitor APKs force app home.
   try {
-    if (Capacitor.isNativePlatform()) return true;
-    if (typeof window !== 'undefined' && (window as unknown as { Capacitor?: unknown }).Capacitor) return true;
-    const ua = typeof navigator !== 'undefined' ? navigator.userAgent || '' : '';
-    if (/;\s*wv\)/i.test(ua)) return true;
+    return Capacitor.isNativePlatform();
   } catch {
-    /* ignore */
+    return false;
   }
-  return false;
 }
 
 export function markNativeDocument() {
