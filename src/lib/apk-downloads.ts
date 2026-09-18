@@ -6,18 +6,17 @@ export const APK_RELEASE_TAG = 'mobile-apks-v1';
 /** Bumped to the current Capacitor build version.
  *  Source of truth for /download AND dist/native-versions.json (self-update
  *  channel polled by sideloaded native apps — stamped by run-vite-build.mjs). */
-export const APK_BUILD_VERSION = '1.0.9091500';
+export const APK_BUILD_VERSION = '1.0.9091800';
 
 /** Native Kotlin/Compose driver (replaces Capacitor driver when installed). */
-export const APK_NATIVE_DRIVER_VERSION = '2.6.30-fresh2go';
+export const APK_NATIVE_DRIVER_VERSION = '2.6.31-fresh2go';
 
 /** Native Kotlin/Compose customer. */
-export const APK_NATIVE_CUSTOMER_VERSION = '2.9.9-fresh2go';
+export const APK_NATIVE_CUSTOMER_VERSION = '2.9.10-fresh2go';
 
-// APKs are served from the website (fresh2go.gr/apk/...) so no GitHub host is
-// involved. run-vite-build.mjs stages committed mobile-apks/*.apk into dist/apk/
-// on every deploy.
-const RELEASE_BASE = 'https://fresh2go.gr/apk';
+// Prefer GitHub release assets (CI uploads). Website /apk is fallback only.
+const RELEASE_BASE = 'https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1';
+const WEBSITE_APK_BASE = 'https://fresh2go.gr/apk';
 
 export { SITE_ORIGIN };
 

@@ -1,0 +1,21 @@
+name: Apply K idle HomeScreen
+on:
+  push:
+    paths:
+      - "scripts/fix_patches/k_idle_homescreen.py"
+      - ".github/workflows/apply-k-idle-homescreen.yml"
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix_patches/k_idle_homescreen.py
+      - run: |
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add native-driver/app/src/main/java/com/freshdelivery/nativedriver/ui/home/HomeScreen.kt
+          git commit -m "fix(native-driver): K-role idle waiting-for-call copy" || exit 0
+          git push origin HEAD:main
