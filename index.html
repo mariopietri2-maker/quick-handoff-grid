@@ -4,16 +4,18 @@
     <meta charset="UTF-8" />
     <script>
       (function () {
-        // f2g early apk redirect — Capacitor / Android WebView APK must never sit on marketing /
+        // Only real Capacitor native shells leave marketing home (/).
+        // Browsers (including mobile Chrome) must stay on / for the public site.
         try {
           var path = location.pathname || '/';
           if (path !== '/' && path !== '') return;
-          var ua = navigator.userAgent || '';
-          var isWv = /; wv\)/i.test(ua) || (/Version\/\d+\.\d+.*Chrome\//i.test(ua) && /Android/i.test(ua));
-          var hasCap = !!(window.Capacitor && (window.Capacitor.isNativePlatform ? window.Capacitor.isNativePlatform() : true));
-          if (hasCap || isWv) {
-            location.replace('/order');
-          }
+          var C = window.Capacitor;
+          if (!C || typeof C.isNativePlatform !== 'function' || !C.isNativePlatform()) return;
+          var appId = '';
+          try { appId = (C.getConfig && C.getConfig().appId) || ''; } catch (e) {}
+          if (appId.indexOf('driver') !== -1) location.replace('/driver');
+          else if (appId.indexOf('store') !== -1) location.replace('/store');
+          else location.replace('/order');
         } catch (e) {}
       })();
     </script>
