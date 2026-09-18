@@ -1,6 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect } from 'react';
-import { Capacitor } from '@capacitor/core';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useCart } from '@/hooks/useCart';
 import { customerAccentStyle } from '@/lib/customer-theme';
@@ -8,16 +7,14 @@ import CustomerBottomNav from '@/components/customer/CustomerBottomNav';
 import CustomerFloatingCart from '@/components/customer/CustomerFloatingCart';
 
 /**
- * Shared customer shell (Uber Eats–style):
- * scrollable viewport + floating cart. Persistent bottom tabs only in the
- * Capacitor app — the desktop web app intentionally has no bottom bar.
+ * Customer shell aligned with native app:
+ * scrollable column + floating cart + persistent bottom tabs
+ * (Αρχική · Αναζήτηση · Παραγγελίες · Λογαριασμός) on web and Capacitor.
  */
 export default function CustomerLayout() {
   const cfg = useCustomerAppConfig();
   const location = useLocation();
   const { itemCount } = useCart();
-
-  const isNative = Capacitor.isNativePlatform();
 
   useEffect(() => {
     if (location.pathname !== '/order') return;
@@ -35,25 +32,23 @@ export default function CustomerLayout() {
     }
   }, [location.pathname, location.hash]);
 
+  // Room for bottom tabs (+ floating cart when items in basket)
   const padBottom = itemCount > 0
-    ? isNative
-      ? 'pb-[calc(9rem+var(--app-safe-bottom))]'
-      : 'pb-[calc(8rem+var(--app-safe-bottom))]'
-    : isNative
-      ? 'pb-[calc(6rem+var(--app-safe-bottom))]'
-      : 'pb-[calc(5rem+var(--app-safe-bottom))]';
+    ? 'pb-[calc(9rem+var(--app-safe-bottom))]'
+    : 'pb-[calc(6rem+var(--app-safe-bottom))]';
 
   return (
     <div
-      className="customer-shell customer-scroll native-scroll relative h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain"
+      className="customer-shell customer-scroll native-scroll relative h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain bg-[hsl(var(--c-bg,0_0%_98%))]"
       style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
       {cfg.sections.show_ambient_glow && <div className="c-ambient" aria-hidden />}
-      <div className={`relative min-h-full ${padBottom}`}>
+      {/* Phone-width column on desktop — closer to native customer */}
+      <div className={`relative mx-auto min-h-full w-full max-w-lg ${padBottom}`}>
         <Outlet />
       </div>
       <CustomerFloatingCart />
-      {isNative && <CustomerBottomNav />}
+      <CustomerBottomNav />
     </div>
   );
 }
