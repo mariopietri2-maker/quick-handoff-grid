@@ -25,8 +25,30 @@ android {
         buildConfigField(
             "String",
             "SUPABASE_ANON_KEY",
-            "\"${System.getenv("SUPABASE_ANON_KEY") ?: ""}\"",
+            "\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9qa2Vzc3BnaHlxbWptdXB5YnZhIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ1MzgwMzMsImV4cCI6MjEwMDExNDAzM30.aynpavzUkC4ZJqKp5lBvDMtFE1xoyAABe0kXjNaDCWk\"",
         )
+        buildConfigField(
+            "String",
+            "MAPBOX_TOKEN",
+            "\"pk.eyJ1IjoibWVtMHIxYWwiLCJhIjoiY21udGJ2N3J3MDF5dTJvcjNkbHh4MWZmNCJ9.lOSU67WPyDi8Fzjg7BQuXg\"",
+        )
+    }
+
+    buildTypes {
+        // Shared debug keystore (mobile-signing/fresh2go-debug.keystore) so every
+        // CI/local debug APK shares one signature — sideload self-update can
+        // install over the existing app. Without this each CI runner generates
+        // a fresh debug key and updates fail with UPDATE_INCOMPATIBLE.
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+        }
+        release {
+            isMinifyEnabled = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+        }
     }
 
     signingConfigs {
@@ -38,49 +60,30 @@ android {
         }
     }
 
-    buildTypes {
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-            isMinifyEnabled = false
-        }
-        release {
-            isMinifyEnabled = false
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-        }
-    }
-
     compileOptions {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions {
-        jvmTarget = "17"
-    }
+    kotlinOptions { jvmTarget = "17" }
     buildFeatures {
         compose = true
         buildConfig = true
     }
     packaging {
-        resources {
-            excludes += "/META-INF/{AL2.0,LGPL2.1}"
-        }
+        resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
     }
 }
 
 dependencies {
-    val composeBom = platform("androidx.compose:compose-bom:2024.10.01")
+    val composeBom = platform("androidx.compose:compose-bom:2024.12.01")
     implementation(composeBom)
-    androidTestImplementation(composeBom)
 
-    implementation("androidx.core:core-ktx:1.13.1")
-    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.core:core-ktx:1.15.0")
     implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.8.7")
     implementation("androidx.lifecycle:lifecycle-viewmodel-compose:2.8.7")
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.7")
-    implementation("androidx.navigation:navigation-compose:2.8.3")
+    implementation("androidx.activity:activity-compose:1.9.3")
+    implementation("androidx.navigation:navigation-compose:2.8.5")
 
     implementation("androidx.compose.ui:ui")
     implementation("androidx.compose.ui:ui-tooling-preview")
@@ -88,23 +91,27 @@ dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     debugImplementation("androidx.compose.ui:ui-tooling")
 
-    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
-    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
-
-    val supabaseVersion = "3.0.3"
-    implementation(platform("io.github.jan-tennert.supabase:bom:$supabaseVersion"))
-    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    val supabase = "3.0.3"
+    implementation(platform("io.github.jan-tennert.supabase:bom:$supabase"))
     implementation("io.github.jan-tennert.supabase:auth-kt")
+    implementation("io.github.jan-tennert.supabase:postgrest-kt")
+    implementation("io.github.jan-tennert.supabase:functions-kt")
     implementation("io.github.jan-tennert.supabase:realtime-kt")
-    implementation("io.github.jan-tennert.supabase:storage-kt")
-    implementation("io.ktor:ktor-client-android:2.3.12")
+
+    implementation("io.ktor:ktor-client-android:3.0.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.3")
+    implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.9.0")
 
     implementation("com.google.android.gms:play-services-location:21.3.0")
-    implementation(platform("com.google.firebase:firebase-bom:33.5.1"))
-    implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation(platform("com.google.firebase:firebase-bom:33.7.0"))
+    implementation("com.google.firebase:firebase-messaging")
 
-    implementation("com.mapbox.maps:android-ndk27:11.8.0")
-    implementation("com.mapbox.extension:maps-compose-ndk27:11.8.0")
+    implementation("androidx.datastore:datastore-preferences:1.1.1")
 
-    implementation("androidx.core:core-splashscreen:1.0.1")
+    implementation("com.mapbox.maps:android:11.9.0")
+    implementation("com.mapbox.extension:maps-compose:11.9.0")
+
+    implementation("io.coil-kt:coil-compose:2.7.0")
+
+    testImplementation("junit:junit:4.13.2")
 }
