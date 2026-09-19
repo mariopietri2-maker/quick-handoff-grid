@@ -13,7 +13,7 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    timeout-minutes: 60
     permissions:
       contents: write
 
@@ -27,12 +27,23 @@ jobs:
           distribution: temurin
           java-version: "17"
 
-      - name: Setup Android SDK
-        uses: android-actions/setup-android@v3
-
-      - name: Install SDK packages
+      - name: Setup Android SDK (cmdline-tools)
         run: |
-          sdkmanager --install "platforms;android-35" "build-tools;35.0.0" "platform-tools"
+          set -euo pipefail
+          SDK_ROOT="$HOME/android-sdk"
+          mkdir -p "$SDK_ROOT/cmdline-tools"
+          curl -fsSL -o /tmp/cmdtools.zip \
+            https://dl.google.com/android/repository/commandlinetools-linux-11076708_latest.zip
+          unzip -q /tmp/cmdtools.zip -d "$SDK_ROOT/cmdline-tools"
+          rm -rf "$SDK_ROOT/cmdline-tools/latest"
+          mv "$SDK_ROOT/cmdline-tools/cmdline-tools" "$SDK_ROOT/cmdline-tools/latest"
+          echo "ANDROID_HOME=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "ANDROID_SDK_ROOT=$SDK_ROOT" >> "$GITHUB_ENV"
+          echo "$SDK_ROOT/cmdline-tools/latest/bin" >> "$GITHUB_PATH"
+          echo "$SDK_ROOT/platform-tools" >> "$GITHUB_PATH"
+          yes | "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --licenses >/dev/null || true
+          "$SDK_ROOT/cmdline-tools/latest/bin/sdkmanager" --sdk_root="$SDK_ROOT" --install \
+            "platforms;android-35" "build-tools;35.0.0" "platform-tools"
 
       - name: Mapbox downloads token
         env:
