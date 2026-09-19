@@ -1,4 +1,3 @@
-# Rebuild after HomeScreen restore + next-wave compile fix
 name: Build Native APKs
 
 on:
@@ -141,8 +140,8 @@ jobs:
 
           if ! gh release view mobile-apks-archive >/dev/null 2>&1; then
             gh release create mobile-apks-archive \
-              --title "Archive — older Android builds" \
-              --notes "Older APK/AAB builds. Latest: mobile-apks-v1." \
+              --title "Archive - older Android builds" \
+              --notes "Older APK/AAB builds. Latest installs: mobile-apks-v1." \
               --prerelease
           fi
 
@@ -168,22 +167,20 @@ jobs:
           done < /tmp/assets.tsv
           rm -rf "$TMP"
 
-          TITLE="Latest — Driver ${DRIVER_NAME} · Customer ${CUST_NAME}"
-          NOTES="## Fresh2GO — latest Android builds only
-
-Only current **native** APKs/AABs. Older files: https://github.com/${REPO}/releases/tag/mobile-apks-archive
-
-### Install
-
-| App | Version | Download |
-|-----|---------|----------|
-| Driver | ${DRIVER_NAME} (${DRIVER_CODE}) | [APK](https://github.com/${REPO}/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk) |
-| Customer | ${CUST_NAME} (${CUST_CODE}) | [APK](https://github.com/${REPO}/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk) |
-
-### Other
-- Play Store AABs: https://github.com/${REPO}/releases/tag/play-store-aabs-v1
-- Archive: https://github.com/${REPO}/releases/tag/mobile-apks-archive
-"
+          TITLE="Latest - Driver ${DRIVER_NAME} - Customer ${CUST_NAME}"
+          NOTES=$(printf '%s\n' \
+            "## Fresh2GO - latest Android builds only" \
+            "" \
+            "Only current native APKs/AABs. Older files: https://github.com/${REPO}/releases/tag/mobile-apks-archive" \
+            "" \
+            "### Install" \
+            "" \
+            "- Driver ${DRIVER_NAME} (${DRIVER_CODE}): https://github.com/${REPO}/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk" \
+            "- Customer ${CUST_NAME} (${CUST_CODE}): https://github.com/${REPO}/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk" \
+            "" \
+            "### Other" \
+            "- Play Store AABs: https://github.com/${REPO}/releases/tag/play-store-aabs-v1" \
+            "- Archive: https://github.com/${REPO}/releases/tag/mobile-apks-archive")
           gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"
           echo "Remaining:"
           gh release view mobile-apks-v1 --json assets --jq '.assets[].name'
