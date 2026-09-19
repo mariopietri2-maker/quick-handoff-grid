@@ -1,0 +1,22 @@
+name: Apply customer perf + update fix
+on:
+  push:
+    paths:
+      - "scripts/fix_patches/customer_perf_and_update.py"
+      - ".github/workflows/apply-customer-perf-update.yml"
+  workflow_dispatch:
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/fix_patches/customer_perf_and_update.py
+      - run: |
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerViewModel.kt \
+                  native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          git commit -m "perf(native-customer): store cache + image sizing" || exit 0
+          git push origin HEAD:main
