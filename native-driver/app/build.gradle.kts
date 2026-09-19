@@ -14,8 +14,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 283
-        versionName = "2.6.31-fresh2go"
+        versionCode = 284
+        versionName = "2.6.32-fresh2go"
 
         buildConfigField(
             "String",
@@ -43,7 +43,8 @@ android {
             signingConfig = signingConfigs.getByName("debug")
         }
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro",
