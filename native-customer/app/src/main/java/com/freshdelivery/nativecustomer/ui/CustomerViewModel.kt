@@ -207,6 +207,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var searchJob: Job? = null
     private var gameShowUntilMs = 0L
     /** Full store list for local search when the network query is empty/fails. */
+    private var storesCacheAtMs: Long = 0L
     private var allStoresCache: List<StoreRow> = emptyList()
 
     init {
@@ -1130,17 +1131,26 @@ autoOpenTrack(
         refreshLoyalty()
     }
 
-    fun refreshStores() {
+    fun refreshStores(force: Boolean = false) {
         viewModelScope.launch {
             runCatching {
-                val list = repo.fetchStores()
-                allStoresCache = list
+                val now = System.currentTimeMillis()
+                val cached = allStoresCache
+                val list = if (!force && cached.isNotEmpty() && now - storesCacheAtMs < 5 * 60 * 1000L) {
+                    cached
+                } else {
+                    val fetched = repo.fetchStores()
+                    allStoresCache = fetched
+                    storesCacheAtMs = now
+                    fetched
+                }
                 // Don't clobber an active search with the full catalogue.
                 val q = _state.value.searchQuery.trim()
                 val shown = if (q.isBlank()) list else filterStoresLocal(list, q)
+                val ratings = runCatching { repo.fetchStoreRatings() }.getOrDefault(_state.value.storeRatings)
                 _state.value = _state.value.copy(
                     stores = shown,
-                    storeRatings = repo.fetchStoreRatings(),
+                    storeRatings = ratings,
                 )
             }.onFailure { e ->
                 _state.value = _state.value.copy(error = e.message)

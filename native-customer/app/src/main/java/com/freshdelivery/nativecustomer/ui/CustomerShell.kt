@@ -533,7 +533,9 @@ private fun StoreHeroImage(url: String?, height: Int = 160) {
             AsyncImage(
                 model = ImageRequest.Builder(ctx)
                     .data(url)
-                    .crossfade(180)
+                    .size(960, 540)
+                    .crossfade(160)
+                    .memoryCacheKey(url)
                     .build(),
                 contentDescription = null,
                 contentScale = ContentScale.Crop,
