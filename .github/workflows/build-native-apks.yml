@@ -126,3 +126,64 @@ jobs:
             gh release create mobile-apks-v1 --title "Fresh Meal Android APKs + AABs" --notes "Native debug APKs and debug AABs."
           gh release upload mobile-apks-v1 dist/* --clobber
           ls dist/
+
+      - name: Organize release assets (latest only + archive)
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          DRIVER_NAME=$(grep -E 'versionName\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          DRIVER_CODE=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+          CUST_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          CUST_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
+
+          if ! gh release view mobile-apks-archive >/dev/null 2>&1; then
+            gh release create mobile-apks-archive \
+              --title "Archive — older Android builds" \
+              --notes "Older APK/AAB builds. Latest: mobile-apks-v1." \
+              --prerelease
+          fi
+
+          gh api "repos/${REPO}/releases/tags/mobile-apks-v1" \
+            --jq '.assets[] | [.id,.name,.browser_download_url] | @tsv' > /tmp/assets.tsv || true
+
+          TMP=$(mktemp -d)
+          while IFS=$'\t' read -r id name url; do
+            [ -z "${id:-}" ] && continue
+            case "$name" in
+              fresh2go-driver-native-debug.apk|fresh2go-driver-native-debug.aab|fresh2go-customer-native-debug.apk|fresh2go-customer-native-debug.aab)
+                echo "KEEP $name"
+                ;;
+              *)
+                echo "ARCHIVE $name"
+                if curl -fsSL -o "$TMP/$name" "$url"; then
+                  gh release upload mobile-apks-archive "$TMP/$name" --clobber || true
+                fi
+                gh api -X DELETE "repos/${REPO}/releases/assets/$id" || true
+                rm -f "$TMP/$name"
+                ;;
+            esac
+          done < /tmp/assets.tsv
+          rm -rf "$TMP"
+
+          TITLE="Latest — Driver ${DRIVER_NAME} · Customer ${CUST_NAME}"
+          NOTES="## Fresh2GO — latest Android builds only
+
+Only current **native** APKs/AABs. Older files: https://github.com/${REPO}/releases/tag/mobile-apks-archive
+
+### Install
+
+| App | Version | Download |
+|-----|---------|----------|
+| Driver | ${DRIVER_NAME} (${DRIVER_CODE}) | [APK](https://github.com/${REPO}/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk) |
+| Customer | ${CUST_NAME} (${CUST_CODE}) | [APK](https://github.com/${REPO}/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk) |
+
+### Other
+- Play Store AABs: https://github.com/${REPO}/releases/tag/play-store-aabs-v1
+- Archive: https://github.com/${REPO}/releases/tag/mobile-apks-archive
+"
+          gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"
+          echo "Remaining:"
+          gh release view mobile-apks-v1 --json assets --jq '.assets[].name'
