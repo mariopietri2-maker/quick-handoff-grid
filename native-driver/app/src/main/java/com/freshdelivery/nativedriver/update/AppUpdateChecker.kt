@@ -3,6 +3,7 @@ package com.freshdelivery.nativedriver.update
 import android.app.DownloadManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -22,23 +23,20 @@ import kotlinx.serialization.json.Json
 import java.io.File
 
 /**
- * Sideload self-update: polls the web channel (dist/native-versions.json,
- * stamped from src/lib/apk-downloads.ts) and installs newer APKs via
- * DownloadManager + FileProvider. Silent when up to date or offline —
- * never blocks startup. Flavor key: "driverNative".
- *
- * Hardened: tries all production origins (fresh2go.gr is canonical),
- * cache-busts the APK URL (GitHub release CDN aggressively caches the
- * asset bytes), deletes any stale partial APK before enqueueing, and
- * allows re-check after dismiss/failure.
+ * Sideload self-update. Hardened against install-fail loops:
+ * - only offers when remote version is *newer* (not merely different)
+ * - after dismiss/fail for a version, suppresses that version for 24h
+ * - never re-prompts while Installing/Downloading
  */
 private val VERSIONS_URLS = listOf(
     "https://fresh2go.gr/native-versions.json",
-    "https://freshdelivery.app/native-versions.json",
-    "https://quick-handoff-grid-8qu8.vercel.app/native-versions.json",
     "https://quick-handoff-grid-production.up.railway.app/native-versions.json",
 )
 private const val APK_FILE_NAME = "fresh2go-update.apk"
+private const val PREFS = "f2g_update"
+private const val KEY_SUPPRESS_VER = "suppress_ver"
+private const val KEY_SUPPRESS_UNTIL = "suppress_until"
+private const val SUPPRESS_MS = 24L * 60 * 60 * 1000
 
 @Serializable
 data class FlavorVersion(val version: String = "", val url: String = "")
@@ -67,13 +65,12 @@ class AppUpdateChecker(
 ) {
     private val client = HttpClient(Android)
     private val json = Json { ignoreUnknownKeys = true }
+    private val prefs = appContext.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
     private val _state = MutableStateFlow<UpdateUiState>(UpdateUiState.Idle)
     val state: StateFlow<UpdateUiState> = _state.asStateFlow()
     private var pending: UpdateInfo? = null
 
     suspend fun check() {
-        // Only one in-flight check/download/install at a time; allow retry
-        // from Idle/Dismissed/Failed (e.g. first launch was offline).
         when (_state.value) {
             is UpdateUiState.Checking,
             is UpdateUiState.Downloading,
@@ -86,29 +83,32 @@ class AppUpdateChecker(
         try {
             val versions = fetchVersions()
             val latest = if (flavorKey == "driverNative") versions.driverNative else versions.customerNative
-            val installed = try {
-                appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName
-            } catch (_: Exception) {
-                null
-            }
+            val installedName = installedVersionName()
             val latestVersion = latest.version.trim()
-            val installedVersion = installed?.trim()
-            if (latestVersion.isNotBlank() && latest.url.isNotBlank() &&
-                installedVersion != null && latestVersion != installedVersion
-            ) {
-                pending = UpdateInfo(latestVersion, cacheBustedUrl(latest.url.trim(), latestVersion))
-                _state.value = UpdateUiState.Available(pending!!)
-            } else {
+            if (latestVersion.isBlank() || latest.url.isBlank() || installedName.isNullOrBlank()) {
                 pending = null
                 _state.value = UpdateUiState.Idle
+                return
             }
+            if (!isNewer(latestVersion, installedName)) {
+                pending = null
+                _state.value = UpdateUiState.Idle
+                return
+            }
+            if (isSuppressed(latestVersion)) {
+                pending = null
+                _state.value = UpdateUiState.Idle
+                return
+            }
+            pending = UpdateInfo(latestVersion, cacheBustedUrl(latest.url.trim(), latestVersion))
+            _state.value = UpdateUiState.Available(pending!!)
         } catch (_: Exception) {
             _state.value = UpdateUiState.Idle
         }
     }
 
-    /** Force a fresh check even after dismiss (used by manual "check" buttons). */
     suspend fun recheck() {
+        clearSuppress()
         pending = null
         _state.value = UpdateUiState.Idle
         check()
@@ -121,7 +121,7 @@ class AppUpdateChecker(
                 val text: String = client.get(base) {
                     parameter("v", System.currentTimeMillis())
                 }.bodyAsText()
-                return json.decodeFromString<NativeVersions>(text)
+                return json.decodeFromString(NativeVersions.serializer(), text)
             } catch (e: Exception) {
                 lastError = e
             }
@@ -130,6 +130,7 @@ class AppUpdateChecker(
     }
 
     fun dismiss() {
+        pending?.version?.let { suppress(it) }
         _state.value = UpdateUiState.Dismissed
     }
 
@@ -140,7 +141,6 @@ class AppUpdateChecker(
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O &&
                 !appContext.packageManager.canRequestPackageInstalls()
             ) {
-                // Needs "install unknown apps" — send to Settings once, keep the offer open.
                 val settingsIntent = Intent(Settings.ACTION_MANAGE_UNKNOWN_APP_SOURCES).apply {
                     data = Uri.parse("package:${appContext.packageName}")
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
@@ -149,8 +149,6 @@ class AppUpdateChecker(
                 _state.value = UpdateUiState.Available(info)
                 return
             }
-            // Drop any stale partial APK so a resumed/corrupt file can never
-            // be installed (and old bytes can't shadow the new download).
             runCatching {
                 val stale = File(
                     appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
@@ -160,87 +158,69 @@ class AppUpdateChecker(
             }
             val dm = appContext.getSystemService(Context.DOWNLOAD_SERVICE) as DownloadManager
             val request = DownloadManager.Request(Uri.parse(info.url)).apply {
-                setTitle("fresh2go Driver — ενημέρωση")
-                setDescription("Λήψη νέας έκδοσης…")
-                setNotificationVisibility(
-                    DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED,
-                )
+                setTitle("Fresh2GO — ενημέρωση")
+                setDescription("Λήψη ${info.version}…")
+                setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                 setDestinationInExternalFilesDir(
                     appContext,
                     Environment.DIRECTORY_DOWNLOADS,
                     APK_FILE_NAME,
                 )
-                setMimeType("application/vnd.android.package-archive")
                 setAllowedOverMetered(true)
                 setAllowedOverRoaming(true)
             }
             val id = dm.enqueue(request)
-            var polls = 0
-            while (true) {
-                val query = DownloadManager.Query().setFilterById(id)
-                var finished = false
-                var seen = false
-                dm.query(query)?.use { cursor ->
-                    if (cursor.moveToFirst()) {
-                        seen = true
-                        val status = cursor.getInt(
-                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS),
-                        )
-                        val downloaded = cursor.getLong(
-                            cursor.getColumnIndexOrThrow(
-                                DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR,
-                            ),
-                        )
-                        val total = cursor.getLong(
-                            cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES),
-                        )
-                        when (status) {
-                            DownloadManager.STATUS_SUCCESSFUL -> {
-                                installUpdate()
-                                finished = true
-                            }
-                            DownloadManager.STATUS_FAILED -> {
-                                _state.value = UpdateUiState.Failed(
-                                    "Η λήψη απέτυχε. Ελέγξτε τη σύνδεση και δοκιμάστε ξανά.",
-                                )
-                                finished = true
-                            }
-                            else -> {
-                                _state.value = UpdateUiState.Downloading(
-                                    if (total > 0) downloaded.toFloat() / total else null,
-                                )
-                            }
+            var tries = 0
+            while (tries < 180) {
+                delay(1000)
+                tries++
+                val q = DownloadManager.Query().setFilterById(id)
+                val c = dm.query(q) ?: break
+                c.use { cursor ->
+                    if (!cursor.moveToFirst()) return@use
+                    val status = cursor.getInt(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_STATUS))
+                    val total = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_TOTAL_SIZE_BYTES))
+                    val soFar = cursor.getLong(cursor.getColumnIndexOrThrow(DownloadManager.COLUMN_BYTES_DOWNLOADED_SO_FAR))
+                    if (total > 0) {
+                        _state.value = UpdateUiState.Downloading((soFar.toFloat() / total).coerceIn(0f, 1f))
+                    }
+                    when (status) {
+                        DownloadManager.STATUS_SUCCESSFUL -> {
+                            installApk(info)
+                            return
+                        }
+                        DownloadManager.STATUS_FAILED -> {
+                            suppress(info.version)
+                            _state.value = UpdateUiState.Failed(
+                                "Η λήψη απέτυχε. Δοκιμάστε αργότερα ή κατεβάστε από fresh2go.gr/download",
+                            )
+                            return
                         }
                     }
                 }
-                if (!seen) {
-                    _state.value = UpdateUiState.Failed(
-                        "Η λήψη διακόπηκε από το σύστημα. Δοκιμάστε ξανά.",
-                    )
-                    return
-                }
-                if (finished) return
-                polls++
-                if (polls > 20 * 60) { // ~10 min safety net
-                    _state.value = UpdateUiState.Failed("Η λήψη άργησε πολύ. Δοκιμάστε ξανά.")
-                    return
-                }
-                delay(500)
             }
+            suppress(info.version)
+            _state.value = UpdateUiState.Failed("Η λήψη έληξε. Δοκιμάστε ξανά αργότερα.")
         } catch (e: Exception) {
-            _state.value = UpdateUiState.Failed(e.localizedMessage ?: "Σφάλμα λήψης")
+            suppress(info.version)
+            _state.value = UpdateUiState.Failed(
+                "Αποτυχία ενημέρωσης. Αν δείτε «App not installed», απεγκαταστήστε " +
+                    "την παλιά εφαρμογή και εγκαταστήστε ξανά από το site. " +
+                    (e.localizedMessage ?: ""),
+            )
         }
     }
 
-    private fun installUpdate() {
+    private fun installApk(info: UpdateInfo) {
         try {
             _state.value = UpdateUiState.Installing
             val file = File(
                 appContext.getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
                 APK_FILE_NAME,
             )
-            if (!file.exists() || file.length() <= 0) {
-                _state.value = UpdateUiState.Failed("Το αρχείο ενημέρωσης είναι άδειο. Δοκιμάστε ξανά.")
+            if (!file.exists() || file.length() <= 0L) {
+                suppress(info.version)
+                _state.value = UpdateUiState.Failed("Το αρχείο ενημέρωσης είναι άδειο.")
                 return
             }
             val uri = FileProvider.getUriForFile(
@@ -253,26 +233,71 @@ class AppUpdateChecker(
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_GRANT_READ_URI_PERMISSION)
             }
             appContext.startActivity(intent)
+            suppress(info.version)
             _state.value = UpdateUiState.Dismissed
         } catch (e: Exception) {
-            // Most common cause pre-fix was a signature mismatch (each CI build
-            // used a fresh debug key). Builds now share one debug keystore, but
-            // devices that already have a mismatched build need one manual
-            // uninstall + reinstall — say so explicitly.
+            suppress(info.version)
             _state.value = UpdateUiState.Failed(
-                "Δεν ξεκίνησε η εγκατάσταση. Αν δείτε «App not installed», " +
-                    "απεγκαταστήστε την εφαρμογή και κατεβάστε τη νέα έκδοση. " +
+                "Δεν ξεκίνησε η εγκατάσταση. Απεγκαταστήστε την παλιά έκδοση και " +
+                    "κατεβάστε από το site (διαφορετικό κλειδί υπογραφής). " +
                     (e.localizedMessage ?: ""),
             )
         }
     }
 
+    private fun installedVersionName(): String? = try {
+        if (Build.VERSION.SDK_INT >= 33) {
+            appContext.packageManager.getPackageInfo(
+                appContext.packageName,
+                PackageManager.PackageInfoFlags.of(0),
+            ).versionName
+        } else {
+            @Suppress("DEPRECATION")
+            appContext.packageManager.getPackageInfo(appContext.packageName, 0).versionName
+        }?.trim()
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun suppress(version: String) {
+        prefs.edit()
+            .putString(KEY_SUPPRESS_VER, version)
+            .putLong(KEY_SUPPRESS_UNTIL, System.currentTimeMillis() + SUPPRESS_MS)
+            .apply()
+    }
+
+    private fun clearSuppress() {
+        prefs.edit().remove(KEY_SUPPRESS_VER).remove(KEY_SUPPRESS_UNTIL).apply()
+    }
+
+    private fun isSuppressed(version: String): Boolean {
+        val until = prefs.getLong(KEY_SUPPRESS_UNTIL, 0L)
+        if (System.currentTimeMillis() > until) return false
+        return prefs.getString(KEY_SUPPRESS_VER, null) == version
+    }
+
     companion object {
-        /** Matches web apkFileUrl(): busts GitHub/CDN + DownloadManager caches. */
         fun cacheBustedUrl(raw: String, version: String): String {
             if (raw.contains("?v=") || raw.contains("&v=")) return raw
             val sep = if (raw.contains("?")) "&" else "?"
             return "$raw${sep}v=${Uri.encode(version)}"
+        }
+
+        fun isNewer(remote: String, installed: String): Boolean {
+            val r = versionParts(remote)
+            val i = versionParts(installed)
+            val n = maxOf(r.size, i.size)
+            for (k in 0 until n) {
+                val a = r.getOrElse(k) { 0 }
+                val b = i.getOrElse(k) { 0 }
+                if (a != b) return a > b
+            }
+            return false
+        }
+
+        private fun versionParts(v: String): List<Int> {
+            val core = v.substringBefore("-").trim()
+            return core.split('.').mapNotNull { it.toIntOrNull() }
         }
     }
 }
