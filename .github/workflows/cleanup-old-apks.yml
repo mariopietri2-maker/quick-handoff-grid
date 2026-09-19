@@ -8,22 +8,87 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Keep latest APKs and set version labels
+
+      - name: Organize releases — latest only + archive
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           set -euo pipefail
+
           DRIVER_NAME=$(grep -E 'versionName\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           DRIVER_CODE=$(grep -E 'versionCode\s*=' native-driver/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
           CUST_NAME=$(grep -E 'versionName\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           CUST_CODE=$(grep -E 'versionCode\s*=' native-customer/app/build.gradle.kts | head -1 | sed -E 's/[^0-9]//g')
-          KEEP='fresh2go-driver-native-debug.apk|fresh2go-driver-native-debug.aab|fresh2go-customer-native-debug.apk|fresh2go-customer-native-debug.aab|\.png$'
-          assets=$(gh api repos/mariopietri2-maker/quick-handoff-grid/releases/tags/mobile-apks-v1 --jq '.assets[] | "\(.id)\t\(.name)"')
-          while IFS=$'\t' read -r id name; do
-            [ -z "${id:-}" ] && continue
-            if echo "$name" | grep -Eq "$KEEP"; then echo "KEEP $name"; else echo "DELETE $name"; gh api -X DELETE "repos/mariopietri2-maker/quick-handoff-grid/releases/assets/$id" || true; fi
-          done <<< "$assets"
-          TITLE="Driver ${DRIVER_NAME} (${DRIVER_CODE}) · Customer ${CUST_NAME} (${CUST_CODE})"
-          NOTES=$(printf '## Fresh Meal latest Android builds\n\n**Driver APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk\n\n**Customer APK** — version **%s** (build %s)\nhttps://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk\n\nOnly the latest build is kept on this release.' "$DRIVER_NAME" "$DRIVER_CODE" "$CUST_NAME" "$CUST_CODE")
+
+          # Latest channel — only current fresh2go native APKs (+ optional AABs for Play testing)
+          KEEP_REGEX='^fresh2go-(driver|customer)-native-debug\.(apk|aab)$'
+
+          # Ensure archive release exists for historical / leftover builds
+          if ! gh release view mobile-apks-archive >/dev/null 2>&1; then
+            gh release create mobile-apks-archive \
+              --title "Archive — older Android builds" \
+              --notes "Older APK/AAB builds moved here so **mobile-apks-v1** only shows the latest." \
+              --prerelease
+          fi
+
+          # List assets on the main download release
+          mapfile -t ROWS < <(gh api repos/mariopietri2-maker/quick-handoff-grid/releases/tags/mobile-apks-v1 \
+            --jq '.assets[] | "\(.id)\t\(.name)\t\(.browser_download_url)"')
+
+          TMP=$(mktemp -d)
+          for row in "${ROWS[@]}"; do
+            id=$(echo "$row" | cut -f1)
+            name=$(echo "$row" | cut -f2)
+            url=$(echo "$row" | cut -f3)
+            [ -z "$id" ] && continue
+
+            if echo "$name" | grep -Eq "$KEEP_REGEX"; then
+              echo "KEEP latest: $name"
+              continue
+            fi
+
+            echo "ARCHIVE then DELETE from latest: $name"
+            # Re-upload to archive (best effort), then remove from main release
+            if curl -fsSL -o "$TMP/$name" "$url"; then
+              gh release upload mobile-apks-archive "$TMP/$name" --clobber || true
+            fi
+            gh api -X DELETE "repos/mariopietri2-maker/quick-handoff-grid/releases/assets/$id" || true
+            rm -f "$TMP/$name"
+          done
+          rm -rf "$TMP"
+
+          # Clean release notes / title for the latest channel
+          TITLE="Latest — Driver ${DRIVER_NAME} · Customer ${CUST_NAME}"
+          NOTES=$(cat <<EOF
+## Fresh2GO — latest Android builds only
+
+This release holds **only the current native builds**. Older files live in [mobile-apks-archive](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-archive).
+
+### Native apps (install these)
+
+| App | Version | File |
+|-----|---------|------|
+| **Driver** | \\`${DRIVER_NAME}\\` (code ${DRIVER_CODE}) | [fresh2go-driver-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-driver-native-debug.apk) |
+| **Customer** | \\`${CUST_NAME}\\` (code ${CUST_CODE}) | [fresh2go-customer-native-debug.apk](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/download/mobile-apks-v1/fresh2go-customer-native-debug.apk) |
+
+Optional debug AABs (same versions) are uploaded when the native CI produces them.
+
+### Play Store AABs
+See separate release: [play-store-aabs-v1](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/play-store-aabs-v1)
+
+### Archive
+Older Capacitor / legacy \\`fresh-*\\` builds: [mobile-apks-archive](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-archive)
+EOF
+)
           gh release edit mobile-apks-v1 --title "$TITLE" --notes "$NOTES"
-          echo "Release title: $TITLE"
+
+          # Soft-label Play Store release as separate channel
+          if gh release view play-store-aabs-v1 >/dev/null 2>&1; then
+            gh release edit play-store-aabs-v1 \
+              --title "Play Store AABs (signed / archive)" \
+              --notes "Signed AAB uploads for Google Play Console. **Not** for sideload. For phone installs use [mobile-apks-v1](https://github.com/mariopietri2-maker/quick-handoff-grid/releases/tag/mobile-apks-v1)." \
+              || true
+          fi
+
+          echo "Done. Latest title: $TITLE"
+          gh release view mobile-apks-v1 --json assets --jq '.assets[].name'
