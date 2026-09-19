@@ -1,0 +1,22 @@
+name: Restore AppUpdateChecker
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/restore-app-update-checker.yml"
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Write AppUpdateChecker from embedded source
+        run: |
+          python3 scripts/fix_patches/write_app_update_checker.py
+      - run: |
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/update/AppUpdateChecker.kt
+          git commit -m "fix(native-customer): update checker anti-loop (newer-only + 24h suppress)" || exit 0
+          git push origin HEAD:main
