@@ -26,44 +26,29 @@ jobs:
             if echo "$base" | grep -Eq "$KEEP"; then
               echo "KEEP $base"
             else
-              git mv "$f" ".github/workflow-archive/$base" 2>/dev/null || mv "$f" ".github/workflow-archive/$base"
+              mv "$f" ".github/workflow-archive/$base"
               echo "ARCHIVE $base"
             fi
           done
 
-          for f in admin-basket-logo-preview.html customer-splash-preview.html flyer.html \
-                   fresh2go-app-mock.html fresh2go-concept.html fresh2go-flyer.html \
-                   preview.html _receipt_compare.html; do
+          for f in admin-basket-logo-preview.html customer-splash-preview.html flyer.html fresh2go-app-mock.html fresh2go-concept.html fresh2go-flyer.html preview.html _receipt_compare.html; do
             if [ -f "$f" ]; then
-              git mv "$f" archive/previews/ 2>/dev/null || mv "$f" archive/previews/
+              mv "$f" archive/previews/
             fi
           done
 
-          [ -f Fresh2GO-flyer-A5.pdf ] && (git mv Fresh2GO-flyer-A5.pdf archive/flyers/ 2>/dev/null || mv Fresh2GO-flyer-A5.pdf archive/flyers/)
-          [ -f fresh2go-animated-logo.svg ] && (git mv fresh2go-animated-logo.svg docs/marketing/ 2>/dev/null || mv fresh2go-animated-logo.svg docs/marketing/)
-          [ -f _dbg_dispatch.cjs ] && (git mv _dbg_dispatch.cjs archive/debug/ 2>/dev/null || mv _dbg_dispatch.cjs archive/debug/)
-          [ -d _restore_parts ] && (git mv _restore_parts archive/ 2>/dev/null || mv _restore_parts archive/)
-          [ -d quick-handoff-grid ] && rm -rf quick-handoff-grid
+          [ -f Fresh2GO-flyer-A5.pdf ] && mv Fresh2GO-flyer-A5.pdf archive/flyers/ || true
+          [ -f fresh2go-animated-logo.svg ] && mv fresh2go-animated-logo.svg docs/marketing/ || true
+          [ -f _dbg_dispatch.cjs ] && mv _dbg_dispatch.cjs archive/debug/ || true
+          [ -d _restore_parts ] && mv _restore_parts archive/ || true
+          [ -d quick-handoff-grid ] && rm -rf quick-handoff-grid || true
 
-          cat > archive/README.md << 'EOR'
-# Archive
-
-Not used at runtime. Old previews, flyers, and debug one-offs.
-EOR
-
-          cat > .github/workflows/README.md << 'EOR'
-# Active GitHub Actions
-
-Only workflows in this folder run. Historical one-shots: ../workflow-archive/
-EOR
-
-          if [ ! -f docs/architecture/PROJECT_MAP.md ]; then
-            echo "see commit for PROJECT_MAP" > docs/architecture/PROJECT_MAP.md
-          fi
+          echo 'Not used at runtime.' > archive/README.md
+          echo 'Active workflows only. Archive: ../workflow-archive/' > .github/workflows/README.md
 
           git config user.email "ci@fresh2go.gr"
           git config user.name "fresh2go-ci"
           git add -A
-          git status -sb | head -40
+          git status -sb | head -50
           git commit -m "chore: organize repo structure (active CI only, archive clutter)" || echo "nothing to commit"
           git push origin HEAD:main
