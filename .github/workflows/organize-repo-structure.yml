@@ -1,0 +1,69 @@
+name: Organize Repo Structure
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  organize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Archive one-shot workflows and root clutter
+        run: |
+          set -euo pipefail
+          mkdir -p archive/previews archive/flyers archive/debug
+          mkdir -p docs/architecture docs/marketing
+          mkdir -p .github/workflow-archive
+
+          KEEP='^(ci|build-native-apks|build-capacitor-apks|build-capacitor-customer|build-native-play-aabs|build-release-aabs|build-ios-apps|build-store-beta-apk|cleanup-old-apks|organize-apk-releases|deploy-all-rebuild|label-apk-versions|organize-repo-structure)\.yml$'
+
+          for f in .github/workflows/*.yml; do
+            base=$(basename "$f")
+            if echo "$base" | grep -Eq "$KEEP"; then
+              echo "KEEP $base"
+            else
+              git mv "$f" ".github/workflow-archive/$base" 2>/dev/null || mv "$f" ".github/workflow-archive/$base"
+              echo "ARCHIVE $base"
+            fi
+          done
+
+          for f in admin-basket-logo-preview.html customer-splash-preview.html flyer.html \
+                   fresh2go-app-mock.html fresh2go-concept.html fresh2go-flyer.html \
+                   preview.html _receipt_compare.html; do
+            if [ -f "$f" ]; then
+              git mv "$f" archive/previews/ 2>/dev/null || mv "$f" archive/previews/
+            fi
+          done
+
+          [ -f Fresh2GO-flyer-A5.pdf ] && (git mv Fresh2GO-flyer-A5.pdf archive/flyers/ 2>/dev/null || mv Fresh2GO-flyer-A5.pdf archive/flyers/)
+          [ -f fresh2go-animated-logo.svg ] && (git mv fresh2go-animated-logo.svg docs/marketing/ 2>/dev/null || mv fresh2go-animated-logo.svg docs/marketing/)
+          [ -f _dbg_dispatch.cjs ] && (git mv _dbg_dispatch.cjs archive/debug/ 2>/dev/null || mv _dbg_dispatch.cjs archive/debug/)
+          [ -d _restore_parts ] && (git mv _restore_parts archive/ 2>/dev/null || mv _restore_parts archive/)
+          [ -d quick-handoff-grid ] && rm -rf quick-handoff-grid
+
+          cat > archive/README.md << 'EOR'
+# Archive
+
+Not used at runtime. Old previews, flyers, and debug one-offs.
+EOR
+
+          cat > .github/workflows/README.md << 'EOR'
+# Active GitHub Actions
+
+Only workflows in this folder run. Historical one-shots: ../workflow-archive/
+EOR
+
+          if [ ! -f docs/architecture/PROJECT_MAP.md ]; then
+            echo "see commit for PROJECT_MAP" > docs/architecture/PROJECT_MAP.md
+          fi
+
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add -A
+          git status -sb | head -40
+          git commit -m "chore: organize repo structure (active CI only, archive clutter)" || echo "nothing to commit"
+          git push origin HEAD:main
