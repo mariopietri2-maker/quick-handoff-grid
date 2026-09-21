@@ -6,6 +6,9 @@ plugins {
     id("com.google.gms.google-services")
 }
 
+import java.util.Properties
+import java.io.FileInputStream
+
 android {
     namespace = "com.freshdelivery.nativedriver"
     compileSdk = 35
@@ -14,8 +17,8 @@ android {
         applicationId = "com.freshdelivery.driver"
         minSdk = 26
         targetSdk = 35
-        versionCode = 284
-        versionName = "2.6.32-fresh2go"
+        versionCode = 285
+        versionName = "2.6.33-fresh2go"
 
         buildConfigField(
             "String",
@@ -32,24 +35,7 @@ android {
             "MAPBOX_TOKEN",
             "\"pk.eyJ1IjoibWVtMHIxYWwiLCJhIjoiY21udGJ2N3J3MDF5dTJvcjNkbHh4MWZmNCJ9.lOSU67WPyDi8Fzjg7BQuXg\"",
         )
-    }
-
-    buildTypes {
-        // Shared debug keystore (mobile-signing/fresh2go-debug.keystore) so every
-        // CI/local debug APK shares one signature — sideload self-update can
-        // install over the existing app. Without this each CI runner generates
-        // a fresh debug key and updates fail with UPDATE_INCOMPATIBLE.
-        debug {
-            signingConfig = signingConfigs.getByName("debug")
-        }
-        release {
-            isMinifyEnabled = true
-            isShrinkResources = true
-            proguardFiles(
-                getDefaultProguardFile("proguard-android-optimize.txt"),
-                "proguard-rules.pro",
-            )
-        }
+        buildConfigField("boolean", "PLAY_STORE_BUILD", "false")
     }
 
     signingConfigs {
@@ -58,6 +44,54 @@ android {
             storePassword = "android"
             keyAlias = "androiddebugkey"
             keyPassword = "android"
+        }
+        create("release") {
+            val envStore = System.getenv("PLAY_KEYSTORE_FILE")
+            val envAlias = System.getenv("PLAY_KEY_ALIAS")
+            val envStorePass = System.getenv("PLAY_STORE_PASSWORD")
+            val envKeyPass = System.getenv("PLAY_KEY_PASSWORD")
+            if (!envStore.isNullOrBlank() && !envAlias.isNullOrBlank()) {
+                storeFile = file(envStore)
+                storePassword = envStorePass ?: ""
+                keyAlias = envAlias
+                keyPassword = envKeyPass ?: envStorePass ?: ""
+            } else {
+                val propsFile = rootProject.file("../mobile-signing/key.properties")
+                if (propsFile.exists()) {
+                    val p = Properties().apply { load(FileInputStream(propsFile)) }
+                    val path = p.getProperty("driverStoreFile") ?: p.getProperty("storeFile")
+                    if (path != null) {
+                        storeFile = rootProject.file("../mobile-signing/${path.substringAfterLast('/')}")
+                        if (storeFile == null || !storeFile!!.exists()) {
+                            storeFile = rootProject.file(path)
+                        }
+                        storePassword = p.getProperty("storePassword") ?: ""
+                        keyAlias = p.getProperty("driverKeyAlias") ?: p.getProperty("keyAlias") ?: "fresh2go-driver"
+                        keyPassword = p.getProperty("keyPassword") ?: storePassword
+                    }
+                }
+            }
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig = signingConfigs.getByName("debug")
+            buildConfigField("boolean", "PLAY_STORE_BUILD", "false")
+        }
+        release {
+            isMinifyEnabled = true
+            isShrinkResources = true
+            isDebuggable = false
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+            val rel = signingConfigs.getByName("release")
+            if (rel.storeFile != null && rel.storeFile!!.exists()) {
+                signingConfig = rel
+            }
+            buildConfigField("boolean", "PLAY_STORE_BUILD", "true")
         }
     }
 
