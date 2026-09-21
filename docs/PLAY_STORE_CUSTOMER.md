@@ -1,42 +1,14 @@
-# Play Store — Native Customer (`com.freshdelivery.customer`)
+# Play Store — Native Customer
 
-## Build signed AAB
+See **[PLAY_STORE_CHECKLIST.md](./PLAY_STORE_CHECKLIST.md)** for the full list.
 
-1. Repo secrets (Settings → Secrets → Actions):
-   - `PLAY_CUSTOMER_KEYSTORE_B64` — base64 of upload `.jks`
-   - `PLAY_STORE_PASSWORD`
-   - `PLAY_KEY_PASSWORD`
-   - Alias: `fresh2go-customer`
+- Listing copy: [PLAY_STORE_LISTING.md](./PLAY_STORE_LISTING.md)
+- Data safety: [PLAY_STORE_DATA_SAFETY.md](./PLAY_STORE_DATA_SAFETY.md)
+- Privacy URL: https://fresh2go.gr/legal/privacy
 
-2. Run workflow **Build Native Play Store AABs**
-   - Set `version_code` **higher** than the last version in Play Console
-     (same package as Capacitor → often ≥ `7233000`)
-   - Optional `version_name` e.g. `2.9.12`
+## Build AAB
 
-3. Download artifact:
-   `fresh2go-customer-native-release.aab`
-
-4. Play Console → Testing → Closed testing → Create release → upload AAB
-
-## Play readiness (code)
-
-| Item | Status |
-|------|--------|
-| `applicationId` | `com.freshdelivery.customer` |
-| `targetSdk` | 35 |
-| Release minify + shrink | Yes |
-| Release signing | CI env / key.properties |
-| `REQUEST_INSTALL_PACKAGES` | Removed on release |
-| Sideload auto-update | Disabled on Play builds |
-| Cleartext traffic | Off |
-| Debuggable release | No |
-
-## Console checklist (you)
-
-- [ ] App name, short/full description (Greek)
-- [ ] Icon 512×512, feature graphic 1024×500
-- [ ] Phone screenshots
-- [ ] Privacy policy URL
-- [ ] Data safety form
-- [ ] Content rating
-- [ ] Closed testing track + testers
+Secrets: PLAY_CUSTOMER_KEYSTORE_B64, PLAY_STORE_PASSWORD, PLAY_KEY_PASSWORD  
+Workflow: **Build Native Play Store AABs**  
+Artifact: fresh2go-customer-native-release.aab  
+versionCode must exceed Play Console current max.
