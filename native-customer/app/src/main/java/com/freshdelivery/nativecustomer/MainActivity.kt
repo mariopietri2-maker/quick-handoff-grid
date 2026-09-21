@@ -14,9 +14,6 @@ import com.stripe.android.paymentsheet.PaymentSheetResult
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
-import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -46,7 +43,6 @@ class MainActivity : ComponentActivity() {
                 is PaymentSheetResult.Canceled -> "Η πληρωμή ακυρώθηκε"
                 else -> null
             }
-            // ViewModel is recreated in compose - use a static holder
             PaymentSheetBridge.onResult(ok, msg)
         }
         enableEdgeToEdge()
@@ -87,16 +83,21 @@ class MainActivity : ComponentActivity() {
                     delay(1_600)
                     splashMinElapsed = true
                 }
-                // Sideload self-update (silent unless a newer build is published).
+                // Sideload self-update disabled on Play Store builds.
                 val updateScope = rememberCoroutineScope()
-                val updateChecker = remember { AppUpdateChecker(applicationContext, "customerNative") }
-                val updateState by updateChecker.state.collectAsState()
-                LaunchedEffect(Unit) { updateChecker.check() }
-                AppUpdateDialog(
-                    state = updateState,
-                    onDownload = { updateScope.launch { updateChecker.download() } },
-                    onDismiss = { updateChecker.dismiss() },
-                )
+                val updateChecker = remember {
+                    if (BuildConfig.PLAY_STORE_BUILD) null
+                    else AppUpdateChecker(applicationContext, "customerNative")
+                }
+                if (updateChecker != null) {
+                    val updateState by updateChecker.state.collectAsState()
+                    LaunchedEffect(Unit) { updateChecker.check() }
+                    AppUpdateDialog(
+                        state = updateState,
+                        onDownload = { updateScope.launch { updateChecker.download() } },
+                        onDismiss = { updateChecker.dismiss() },
+                    )
+                }
                 when {
                     state.bootstrapping || !splashMinElapsed -> {
                         SplashScreen(
