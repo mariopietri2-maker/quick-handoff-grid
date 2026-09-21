@@ -1,6 +1,7 @@
-# Fresh2GO customer — keep network + serialization
+# Fresh2GO customer — Play release
 -keepattributes *Annotation*, InnerClasses, Signature, Exception
 -keepattributes RuntimeVisibleAnnotations, AnnotationDefault
+-keepattributes SourceFile,LineNumberTable
 
 -keep class kotlinx.serialization.** { *; }
 -keepclassmembers class kotlinx.serialization.json.** { *; }
@@ -14,7 +15,11 @@
 
 -keep class com.freshdelivery.nativecustomer.data.** { *; }
 -keep class com.freshdelivery.nativecustomer.update.** { *; }
+-keep class com.stripe.android.** { *; }
+-dontwarn com.stripe.android.**
 
-# Coil / Mapbox
 -dontwarn com.mapbox.**
 -keep class com.mapbox.** { *; }
+
+-keep class com.google.firebase.** { *; }
+-dontwarn com.google.firebase.**
