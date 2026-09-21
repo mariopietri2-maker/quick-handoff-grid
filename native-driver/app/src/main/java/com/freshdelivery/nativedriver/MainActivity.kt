@@ -36,12 +36,10 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        // Channel must exist before any FCM arrives (including cold start from kill).
         DriverFirebaseMessagingService.ensureOfferChannel(this)
         StoreCallRingService.ensureChannel(this)
         requestRuntimePermissions()
         maybeRequestUnrestrictedBattery()
-        // Opening the app stops the background store-call ring.
         StoreCallRingService.stop(this)
 
         setContent {
@@ -49,16 +47,20 @@ class MainActivity : ComponentActivity() {
                 Surface(modifier = Modifier.fillMaxSize()) {
                     DriverNavGraph()
                 }
-                // Sideload self-update (silent unless a newer build is published).
                 val updateScope = rememberCoroutineScope()
-                val updateChecker = remember { AppUpdateChecker(applicationContext, "driverNative") }
-                val updateState by updateChecker.state.collectAsState()
-                LaunchedEffect(Unit) { updateChecker.check() }
-                AppUpdateDialog(
-                    state = updateState,
-                    onDownload = { updateScope.launch { updateChecker.download() } },
-                    onDismiss = { updateChecker.dismiss() },
-                )
+                val updateChecker = remember {
+                    if (BuildConfig.PLAY_STORE_BUILD) null
+                    else AppUpdateChecker(applicationContext, "driverNative")
+                }
+                if (updateChecker != null) {
+                    val updateState by updateChecker.state.collectAsState()
+                    LaunchedEffect(Unit) { updateChecker.check() }
+                    AppUpdateDialog(
+                        state = updateState,
+                        onDownload = { updateScope.launch { updateChecker.download() } },
+                        onDismiss = { updateChecker.dismiss() },
+                    )
+                }
             }
         }
     }
@@ -85,10 +87,6 @@ class MainActivity : ComponentActivity() {
         permissionLauncher.launch(permissions.toTypedArray())
     }
 
-    /**
-     * OEM battery savers delay FCM until the app is opened once.
-     * Ask once for unrestricted battery so background offers ring.
-     */
     private fun maybeRequestUnrestrictedBattery() {
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) return
         val prefs = getSharedPreferences("driver_ops", Context.MODE_PRIVATE)
