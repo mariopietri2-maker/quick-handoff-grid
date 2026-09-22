@@ -40,7 +40,7 @@ function encodeCp737Char(ch: string): number {
   const code = ch.charCodeAt(0);
   if (code >= 0x20 && code <= 0x7e) return code;
   for (const [u, b] of CP737_MAP) if (u === code) return b;
-  return 0x3f; // '?'
+  return 0x3f; // ?
 }
 
 export function encodeCp737(input: string): Uint8Array {
@@ -64,7 +64,8 @@ export class EscPosEncoder {
   }
 
   reset(): this {
-    return this.raw([ESC, 0x40]); // ESC @ — initialize printer
+    // ESC @ init, then select CP737 (Greek) — ESC t 14 on Epson-compatible printers
+    return this.raw([ESC, 0x40]).raw([ESC, 0x74, 14]);
   }
 
   align(a: EscPosAlign): this {
@@ -119,7 +120,7 @@ export function splitBytes(bytes: Uint8Array, maxLen: number): Uint8Array[] {
   if (bytes.byteLength <= maxLen) return [bytes];
   const out: Uint8Array[] = [];
   for (let i = 0; i < bytes.byteLength; i += maxLen) {
-    out.push(bytes.slice(i, i + maxLen));
+    out.push(bytes.subarray(i, Math.min(i + maxLen, bytes.byteLength)));
   }
   return out;
 }
