@@ -10,7 +10,6 @@ export type PrintOrderExtras = {
   customerPhone?: string | null;
   driverCode?: string | null;
   driverName?: string | null;
-  /** Fiscal identity from order_invoices (provider-issued). Rendered only when present. */
   fiscal?: {
     number?: string | null;
     mark?: string | null;
@@ -26,7 +25,8 @@ export const PAYMENT_LABELS: Record<string, string> = {
 };
 
 function money(n: number | null | undefined) {
-  return `€${Number(n ?? 0).toFixed(2)}`;
+  // EUR prefix — euro glyph missing on many thermal fonts
+  return `EUR ${Number(n ?? 0).toFixed(2)}`;
 }
 
 function escpad(text: string, width: number, align: 'left' | 'right' | 'center' = 'left'): string {
@@ -44,7 +44,6 @@ function cutText(text: string, width: number): string {
   return short.length > width ? short.slice(0, Math.max(1, width - 1)) + '~' : short;
 }
 
-/** Build the atomic ESC/POS chunk list for an order ticket. */
 export function buildOrderEscPos(
   order: OrderWithItems,
   storeName: string,
@@ -82,11 +81,11 @@ export function buildOrderEscPos(
   enc.text(escpad('FRESH2GO.GR', cols, 'center'));
   enc.bold(false);
   enc.feed(1);
-  enc.double(true);
+  enc.tall(true);
   enc.bold(true);
   enc.text(escpad(cutText(String(storeName ?? 'Κατάστημα'), cols), cols, 'center').trimEnd());
   enc.bold(false);
-  enc.double(false);
+  enc.tall(false);
   enc.feed(1);
 
   enc.align('center');
@@ -95,11 +94,11 @@ export function buildOrderEscPos(
 
   enc.text('-'.repeat(cols));
   enc.feed(1);
-  enc.double(true);
+  enc.tall(true);
   enc.bold(true);
   enc.text(escpad(cutText(orderNo, cols), cols, 'center'));
   enc.bold(false);
-  enc.double(false);
+  enc.tall(false);
   enc.feed(1);
 
   if (payLabel) {
@@ -120,7 +119,7 @@ export function buildOrderEscPos(
     const qty = Number(item.quantity) || 0;
     const unit = Number(item.unit_price) || 0;
     const amt = money(qty * unit);
-    const left = cutText(`${qty}× ${String(item.name ?? '')}`, cols - amt.length - 1);
+    const left = cutText(`${qty}x ${String(item.name ?? '')}`, cols - amt.length - 1);
     enc.text(left + ' '.repeat(Math.max(1, cols - amt.length - left.length)) + amt);
     enc.line();
   }
@@ -128,22 +127,21 @@ export function buildOrderEscPos(
     enc.text('-');
     enc.line();
   }
-  enc.text('─'.repeat(cols));
+  enc.text('-'.repeat(cols));
   enc.line();
 
-  enc.text(escpad('Υποσύνολο', cols - 10, 'left') + ' '.repeat(2) + escpad(money(subtotal), 8, 'right'));
+  enc.text(escpad('Υποσύνολο', cols - 12, 'left') + ' '.repeat(2) + escpad(money(subtotal), 10, 'right'));
   enc.line();
   if (fee > 0) {
-    enc.text(escpad('Παράδοση', cols - 10, 'left') + ' '.repeat(2) + escpad(money(fee), 8, 'right'));
+    enc.text(escpad('Παράδοση', cols - 12, 'left') + ' '.repeat(2) + escpad(money(fee), 10, 'right'));
     enc.line();
   }
   if (tip > 0) {
-    enc.text(escpad('Φιλοδώρημα', cols - 10, 'left') + ' '.repeat(2) + escpad(money(tip), 8, 'right'));
+    enc.text(escpad('Φιλοδώρημα', cols - 12, 'left') + ' '.repeat(2) + escpad(money(tip), 10, 'right'));
     enc.line();
   }
-  // Do NOT double-width money lines — halves columns and clips amounts (€10 → €1).
   enc.bold(true);
-  enc.text(escpad('ΣΥΝΟΛΟ', cols - 10, 'left') + ' '.repeat(2) + escpad(money(order.total_amount), 8, 'right'));
+  enc.text(escpad('ΣΥΝΟΛΟ', cols - 12, 'left') + ' '.repeat(2) + escpad(money(order.total_amount), 10, 'right'));
   enc.bold(false);
   enc.feed(1);
 
@@ -169,7 +167,6 @@ export function buildOrderEscPos(
     enc.feed(1);
   }
 
-  // Recipient (centered) + optional driver
   const custName = extras.customerName ? String(extras.customerName).trim() : '';
   const custPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
   const addr = order.delivery_address ? String(order.delivery_address).trim() : '';
