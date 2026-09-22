@@ -1,0 +1,32 @@
+name: Restore OrderQueue
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  restore:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Restore fixed OrderQueue
+        run: |
+          set -euo pipefail
+          git show e6f7d12aca4e73a0b2f4a63fc2bf841433784080:src/components/store/OrderQueue.tsx > src/components/store/OrderQueue.tsx
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('src/components/store/OrderQueue.tsx')
+          t = p.read_text()
+          old = "  const isBusy = (id: string) => !!busyLocal[id] || pendingSet.has(id);"
+          new = """  // pendingIds is only for new-order highlight — must NOT block Accept.\n  // Blocking on pendingSet made Accept a silent no-op for every new order.\n  const isBusy = (id: string) => !!busyLocal[id];"""
+          if old not in t:
+              raise SystemExit('pattern missing')
+          p.write_text(t.replace(old, new, 1))
+          print('patched', len(p.read_text()))
+          PY
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add src/components/store/OrderQueue.tsx
+          git commit -m "fix(store): restore OrderQueue and unblock Accept button"
+          git push origin HEAD:main
