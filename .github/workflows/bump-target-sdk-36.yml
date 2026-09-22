@@ -1,0 +1,88 @@
+name: Bump targetSdk 36
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/bump-target-sdk-36.yml"
+jobs:
+  bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch SDK levels
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          def patch_customer(p: Path):
+              t = p.read_text()
+              t2 = t
+              t2 = t2.replace("compileSdk = 35", "compileSdk = 36")
+              t2 = t2.replace("targetSdk = 35", "targetSdk = 36")
+              # only bump if still on older version codes for customer
+              if "versionCode = 285" in t2:
+                  t2 = t2.replace("versionCode = 285", "versionCode = 286")
+              if 'versionName = "2.9.12-fresh2go"' in t2:
+                  t2 = t2.replace('versionName = "2.9.12-fresh2go"', 'versionName = "2.9.13-fresh2go"')
+              # if previous bad push broke deps, we only fix numbers on existing correct file from main history
+              p.write_text(t2)
+              print(p, "compileSdk36" if "compileSdk = 36" in t2 else "FAIL")
+
+          def patch_driver(p: Path):
+              t = p.read_text()
+              t = t.replace("compileSdk = 35", "compileSdk = 36")
+              t = t.replace("targetSdk = 35", "targetSdk = 36")
+              p.write_text(t)
+
+          def patch_vars(p: Path):
+              t = p.read_text()
+              t = t.replace("compileSdkVersion = 35", "compileSdkVersion = 36")
+              t = t.replace("targetSdkVersion = 35", "targetSdkVersion = 36")
+              p.write_text(t)
+
+          # Restore customer gradle from git history if stripe missing (bad push)
+          cust = Path("native-customer/app/build.gradle.kts")
+          text = cust.read_text()
+          if "stripe-android" not in text or "compose-bom:2024.12.01" not in text:
+              import subprocess
+              # find last good blob before bad rewrite
+              sha = subprocess.check_output(
+                  ["git", "log", "--pretty=format:%H", "-n", "20", "--", str(cust)],
+                  text=True,
+              ).strip().splitlines()
+              restored = False
+              for s in sha:
+                  try:
+                      blob = subprocess.check_output(["git", "show", f"{s}:{cust}"], text=True)
+                  except Exception:
+                      continue
+                  if "stripe-android" in blob and "compose-bom" in blob:
+                      # apply sdk bumps on restored content
+                      blob = blob.replace("compileSdk = 35", "compileSdk = 36")
+                      blob = blob.replace("targetSdk = 35", "targetSdk = 36")
+                      blob = blob.replace("versionCode = 285", "versionCode = 286")
+                      blob = blob.replace('versionName = "2.9.12-fresh2go"', 'versionName = "2.9.13-fresh2go"')
+                      # also handle if already 36 in history
+                      if "compileSdk = 36" not in blob:
+                          blob = blob.replace("compileSdk = 34", "compileSdk = 36")
+                      cust.write_text(blob)
+                      restored = True
+                      print("restored customer gradle from", s[:8])
+                      break
+              if not restored:
+                  raise SystemExit("could not restore customer gradle")
+          else:
+              patch_customer(cust)
+
+          patch_driver(Path("native-driver/app/build.gradle.kts"))
+          patch_vars(Path("android/variables.gradle"))
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/build.gradle.kts native-driver/app/build.gradle.kts android/variables.gradle
+          if git diff --staged --quiet; then echo no changes; else git commit -m "fix(android): targetSdk 36 + restore customer gradle"; git push; fi
