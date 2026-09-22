@@ -11,7 +11,7 @@ import {
   type PrintOrderExtras,
 } from '@/lib/print-order-escpos';
 
-export type { PrintOrderExtras }; // keep the old import path working
+export type { PrintOrderExtras };
 
 function money(n: number | null | undefined) {
   return `€${Number(n ?? 0).toFixed(2)}`;
@@ -68,13 +68,13 @@ export function printOrderTicket(
       <title>Παραγγελία ${e(orderNo)} — Fresh2GO.GR</title>
       <meta charset="utf-8" />
       <style>
-        @page { size: 80mm auto; margin: 3mm; }
+        @page { size: 80mm auto; margin: 2mm; }
         * { box-sizing: border-box; }
         body {
           font-family: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
           color: #000;
           padding: 6px 4px 10px;
-          max-width: 72mm;
+          max-width: 70mm;
           margin: 0 auto;
           font-size: 12px;
           line-height: 1.35;
@@ -155,32 +155,63 @@ export function printOrderTicket(
         table.items .qty { width: 28px; font-weight: 800; }
         table.items .name { padding: 3px 4px; font-weight: 600; }
         table.items .amt { text-align: right; white-space: nowrap; width: 58px; font-weight: 800; }
-        table.totals { width: 100%; border-collapse: collapse; margin-top: 2px; }
-        table.totals td { padding: 2px 0; }
-        table.totals .r { text-align: right; }
+        table.totals { width: 100%; border-collapse: collapse; margin-top: 2px; table-layout: fixed; }
+        table.totals td { padding: 3px 0; vertical-align: baseline; }
+        table.totals td:first-child { width: 55%; text-align: left; }
+        table.totals td.r { width: 45%; text-align: right; white-space: nowrap; font-weight: 700; }
         table.totals .grand td {
-          font-size: 16px;
+          font-size: 15px;
           font-weight: 900;
           border-top: 2px solid #000;
           padding-top: 6px;
         }
         .block {
-          margin-top: 10px;
-          font-size: 12px;
+          margin: 12px auto 0;
+          width: 100%;
+          box-sizing: border-box;
+          font-size: 13px;
           text-align: center;
-          border: 1.5px solid #000;
+          border: 2px solid #000;
           border-radius: 8px;
-          padding: 8px 10px;
+          padding: 10px 8px 12px;
         }
         .block strong {
           display: block;
-          font-size: 9px;
-          letter-spacing: 0.12em;
+          width: 100%;
+          text-align: center;
+          font-size: 11px;
+          letter-spacing: 0.14em;
           text-transform: uppercase;
-          margin-bottom: 4px;
+          margin: 0 0 8px;
+          padding-bottom: 6px;
+          border-bottom: 1px solid #000;
         }
-        .block .line { display: block; font-weight: 700; line-height: 1.35; }
-        .block .sub { display: block; font-size: 11px; font-weight: 600; margin-top: 2px; }
+        .block .line {
+          display: block;
+          width: 100%;
+          text-align: center;
+          font-weight: 800;
+          font-size: 14px;
+          line-height: 1.4;
+          margin: 0 auto;
+        }
+        .block .sub {
+          display: block;
+          width: 100%;
+          text-align: center;
+          font-size: 12px;
+          font-weight: 700;
+          margin: 4px auto 0;
+        }
+        .block .addr {
+          display: block;
+          width: 100%;
+          text-align: center;
+          font-weight: 800;
+          font-size: 13px;
+          line-height: 1.35;
+          margin: 6px auto 0;
+        }
         .notes {
           background: #000;
           color: #fff;
@@ -302,10 +333,10 @@ export function printOrderTicket(
       ${
         hasRecipient
           ? `<div class="block">
-              <strong>Παραλήπτης</strong>
+              <strong>ΠΑΡΑΛΗΠΤΗΣ</strong>
               ${recipientName ? `<span class="line">${e(recipientName)}</span>` : ''}
               ${recipientPhone ? `<span class="sub">${e(recipientPhone)}</span>` : ''}
-              ${recipientAddr ? `<span class="line" style="margin-top:4px">${e(recipientAddr)}</span>` : ''}
+              ${recipientAddr ? `<span class="addr">${e(recipientAddr)}</span>` : ''}
             </div>`
           : ''
       }
@@ -334,12 +365,6 @@ export function printOrderTicket(
   win.document.close();
 }
 
-/**
- * Print an order through the best available path:
- *  - direct ESC/POS (Bluetooth/USB) when the store connected a printer and
- *    "Απευθείας" mode is enabled → silent receipt, no browser dialog,
- *  - otherwise the classic browser print dialog.
- */
 export async function printOrderSafe(
   order: OrderWithItems,
   storeName: string,
@@ -372,9 +397,7 @@ export function PrintTicketButton({
       size="sm"
       onClick={(e) => {
         e.stopPropagation();
-        void printOrderSafe(order, storeName, extras).catch(() => {
-          // Silent failure — direct printing may fail if the printer was unplugged.
-        });
+        void printOrderSafe(order, storeName, extras).catch(() => {});
       }}
       className="h-8 text-xs"
     >
