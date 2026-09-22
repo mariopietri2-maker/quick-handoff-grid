@@ -106,6 +106,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -798,7 +800,7 @@ private fun HomeTab(
             }
         }
 
-        if (showDiscovery && state.gameShow) {
+        if (false && showDiscovery && state.gameShow) {
             item {
                 when (state.gameActive) {
                     "wheel" -> LuckyWheelCard(state = state, onSpin = onSpinWheel)
@@ -1284,6 +1286,26 @@ private fun AnimatedDemoStoreCard(store: DemoStoreCardData, onClick: () -> Unit)
     }
 }
 
+
+@Composable
+private fun StoreCardSkeleton() {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .shadow(2.dp, RoundedCornerShape(20.dp))
+            .clip(RoundedCornerShape(20.dp))
+            .background(Color.White),
+    ) {
+        Box(Modifier.fillMaxWidth().height(148.dp).background(FreshChip))
+        Column(Modifier.padding(14.dp)) {
+            Box(Modifier.fillMaxWidth(0.55f).height(16.dp).clip(RoundedCornerShape(6.dp)).background(FreshChip))
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.fillMaxWidth(0.35f).height(12.dp).clip(RoundedCornerShape(6.dp)).background(FreshChip))
+        }
+    }
+}
+
 @Composable
 private fun FreshStoreCard(
     store: StoreRow,
@@ -1589,6 +1611,7 @@ private fun MenuScreen(
     isFavorite: Boolean = false,
     onToggleFavorite: () -> Unit = {},
 ) {
+    val haptic = LocalHapticFeedback.current
     val store = state.selectedStore
     val menuGroups = remember(state.menu) {
         state.menu
@@ -1741,13 +1764,13 @@ private fun MenuScreen(
                         FreshMenuRow(
                             item = item,
                             onAdd = {
-                                if (item.is_available != false) onAdd(item)
+                                if (item.is_available != false) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onAdd(item) }
                             },
                         )
                         Spacer(Modifier.height(6.dp))
                     }
                 }
-                item { Spacer(Modifier.height(100.dp)) }
+                item { Spacer(Modifier.height(if (state.cartCount > 0) 120.dp else 24.dp)) }
             }
         }
         if (state.cartCount > 0) {
@@ -2359,6 +2382,30 @@ private fun AddressPickerScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(horizontal = 16.dp, vertical = 8.dp),
         ) {
+            if (state.savedAddresses.isNotEmpty()) {
+                Text("Γρήγορη επιλογή", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(8.dp))
+                state.savedAddresses.forEach { sa ->
+                    Surface(
+                        onClick = { onSelectSaved(sa); onBack() },
+                        color = if (sa.is_default == true) FreshGreenSoft else Color.White,
+                        shape = RoundedCornerShape(14.dp),
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp).shadow(2.dp, RoundedCornerShape(14.dp)),
+                    ) {
+                        Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Icon(Icons.Outlined.LocationOn, contentDescription = null, tint = FreshGreen, modifier = Modifier.size(20.dp))
+                            Spacer(Modifier.width(10.dp))
+                            Column(Modifier.weight(1f)) {
+                                Text((sa.label ?: "Σπίτι").ifBlank { "Σπίτι" }, fontWeight = FontWeight.Bold)
+                                Text(sa.address, color = FreshMuted, style = MaterialTheme.typography.bodySmall, maxLines = 2)
+                            }
+                        }
+                    }
+                }
+                Spacer(Modifier.height(10.dp))
+                Text("Ή νέα διεύθυνση", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                Spacer(Modifier.height(8.dp))
+            }
             OutlinedTextField(
                 value = address,
                 onValueChange = {
@@ -3158,10 +3205,14 @@ private fun TrackTab(state: CustomerUiState) {
                 .padding(16.dp),
         ) {
             if (order == null) {
-                Text(
-                    "Επίλεξε παραγγελία από Παραγγελίες για live tracking.",
-                    color = FreshMuted,
-                )
+                Column(
+                    Modifier.fillMaxWidth().padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Text("Δεν παρακολουθείς παραγγελία", fontWeight = FontWeight.Bold, color = FreshInk)
+                    Spacer(Modifier.height(6.dp))
+                    Text("Άνοιξε Παραγγελίες και πάτα μια ενεργή παραγγελία.", color = FreshMuted)
+                }
             } else {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Column(Modifier.weight(1f)) {

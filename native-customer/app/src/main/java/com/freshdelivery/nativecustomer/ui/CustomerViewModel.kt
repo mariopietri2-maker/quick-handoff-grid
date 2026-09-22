@@ -140,8 +140,8 @@ data class CustomerUiState(
     val appConfig: com.freshdelivery.nativecustomer.data.CustomerAppConfig = com.freshdelivery.nativecustomer.data.CustomerAppConfig(),
     // Emerald v2 games — lucky wheel / mystery cards (mirrors the web prototype)
     val gameActive: String = "wheel",
-    val gameShow: Boolean = true,
-    val gameEnabled: Boolean = true,
+    val gameShow: Boolean = false,
+    val gameEnabled: Boolean = false,
     val wheelSegments: List<WheelSegment> = WHEEL_SEGMENTS,
     val dealSeconds: Int = 899,
     val spinning: Boolean = false,
@@ -730,6 +730,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             cartStoreId = storeId,
             cartStoreName = s.selectedStore?.name,
             error = null,
+            info = "Προστέθηκε στο καλάθι",
         )
     }
 
@@ -1704,46 +1705,7 @@ autoOpenTrack(
      * Exactly one game at a time. If it appears, it stays for [GAME_SHOW_WINDOW_MS]
      * (15 minutes), then hides until the next day's roll.
      */
-    private fun rollDailyGameShow(): Boolean {
-        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
-        val day = todayKey()
-        if (prefs.getString("game_show_day", null) == day) {
-            if (!prefs.getBoolean("game_show_today", false)) {
-                gameShowUntilMs = 0L
-                return false
-            }
-            // Restore which game was rolled for today.
-            val active = prefs.getString("game_active_today", null)
-            if (active == "wheel" || active == "cards") {
-                _state.value = _state.value.copy(gameActive = active)
-            }
-            val shownAt = prefs.getLong("game_shown_at", 0L)
-            val until = shownAt + GAME_SHOW_WINDOW_MS
-            gameShowUntilMs = until
-            return System.currentTimeMillis() < until
-        }
-        // Fresh daily roll: 0.00–0.30 wheel, 0.30–0.70 cards, else none.
-        val roll = Random.nextDouble()
-        val active: String?
-        val show: Boolean
-        when {
-            roll < 0.30 -> { active = "wheel"; show = true }
-            roll < 0.70 -> { active = "cards"; show = true }
-            else -> { active = null; show = false }
-        }
-        val now = System.currentTimeMillis()
-        gameShowUntilMs = if (show) now + GAME_SHOW_WINDOW_MS else 0L
-        if (active != null) {
-            _state.value = _state.value.copy(gameActive = active)
-        }
-        prefs.edit()
-            .putString("game_show_day", day)
-            .putBoolean("game_show_today", show)
-            .putString("game_active_today", active)
-            .putLong("game_shown_at", now)
-            .apply()
-        return show
-    }
+    private fun rollDailyGameShow(): Boolean = false // soft-launch
 
     /** Seconds until local midnight — drives the daily game-cycle countdown. */
     private fun secondsToMidnight(): Int =
