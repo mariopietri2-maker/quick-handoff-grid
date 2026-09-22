@@ -1,0 +1,59 @@
+name: Fix Print Recipient
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch print path
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          # totals: no double on ΣΥΝΟΛΟ
+          p = Path('src/lib/print-order-escpos.ts')
+          t = p.read_text()
+          t2 = t.replace(
+              "enc.bold(true);\n  enc.double(true);\n  enc.text(escpad('ΣΥΝΟΛΟ', cols - 10, 'left') + ' '.repeat(2) + escpad(money(order.total_amount), 8, 'right'));\n  enc.double(false);\n  enc.bold(false);",
+              "// Do NOT double-width money lines — halves columns and clips amounts (€10 → €1).\n  enc.bold(true);\n  enc.text(escpad('ΣΥΝΟΛΟ', cols - 10, 'left') + ' '.repeat(2) + escpad(money(order.total_amount), 8, 'right'));\n  enc.bold(false);",
+          )
+          if t2 == t:
+              print('totals already patched or pattern miss')
+          else:
+              p.write_text(t2)
+              print('totals patched')
+
+          # OrderQueue extras
+          p = Path('src/components/store/OrderQueue.tsx')
+          t = p.read_text()
+          t = t.replace(
+              'await printOrderSafe(next, storeName, { driverCode: drv });',
+              "await printOrderSafe(next, storeName, {\n            driverCode: drv,\n            customerName: next.customer_name ?? null,\n            customerPhone: next.customer_phone ?? null,\n          });",
+          )
+          old_btn = """extras={{\n                  driverCode: order.driver_id ? driverCodes[order.driver_id] : null,\n                }}"""
+          new_btn = """extras={{\n                  driverCode: order.driver_id ? driverCodes[order.driver_id] : null,\n                  customerName: order.customer_name ?? null,\n                  customerPhone: order.customer_phone ?? null,\n                }}"""
+          if old_btn in t:
+              t = t.replace(old_btn, new_btn)
+              print('button extras ok')
+          p.write_text(t)
+
+          # enrich fetchOrders
+          p = Path('src/hooks/useOrders.ts')
+          t = p.read_text()
+          old = """    if (!error && data) setOrders(data as OrderWithItems[]);\n    setLoading(false);"""
+          new = """    if (!error && data) {\n      const rows = data as OrderWithItems[];\n      const ids = [...new Set(rows.map((o) => o.customer_id).filter(Boolean))] as string[];\n      let nameById: Record<string, { full_name?: string | null; phone?: string | null }> = {};\n      if (ids.length > 0) {\n        const { data: profiles } = await supabase\n          .from('profiles')\n          .select('user_id, full_name, phone')\n          .in('user_id', ids);\n        for (const pr of (profiles as { user_id: string; full_name?: string | null; phone?: string | null }[]) ?? []) {\n          nameById[pr.user_id] = { full_name: pr.full_name, phone: pr.phone };\n        }\n      }\n      setOrders(\n        rows.map((o) => ({\n          ...o,\n          customer_name: nameById[o.customer_id ?? '']?.full_name ?? o.customer_name ?? null,\n          customer_phone: nameById[o.customer_id ?? '']?.phone ?? o.customer_phone ?? null,\n        })),\n      );\n    }\n    setLoading(false);"""
+          if old in t:
+              p.write_text(t.replace(old, new, 1))
+              print('fetch enrich ok')
+          else:
+              print('fetch already enriched or miss')
+          PY
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add -A
+          git commit -m "fix(store print): totals, recipient data on tickets" || echo nothing
+          git push origin HEAD:main
