@@ -1,0 +1,24 @@
+name: Polish customer native UX
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/polish_customer_native_ux.py"
+      - ".github/workflows/polish-customer-native-ux.yml"
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/polish_customer_native_ux.py
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          if git diff --staged --quiet; then echo no changes; else
+            git commit -m "polish(native-customer): clearer checkout CTA, orders empty state, lighter store cards"
+            git push
+          fi
