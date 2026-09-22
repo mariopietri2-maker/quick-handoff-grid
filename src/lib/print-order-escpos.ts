@@ -1,20 +1,16 @@
-// ESC/POS receipt renderer — mirrors the HTML kitchen ticket (PrintOrderTicket)
-// so silent printing looks the same as the browser-dialog printout.
-
-import { EscPosEncoder, ESCPOS_COLS, type EscPosWidth } from '@/lib/escpos';
 import type { OrderWithItems } from '@/hooks/useOrders';
 import { formatOrderNumber } from '@/lib/order-number';
+import { EscPosEncoder, ESCPOS_COLS, type EscPosWidth } from '@/lib/escpos-encoder';
 
 export type PrintOrderExtras = {
-  customerName?: string | null;
-  customerPhone?: string | null;
   driverCode?: string | null;
   driverName?: string | null;
-  /** Fiscal identity from order_invoices (provider-issued). Rendered only when present. */
+  customerName?: string | null;
+  customerPhone?: string | null;
   fiscal?: {
-    number?: string | null;
     mark?: string | null;
     uid?: string | null;
+    number?: string | null;
     qrUrl?: string | null;
   } | null;
 };
@@ -22,16 +18,15 @@ export type PrintOrderExtras = {
 export const PAYMENT_LABELS: Record<string, string> = {
   cash: 'ΜΕΤΡΗΤΑ',
   card: 'ΚΑΡΤΑ',
-  online: 'ONLINE',
+  wallet: 'ΠΟΡΤΟΦΟΛΙ',
 };
 
-function money(n: number | null | undefined): string {
-  return `${Number(n ?? 0).toFixed(2)} EUR`;
+function money(n: number | null | undefined) {
+  return `€${Number(n ?? 0).toFixed(2)}`;
 }
 
-/** Visual width — CP737 is single-byte, so string length == printed columns. */
 function escpad(text: string, width: number, align: 'left' | 'right' | 'center' = 'left'): string {
-  const len = text.length;
+  const len = [...text].length;
   if (len >= width) return text.slice(0, width);
   const gap = width - len;
   if (align === 'left') return text + ' '.repeat(gap);
@@ -110,7 +105,7 @@ export function buildOrderEscPos(
   if (payLabel) {
     enc.align('center');
     enc.bold(true);
-    enc.text(escpad(`${payLabel}${!isCash ? ' - ΠΛΗΡΩΘΗΚΕ' : ''}`, cols - 4, 'center').trimEnd()); 
+    enc.text(escpad(`${payLabel}${!isCash ? ' - ΠΛΗΡΩΘΗΚΕ' : ''}`, cols - 4, 'center').trimEnd());
     enc.bold(false);
     enc.feed(1);
   }
@@ -179,30 +174,55 @@ export function buildOrderEscPos(
     enc.feed(1);
   }
 
-  // Customer / driver
-  const custName = extras.customerName;
-  const custPhone = extras.customerPhone;
+  // Recipient (centered) + optional driver
+  const custName = extras.customerName ? String(extras.customerName).trim() : '';
+  const custPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
+  const addr = order.delivery_address ? String(order.delivery_address).trim() : '';
   const drv = extras.driverCode ?? extras.driverName;
-  if (custName || custPhone || drv) {
-    enc.align('left');
-enc.text('-'.repeat(cols));
+  if (custName || custPhone || addr || drv) {
+    enc.text('-'.repeat(cols));
     enc.line();
-    if (custName) {
+    enc.align('center');
+    if (custName || custPhone || addr) {
       enc.bold(true);
-      enc.text('Πελάτης:');
+      enc.text(escpad('ΠΑΡΑΛΗΠΤΗΣ', cols, 'center').trimEnd());
       enc.bold(false);
       enc.line();
-      enc.text(cutText(custName, cols));
-      enc.line();
-    }
-    if (custPhone) {
-      enc.text(cutText(`Τηλ. ${custPhone}`, cols));
-      enc.line();
+      if (custName) {
+        enc.bold(true);
+        enc.text(escpad(cutText(custName, cols), cols, 'center').trimEnd());
+        enc.bold(false);
+        enc.line();
+      }
+      if (custPhone) {
+        enc.text(escpad(cutText(custPhone, cols), cols, 'center').trimEnd());
+        enc.line();
+      }
+      if (addr) {
+        const words = addr.split(/\s+/);
+        let line = '';
+        for (const w of words) {
+          const next = line ? `${line} ${w}` : w;
+          if (next.length > cols && line) {
+            enc.text(escpad(cutText(line, cols), cols, 'center').trimEnd());
+            enc.line();
+            line = w;
+          } else {
+            line = next;
+          }
+        }
+        if (line) {
+          enc.text(escpad(cutText(line, cols), cols, 'center').trimEnd());
+          enc.line();
+        }
+      }
     }
     if (drv) {
-      enc.text(cutText(`Οδηγός: ${drv}`, cols));
+      enc.feed(1);
+      enc.text(escpad(cutText(`Οδηγός: ${drv}`, cols), cols, 'center').trimEnd());
       enc.line();
     }
+    enc.align('left');
   }
 
   // Fiscal block
@@ -242,7 +262,14 @@ export function buildOrderEscPosBuffer(
   extras: PrintOrderExtras = {},
   width: EscPosWidth = 80,
 ): Uint8Array {
-  const enc = new EscPosEncoder(width);
-  for (const c of buildOrderEscPos(order, storeName, extras, width)) enc.raw(c);
-  return enc.getBytes();
+  const chunks = buildOrderEscPos(order, storeName, extras, width);
+  let total = 0;
+  for (const c of chunks) total += c.length;
+  const out = new Uint8Array(total);
+  let offset = 0;
+  for (const c of chunks) {
+    out.set(c, offset);
+    offset += c.length;
+  }
+  return out;
 }
