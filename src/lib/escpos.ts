@@ -1,7 +1,5 @@
 // Minimal ESC/POS encoder for 58/80mm thermal printers with CP737 (Greek) support.
-// Produces a list of *atomic* chunks — each chunk is a complete command (or a text
-// run) so callers can send them one-by-one over Bluetooth (BEL/MTU friendly) without
-// ever splitting a multi-byte command across writes.
+// Atomic chunks so BLE/USB writers never split multi-byte commands.
 
 export type EscPosWidth = 58 | 80;
 export type EscPosAlign = 'left' | 'center' | 'right';
@@ -9,43 +7,100 @@ export type EscPosAlign = 'left' | 'center' | 'right';
 const ESC = 0x1b;
 const GS = 0x1d;
 
-/** Columns at font-A for each paper width (reasonable defaults for thermal printers). */
+/** Columns at font-A for each paper width. */
 export const ESCPOS_COLS: Record<EscPosWidth, number> = {
   58: 32,
   80: 42,
 };
 
-// CP737 (OEM Greek) — Unicode codepoint -> single byte. ASCII passes through.
-const CP737_MAP: ReadonlyArray<readonly [number, number]> = [
-  [0x0391, 0x80], [0x03b1, 0x81], [0x0392, 0x82], [0x03b2, 0x83],
-  [0x0393, 0x84], [0x03b3, 0x85], [0x0394, 0x86], [0x03b4, 0x87],
-  [0x0395, 0x88], [0x03b5, 0x89], [0x0396, 0x8a], [0x03b6, 0x8b],
-  [0x0397, 0x8c], [0x03b7, 0x8d], [0x0398, 0x8e], [0x03b8, 0x8f],
-  [0x0399, 0x90], [0x03b9, 0x91], [0x039a, 0x92], [0x03ba, 0x93],
-  [0x039b, 0x94], [0x03bb, 0x95], [0x039c, 0x96], [0x03bc, 0x97],
-  [0x039d, 0x98], [0x03bd, 0x99], [0x039e, 0x9a], [0x03be, 0x9b],
-  [0x039f, 0x9c], [0x03bf, 0x9d], [0x03a0, 0x9e], [0x03c0, 0x9f],
-  [0x03a1, 0xa0], [0x03c1, 0xa1], [0x03a3, 0xa2], [0x03c2, 0xa3],
-  [0x03c3, 0xa4], [0x03a4, 0xa5], [0x03c4, 0xa6], [0x03a5, 0xa7],
-  [0x03c5, 0xa8], [0x03a6, 0xa9], [0x03c6, 0xaa], [0x03a7, 0xab],
-  [0x03c7, 0xac], [0x03a8, 0xad], [0x03c8, 0xae], [0x03a9, 0xaf],
-  [0x03c9, 0xb0], [0x03ac, 0xb1], [0x03ad, 0xb2], [0x03ae, 0xb3],
-  [0x03af, 0xb4], [0x03cc, 0xb5], [0x03cd, 0xb6], [0x03ce, 0xb7],
-  [0x038a, 0xb8], [0x038e, 0xb9], [0x03ab, 0xba], [0x0386, 0xbb],
-  [0x0388, 0xbc], [0x0389, 0xbd], [0x038c, 0xbe], [0x038f, 0xbf],
-  [0x0390, 0xc0],
-];
+/**
+ * IBM Code page 737 (OEM Greek) — correct mapping.
+ * 0x80–0x97 capital, 0x98–0xAF lowercase (+ ω at 0xE0).
+ * @see https://en.wikipedia.org/wiki/Code_page_737
+ */
+const CP737: Record<number, number> = {
+  0x0391: 0x80, // Α
+  0x0392: 0x81, // Β
+  0x0393: 0x82, // Γ
+  0x0394: 0x83, // Δ
+  0x0395: 0x84, // Ε
+  0x0396: 0x85, // Ζ
+  0x0397: 0x86, // Η
+  0x0398: 0x87, // Θ
+  0x0399: 0x88, // Ι
+  0x039a: 0x89, // Κ
+  0x039b: 0x8a, // Λ
+  0x039c: 0x8b, // Μ
+  0x039d: 0x8c, // Ν
+  0x039e: 0x8d, // Ξ
+  0x039f: 0x8e, // Ο
+  0x03a0: 0x8f, // Π
+  0x03a1: 0x90, // Ρ
+  0x03a3: 0x91, // Σ
+  0x03a4: 0x92, // Τ
+  0x03a5: 0x93, // Υ
+  0x03a6: 0x94, // Φ
+  0x03a7: 0x95, // Χ
+  0x03a8: 0x96, // Ψ
+  0x03a9: 0x97, // Ω
+  0x03b1: 0x98, // α
+  0x03b2: 0x99, // β
+  0x03b3: 0x9a, // γ
+  0x03b4: 0x9b, // δ
+  0x03b5: 0x9c, // ε
+  0x03b6: 0x9d, // ζ
+  0x03b7: 0x9e, // η
+  0x03b8: 0x9f, // θ
+  0x03b9: 0xa0, // ι
+  0x03ba: 0xa1, // κ
+  0x03bb: 0xa2, // λ
+  0x03bc: 0xa3, // μ
+  0x03bd: 0xa4, // ν
+  0x03be: 0xa5, // ξ
+  0x03bf: 0xa6, // ο
+  0x03c0: 0xa7, // π
+  0x03c1: 0xa8, // ρ
+  0x03c2: 0xa9, // ς
+  0x03c3: 0xaa, // σ
+  0x03c4: 0xab, // τ
+  0x03c5: 0xac, // υ
+  0x03c6: 0xad, // φ
+  0x03c7: 0xae, // χ
+  0x03c8: 0xaf, // ψ
+  0x03c9: 0xe0, // ω
+  // Accented → closest base letter (cheap printers often lack accents)
+  0x03ac: 0x98, // ά
+  0x03ad: 0x9c, // έ
+  0x03ae: 0x9e, // ή
+  0x03af: 0xa0, // ί
+  0x03cc: 0xa6, // ό
+  0x03cd: 0xac, // ύ
+  0x03ce: 0xe0, // ώ
+  0x0386: 0x80, // Ά
+  0x0388: 0x84, // Έ
+  0x0389: 0x86, // Ή
+  0x038a: 0x88, // Ί
+  0x038c: 0x8e, // Ό
+  0x038e: 0x93, // Ύ
+  0x038f: 0x97, // Ώ
+  0x03ca: 0xa0, // ϊ
+  0x03cb: 0xac, // ϋ
+  0x0390: 0xa0, // ΐ
+  0x03b0: 0xac, // ΰ
+  0x20ac: 0x45, // € → E
+};
 
 function encodeCp737Char(ch: string): number {
   const code = ch.charCodeAt(0);
   if (code >= 0x20 && code <= 0x7e) return code;
-  for (const [u, b] of CP737_MAP) if (u === code) return b;
+  if (CP737[code] !== undefined) return CP737[code];
   return 0x3f; // ?
 }
 
 export function encodeCp737(input: string): Uint8Array {
-  const out = new Uint8Array(input.length);
-  for (let i = 0; i < input.length; i++) out[i] = encodeCp737Char(input[i]);
+  const s = input.normalize('NFC');
+  const out = new Uint8Array(s.length);
+  for (let i = 0; i < s.length; i++) out[i] = encodeCp737Char(s[i]);
   return out;
 }
 
@@ -64,21 +119,29 @@ export class EscPosEncoder {
   }
 
   reset(): this {
-    // ESC @ init, then select CP737 (Greek) — ESC t 14 on Epson-compatible printers
-    return this.raw([ESC, 0x40]).raw([ESC, 0x74, 14]);
+    this.raw([ESC, 0x40]); // init
+    this.raw([ESC, 0x74, 14]); // code page 737 Greek
+    this.raw([ESC, 0x52, 11]); // international charset Greece (best-effort)
+    return this;
   }
 
   align(a: EscPosAlign): this {
     const n = a === 'center' ? 1 : a === 'right' ? 2 : 0;
-    return this.raw([ESC, 0x61, n]); // ESC a n
+    return this.raw([ESC, 0x61, n]);
   }
 
   bold(on: boolean): this {
-    return this.raw([ESC, 0x45, on ? 1 : 0]); // ESC E n
+    return this.raw([ESC, 0x45, on ? 1 : 0]);
   }
 
+  /** Double height only — keeps column width so amounts stay readable. */
+  tall(on: boolean): this {
+    return this.raw([GS, 0x21, on ? 0x01 : 0x00]);
+  }
+
+  /** Height-only (same as tall). Full double-width clips totals. */
   double(on: boolean): this {
-    return this.raw([GS, 0x21, on ? 0x11 : 0x00]); // GS ! n (double width + height)
+    return this.tall(on);
   }
 
   text(s: string): this {
@@ -86,18 +149,17 @@ export class EscPosEncoder {
   }
 
   feed(lines = 1): this {
-    return this.raw([ESC, 0x64, Math.max(1, Math.min(255, lines))]); // ESC d n
+    return this.raw([ESC, 0x64, Math.max(1, Math.min(255, lines))]);
   }
 
   line(): this {
-    return this.raw([0x0a]); // LF
+    return this.raw([0x0a]);
   }
 
   cut(): this {
-    return this.raw([GS, 0x56, 0x42, 0x00]).feed(3); // GS V B 0 — partial cut + clear
+    return this.raw([GS, 0x56, 0x42, 0x00]).feed(3);
   }
 
-  /** Atomic command/text chunks (each fits a single BLE write of 20 bytes when small). */
   getChunks(): Uint8Array[] {
     return this.chunks;
   }
@@ -115,7 +177,6 @@ export class EscPosEncoder {
   }
 }
 
-/** Split a byte buffer into ≤ maxLen pieces (used for BLE writes / small MTUs). */
 export function splitBytes(bytes: Uint8Array, maxLen: number): Uint8Array[] {
   if (bytes.byteLength <= maxLen) return [bytes];
   const out: Uint8Array[] = [];
