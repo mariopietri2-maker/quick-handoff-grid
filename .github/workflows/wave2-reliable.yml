@@ -1,0 +1,23 @@
+name: Customer wave2 reliable polish
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/wave2_reliable.py"
+      - ".github/workflows/wave2-reliable.yml"
+jobs:
+  polish:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - run: python3 scripts/wave2_reliable.py
+      - run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/
+          if git diff --staged --quiet; then echo no changes; else
+            git commit -m "polish(native-customer): wave2 — skeletons, haptic, address first, track, hide games"
+            git push
+          fi
