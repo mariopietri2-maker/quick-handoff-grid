@@ -56,6 +56,11 @@ export function printOrderTicket(
     })
     .join('');
 
+  const recipientName = extras.customerName ? String(extras.customerName).trim() : '';
+  const recipientPhone = extras.customerPhone ? String(extras.customerPhone).trim() : '';
+  const recipientAddr = order.delivery_address ? String(order.delivery_address).trim() : '';
+  const hasRecipient = !!(recipientName || recipientPhone || recipientAddr);
+
   const html = `
     <!doctype html>
     <html lang="el">
@@ -160,12 +165,22 @@ export function printOrderTicket(
           padding-top: 6px;
         }
         .block {
-          margin-top: 8px;
-          font-size: 11px;
-          border-left: 3px solid #000;
-          padding-left: 8px;
+          margin-top: 10px;
+          font-size: 12px;
+          text-align: center;
+          border: 1.5px solid #000;
+          border-radius: 8px;
+          padding: 8px 10px;
         }
-        .block strong { display: block; font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; margin-bottom: 2px; }
+        .block strong {
+          display: block;
+          font-size: 9px;
+          letter-spacing: 0.12em;
+          text-transform: uppercase;
+          margin-bottom: 4px;
+        }
+        .block .line { display: block; font-weight: 700; line-height: 1.35; }
+        .block .sub { display: block; font-size: 11px; font-weight: 600; margin-top: 2px; }
         .notes {
           background: #000;
           color: #fff;
@@ -285,10 +300,12 @@ export function printOrderTicket(
       }
 
       ${
-        extras.customerName
+        hasRecipient
           ? `<div class="block">
-              <strong>Πελάτης</strong>
-              ${e(String(extras.customerName))}
+              <strong>Παραλήπτης</strong>
+              ${recipientName ? `<span class="line">${e(recipientName)}</span>` : ''}
+              ${recipientPhone ? `<span class="sub">${e(recipientPhone)}</span>` : ''}
+              ${recipientAddr ? `<span class="line" style="margin-top:4px">${e(recipientAddr)}</span>` : ''}
             </div>`
           : ''
       }
