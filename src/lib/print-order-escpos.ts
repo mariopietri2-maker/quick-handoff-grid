@@ -141,10 +141,9 @@ export function buildOrderEscPos(
     enc.text(escpad('Φιλοδώρημα', cols - 10, 'left') + ' '.repeat(2) + escpad(money(tip), 8, 'right'));
     enc.line();
   }
+  // Do NOT double-width money lines — halves columns and clips amounts (€10 → €1).
   enc.bold(true);
-  enc.double(true);
   enc.text(escpad('ΣΥΝΟΛΟ', cols - 10, 'left') + ' '.repeat(2) + escpad(money(order.total_amount), 8, 'right'));
-  enc.double(false);
   enc.bold(false);
   enc.feed(1);
 

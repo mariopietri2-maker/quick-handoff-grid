@@ -59,7 +59,27 @@ export function useStoreOrders(
       .in('status', ['placed', 'accepted', 'preparing', 'ready'])
       .order('created_at', { ascending: false })
       .limit(100);
-    if (!error && data) setOrders(data as OrderWithItems[]);
+    if (!error && data) {
+      const rows = data as OrderWithItems[];
+      const ids = [...new Set(rows.map((o) => o.customer_id).filter(Boolean))] as string[];
+      let nameById: Record<string, { full_name?: string | null; phone?: string | null }> = {};
+      if (ids.length > 0) {
+        const { data: profiles } = await supabase
+          .from('profiles')
+          .select('user_id, full_name, phone')
+          .in('user_id', ids);
+        for (const pr of (profiles as { user_id: string; full_name?: string | null; phone?: string | null }[]) ?? []) {
+          nameById[pr.user_id] = { full_name: pr.full_name, phone: pr.phone };
+        }
+      }
+      setOrders(
+        rows.map((o) => ({
+          ...o,
+          customer_name: nameById[o.customer_id ?? '']?.full_name ?? o.customer_name ?? null,
+          customer_phone: nameById[o.customer_id ?? '']?.phone ?? o.customer_phone ?? null,
+        })),
+      );
+    }
     setLoading(false);
   }, [storeId]);
 

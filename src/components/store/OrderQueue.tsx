@@ -237,7 +237,11 @@ export function OrderQueue({
       const drv = next.driver_id ? driverCodes[next.driver_id] : null;
       void (async () => {
         try {
-          await printOrderSafe(next, storeName, { driverCode: drv });
+          await printOrderSafe(next, storeName, {
+            driverCode: drv,
+            customerName: next.customer_name ?? null,
+            customerPhone: next.customer_phone ?? null,
+          });
         } catch {
           /* ignore */
         } finally {
@@ -455,6 +459,8 @@ export function OrderQueue({
                 storeName={storeName}
                 extras={{
                   driverCode: order.driver_id ? driverCodes[order.driver_id] : null,
+                  customerName: order.customer_name ?? null,
+                  customerPhone: order.customer_phone ?? null,
                 }}
               />
               {nextAction && (
