@@ -5,6 +5,7 @@ on:
   push:
     paths:
       - ".github/workflows/build-customer-play-aab-36.yml"
+      - "native-customer/app/build.gradle.kts"
 
 concurrency:
   group: customer-play-aab-36
@@ -44,20 +45,21 @@ jobs:
           echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
           keytool -list -keystore mobile-signing/fresh2go-customer-upload.jks -storepass "$PLAY_STORE_PASSWORD" | head -20
 
-      - name: Bump versionCode for Play + targetSdk 36
+      - name: Ensure targetSdk 36 + Play versionCode
         run: |
-          set -euo pipefail
           python3 - <<'PY'
           from pathlib import Path
           import re
           p = Path("native-customer/app/build.gradle.kts")
           t = p.read_text()
-          t = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 36", t)
-          t = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 36", t)
-          t = re.sub(r"versionCode\s*=\s*\d+", "versionCode = 7233001", t)
-          t = re.sub(r'versionName\s*=\s*"[^"]*"', 'versionName = "2.9.13-play"', t)
+          t = re.sub(r"compileSdk\\s*=\\s*\\d+", "compileSdk = 36", t)
+          t = re.sub(r"targetSdk\\s*=\\s*\\d+", "targetSdk = 36", t)
+          t = re.sub(r"versionCode\\s*=\\s*\\d+", "versionCode = 7233001", t)
+          t = re.sub(r'versionName\\s*=\\s*"[^"]*"', 'versionName = "2.9.13-play"', t)
+          t = re.sub(r'\\n\\s*implementation\\("com\\.google\\.maps\\.android:maps-compose:[^"]+"\\)\\s*', "\\n", t)
           p.write_text(t)
-          print("patched ok")
+          assert "maps-compose" not in p.read_text()
+          print("ok")
           PY
 
       - name: Gradle wrapper
