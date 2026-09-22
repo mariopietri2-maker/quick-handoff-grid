@@ -1,16 +1,20 @@
+// ESC/POS receipt renderer — mirrors the HTML kitchen ticket (PrintOrderTicket)
+// so silent printing looks the same as the browser-dialog printout.
+
+import { EscPosEncoder, ESCPOS_COLS, type EscPosWidth } from '@/lib/escpos';
 import type { OrderWithItems } from '@/hooks/useOrders';
 import { formatOrderNumber } from '@/lib/order-number';
-import { EscPosEncoder, ESCPOS_COLS, type EscPosWidth } from '@/lib/escpos-encoder';
 
 export type PrintOrderExtras = {
-  driverCode?: string | null;
-  driverName?: string | null;
   customerName?: string | null;
   customerPhone?: string | null;
+  driverCode?: string | null;
+  driverName?: string | null;
+  /** Fiscal identity from order_invoices (provider-issued). Rendered only when present. */
   fiscal?: {
+    number?: string | null;
     mark?: string | null;
     uid?: string | null;
-    number?: string | null;
     qrUrl?: string | null;
   } | null;
 };
@@ -73,7 +77,6 @@ export function buildOrderEscPos(
   enc.reset();
   enc.feed(1);
 
-  // Brand + store
   enc.align('center');
   enc.bold(true);
   enc.text(escpad('FRESH2GO.GR', cols, 'center'));
@@ -86,12 +89,10 @@ export function buildOrderEscPos(
   enc.double(false);
   enc.feed(1);
 
-  // Meta line (date / time)
   enc.align('center');
   enc.text(escpad(created.trim(), cols, 'center').trimEnd());
   enc.feed(1);
 
-  // Ticket number
   enc.text('-'.repeat(cols));
   enc.feed(1);
   enc.double(true);
@@ -101,7 +102,6 @@ export function buildOrderEscPos(
   enc.double(false);
   enc.feed(1);
 
-  // Payment badge
   if (payLabel) {
     enc.align('center');
     enc.bold(true);
@@ -113,7 +113,6 @@ export function buildOrderEscPos(
   enc.text('-'.repeat(cols));
   enc.feed(1);
 
-  // Items
   enc.align('left');
   enc.bold(false);
   const items = order.order_items ?? [];
@@ -132,7 +131,6 @@ export function buildOrderEscPos(
   enc.text('─'.repeat(cols));
   enc.line();
 
-  // Totals
   enc.text(escpad('Υποσύνολο', cols - 10, 'left') + ' '.repeat(2) + escpad(money(subtotal), 8, 'right'));
   enc.line();
   if (fee > 0) {
@@ -150,7 +148,6 @@ export function buildOrderEscPos(
   enc.bold(false);
   enc.feed(1);
 
-  // Cash collection note
   if (isCash) {
     enc.align('center');
     enc.bold(true);
@@ -160,7 +157,6 @@ export function buildOrderEscPos(
     enc.feed(1);
   }
 
-  // Notes
   if (order.notes) {
     enc.align('left');
     enc.bold(true);
@@ -225,7 +221,6 @@ export function buildOrderEscPos(
     enc.align('left');
   }
 
-  // Fiscal block
   const fiscal = extras.fiscal;
   if (fiscal && (fiscal.mark || fiscal.uid || fiscal.number)) {
     enc.feed(1);
@@ -244,7 +239,6 @@ export function buildOrderEscPos(
     enc.feed(1);
   }
 
-  // Footer ref
   enc.align('center');
   enc.text(escpad('Ευχαριστούμε - FRESH2GO.GR', cols, 'center').trimEnd());
   enc.text(escpad(`REF ${orderNoPlain}`, cols, 'center').trimEnd());
@@ -255,7 +249,6 @@ export function buildOrderEscPos(
   return enc.getChunks();
 }
 
-/** Assemble a single flat byte buffer (for USB writes / debugging). */
 export function buildOrderEscPosBuffer(
   order: OrderWithItems,
   storeName: string,
