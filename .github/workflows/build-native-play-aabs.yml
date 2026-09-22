@@ -105,15 +105,15 @@ jobs:
           echo "VERSION_CODE=$CODE" >> "$GITHUB_ENV"
           echo "VERSION_NAME=$NAME" >> "$GITHUB_ENV"
           python3 - native-driver/app/build.gradle.kts native-customer/app/build.gradle.kts "$CODE" "$NAME" <<'PY'
-import re, sys
-path1, path2, code, name = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
-for path in (path1, path2):
-    text = open(path).read()
-    text = re.sub(r"versionCode\s+\d+", f"versionCode {code}", text, count=1)
-    text = re.sub(r'versionName\s*=\s*"[^"]*"', f'versionName = "{name}"', text, count=1)
-    open(path, "w").write(text)
-    print(f"bumped -> {path}: versionCode={code} versionName={name}")
-PY
+          import re, sys
+          path1, path2, code, name = sys.argv[1], sys.argv[2], sys.argv[3], sys.argv[4]
+          for path in (path1, path2):
+              text = open(path).read()
+              text = re.sub(r"versionCode\s+\d+", f"versionCode {code}", text, count=1)
+              text = re.sub(r'versionName\s*=\s*"[^"]*"', f'versionName = "{name}"', text, count=1)
+              open(path, "w").write(text)
+              print(f"bumped -> {path}: versionCode={code} versionName={name}")
+          PY
 
       - name: Build driver native release AAB
         working-directory: native-driver
