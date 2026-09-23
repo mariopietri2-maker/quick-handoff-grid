@@ -1,0 +1,64 @@
+name: Fix Splash And Home
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Apply patches
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/Models.kt')
+          t = p.read_text()
+          t2 = t.replace(
+              'val appName: String = "fresh2go",\n    val cityLabel: String = "Ιωάννινα",\n    val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",',
+              'val appName: String = "Fresh2GO",\n    val cityLabel: String = "Ιωάννινα",\n    val tagline: String = "Fresh Meals. Fast Delivery.",',
+          )
+          if t2 == t:
+              raise SystemExit('Models defaults miss')
+          p.write_text(t2)
+
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          t = p.read_text()
+          old = '''    var filter by remember {
+        mutableStateOf(
+            if (state.deliveryLat != null && state.deliveryLng != null) HomeFilter.Near else HomeFilter.All,
+        )
+    }'''
+          new = '''    // Always open on Όλα (main discovery feed). User can switch to Κοντά μου.
+    var filter by remember { mutableStateOf(HomeFilter.All) }'''
+          if old not in t:
+              raise SystemExit('filter init miss')
+          p.write_text(t.replace(old, new, 1))
+
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/MainActivity.kt')
+          t = p.read_text()
+          old = '''                    state.bootstrapping || !splashMinElapsed -> {
+                        SplashScreen(
+                            appName = state.appConfig.appName,
+                            tagline = state.appConfig.tagline,
+                        )
+                    }'''
+          new = '''                    state.bootstrapping || !splashMinElapsed -> {
+                        // Fixed brand — avoid two splash looks when remote config loads.
+                        SplashScreen(
+                            appName = "Fresh2GO",
+                            tagline = "Fresh Meals. Fast Delivery.",
+                        )
+                    }'''
+          if old not in t:
+              raise SystemExit('splash call miss')
+          p.write_text(t.replace(old, new, 1))
+          print('all patched')
+          PY
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add -A
+          git commit -m "fix(customer): one splash Fresh2GO + open on Όλα" || echo nothing
+          git push origin HEAD:main
