@@ -100,9 +100,10 @@ class MainActivity : ComponentActivity() {
                 }
                 when {
                     state.bootstrapping || !splashMinElapsed -> {
+                        // Fixed brand — one splash only (no flash when remote config loads).
                         SplashScreen(
-                            appName = state.appConfig.appName,
-                            tagline = state.appConfig.tagline,
+                            appName = "Fresh2GO",
+                            tagline = "Fresh Meals. Fast Delivery.",
                         )
                     }
                     !state.signedIn -> {
