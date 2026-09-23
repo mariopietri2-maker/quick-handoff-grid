@@ -17,8 +17,14 @@ jobs:
       - name: Apply patches
         run: |
           set -euo pipefail
+          if [ -f scripts/fix_patches/fix_customer_update_compile.py ]; then
+            python3 scripts/fix_patches/fix_customer_update_compile.py
+          fi
           for f in scripts/fix_patches/*.py; do
             [ -f "$f" ] || continue
+            case "$f" in
+              *fix_customer_update_compile.py) continue ;;
+            esac
             echo "RUN $f"
             python3 "$f" || true
           done
@@ -26,5 +32,5 @@ jobs:
           git config user.name "fresh2go-ci"
           git add -A
           git status
-          git commit -m "release: live 2.9.15 customer (support reopen + splash + home)" || exit 0
+          git commit -m "fix(customer): restore AppUpdateChecker + SupportScreen imports for 2.9.15 build" || exit 0
           git push origin HEAD:main
