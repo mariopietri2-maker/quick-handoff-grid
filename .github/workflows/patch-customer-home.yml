@@ -1,0 +1,52 @@
+name: Patch Customer Home
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch
+        run: |
+          python3 << 'PY'
+          from pathlib import Path
+
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/data/Models.kt')
+          t = p.read_text()
+          t = t.replace('val appName: String = "fresh2go",', 'val appName: String = "Fresh2GO",')
+          t = t.replace(
+              'val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",',
+              'val tagline: String = "Fresh Meals. Fast Delivery.",',
+          )
+          p.write_text(t)
+
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          t = p.read_text()
+          old = '''    var filter by remember {
+        mutableStateOf(
+            if (state.deliveryLat != null && state.deliveryLng != null) HomeFilter.Near else HomeFilter.All,
+        )
+    }'''
+          new = '''    // Always open on Όλα (main discovery feed).
+    var filter by remember { mutableStateOf(HomeFilter.All) }'''
+          if old not in t:
+              if 'mutableStateOf(HomeFilter.All)' in t:
+                  print('filter already All')
+              else:
+                  raise SystemExit('filter pattern missing')
+          else:
+              p.write_text(t.replace(old, new, 1))
+              print('filter patched')
+          print('done')
+          PY
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add -A
+          git diff --cached --stat
+          git commit -m "fix(customer): default Όλα + Fresh2GO branding defaults" || echo nochange
+          git push origin HEAD:main
