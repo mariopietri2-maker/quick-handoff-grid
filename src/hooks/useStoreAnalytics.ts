@@ -67,11 +67,13 @@ export function useStoreAnalytics(storeId: string | null): StoreAnalyticsData {
 
     // Today
     const todayOrders = orders.filter(o => o.created_at.slice(0, 10) === todayStr);
-    const todayRevenue = todayOrders.reduce((s, o) => s + Number(o.total_amount), 0);
+    const todayDelivered = todayOrders.filter(o => o.status === 'delivered');
+    const todayRevenue = todayDelivered.reduce((s, o) => s + Number(o.total_amount), 0);
 
     // This week
     const weekOrders = orders.filter(o => new Date(o.created_at) >= sevenDaysAgo);
-    const weekRevenue = weekOrders.reduce((s, o) => s + Number(o.total_amount), 0);
+    const weekDelivered = weekOrders.filter(o => o.status === 'delivered');
+    const weekRevenue = weekDelivered.reduce((s, o) => s + Number(o.total_amount), 0);
 
     // Avg prep time (from delivered orders that have estimated_prep_time)
     const deliveredWithPrep = orders.filter(o => o.status === 'delivered' && o.estimated_prep_time);
@@ -87,7 +89,7 @@ export function useStoreAnalytics(storeId: string | null): StoreAnalyticsData {
       const key = d.toISOString().slice(0, 10);
       dailyMap.set(key, { date: key, revenue: 0, orderCount: 0 });
     }
-    weekOrders.forEach(o => {
+    weekDelivered.forEach(o => {
       const key = o.created_at.slice(0, 10);
       const entry = dailyMap.get(key);
       if (entry) {
