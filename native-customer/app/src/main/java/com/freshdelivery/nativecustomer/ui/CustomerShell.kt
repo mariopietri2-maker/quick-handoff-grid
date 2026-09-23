@@ -574,11 +574,8 @@ private fun HomeTab(
     onOpenCart: () -> Unit = {},
     onToggleFavorite: (String) -> Unit = {},
 ) {
-    var filter by remember {
-        mutableStateOf(
-            if (state.deliveryLat != null && state.deliveryLng != null) HomeFilter.Near else HomeFilter.All,
-        )
-    }
+    // Always open on Όλα (main discovery feed).
+    var filter by remember { mutableStateOf(HomeFilter.All) }
     // While the user is searching, force "Όλα" so Open/Near/Deals don't hide matches.
     LaunchedEffect(state.searchQuery) {
         if (state.searchQuery.isNotBlank() && filter != HomeFilter.All) {
@@ -779,7 +776,7 @@ private fun HomeTab(
             Row(
                 Modifier
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }
@@ -3904,7 +3901,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
         ),
         label = "kenBurns",
     )
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {
+    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp)) {
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxWidth().height(156.dp),
@@ -3923,11 +3920,9 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                 Modifier
                     .fillMaxSize()
                     .graphicsLayer {
+                        // Fade only — no scale (scale left a visible gap above/below the card).
                         val offset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                        val scale = 1f - (kotlin.math.abs(offset) * 0.06f).coerceIn(0f, 0.12f)
-                        scaleX = scale
-                        scaleY = scale
-                        alpha = 1f - (kotlin.math.abs(offset) * 0.25f).coerceIn(0f, 0.35f)
+                        alpha = 1f - (kotlin.math.abs(offset) * 0.2f).coerceIn(0f, 0.3f)
                     }
                     .shadow(14.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))

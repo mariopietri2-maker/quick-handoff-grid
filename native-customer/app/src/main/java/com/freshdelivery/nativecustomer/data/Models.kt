@@ -137,9 +137,9 @@ data class PromoBanner(
 )
 
 data class CustomerAppConfig(
-    val appName: String = "fresh2go",
+    val appName: String = "Fresh2GO",
     val cityLabel: String = "Ιωάννινα",
-    val tagline: String = "Η Ήπειρος στο σπίτι σου, γρήγορα.",
+    val tagline: String = "Fresh Meals. Fast Delivery.",
     val logoUrl: String? = null,
     /** Show logo/wordmark chip in the home header (web `branding.show_header_brand`). */
     val showHeaderBrand: Boolean = true,
