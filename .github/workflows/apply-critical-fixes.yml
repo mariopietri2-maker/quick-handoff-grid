@@ -17,10 +17,15 @@ jobs:
       - name: Apply patches
         run: |
           set -euo pipefail
-          python3 scripts/fix_patches/apply_web_role_fixes.py
+          if [ -f scripts/fix_patches/apply_web_role_fixes.py ]; then
+            python3 scripts/fix_patches/apply_web_role_fixes.py || true
+          fi
+          if [ -f scripts/fix_patches/customer_splash_home.py ]; then
+            python3 scripts/fix_patches/customer_splash_home.py
+          fi
           git config user.email "ci@fresh2go.gr"
           git config user.name "fresh2go-ci"
           git add -A
           git status
-          git commit -m "fix: restore ViewModel + store role routing (CustomerApp/AuthPage)" || exit 0
+          git commit -m "fix(customer): single splash + open on Όλα + tighter promo gap" || exit 0
           git push origin HEAD:main
