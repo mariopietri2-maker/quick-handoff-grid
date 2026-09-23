@@ -2305,7 +2305,7 @@ private fun CartCheckoutScreen(
                             .height(56.dp)
                             .shadow(if (canPlace) 10.dp else 2.dp, RoundedCornerShape(28.dp))
                             .clip(RoundedCornerShape(28.dp))
-                            .background(if (!canPlace) FreshChip else FreshGradient)
+                            .then(if (canPlace) Modifier.background(FreshGradient) else Modifier.background(FreshChip))
                             .clickable(
                                 enabled = canPlace,
                                 onClick = onPlaceOrder,
