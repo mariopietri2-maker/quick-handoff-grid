@@ -1,0 +1,66 @@
+name: Rebuild customer wave2 + delete old AAB
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - ".github/workflows/rebuild-customer-wave2.yml"
+      - "scripts/bump-customer-2914.py"
+jobs:
+  cleanup-and-bump:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Delete old customer APK/AAB release assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          REPO="${{ github.repository }}"
+          for TAG in native-customer-aab-api36 native-play-aabs-v1 mobile-apks-v1; do
+            echo "=== $TAG ==="
+            if ! gh release view "$TAG" >/dev/null 2>&1; then
+              echo "skip missing $TAG"
+              continue
+            fi
+            gh api "repos/$REPO/releases/tags/$TAG" --jq '.assets[] | [.id,.name] | @tsv' 2>/dev/null | while IFS=$'\t' read -r id name; do
+              case "$name" in
+                *customer*|*Customer*)
+                  echo "DELETE $TAG / $name ($id)"
+                  gh api -X DELETE "repos/$REPO/releases/assets/$id" || true
+                  ;;
+                *)
+                  echo "KEEP $name"
+                  ;;
+              esac
+            done || true
+          done
+          echo "Cleanup done"
+
+      - name: Bump version 2.9.14
+        run: python3 scripts/bump-customer-2914.py
+
+      - name: Commit version bump
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/build.gradle.kts src/lib/apk-downloads.ts
+          if git diff --staged --quiet; then echo no bump needed; else
+            git commit -m "chore(customer): 2.9.14-fresh2go versionCode 7233002 (wave2 polish)"
+            git push
+          fi
+
+      - name: Trigger native APK build
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run build-native-apks.yml --ref main || true
+
+      - name: Trigger customer Play AAB (API 36)
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh workflow run build-customer-play-aab-36.yml --ref main || true
