@@ -1,0 +1,50 @@
+name: Fix Home Gap
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch spacing
+        run: |
+          set -euo pipefail
+          python3 <<'PY'
+          from pathlib import Path
+          p = Path('native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt')
+          t = p.read_text()
+          t = t.replace(
+              '.padding(horizontal = 16.dp, vertical = 8.dp),\n                horizontalArrangement = Arrangement.spacedBy(8.dp),\n            ) {\n                FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }',
+              '.padding(horizontal = 16.dp, vertical = 4.dp),\n                horizontalArrangement = Arrangement.spacedBy(8.dp),\n            ) {\n                FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }',
+              1,
+          )
+          t = t.replace(
+              'Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 6.dp)) {',
+              'Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp)) {',
+              1,
+          )
+          old = '''                    .graphicsLayer {
+                        val offset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        val scale = 1f - (kotlin.math.abs(offset) * 0.06f).coerceIn(0f, 0.12f)
+                        scaleX = scale
+                        scaleY = scale
+                        alpha = 1f - (kotlin.math.abs(offset) * 0.25f).coerceIn(0f, 0.35f)
+                    }'''
+          new = '''                    .graphicsLayer {
+                        // Fade only — no scale (scale left a visible gap above/below the card).
+                        val offset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
+                        alpha = 1f - (kotlin.math.abs(offset) * 0.2f).coerceIn(0f, 0.3f)
+                    }'''
+          if old not in t:
+              raise SystemExit('graphicsLayer pattern missing')
+          t = t.replace(old, new, 1)
+          p.write_text(t)
+          print('patched')
+          PY
+          git config user.email "ci@fresh2go.gr"
+          git config user.name "fresh2go-ci"
+          git add -A
+          git commit -m "fix(customer home): tighter chips-to-promo gap" || echo nothing
+          git push origin HEAD:main
