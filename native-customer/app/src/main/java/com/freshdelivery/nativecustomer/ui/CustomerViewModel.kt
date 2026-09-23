@@ -1375,23 +1375,31 @@ autoOpenTrack(
 
     fun openSupport() {
         if (_state.value.supportOpen) return
-        _state.value = _state.value.copy(supportOpen = true, supportView = SupportView.Topics)
+        // Always land on Topics so a previously closed chat does not block a new request.
+        _state.value = _state.value.copy(
+            supportOpen = true,
+            supportView = SupportView.Topics,
+            liveChatClosed = false,
+            liveChatSessionId = null,
+            liveChatTopic = null,
+            liveChatError = null,
+        )
         viewModelScope.launch {
             val uid = _state.value.userId ?: return@launch
             runCatching { repo.fetchMyTickets(uid) }
                 .onSuccess { list -> _state.value = _state.value.copy(tickets = list) }
+            // Resume only an OPEN session; closed ones stay history — user picks a new topic.
             val session = repo.getMyLiveChatSession()
-            if (session != null && session.id != null) {
-                val closed = session.status == "closed"
+            if (session != null && session.id != null && session.status != "closed") {
                 _state.value = _state.value.copy(
                     supportView = SupportView.Live,
                     liveChatSessionId = session.id,
-                    liveChatClosed = closed,
+                    liveChatClosed = false,
                     liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: "Γενικό",
                     liveChatLoading = true,
                 )
                 fetchLiveChatHistory()
-                if (!closed) startLiveChatSubscription(uid)
+                startLiveChatSubscription(uid)
             }
         }
     }
@@ -1429,11 +1437,19 @@ autoOpenTrack(
 
     private fun selectLiveChatTopic(topic: String) {
         viewModelScope.launch {
+            // ensure_my_live_chat_session creates a NEW open row when the last one is closed
             val sessionId = repo.ensureMyLiveChatSession(topic)
+            if (sessionId.isNullOrBlank()) {
+                _state.value = _state.value.copy(
+                    liveChatError = "Δεν άνοιξε νέα συνομιλία. Δοκίμασε ξανά.",
+                    supportView = SupportView.Topics,
+                )
+                return@launch
+            }
             _state.value = _state.value.copy(
                 supportView = SupportView.Live,
                 liveChatTopic = topic,
-                liveChatSessionId = sessionId ?: _state.value.liveChatSessionId,
+                liveChatSessionId = sessionId,
                 liveChatClosed = false,
                 liveChatError = null,
             )

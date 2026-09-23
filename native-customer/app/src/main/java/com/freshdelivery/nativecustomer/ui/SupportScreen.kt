@@ -35,7 +35,11 @@ import androidx.compose.material.icons.outlined.Smartphone
 import androidx.compose.material.icons.outlined.SupportAgent
 import androidx.compose.material.icons.outlined.Warning
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
@@ -576,17 +580,26 @@ private fun ColumnScope.LiveChatView(
                 .fillMaxWidth()
                 .padding(top = 8.dp),
         ) {
-            Row(
-                Modifier.padding(horizontal = 12.dp, vertical = 10.dp),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Icon(Icons.Outlined.Warning, contentDescription = null, tint = FreshRose, modifier = Modifier.size(18.dp))
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "Η συνομιλία έκλεισε από την υποστήριξη. Ξεκίνα νέο αίτημα για να συνεχίσεις.",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = FreshRose,
-                )
+            Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Outlined.Warning, contentDescription = null, tint = FreshRose, modifier = Modifier.size(18.dp))
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Η συνομιλία έκλεισε από την υποστήριξη.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = FreshRose,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = onClearTopic,
+                    colors = ButtonDefaults.buttonColors(containerColor = FreshGreen),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text("Ξεκίνα νέα συνομιλία", color = Color.White, fontWeight = FontWeight.Bold)
+                }
             }
         }
     }
