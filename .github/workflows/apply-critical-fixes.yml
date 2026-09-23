@@ -21,11 +21,14 @@ jobs:
             python3 scripts/fix_patches/apply_web_role_fixes.py || true
           fi
           if [ -f scripts/fix_patches/customer_splash_home.py ]; then
-            python3 scripts/fix_patches/customer_splash_home.py
+            python3 scripts/fix_patches/customer_splash_home.py || true
+          fi
+          if [ -f scripts/fix_patches/customer_support_reopen.py ]; then
+            python3 scripts/fix_patches/customer_support_reopen.py
           fi
           git config user.email "ci@fresh2go.gr"
           git config user.name "fresh2go-ci"
           git add -A
           git status
-          git commit -m "fix(customer): single splash + open on Όλα + tighter promo gap" || exit 0
+          git commit -m "fix(customer): reopen live chat after support closes session" || exit 0
           git push origin HEAD:main
