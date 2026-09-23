@@ -1,0 +1,90 @@
+name: Fix AAB compile + rebuild customer
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "scripts/fix-place-order-bg.py"
+      - ".github/workflows/fix-aab-compile-and-rebuild.yml"
+jobs:
+  fix-and-build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Fix compile error
+        run: python3 scripts/fix-place-order-bg.py
+      - name: Commit fix if needed
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add native-customer/app/src/main/java/com/freshdelivery/nativecustomer/ui/CustomerShell.kt
+          if git diff --staged --quiet; then echo no code change; else
+            git commit -m "fix(native-customer): place-order CTA background Color/Brush mismatch"
+            git push
+          fi
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+      - uses: android-actions/setup-android@v4
+      - name: Install SDK 36
+        run: sdkmanager --install "platforms;android-36" "build-tools;36.0.0" "platform-tools"
+      - name: Restore Play customer keystore
+        env:
+          PLAY_CUSTOMER_KEYSTORE_B64: ${{ secrets.PLAY_CUSTOMER_KEYSTORE_B64 }}
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          mkdir -p mobile-signing
+          echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
+      - name: Version + strip maps-compose
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          p = Path("native-customer/app/build.gradle.kts")
+          t = p.read_text()
+          t = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 36", t)
+          t = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 36", t)
+          t = re.sub(r"versionCode\s*=\s*\d+", "versionCode = 7233002", t)
+          t = re.sub(r'versionName\s*=\s*"[^"]*"', 'versionName = "2.9.14-play"', t)
+          t = re.sub(r'\n\s*implementation\("com\.google\.maps\.android:maps-compose:[^"]+"\)\s*', "\n", t)
+          p.write_text(t)
+          print("ok")
+          PY
+      - name: Gradle wrapper
+        run: |
+          cp -R native-driver/gradle native-customer/ 2>/dev/null || true
+          cp native-driver/gradlew native-customer/ 2>/dev/null || true
+          chmod +x native-customer/gradlew
+      - name: bundleRelease
+        working-directory: native-customer
+        env:
+          PLAY_KEYSTORE_FILE: ${{ github.workspace }}/mobile-signing/fresh2go-customer-upload.jks
+          PLAY_KEY_ALIAS: fresh2go-customer
+          PLAY_STORE_PASSWORD: ${{ secrets.PLAY_STORE_PASSWORD }}
+          PLAY_KEY_PASSWORD: ${{ secrets.PLAY_KEY_PASSWORD }}
+        run: |
+          echo "sdk.dir=$ANDROID_HOME" > local.properties
+          ./gradlew :app:bundleRelease --no-daemon --stacktrace
+      - name: Publish release AAB
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          set -euo pipefail
+          mkdir -p store-bundles
+          cp native-customer/app/build/outputs/bundle/release/app-release.aab \
+            store-bundles/fresh2go-customer-native-release-api36.aab
+          TAG=native-customer-aab-api36
+          gh release view "$TAG" >/dev/null 2>&1 || \
+            gh release create "$TAG" --title "Fresh2GO Customer native AAB (API 36)" --notes "2.9.14-play / 7233002"
+          gh release edit "$TAG" --notes "Signed Play AAB · com.freshdelivery.customer · targetSdk 36 · versionCode 7233002 · 2.9.14-play"
+          gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets[] | select(.name|test("aab";"i")) | .id' | while read -r id; do
+            [ -n "$id" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
+          done
+          gh release upload "$TAG" store-bundles/*.aab --clobber
+          ls -lah store-bundles/
+          echo "https://github.com/${{ github.repository }}/releases/download/$TAG/fresh2go-customer-native-release-api36.aab"
