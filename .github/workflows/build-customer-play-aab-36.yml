@@ -45,7 +45,7 @@ jobs:
           echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
           keytool -list -keystore mobile-signing/fresh2go-customer-upload.jks -storepass "$PLAY_STORE_PASSWORD" | head -20
 
-      - name: Ensure targetSdk 36 + Play versionCode
+      - name: Ensure targetSdk 36 + version 2.9.14-play / 7233002
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -59,7 +59,7 @@ jobs:
           t = re.sub(r'\n\s*implementation\("com\.google\.maps\.android:maps-compose:[^"]+"\)\s*', "\n", t)
           p.write_text(t)
           assert "maps-compose" not in p.read_text()
-          print("ok 7233002")
+          print("ok 2.9.14-play / 7233002")
           PY
 
       - name: Gradle wrapper
@@ -95,7 +95,7 @@ jobs:
           path: store-bundles/*.aab
           retention-days: 30
 
-      - name: Publish GitHub release (clobber old AAB)
+      - name: Publish GitHub release (replace old AAB)
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -104,10 +104,10 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" \
               --title "Fresh2GO Customer native AAB (API 36)" \
-              --notes "Signed Play upload AAB · package com.freshdelivery.customer · targetSdk 36 · versionCode 7233002 · wave2 polish."
-          # Remove existing customer aab assets then upload
-          gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets[] | select(.name|test("customer")) | .id' | while read -r id; do
+              --notes "Signed Play AAB · com.freshdelivery.customer · targetSdk 36 · versionCode 7233002 · 2.9.14-play · wave2 polish."
+          gh release edit "$TAG" --notes "Signed Play AAB · com.freshdelivery.customer · targetSdk 36 · versionCode 7233002 · 2.9.14-play · wave2 polish."
+          gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets[] | select(.name|test("customer";"i")) | .id' | while read -r id; do
             [ -n "$id" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
           done
           gh release upload "$TAG" store-bundles/*.aab --clobber
-          echo "Download: https://github.com/${{ github.repository }}/releases/tag/$TAG"
+          echo "https://github.com/${{ github.repository }}/releases/tag/$TAG"
