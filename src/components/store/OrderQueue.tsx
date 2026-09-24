@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Clock, Car, ChevronDown, ChevronRight, Timer, Plus, Minus, Trash2, Package, Ban,
+  User, ShoppingBag,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
@@ -61,7 +62,6 @@ const statusConfig: Record<string, { label: string; short: string; bg: string; c
 
 const PREP_PRESETS = [10, 15, 20, 30, 45];
 
-
 async function markItemSoldOut(menuItemId: string | null | undefined, itemName: string) {
   if (!menuItemId) {
     toast.error('Δεν βρέθηκε σύνδεση με το μενού');
@@ -69,17 +69,17 @@ async function markItemSoldOut(menuItemId: string | null | undefined, itemName: 
   }
   const { error } = await supabase
     .from('menu_items')
-    .update({ is_available: false } as never)
+    .update({ is_available: false } as any)
     .eq('id', menuItemId);
   if (error) {
-    toast.error(error.message ?? 'Αποτυχία');
+    toast.error('Αποτυχία ενημέρωσης μενού');
     return;
   }
-  toast.success(`«${itemName}» εξαντλήθηκε (μη διαθέσιμο στο μενού)`);
+  toast.success(`«${itemName}» εξαντλήθηκε`);
 }
 
 function itemCount(order: OrderWithItems) {
-  return (order.order_items ?? []).reduce((n, i) => n + (Number(i.quantity) || 0), 0);
+  return (order.order_items || []).reduce((s, i) => s + Number(i.quantity || 0), 0);
 }
 
 function sortForKitchen(a: OrderWithItems, b: OrderWithItems) {
@@ -100,10 +100,10 @@ function getTimeSince(dateStr: string, now: number) {
 }
 
 function getTimeUntil(dateStr: string, now: number) {
-  const diff = Math.ceil((new Date(dateStr).getTime() - now) / 60000);
-  if (diff < 1) return 'τώρα';
-  if (diff < 60) return `σε ${diff}λ`;
-  return `σε ${Math.floor(diff / 60)}ω`;
+  const diff = Math.floor((new Date(dateStr).getTime() - now) / 60000);
+  if (diff < 0) return '0λ';
+  if (diff < 60) return `${diff}λ`;
+  return `${Math.floor(diff / 60)}ω`;
 }
 
 function getNextAction(status: string) {
@@ -111,17 +111,28 @@ function getNextAction(status: string) {
     case 'placed':
       return { label: 'Αποδοχή', short: 'OK', next: 'preparing' };
     case 'accepted':
-      return { label: 'Έναρξη', short: 'Start', next: 'preparing' };
+      return { label: 'Έτοιμο', short: 'Έτοιμο', next: 'ready' };
     case 'preparing':
-      return { label: 'Έτοιμη', short: 'Έτοιμη', next: 'ready' };
+      return { label: 'Έτοιμο', short: 'Έτοιμο', next: 'ready' };
     default:
       return null;
   }
 }
 
+/** Minutes left until estimated ready (prep), or age for new orders. */
+function getCountdownMinutes(order: OrderWithItems, now: number, prepMin: number): number | null {
+  if (order.status === 'placed') {
+    const age = Math.floor((now - new Date(order.created_at).getTime()) / 60000);
+    return Math.max(0, age);
+  }
+  const base = (order as any).accepted_at || (order as any).updated_at || order.created_at;
+  const deadline = new Date(base).getTime() + prepMin * 60_000;
+  return Math.max(0, Math.ceil((deadline - now) / 60000));
+}
+
 /**
- * Dense 3-column kitchen board — readable tickets that still fit
- * a busy queue (columns scroll independently; 2-up only on 2xl).
+ * efood Partner–style Live παραγγελίες board:
+ * two columns (Νέα / Έγινε αποδεκτή), clean tickets, empty states, floating counts.
  */
 export function OrderQueue({
   orders,
@@ -139,7 +150,7 @@ export function OrderQueue({
   const printRunningRef = useRef(false);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(Date.now()), 30_000);
+    const id = window.setInterval(() => setNow(Date.now()), 15_000);
     return () => window.clearInterval(id);
   }, []);
 
@@ -173,19 +184,16 @@ export function OrderQueue({
 
   const columns = useMemo(() => {
     const neu = orders.filter((o) => o.status === 'placed').sort(sortForKitchen);
-    const kitchen = orders
+    const accepted = orders
       .filter((o) => o.status === 'accepted' || o.status === 'preparing')
       .sort(sortForKitchen);
     const ready = orders.filter((o) => o.status === 'ready').sort(sortForKitchen);
     return [
-      { id: 'new' as const, label: 'Νέες', items: neu, accent: statusConfig.placed.accent },
-      { id: 'kitchen' as const, label: 'Κουζίνα', items: kitchen, accent: statusConfig.preparing.accent },
-      { id: 'ready' as const, label: 'Έτοιμες', items: ready, accent: statusConfig.ready.accent },
+      { id: 'new' as const, label: 'Νέα', items: neu, accent: 'border-border bg-card' },
+      { id: 'accepted' as const, label: 'Έγινε αποδεκτή', items: accepted, accent: 'border-border bg-card' },
+      { id: 'ready' as const, label: 'Έτοιμες', items: ready, accent: 'border-border bg-card' },
     ];
   }, [orders]);
-
-  const nextNew = columns[0]?.items[0] ?? null;
-  const totalLive = orders.length;
 
   const setPrep = (orderId: string, value: number) => {
     setPrepTimes((prev) => ({ ...prev, [orderId]: Math.max(5, Math.min(120, value)) }));
@@ -194,7 +202,6 @@ export function OrderQueue({
     prepTimes[order.id] ?? order.estimated_prep_time ?? 20;
 
   // pendingIds is only for new-order highlight — must NOT block Accept.
-  // Blocking on pendingSet made Accept a silent no-op for every new order.
   const isBusy = (id: string) => !!busyLocal[id];
 
   const handleAdvance = async (order: OrderWithItems, nextStatus: string) => {
@@ -260,132 +267,121 @@ export function OrderQueue({
   };
 
   const renderCard = (order: OrderWithItems) => {
-    const config = statusConfig[order.status] || statusConfig.placed;
     const nextAction = getNextAction(order.status);
     const items = order.order_items || [];
     const open = !!expanded[order.id];
     const currentPrep = getPrep(order);
     const busy = isBusy(order.id);
-    const age = getTimeSince(order.created_at, now);
-    const scheduledMs = order.scheduled_for ? new Date(order.scheduled_for).getTime() : null;
-    const upcomingScheduled = scheduledMs !== null && scheduledMs > now;
+    const nItems = itemCount(order);
+    const countdown = getCountdownMinutes(order, now, currentPrep);
+    const customerName =
+      (order as any).customer_name ||
+      (order as any).customer_full_name ||
+      (order as any).profiles?.full_name ||
+      (order as any).delivery_name ||
+      null;
+    const upcomingScheduled =
+      order.scheduled_for && new Date(order.scheduled_for).getTime() > now;
     const urgent =
       order.status === 'placed' &&
       !upcomingScheduled &&
       Date.now() - new Date(order.created_at).getTime() > 5 * 60_000;
-    const nItems = itemCount(order);
 
     return (
       <div
         key={order.id}
         className={cn(
-          'rounded-lg border overflow-hidden bg-card shadow-sm',
-          config.bg,
-          urgent && 'ring-2 ring-destructive/45',
-          open && 'col-span-full',
+          'rounded-xl border bg-card px-3 py-3 shadow-sm transition-shadow hover:shadow-md',
+          urgent && 'ring-2 ring-destructive/40 border-destructive/30',
+          open && 'ring-1 ring-primary/25',
         )}
       >
-        {/* Compact ticket row — sized for quick tap without feeling tiny */}
-        <div className="flex items-center gap-1.5 pl-2 pr-1.5 py-1.5 min-h-[52px]">
+        <div className="flex items-start gap-3">
           <button
             type="button"
             onClick={() => toggleExpand(order.id)}
-            className="flex-1 min-w-0 text-left flex items-center gap-2 py-0.5"
-            aria-expanded={open}
+            className="flex-1 min-w-0 text-left space-y-1"
           >
-            <span className="font-mono font-extrabold text-[15px] tabular-nums text-foreground shrink-0 leading-none">
-              {formatOrderNumber(order)}
-            </span>
-            {order.source && order.source !== 'in_app' && (
-              <span className="text-[10px] font-heading font-bold uppercase tracking-wide px-1 py-0.5 rounded bg-muted text-muted-foreground shrink-0">
-                {order.source}
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="font-heading font-extrabold text-[17px] tabular-nums text-foreground">
+                {formatOrderNumber(order)}
               </span>
-            )}
-            {order.scheduled_for && (
-              <span className="text-[10px] font-heading font-bold tracking-wide px-1 py-0.5 rounded bg-warning/15 text-warning border border-warning/30 shrink-0">
-                <Clock className="h-3 w-3 inline mr-0.5" />
-                Προγρ. {new Date(order.scheduled_for).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            )}
-            <span
-              className={cn(
-                'text-[12px] font-heading font-semibold tabular-nums shrink-0',
-                urgent ? 'text-destructive' : 'text-muted-foreground',
+              {order.source && order.source !== 'in_app' && (
+                <span className="text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded bg-muted text-muted-foreground">
+                  {order.source}
+                </span>
               )}
-            >
-              {upcomingScheduled ? getTimeUntil(order.scheduled_for, now) : age}
-            </span>
-            <span className="text-[12px] text-muted-foreground truncate hidden min-[380px]:inline">
-              {nItems}×
-              {items[0] ? ` ${items[0].name}` : ''}
-              {order.notes ? ' ·📝' : ''}
-            </span>
-            {order.driver_id && (
-              <span className="inline-flex items-center gap-0.5 text-[10px] font-heading font-bold text-info shrink-0">
-                <Car className="h-3.5 w-3.5" aria-hidden />
-                {formatDriverCode(driverCodes[order.driver_id], { fallback: 'DRV' })}
+            </div>
+            <p className="text-[12px] text-muted-foreground tabular-nums">
+              {(order as any).order_code || order.id.slice(0, 8)} · {nItems}{' '}
+              {nItems === 1 ? 'προϊόν' : 'προϊόντα'}
+            </p>
+            <p className="text-[13px] font-medium text-foreground flex items-center gap-1.5 min-w-0">
+              <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+              <span className="truncate">
+                {customerName || (order.driver_id ? `Οδηγός ${formatDriverCode(driverCodes[order.driver_id] || '')}` : 'Πελάτης')}
               </span>
-            )}
-            {open ? (
-              <ChevronDown className="h-4 w-4 text-muted-foreground shrink-0 ml-auto" />
-            ) : (
-              <ChevronRight className="h-4 w-4 text-muted-foreground/70 shrink-0 ml-auto" />
-            )}
+            </p>
           </button>
 
-          <span className="text-[13px] font-heading font-bold tabular-nums text-foreground shrink-0 pr-0.5">
-            €{Number(order.total_amount).toFixed(0)}
-          </span>
+          {countdown !== null && order.status !== 'ready' && (
+            <div
+              className={cn(
+                'shrink-0 h-11 w-11 rounded-full border-2 flex items-center justify-center',
+                'font-heading font-bold text-[15px] tabular-nums',
+                countdown <= 5
+                  ? 'border-destructive text-destructive bg-destructive/5'
+                  : 'border-muted-foreground/30 text-foreground',
+              )}
+              title={order.status === 'placed' ? 'Λεπτά από την παραγγελία' : 'Λεπτά έως έτοιμο'}
+            >
+              {countdown}
+            </div>
+          )}
 
           {nextAction && (
             <Button
               size="sm"
               disabled={busy}
               className={cn(
-                'h-9 px-3 text-[12px] font-heading font-bold shrink-0',
+                'shrink-0 h-9 px-4 font-heading font-bold text-[13px]',
                 order.status === 'placed'
-                  ? 'gradient-primary text-primary-foreground'
-                  : 'gradient-success text-success-foreground',
+                  ? 'bg-primary hover:bg-primary/90'
+                  : 'bg-info text-info-foreground hover:bg-info/90',
               )}
-              onClick={() => handleAdvance(order, nextAction.next)}
+              onClick={() => nextAction && void handleAdvance(order, nextAction.next)}
             >
-              {busy ? '…' : nextAction.short}
+              {busy ? '…' : nextAction.label}
             </Button>
-          )}
-          {order.status === 'ready' && !order.driver_id && (
-            <span className="text-[10px] font-heading font-semibold text-success px-1 shrink-0">
-              ⌛
-            </span>
           )}
         </div>
 
         {open && (
-          <div className="px-2.5 pb-2.5 space-y-2 border-t border-border/50 pt-2">
-            <div className="space-y-0.5">
-              {items.map((item, i) => (
-                <div key={i} className="flex justify-between text-[12px] gap-2 items-center">
-                  <span className="text-foreground min-w-0">
-                    {item.quantity}x {item.name}
+          <div className="mt-3 pt-3 border-t border-border/60 space-y-2">
+            <div className="space-y-1">
+              {items.map((item: any) => (
+                <div key={item.id} className="flex justify-between gap-2 text-[12px]">
+                  <span className="text-foreground">
+                    <span className="font-semibold tabular-nums">{item.quantity}×</span> {item.name}
                   </span>
-                  <span className="flex items-center gap-1.5 shrink-0">
-                    <span className="text-muted-foreground tabular-nums">
-                      €{Number(item.unit_price).toFixed(2)}
+                  <span className="flex items-center gap-1 shrink-0">
+                    <span className="tabular-nums text-muted-foreground">
+                      €{Number(item.unit_price * item.quantity).toFixed(2)}
                     </span>
-                    {item.menu_item_id && (
+                    {order.status === 'placed' && (
                       <button
                         type="button"
-                        title="Εξαντλήθηκε — απόκρυψη από το μενού"
-                        className="inline-flex items-center gap-0.5 text-[10px] font-heading font-bold text-destructive/90 hover:text-destructive px-1.5 py-0.5 rounded border border-destructive/25 hover:bg-destructive/10"
+                        className="inline-flex items-center gap-0.5 text-[10px] font-bold text-destructive/90 hover:text-destructive px-1 py-0.5 rounded border border-destructive/25"
                         onClick={() => void markItemSoldOut(item.menu_item_id, item.name)}
                       >
-                        <Ban className="h-3 w-3" aria-hidden />
+                        <Ban className="h-3 w-3" />
                         86
                       </button>
                     )}
                   </span>
                 </div>
               ))}
-              <div className="flex justify-between font-heading font-semibold pt-1 border-t border-border text-[12px]">
+              <div className="flex justify-between font-semibold pt-1 border-t border-border text-[12px]">
                 <span>Σύνολο</span>
                 <span className="tabular-nums">€{Number(order.total_amount).toFixed(2)}</span>
               </div>
@@ -398,121 +394,51 @@ export function OrderQueue({
             )}
 
             {order.status === 'placed' && (
-              <div className="rounded-md bg-card border border-border p-2 space-y-1.5">
+              <div className="rounded-md bg-muted/30 border border-border p-2 space-y-1.5">
                 <div className="flex items-center gap-1.5">
                   <Timer className="h-3.5 w-3.5 text-primary" />
-                  <span className="font-heading text-[11px] font-semibold">Ετοιμασία</span>
+                  <span className="font-heading text-[11px] font-semibold">Χρόνος ετοιμασίας</span>
                 </div>
                 <div className="flex items-center justify-between gap-2">
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => setPrep(order.id, currentPrep - 5)}
-                  >
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setPrep(order.id, currentPrep - 5)}>
                     <Minus className="h-3 w-3" />
                   </Button>
                   <div className="text-center">
                     <span className="font-heading font-bold text-lg tabular-nums">{currentPrep}</span>
                     <span className="text-[10px] text-muted-foreground ml-0.5">λ</span>
                   </div>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="icon"
-                    className="h-7 w-7"
-                    onClick={() => setPrep(order.id, currentPrep + 5)}
-                  >
+                  <Button type="button" variant="outline" size="icon" className="h-7 w-7" onClick={() => setPrep(order.id, currentPrep + 5)}>
                     <Plus className="h-3 w-3" />
                   </Button>
                 </div>
                 <div className="flex flex-wrap gap-1">
-                  {PREP_PRESETS.map((p) => (
-                    <Button
-                      key={p}
+                  {PREP_PRESETS.map((m) => (
+                    <button
+                      key={m}
                       type="button"
-                      variant={currentPrep === p ? 'default' : 'outline'}
-                      size="sm"
-                      className="h-6 px-2 text-[10px] font-heading"
-                      onClick={() => setPrep(order.id, p)}
+                      onClick={() => setPrep(order.id, m)}
+                      className={cn(
+                        'text-[11px] px-2 py-0.5 rounded-full border font-heading font-semibold',
+                        currentPrep === m
+                          ? 'bg-primary text-primary-foreground border-primary'
+                          : 'bg-card border-border text-muted-foreground hover:border-primary/40',
+                      )}
                     >
-                      {p}λ
-                    </Button>
+                      {m}λ
+                    </button>
                   ))}
                 </div>
               </div>
             )}
 
-            {order.status !== 'placed' &&
-              !!order.estimated_prep_time &&
-              order.estimated_prep_time > 0 && (
-                <div className="flex items-center gap-1.5 text-[12px] text-warning">
-                  <Timer className="h-3.5 w-3.5" />
-                  <span>~{order.estimated_prep_time}λ εκτίμηση</span>
-                </div>
+            <div className="flex flex-wrap gap-1.5">
+              <PrintTicketButton order={order} storeName={storeName} driverCode={order.driver_id ? driverCodes[order.driver_id] : undefined} />
+              {order.driver_id && (
+                <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground px-2 py-1 rounded border border-border">
+                  <Car className="h-3 w-3" />
+                  {formatDriverCode(driverCodes[order.driver_id] || '')}
+                </span>
               )}
-
-            <div className="flex items-center gap-1.5">
-              <PrintTicketButton
-                order={order}
-                storeName={storeName}
-                extras={{
-                  driverCode: order.driver_id ? driverCodes[order.driver_id] : null,
-                  customerName: order.customer_name ?? null,
-                  customerPhone: order.customer_phone ?? null,
-                }}
-              />
-              {nextAction && (
-                <Button
-                  className={cn(
-                    'flex-1 h-9 font-heading font-semibold text-[13px]',
-                    order.status === 'placed'
-                      ? 'gradient-primary shadow-primary text-primary-foreground'
-                      : 'gradient-success text-success-foreground',
-                  )}
-                  disabled={busy}
-                  onClick={() => handleAdvance(order, nextAction.next)}
-                >
-                  {busy ? '…' : nextAction.label}
-                  <ChevronRight className="ml-0.5 h-4 w-4" />
-                </Button>
-              )}
-              <AlertDialog>
-                <AlertDialogTrigger asChild>
-                  <Button
-                    variant="outline"
-                    size="icon"
-                    className="h-9 w-9 text-destructive border-destructive/30 hover:bg-destructive/10"
-                    disabled={!!order.driver_id || busy}
-                    title={order.driver_id ? 'Έχει ανατεθεί σε οδηγό' : 'Ακύρωση'}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Ακύρωση {formatOrderNumber(order)};</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      Η παραγγελία θα αφαιρεθεί από την ουρά. Επιστροφές χρημάτων γίνονται ξεχωριστά.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-                  <AlertDialogFooter>
-                    <AlertDialogCancel>Όχι</AlertDialogCancel>
-                    <AlertDialogAction
-                      onClick={async () => {
-                        stopOrderAlertLoop();
-                        const ok = await onStatusUpdate(order.id, 'cancelled');
-                        if (ok === false) toast.error('Cancel failed');
-                        else toast.success('Order cancelled');
-                      }}
-                      className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                    >
-                      Ναι, ακύρωση
-                    </AlertDialogAction>
-                  </AlertDialogFooter>
-                </AlertDialogContent>
-              </AlertDialog>
             </div>
           </div>
         )}
@@ -520,104 +446,92 @@ export function OrderQueue({
     );
   };
 
+  const newCol = columns[0];
+  const acceptedCol = columns[1];
+  const readyCol = columns[2];
+
   return (
-    <div className="space-y-2.5">
-      {/* Density meter + sticky next accept */}
-      <div className="flex flex-wrap items-center gap-2 justify-between">
-        <p className="text-[11px] text-muted-foreground font-heading">
-          <span className="font-bold text-foreground tabular-nums">{totalLive}</span> ενεργές
-          <span className="mx-1 opacity-40">·</span>
-          πυκνή προβολή · πάτα κάρτα για λεπτομέρειες
-        </p>
-        {nextNew && (
-          <div className="flex items-center gap-1.5 rounded-lg border border-primary/30 bg-primary/10 pl-2.5 pr-1 py-1">
-            <Clock className="h-3.5 w-3.5 text-primary shrink-0" />
-            <span className="text-[11px] font-heading font-bold text-foreground tabular-nums">
-              {formatOrderNumber(nextNew)}
+    <div className="space-y-3 relative">
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <h2 className="font-heading font-extrabold text-xl md:text-2xl text-foreground tracking-tight">
+          Live παραγγελίες
+        </h2>
+        <div className="flex items-center gap-2 text-[12px] text-muted-foreground">
+          <span className="inline-flex items-center gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
             </span>
-            <span className="text-[10px] text-muted-foreground hidden sm:inline">
-              {getTimeSince(nextNew.created_at, now)} · {getPrep(nextNew)}λ
-            </span>
-            <div className="flex gap-0.5">
-              {PREP_PRESETS.slice(0, 3).map((p) => (
-                <button
-                  key={p}
-                  type="button"
-                  onClick={() => setPrep(nextNew.id, p)}
-                  className={cn(
-                    'h-6 px-1.5 rounded text-[10px] font-heading font-bold border',
-                    getPrep(nextNew) === p
-                      ? 'bg-primary text-primary-foreground border-primary'
-                      : 'bg-card border-border',
-                  )}
-                >
-                  {p}
-                </button>
-              ))}
-            </div>
-            <Button
-              size="sm"
-              className="h-7 px-2.5 text-[11px] font-heading gradient-primary text-primary-foreground"
-              disabled={isBusy(nextNew.id)}
-              onClick={() => handleAdvance(nextNew, 'preparing')}
-            >
-              {isBusy(nextNew.id) ? '…' : 'Αποδοχή'}
-            </Button>
-          </div>
-        )}
+            Ζωντανά
+          </span>
+        </div>
       </div>
 
-      {/* 3-column board: mobile = horizontal snap; desktop = equal columns with independent scroll */}
-      <div
-        className={cn(
-          'flex gap-2 overflow-x-auto pb-1 snap-x snap-mandatory',
-          'md:grid md:grid-cols-3 md:overflow-visible md:pb-0 md:snap-none',
-          'md:h-[calc(100dvh-12.5rem)]',
-        )}
-      >
-        {columns.map((col) => (
-          <section
-            key={col.id}
-            className={cn(
-              'snap-start shrink-0 w-[min(92vw,340px)] md:w-auto md:min-w-0',
-              'rounded-xl border flex flex-col min-h-0',
-              col.accent,
-            )}
-          >
-            <div className="flex items-center justify-between gap-2 px-2.5 py-1.5 border-b border-border/50 shrink-0 bg-card/60 backdrop-blur-sm rounded-t-xl">
-              <h3 className="font-heading font-extrabold text-[13px] text-foreground">{col.label}</h3>
-              <span
-                className={cn(
-                  'min-w-[1.5rem] h-5 px-1.5 rounded-full text-[11px] font-heading font-bold tabular-nums',
-                  'flex items-center justify-center bg-card border border-border',
-                  col.items.length >= 15 && 'bg-warning/15 border-warning/40 text-warning',
-                  col.items.length >= 25 && 'bg-destructive/15 border-destructive/40 text-destructive',
-                )}
-              >
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-6 min-h-[50vh]">
+        {[newCol, acceptedCol].map((col) => (
+          <section key={col.id} className="flex flex-col min-h-0">
+            <div className="flex items-baseline gap-2 mb-3">
+              <h3 className="font-heading font-bold text-[15px] text-foreground">
+                {col.label}
+              </h3>
+              <span className="font-heading font-extrabold text-[15px] tabular-nums text-muted-foreground">
                 {col.items.length}
               </span>
             </div>
 
-            <div className="flex-1 overflow-y-auto overflow-x-hidden p-2 scrollbar-thin min-h-[10rem] md:min-h-0">
+            <div className="flex-1 space-y-2.5 overflow-y-auto min-h-[12rem] max-h-[calc(100dvh-14rem)] pr-0.5">
               {col.items.length === 0 ? (
-                <div className="rounded-lg border border-dashed border-border/60 bg-card/30 py-10 text-center">
-                  <Package className="h-5 w-5 text-muted-foreground/60 mx-auto mb-1" />
-                  <p className="text-[11px] text-muted-foreground">Κενή</p>
+                <div className="flex flex-col items-center justify-center py-16 px-4 text-center">
+                  <div className="h-20 w-20 rounded-2xl bg-muted/40 border border-dashed border-border flex items-center justify-center mb-3">
+                    <ShoppingBag className="h-9 w-9 text-muted-foreground/50" strokeWidth={1.25} />
+                  </div>
+                  <p className="text-[13px] text-muted-foreground font-medium">
+                    {col.id === 'new'
+                      ? 'Δεν υπάρχουν νέες παραγγελίες'
+                      : 'Δεν υπάρχουν αποδεκτές παραγγελίες'}
+                  </p>
                 </div>
               ) : (
-                <div
-                  className={cn(
-                    'grid gap-2 content-start',
-                    // Prefer wider tickets; 2-up only on very wide columns
-                    'grid-cols-1 2xl:grid-cols-2',
-                  )}
-                >
-                  {col.items.map((order) => renderCard(order))}
-                </div>
+                col.items.map((order) => renderCard(order))
               )}
             </div>
           </section>
         ))}
+      </div>
+
+      {readyCol.items.length > 0 && (
+        <section className="rounded-xl border border-success/25 bg-success/5 p-3 space-y-2">
+          <div className="flex items-center gap-2">
+            <h3 className="font-heading font-bold text-[14px] text-foreground">Έτοιμες</h3>
+            <span className="min-w-[1.4rem] h-5 px-1.5 rounded-full bg-success/15 text-success text-[11px] font-bold tabular-nums flex items-center justify-center">
+              {readyCol.items.length}
+            </span>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {readyCol.items.map((order) => renderCard(order))}
+          </div>
+        </section>
+      )}
+
+      <div className="fixed bottom-4 right-4 z-40 hidden sm:block">
+        <div className="rounded-xl border border-border bg-card shadow-lg p-3 min-w-[200px]">
+          <div className="flex items-center justify-between gap-2 mb-2">
+            <p className="text-[11px] font-heading font-bold text-foreground flex items-center gap-1.5">
+              <span className="h-1.5 w-1.5 rounded-full bg-destructive animate-pulse" />
+              Ζωντανές παραγγελίες
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div className="rounded-lg bg-muted/50 px-2.5 py-2 text-center">
+              <p className="text-[10px] text-muted-foreground font-medium">Νέα</p>
+              <p className="font-heading font-extrabold text-lg tabular-nums">{newCol.items.length}</p>
+            </div>
+            <div className="rounded-lg bg-muted/50 px-2.5 py-2 text-center">
+              <p className="text-[10px] text-muted-foreground font-medium">Έγινε αποδεκτή</p>
+              <p className="font-heading font-extrabold text-lg tabular-nums">{acceptedCol.items.length}</p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );
