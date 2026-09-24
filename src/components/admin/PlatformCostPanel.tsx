@@ -1,4 +1,4 @@
-import { useMemo } from 'react';
+import { useEffect, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, startOfDay } from 'date-fns';
 import {
@@ -107,7 +107,8 @@ export default function PlatformCostPanel({ onNavigate }: { onNavigate?: (tab: s
 
   const { data, isLoading, isFetching, dataUpdatedAt, refetch } = useQuery({
     queryKey: ['admin-platform-cost'],
-    refetchInterval: 15_000,
+    refetchInterval: 10_000,
+    staleTime: 0,
     queryFn: async () => {
       const todayStart = startOfDay(new Date()).toISOString();
 
@@ -121,6 +122,9 @@ export default function PlatformCostPanel({ onNavigate }: { onNavigate?: (tab: s
         pendingPayoutsRes,
         ordersCountRes,
         locationsCountRes,
+        driversOnShiftRes,
+        activeStoresRes,
+        activeDriversRes,
       ] = await Promise.all([
         (supabase as any)
           .from('admin_treasury')
@@ -152,6 +156,13 @@ export default function PlatformCostPanel({ onNavigate }: { onNavigate?: (tab: s
           .limit(2000),
         supabase.from('orders').select('id', { count: 'exact', head: true }),
         supabase.from('driver_locations').select('id', { count: 'exact', head: true }),
+        (supabase as any)
+          .from('driver_state')
+          .select('driver_id, shift_started_at, on_break')
+          .not('shift_started_at', 'is', null)
+          .limit(2000),
+        supabase.from('stores').select('id', { count: 'exact', head: true }).eq('is_active', true),
+        supabase.from('driver_profiles').select('user_id', { count: 'exact', head: true }).eq('is_active', true),
       ]);
 
       const orders = todayOrdersRes.data ?? [];
@@ -199,6 +210,10 @@ export default function PlatformCostPanel({ onNavigate }: { onNavigate?: (tab: s
         pool_healthy_threshold: 500,
       };
 
+      const onShift = ((driversOnShiftRes.data as any[]) ?? []).filter(
+        (s) => !!s.shift_started_at && !s.on_break,
+      ).length;
+
       return {
         treasury,
         settings,
@@ -208,9 +223,37 @@ export default function PlatformCostPanel({ onNavigate }: { onNavigate?: (tab: s
         unresolvedPayouts,
         ordersTotal: ordersCountRes.count ?? 0,
         locationsTotal: locationsCountRes.count ?? 0,
+        driversOnShift: onShift,
+        activeDrivers: activeDriversRes.count ?? 0,
+        activeStores: activeStoresRes.count ?? 0,
       };
     },
   });
+
+  // Realtime: refresh when orders / wallets / treasury change
+  useEffect(() => {
+    const channel = supabase
+      .channel('admin-platform-cost-live')
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => {
+        void refetch();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'admin_treasury' }, () => {
+        void refetch();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_wallets' }, () => {
+        void refetch();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'store_wallets' }, () => {
+        void refetch();
+      })
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'driver_state' }, () => {
+        void refetch();
+      })
+      .subscribe();
+    return () => {
+      void supabase.removeChannel(channel);
+    };
+  }, [refetch]);
 
   const stripeEstimate = useMemo(() => {
     if (!data) return 0;
@@ -248,12 +291,16 @@ export default function PlatformCostPanel({ onNavigate }: { onNavigate?: (tab: s
             Κόστος πλατφόρμας
           </h2>
           <p className="text-sm text-muted-foreground mt-1 max-w-2xl">
-            Ζωντανή εικόνα λειτουργικού κόστους: ταμείο, υποχρεώσεις προς οδηγούς/καταστήματα,
-            σημερινά payouts &amp; κέρδος, και εκτιμήσεις υποδομής.
+            Ζωντανά στοιχεία από τη βάση: ταμείο, υποχρεώσεις, σημερινά payouts & κέρδος,
+            οδηγοί/καταστήματα σε λειτουργία. Οι εκτιμήσεις υποδομής είναι προσεγγίσεις.
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Badge variant="outline" className="tabular-nums text-xs font-normal">
+          <Badge variant="outline" className="tabular-nums text-xs font-normal gap-1.5">
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-success opacity-60" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-success" />
+            </span>
             Live · {updatedLabel}
           </Badge>
           <Button
@@ -305,6 +352,37 @@ export default function PlatformCostPanel({ onNavigate }: { onNavigate?: (tab: s
               hint="Θετικά store wallets"
               icon={Store}
               tone={(data?.storeLiability ?? 0) > 0 ? 'warn' : 'neutral'}
+            />
+          </div>
+
+          {/* Live ops strip */}
+          <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Kpi
+              label="Ανοιχτές παραγγελίες"
+              value={String(data?.today.openOrders ?? 0)}
+              hint="Σε εξέλιξη τώρα"
+              icon={Activity}
+              tone={(data?.today.openOrders ?? 0) > 0 ? 'warn' : 'neutral'}
+            />
+            <Kpi
+              label="Οδηγοί σε βάρδια"
+              value={`${data?.driversOnShift ?? 0} / ${data?.activeDrivers ?? 0}`}
+              hint="Online · ενεργοί προφίλ"
+              icon={Bike}
+              tone={(data?.driversOnShift ?? 0) > 0 ? 'good' : 'warn'}
+            />
+            <Kpi
+              label="Ενεργά καταστήματα"
+              value={String(data?.activeStores ?? 0)}
+              hint="is_active = true"
+              icon={Store}
+            />
+            <Kpi
+              label="Lifetime κέρδος"
+              value={euro(Number(data?.treasury.lifetime_platform_earned ?? 0))}
+              hint="lifetime_platform_earned"
+              icon={TrendingUp}
+              tone="good"
             />
           </div>
 
