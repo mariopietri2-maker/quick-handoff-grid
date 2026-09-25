@@ -47,7 +47,7 @@ export default function AutoAcceptRules({ storeId }: { storeId: string }) {
             <Zap className="h-5 w-5 text-primary" />
             <div>
               <h3 className="font-heading font-bold text-foreground">Αυτόματη Αποδοχή</h3>
-              <p className="text-xs text-muted-foreground">Δέξου αυτόματα μικρές παραγγελίες</p>
+              <p className="text-xs text-muted-foreground">Μετά από 10 κουδουνίσματα → αυτόματη αποδοχή με χρόνο ετοιμασίας</p>
             </div>
           </div>
           <Switch checked={enabled} onCheckedChange={setEnabled} />
