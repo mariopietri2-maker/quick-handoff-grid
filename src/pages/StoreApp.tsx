@@ -248,7 +248,7 @@ export default function StoreApp() {
         </div>
       </header>
 
-      <div className={`mx-auto py-4 ${view === 'manage' && !isNStore ? 'max-w-none px-0 lg:px-0' : 'container max-w-5xl px-4'}`}>
+      <div className={`mx-auto py-4 ${view === 'manage' && !isNStore ? 'max-w-none px-0' : 'container max-w-5xl px-4'}`}>
         <StorePwaInstallBanner />
 
         {view === 'create' ? (
@@ -309,9 +309,9 @@ export default function StoreApp() {
             <Button onClick={backToPortal}>Πίσω στο portal</Button>
           </div>
         ) : (
-          <div className={`${!isNStore ? 'lg:flex lg:gap-0 lg:items-start' : 'lg:grid lg:grid-cols-[270px_minmax(0,1fr)] lg:gap-5 lg:items-start'} space-y-4 lg:space-y-0`}>
+          <div className={`${!isNStore ? 'md:flex md:gap-0 md:items-start' : 'md:grid md:grid-cols-[240px_minmax(0,1fr)] md:gap-4 md:items-start'} space-y-4 lg:space-y-0`}>
             {!isNStore && (
-              <aside className="hidden lg:flex flex-col w-[260px] shrink-0 sticky top-14 self-start max-h-[calc(100vh-3.5rem)] overflow-y-auto border-r border-border bg-card/95 backdrop-blur-sm">
+              <aside className="hidden md:flex flex-col w-[240px] md:w-[260px] shrink-0 sticky top-14 self-start max-h-[calc(100vh-3.5rem)] overflow-y-auto border-r border-border bg-card/95 backdrop-blur-sm">
                 <div className="px-4 pt-4 pb-3 border-b border-border">
                   <div className="flex items-center gap-2.5 mb-3">
                     <Logo className="h-8 w-8" />
@@ -416,7 +416,7 @@ export default function StoreApp() {
                 {store && <div className="mt-3"><StoreDriverIdPanel storeId={store.id} storeName={store.name} /></div>}
               </aside>
             )}
-            <div className={`${!isNStore ? 'flex-1 min-w-0 px-0 lg:px-5 lg:py-1' : 'order-1 lg:order-2 min-w-0'}`}>
+            <div className={`${!isNStore ? 'flex-1 min-w-0 px-3 md:px-5 md:py-1' : 'order-1 md:order-2 min-w-0'}`}>
               {store.store_role === 'N' ? (
                 <div className="py-6 max-w-lg mx-auto space-y-4">
             <AnnouncementsBanner audience="store_owners" />
@@ -494,7 +494,7 @@ export default function StoreApp() {
               <PackagePlus className="h-4 w-4" />
               Νέα Custom Order (eFood / Wolt / Box)
             </Button>
-            <div className="hidden lg:flex items-center justify-between mb-3 pt-1">
+            <div className="hidden md:flex items-center justify-between mb-3 pt-1">
               <h1 className="text-xl font-heading font-bold text-foreground tracking-tight">
                 {activeTab === 'orders' ? 'Live παραγγελίες' :
                  activeTab === 'external' ? 'Εξωτερικές παραγγελίες' :
@@ -509,7 +509,7 @@ export default function StoreApp() {
               </h1>
             </div>
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList ref={tabsListRef} className={`w-full h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin rounded-xl border border-border bg-muted/40 p-1 lg:hidden ${activeTab === 'orders' ? 'mb-2' : 'mb-4'}`}>
+              <TabsList ref={tabsListRef} className={`w-full h-auto gap-1 flex overflow-x-auto sm:flex-wrap scrollbar-thin rounded-xl border border-border bg-muted/40 p-1 md:hidden ${activeTab === 'orders' ? 'mb-2' : 'mb-4'}`}>
                 <TabsTrigger value="orders" className="flex-1 min-w-[90px] font-heading rounded-lg relative">
                   <ClipboardList className="h-4 w-4 mr-1.5" />
                   Παραγγελίες
