@@ -1,0 +1,150 @@
+name: Apply Ring10 Auto Accept
+
+on:
+  workflow_dispatch:
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch notifications + useOrders + AutoAcceptRules
+        run: |
+          python3 <<'PY'
+          from pathlib import Path
+
+          # 1) notifications.ts — onComplete after max rings
+          p = Path('src/lib/notifications.ts')
+          t = p.read_text()
+          if 'orderAlertOnComplete' not in t:
+              t = t.replace(
+                  'let orderAlertMaxRepeats: number | null = null;\nconst ORDER_ALERT_GAP_MS = 3200;',
+                  'let orderAlertMaxRepeats: number | null = null;\nlet orderAlertOnComplete: (() => void) | null = null;\nlet orderAlertCompleted = false;\nconst ORDER_ALERT_GAP_MS = 3200;',
+                  1,
+              )
+              t = t.replace(
+                  'export function startOrderAlertLoop(opts?: { maxRepeats?: number | null }) {\n  const nextMax = opts && \'maxRepeats\' in opts ? opts.maxRepeats ?? null : null;\n  if (orderAlertTimer != null) {\n    orderAlertMaxRepeats = nextMax;\n    if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n      stopOrderAlertLoop();\n    }\n    return;\n  }',
+                  '''export function startOrderAlertLoop(opts?: {\n  maxRepeats?: number | null;\n  onComplete?: () => void;\n}) {\n  const nextMax = opts && \'maxRepeats\' in opts ? opts.maxRepeats ?? null : null;\n  if (opts?.onComplete) orderAlertOnComplete = opts.onComplete;\n  if (orderAlertTimer != null) {\n    orderAlertMaxRepeats = nextMax;\n    if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n      const cb = orderAlertOnComplete;\n      orderAlertOnComplete = null;\n      stopOrderAlertLoop();\n      if (cb && !orderAlertCompleted) { orderAlertCompleted = true; try { cb(); } catch {} }\n    }\n    return;\n  }''',
+                  1,
+              )
+              t = t.replace(
+                  'if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n    stopOrderAlertLoop();\n    return;\n  }\n  orderAlertTimer = setInterval(() => {\n    try {\n      const live = loadStoreSoundPrefs();\n      if (!live.orderChimeEnabled) { stopOrderAlertLoop(); return; }\n      if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) { stopOrderAlertLoop(); return; }\n      playOrderSound(live.orderVolume);\n      orderAlertCount += 1;\n      if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) stopOrderAlertLoop();\n    } catch {}\n  }, 2800);\n}',
+                  '''orderAlertCompleted = false;\n  if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n    const cb = orderAlertOnComplete;\n    orderAlertOnComplete = null;\n    stopOrderAlertLoop();\n    if (cb) { orderAlertCompleted = true; try { cb(); } catch {} }\n    return;\n  }\n  orderAlertTimer = setInterval(() => {\n    try {\n      const live = loadStoreSoundPrefs();\n      if (!live.orderChimeEnabled) { stopOrderAlertLoop(); return; }\n      if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n        const cb = orderAlertOnComplete;\n        orderAlertOnComplete = null;\n        stopOrderAlertLoop();\n        if (cb && !orderAlertCompleted) { orderAlertCompleted = true; try { cb(); } catch {} }\n        return;\n      }\n      playOrderSound(live.orderVolume);\n      orderAlertCount += 1;\n      if (orderAlertMaxRepeats != null && orderAlertCount >= orderAlertMaxRepeats) {\n        const cb = orderAlertOnComplete;\n        orderAlertOnComplete = null;\n        stopOrderAlertLoop();\n        if (cb && !orderAlertCompleted) { orderAlertCompleted = true; try { cb(); } catch {} }\n      }\n    } catch {}\n  }, 2800);\n}''',
+                  1,
+              )
+              t = t.replace(
+                  'export function stopOrderAlertLoop() {\n  if (orderAlertTimer != null) {\n    clearInterval(orderAlertTimer);\n    orderAlertTimer = null;\n  }\n  orderAlertCount = 0;\n}',
+                  '''export function stopOrderAlertLoop() {\n  if (orderAlertTimer != null) {\n    clearInterval(orderAlertTimer);\n    orderAlertTimer = null;\n  }\n  orderAlertOnComplete = null;\n  orderAlertCount = 0;\n}''',
+                  1,
+              )
+              p.write_text(t)
+              print('notifications patched')
+          else:
+              print('notifications already patched')
+
+          # 2) useOrders — 10 rings + auto accept
+          u = Path('src/hooks/useOrders.ts')
+          ut = u.read_text()
+          ut2 = ut.replace(
+              "startOrderAlertLoop({ maxRepeats: autoAcceptRef.current ? 5 : null });",
+              "startOrderAlertLoop({ maxRepeats: autoAcceptRef.current ? 10 : null });",
+          )
+          old_eff = """  useEffect(() => {
+    if (suppressSound) { stopOrderAlertLoop(); return; }
+    const hasNew = orders.some((o) => o.status === 'placed');
+    if (hasNew) startOrderAlertLoop({ maxRepeats: autoAcceptEnabled ? 5 : null });
+    else stopOrderAlertLoop();
+  }, [orders, autoAcceptEnabled, suppressSound]);"""
+          new_eff = """  const autoAcceptPrepRef = useRef(20);
+  const autoAcceptingRef = useRef(false);
+  useEffect(() => {
+    if (!storeId) return;
+    void (supabase as any)
+      .from('store_auto_accept_rules')
+      .select('default_prep_minutes')
+      .eq('store_id', storeId)
+      .maybeSingle()
+      .then(({ data }: any) => {
+        const prep = Number(data?.default_prep_minutes);
+        if (Number.isFinite(prep) && prep > 0) autoAcceptPrepRef.current = prep;
+      });
+  }, [storeId]);
+
+  const autoAcceptPlaced = useCallback(async () => {
+    if (!storeId || autoAcceptingRef.current) return;
+    const placed = orders.filter((o) => o.status === 'placed');
+    if (placed.length === 0) return;
+    autoAcceptingRef.current = true;
+    const prep = autoAcceptPrepRef.current || 20;
+    try {
+      for (const o of placed) {
+        try {
+          const { error } = await supabase.rpc('transition_order_status' as never, {
+            p_order_id: o.id,
+            p_new_status: 'preparing',
+            p_estimated_prep_time: prep,
+          } as never);
+          if (error) {
+            await supabase.from('orders').update({ status: 'preparing', estimated_prep_time: prep } as any).eq('id', o.id).eq('status', 'placed');
+          }
+        } catch {}
+      }
+      toast.success(`Αυτόματη αποδοχή · ετοιμασία ${prep}λ`);
+      stopOrderAlertLoop();
+      void fetchOrders();
+    } finally {
+      autoAcceptingRef.current = false;
+    }
+  }, [storeId, orders, fetchOrders]);
+
+  useEffect(() => {
+    if (suppressSound) { stopOrderAlertLoop(); return; }
+    const hasNew = orders.some((o) => o.status === 'placed');
+    if (hasNew) {
+      startOrderAlertLoop({
+        maxRepeats: autoAcceptEnabled ? 10 : null,
+        onComplete: autoAcceptEnabled ? () => { void autoAcceptPlaced(); } : undefined,
+      });
+    } else stopOrderAlertLoop();
+  }, [orders, autoAcceptEnabled, suppressSound, autoAcceptPlaced]);"""
+          if old_eff in ut2:
+              ut2 = ut2.replace(old_eff, new_eff, 1)
+              print('useOrders effect patched')
+          else:
+              print('useOrders effect pattern miss')
+          # also load enabled rules still works
+          if ut2 != ut:
+              u.write_text(ut2)
+              print('useOrders written')
+
+          # 3) AutoAcceptRules copy
+          a = Path('src/components/store/AutoAcceptRules.tsx')
+          at = a.read_text()
+          at = at.replace(
+              'Δέξου αυτόματα μικρές παραγγελίες',
+              'Μετά από 10 κουδουνίσματα → αυτόματη αποδοχή με τον χρόνο ετοιμασίας',
+          )
+          if '10 κουδουνίσματα' in at and 'Αυτόματη αποδοχή' in at:
+              if 'Όταν είναι ενεργό' not in at:
+                  at = at.replace(
+                      '<Button onClick={save} className="w-full">Αποθήκευση</Button>',
+                      '''<p className="text-[11px] text-muted-foreground leading-snug">
+          Όταν είναι ενεργό: χτυπάει <strong>10 φορές</strong> και μετά γίνεται αυτόματα αποδεκτή
+          με τον προεπιλεγμένο χρόνο ετοιμασίας. Μικρές παραγγελίες (≤ μέγιστο ποσό) μπορεί να γίνουν
+          αποδεκτές αμέσως από τον server.
+        </p>
+        <Button onClick={save} className="w-full">Αποθήκευση</Button>''',
+                  )
+              a.write_text(at)
+              print('AutoAcceptRules patched')
+          PY
+      - name: Commit
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add src/lib/notifications.ts src/hooks/useOrders.ts src/components/store/AutoAcceptRules.tsx
+          git diff --cached --stat
+          git commit -m "feat(store): auto-accept after 10 rings with default prep time" || exit 0
+          git push origin HEAD:main
