@@ -2,7 +2,7 @@ import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   ClipboardList, UtensilsCrossed, Settings, Plus, Bell, BarChart3, Tag,
   Package, Clock, Zap, PackagePlus, ArrowLeft, Power, ReceiptText,
-  Wallet, Store as StoreIcon,
+  Wallet, Store as StoreIcon, History,
 } from 'lucide-react';
 import { Logo } from '@/components/brand/Logo';
 import { UserMenu } from '@/components/UserMenu';
@@ -19,6 +19,7 @@ import AutoAcceptRules from '@/components/store/AutoAcceptRules';
 import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderIngest';
 import StoreWalletCard from '@/components/store/StoreWalletCard';
 import StoreOrderPnl from '@/components/store/StoreOrderPnl';
+import StoreOrderHistory from '@/components/store/StoreOrderHistory';
 import MenuImportFromReceipt from '@/components/store/MenuImportFromReceipt';
 import { StoreOpennessToggle } from '@/components/store/StoreOpennessToggle';
 import { isStoreOpenNow } from '@/lib/store-hours';
@@ -130,7 +131,7 @@ export default function StoreApp() {
       const t = new URLSearchParams(window.location.search).get('tab');
       if (
         t &&
-        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'promos', 'automation', 'settings', 'pnl'].includes(t)
+        ['orders', 'external', 'menu', 'inventory', 'hours', 'analytics', 'promos', 'automation', 'settings', 'pnl', 'history'].includes(t)
       ) {
         return t;
       }
@@ -330,6 +331,7 @@ export default function StoreApp() {
                   {[
                     { id: 'orders', label: 'Live παραγγελίες', icon: ClipboardList, badge: placedCount },
                     { id: 'external', label: 'Εξωτερικές / Custom', icon: PackagePlus },
+                    { id: 'history', label: 'Ιστορικό', icon: History },
                   ].map((item) => {
                     const Icon = item.icon;
                     const active = activeTab === item.id;
@@ -498,6 +500,7 @@ export default function StoreApp() {
               <h1 className="text-xl font-heading font-bold text-foreground tracking-tight">
                 {activeTab === 'orders' ? 'Live παραγγελίες' :
                  activeTab === 'external' ? 'Εξωτερικές παραγγελίες' :
+                 activeTab === 'history' ? 'Ιστορικό παραγγελιών' :
                  activeTab === 'menu' ? 'Κατάλογος' :
                  activeTab === 'inventory' ? 'Απόθεμα' :
                  activeTab === 'hours' ? 'Ωράριο' :
@@ -520,6 +523,10 @@ export default function StoreApp() {
                 <TabsTrigger value="external" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <PackagePlus className="h-4 w-4 mr-1.5" />
                   External
+                </TabsTrigger>
+                <TabsTrigger value="history" className="flex-1 min-w-[90px] font-heading rounded-lg">
+                  <History className="h-4 w-4 mr-1.5" />
+                  Ιστορικό
                 </TabsTrigger>
                 <TabsTrigger value="menu" className="flex-1 min-w-[90px] font-heading rounded-lg">
                   <UtensilsCrossed className="h-4 w-4 mr-1.5" />
@@ -574,6 +581,9 @@ export default function StoreApp() {
 
               <TabsContent value="external">
                 <StoreExternalOrderIngest storeId={store.id} />
+              </TabsContent>
+              <TabsContent value="history">
+                <StoreOrderHistory storeId={store.id} />
               </TabsContent>
               <TabsContent value="menu">
                 <MenuImportFromReceipt storeId={store.id} />
