@@ -25,8 +25,16 @@ export const PAYMENT_LABELS: Record<string, string> = {
 };
 
 function money(n: number | null | undefined) {
-  // EUR prefix — euro glyph missing on many thermal fonts
-  return `EUR ${Number(n ?? 0).toFixed(2)}`;
+  // Compact ASCII so 58mm paper does not clip the amount column
+  return Number(n ?? 0).toFixed(2);
+}
+
+function twoCol(left: string, right: string, cols: number): string {
+  const r = cutText(String(right), Math.min(10, Math.max(6, Math.floor(cols * 0.35))));
+  const maxL = Math.max(4, cols - r.length - 1);
+  const l = cutText(String(left), maxL);
+  const gap = Math.max(1, cols - [...l].length - [...r].length);
+  return l + ' '.repeat(gap) + r;
 }
 
 function escpad(text: string, width: number, align: 'left' | 'right' | 'center' = 'left'): string {
@@ -48,7 +56,7 @@ export function buildOrderEscPos(
   order: OrderWithItems,
   storeName: string,
   extras: PrintOrderExtras = {},
-  width: EscPosWidth = 80,
+  width: EscPosWidth = 58,
 ): Uint8Array[] {
   const cols = ESCPOS_COLS[width];
   const enc = new EscPosEncoder(width);
@@ -115,13 +123,24 @@ export function buildOrderEscPos(
   enc.align('left');
   enc.bold(false);
   const items = order.order_items ?? [];
+  let itemsSum = 0;
   for (const item of items) {
     const qty = Number(item.quantity) || 0;
-    const unit = Number(item.unit_price) || 0;
-    const amt = money(qty * unit);
-    const left = cutText(`${qty}x ${String(item.name ?? '')}`, cols - amt.length - 1);
-    enc.text(left + ' '.repeat(Math.max(1, cols - amt.length - left.length)) + amt);
-    enc.line();
+    const unit = Number((item as { unit_price?: number | null }).unit_price) || 0;
+    const lineAmt = qty * unit;
+    itemsSum += lineAmt;
+    const name = String(item.name ?? '').trim() || 'Προϊόν';
+    const amtStr = money(lineAmt);
+    const header = cutText(`${qty}x ${name}`, cols);
+    if ([...header].length + [...amtStr].length + 1 <= cols) {
+      enc.text(twoCol(header, amtStr, cols));
+      enc.line();
+    } else {
+      enc.text(header);
+      enc.line();
+      enc.text(twoCol('', amtStr, cols));
+      enc.line();
+    }
   }
   if (items.length === 0) {
     enc.text('-');
@@ -130,18 +149,21 @@ export function buildOrderEscPos(
   enc.text('-'.repeat(cols));
   enc.line();
 
-  enc.text(escpad('Υποσύνολο', cols - 12, 'left') + ' '.repeat(2) + escpad(money(subtotal), 10, 'right'));
+  const totalAmt = Number(order.total_amount) || itemsSum || 0;
+  const subAmt = Number.isFinite(subtotal) && subtotal > 0 ? subtotal : Math.max(0, totalAmt - fee - tip);
+
+  enc.text(twoCol('Υποσύνολο', money(subAmt), cols));
   enc.line();
   if (fee > 0) {
-    enc.text(escpad('Παράδοση', cols - 12, 'left') + ' '.repeat(2) + escpad(money(fee), 10, 'right'));
+    enc.text(twoCol('Παράδοση', money(fee), cols));
     enc.line();
   }
   if (tip > 0) {
-    enc.text(escpad('Φιλοδώρημα', cols - 12, 'left') + ' '.repeat(2) + escpad(money(tip), 10, 'right'));
+    enc.text(twoCol('Φιλοδώρημα', money(tip), cols));
     enc.line();
   }
   enc.bold(true);
-  enc.text(escpad('ΣΥΝΟΛΟ', cols - 12, 'left') + ' '.repeat(2) + escpad(money(order.total_amount), 10, 'right'));
+  enc.text(twoCol('ΣΥΝΟΛΟ', money(totalAmt), cols));
   enc.bold(false);
   enc.feed(1);
 
@@ -149,7 +171,8 @@ export function buildOrderEscPos(
     enc.align('center');
     enc.bold(true);
     enc.text('*** ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ ***');
-    enc.text(escpad(money(order.total_amount), cols, 'center').trimEnd());
+    enc.line();
+    enc.text(escpad(money(totalAmt), cols, 'center').trimEnd());
     enc.bold(false);
     enc.feed(1);
   }
@@ -177,17 +200,17 @@ export function buildOrderEscPos(
     enc.align('center');
     if (custName || custPhone || addr) {
       enc.bold(true);
-      enc.text(escpad('ΠΑΡΑΛΗΠΤΗΣ', cols, 'center').trimEnd());
+      enc.text('ΠΑΡΑΛΗΠΤΗΣ');
       enc.bold(false);
       enc.line();
       if (custName) {
         enc.bold(true);
-        enc.text(escpad(cutText(custName, cols), cols, 'center').trimEnd());
+        enc.text(cutText(custName, cols));
         enc.bold(false);
         enc.line();
       }
       if (custPhone) {
-        enc.text(escpad(cutText(custPhone, cols), cols, 'center').trimEnd());
+        enc.text(cutText(custPhone, cols));
         enc.line();
       }
       if (addr) {
@@ -196,7 +219,7 @@ export function buildOrderEscPos(
         for (const w of words) {
           const next = line ? `${line} ${w}` : w;
           if (next.length > cols && line) {
-            enc.text(escpad(cutText(line, cols), cols, 'center').trimEnd());
+            enc.text(cutText(line, cols));
             enc.line();
             line = w;
           } else {
@@ -204,14 +227,14 @@ export function buildOrderEscPos(
           }
         }
         if (line) {
-          enc.text(escpad(cutText(line, cols), cols, 'center').trimEnd());
+          enc.text(cutText(line, cols));
           enc.line();
         }
       }
     }
     if (drv) {
       enc.feed(1);
-      enc.text(escpad(cutText(`Οδηγός: ${drv}`, cols), cols, 'center').trimEnd());
+      enc.text(cutText(`Οδηγός: ${drv}`, cols));
       enc.line();
     }
     enc.align('left');

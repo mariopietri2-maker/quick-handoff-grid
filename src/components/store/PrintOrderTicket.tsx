@@ -166,15 +166,17 @@ export function printOrderTicket(
           padding-top: 6px;
         }
         .block {
-          margin: 12px auto 0;
+          margin: 14px auto 0;
           width: 100%;
+          max-width: 100%;
           box-sizing: border-box;
           font-size: 13px;
-          text-align: center;
+          text-align: center !important;
           border: 2px solid #000;
           border-radius: 8px;
-          padding: 10px 8px 12px;
+          padding: 12px 6px 14px;
         }
+        .block * { text-align: center !important; }
         .block strong {
           display: block;
           width: 100%;
@@ -373,7 +375,7 @@ export async function printOrderSafe(
   const prefs = getPrinterPrefs();
   const st = getPrinterState();
   if (prefs.enabled && prefs.mode === 'direct' && st.status === 'connected') {
-    const chunks = buildOrderEscPos(order, storeName, extras, prefs.paperWidth ?? 80);
+    const chunks = buildOrderEscPos(order, storeName, extras, prefs.paperWidth ?? 58);
     await sendToActivePrinter(chunks);
     return { direct: true };
   }

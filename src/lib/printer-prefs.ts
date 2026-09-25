@@ -32,7 +32,7 @@ const DEFAULTS: PrinterPrefs = {
   autoPrintOnAccept: false,
   printerName: '',
   mode: 'browser',
-  paperWidth: 80,
+  paperWidth: 58,
   baudRate: 9600,
   blePreset: 'ff00',
   bleCustomService: '',
