@@ -197,7 +197,7 @@ export default function StoreApp() {
   return (
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 glass-strong border-b border-border/40">
-        <div className="container max-w-5xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
+        <div className={`mx-auto px-4 h-14 flex items-center justify-between gap-2 ${view === 'manage' && !isNStore ? 'max-w-none' : 'container max-w-5xl'}`}>
           <div className="flex items-center gap-2.5 min-w-0">
             {view === 'manage' && stores.length > 1 && (
               <Button size="icon" variant="ghost" className="shrink-0" onClick={backToPortal}>
@@ -248,7 +248,7 @@ export default function StoreApp() {
         </div>
       </header>
 
-      <div className="container max-w-5xl mx-auto px-4 py-4">
+      <div className={`mx-auto py-4 ${view === 'manage' && !isNStore ? 'max-w-none px-0 lg:px-0' : 'container max-w-5xl px-4'}`}>
         <StorePwaInstallBanner />
 
         {view === 'create' ? (
