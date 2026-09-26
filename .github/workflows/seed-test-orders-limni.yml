@@ -1,0 +1,137 @@
+name: Seed test orders (Limni grill)
+on:
+  workflow_dispatch:
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create test orders for Ψητοπωλείο Λίμνη (no driver)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+          FALLBACK_URL: https://ojkesspghyqmjmupybva.supabase.co
+        run: |
+          set -euo pipefail
+          URL="${SUPABASE_URL:-$FALLBACK_URL}"
+          KEY="${SUPABASE_SERVICE_ROLE_KEY:-}"
+          if [ -z "$KEY" ]; then
+            echo "Missing secrets.SUPABASE_SERVICE_ROLE_KEY — cannot insert orders."
+            exit 1
+          fi
+          python3 << 'PY'
+          import json, os, urllib.request, urllib.parse, uuid
+          from datetime import datetime, timezone
+
+          URL = os.environ["URL"].rstrip("/")
+          KEY = os.environ["KEY"]
+
+          def req(method, path, body=None, prefer=None):
+              headers = {
+                  "apikey": KEY,
+                  "Authorization": f"Bearer {KEY}",
+                  "Content-Type": "application/json",
+                  "Accept": "application/json",
+              }
+              if prefer:
+                  headers["Prefer"] = prefer
+              data = None if body is None else json.dumps(body).encode()
+              r = urllib.request.Request(URL + path, data=data, headers=headers, method=method)
+              with urllib.request.urlopen(r, timeout=30) as resp:
+                  raw = resp.read().decode() or "null"
+                  return json.loads(raw)
+
+          # Find store
+          q = urllib.parse.quote("%λίμνη%")
+          stores = req("GET", f"/rest/v1/stores?select=id,name,store_role,address&name=ilike.{q}&limit=10")
+          if not stores:
+              stores = req("GET", "/rest/v1/stores?select=id,name,store_role,address&name=ilike.*ψητ*&limit=20")
+          if not stores:
+              alls = req("GET", "/rest/v1/stores?select=id,name,store_role&limit=50")
+              print("sample stores", alls)
+              raise SystemExit("Store not found for λίμνη / ψητ")
+
+          store = None
+          for s in stores:
+              n = (s.get("name") or "").lower()
+              if "λίμνη" in n or "λιμνη" in n or "limni" in n:
+                  store = s
+                  break
+          store = store or stores[0]
+          print("STORE", store)
+          sid = store["id"]
+
+          # Optional menu items for realistic lines
+          items = req("GET", f"/rest/v1/menu_items?select=id,name,price&store_id=eq.{sid}&is_available=eq.true&limit=5")
+          if not items:
+              items = [
+                  {"id": None, "name": "Μερίδα σουβλάκι test", "price": 8.5},
+                  {"id": None, "name": "Μερίδα γύρο test", "price": 9.0},
+                  {"id": None, "name": "Πίτα χοιρινό test", "price": 3.5},
+              ]
+
+          created = []
+          for i in range(3):
+              line = items[i % len(items)]
+              unit = float(line.get("price") or 8.5)
+              qty = 1 + (i % 2)
+              food = round(unit * qty, 2)
+              fee = 1.5
+              tip = 0.5 if i == 0 else 0
+              total = round(food + fee + tip, 2)
+              order = {
+                  "store_id": sid,
+                  "status": "placed",
+                  "payment_method": "cash",
+                  "source": "in_app",
+                  "total_amount": total,
+                  "delivery_fee": fee,
+                  "tip_amount": tip,
+                  "store_charge": 0,
+                  "driver_payout": 0,
+                  "driver_pool_bonus": 0,
+                  "platform_profit": 0,
+                  "refunded_amount": 0,
+                  "surge_multiplier_used": 1,
+                  "driver_id": None,
+                  "delivery_address": f"Δοκιμαστική {i+1}, Ιωάννινα (TEST — no driver)",
+                  "delivery_latitude": 39.665,
+                  "delivery_longitude": 20.852,
+                  "notes": f"TEST ORDER #{i+1} για {store.get('name')} — μην δοθεί σε οδηγό",
+                  "customer_id": None,
+              }
+              try:
+                  rows = req("POST", "/rest/v1/orders", order, prefer="return=representation")
+              except Exception as e:
+                  print("order insert failed", e)
+                  # Try create_external_order RPC
+                  try:
+                      rows = req("POST", "/rest/v1/rpc/create_external_order", {
+                          "p_store_id": sid,
+                          "p_items": [{"name": line["name"], "quantity": qty, "unit_price": unit}],
+                          "p_total_amount": total,
+                          "p_delivery_address": order["delivery_address"],
+                          "p_notes": order["notes"],
+                      }, prefer="return=representation")
+                  except Exception as e2:
+                      print("rpc failed", e2)
+                      raise
+              o = rows[0] if isinstance(rows, list) else rows
+              oid = o.get("id") if isinstance(o, dict) else None
+              print("ORDER", oid, total)
+              if oid:
+                  oi = {
+                      "order_id": oid,
+                      "name": line["name"],
+                      "quantity": qty,
+                      "unit_price": unit,
+                  }
+                  if line.get("id"):
+                      oi["menu_item_id"] = line["id"]
+                  try:
+                      req("POST", "/rest/v1/order_items", oi, prefer="return=minimal")
+                  except Exception as e:
+                      print("item insert", e)
+                  created.append({"id": oid, "total": total, "item": line["name"], "qty": qty})
+
+          print("CREATED", json.dumps(created, ensure_ascii=False, indent=2))
+          PY
