@@ -11,6 +11,7 @@ import {
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import { PrintTicketButton, printOrderSafe } from './PrintOrderTicket';
+import { formatEuro, lineTotal, orderMoney } from '@/lib/money';
 import { getPrinterPrefs } from '@/lib/printer-prefs';
 import type { OrderWithItems } from '@/hooks/useOrders';
 import { formatOrderNumber } from '@/lib/order-number';
@@ -366,7 +367,7 @@ export function OrderQueue({
                   </span>
                   <span className="flex items-center gap-1 shrink-0">
                     <span className="tabular-nums text-muted-foreground">
-                      €{Number(item.unit_price * item.quantity).toFixed(2)}
+                      {formatEuro(lineTotal(item.unit_price, item.quantity))}
                     </span>
                     {order.status === 'placed' && (
                       <button
@@ -383,7 +384,7 @@ export function OrderQueue({
               ))}
               <div className="flex justify-between font-semibold pt-1 border-t border-border text-[12px]">
                 <span>Σύνολο</span>
-                <span className="tabular-nums">€{Number(order.total_amount).toFixed(2)}</span>
+                <span className="tabular-nums">{formatEuro(orderMoney(order).total)}</span>
               </div>
             </div>
 

@@ -1,3 +1,5 @@
+import { parseMoney, roundMoney } from '@/lib/money';
+
 /**
  * Per-order store economics (the "what you earned vs the fees" breakdown).
  * Mirrors src/lib/driver-payout.ts and the settlement logic in the SQL
@@ -52,17 +54,17 @@ export function isExternalSource(source?: string | null): boolean {
 }
 
 export function getStoreOrderPnl(order: StoreOrderFields, defaultCommissionPct: number | null = null): StoreOrderPnl {
-  const gross = Math.max(0, Number(order.total_amount ?? 0));
-  const deliveryFee = Math.max(0, Number(order.delivery_fee ?? 0));
-  const tip = Math.max(0, Number(order.tip_amount ?? 0));
-  const subtotal = Math.max(0, Number((gross - deliveryFee - tip).toFixed(2)));
+  const gross = Math.max(0, parseMoney(order.total_amount));
+  const deliveryFee = Math.max(0, parseMoney(order.delivery_fee));
+  const tip = Math.max(0, parseMoney(order.tip_amount));
+  const subtotal = Math.max(0, roundMoney(gross - deliveryFee - tip));
 
   const isExternal = isExternalSource(order.source);
   const settled = order.status === 'delivered';
   const commissionPct = defaultCommissionPct != null ? Math.max(0, defaultCommissionPct) : null;
 
   if (isExternal) {
-    const storeCharge = Math.max(0, Number(order.store_charge ?? 0));
+    const storeCharge = Math.max(0, parseMoney(order.store_charge));
     return {
       gross,
       deliveryFee,
@@ -71,7 +73,7 @@ export function getStoreOrderPnl(order: StoreOrderFields, defaultCommissionPct: 
       commissionPct: null,
       platformFee: 0,
       storeCharge,
-      net: Number((subtotal - storeCharge).toFixed(2)),
+      net: roundMoney(subtotal - storeCharge),
       isExternal,
       settled,
     };
@@ -79,8 +81,8 @@ export function getStoreOrderPnl(order: StoreOrderFields, defaultCommissionPct: 
 
   // Settlement lands a single net amount = subtotal * (1 - commission/100); fall back to 15%.
   const effectivePct = commissionPct ?? 15;
-  const platformFee = Number((subtotal * effectivePct / 100).toFixed(2));
-  const net = Number((subtotal - platformFee).toFixed(2));
+  const platformFee = roundMoney(subtotal * effectivePct / 100);
+  const net = roundMoney(subtotal - platformFee);
 
   return {
     gross,

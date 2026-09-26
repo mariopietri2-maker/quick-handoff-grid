@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { formatOrderNumber } from '@/lib/order-number';
+import { formatEuro, lineTotal, orderMoney } from '@/lib/money';
 
 type HistoryOrder = {
   id: string;
@@ -43,10 +44,7 @@ const STATUS_LABEL: Record<string, string> = {
   placed: 'Νέα',
 };
 
-function euro(n: unknown) {
-  const x = typeof n === 'number' ? n : Number(String(n ?? '').replace(',', '.'));
-  return `€${(Number.isFinite(x) ? x : 0).toFixed(2)}`;
-}
+const euro = formatEuro;
 
 export default function StoreOrderHistory({ storeId }: { storeId: string }) {
   const [q, setQ] = useState('');
@@ -138,8 +136,7 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
           {filtered.map((o) => {
             const open = openId === o.id;
             const items = o.order_items ?? [];
-            const itemsSum = items.reduce((s, i) => s + Number(i.unit_price || 0) * Number(i.quantity || 0), 0);
-            const total = Number(o.total_amount) || itemsSum || 0;
+            const total = orderMoney(o).total;
             return (
               <Card key={o.id} className="overflow-hidden border-border/80">
                 <button type="button" className="w-full text-left p-3 sm:p-4 flex items-start gap-3 hover:bg-muted/40 transition-colors" onClick={() => setOpenId(open ? null : o.id)}>
@@ -188,7 +185,7 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
                           {items.map((i) => (
                             <li key={i.id} className="flex justify-between gap-2 text-sm font-heading">
                               <span><span className="font-bold tabular-nums">{i.quantity}×</span> {i.name}</span>
-                              <span className="tabular-nums font-semibold shrink-0">{euro(Number(i.unit_price || 0) * Number(i.quantity || 0))}</span>
+                              <span className="tabular-nums font-semibold shrink-0">{euro(lineTotal(i.unit_price, i.quantity))}</span>
                             </li>
                           ))}
                         </ul>

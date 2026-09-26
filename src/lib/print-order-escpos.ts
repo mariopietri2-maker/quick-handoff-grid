@@ -4,6 +4,7 @@
 import { EscPosEncoder, ESCPOS_COLS, type EscPosWidth } from '@/lib/escpos';
 import type { OrderWithItems } from '@/hooks/useOrders';
 import { formatOrderNumber } from '@/lib/order-number';
+import { formatMoneyPlain, lineTotal, orderMoney, parseMoney } from '@/lib/money';
 
 export type PrintOrderExtras = {
   customerName?: string | null;
@@ -25,8 +26,7 @@ export const PAYMENT_LABELS: Record<string, string> = {
 };
 
 function money(n: number | null | undefined) {
-  // Compact ASCII so 58mm paper does not clip the amount column
-  return (function(v){if(v==null||v==='')return 0;if(typeof v==='number')return Number.isFinite(v)?v:0;const s=String(v).replace(',','.').replace(/[^0-9.-]/g,'');const n=Number(s);return Number.isFinite(n)?n:0;})(n).toFixed(2);
+  return formatMoneyPlain(n);
 }
 
 function twoCol(left: string, right: string, cols: number): string {
@@ -78,8 +78,8 @@ export function buildOrderEscPos(
   const payKey = String((order as { payment_method?: string | null }).payment_method ?? '').toLowerCase();
   const payLabel = PAYMENT_LABELS[payKey] ?? (payKey ? payKey.toUpperCase() : null);
   const isCash = payKey === 'cash';
-  const fee = Number(order.delivery_fee ?? 0);
-  const tip = Number(order.tip_amount ?? 0);
+  let fee = parseMoney(order.delivery_fee);
+  let tip = parseMoney(order.tip_amount);
 
   enc.reset();
   enc.feed(1);
@@ -149,8 +149,17 @@ export function buildOrderEscPos(
   enc.text('-'.repeat(cols));
   enc.line();
 
-  const totalAmt = Number(String(order.total_amount ?? 0).replace(',','.')) || itemsSum || 0;
-  const subAmt = Number.isFinite(subtotal) && subtotal > 0 ? subtotal : Math.max(0, totalAmt - fee - tip);
+  const om = orderMoney({
+    total_amount: order.total_amount,
+    delivery_fee: order.delivery_fee,
+    tip_amount: order.tip_amount,
+    order_items: items as never,
+  });
+  const totalAmt = om.total;
+  fee = om.deliveryFee;
+  tip = om.tip;
+  const subAmtOm = om.subtotal; /* use below */
+  const subAmt = typeof subAmtOm === "number" ? subAmtOm : Math.max(0, totalAmt - fee - tip);
 
   enc.text(twoCol('Υποσύνολο', money(subAmt), cols));
   enc.line();

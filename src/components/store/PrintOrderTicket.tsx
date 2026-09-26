@@ -10,11 +10,12 @@ import {
   PAYMENT_LABELS,
   type PrintOrderExtras,
 } from '@/lib/print-order-escpos';
+import { formatEuro, lineTotal, orderMoney } from '@/lib/money';
 
 export type { PrintOrderExtras };
 
 function money(n: number | null | undefined) {
-  const x=Number(String(n??0).replace(',','.'));return `€${(Number.isFinite(x)?x:0).toFixed(2)}`;
+  return formatEuro(n);
 }
 
 /** Professional 80mm kitchen / delivery receipt for Fresh2GO.GR. */
@@ -36,17 +37,16 @@ export function printOrderTicket(
     minute: '2-digit',
   });
 
-  const subtotal =
-    Number(order.total_amount ?? 0) -
-    Number(order.delivery_fee ?? 0) -
-    Number(order.tip_amount ?? 0);
+  const om = orderMoney(order);
+  const displayTotal = om.total;
+  const subtotal = om.subtotal;
   const payKey = String((order as any).payment_method ?? '').toLowerCase();
   const payLabel = PAYMENT_LABELS[payKey] ?? (payKey ? payKey.toUpperCase() : null);
   const isCash = payKey === 'cash';
 
   const itemsHtml = (order.order_items ?? [])
     .map((i) => {
-      const line = Number(i.unit_price) * Number(i.quantity);
+      const line = lineTotal(i.unit_price, i.quantity);
       return `
         <tr>
           <td class="qty">${Number(i.quantity)}×</td>
@@ -317,12 +317,12 @@ export function printOrderTicket(
             ? `<tr><td>Φιλοδώρημα</td><td class="r">${money(order.tip_amount)}</td></tr>`
             : ''
         }
-        <tr class="grand"><td>ΣΥΝΟΛΟ</td><td class="r">${money(order.total_amount)}</td></tr>
+        <tr class="grand"><td>ΣΥΝΟΛΟ</td><td class="r">${money(displayTotal)}</td></tr>
       </table>
 
       ${
         isCash
-          ? `<div class="notes">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ · ${money(order.total_amount)}</div>`
+          ? `<div class="notes">⚠ ΕΙΣΠΡΑΞΗ ΜΕΤΡΗΤΩΝ · ${money(displayTotal)}</div>`
           : ''
       }
 
