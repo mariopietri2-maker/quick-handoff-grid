@@ -17,7 +17,7 @@ android {
         applicationId = "com.freshdelivery.customer"
         minSdk = 26
         targetSdk = 36
-        versionCode = 7233018
+        versionCode = 7233019
         versionName = "2.9.15-fresh2go"
 
         buildConfigField(
