@@ -1,8 +1,9 @@
-// Local printer preferences (per device).
+// Local printer preferences (per device / per store).
 // mode 'browser' = classic browser print dialog; mode 'direct' = silent ESC/POS
 // over Bluetooth/USB (when a printer is connected via printer-devices).
+// Each store can have its own paper width (58mm vs 80mm) and connection settings.
 
-const KEY = 'store-printer-prefs';
+const GLOBAL_KEY = 'store-printer-prefs';
 
 export type PrinterMode = 'browser' | 'direct';
 
@@ -17,8 +18,9 @@ export interface PrinterLastDevice {
 export interface PrinterPrefs {
   enabled: boolean;
   autoPrintOnAccept: boolean;
-  printerName: string; // Informational only — used as a label in the UI
+  printerName: string;
   mode: PrinterMode;
+  /** Physical paper width of THIS store's printer */
   paperWidth: 58 | 80;
   baudRate: number;
   blePreset: string;
@@ -32,7 +34,7 @@ const DEFAULTS: PrinterPrefs = {
   autoPrintOnAccept: false,
   printerName: '',
   mode: 'browser',
-  paperWidth: 58,
+  paperWidth: 80,
   baudRate: 9600,
   blePreset: 'ff00',
   bleCustomService: '',
@@ -40,21 +42,36 @@ const DEFAULTS: PrinterPrefs = {
   lastDevice: null,
 };
 
-export function getPrinterPrefs(): PrinterPrefs {
-  if (typeof window === 'undefined') return DEFAULTS;
+function storageKey(storeId?: string | null): string {
+  if (storeId && storeId.trim()) return `${GLOBAL_KEY}:${storeId.trim()}`;
+  return GLOBAL_KEY;
+}
+
+export function getPrinterPrefs(storeId?: string | null): PrinterPrefs {
+  if (typeof window === 'undefined') return { ...DEFAULTS };
   try {
-    const raw = localStorage.getItem(KEY);
-    if (!raw) return DEFAULTS;
+    const key = storageKey(storeId);
+    let raw = localStorage.getItem(key);
+    if (!raw && storeId) {
+      const legacy = localStorage.getItem(GLOBAL_KEY);
+      if (legacy) {
+        localStorage.setItem(key, legacy);
+        raw = legacy;
+      }
+    }
+    if (!raw) return { ...DEFAULTS };
     return { ...DEFAULTS, ...JSON.parse(raw) };
   } catch {
-    return DEFAULTS;
+    return { ...DEFAULTS };
   }
 }
 
-export function setPrinterPrefs(prefs: Partial<PrinterPrefs>) {
+export function setPrinterPrefs(prefs: Partial<PrinterPrefs>, storeId?: string | null) {
   if (typeof window === 'undefined') return;
-  const current = getPrinterPrefs();
+  const current = getPrinterPrefs(storeId);
   const next = { ...current, ...prefs };
-  localStorage.setItem(KEY, JSON.stringify(next));
-  window.dispatchEvent(new CustomEvent('printer-prefs-changed', { detail: next }));
+  localStorage.setItem(storageKey(storeId), JSON.stringify(next));
+  window.dispatchEvent(
+    new CustomEvent('printer-prefs-changed', { detail: { ...next, storeId: storeId ?? null } }),
+  );
 }
