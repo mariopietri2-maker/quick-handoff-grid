@@ -26,7 +26,7 @@ export const PAYMENT_LABELS: Record<string, string> = {
 
 function money(n: number | null | undefined) {
   // Compact ASCII so 58mm paper does not clip the amount column
-  return Number(n ?? 0).toFixed(2);
+  return (function(v){if(v==null||v==='')return 0;if(typeof v==='number')return Number.isFinite(v)?v:0;const s=String(v).replace(',','.').replace(/[^0-9.-]/g,'');const n=Number(s);return Number.isFinite(n)?n:0;})(n).toFixed(2);
 }
 
 function twoCol(left: string, right: string, cols: number): string {
@@ -126,7 +126,7 @@ export function buildOrderEscPos(
   let itemsSum = 0;
   for (const item of items) {
     const qty = Number(item.quantity) || 0;
-    const unit = Number((item as { unit_price?: number | null }).unit_price) || 0;
+    const unit = Number(String((item as any).unit_price ?? 0).replace(',','.')) || 0;
     const lineAmt = qty * unit;
     itemsSum += lineAmt;
     const name = String(item.name ?? '').trim() || 'Προϊόν';
@@ -149,7 +149,7 @@ export function buildOrderEscPos(
   enc.text('-'.repeat(cols));
   enc.line();
 
-  const totalAmt = Number(order.total_amount) || itemsSum || 0;
+  const totalAmt = Number(String(order.total_amount ?? 0).replace(',','.')) || itemsSum || 0;
   const subAmt = Number.isFinite(subtotal) && subtotal > 0 ? subtotal : Math.max(0, totalAmt - fee - tip);
 
   enc.text(twoCol('Υποσύνολο', money(subAmt), cols));
@@ -163,7 +163,7 @@ export function buildOrderEscPos(
     enc.line();
   }
   enc.bold(true);
-  enc.text(twoCol('ΣΥΝΟΛΟ', money(totalAmt), cols));
+  enc.text(twoCol('ΣΥΝΟΛΟ EUR', money(totalAmt), cols));
   enc.bold(false);
   enc.feed(1);
 

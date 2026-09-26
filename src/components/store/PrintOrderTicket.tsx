@@ -14,7 +14,7 @@ import {
 export type { PrintOrderExtras };
 
 function money(n: number | null | undefined) {
-  return `€${Number(n ?? 0).toFixed(2)}`;
+  const x=Number(String(n??0).replace(',','.'));return `€${(Number.isFinite(x)?x:0).toFixed(2)}`;
 }
 
 /** Professional 80mm kitchen / delivery receipt for Fresh2GO.GR. */
