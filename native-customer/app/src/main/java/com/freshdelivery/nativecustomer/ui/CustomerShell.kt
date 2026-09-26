@@ -1126,6 +1126,17 @@ private fun storeDeliveryFeeLabel(store: StoreRow): String {
     }
 }
 
+/** Who delivers this store — shown so customers know Fresh2GO vs store courier. */
+private fun storeFulfilmentLabel(store: StoreRow): String {
+    val mode = store.fulfilment_mode?.trim()?.lowercase().orEmpty()
+    return if (mode == "store") "Παράδοση καταστήματος" else "Παράδοση Fresh2GO"
+}
+
+private fun isPlatformFulfilment(store: StoreRow): Boolean {
+    val mode = store.fulfilment_mode?.trim()?.lowercase().orEmpty()
+    return mode != "store"
+}
+
 private fun storeDistanceLabel(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String? {
     if (deliveryLat == null || deliveryLng == null) return null
     val km = storeDistanceKm(deliveryLat, deliveryLng, store)
@@ -1474,6 +1485,19 @@ private fun FreshStoreCard(
                         )
                     }
                 }
+                Surface(
+                    color = if (isPlatformFulfilment(store)) FreshTealDark.copy(alpha = 0.12f) else FreshChip,
+                    shape = RoundedCornerShape(12.dp),
+                ) {
+                    Text(
+                        storeFulfilmentLabel(store),
+                        color = if (isPlatformFulfilment(store)) FreshTealDark else FreshMuted,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelMedium,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                        maxLines = 1,
+                    )
+                }
                 if (dist != null) {
                     Surface(color = FreshChip, shape = RoundedCornerShape(12.dp)) {
                         Text(
@@ -1595,6 +1619,15 @@ private fun StoreMiniCard(
                 maxLines = 1,
                 modifier = Modifier.padding(top = 2.dp),
             )
+            Text(
+                storeFulfilmentLabel(store),
+                color = if (isPlatformFulfilment(store)) FreshTealDark else FreshMuted,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.SemiBold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.padding(top = 2.dp),
+            )
         }
     }
 }
@@ -1673,17 +1706,33 @@ private fun MenuScreen(
                             )
                         }
                         Spacer(Modifier.height(8.dp))
-                        Surface(
-                            color = Color.White.copy(alpha = 0.22f),
-                            shape = RoundedCornerShape(10.dp),
-                        ) {
-                            Text(
-                                "${state.menu.size} προϊόντα",
-                                color = Color.White,
-                                fontWeight = FontWeight.SemiBold,
-                                style = MaterialTheme.typography.labelMedium,
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
-                            )
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            store?.let { s ->
+                                Surface(
+                                    color = if (isPlatformFulfilment(s)) FreshTealDark else Color.White.copy(alpha = 0.22f),
+                                    shape = RoundedCornerShape(10.dp),
+                                ) {
+                                    Text(
+                                        storeFulfilmentLabel(s),
+                                        color = Color.White,
+                                        fontWeight = FontWeight.Bold,
+                                        style = MaterialTheme.typography.labelMedium,
+                                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                    )
+                                }
+                            }
+                            Surface(
+                                color = Color.White.copy(alpha = 0.22f),
+                                shape = RoundedCornerShape(10.dp),
+                            ) {
+                                Text(
+                                    "${state.menu.size} προϊόντα",
+                                    color = Color.White,
+                                    fontWeight = FontWeight.SemiBold,
+                                    style = MaterialTheme.typography.labelMedium,
+                                    modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+                                )
+                            }
                         }
                     }
                 }
