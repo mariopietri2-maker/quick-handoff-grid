@@ -20,6 +20,7 @@ import { cn } from '@/lib/utils';
 import { stopOrderAlertLoop } from '@/lib/notifications';
 
 interface OrderQueueProps {
+  storeId?: string | null;
   orders: OrderWithItems[];
   onStatusUpdate: (
     orderId: string,
@@ -139,6 +140,7 @@ export function OrderQueue({
   orders,
   onStatusUpdate,
   storeName = 'Κατάστημα',
+  storeId = null,
   pendingIds,
 }: OrderQueueProps) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
@@ -249,7 +251,7 @@ export function OrderQueue({
             driverCode: drv,
             customerName: next.customer_name ?? null,
             customerPhone: next.customer_phone ?? null,
-          });
+          }, storeId);
         } catch {
           /* ignore */
         } finally {
@@ -261,7 +263,7 @@ export function OrderQueue({
       })();
     };
     pump();
-  }, [orders, storeName, driverCodes]);
+  }, [orders, storeName, storeId, driverCodes]);
 
   const toggleExpand = (id: string) => {
     setExpanded((p) => ({ ...p, [id]: !p[id] }));
@@ -433,7 +435,7 @@ export function OrderQueue({
             )}
 
             <div className="flex flex-wrap gap-1.5">
-              <PrintTicketButton order={order} storeName={storeName} driverCode={order.driver_id ? driverCodes[order.driver_id] : undefined} />
+              <PrintTicketButton order={order} storeName={storeName} storeId={storeId} driverCode={order.driver_id ? driverCodes[order.driver_id] : undefined} />
               {order.driver_id && (
                 <span className="inline-flex items-center gap-1 text-[11px] text-muted-foreground px-2 py-1 rounded border border-border">
                   <Car className="h-3 w-3" />

@@ -23,6 +23,7 @@ import { printOrderSafe } from './PrintOrderTicket';
 
 interface PrinterSettingsProps {
   storeName: string;
+  storeId?: string | null;
 }
 
 const BAUD_RATES = [9600, 19200, 38400, 57600, 115200];
@@ -52,8 +53,9 @@ function connectionBadge(conn: PrinterState) {
   }
 }
 
-export function PrinterSettings({ storeName }: PrinterSettingsProps) {
-  const [prefs, setPrefs] = useState<PrinterPrefs>(getPrinterPrefs());
+export function PrinterSettings({ storeName, storeId }: PrinterSettingsProps) {
+  const [prefs, setPrefs] = useState<PrinterPrefs>(() => getPrinterPrefs(storeId));
+  useEffect(() => { setPrefs(getPrinterPrefs(storeId)); }, [storeId]);
   const [conn, setConn] = useState<PrinterState>(getPrinterState());
   const [busy, setBusy] = useState(false);
 
@@ -83,7 +85,7 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
   }, [prefs.enabled, directReady]);
 
   const update = (patch: Partial<PrinterPrefs>) => {
-    setPrinterPrefs(patch);
+    setPrinterPrefs(patch, storeId);
     setPrefs((prev) => ({ ...prev, ...patch }));
   };
 
@@ -277,17 +279,20 @@ export function PrinterSettings({ storeName }: PrinterSettingsProps) {
 
             <div className="grid grid-cols-2 gap-2">
               <div className="space-y-1.5">
-                <Label className="font-heading text-xs">Χαρτί</Label>
+                <Label className="font-heading text-xs">Πλάτος χαρτιού (αυτό το κατάστημα)</Label>
                 <Select
                   value={String(prefs.paperWidth)}
                   onValueChange={(v) => update({ paperWidth: Number(v) as 58 | 80 })}
                 >
                   <SelectTrigger className="h-9 text-xs"><SelectValue /></SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="80">80mm</SelectItem>
-                    <SelectItem value="58">58mm</SelectItem>
+                    <SelectItem value="80">80mm — φαρδύ</SelectItem>
+                    <SelectItem value="58">58mm — στενό</SelectItem>
                   </SelectContent>
                 </Select>
+                <p className="text-[10px] text-muted-foreground leading-snug">
+                  Κάθε κατάστημα έχει δική του ρύθμιση για τον εκτυπωτή του «{storeName}».
+                </p>
               </div>
               {printerSupport.usb && (
                 <div className="space-y-1.5">

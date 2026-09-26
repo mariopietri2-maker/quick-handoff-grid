@@ -23,8 +23,14 @@ export function printOrderTicket(
   order: OrderWithItems,
   storeName: string,
   extras: PrintOrderExtras = {},
+  storeId?: string | null,
 ) {
-  const win = window.open('', 'PRINT', 'height=760,width=420');
+  const prefs = getPrinterPrefs(storeId);
+  const paperWidth: 58 | 80 = prefs.paperWidth === 58 ? 58 : 80;
+  const narrow = paperWidth === 58;
+  const pageMm = paperWidth;
+  const bodyMm = narrow ? 54 : 72;
+  const win = window.open('', 'PRINT', narrow ? 'height=760,width=360' : 'height=760,width=480');
   if (!win) return;
   const e = escapeHtml;
   const orderNo = formatOrderNumber(order);
@@ -67,13 +73,13 @@ export function printOrderTicket(
       <title>Παραγγελία ${e(orderNo)} — Fresh2GO.GR</title>
       <meta charset="utf-8" />
       <style>
-        @page { size: 58mm auto; margin: 1.5mm; }
+        @page { size: ${pageMm}mm auto; margin: ${narrow ? '1.5mm' : '2mm'}; }
         * { box-sizing: border-box; }
         body {
           font-family: "IBM Plex Mono", "SF Mono", ui-monospace, Menlo, Consolas, monospace;
           color: #000;
           padding: 6px 4px 10px;
-          max-width: 54mm; width: 54mm;
+          max-width: ${bodyMm}mm; width: ${bodyMm}mm;
           margin: 0 auto;
           font-size: 12px;
           line-height: 1.35;
@@ -352,15 +358,17 @@ export async function printOrderSafe(
   order: OrderWithItems,
   storeName: string,
   extras: PrintOrderExtras = {},
+  storeId?: string | null,
 ): Promise<{ direct: boolean }> {
-  const prefs = getPrinterPrefs();
+  const prefs = getPrinterPrefs(storeId);
   const st = getPrinterState();
   if (prefs.enabled && prefs.mode === 'direct' && st.status === 'connected') {
-    const chunks = buildOrderEscPos(order, storeName, extras, prefs.paperWidth ?? 58);
+    const width = prefs.paperWidth === 58 ? 58 : 80;
+    const chunks = buildOrderEscPos(order, storeName, extras, width);
     await sendToActivePrinter(chunks);
     return { direct: true };
   }
-  printOrderTicket(order, storeName, extras);
+  printOrderTicket(order, storeName, extras, storeId);
   return { direct: false };
 }
 
@@ -368,10 +376,12 @@ export function PrintTicketButton({
   order,
   storeName,
   extras,
+  storeId,
 }: {
   order: OrderWithItems;
   storeName: string;
   extras?: PrintOrderExtras;
+  storeId?: string | null;
 }) {
   return (
     <Button
@@ -380,7 +390,7 @@ export function PrintTicketButton({
       size="sm"
       onClick={(e) => {
         e.stopPropagation();
-        void printOrderSafe(order, storeName, extras).catch(() => {});
+        void printOrderSafe(order, storeName, extras, storeId).catch(() => {});
       }}
       className="h-8 text-xs"
     >

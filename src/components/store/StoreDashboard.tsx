@@ -121,7 +121,7 @@ export default function StoreDashboard({
       </div>
 
       {/* Kitchen board */}
-      <OrderQueue orders={orders} onStatusUpdate={onStatusUpdate} storeName={storeName} pendingIds={pendingIds} />
+      <OrderQueue orders={orders} onStatusUpdate={onStatusUpdate} storeName={storeName} storeId={storeId} pendingIds={pendingIds} />
 
       {/* Bottom panels */}
       <div className="grid grid-cols-1 gap-3 lg:grid-cols-2">

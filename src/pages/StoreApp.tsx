@@ -610,7 +610,7 @@ export default function StoreApp() {
               <TabsContent value="settings" className="space-y-4">
                 <StoreWalletCard storeId={store.id} />
                 <StoreSettings storeId={store.id} />
-                <PrinterSettings storeName={store.name} />
+                <PrinterSettings storeName={store.name} storeId={store.id} />
               </TabsContent>
               </Tabs>
           </>
