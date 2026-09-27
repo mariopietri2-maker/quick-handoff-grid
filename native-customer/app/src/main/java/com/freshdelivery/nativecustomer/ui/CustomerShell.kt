@@ -236,12 +236,23 @@ fun CustomerShell(
             onClearMessages()
         }
     }
-    BackHandler(enabled = addressOpen || state.showCart || state.selectedStore != null || state.adminOpen || state.supportOpen) {
-        if (addressOpen) addressOpen = false
-        else if (state.supportOpen) onCloseSupport()
-        else if (state.adminOpen) onToggleAdmin(false)
-        else if (state.showCart) onToggleCart(false)
-        else onCloseStore()
+    // System back: close overlays / leave store / leave non-Home tabs — never exit until Home root.
+    val onNonRootScreen = addressOpen ||
+        state.showCart ||
+        state.selectedStore != null ||
+        state.adminOpen ||
+        state.supportOpen ||
+        state.tab != CustomerTab.Home
+    BackHandler(enabled = onNonRootScreen) {
+        when {
+            addressOpen -> addressOpen = false
+            state.supportOpen -> onCloseSupport()
+            state.adminOpen -> onToggleAdmin(false)
+            state.showCart -> onToggleCart(false)
+            state.selectedStore != null -> onCloseStore()
+            state.tab == CustomerTab.Track -> onTab(CustomerTab.Orders)
+            state.tab != CustomerTab.Home -> onTab(CustomerTab.Home)
+        }
     }
     if (addressOpen) {
         AddressPickerScreen(
