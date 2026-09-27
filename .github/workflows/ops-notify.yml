@@ -1,0 +1,43 @@
+name: Ops notify (optional Telegram/Discord)
+on:
+  workflow_run:
+    workflows:
+      - "Build Native APKs"
+    types: [completed]
+  workflow_dispatch:
+jobs:
+  notify:
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Notify
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          DISCORD_WEBHOOK_URL: ${{ secrets.DISCORD_WEBHOOK_URL }}
+          CONCLUSION: ${{ github.event.workflow_run.conclusion || 'manual' }}
+          RUN_URL: ${{ github.event.workflow_run.html_url || github.server_url }}
+        run: |
+          MSG="Fresh2GO ops: native build ${CONCLUSION}. ${RUN_URL}"
+          echo "$MSG"
+          if [ -n "${TELEGRAM_BOT_TOKEN:-}" ] && [ -n "${TELEGRAM_CHAT_ID:-}" ]; then
+            curl -sS -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+              --data-urlencode "chat_id=${TELEGRAM_CHAT_ID}" \
+              --data-urlencode "text=${MSG}" || true
+          fi
+          if [ -n "${DISCORD_WEBHOOK_URL:-}" ]; then
+            python3 - <<'PY'
+import json, os, urllib.request
+msg = f"Fresh2GO ops: {os.environ.get('CONCLUSION')} {os.environ.get('RUN_URL')}"
+req = urllib.request.Request(
+    os.environ["DISCORD_WEBHOOK_URL"],
+    data=json.dumps({"content": msg}).encode(),
+    headers={"Content-Type": "application/json"},
+    method="POST",
+)
+try:
+    urllib.request.urlopen(req, timeout=15)
+except Exception as e:
+    print("discord", e)
+PY
+          fi
