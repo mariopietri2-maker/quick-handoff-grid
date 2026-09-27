@@ -13,6 +13,7 @@ import { TicketChat } from '@/components/support/TicketChat';
 import { CustomerLiveChat } from '@/components/customer/CustomerLiveChat';
 import { format } from 'date-fns';
 import { hasSupportPhone, SUPPORT_PHONE } from '@/lib/support-phone';
+import { SupportFaqPanel } from '@/components/support/SupportFaqPanel';
 
 type Category = {
   key: string;
@@ -246,6 +247,8 @@ export function CustomerSupportButton({
                     <p className="text-[11px] text-muted-foreground">Επείγον — απάντηση σε πραγματικό χρόνο</p>
                   </div>
                 </button>
+
+                <div className="mb-3"><SupportFaqPanel mode="customer" /></div>
 
                 {tickets.length > 0 && (
                   <button

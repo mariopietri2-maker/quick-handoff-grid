@@ -270,6 +270,41 @@ fun SupportScreen(
 }
 
 @Composable
+
+@Composable
+private fun BotFaqSection() {
+    val items = listOf(
+        "Πού είναι η παραγγελία μου;" to "Άνοιξε Παραγγελίες → πάτα την ενεργή → Παρακολούθηση.",
+        "Ποιος παραδίδει;" to "«Παράδοση Fresh2GO» = οδηγός πλατφόρμας.",
+        "Πώς αλλάζω διεύθυνση;" to "Αρχική → πάτα τη διεύθυνση.",
+        "Τρόποι πληρωμής;" to "Μετρητά και/ή κάρτα.",
+        "Μπορώ να ακυρώσω;" to "Πριν αποδοχή · μετά live chat.",
+    )
+    var openIdx by remember { mutableStateOf(-1) }
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        Text("Συχνές ερωτήσεις", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+        Text("Bot", style = MaterialTheme.typography.labelSmall, color = FreshMuted)
+        items.forEachIndexed { i, pair ->
+            val q = pair.first
+            val a = pair.second
+            Surface(
+                onClick = { openIdx = if (openIdx == i) -1 else i },
+                color = FreshSurface,
+                shape = RoundedCornerShape(12.dp),
+                modifier = Modifier.fillMaxWidth(),
+            ) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(q, fontWeight = FontWeight.SemiBold, style = MaterialTheme.typography.bodySmall)
+                    if (openIdx == i) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(a, style = MaterialTheme.typography.bodySmall, color = FreshMuted)
+                    }
+                }
+            }
+        }
+    }
+}
+
 private fun ColumnScope.TopicsView(
     tickets: List<SupportTicketRow>,
     onSelectTopic: (String) -> Unit,
@@ -313,7 +348,9 @@ private fun ColumnScope.TopicsView(
             style = MaterialTheme.typography.bodySmall,
             color = FreshMuted,
         )
-        Spacer(Modifier.height(6.dp))
+        Spacer(Modifier.height(10.dp))
+        BotFaqSection()
+        Spacer(Modifier.height(10.dp))
         SUPPORT_TOPICS.forEach { t ->
             Surface(
                 onClick = { onSelectTopic(t.key) },
