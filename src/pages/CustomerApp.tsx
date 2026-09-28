@@ -946,6 +946,14 @@ const displayAddress = deliveryAddress
                             <Utensils className="h-10 w-10 text-[hsl(var(--c-text-muted))]" />
                           </div>
                         )}
+                        {store.image_url && store.cover_image_url && (
+                          <img
+                            src={store.image_url}
+                            alt=""
+                            className="absolute bottom-2.5 left-2.5 h-12 w-12 rounded-xl object-cover border-2 border-white shadow-md bg-white z-[1]"
+                            loading="lazy"
+                          />
+                        )}
                         {!open && (
                           <span className="absolute top-2.5 right-2.5 text-white bg-neutral-700/95 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
                             Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
@@ -983,7 +991,7 @@ const displayAddress = deliveryAddress
                           </div>
                         )}
                         {cfg.sections.show_store_badges && (
-                          <div className="absolute bottom-2.5 left-2.5 flex flex-wrap gap-1.5 max-w-[85%]">
+                          <div className="absolute bottom-2.5 right-2.5 flex flex-wrap gap-1.5 justify-end max-w-[60%]">
                             {store.promo_badge && (
                               <span className="text-[10px] font-extrabold uppercase tracking-wide text-white bg-[hsl(var(--c-accent))] px-2 py-0.5 rounded-md shadow">
                                 {store.promo_badge}
