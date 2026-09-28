@@ -377,11 +377,13 @@ export function PrintTicketButton({
   storeName,
   extras,
   storeId,
+  driverCode,
 }: {
   order: OrderWithItems;
   storeName: string;
   extras?: PrintOrderExtras;
   storeId?: string | null;
+  driverCode?: string | null;
 }) {
   return (
     <Button
@@ -390,7 +392,8 @@ export function PrintTicketButton({
       size="sm"
       onClick={(e) => {
         e.stopPropagation();
-        void printOrderSafe(order, storeName, extras, storeId).catch(() => {});
+        const merged = { ...(extras ?? {}), ...(driverCode ? { driverCode } : {}) };
+        void printOrderSafe(order, storeName, merged, storeId).catch(() => {});
       }}
       className="h-8 text-xs"
     >

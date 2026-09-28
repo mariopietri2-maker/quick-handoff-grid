@@ -148,6 +148,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
 import com.freshdelivery.nativecustomer.ui.theme.FreshRose
 import com.freshdelivery.nativecustomer.ui.theme.FreshRoseSoft
 import com.freshdelivery.nativecustomer.ui.theme.FreshSurface
+import com.freshdelivery.nativecustomer.ui.theme.FreshTealDark
 import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 import com.freshdelivery.nativecustomer.ui.theme.FreshVioletSoft
 import java.time.DayOfWeek
