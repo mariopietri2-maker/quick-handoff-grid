@@ -24,6 +24,7 @@ const translations: Record<string, Record<Lang, string>> = {
   'customer.search_placeholder': { el: 'Φαγητό, καταστήματα, κουζίνες', en: 'Food, restaurants, cuisines' },
   'customer.popular': { el: 'Προτεινόμενα', en: 'Featured' },
   'customer.nearby': { el: 'Όλα τα καταστήματα', en: 'All stores' },
+  'customer.near_you': { el: 'Κοντά σου', en: 'Near you' },
   'customer.no_results': { el: 'Δεν βρέθηκαν εστιατόρια', en: 'No restaurants found' },
   'customer.try_search': { el: 'Δοκιμάστε διαφορετική αναζήτηση', en: 'Try a different search' },
   'customer.check_back': { el: 'Ελέγξτε ξανά σύντομα', en: 'Check back soon' },
