@@ -142,6 +142,12 @@ export function MenuControl({ storeId }: MenuControlProps) {
 
   return (
     <div className="space-y-4">
+      <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
+        <p className="font-heading font-semibold text-sm text-foreground">Διαχείριση μενού</p>
+        <p className="text-[11px] text-muted-foreground">
+          Προσφορές πάνω · μολύβι = επεξεργασία · ⚙ = επιλογές προϊόντος · χειροκίνητη προσθήκη
+        </p>
+      </div>
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-[160px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />

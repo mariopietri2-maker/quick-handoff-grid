@@ -20,7 +20,6 @@ import StoreExternalOrderIngest from '@/components/store/StoreExternalOrderInges
 import StoreWalletCard from '@/components/store/StoreWalletCard';
 import StoreOrderPnl from '@/components/store/StoreOrderPnl';
 import StoreOrderHistory from '@/components/store/StoreOrderHistory';
-import MenuImportFromReceipt from '@/components/store/MenuImportFromReceipt';
 import { StoreOpennessToggle } from '@/components/store/StoreOpennessToggle';
 import { isStoreOpenNow } from '@/lib/store-hours';
 import { StoreSupportButton } from '@/components/store/StoreSupportButton';
@@ -586,7 +585,7 @@ export default function StoreApp() {
                 <StoreOrderHistory storeId={store.id} />
               </TabsContent>
               <TabsContent value="menu">
-                <MenuImportFromReceipt storeId={store.id} />
+                {/* AI menu import disabled */}
                 <MenuControl storeId={store.id} />
               </TabsContent>
               <TabsContent value="inventory">
