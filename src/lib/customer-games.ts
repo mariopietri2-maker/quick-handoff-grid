@@ -1,3 +1,7 @@
+/** Client-side helpers for the customer home games (lucky wheel only). */
+
+const PREFIX = 'fresh2go_game_';
+
 export type GameDeal = {
   code: string;
   pct: number | null;
@@ -5,152 +9,99 @@ export type GameDeal = {
   label: string;
 };
 
-const PREFIX = 'fresh_customer_';
+export const GAME_DEAL_WINDOW_MS = 10 * 60 * 1000;
 
 function todayKey(): string {
   const d = new Date();
-  const y = d.getFullYear();
-  const m = String(d.getMonth() + 1).padStart(2, '0');
-  const day = String(d.getDate()).padStart(2, '0');
-  return `${y}-${m}-${day}`;
+  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
 }
 
 export function canSpinToday(): boolean {
-  try {
-    return localStorage.getItem(`${PREFIX}wheel_last_spin_day`) !== todayKey();
-  } catch {
-    return true;
-  }
+  return localStorage.getItem(`${PREFIX}wheel_last_spin_day`) !== todayKey();
 }
 
-export function persistSpinDay() {
-  try {
-    localStorage.setItem(`${PREFIX}wheel_last_spin_day`, todayKey());
-  } catch {}
+export function persistSpinDay(): void {
+  localStorage.setItem(`${PREFIX}wheel_last_spin_day`, todayKey());
 }
 
 export function canClaimCardToday(): boolean {
-  try {
-    return localStorage.getItem(`${PREFIX}card_claim_day`) !== todayKey();
-  } catch {
-    return true;
+  return localStorage.getItem(`${PREFIX}card_last_claim_day`) !== todayKey();
+}
+
+export function persistCardClaimDay(): void {
+  localStorage.setItem(`${PREFIX}card_last_claim_day`, todayKey());
+}
+
+export function getWonAt(): number | null {
+  const raw = localStorage.getItem(`${PREFIX}won_at`);
+  if (!raw) return null;
+  const n = Number(raw);
+  return Number.isFinite(n) ? n : null;
+}
+
+export function setWonDeal(deal: GameDeal | null): void {
+  if (!deal) {
+    localStorage.removeItem(`${PREFIX}won_deal`);
+    localStorage.removeItem(`${PREFIX}won_at`);
+    return;
   }
+  localStorage.setItem(`${PREFIX}won_deal`, JSON.stringify(deal));
+  localStorage.setItem(`${PREFIX}won_at`, String(Date.now()));
 }
 
-export function persistCardClaimDay() {
-  try {
-    localStorage.setItem(`${PREFIX}card_claim_day`, todayKey());
-  } catch {}
+export function prizeToDeal(prize: {
+  code: string;
+  pct?: number | null;
+  free_delivery?: boolean;
+  label?: string;
+}): GameDeal {
+  return {
+    code: prize.code,
+    pct: prize.pct ?? null,
+    freeDelivery: !!prize.free_delivery,
+    label: prize.label || (prize.free_delivery ? 'Δωρεάν παράδοση' : 'Έκπτωση'),
+  };
 }
-
-/** How long the games section stays visible once it appears — then it hides for the rest of the day. */
-const GAME_SHOW_WINDOW_MS = 10 * 60 * 1000;
-
-/** A won prize stays valid 10 minutes after the customer claims it. */
-export const GAME_DEAL_WINDOW_MS = 10 * 60 * 1000;
 
 /**
- * One roll per calendar day. Wheel appears with 30% probability,
- * mystery cards with 40%. When it wins, the games section shows for
- * GAME_SHOW_WINDOW_MS only; afterwards (and on any later visit that day) it
- * stays hidden until the next day's roll (resets at midnight).
+ * Daily show for the lucky wheel only (cards removed).
+ * ~30% chance; visible window ~15 minutes.
  */
-export function resolveDailyGameShow(active: 'wheel' | 'cards' = 'wheel'): { show: boolean; expiresAt: number | null } {
-  try {
-    const day = todayKey();
-    if (localStorage.getItem(`${PREFIX}game_show_day`) === day) {
-      if (localStorage.getItem(`${PREFIX}game_show_today`) !== 'true') {
+export function resolveDailyGameShow(active: 'wheel' | 'cards' = 'wheel'): {
+  show: boolean;
+  expiresAt: number | null;
+} {
+  active = 'wheel';
+  const day = todayKey();
+  const key = `${PREFIX}daily_show_${day}`;
+  const raw = localStorage.getItem(key);
+  if (raw) {
+    try {
+      const parsed = JSON.parse(raw) as { show: boolean; expiresAt: number | null };
+      if (parsed.expiresAt && parsed.expiresAt < Date.now()) {
         return { show: false, expiresAt: null };
       }
-      const shownAt = parseInt(localStorage.getItem(`${PREFIX}game_shown_at`) || '0', 10) || 0;
-      const expiresAt = shownAt + GAME_SHOW_WINDOW_MS;
-      return { show: Date.now() < expiresAt, expiresAt };
+      return parsed;
+    } catch {
+      /* fall through */
     }
-    const chance = active === 'cards' ? 0.4 : 0.3;
-    const show = Math.random() < chance;
-    const now = Date.now();
-    localStorage.setItem(`${PREFIX}game_show_day`, day);
-    localStorage.setItem(`${PREFIX}game_show_today`, String(show));
-    localStorage.setItem(`${PREFIX}game_shown_at`, String(now));
-    return { show, expiresAt: show ? now + GAME_SHOW_WINDOW_MS : null };
-  } catch {
-    return { show: false, expiresAt: null };
   }
+  const show = Math.random() < 0.3;
+  const expiresAt = show ? Date.now() + 15 * 60 * 1000 : null;
+  localStorage.setItem(key, JSON.stringify({ show, expiresAt }));
+  return { show, expiresAt };
 }
 
 export function secondsToMidnight(): number {
   const now = new Date();
-  const next = new Date(now.getFullYear(), now.getMonth(), now.getDate() + 1, 0, 0, 0, 0);
-  return Math.max(1, Math.floor((next.getTime() - now.getTime()) / 1000));
+  const mid = new Date(now);
+  mid.setHours(24, 0, 0, 0);
+  return Math.max(1, Math.ceil((mid.getTime() - now.getTime()) / 1000));
 }
 
-export function formatDealTime(total: number): string {
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  const pad = (n: number) => String(n).padStart(2, '0');
-  return h > 0 ? `${pad(h)}:${pad(m)}:${pad(s)}` : `${pad(m)}:${pad(s)}`;
-}
-
-export function getWonDeal(): GameDeal | null {
-  try {
-    const raw = localStorage.getItem(`${PREFIX}won_deal`);
-    if (!raw) return null;
-    const parsed = JSON.parse(raw) as GameDeal;
-    if (parsed && typeof parsed.code === 'string') return parsed;
-    return null;
-  } catch {
-    return null;
-  }
-}
-
-export function setWonDeal(deal: GameDeal | null) {
-  try {
-    if (deal) {
-      localStorage.setItem(`${PREFIX}won_deal`, JSON.stringify(deal));
-      localStorage.setItem(`${PREFIX}won_at`, String(Date.now()));
-    } else {
-      localStorage.removeItem(`${PREFIX}won_deal`);
-      localStorage.removeItem(`${PREFIX}won_at`);
-    }
-  } catch {}
-}
-
-/** When the currently-won prize was claimed (ms epoch), or null if none. */
-export function getWonAt(): number | null {
-  try {
-    const v = localStorage.getItem(`${PREFIX}won_at`);
-    if (!v) return null;
-    const n = parseInt(v, 10);
-    return Number.isFinite(n) ? n : null;
-  } catch {
-    return null;
-  }
-}
-
-export function prizeToDeal(prize: string): GameDeal | null {
-  const p = prize.trim();
-  if (!p) return null;
-  const pctMatch = p.match(/(\d+)\s*%/);
-  const pct = pctMatch ? parseInt(pctMatch[1], 10) : null;
-  const free = /δωρεάν/i.test(p) || /free/i.test(p);
-  if (free) {
-    return { code: 'ΠΑΡΑΔΟΣΗ', pct: null, freeDelivery: true, label: 'Δωρεάν παράδοση' };
-  }
-  if (pct != null) {
-    const code =
-      pct === 5
-        ? 'FRESH5'
-        : pct === 10
-          ? 'FRESH10'
-          : pct === 15
-            ? 'FRESH15'
-            : pct === 20
-              ? 'FRESH20'
-              : pct === 25
-                ? 'FRESH25'
-                : `FRESH${pct}`;
-    return { code, pct, freeDelivery: false, label: `${pct}% έκπτωση` };
-  }
-  return null;
+export function formatDealTime(totalSeconds: number): string {
+  const s = Math.max(0, Math.floor(totalSeconds));
+  const m = Math.floor(s / 60);
+  const r = s % 60;
+  return `${m}:${String(r).padStart(2, '0')}`;
 }
