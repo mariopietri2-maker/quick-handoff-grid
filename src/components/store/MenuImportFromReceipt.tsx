@@ -40,7 +40,15 @@ export default function MenuImportFromReceipt({ storeId }: Props) {
       const { data, error } = await supabase.functions.invoke('parse-receipt', {
         body: { text: pasteText, mode: 'menu' },
       });
-      if (error) throw error;
+      if (error) {
+        const msg = (error as any)?.message || String(error);
+        if (/non-2xx|FunctionsHttpError|Failed to send/i.test(msg)) {
+          toast.error('Η ανάλυση μενού απέτυχε (AI service). Πρόσθεσε προϊόντα χειροκίνητα ή έλεγξε AI_GATEWAY_API_KEY.');
+        } else {
+          toast.error(msg);
+        }
+        return;
+      }
       const d = data?.data ?? {};
       const rows = Array.isArray(d.menu_items) ? d.menu_items : [];
       if (rows.length === 0) {

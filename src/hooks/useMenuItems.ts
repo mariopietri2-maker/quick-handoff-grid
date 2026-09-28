@@ -18,7 +18,11 @@ export function useMenuItems(storeId: string | null) {
       .order('category', { ascending: true })
       .order('name', { ascending: true });
 
-    if (!error && data) {
+    if (error) {
+      console.error('menu_items fetch', error);
+      toast.error('Αποτυχία φόρτωσης μενού: ' + (error.message || 'άγνωστο σφάλμα'));
+      setItems([]);
+    } else if (data) {
       setItems(data);
     }
     setLoading(false);

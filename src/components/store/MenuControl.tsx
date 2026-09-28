@@ -116,10 +116,15 @@ export function MenuControl({ storeId }: MenuControlProps) {
     setAddOpen(false);
   };
 
-  const filtered = items.filter(item =>
-    item.name.toLowerCase().includes(search.toLowerCase()) ||
-    (item.category ?? '').toLowerCase().includes(search.toLowerCase())
-  );
+  const filtered = items.filter(item => {
+    const q = search.toLowerCase().trim();
+    if (!q) return true;
+    return (
+      (item.name ?? '').toLowerCase().includes(q) ||
+      (item.category ?? '').toLowerCase().includes(q) ||
+      (item.description ?? '').toLowerCase().includes(q)
+    );
+  });
 
   const categories = [
     ...(filtered.some(isOfferItem) ? ['Προσφορές'] : []),
@@ -230,7 +235,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
               {category}
             </h3>
             <div className="space-y-2">
-              {category === 'Προσφορές' ? filtered.filter(isOfferItem) : filtered.filter(i => !isOfferItem(i) && (i.category ?? 'Χωρίς Κατηγορία') === category).map(item => (
+              {(category === 'Προσφορές' ? filtered.filter(isOfferItem) : filtered.filter(i => !isOfferItem(i) && (i.category ?? 'Χωρίς Κατηγορία') === category)).map(item => (
                 <Card key={item.id} className={`shadow-[var(--shadow-sm)] ${
                   !item.is_available ? 'opacity-50' : item.is_snoozed ? 'border-warning/40' : ''
                 } ${selectMode && selectedIds.has(item.id) ? 'ring-2 ring-primary' : ''}`}>
@@ -244,7 +249,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
                     )}
                     <div className="flex-1 min-w-0 basis-[60%]">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-heading font-semibold text-foreground truncate">{item.name}</span>
+                        <span className="font-heading font-semibold text-foreground truncate">{item.name || "Χωρίς όνομα"}</span>
                         {item.is_snoozed && (
                           <Badge variant="outline" className="text-warning border-warning/30 text-xs">
                             <Moon className="h-3 w-3 mr-1" />
