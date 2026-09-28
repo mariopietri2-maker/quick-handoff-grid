@@ -421,7 +421,7 @@ export default function RestaurantPage() {
       {/* Category tabs — mobile */}
       {!normalizedQuery && visibleCategories.length > 1 && (
         <div
-          className={`lg:hidden sticky z-40 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
+          className={`md:hidden sticky z-40 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
             showStickyHeader ? 'top-[52px]' : 'top-0'
           }`}
         >
@@ -446,9 +446,9 @@ export default function RestaurantPage() {
         </div>
       )}
 
-      <div className="max-w-6xl mx-auto px-4 pt-5 lg:pt-6 lg:grid lg:grid-cols-[200px_minmax(0,1fr)_280px] lg:gap-8 lg:items-start">
+      <div className="max-w-6xl mx-auto px-4 pt-5 md:pt-6 md:grid md:grid-cols-[180px_minmax(0,1fr)] xl:grid-cols-[200px_minmax(0,1fr)_280px] md:gap-6 xl:gap-8 md:items-start">
         {!normalizedQuery && visibleCategories.length > 0 && (
-          <aside className="hidden lg:block sticky top-20 self-start">
+          <aside className="hidden md:block sticky top-20 self-start">
             <p className="text-[11px] font-bold uppercase tracking-wide c-soft mb-2 px-2">Κατηγορίες</p>
             <nav className="flex flex-col gap-0.5 border-l border-[hsl(var(--c-border))]">
               {visibleCategories.map((cat) => (
@@ -521,7 +521,7 @@ export default function RestaurantPage() {
         )}
         </div>
 
-        <aside className="hidden lg:block sticky top-20 self-start">
+        <aside className="hidden xl:block sticky top-20 self-start">
           <div className="rounded-2xl border border-[hsl(var(--c-border))] bg-[hsl(var(--c-surface))] shadow-sm overflow-hidden">
             <div className="px-4 py-3 border-b border-[hsl(var(--c-border))]">
               <h3 className="font-heading font-extrabold text-[16px] c-ink">Καλάθι</h3>
@@ -564,7 +564,7 @@ export default function RestaurantPage() {
 
       {/* Sticky cart bar — mobile */}
       {cartForThisStore && (
-        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="xl:hidden fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
           <div
             className="max-w-6xl mx-auto px-3 pt-2"
             style={{ paddingBottom: 'max(0.75rem, var(--app-safe-bottom))' }}
