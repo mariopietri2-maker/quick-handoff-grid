@@ -74,25 +74,16 @@ export default function CustomerGames() {
   return (
     <>
       {burst > 0 && <ConfettiBurst key={burst} onDone={() => setBurst(0)} />}
-      {g.active === 'wheel' ? (
-        <LuckyWheel
-          segments={g.wheelSegments}
-          spinning={g.spinning}
-          wheelTarget={g.wheelTarget}
-          wheelResult={g.wheelResult}
-          spinLocked={g.spinLocked}
-          dealSeconds={g.dealSeconds}
-          onSpin={g.spin}
-        />
-      ) : (
-        <MysteryCards
-          cards={g.cards}
-          cardClaimed={g.cardClaimed}
-          claimedCardIndex={g.claimedCardIndex}
-          openedCards={g.openedCards}
-          onOpenCard={g.openCard}
-        />
-      )}
+      {/* Only lucky wheel — mystery cards removed */}
+      <LuckyWheel
+        segments={g.wheelSegments}
+        spinning={g.spinning}
+        wheelTarget={g.wheelTarget}
+        wheelResult={g.wheelResult}
+        spinLocked={g.spinLocked}
+        dealSeconds={g.dealSeconds}
+        onSpin={g.spin}
+      />
     </>
   );
 }

@@ -28,7 +28,7 @@ export function useCustomerGames() {
   const cfg = useCustomerAppConfig();
   const games = cfg.games;
   const enabled = games.enabled;
-  const active = games.active;
+  const active = 'wheel' as const; // only lucky wheel — cards removed
 
   const wheelSegments = useMemo(
     () => (games.wheel_segments.length ? games.wheel_segments : DEFAULT_CONFIG.games.wheel_segments),

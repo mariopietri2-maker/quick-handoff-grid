@@ -811,10 +811,8 @@ private fun HomeTab(
 
         if (false && showDiscovery && state.gameShow) {
             item {
-                when (state.gameActive) {
-                    "wheel" -> LuckyWheelCard(state = state, onSpin = onSpinWheel)
-                    else -> MysteryCardsSection(state = state, onOpenCard = onOpenCard)
-                }
+                // Only lucky wheel — mystery cards removed
+                LuckyWheelCard(state = state, onSpin = onSpinWheel)
             }
         }
         // Fresh2GO discovery rails (efood density, own style) — only on the default feed
