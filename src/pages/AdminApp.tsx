@@ -9,7 +9,7 @@ import { Switch } from '@/components/ui/switch';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 import { Input } from '@/components/ui/input';
-import { Shield, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X } from 'lucide-react';
+import { Shield, Store, ShoppingBag, LogOut, Search, Bell, Menu, TrendingUp, Bike, Wallet, Activity, MoreVertical, MessageSquare, Ban, RotateCcw, Plus, Minus, X, Trash2 } from 'lucide-react';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import AdminSidebar, { findParentSection, getTabsForSection, NAV_SECTIONS } from '@/components/admin/AdminSidebar';
 import AdminDashboard from '@/components/admin/AdminDashboard';
@@ -229,6 +229,37 @@ export default function AdminApp() {
     else { toast.success(currentActive ? 'Απενεργοποιήθηκε' : 'Ενεργοποιήθηκε'); queryClient.invalidateQueries({ queryKey: ['admin-stores'] }); }
   };
 
+  const handleDeleteStore = async (storeId: string, storeName: string) => {
+    if (!perms.isFull && !perms.canManageSettings) {
+      toast.error('Δεν έχεις δικαίωμα διαγραφής καταστήματος');
+      return;
+    }
+    const ok = window.confirm(
+      `Διαγραφή καταστήματος «${storeName}»;\n\n` +
+        '• Χωρίς παραγγελίες → οριστική διαγραφή\n' +
+        '• Με παραγγελίες → απενεργοποίηση (ιστορικό παραμένει)\n\n' +
+        'Η ενέργεια δεν αναιρείται εύκολα.'
+    );
+    if (!ok) return;
+    const typed = window.prompt(`Πληκτρολόγησε το όνομα για επιβεβαίωση:\n${storeName}`);
+    if (typed?.trim() !== storeName.trim()) {
+      toast.error('Το όνομα δεν ταιριάζει — ακυρώθηκε');
+      return;
+    }
+    const { data, error } = await (supabase.rpc as any)('admin_delete_store', { p_store_id: storeId });
+    if (error) {
+      toast.error(error.message || 'Αποτυχία διαγραφής');
+      return;
+    }
+    if (data?.ok === false) {
+      toast.error(data?.error || 'Αποτυχία');
+      return;
+    }
+    if (data?.mode === 'hard') toast.success(`Διαγράφηκε οριστικά: ${storeName}`);
+    else toast.success(`Απενεργοποιήθηκε (έχει ${data?.orders ?? '?'} παραγγελίες): ${storeName}`);
+    queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
+  };
+
 
 
   const handleToggleDriverActive = async (userId: string, currentActive: boolean) => {
@@ -443,7 +474,7 @@ export default function AdminApp() {
       case 'orders_table':
         return <OrdersSection orders={orders.data} drivers={allDrivers} statusColors={statusColors} statusLabels={statusLabelsEl} onUpdateStatus={handleUpdateOrderStatus} onAssignDriver={handleAssignDriver} onRefund={handleRefundOrder} onForceStatus={handleForceOrderStatus} />;
       case 'stores':
-        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} />;
+        return <StoresSection stores={filteredStores} allStores={allStores} storeWallets={storeWallets.data ?? []} filter={storeFilter} setFilter={setStoreFilter} onToggle={handleToggleStoreActive} onDelete={handleDeleteStore} />;
       case 'store_registry':
         return <StoreRegistryPanel stores={allStores as any} profiles={profiles.data as any} />;
       case 'platform_mode':
@@ -912,7 +943,7 @@ function OrdersSection({ orders, drivers, statusColors, statusLabels, onUpdateSt
   );
 }
 
-function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle }: any) {
+function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle, onDelete }: any) {
   const walletMap = new Map((storeWallets ?? []).map((w: any) => [w.store_id, w]));
   const totalLifetime = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.lifetime_earnings ?? 0), 0);
   const totalAvailable = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.available_balance ?? 0), 0);
@@ -945,7 +976,7 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
+            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th><th className="w-16"></th></tr></thead>
             <tbody>
               {stores.map((store: any) => {
                 const w: any = walletMap.get(store.id);
@@ -964,12 +995,22 @@ function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onT
                       </span>
                     </td>
                     <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(store.created_at), 'dd MMM yyyy')}</td>
+                    <td className="text-right">
+                      <button
+                        type="button"
+                        title="Διαγραφή καταστήματος"
+                        onClick={() => onDelete?.(store.id, store.name)}
+                        className="inline-flex h-7 w-7 items-center justify-center rounded-md text-red-600 hover:bg-red-500/10 border border-transparent hover:border-red-500/30"
+                      >
+                        <Trash2 className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
                   </tr>
                 );
               })}
               {!stores.length && (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center">
+                  <td colSpan={8} className="py-14 text-center">
                     <div className="inline-flex flex-col items-center gap-2 text-muted-foreground">
                       <Store className="h-8 w-8 opacity-40" />
                       <p className="text-[12.5px] font-medium">Κανένα κατάστημα σε αυτό το φίλτρο</p>
