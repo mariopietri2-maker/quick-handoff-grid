@@ -65,7 +65,7 @@ export function prizeToDeal(prize: {
 
 /**
  * Daily show for the lucky wheel only (cards removed).
- * ~30% chance; visible window ~15 minutes.
+ * ~60% chance; visible window ~15 minutes.
  */
 export function resolveDailyGameShow(active: 'wheel' | 'cards' = 'wheel'): {
   show: boolean;
@@ -86,7 +86,7 @@ export function resolveDailyGameShow(active: 'wheel' | 'cards' = 'wheel'): {
       /* fall through */
     }
   }
-  const show = Math.random() < 0.3;
+  const show = Math.random() < 0.6;
   const expiresAt = show ? Date.now() + 15 * 60 * 1000 : null;
   localStorage.setItem(key, JSON.stringify({ show, expiresAt }));
   return { show, expiresAt };
@@ -105,7 +105,6 @@ export function formatDealTime(totalSeconds: number): string {
   const r = s % 60;
   return `${m}:${String(r).padStart(2, '0')}`;
 }
-
 
 export function getSegmentStock(code: string, configured: number | null | undefined): number | null {
   if (configured == null || configured === undefined) return null;
