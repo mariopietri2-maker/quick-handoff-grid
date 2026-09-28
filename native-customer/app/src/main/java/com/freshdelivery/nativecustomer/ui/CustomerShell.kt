@@ -793,9 +793,9 @@ private fun HomeTab(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }
+                FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { applyFilter(HomeFilter.Deals) }
                 FreshFilterChip("Ανοιχτά", selected = filter == HomeFilter.Open) { applyFilter(HomeFilter.Open) }
                 FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { applyFilter(HomeFilter.Near) }
-                FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { applyFilter(HomeFilter.Deals) }
                 FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { applyFilter(HomeFilter.Fav) }
             }
         }

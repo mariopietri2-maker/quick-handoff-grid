@@ -583,6 +583,19 @@ const displayAddress = deliveryAddress
         <ActiveOrderTracker />
         {cfg.sections.show_order_again && <OrderAgainRow />}
 
+        {/* Προσφορές — first thing customers see */}
+        {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (
+          <OfferRow
+            title={t('customer.filter_offers')}
+            subtitle={t('customer.recommended_sub')}
+            items={promotionOffers}
+            onSeeAll={() => {
+              setFilterOffers(true);
+              document.getElementById('nearby-stores')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }}
+          />
+        )}
+
         {/* Circular category rail (Uber Eats style) */}
         {cfg.sections.show_categories !== false && (
         <section id="browse-categories" className="pt-4 scroll-mt-36">
@@ -803,16 +816,6 @@ const displayAddress = deliveryAddress
               </div>
             </section>
           )}
-
-        {/* Offers rail — secondary */}
-        {!isSearching && selectedCategory === 'all' && promotionOffers.length > 0 && (
-          <OfferRow
-            title={t('customer.recommended')}
-            subtitle={t('customer.recommended_sub')}
-            items={promotionOffers}
-            onSeeAll={() => setFilterOffers(true)}
-          />
-        )}
 
         {!isSearching && selectedCategory === 'all' && cfg.sections.show_ai_strip && (
           <AiCardStrip />
