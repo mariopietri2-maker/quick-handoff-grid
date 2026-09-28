@@ -1655,11 +1655,40 @@ private fun MenuScreen(
 ) {
     val haptic = LocalHapticFeedback.current
     val store = state.selectedStore
+    fun isOfferCategory(cat: String): Boolean {
+        val c = cat.lowercase()
+        return c.contains("προσφορ") || c.contains("offer") || c.contains("deal") ||
+            c.contains("1+1") || c.contains("έκπτ") || c.contains("promo") || c.contains("εκπτ")
+    }
+    fun isOfferItem(item: MenuItemRow): Boolean {
+        val cat = item.category?.trim().orEmpty()
+        if (isOfferCategory(cat)) return true
+        val n = item.name.lowercase()
+        return n.contains("1+1") || n.contains("προσφορ") || n.contains("-50%") || n.contains("-20%")
+    }
     val menuGroups = remember(state.menu) {
-        state.menu
+        val offerItems = state.menu.filter { isOfferItem(it) }
+        val rest = state.menu.filter { !isOfferItem(it) }
+        val groups = mutableListOf<Pair<String, List<MenuItemRow>>>()
+        if (offerItems.isNotEmpty()) {
+            groups += "Προσφορές" to offerItems
+        }
+        rest
             .groupBy { it.category?.trim()?.takeIf { c -> c.isNotEmpty() } ?: "Μενού" }
             .toList()
-            .sortedBy { (cat, _) -> if (cat == "Μενού") "zzz" else cat }
+            .sortedBy { (cat, _) ->
+                when {
+                    isOfferCategory(cat) -> "0$cat"
+                    cat == "Μενού" -> "zzz"
+                    else -> cat
+                }
+            }
+            .forEach { (cat, items) ->
+                if (!(isOfferCategory(cat) && offerItems.isNotEmpty())) {
+                    groups += cat to items
+                }
+            }
+        groups.toList()
     }
     var selectedCategory by remember(state.selectedStore?.id) { mutableStateOf<String?>(null) }
     val visibleGroups = remember(menuGroups, selectedCategory) {
@@ -1821,6 +1850,7 @@ private fun MenuScreen(
                     items(itemsInCat, key = { it.id }) { item ->
                         FreshMenuRow(
                             item = item,
+                            highlightOffer = category == "Προσφορές" || category.lowercase().contains("προσφορ") || category.lowercase().contains("offer"),
                             onAdd = {
                                 if (item.is_available != false) { haptic.performHapticFeedback(HapticFeedbackType.LongPress); onAdd(item) }
                             },
@@ -1850,15 +1880,15 @@ private fun MenuScreen(
 }
 
 @Composable
-private fun FreshMenuRow(item: MenuItemRow, onAdd: () -> Unit) {
+private fun FreshMenuRow(item: MenuItemRow, highlightOffer: Boolean = false, onAdd: () -> Unit) {
     val available = item.is_available != false
     Row(
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(3.dp, RoundedCornerShape(20.dp))
+            .shadow(if (highlightOffer) 5.dp else 3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.White)
+            .background(if (highlightOffer) FreshGreenSoft.copy(alpha = 0.35f) else Color.White)
             .clickable(enabled = available, onClick = onAdd)
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
