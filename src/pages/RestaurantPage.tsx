@@ -100,10 +100,15 @@ export default function RestaurantPage() {
     });
   }, [menuItems, normalizedQuery]);
 
-  const visibleCategories = useMemo(
-    () => [...new Set(filteredItems.map((i) => i.category ?? 'Άλλο'))],
-    [filteredItems],
-  );
+  const visibleCategories = useMemo(() => {
+    const cats = [...new Set(filteredItems.map((i) => i.category ?? 'Άλλο'))];
+    const isOffer = (c: string) => /προσφορ|offer|1\s*\+\s*1/i.test(c);
+    return cats.sort((a, b) => {
+      const ao = isOffer(a) ? 0 : 1;
+      const bo = isOffer(b) ? 0 : 1;
+      return ao - bo || a.localeCompare(b, 'el');
+    });
+  }, [filteredItems]);
 
   useEffect(() => {
     if (visibleCategories.length > 0 && (!activeCategory || !visibleCategories.includes(activeCategory))) {
@@ -180,6 +185,7 @@ export default function RestaurantPage() {
   const storeEta = useDeliveryEta(store?.prep_buffer_minutes ?? 0);
   const etaLow = Math.min(storeEta.min, etaCap);
   const etaHigh = Math.min(storeEta.max, etaCap);
+  const etaLabel = store ? `${etaLow}–${etaHigh} λεπ` : null;
   const storeOpen = store
     ? isStoreOpenNow((store as any).opening_hours, (store as any).holiday_dates, (store as any).status_override)
     : true;
@@ -191,7 +197,7 @@ export default function RestaurantPage() {
     return (
       <div className="customer-shell customer-scroll min-h-[100dvh] max-h-[100dvh] overflow-y-auto overscroll-contain c-page">
         <div className="h-56 bg-[hsl(var(--c-surface-muted))] animate-pulse" />
-        <div className="max-w-2xl mx-auto px-4 pt-5 space-y-4">
+        <div className="max-w-6xl mx-auto px-4 pt-5 space-y-4">
           <div className="h-7 bg-[hsl(var(--c-surface-muted))] rounded-lg w-2/3 animate-pulse" />
           <div className="h-4 bg-[hsl(var(--c-surface-muted))] rounded w-1/2 animate-pulse" />
           <div className="h-4 bg-[hsl(var(--c-surface-muted))] rounded w-1/3 animate-pulse" />
@@ -249,7 +255,7 @@ export default function RestaurantPage() {
           showStickyHeader ? 'translate-y-0 opacity-100' : '-translate-y-full opacity-0 pointer-events-none'
         }`}
       >
-        <div className="max-w-2xl mx-auto px-4 py-3 flex items-center gap-3">
+        <div className="max-w-6xl mx-auto px-4 py-3 flex items-center gap-3">
           <button
             type="button"
             onClick={() => navigate('/order')}
@@ -277,9 +283,9 @@ export default function RestaurantPage() {
       {/* Hero */}
       <header ref={heroRef} className="relative">
         <div className="h-52 sm:h-60 bg-[hsl(var(--c-surface-muted))] overflow-hidden">
-          {store.image_url ? (
+          {(store as any).cover_image_url || store.image_url ? (
             <img
-              src={store.image_url}
+              src={(store as any).cover_image_url || store.image_url}
               alt={`Φωτογραφία εστιατορίου ${store.name}`}
               className="w-full h-full object-cover"
             />
@@ -326,11 +332,16 @@ export default function RestaurantPage() {
       </header>
 
       {/* Store identity */}
-      <main className="max-w-2xl mx-auto px-4 -mt-3 relative z-10">
+      <main className="max-w-6xl mx-auto px-4 -mt-3 relative z-10">
         <div className="rounded-2xl bg-[hsl(var(--c-elevated))] border border-[hsl(var(--c-border))] shadow-[0_8px_24px_-12px_hsl(0_0%_0%/0.18)] px-4 py-4">
-          <h1 className="font-heading font-black text-[26px] leading-tight tracking-tight c-ink">
-            {store.name}
-          </h1>
+          <div className="flex items-center gap-3">
+            {store.image_url && (
+              <img src={store.image_url} alt="" className="h-14 w-14 rounded-xl object-cover border border-[hsl(var(--c-border))] shadow-sm shrink-0 bg-white" />
+            )}
+            <h1 className="font-heading font-black text-[22px] sm:text-[26px] leading-tight tracking-tight c-ink">
+              {store.name}
+            </h1>
+          </div>
           <div className="flex items-center gap-x-3 gap-y-1.5 mt-2.5 flex-wrap text-[13px] font-semibold c-muted">
             <RatingBadge storeId={store.id} />
             {storeOpen ? (
@@ -381,7 +392,7 @@ export default function RestaurantPage() {
       </main>
 
       {/* Search */}
-      <div className="max-w-2xl mx-auto px-4 mt-4">
+      <div className="max-w-6xl mx-auto px-4 mt-4">
         <label className="relative block">
           <span className="sr-only">Αναζήτηση στο μενού</span>
           <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 c-soft pointer-events-none" />
@@ -404,14 +415,14 @@ export default function RestaurantPage() {
         </label>
       </div>
 
-      {/* Category tabs */}
+      {/* Category tabs — mobile */}
       {!normalizedQuery && visibleCategories.length > 1 && (
         <div
-          className={`sticky z-40 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
+          className={`lg:hidden sticky z-40 bg-[hsl(var(--c-surface)/0.95)] backdrop-blur-md border-b border-[hsl(var(--c-border))] mt-3 transition-[top] duration-200 ${
             showStickyHeader ? 'top-[52px]' : 'top-0'
           }`}
         >
-          <div className="max-w-2xl mx-auto">
+          <div className="max-w-6xl mx-auto">
             <div className="flex overflow-x-auto no-scrollbar">
               {visibleCategories.map((cat) => (
                 <button
@@ -432,8 +443,29 @@ export default function RestaurantPage() {
         </div>
       )}
 
-      {/* Menu */}
-      <div className="max-w-2xl mx-auto px-4 pt-5 space-y-7">
+      <div className="max-w-6xl mx-auto px-4 pt-5 lg:pt-6 lg:grid lg:grid-cols-[200px_minmax(0,1fr)_280px] lg:gap-8 lg:items-start">
+        {!normalizedQuery && visibleCategories.length > 0 && (
+          <aside className="hidden lg:block sticky top-20 self-start">
+            <p className="text-[11px] font-bold uppercase tracking-wide c-soft mb-2 px-2">Κατηγορίες</p>
+            <nav className="flex flex-col gap-0.5 border-l border-[hsl(var(--c-border))]">
+              {visibleCategories.map((cat) => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => scrollToCategory(cat)}
+                  className={`text-left px-3 py-2 text-[13px] font-semibold transition-colors border-l-2 -ml-px ${
+                    activeCategory === cat
+                      ? 'border-[hsl(var(--c-accent))] text-[hsl(var(--c-accent))] bg-[hsl(var(--c-accent)/0.06)]'
+                      : 'border-transparent c-soft hover:bg-[hsl(var(--c-surface-muted))]'
+                  }`}
+                >
+                  {cat}
+                </button>
+              ))}
+            </nav>
+          </aside>
+        )}
+        <div className="space-y-7 min-w-0">
         {filteredItems.length === 0 ? (
           <div className="text-center py-16">
             <p className="font-heading font-extrabold c-ink">
@@ -484,13 +516,54 @@ export default function RestaurantPage() {
             <ReviewList storeId={store.id} />
           </div>
         )}
+        </div>
+
+        <aside className="hidden lg:block sticky top-20 self-start">
+          <div className="rounded-2xl border border-[hsl(var(--c-border))] bg-[hsl(var(--c-surface))] shadow-sm overflow-hidden">
+            <div className="px-4 py-3 border-b border-[hsl(var(--c-border))]">
+              <h3 className="font-heading font-extrabold text-[16px] c-ink">Καλάθι</h3>
+              {etaLabel && (
+                <p className="text-[12px] c-soft mt-0.5 flex items-center gap-1">
+                  <Clock className="h-3.5 w-3.5" />
+                  {etaLabel}
+                </p>
+              )}
+            </div>
+            {cartForThisStore && items.length > 0 ? (
+              <div className="p-3 space-y-2 max-h-[50vh] overflow-y-auto">
+                {items.map((ci) => (
+                  <div key={ci.menuItemId} className="flex items-start justify-between gap-2 text-[13px]">
+                    <div className="min-w-0">
+                      <p className="font-semibold c-ink truncate">{ci.name}</p>
+                      <p className="c-soft tabular-nums">×{ci.quantity}</p>
+                    </div>
+                    <p className="font-bold c-ink tabular-nums shrink-0">€{(ci.price * ci.quantity).toFixed(2)}</p>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() => navigate('/checkout')}
+                  className="w-full h-11 mt-2 rounded-xl bg-[hsl(var(--c-accent))] text-white font-heading font-extrabold text-[14px]"
+                >
+                  Συνέχεια · €{total.toFixed(2)}
+                </button>
+              </div>
+            ) : (
+              <div className="px-4 py-10 text-center">
+                <ShoppingBag className="h-10 w-10 mx-auto c-soft opacity-40 mb-2" />
+                <p className="font-heading font-bold text-sm c-ink">Άδειο καλάθι</p>
+                <p className="text-[12px] c-soft mt-1">Πρόσθεσε προϊόντα από το μενού</p>
+              </div>
+            )}
+          </div>
+        </aside>
       </div>
 
-      {/* Sticky cart bar — clear of Android system nav */}
+      {/* Sticky cart bar — mobile */}
       {cartForThisStore && (
-        <div className="fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
+        <div className="lg:hidden fixed bottom-0 left-0 right-0 z-50 pointer-events-none">
           <div
-            className="max-w-2xl mx-auto px-3 pt-2"
+            className="max-w-6xl mx-auto px-3 pt-2"
             style={{ paddingBottom: 'max(0.75rem, var(--app-safe-bottom))' }}
           >
             <button
