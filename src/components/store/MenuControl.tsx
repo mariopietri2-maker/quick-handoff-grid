@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Moon, X, Search, Plus, CheckSquare, Square, Image as ImageIcon, Trash2, Loader2 } from 'lucide-react';
+import { Moon, X, Search, Plus, CheckSquare, Square, Image as ImageIcon, Trash2, Loader2, Pencil } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Switch } from '@/components/ui/switch';
 import { Badge } from '@/components/ui/badge';
@@ -13,6 +13,11 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { toast } from 'sonner';
 import ItemModifiersEditor from './ItemModifiersEditor';
+
+function isOfferItem(item: { name?: string | null; category?: string | null; description?: string | null }) {
+  const blob = `${item.name ?? ''} ${item.category ?? ''} ${item.description ?? ''}`.toLowerCase();
+  return /προσφορ|offer|1\s*\+\s*1|2\s*\+\s*1|έκπτωσ|discount/.test(blob);
+}
 
 interface MenuControlProps {
   storeId: string;
@@ -32,7 +37,7 @@ function extFromFile(file: File): string {
 }
 
 export function MenuControl({ storeId }: MenuControlProps) {
-  const { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem, updateItemImage } = useMenuItems(storeId);
+  const { items, loading, toggleAvailable, toggleSnooze, bulkSetSnooze, bulkSetAvailable, addItem, updateItem, updateItemImage } = useMenuItems(storeId);
   const { isAdmin } = useAuth();
   const [search, setSearch] = useState('');
   const [addOpen, setAddOpen] = useState(false);
@@ -40,6 +45,8 @@ export function MenuControl({ storeId }: MenuControlProps) {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
   const [newItem, setNewItem] = useState({ name: '', price: '', category: '', description: '' });
   const [imageBusyId, setImageBusyId] = useState<string | null>(null);
+  const [edit, setEdit] = useState<null | { id: string; name: string; price: string; category: string; description: string }>(null);
+  const [editBusy, setEditBusy] = useState(false);
   const fileRefs = useRef<Record<string, HTMLInputElement | null>>({});
 
   const uploadItemImage = async (itemId: string, file: File) => {
@@ -114,7 +121,10 @@ export function MenuControl({ storeId }: MenuControlProps) {
     (item.category ?? '').toLowerCase().includes(search.toLowerCase())
   );
 
-  const categories = [...new Set(filtered.map(i => i.category ?? 'Χωρίς Κατηγορία'))];
+  const categories = [
+    ...(filtered.some(isOfferItem) ? ['Προσφορές'] : []),
+    ...[...new Set(filtered.filter(i => !isOfferItem(i)).map(i => i.category ?? 'Χωρίς Κατηγορία'))],
+  ];
 
   if (loading) {
     return (
@@ -220,7 +230,7 @@ export function MenuControl({ storeId }: MenuControlProps) {
               {category}
             </h3>
             <div className="space-y-2">
-              {filtered.filter(i => (i.category ?? 'Χωρίς Κατηγορία') === category).map(item => (
+              {category === 'Προσφορές' ? filtered.filter(isOfferItem) : filtered.filter(i => !isOfferItem(i) && (i.category ?? 'Χωρίς Κατηγορία') === category).map(item => (
                 <Card key={item.id} className={`shadow-[var(--shadow-sm)] ${
                   !item.is_available ? 'opacity-50' : item.is_snoozed ? 'border-warning/40' : ''
                 } ${selectMode && selectedIds.has(item.id) ? 'ring-2 ring-primary' : ''}`}>
@@ -312,6 +322,20 @@ export function MenuControl({ storeId }: MenuControlProps) {
                           )}
                         </>
                       )}
+                      <button
+                        type="button"
+                        onClick={() => setEdit({
+                          id: item.id,
+                          name: item.name ?? '',
+                          price: String(item.price ?? ''),
+                          category: item.category ?? '',
+                          description: item.description ?? '',
+                        })}
+                        className="h-9 w-9 rounded-lg flex items-center justify-center bg-muted text-muted-foreground hover:text-primary"
+                        title="Επεξεργασία"
+                      >
+                        <Pencil className="h-4 w-4" />
+                      </button>
                       <Switch
                         checked={item.is_available ?? true}
                         onCheckedChange={() => toggleAvailable(item.id)}
@@ -324,6 +348,54 @@ export function MenuControl({ storeId }: MenuControlProps) {
           </div>
         ))
       )}
+
+      <Dialog open={!!edit} onOpenChange={(o) => !o && setEdit(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="font-heading">Επεξεργασία προϊόντος</DialogTitle>
+          </DialogHeader>
+          {edit && (
+            <div className="space-y-3">
+              <div>
+                <Label className="font-heading">Όνομα</Label>
+                <Input value={edit.name} onChange={(e) => setEdit({ ...edit, name: e.target.value })} />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <Label className="font-heading">Τιμή (€)</Label>
+                  <Input type="number" step="0.01" value={edit.price} onChange={(e) => setEdit({ ...edit, price: e.target.value })} />
+                </div>
+                <div>
+                  <Label className="font-heading">Κατηγορία</Label>
+                  <Input value={edit.category} onChange={(e) => setEdit({ ...edit, category: e.target.value })} />
+                </div>
+              </div>
+              <div>
+                <Label className="font-heading">Περιγραφή</Label>
+                <Input value={edit.description} onChange={(e) => setEdit({ ...edit, description: e.target.value })} />
+              </div>
+              <Button
+                className="w-full"
+                disabled={editBusy}
+                onClick={async () => {
+                  if (!edit.name.trim() || edit.price === '') return;
+                  setEditBusy(true);
+                  const ok = await updateItem(edit.id, {
+                    name: edit.name.trim(),
+                    price: parseFloat(edit.price),
+                    category: edit.category.trim() || 'Χωρίς Κατηγορία',
+                    description: edit.description.trim() || null,
+                  });
+                  setEditBusy(false);
+                  if (ok) setEdit(null);
+                }}
+              >
+                Αποθήκευση
+              </Button>
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
