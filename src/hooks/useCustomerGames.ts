@@ -12,6 +12,8 @@ import {
   resolveDailyGameShow,
   secondsToMidnight,
   setWonDeal,
+  pickWeightedSegmentIndex,
+  consumeSegmentStock,
   type GameDeal,
 } from '@/lib/customer-games';
 
@@ -108,7 +110,7 @@ export function useCustomerGames() {
       toast('Η ρόδα είναι διαθέσιμη μία φορά την ημέρα');
       return;
     }
-    const target = Math.floor(Math.random() * wheelSegments.length);
+    const target = pickWeightedSegmentIndex(wheelSegments);
     setSpinning(true);
     setWheelTarget(target);
     setWheelResult(null);
@@ -134,6 +136,7 @@ export function useCustomerGames() {
       setWonDeal(deal);
       setWonAtTs(Date.now());
       persistSpinDay();
+      consumeSegmentStock(seg.code, seg.quantity);
     }, SPIN_MS);
   }, [enabled, spinning, spinLocked, active, wheelSegments]);
 

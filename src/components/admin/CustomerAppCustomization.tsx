@@ -495,6 +495,47 @@ export default function CustomerAppCustomization() {
                         />
                       </div>
                       <div>
+                        <Label className="text-xs">Βάρος (πιθανότητα)</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          value={seg.weight ?? 1}
+                          onChange={e => {
+                            const wheel_segments = [...draft.games.wheel_segments];
+                            wheel_segments[i] = { ...seg, weight: Math.max(0, Number(e.target.value) || 0) };
+                            setDraft({ ...draft, games: { ...draft.games, wheel_segments } });
+                          }}
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-0.5">
+                          {(() => {
+                            const total = draft.games.wheel_segments.reduce((a, s) => a + Math.max(0, Number(s.weight ?? 1)), 0) || 1;
+                            const w = Math.max(0, Number(seg.weight ?? 1));
+                            return `~${Math.round((w / total) * 100)}% πιθανότητα`;
+                          })()}
+                        </p>
+                      </div>
+                      <div>
+                        <Label className="text-xs">Ποσότητα</Label>
+                        <Input
+                          type="number"
+                          min={0}
+                          step={1}
+                          placeholder="∞"
+                          value={seg.quantity == null ? '' : seg.quantity}
+                          onChange={e => {
+                            const wheel_segments = [...draft.games.wheel_segments];
+                            const v = e.target.value;
+                            wheel_segments[i] = {
+                              ...seg,
+                              quantity: v === '' ? null : Math.max(0, Number(v) || 0),
+                            };
+                            setDraft({ ...draft, games: { ...draft.games, wheel_segments } });
+                          }}
+                        />
+                        <p className="text-[10px] text-muted-foreground mt-0.5">Κενό = απεριόριστα</p>
+                      </div>
+                      <div>
                         <Label className="text-xs">Χρώμα</Label>
                         <div className="flex gap-1.5 items-center">
                           <Input

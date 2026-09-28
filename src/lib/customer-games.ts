@@ -105,3 +105,41 @@ export function formatDealTime(totalSeconds: number): string {
   const r = s % 60;
   return `${m}:${String(r).padStart(2, '0')}`;
 }
+
+
+export function getSegmentStock(code: string, configured: number | null | undefined): number | null {
+  if (configured == null || configured === undefined) return null;
+  const key = `${PREFIX}seg_stock_${code}`;
+  const raw = localStorage.getItem(key);
+  if (raw == null) return configured;
+  const n = Number(raw);
+  return Number.isFinite(n) ? Math.max(0, n) : configured;
+}
+
+export function consumeSegmentStock(code: string, configured: number | null | undefined): void {
+  if (configured == null || configured === undefined) return;
+  const cur = getSegmentStock(code, configured);
+  if (cur == null) return;
+  localStorage.setItem(`${PREFIX}seg_stock_${code}`, String(Math.max(0, cur - 1)));
+}
+
+export function pickWeightedSegmentIndex(
+  segments: { code: string; weight?: number; quantity?: number | null }[],
+): number {
+  if (segments.length === 0) return 0;
+  const eligible = segments
+    .map((s, i) => {
+      const stock = getSegmentStock(s.code, s.quantity);
+      const w = Math.max(0, Number(s.weight ?? 1));
+      return { i, w: stock === 0 ? 0 : w };
+    })
+    .filter((x) => x.w > 0);
+  const pool = eligible.length ? eligible : segments.map((_, i) => ({ i, w: 1 }));
+  const total = pool.reduce((a, x) => a + x.w, 0);
+  let r = Math.random() * total;
+  for (const x of pool) {
+    r -= x.w;
+    if (r <= 0) return x.i;
+  }
+  return pool[pool.length - 1].i;
+}

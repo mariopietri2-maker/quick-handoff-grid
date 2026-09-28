@@ -39,6 +39,8 @@ export type WheelSegmentConfig = {
   free_delivery: boolean;
   /** Hex color of the segment, e.g. "#F97316". */
   color: string;
+  weight?: number;
+  quantity?: number | null;
 };
 
 export type MysteryCardConfig = {
@@ -155,10 +157,19 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
 
 function mergeConfig(cfg: any): CustomerAppConfig {
   const games = cfg?.games ?? {};
-  const wheelSegments =
+  const wheelSegmentsRaw =
     Array.isArray(games?.wheel_segments) && (games.wheel_segments as any[]).length > 0
       ? games.wheel_segments
       : DEFAULT_CONFIG.games.wheel_segments;
+  const wheelSegments = (wheelSegmentsRaw as any[]).map((s) => ({
+    label: String(s.label ?? ''),
+    code: String(s.code ?? ''),
+    pct: s.pct == null ? null : Number(s.pct),
+    free_delivery: !!s.free_delivery,
+    color: String(s.color ?? '#F97316'),
+    weight: s.weight == null ? 1 : Math.max(0, Number(s.weight) || 0),
+    quantity: s.quantity == null || s.quantity === '' ? null : Math.max(0, Number(s.quantity) || 0),
+  }));
   const cards =
     Array.isArray(games?.cards) && (games.cards as any[]).length > 0
       ? games.cards
@@ -175,7 +186,7 @@ function mergeConfig(cfg: any): CustomerAppConfig {
     hero_cards: Array.isArray(cfg?.hero_cards) ? cfg.hero_cards : [],
     games: {
       enabled: games?.enabled ?? DEFAULT_CONFIG.games.enabled,
-      active: games?.active === 'cards' ? 'cards' : 'wheel',
+      active: 'wheel' as const,
       wheel_segments: wheelSegments,
       cards: cards,
     },
