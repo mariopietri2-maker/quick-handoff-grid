@@ -809,7 +809,7 @@ private fun HomeTab(
             }
         }
 
-        if (false && showDiscovery && state.gameShow) {
+        if (showDiscovery && state.gameShow) {
             item {
                 // Only lucky wheel — mystery cards removed
                 LuckyWheelCard(state = state, onSpin = onSpinWheel)

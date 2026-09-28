@@ -1721,7 +1721,28 @@ autoOpenTrack(
      * Exactly one game at a time. If it appears, it stays for [GAME_SHOW_WINDOW_MS]
      * (15 minutes), then hides until the next day's roll.
      */
-    private fun rollDailyGameShow(): Boolean = false // soft-launch
+    private fun rollDailyGameShow(): Boolean {
+        val prefs = getApplication<Application>().getSharedPreferences("fresh_customer", Context.MODE_PRIVATE)
+        val day = java.time.LocalDate.now().toString()
+        val key = "daily_game_show_$day"
+        if (prefs.contains(key)) {
+            val show = prefs.getBoolean(key, false)
+            if (show) {
+                val until = prefs.getLong("daily_game_until_$day", 0L)
+                if (until > 0L && System.currentTimeMillis() < until) {
+                    gameShowUntilMs = until
+                    return true
+                }
+                return false
+            }
+            return false
+        }
+        val show = Random.nextDouble() < 0.6
+        val until = if (show) System.currentTimeMillis() + GAME_SHOW_WINDOW_MS else 0L
+        prefs.edit().putBoolean(key, show).putLong("daily_game_until_$day", until).apply()
+        if (show) gameShowUntilMs = until
+        return show
+    }
 
     /** Seconds until local midnight — drives the daily game-cycle countdown. */
     private fun secondsToMidnight(): Int =
