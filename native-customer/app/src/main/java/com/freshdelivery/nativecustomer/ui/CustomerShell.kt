@@ -788,7 +788,8 @@ private fun HomeTab(
             Row(
                 Modifier
                     .horizontalScroll(rememberScrollState())
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 16.dp)
+                    .padding(top = 4.dp, bottom = 2.dp),
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
             ) {
                 FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }
@@ -3971,30 +3972,20 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
         ),
         label = "sheen",
     )
-    val bob by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1600, easing = FastOutSlowInEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "bob",
-    )
-    // Slow Ken Burns zoom + pan so each promo card feels "alive" like a video.
-    val kenBurns by infinite.animateFloat(
-        initialValue = 0f,
-        targetValue = 1f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(9_000, easing = LinearEasing),
-            repeatMode = RepeatMode.Reverse,
-        ),
-        label = "kenBurns",
-    )
-    Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp)) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .padding(top = 2.dp, bottom = 0.dp)
+            .height(168.dp),
+    ) {
         HorizontalPager(
             state = pagerState,
-            modifier = Modifier.fillMaxWidth().height(156.dp),
-            pageSpacing = 12.dp,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(148.dp)
+                .clip(RoundedCornerShape(24.dp)),
+            pageSpacing = 0.dp,
         ) { page ->
             val promo = promos[page]
             val gradient = when (promo.gradient) {
@@ -4008,12 +3999,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
             Box(
                 Modifier
                     .fillMaxSize()
-                    .graphicsLayer {
-                        // Fade only — no scale (scale left a visible gap above/below the card).
-                        val offset = (pagerState.currentPage - page) + pagerState.currentPageOffsetFraction
-                        alpha = 1f - (kotlin.math.abs(offset) * 0.2f).coerceIn(0f, 0.3f)
-                    }
-                    .shadow(14.dp, RoundedCornerShape(24.dp))
+                    .shadow(8.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
                     .background(gradient),
             ) {
@@ -4023,14 +4009,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                         model = img,
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
-                        modifier = Modifier
-                            .fillMaxSize()
-                            .graphicsLayer {
-                                val zoom = 1.05f + kenBurns * 0.13f
-                                scaleX = zoom
-                                scaleY = zoom
-                                translationX = (kenBurns - 0.5f) * 14f
-                            },
+                        modifier = Modifier.fillMaxSize(),
                     )
                     Box(Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.4f)))
                 }
@@ -4056,8 +4035,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
                         Box(
                             Modifier
                                 .size(48.dp)
-                                .graphicsLayer { translationY = (bob - 0.5f) * 8f }
-                                .clip(RoundedCornerShape(16.dp))
+                                                                .clip(RoundedCornerShape(16.dp))
                                 .background(Color.White.copy(alpha = 0.22f)),
                             contentAlignment = Alignment.Center,
                         ) {
@@ -4114,7 +4092,7 @@ private fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pro
         }
         if (promos.size > 1) {
             Row(
-                Modifier.fillMaxWidth().padding(top = 10.dp),
+                Modifier.fillMaxWidth().padding(top = 6.dp),
                 horizontalArrangement = Arrangement.Center,
             ) {
                 repeat(promos.size) { i ->
