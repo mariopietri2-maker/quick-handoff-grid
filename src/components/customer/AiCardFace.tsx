@@ -131,6 +131,18 @@ export function AiCardFace({
         <div className="ai-card-veil" />
         {active && motion !== 'none' && <div className="ai-card-shimmer" aria-hidden />}
 
+        {card.logo_url ? (
+          <img
+            src={card.logo_url}
+            alt=""
+            className={cn(
+              'absolute z-[3] rounded-2xl object-cover border-2 border-white shadow-lg bg-white',
+              compact ? 'top-2.5 right-2.5 h-11 w-11' : 'top-3.5 right-3.5 h-14 w-14',
+            )}
+            loading="lazy"
+          />
+        ) : null}
+
         <div
           className={cn(
             'ai-card-content absolute inset-0 flex flex-col justify-end',
