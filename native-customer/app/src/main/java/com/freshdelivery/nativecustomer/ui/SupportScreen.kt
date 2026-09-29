@@ -70,6 +70,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshInk
 import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
 import com.freshdelivery.nativecustomer.ui.theme.FreshRose
 import com.freshdelivery.nativecustomer.ui.theme.FreshRoseSoft
+import com.freshdelivery.nativecustomer.ui.theme.FreshSurface
 
 /** A problem the customer picks before support (urgent topics open live chat, others tickets). */
 private data class SupportTopic(
@@ -268,8 +269,6 @@ fun SupportScreen(
         }
     }
 }
-
-@Composable
 
 @Composable
 private fun BotFaqSection() {
