@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, Receipt, User } from 'lucide-react';
+import { Home, Search, ClipboardList, CircleUser } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useT } from '@/lib/i18n';
 import { cn } from '@/lib/utils';
@@ -18,7 +18,7 @@ function scrollCustomerTop() {
 }
 
 /**
- * Uber Eats–style bottom tabs: Home · Browse · Orders · Account.
+ * Uber Eats–style bottom tabs: Home · Search · Orders · Account.
  * Mounted by CustomerLayout across /order, /orders, /profile.
  */
 export default function CustomerBottomNav() {
@@ -45,7 +45,9 @@ export default function CustomerBottomNav() {
     navigate(`/auth?next=${encodeURIComponent(next)}`);
   };
 
-  const tap = () => { void hapticSelection(); };
+  const tap = () => {
+    void hapticSelection();
+  };
 
   const itemClass = (id: TabId) =>
     cn(
@@ -59,21 +61,27 @@ export default function CustomerBottomNav() {
       active === id && 'c-nav-label-active font-extrabold',
     );
 
-  const icon = (id: TabId, Icon: typeof Home) => (
-    <span
-      className={cn(
-        'flex h-[32px] w-[46px] items-center justify-center rounded-[13px] transition-all duration-200',
-        active === id && 'c-nav-item-pill',
-      )}
-      aria-hidden="true"
-    >
-      <Icon
-        className="h-[21px] w-[21px]"
-        strokeWidth={active === id ? 2.6 : 2}
-        fill={active === id ? 'currentColor' : 'none'}
-      />
-    </span>
-  );
+  /** Cleaner icon treatment: solid fill only on home/account; stroke-forward for search/orders. */
+  const icon = (id: TabId, Icon: typeof Home, opts?: { solidWhenActive?: boolean }) => {
+    const isOn = active === id;
+    const solid = opts?.solidWhenActive !== false && isOn;
+    return (
+      <span
+        className={cn(
+          'flex h-[34px] w-[48px] items-center justify-center rounded-[14px] transition-all duration-200',
+          isOn && 'c-nav-item-pill',
+        )}
+        aria-hidden="true"
+      >
+        <Icon
+          className="h-[22px] w-[22px]"
+          strokeWidth={isOn ? 2.4 : 2}
+          fill={solid ? 'currentColor' : 'none'}
+          absoluteStrokeWidth={false}
+        />
+      </span>
+    );
+  };
 
   return (
     <nav
@@ -81,8 +89,8 @@ export default function CustomerBottomNav() {
       style={{ paddingBottom: 'calc(var(--app-safe-bottom) + 8px)' }}
       aria-label="Κύρια πλοήγηση"
     >
-      <div className="mx-auto max-w-2xl px-3">
-        <div className="c-nav-bar grid h-[60px] grid-cols-4 items-stretch px-1">
+      <div className="mx-auto max-w-2xl px-3 pointer-events-auto">
+        <div className="c-nav-bar grid h-[62px] grid-cols-4 items-stretch px-1.5">
           <button
             type="button"
             className={itemClass('home')}
@@ -114,30 +122,45 @@ export default function CustomerBottomNav() {
               }
             }}
           >
-            {icon('browse', Search)}
+            {/* Search: stroke-only so Αναζήτηση stays crisp (not a solid blob) */}
+            {icon('browse', Search, { solidWhenActive: false })}
             <span className={labelClass('browse')}>{t('customer.tab_browse')}</span>
           </button>
 
           {user ? (
             <Link to="/orders" className={itemClass('orders')} onClick={tap}>
-              {icon('orders', Receipt)}
+              {icon('orders', ClipboardList, { solidWhenActive: false })}
               <span className={labelClass('orders')}>{t('customer.orders')}</span>
             </Link>
           ) : (
-            <button type="button" className={itemClass('orders')} onClick={() => { tap(); goAuth('/orders'); }}>
-              {icon('orders', Receipt)}
+            <button
+              type="button"
+              className={itemClass('orders')}
+              onClick={() => {
+                tap();
+                goAuth('/orders');
+              }}
+            >
+              {icon('orders', ClipboardList, { solidWhenActive: false })}
               <span className={labelClass('orders')}>{t('customer.orders')}</span>
             </button>
           )}
 
           {user ? (
             <Link to="/profile" className={itemClass('account')} onClick={tap}>
-              {icon('account', User)}
+              {icon('account', CircleUser)}
               <span className={labelClass('account')}>{t('customer.tab_account')}</span>
             </Link>
           ) : (
-            <button type="button" className={itemClass('account')} onClick={() => { tap(); goAuth('/profile'); }}>
-              {icon('account', User)}
+            <button
+              type="button"
+              className={itemClass('account')}
+              onClick={() => {
+                tap();
+                goAuth('/profile');
+              }}
+            >
+              {icon('account', CircleUser)}
               <span className={labelClass('account')}>{t('customer.tab_account')}</span>
             </button>
           )}
