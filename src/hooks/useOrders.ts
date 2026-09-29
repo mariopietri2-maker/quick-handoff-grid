@@ -62,7 +62,7 @@ export function useStoreOrders(
     if (!error && data) {
       const rows = data as OrderWithItems[];
       const ids = [...new Set(rows.map((o) => o.customer_id).filter(Boolean))] as string[];
-      let nameById: Record<string, { full_name?: string | null; phone?: string | null }> = {};
+      const nameById: Record<string, { full_name?: string | null; phone?: string | null }> = {};
       if (ids.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')

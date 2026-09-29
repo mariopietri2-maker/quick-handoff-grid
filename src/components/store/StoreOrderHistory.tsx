@@ -65,7 +65,7 @@ export default function StoreOrderHistory({ storeId }: { storeId: string }) {
       if (error) throw error;
       const rows = (data ?? []) as HistoryOrder[];
       const custIds = [...new Set(rows.map((r) => r.customer_id).filter(Boolean))] as string[];
-      let nameById: Record<string, { full_name?: string | null; phone?: string | null }> = {};
+      const nameById: Record<string, { full_name?: string | null; phone?: string | null }> = {};
       if (custIds.length > 0) {
         const { data: profiles } = await supabase
           .from('profiles')

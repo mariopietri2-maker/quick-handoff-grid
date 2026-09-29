@@ -49,6 +49,24 @@ export function setWonDeal(deal: GameDeal | null): void {
   localStorage.setItem(`${PREFIX}won_at`, String(Date.now()));
 }
 
+/** Read back the prize stored by setWonDeal (used by checkout to apply it). */
+export function getWonDeal(): GameDeal | null {
+  const raw = localStorage.getItem(`${PREFIX}won_deal`);
+  if (!raw) return null;
+  try {
+    const parsed = JSON.parse(raw) as Partial<GameDeal> | null;
+    if (!parsed || typeof parsed.code !== 'string') return null;
+    return {
+      code: parsed.code,
+      pct: typeof parsed.pct === 'number' ? parsed.pct : null,
+      freeDelivery: !!parsed.freeDelivery,
+      label: typeof parsed.label === 'string' ? parsed.label : parsed.code,
+    };
+  } catch {
+    return null;
+  }
+}
+
 export function prizeToDeal(prize: {
   code: string;
   pct?: number | null;

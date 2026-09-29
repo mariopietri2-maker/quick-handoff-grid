@@ -6,9 +6,7 @@ import {
   canSpinToday,
   GAME_DEAL_WINDOW_MS,
   getWonAt,
-  persistCardClaimDay,
   persistSpinDay,
-  prizeToDeal,
   resolveDailyGameShow,
   secondsToMidnight,
   setWonDeal,
@@ -140,24 +138,10 @@ export function useCustomerGames() {
     }, SPIN_MS);
   }, [enabled, spinning, spinLocked, active, wheelSegments]);
 
-  const openCard = useCallback(
-    (index: number) => {
-      const card = cards[index];
-      if (!enabled || !card || !card.enabled || cardClaimed || active !== 'cards') return;
-      if (!canClaimCardToday()) {
-        toast('Οι κάρτες ξαναεμφανίζονται αύριο');
-        return;
-      }
-      const deal = prizeToDeal(card.prize);
-      setCardClaimed(true);
-      setClaimedCardIndex(index);
-      setOpenedCards(cards.map((_, j) => j));
-      setWonDeal(deal);
-      setWonAtTs(Date.now());
-      persistCardClaimDay();
-    },
-    [enabled, cardClaimed, active, cards],
-  );
+  // Mystery cards were removed from the customer app — the wheel is the only
+  // game. The handler stays so the returned shape is unchanged, but it can
+  // never claim anything.
+  const openCard = useCallback((_index: number) => {}, []);
 
   return {
     enabled,
