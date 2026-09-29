@@ -304,6 +304,7 @@ private fun BotFaqSection() {
     }
 }
 
+@Composable
 private fun ColumnScope.TopicsView(
     tickets: List<SupportTicketRow>,
     onSelectTopic: (String) -> Unit,
