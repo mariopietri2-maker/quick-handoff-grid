@@ -25,6 +25,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.pager.HorizontalPager
@@ -336,6 +337,7 @@ fun CustomerShell(
 
     Scaffold(
         containerColor = FreshBg,
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = { SnackbarHost(snackbar) },
         bottomBar = {
             Column {
@@ -643,7 +645,7 @@ private fun HomeTab(
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp)
-                    .padding(top = 8.dp, bottom = 4.dp),
+                    .padding(top = 2.dp, bottom = 4.dp),
             ) {
                 // Brand row: logo + Fresh2GO (top-left) · cart + profile (top-right)
                 Row(
@@ -826,7 +828,7 @@ private fun HomeTab(
                 stores.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, it) }
             } else stores
 
-            if (withOffers.isNotEmpty()) {
+            if (withOffers.size >= 2) {
                 item {
                     DiscoverSectionHeader(title = "Προσφορές τώρα", action = "Όλες ›") {
                         applyFilter(HomeFilter.Deals); onSearch("")

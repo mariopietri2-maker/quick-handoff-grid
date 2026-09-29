@@ -142,10 +142,17 @@ export function MenuControl({ storeId }: MenuControlProps) {
 
   return (
     <div className="space-y-4">
-      <div className="rounded-xl border border-primary/20 bg-primary/5 px-3 py-2">
-        <p className="font-heading font-semibold text-sm text-foreground">Διαχείριση μενού</p>
+      <div className="rounded-xl border-2 border-orange-500/40 bg-orange-500/10 px-3 py-3 space-y-1.5">
+        <p className="font-heading font-extrabold text-sm text-foreground">Διαχείριση μενού</p>
+        <p className="text-[12px] text-foreground/90 leading-snug">
+          Για <strong>custom κρέπα / burger / πίτσα</strong>: δημιούργησε το προϊόν → πάτα το κουμπί{' '}
+          <span className="inline-flex items-center gap-1 rounded-md border border-orange-500/50 bg-white px-1.5 py-0.5 text-[11px] font-extrabold text-orange-700">
+            Υλικά
+          </span>{' '}
+          δίπλα στο προϊόν → πρόσθεσε ομάδες (Βάση, Γέμιση, Σάλτσες) ή πάτα πρότυπο «Custom κρέπα».
+        </p>
         <p className="text-[11px] text-muted-foreground">
-          Προσφορές πάνω · μολύβι = επεξεργασία · ⚙ = επιλογές προϊόντος · χειροκίνητη προσθήκη
+          Ο πελάτης επιλέγει υλικά όταν το βάζει στο καλάθι.
         </p>
       </div>
       <div className="flex flex-wrap gap-2">
@@ -194,6 +201,10 @@ export function MenuControl({ storeId }: MenuControlProps) {
                 <Label className="font-heading">Περιγραφή (προαιρετικό)</Label>
                 <Input value={newItem.description} onChange={e => setNewItem(p => ({ ...p, description: e.target.value }))} placeholder="Σύντομη περιγραφή" maxLength={200} />
               </div>
+              <p className="text-[11px] text-muted-foreground rounded-lg bg-muted/60 px-2.5 py-2">
+                Μετά την προσθήκη, πάτα <strong>Υλικά</strong> στο προϊόν για custom επιλογές
+                (κρέπα με υλικά, μεγέθη, extras).
+              </p>
               <Button onClick={handleAdd} className="w-full gradient-primary text-primary-foreground font-heading" disabled={!newItem.name || !newItem.price || !newItem.category}>
                 Προσθήκη
               </Button>
