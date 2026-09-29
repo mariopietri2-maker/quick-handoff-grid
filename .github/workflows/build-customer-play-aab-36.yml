@@ -45,7 +45,7 @@ jobs:
           echo "$PLAY_CUSTOMER_KEYSTORE_B64" | base64 -d > mobile-signing/fresh2go-customer-upload.jks
           keytool -list -keystore mobile-signing/fresh2go-customer-upload.jks -storepass "$PLAY_STORE_PASSWORD" | head -20
 
-      - name: Ensure targetSdk 36 + version 2.9.14-play / 7233002
+      - name: Ensure targetSdk 36 + version 2.9.16-fresh2go / 7233044
         run: |
           python3 - <<'PY'
           from pathlib import Path
@@ -54,12 +54,12 @@ jobs:
           t = p.read_text()
           t = re.sub(r"compileSdk\s*=\s*\d+", "compileSdk = 36", t)
           t = re.sub(r"targetSdk\s*=\s*\d+", "targetSdk = 36", t)
-          t = re.sub(r"versionCode\s*=\s*\d+", "versionCode = 7233002", t)
-          t = re.sub(r'versionName\s*=\s*"[^"]*"', 'versionName = "2.9.14-play"', t)
+          t = re.sub(r"versionCode\s*=\s*\d+", "versionCode = 7233044", t)
+          t = re.sub(r'versionName\s*=\s*"[^"]*"', 'versionName = "2.9.16-fresh2go"', t)
           t = re.sub(r'\n\s*implementation\("com\.google\.maps\.android:maps-compose:[^"]+"\)\s*', "\n", t)
           p.write_text(t)
           assert "maps-compose" not in p.read_text()
-          print("ok 2.9.14-play / 7233002")
+          print("ok 2.9.16-fresh2go / 7233044")
           PY
 
       - name: Gradle wrapper
@@ -104,8 +104,8 @@ jobs:
           gh release view "$TAG" >/dev/null 2>&1 || \
             gh release create "$TAG" \
               --title "Fresh2GO Customer native AAB (API 36)" \
-              --notes "Signed Play AAB · com.freshdelivery.customer · targetSdk 36 · versionCode 7233002 · 2.9.14-play · wave2 polish."
-          gh release edit "$TAG" --notes "Signed Play AAB · com.freshdelivery.customer · targetSdk 36 · versionCode 7233002 · 2.9.14-play · wave2 polish."
+              --notes "Signed Play AAB · com.freshdelivery.customer · targetSdk 36 · versionCode 7233044 · 2.9.16-fresh2go · latest native."
+          gh release edit "$TAG" --notes "Signed Play AAB · com.freshdelivery.customer · targetSdk 36 · versionCode 7233044 · 2.9.16-fresh2go · latest native."
           gh api "repos/${{ github.repository }}/releases/tags/$TAG" --jq '.assets[] | select(.name|test("customer";"i")) | .id' | while read -r id; do
             [ -n "$id" ] && gh api -X DELETE "repos/${{ github.repository }}/releases/assets/$id" || true
           done
