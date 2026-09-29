@@ -7,7 +7,7 @@ import { initNativeShell, markNativeDocument } from "./lib/native-shell";
 import { initPwaInstallCapture, registerStorePwa } from "@/lib/pwa";
 
 // Apply native CSS classes before React paints (avoids web-chrome flash).
-// redeploy-20260928-store-logos-hero
+// redeploy-20260929-uber-eats-home
 markNativeDocument();
 void initNativeStatusBar();
 void initNativeShell();
