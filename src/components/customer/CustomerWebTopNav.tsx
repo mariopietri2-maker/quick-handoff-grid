@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Home, Search, Receipt, User, ShoppingBag, Languages } from 'lucide-react';
+import { Home, Search, ClipboardList, CircleUser, ShoppingBag, Languages } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
 import { useCart } from '@/hooks/useCart';
 import { useI18n, useT } from '@/lib/i18n';
@@ -32,7 +32,7 @@ export default function CustomerWebTopNav() {
   const goAuth = (next: string) => navigate(`/auth?next=${encodeURIComponent(next)}`);
 
   const linkBase =
-    'inline-flex items-center gap-1.5 h-9 px-3 rounded-full text-[14px] font-bold transition-colors';
+    'inline-flex items-center gap-2 h-10 px-3.5 rounded-full text-[14px] font-bold transition-colors';
   const linkClass = (active: boolean) =>
     cn(
       linkBase,
@@ -68,7 +68,7 @@ export default function CustomerWebTopNav() {
             className={linkClass(onHome && !browsing)}
             onClick={() => navigate('/order')}
           >
-            <Home className="h-[18px] w-[18px]" strokeWidth={2.2} />
+            <Home className="h-[19px] w-[19px]" strokeWidth={2.25} />
             {t('customer.tab_home')}
           </button>
           <button
@@ -83,37 +83,34 @@ export default function CustomerWebTopNav() {
               }
             }}
           >
-            <Search className="h-[18px] w-[18px]" strokeWidth={2.2} />
+            <Search className="h-[19px] w-[19px]" strokeWidth={2.4} />
             {t('customer.tab_browse')}
           </button>
           {user ? (
             <Link to="/orders" className={linkClass(onOrders)}>
-              <Receipt className="h-[18px] w-[18px]" strokeWidth={2.2} />
+              <ClipboardList className="h-[19px] w-[19px]" strokeWidth={2.25} />
               {t('customer.orders')}
             </Link>
           ) : (
             <button type="button" className={linkClass(false)} onClick={() => goAuth('/orders')}>
-              <Receipt className="h-[18px] w-[18px]" strokeWidth={2.2} />
+              <ClipboardList className="h-[19px] w-[19px]" strokeWidth={2.25} />
               {t('customer.orders')}
             </button>
           )}
           {user ? (
             <Link to="/profile" className={linkClass(onProfile)}>
-              <User className="h-[18px] w-[18px]" strokeWidth={2.2} />
+              <CircleUser className="h-[19px] w-[19px]" strokeWidth={2.25} />
               {t('customer.tab_account')}
             </Link>
           ) : (
             <button type="button" className={linkClass(false)} onClick={() => goAuth('/profile')}>
-              <User className="h-[18px] w-[18px]" strokeWidth={2.2} />
+              <CircleUser className="h-[19px] w-[19px]" strokeWidth={2.25} />
               {t('customer.tab_account')}
             </button>
           )}
         </nav>
 
         <div className="ml-auto flex items-center gap-2 shrink-0">
-          {/* Brand-token language switch — the shared LanguageToggle uses the
-              cold global `muted`/`foreground` tokens, which read off-brand
-              against the warm customer shell. Native keeps the shared one. */}
           <button
             type="button"
             onClick={() => setLang(lang === 'el' ? 'en' : 'el')}
