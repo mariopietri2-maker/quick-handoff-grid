@@ -72,7 +72,7 @@ import com.freshdelivery.nativecustomer.ui.theme.FreshRose
 import com.freshdelivery.nativecustomer.ui.theme.FreshRoseSoft
 import com.freshdelivery.nativecustomer.ui.theme.FreshSurface
 
-/** A problem the customer picks before support (urgent topics open live chat, others tickets). */
+/** Problem the customer picks before live chat (becomes the chat title for support). */
 private data class SupportTopic(
     val key: String,
     val label: String,
@@ -117,7 +117,7 @@ private fun shortTime(ts: String?): String =
         }.getOrNull() ?: it.take(16).replace("T", " ")
     } ?: ""
 
-/** Emerald v2 — customer support: urgent live chat (wrong order) + async tickets (everything else). */
+/** Customer support: topic picker → live chat only (no tickets). */
 @Composable
 fun SupportScreen(
     state: CustomerUiState,
@@ -230,9 +230,7 @@ fun SupportScreen(
 
         when (view) {
             SupportView.Topics -> TopicsView(
-                tickets = state.tickets,
                 onSelectTopic = onSelectTopic,
-                onShowMyTickets = onShowMyTickets,
             )
 
             SupportView.Compose -> ComposeView(
@@ -306,45 +304,12 @@ private fun BotFaqSection() {
 
 @Composable
 private fun ColumnScope.TopicsView(
-    tickets: List<SupportTicketRow>,
     onSelectTopic: (String) -> Unit,
-    onShowMyTickets: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        if (tickets.isNotEmpty()) {
-            val openCount = tickets.count { it.status != "resolved" }
-            Surface(
-                onClick = onShowMyTickets,
-                color = FreshGreenSoft.copy(alpha = 0.6f),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth(),
-            ) {
-                Row(Modifier.padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(40.dp)
-                            .background(FreshGreen, RoundedCornerShape(12.dp)),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Icon(Icons.Outlined.Description, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
-                    }
-                    Spacer(Modifier.width(12.dp))
-                    Column(Modifier.weight(1f)) {
-                        Text("Οι συνομιλίες μου", fontWeight = FontWeight.Bold)
-                        Text(
-                            if (openCount > 0) "$openCount ενεργά · ιστορικό αιτημάτων" else "Όλα τα αιτήματα επιλύθηκαν",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = FreshMuted,
-                        )
-                    }
-                    Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, tint = FreshGreen)
-                }
-            }
-        }
-
         Text("Τι πρόβλημα έχεις;", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(
-            "Επείγοντα ανοίγουν ζωντανή συνομιλία · τα υπόλοιπα γίνονται αίτημα με γραπτή απάντηση.",
+            "Διάλεξε θέμα και άνοιξε ζωντανή συνομιλία με την υποστήριξη.",
             style = MaterialTheme.typography.bodySmall,
             color = FreshMuted,
         )

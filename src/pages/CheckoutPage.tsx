@@ -63,6 +63,9 @@ export default function CheckoutPage() {
         if (typeof row.card_payments_enabled === 'boolean') {
           setCardPaymentsAllowed(row.card_payments_enabled);
         }
+        if (typeof (row as any).viva_payments_enabled === 'boolean') {
+          setVivaPaymentsAllowed(Boolean((row as any).viva_payments_enabled));
+        }
         if (row.stripe_publishable_key) {
           setPaymentsPublishableKey(row.stripe_publishable_key);
         }
@@ -132,7 +135,8 @@ export default function CheckoutPage() {
   const [promoLoading, setPromoLoading] = useState(false);
   const [appliedPromo, setAppliedPromo] = useState<AppliedPromo | null>(null);
   const cardEnabled = cardPaymentsAllowed && isPaymentsConfigured();
-  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash'>('cash');
+  const [paymentMethod, setPaymentMethod] = useState<'card' | 'cash' | 'viva'>('cash');
+  const [vivaPaymentsAllowed, setVivaPaymentsAllowed] = useState(false);
   const [pendingOrderId, setPendingOrderId] = useState<string | null>(null);
 
   useEffect(() => {
@@ -351,10 +355,22 @@ export default function CheckoutPage() {
       );
 
       if (paymentMethod === 'card') {
-        // Show embedded Stripe checkout — customer pays, webhook completes the order.
-        // Clear cart now: the order row exists; if they abandon, admin cleans up.
         clearCart();
         setPendingOrderId(order.id);
+      } else if (paymentMethod === 'viva') {
+        clearCart();
+        const origin = window.location.origin;
+        const { data: viva, error: vivaErr } = await supabase.functions.invoke('create-viva-checkout', {
+          body: {
+            orderId: order.id,
+            successUrl: `${origin}/order-tracking/${order.id}?paid=1`,
+            failureUrl: `${origin}/checkout?viva=failed`,
+          },
+        });
+        if (vivaErr || !(viva as any)?.checkoutUrl) {
+          throw vivaErr || new Error((viva as any)?.error || 'Αποτυχία Viva Wallet');
+        }
+        window.location.assign((viva as any).checkoutUrl as string);
       } else {
         clearCart();
         toast.success('Η παραγγελία καταχωρήθηκε! 🎉');
@@ -572,7 +588,21 @@ export default function CheckoutPage() {
                 <span>Κάρτα</span>
                 {!cardEnabled && <span className="text-[10px] italic opacity-80">Σύντομα διαθέσιμη</span>}
               </button>
-              <button
+                            {vivaPaymentsAllowed && (
+                <button
+                  type="button"
+                  onClick={() => setPaymentMethod('viva')}
+                  className={`flex-1 flex items-center justify-center gap-2 rounded-2xl border px-3 py-3 text-sm font-heading font-semibold transition-colors ${
+                    paymentMethod === 'viva'
+                      ? 'border-[hsl(var(--c-text))] bg-[hsl(var(--c-text))] text-[hsl(var(--c-bg))] shadow-sm'
+                      : 'border-border bg-card text-muted-foreground hover:border-[hsl(var(--c-text)/0.4)] hover:text-foreground'
+                  }`}
+                >
+                  <CreditCard className="h-5 w-5" />
+                  <span>Viva Wallet</span>
+                </button>
+              )}
+<button
                 type="button"
                 onClick={() => setPaymentMethod('cash')}
                 className={`flex flex-col items-center justify-center gap-1.5 py-3 rounded-xl border-2 text-sm font-heading transition-all ${
@@ -587,7 +617,9 @@ export default function CheckoutPage() {
             </div>
             <p className="text-xs text-muted-foreground">
               {paymentMethod === 'card'
-                ? 'Πληρώνετε με ασφάλεια online. Ο ΦΠΑ υπολογίζεται αυτόματα.'
+                ? 'Πληρώνετε με ασφάλεια online (Stripe).'
+                : paymentMethod === 'viva'
+                ? 'Πληρώνετε με Viva Wallet (κάρτα / Apple / Google Pay).'
                 : 'Πληρώνετε στον οδηγό κατά την παράδοση.'}
             </p>
           </CardContent>
@@ -695,7 +727,7 @@ export default function CheckoutPage() {
           >
             <span className="flex items-center gap-2">
               {paymentMethod === 'card' ? <CreditCard className="h-5 w-5" /> : <Banknote className="h-5 w-5" />}
-              {submitting ? 'Υποβολή…' : paymentMethod === 'card' ? 'Πληρωμή τώρα' : 'Υποβολή Παραγγελίας'}
+              {submitting ? 'Υποβολή…' : paymentMethod === 'card' || paymentMethod === 'viva' ? 'Πληρωμή τώρα' : 'Υποβολή Παραγγελίας'}
             </span>
             <span className="font-extrabold text-lg tabular-nums">{grandTotal.toFixed(2)}€</span>
           </Button>

@@ -1421,18 +1421,10 @@ autoOpenTrack(
         )
     }
 
-    /** Customer picks a problem first — urgent topics go to live chat, the rest become tickets. */
+    /** Customer picks a problem first — all topics open live chat (no tickets). */
     fun selectSupportTopic(topic: String) {
         if (_state.value.userId == null) return
-        if (topic in URGENT_TOPICS) {
-            selectLiveChatTopic(topic)
-        } else {
-            _state.value = _state.value.copy(
-                supportView = SupportView.Compose,
-                ticketTopic = topic,
-                ticketError = null,
-            )
-        }
+        selectLiveChatTopic(topic)
     }
 
     private fun selectLiveChatTopic(topic: String) {

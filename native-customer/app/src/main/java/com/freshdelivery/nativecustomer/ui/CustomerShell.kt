@@ -2,6 +2,7 @@
 package com.freshdelivery.nativecustomer.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -474,9 +475,9 @@ private fun FreshCartBar(
         Box(
             Modifier
                 .fillMaxWidth()
-                .shadow(12.dp, RoundedCornerShape(20.dp))
-                .clip(RoundedCornerShape(20.dp))
-                .background(FreshGradient)
+                .shadow(12.dp, RoundedCornerShape(16.dp))
+                .clip(RoundedCornerShape(16.dp))
+                .background(FreshInk)
                 .clickable(onClick = onClick),
         ) {
             Row(
@@ -854,6 +855,71 @@ private fun HomeTab(
                 }
             }
 
+            // Παράγγειλε ξανά — last unique stores from order history
+            val recentOrders = state.orders
+                .distinctBy { it.order.store_id }
+                .take(4)
+            if (recentOrders.isNotEmpty()) {
+                item {
+                    DiscoverSectionHeader(title = "Παράγγειλε ξανά", action = "Ιστορικό ›") {
+                        onTab(com.freshdelivery.nativecustomer.data.CustomerTab.Orders)
+                    }
+                }
+                item {
+                    Row(
+                        Modifier
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 16.dp, vertical = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    ) {
+                        recentOrders.forEach { ou ->
+                            val store = state.stores.firstOrNull { it.id == ou.order.store_id }
+                            Surface(
+                                onClick = {
+                                    if (store != null) onOpenStore(store)
+                                    else onTab(com.freshdelivery.nativecustomer.data.CustomerTab.Orders)
+                                },
+                                color = Color.White,
+                                shape = RoundedCornerShape(14.dp),
+                                border = BorderStroke(1.dp, FreshDivider),
+                                modifier = Modifier.width(168.dp),
+                            ) {
+                                Row(
+                                    Modifier.padding(10.dp),
+                                    verticalAlignment = Alignment.CenterVertically,
+                                ) {
+                                    Box(
+                                        Modifier
+                                            .size(40.dp)
+                                            .clip(RoundedCornerShape(10.dp))
+                                            .background(FreshGreenSoft),
+                                        contentAlignment = Alignment.Center,
+                                    ) {
+                                        Text("🍽️", fontSize = 18.sp)
+                                    }
+                                    Spacer(Modifier.width(8.dp))
+                                    Column(Modifier.weight(1f)) {
+                                        Text(
+                                            ou.storeName ?: store?.name ?: "Κατάστημα",
+                                            fontWeight = FontWeight.Bold,
+                                            fontSize = 12.sp,
+                                            maxLines = 1,
+                                            overflow = TextOverflow.Ellipsis,
+                                        )
+                                        Text(
+                                            "€%.2f".format(ou.order.total_amount ?: 0.0),
+                                            color = FreshMuted,
+                                            fontSize = 11.sp,
+                                            maxLines = 1,
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             if (freeDelivery.isNotEmpty()) {
                 item {
                     DiscoverSectionHeader(title = "Δωρεάν delivery", action = "Δες τα όλα ›") {
@@ -942,29 +1008,6 @@ private fun HomeTab(
                 }
             }
 
-            item {
-                DiscoverSectionHeader(
-                    title = "Νέες γεύσεις — ζωντανά",
-                    action = "Δοκίμασε ›",
-                    onAction = { onSearch(demoStoreCards.first().cuisine) },
-                )
-            }
-            item {
-                val order = remember { demoStoreCards.shuffled() }
-                Row(
-                    Modifier
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 16.dp, vertical = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                ) {
-                    order.forEach { demo ->
-                        AnimatedDemoStoreCard(
-                            store = demo,
-                            onClick = { onSearch(demo.cuisine) },
-                        )
-                    }
-                }
-            }
         }
         item(key = "store-list-header") {
             Row(
@@ -2835,7 +2878,7 @@ private fun BrowseTab(
                     .fillMaxWidth()
                     .statusBarsPadding()
                     .padding(horizontal = 16.dp)
-                    .padding(top = 8.dp, bottom = 4.dp),
+                    .padding(top = 2.dp, bottom = 4.dp),
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
