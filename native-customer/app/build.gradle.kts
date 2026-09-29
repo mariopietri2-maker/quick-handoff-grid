@@ -18,7 +18,7 @@ android {
         minSdk = 26
         targetSdk = 36
         versionCode = 7233052
-        versionName = "2.9.19-fresh2go"
+        versionName = "2.9.20-fresh2go"
 
         buildConfigField(
             "String",
