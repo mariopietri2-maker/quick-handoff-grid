@@ -3,18 +3,22 @@ import { useEffect } from 'react';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
 import { useCart } from '@/hooks/useCart';
 import { customerAccentStyle } from '@/lib/customer-theme';
+import { isNativeShell } from '@/lib/pwa';
 import CustomerBottomNav from '@/components/customer/CustomerBottomNav';
 import CustomerFloatingCart from '@/components/customer/CustomerFloatingCart';
 
 /**
- * Customer shell aligned with native app:
- * scrollable column + floating cart + persistent bottom tabs
- * (Αρχική · Αναζήτηση · Παραγγελίες · Λογαριασμός) on web and Capacitor.
+ * Customer shell:
+ * Capacitor keeps the phone layout (scrollable column + floating cart +
+ * persistent bottom tabs). The website gets the wide desktop column and no
+ * tab bar — it navigates via CustomerWebTopNav instead.
  */
 export default function CustomerLayout() {
   const cfg = useCustomerAppConfig();
   const location = useLocation();
   const { itemCount } = useCart();
+  // Tab bar is a mobile-app affordance; the website uses the top nav.
+  const showTabs = isNativeShell();
 
   useEffect(() => {
     if (location.pathname !== '/order') return;
@@ -32,10 +36,15 @@ export default function CustomerLayout() {
     }
   }, [location.pathname, location.hash]);
 
-  // Room for bottom tabs (+ floating cart when items in basket)
-  const padBottom = itemCount > 0
-    ? 'pb-[calc(9rem+var(--app-safe-bottom))]'
-    : 'pb-[calc(6rem+var(--app-safe-bottom))]';
+  // Room for the bars that actually render. Web has no tab bar, so it only
+  // needs to clear the floating cart.
+  const padBottom = showTabs
+    ? (itemCount > 0
+        ? 'pb-[calc(9rem+var(--app-safe-bottom))]'
+        : 'pb-[calc(6rem+var(--app-safe-bottom))]')
+    : (itemCount > 0
+        ? 'pb-[calc(7rem+var(--app-safe-bottom))]'
+        : 'pb-[calc(2.5rem+var(--app-safe-bottom))]');
 
   return (
     <div
@@ -43,12 +52,14 @@ export default function CustomerLayout() {
       style={customerAccentStyle(cfg.branding.accent_hsl, cfg.branding.accent_dark_hsl)}
     >
       {cfg.sections.show_ambient_glow && <div className="c-ambient" aria-hidden />}
-      {/* Phone-width column on desktop — closer to native customer */}
-      <div className={`relative mx-auto min-h-full w-full max-w-lg ${padBottom}`}>
+      {/* Phone-width column in the app; wide column on the website. */}
+      <div
+        className={`relative mx-auto min-h-full w-full ${showTabs ? 'max-w-lg' : 'max-w-[1400px]'} ${padBottom}`}
+      >
         <Outlet />
       </div>
       <CustomerFloatingCart />
-      <CustomerBottomNav />
+      {showTabs && <CustomerBottomNav />}
     </div>
   );
 }

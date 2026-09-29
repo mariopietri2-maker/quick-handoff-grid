@@ -38,6 +38,8 @@ import { openRealtimeChannel } from '@/lib/realtime-channel';
 import { usePlatformSettings } from '@/hooks/usePlatformSettings';
 import { useDeliveryEta } from '@/hooks/useDeliveryEta';
 import { isStoreOpenNow, nextOpeningLabel } from '@/lib/store-hours';
+import { isNativeShell } from '@/lib/pwa';
+import CustomerWebTopNav from '@/components/customer/CustomerWebTopNav';
 
 // Lazy-load the address picker: it pulls in the ~1.7MB mapbox-gl chunk, so it
 // should only load when the customer actually opens the delivery address sheet.
@@ -70,6 +72,18 @@ function BrandName({ name }: { name: string }) {
 export default function CustomerApp() {
   const t = useT();
   const cfg = useCustomerAppConfig();
+  // The website gets its own desktop layout; the native app keeps the phone UI.
+  const isWeb = !isNativeShell();
+  // Website: multi-column store grid. Native app: single phone column.
+  const feedGridClass = isWeb
+    ? 'grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-x-5 gap-y-7'
+    : 'space-y-5';
+  const loadingGridClass = feedGridClass;
+  // Rails: horizontal scroll on native, wrapping grid on the website.
+  const railOuter = isWeb ? '' : 'overflow-x-auto no-scrollbar';
+  const railInner = isWeb ? 'grid gap-4' : 'flex gap-3 px-4 pb-1 w-max';
+  const railCard160 = isWeb ? 'w-full text-left' : 'w-[160px] shrink-0 text-left';
+  const railCard200 = isWeb ? 'w-full text-left' : 'w-[200px] shrink-0 text-left';
   const searchInputRef = useRef<HTMLInputElement>(null);
 
   const CATEGORY_EMOJI: Record<string, string> = {
@@ -439,8 +453,10 @@ const displayAddress = deliveryAddress
         className="sticky top-0 z-40 c-header border-b"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
-        <div className="max-w-2xl mx-auto px-4 pt-3 pb-3">
-          {cfg.branding.show_header_brand && (
+        {isWeb && <CustomerWebTopNav />}
+
+        <div className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6 pt-4 pb-4' : 'max-w-2xl mx-auto px-4 pt-3 pb-3'}>
+          {cfg.branding.show_header_brand && !isWeb && (
             <div className="flex items-center gap-2.5 mb-2.5 animate-fade-in">
               <div className="h-8 w-8 shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]">
                 <Logo size={32} />
@@ -476,6 +492,7 @@ const displayAddress = deliveryAddress
                 </div>
               </div>
             </button>
+            {!isWeb && (
             <div className="flex items-center gap-2 shrink-0">
               <LanguageToggle compact />
               {itemCount > 0 && (
@@ -513,6 +530,7 @@ const displayAddress = deliveryAddress
                 </Link>
               )}
             </div>
+            )}
           </div>
 
           <div className="relative">
@@ -579,7 +597,7 @@ const displayAddress = deliveryAddress
         </div>
       </header>
 
-      <main className="max-w-2xl mx-auto">
+      <main className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6' : 'max-w-2xl mx-auto'}>
         <ActiveOrderTracker />
         {cfg.sections.show_order_again && <OrderAgainRow />}
 
@@ -596,8 +614,47 @@ const displayAddress = deliveryAddress
           />
         )}
 
-        {/* Circular category rail (Uber Eats style) */}
-        {cfg.sections.show_categories !== false && (
+        <div className={isWeb ? 'flex gap-8 items-start' : ''}>
+        {/* Desktop category sidebar — website only */}
+        {isWeb && cfg.sections.show_categories !== false && (
+        <aside className="hidden lg:block w-[224px] shrink-0 sticky top-4">
+          <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] c-soft px-3 mb-2">
+            {t('customer.tab_browse')}
+          </div>
+          <nav className="flex flex-col gap-1" aria-label={t('customer.tab_browse')}>
+            {categoryOptions.map((cat) => {
+              const active = selectedCategory === cat.value;
+              return (
+                <button
+                  key={cat.value}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat.value)}
+                  className={`flex items-center gap-3 h-11 px-3 rounded-xl text-left transition-colors ${
+                    active
+                      ? 'bg-[hsl(var(--c-accent))] text-white shadow-[0_8px_20px_-10px_hsl(var(--c-accent)/0.7)]'
+                      : 'c-ink hover:bg-[hsl(var(--c-surface-muted))]'
+                  }`}
+                >
+                  <span
+                    className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-[15px] emoji ${
+                      active ? 'bg-white/20' : 'bg-[hsl(var(--c-surface-muted))]'
+                    }`}
+                  >
+                    {cat.emoji}
+                  </span>
+                  <span className={`text-[14px] leading-tight ${active ? 'font-extrabold' : 'font-bold'}`}>
+                    {cat.label}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        </aside>
+        )}
+
+        <div className={isWeb ? 'flex-1 min-w-0' : ''}>
+        {/* Circular category rail (Uber Eats style) — native app only */}
+        {!isWeb && cfg.sections.show_categories !== false && (
         <section id="browse-categories" className="pt-4 scroll-mt-36">
           <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-1">
             {categoryOptions.map((cat) => {
@@ -657,8 +714,8 @@ const displayAddress = deliveryAddress
               </h2>
               <p className="text-[12px] c-soft mt-0.5">{t('customer.free_delivery_sub')}</p>
             </div>
-            <div className="overflow-x-auto no-scrollbar">
-              <div className="flex gap-3 px-4 pb-1 w-max">
+            <div className={railOuter}>
+              <div className={`${railInner} ${isWeb ? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-4' : ''}`}>
                 {freeDeliveryStores.slice(0, 10).map((store) => {
                   const cover = store.cover_image_url || store.image_url;
                   const etaLow = Math.min(baseEta.min + (store.prep_buffer_minutes ?? 0), etaCap);
@@ -669,7 +726,7 @@ const displayAddress = deliveryAddress
                       key={store.id}
                       type="button"
                       onClick={() => navigate(`/restaurant/${store.id}`)}
-                      className="w-[160px] shrink-0 text-left"
+                      className={railCard160}
                     >
                       <div className="relative h-[100px] rounded-2xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))] shadow-[0_10px_22px_-14px_hsl(25_39%_18%/0.25)]">
                         {cover ? (
@@ -719,8 +776,8 @@ const displayAddress = deliveryAddress
                   {t('customer.popular')}
                 </h2>
               </div>
-              <div className="overflow-x-auto no-scrollbar">
-                <div className="flex gap-3 px-4 pb-1 w-max">
+              <div className={railOuter}>
+                <div className={`${railInner} ${isWeb ? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-4' : ''}`}>
                   {promotedStores.map((store) => {
                     const cover = store.cover_image_url || store.image_url;
                     const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
@@ -732,7 +789,7 @@ const displayAddress = deliveryAddress
                       key={store.id}
                       type="button"
                       onClick={() => navigate(`/restaurant/${store.id}`)}
-                      className="w-[200px] shrink-0 text-left"
+                      className={railCard200}
                     >
                       <div className="relative h-[120px] rounded-2xl overflow-hidden mb-2 bg-[hsl(var(--c-surface-muted))] shadow-[0_12px_26px_-14px_hsl(25_39%_18%/0.28)]">
                         {cover ? (
@@ -823,7 +880,7 @@ const displayAddress = deliveryAddress
 
         {/* Main feed */}
         {cfg.sections.show_nearby && (
-          <section id="nearby-stores" className="pt-6 px-4 scroll-mt-28 pb-4">
+          <section id="nearby-stores" className={`pt-6 scroll-mt-28 pb-4 ${isWeb ? '' : 'px-4'}`}>
             <div className="flex items-end justify-between mb-3">
               <h2 className="font-heading font-extrabold text-[20px] c-ink tracking-tight">
                 {isSearching
@@ -839,7 +896,13 @@ const displayAddress = deliveryAddress
               </span>
             </div>
 
-            <div className="flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4">
+            <div
+              className={
+                isWeb
+                  ? 'flex gap-2 flex-wrap pb-3'
+                  : 'flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4'
+              }
+            >
               {[
                 {
                   key: 'offers',
@@ -889,8 +952,8 @@ const displayAddress = deliveryAddress
             </div>
 
             {loading ? (
-              <div className="space-y-5">
-                {[1, 2, 3].map((i) => (
+              <div className={loadingGridClass}>
+                {[1, 2, 3, 4, 5, 6].map((i) => (
                   <div key={i} className="animate-pulse">
                     <div className="aspect-[16/10] bg-[hsl(var(--c-surface-muted))] rounded-[20px] mb-2.5" />
                     <div className="h-4 bg-[hsl(var(--c-surface-muted))] rounded w-2/3 mb-1.5" />
@@ -909,7 +972,7 @@ const displayAddress = deliveryAddress
                 </p>
               </div>
             ) : (
-              <div className="space-y-5">
+              <div className={feedGridClass}>
                 {filtered.map((store) => {
                   const open = isStoreOpenNow(store.opening_hours, store.holiday_dates, store.status_override);
                   const closedLabel = open ? null : nextOpeningLabel(store.opening_hours);
@@ -1047,6 +1110,8 @@ const displayAddress = deliveryAddress
             )}
           </section>
         )}
+        </div>
+        </div>
       </main>
 
       <Sheet open={addressOpen} onOpenChange={setAddressOpen}>
