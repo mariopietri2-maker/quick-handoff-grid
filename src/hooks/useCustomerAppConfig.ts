@@ -23,6 +23,10 @@ export type HeroCard = {
   badge?: string;
   /** Soft accent wash color as HSL without wrapper, e.g. "152 100% 39%". */
   accent_hsl?: string;
+  /** Optional store logo shown top-right on the slide. */
+  logo_url?: string | null;
+  /** Optional store id for deep-link / logo resolution. */
+  store_id?: string | null;
 };
 
 export function heroCardImage(card: Pick<HeroCard, 'image_url' | 'image_data_url'>): string | null {
