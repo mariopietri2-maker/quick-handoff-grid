@@ -39,7 +39,7 @@ export function AiHeroCarousel() {
   if (cards.length === 0) return null;
 
   return (
-    <div className="px-5 pt-5 animate-fade-in">
+    <div className="animate-fade-in">
       <div
         ref={scrollerRef}
         onScroll={onScroll}

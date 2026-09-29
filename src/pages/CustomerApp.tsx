@@ -440,7 +440,7 @@ const displayAddress = deliveryAddress
   }
 
   return (
-    <div className="c-page min-h-full relative">
+    <div className="customer-shell c-page min-h-full relative bg-[hsl(var(--c-bg))]">
       <AppSplash />
       <SEO
         title={`Παραγγείλτε φαγητό online — ${cfg.branding.app_name}`}
@@ -450,12 +450,12 @@ const displayAddress = deliveryAddress
       <h1 className="sr-only">Παραγγείλτε φαγητό online από εστιατόρια κοντά σας</h1>
 
       <header
-        className="sticky top-0 z-40 c-header border-b"
+        className="sticky top-0 z-40 bg-[hsl(var(--c-surface)/0.92)] backdrop-blur-md border-b border-[hsl(var(--c-border))]"
         style={{ paddingTop: 'env(safe-area-inset-top)' }}
       >
         {isWeb && <CustomerWebTopNav />}
 
-        <div className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6 pt-4 pb-4' : 'max-w-2xl mx-auto px-4 pt-3 pb-3'}>
+        <div className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6 pt-4 pb-4' : 'max-w-6xl mx-auto px-4 pt-3 pb-3'}>
           {cfg.branding.show_header_brand && !isWeb && (
             <div className="flex items-center gap-2.5 mb-2.5 animate-fade-in">
               <div className="h-8 w-8 shrink-0 shadow-[0_6px_16px_-8px_hsl(var(--c-accent)/0.55)]">
@@ -597,7 +597,7 @@ const displayAddress = deliveryAddress
         </div>
       </header>
 
-      <main className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6' : 'max-w-2xl mx-auto'}>
+      <main className={isWeb ? 'w-full max-w-[1400px] mx-auto px-6' : 'max-w-6xl mx-auto'}>
         <ActiveOrderTracker />
         {cfg.sections.show_order_again && <OrderAgainRow />}
 
@@ -690,8 +690,23 @@ const displayAddress = deliveryAddress
         )}
 
         {/* One promo / hero — lean, not stacked ads */}
-        {!isSearching && selectedCategory === 'all' && cfg.sections.show_hero_carousel !== false && (
-          <AiHeroCarousel />
+        {/* Uber-style hero row */}
+        {!isSearching && selectedCategory === 'all' && (
+          <section className="px-4 pt-5 pb-1">
+            <div className="md:grid md:grid-cols-[1fr_minmax(260px,380px)] md:gap-6 md:items-center">
+              <div className="py-1 md:py-4">
+                <h2 className="font-heading font-black text-[28px] sm:text-[34px] md:text-[40px] c-ink tracking-tight leading-[1.05]">
+                  Περίμενες φαγητό;<br className="hidden sm:block" /> Πάρε το τώρα.
+                </h2>
+                <p className="text-[14px] sm:text-[15px] c-soft mt-2 max-w-md font-medium">
+                  Βρες κατάστημα, κουζίνα ή πιάτο κοντά σου.
+                </p>
+              </div>
+              <div className="mt-3 md:mt-0">
+                {cfg.sections.show_hero_carousel !== false && <AiHeroCarousel />}
+              </div>
+            </div>
+          </section>
         )}
         {!isSearching &&
           selectedCategory === 'all' &&
@@ -881,8 +896,8 @@ const displayAddress = deliveryAddress
         {/* Main feed */}
         {cfg.sections.show_nearby && (
           <section id="nearby-stores" className={`pt-6 scroll-mt-28 pb-4 ${isWeb ? '' : 'px-4'}`}>
-            <div className="flex items-end justify-between mb-3">
-              <h2 className="font-heading font-extrabold text-[20px] c-ink tracking-tight">
+            <div className="flex items-end justify-between mb-4">
+              <h2 className="font-heading font-black text-[22px] md:text-[26px] c-ink tracking-tight">
                 {isSearching
                   ? `${t('customer.results_for')} "${debouncedSearch}"`
                   : selectedCategory !== 'all'
@@ -1009,21 +1024,21 @@ const displayAddress = deliveryAddress
                             <Utensils className="h-10 w-10 text-[hsl(var(--c-text-muted))]" />
                           </div>
                         )}
-                        {store.image_url && store.cover_image_url && (
+                        {store.image_url && (
                           <img
                             src={store.image_url}
                             alt=""
-                            className="absolute bottom-2.5 left-2.5 h-12 w-12 rounded-xl object-cover border-2 border-white shadow-md bg-white z-[1]"
+                            className="absolute top-2.5 right-2.5 h-12 w-12 rounded-xl object-cover border-2 border-white shadow-md bg-white z-[2]"
                             loading="lazy"
                           />
                         )}
                         {!open && (
-                          <span className="absolute top-2.5 right-2.5 text-white bg-neutral-700/95 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
+                          <span className="absolute bottom-2.5 left-2.5 text-white bg-neutral-700/95 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow z-[1]">
                             Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
                           </span>
                         )}
                         {open && (
-                          <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-orange-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
+                          <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 bg-orange-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow z-[1]">
                             <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                             Ανοιχτό
                           </span>
