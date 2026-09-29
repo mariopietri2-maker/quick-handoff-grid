@@ -70,6 +70,7 @@ export function LiveChatThread({
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
+  const sendingRef = useRef(false);
 
   const participantId = driverId ?? customerId ?? storeId;
   const topic = messages.find((m) => m.topic)?.topic ?? null;
@@ -104,7 +105,20 @@ export function LiveChatThread({
         { event: 'INSERT', schema: 'public', table: 'live_chat_messages', filter },
         (payload) => {
           const incoming = payload.new as LiveMessage;
-          setMessages((prev) => (prev.some((m) => m.id === incoming.id) ? prev : [...prev, incoming]));
+          setMessages((prev) => {
+            if (prev.some((m) => m.id === incoming.id)) return prev;
+            // Drop optimistic temp bubble for the same sender+text (was causing double messages)
+            const withoutOptimistic = prev.filter(
+              (m) =>
+                !(
+                  m.id.startsWith('tmp-') &&
+                  m.sender_id === incoming.sender_id &&
+                  m.message === incoming.message
+                ),
+            );
+            if (withoutOptimistic.some((m) => m.id === incoming.id)) return withoutOptimistic;
+            return [...withoutOptimistic, incoming];
+          });
         },
       )
       .subscribe();
@@ -121,10 +135,12 @@ export function LiveChatThread({
 
   const send = async () => {
     const msg = text.trim();
-    if (!msg || !user || !participantId || sending || disabled) return;
+    if (!msg || !user || !participantId || sending || sendingRef.current || disabled) return;
+    sendingRef.current = true;
     setSending(true);
+    const tempId = `tmp-${crypto.randomUUID()}`;
     const optimistic: LiveMessage = {
-      id: crypto.randomUUID(),
+      id: tempId,
       driver_id: driverId ?? null,
       customer_id: customerId ?? null,
       store_id: storeId ?? null,
@@ -136,19 +152,32 @@ export function LiveChatThread({
     };
     setMessages((prev) => [...prev, optimistic]);
     setText('');
-    const { error } = await (supabase as any).from('live_chat_messages').insert({
-      driver_id: driverId ?? null,
-      customer_id: customerId ?? null,
-      store_id: storeId ?? null,
-      order_id: orderId ?? null,
-      sender_id: user.id,
-      sender_role: viewerRole,
-      message: msg,
-    });
+    const { data, error } = await (supabase as any)
+      .from('live_chat_messages')
+      .insert({
+        driver_id: driverId ?? null,
+        customer_id: customerId ?? null,
+        store_id: storeId ?? null,
+        order_id: orderId ?? null,
+        sender_id: user.id,
+        sender_role: viewerRole,
+        message: msg,
+      })
+      .select('*')
+      .single();
     setSending(false);
+    sendingRef.current = false;
     if (error) {
-      setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+      setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setText(msg);
+      return;
+    }
+    if (data) {
+      const real = data as LiveMessage;
+      setMessages((prev) => {
+        const cleaned = prev.filter((m) => m.id !== tempId && m.id !== real.id);
+        return [...cleaned, real];
+      });
     }
   };
 
