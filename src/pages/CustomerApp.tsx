@@ -387,17 +387,40 @@ const displayAddress = deliveryAddress
   );
 
   const categoryOptions = useMemo(() => {
-    const fromMenu = Array.from(new Set(Object.values(storeCategories).flat())).sort();
+    // Curated top-level browse filters only — do NOT dump every store menu section
+    // (Main, Sides, Freaking Glub, etc.) into the left sidebar / rail.
+    const HIGH_LEVEL =
+      /προσφορ|offer|deal|πίτσ|pizza|κρέπ|crepe|burger|σουβλ|gyro|σαλάτ|salad|γλυκ|dessert|καφέ|coffee|ποτ|drink|pasta|ζυμαρ|σουπ|soup/i;
+    const BLOCK =
+      /^(main|sides?|starters?|plates?|soups?|freaking|my\s|vegetarian|vegan|sandwiches?|pita$|salads?$)/i;
+
     const fromTiles = cfg.tiles
       .filter((tile) => tile.category && tile.category !== 'all')
       .map((tile) => tile.category);
-    const merged = Array.from(new Set([...fromTiles, ...fromMenu]));
+
+    const fromMenu = Array.from(new Set(Object.values(storeCategories).flat()))
+      .map((c) => String(c).replace(/^!+\s*/, '').trim())
+      .filter((c) => {
+        if (!c || BLOCK.test(c.trim())) return false;
+        const key = c.toLowerCase();
+        if (CATEGORY_EMOJI[key]) return true;
+        return HIGH_LEVEL.test(c);
+      })
+      .sort((a, b) => a.localeCompare(b, 'el'));
+
+    // Prefer tiles order, then a few high-level menu categories — cap total
+    const merged: string[] = [];
+    for (const c of [...fromTiles, ...fromMenu]) {
+      if (!merged.some((x) => x.toLowerCase() === c.toLowerCase())) merged.push(c);
+      if (merged.length >= 8) break;
+    }
+
     return [
       { value: 'all', label: t('cat.all'), emoji: '🍽️' },
       ...merged.map((c) => ({
         value: c,
-        label: cfg.tiles.find((tile) => tile.category === c)?.label ?? c,
-        emoji: CATEGORY_EMOJI[c.toLowerCase()] ?? '🍴',
+        label: cfg.tiles.find((tile) => tile.category === c)?.label ?? c.replace(/^!+\s*/, ''),
+        emoji: CATEGORY_EMOJI[c.toLowerCase().replace(/^!+\s*/, '')] ?? '🍴',
       })),
     ];
   }, [storeCategories, cfg.tiles, t]);
@@ -617,7 +640,7 @@ const displayAddress = deliveryAddress
         <div className={isWeb ? 'flex gap-8 items-start' : ''}>
         {/* Desktop category sidebar — website only */}
         {isWeb && cfg.sections.show_categories !== false && (
-        <aside className="hidden lg:block w-[224px] shrink-0 sticky top-4">
+        <aside className="hidden lg:block w-[180px] shrink-0 sticky top-4 max-h-[calc(100vh-6rem)] overflow-y-auto no-scrollbar">
           <div className="text-[11px] font-extrabold uppercase tracking-[0.14em] c-soft px-3 mb-2">
             {t('customer.tab_browse')}
           </div>
@@ -629,20 +652,20 @@ const displayAddress = deliveryAddress
                   key={cat.value}
                   type="button"
                   onClick={() => setSelectedCategory(cat.value)}
-                  className={`flex items-center gap-3 h-11 px-3 rounded-xl text-left transition-colors ${
+                  className={`flex items-center gap-3 h-9 px-2.5 rounded-lg text-left transition-colors ${
                     active
                       ? 'bg-[hsl(var(--c-accent))] text-white shadow-[0_8px_20px_-10px_hsl(var(--c-accent)/0.7)]'
                       : 'c-ink hover:bg-[hsl(var(--c-surface-muted))]'
                   }`}
                 >
                   <span
-                    className={`h-8 w-8 shrink-0 rounded-full flex items-center justify-center text-[15px] emoji ${
+                    className={`h-7 w-7 shrink-0 rounded-full flex items-center justify-center text-[13px] emoji ${
                       active ? 'bg-white/20' : 'bg-[hsl(var(--c-surface-muted))]'
                     }`}
                   >
                     {cat.emoji}
                   </span>
-                  <span className={`text-[14px] leading-tight ${active ? 'font-extrabold' : 'font-bold'}`}>
+                  <span className={`text-[13px] leading-tight truncate ${active ? 'font-extrabold' : 'font-semibold'}`}>
                     {cat.label}
                   </span>
                 </button>
