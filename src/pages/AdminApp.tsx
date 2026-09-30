@@ -72,6 +72,7 @@ const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsageP
 const PlatformCostPanel      = lazy(() => import('@/components/admin/PlatformCostPanel'));
 const AdminLoyaltyPanel      = lazy(() => import('@/components/admin/AdminLoyaltyPanel'));
 const BufferDistributor      = lazy(() => import('@/components/admin/BufferDistributor'));
+const SystemHealthPanel = lazy(() => import('@/components/admin/SystemHealthPanel'));
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
 const MissionControl         = lazy(() => import('@/components/admin/MissionControl'));
 const SurgeMap               = lazy(() => import('@/components/admin/SurgeMap'));
@@ -460,7 +461,7 @@ export default function AdminApp() {
       case 'live_ops':
         return <AdminLiveDriversMap />;
       case 'system_health':
-        return <SystemDoctorPanel />;
+        return <SystemHealthPanel />;
       case 'cloud_usage':
         return <CloudUsagePanel />;
       case 'analytics':
