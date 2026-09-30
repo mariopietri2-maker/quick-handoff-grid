@@ -48,6 +48,7 @@ interface LiveChatThreadProps {
   viewerRole: 'support' | 'admin' | 'driver' | 'customer' | 'store';
   /** Read-only when the session is closed. */
   disabled?: boolean;
+  onReopen?: () => void;
   title?: string;
   subtitle?: string;
   className?: string;
@@ -60,6 +61,7 @@ export function LiveChatThread({
   orderId,
   viewerRole,
   disabled = false,
+  onReopen,
   title,
   subtitle,
   className,
@@ -69,11 +71,13 @@ export function LiveChatThread({
   const [text, setText] = useState('');
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
+  const [sessionClosed, setSessionClosed] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const sendingRef = useRef(false);
 
   const participantId = driverId ?? customerId ?? storeId;
   const topic = messages.find((m) => m.topic)?.topic ?? null;
+  const effectivelyDisabled = disabled || sessionClosed;
 
   useEffect(() => {
     if (!participantId) return;
@@ -129,13 +133,57 @@ export function LiveChatThread({
     };
   }, [driverId, customerId, storeId, participantId]);
 
+
+  useEffect(() => {
+    if (!participantId) return;
+    let active = true;
+    const applyStatus = (status: string | null | undefined) => {
+      if (!active) return;
+      setSessionClosed(status === 'closed');
+    };
+    const loadSession = async () => {
+      let q: any = (supabase as any)
+        .from('live_chat_sessions')
+        .select('id, status, closed_at')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (driverId) q = q.eq('driver_id', driverId);
+      else if (storeId) q = q.eq('store_id', storeId);
+      else q = q.eq('customer_id', customerId);
+      const { data } = await q.maybeSingle();
+      applyStatus((data as { status?: string } | null)?.status ?? null);
+    };
+    void loadSession();
+    const filter = driverId
+      ? `driver_id=eq.${driverId}`
+      : storeId
+        ? `store_id=eq.${storeId}`
+        : `customer_id=eq.${customerId}`;
+    const channel = supabase
+      .channel(`live-session-${participantId}`)
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'live_chat_sessions', filter },
+        (payload) => {
+          const row = (payload.new ?? payload.old) as { status?: string } | null;
+          if (row?.status) applyStatus(row.status);
+          else void loadSession();
+        },
+      )
+      .subscribe();
+    return () => {
+      active = false;
+      supabase.removeChannel(channel);
+    };
+  }, [driverId, customerId, storeId, participantId]);
+
   useEffect(() => {
     scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
   }, [messages]);
 
   const send = async () => {
     const msg = text.trim();
-    if (!msg || !user || !participantId || sending || sendingRef.current || disabled) return;
+    if (!msg || !user || !participantId || sending || sendingRef.current || effectivelyDisabled) return;
     sendingRef.current = true;
     setSending(true);
     const tempId = `tmp-${crypto.randomUUID()}`;
@@ -170,6 +218,10 @@ export function LiveChatThread({
     if (error) {
       setMessages((prev) => prev.filter((m) => m.id !== tempId));
       setText(msg);
+      const errText = String(error.message || error).toLowerCase();
+      if (errText.includes('closed') || errText.includes('κλειστ')) {
+        setSessionClosed(true);
+      }
       return;
     }
     if (data) {
@@ -240,9 +292,16 @@ export function LiveChatThread({
         )}
       </div>
 
-      {disabled ? (
-        <div className="shrink-0 border-t bg-card p-3 text-center text-xs text-muted-foreground">
-          Συνομιλία κλειστή — μόνο για ανάγνωση.
+      {effectivelyDisabled ? (
+        <div className="shrink-0 border-t bg-card p-3 space-y-2">
+          <p className="text-center text-xs text-muted-foreground">
+            Η συνομιλία έκλεισε από την υποστήριξη — μόνο για ανάγνωση.
+          </p>
+          {onReopen && (viewerRole === 'customer' || viewerRole === 'driver' || viewerRole === 'store') && (
+            <Button type="button" className="w-full h-10 text-sm font-bold" onClick={() => onReopen()}>
+              Ξεκίνα νέα συνομιλία
+            </Button>
+          )}
         </div>
       ) : (
         <div className="shrink-0 border-t bg-card p-2 flex items-center gap-2">

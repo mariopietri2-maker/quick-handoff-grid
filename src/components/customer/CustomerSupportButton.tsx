@@ -65,6 +65,7 @@ export function CustomerSupportButton({
 }: CustomerSupportButtonProps) {
   const [open, setOpen] = useState(false);
   const [view, setView] = useState<'menu' | 'category' | 'tickets' | 'chat' | 'live'>('menu');
+  const [liveTopic, setLiveTopic] = useState<string | null>(null);
   const [category, setCategory] = useState<Category | null>(null);
   const [description, setDescription] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -76,7 +77,13 @@ export function CustomerSupportButton({
     setCategory(null);
     setDescription('');
     setActiveTicket(null);
+    setLiveTopic(null);
     setView('menu');
+  };
+
+  const openLive = (topicKey?: string | null) => {
+    setLiveTopic(topicKey ?? null);
+    setView('live');
   };
 
   useEffect(() => {
@@ -236,7 +243,7 @@ export function CustomerSupportButton({
 
                 <button
                   type="button"
-                  onClick={() => setView('live')}
+                  onClick={() => openLive(null)}
                   className="w-full flex items-center gap-3 p-3 mb-3 rounded-xl bg-red-500/10 border border-red-500/30 hover:bg-red-500/15 transition-colors"
                 >
                   <span className="h-10 w-10 rounded-full bg-red-500 text-white flex items-center justify-center shadow-md">
@@ -253,7 +260,7 @@ export function CustomerSupportButton({
                 {tickets.length > 0 && (
                   <button
                     type="button"
-                    onClick={() => setView('tickets')}
+                    onClick={() => openLive(null)}
                     className="w-full flex items-center gap-3 p-3 mb-4 rounded-xl bg-primary/10 border border-primary/30 hover:bg-primary/15 transition-colors"
                   >
                     <span className="h-10 w-10 rounded-full bg-primary text-primary-foreground flex items-center justify-center shadow-md">
@@ -272,7 +279,7 @@ export function CustomerSupportButton({
                 )}
 
                 <p className="text-[10px] uppercase tracking-wider font-heading font-bold text-muted-foreground mb-2 px-1">
-                  Νέο αίτημα
+                  Ζωντανή συνομιλία — διάλεξε θέμα
                 </p>
                 <div className="grid grid-cols-2 gap-2.5">
                   {CATEGORIES.map((c) => {
@@ -281,7 +288,7 @@ export function CustomerSupportButton({
                       <button
                         key={c.key}
                         type="button"
-                        onClick={() => { setCategory(c); setView(c.urgent ? 'live' : 'category'); }}
+                        onClick={() => { setCategory(c); openLive(c.key); }}
                         className="flex flex-col items-start gap-2 p-3 rounded-xl border border-border bg-card hover:border-primary/40 hover:bg-primary/5 transition-colors text-left"
                       >
                         <span className={`h-8 w-8 rounded-lg ${c.tone} flex items-center justify-center`}>
@@ -366,7 +373,7 @@ export function CustomerSupportButton({
             )}
 
             {view === 'live' && (
-              <CustomerLiveChat orderId={orderId} className="h-[62vh]" />
+              <CustomerLiveChat orderId={orderId} topic={liveTopic} className="h-[62vh]" />
             )}
           </div>
         </DialogContent>
