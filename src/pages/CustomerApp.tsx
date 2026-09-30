@@ -157,6 +157,7 @@ export default function CustomerApp() {
   const [filterOffers, setFilterOffers] = useState(false);
   const [filterTopRated, setFilterTopRated] = useState(false);
   const [filterFast, setFilterFast] = useState(false);
+  const [filterOpenOnly, setFilterOpenOnly] = useState(false);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { user, profile, isStore } = useAuth();
@@ -254,6 +255,7 @@ const displayAddress = deliveryAddress
       setFilterOffers(false);
       setFilterTopRated(false);
       setFilterFast(false);
+      setFilterOpenOnly(false);
       clearSearch();
     };
     window.addEventListener('customer:focus-browse', onBrowse);
@@ -443,6 +445,7 @@ const displayAddress = deliveryAddress
         }
         if (filterTopRated && (ratings[s.id]?.avg ?? 0) < 4.5) return false;
         if (filterFast && (s.prep_buffer_minutes ?? 0) > 5) return false;
+        if (filterOpenOnly && !isStoreOpenNow(s.opening_hours, s.holiday_dates, s.status_override)) return false;
         return true;
       }),
     [
@@ -453,6 +456,7 @@ const displayAddress = deliveryAddress
       filterOffers,
       filterTopRated,
       filterFast,
+      filterOpenOnly,
       ratings,
     ],
   );
@@ -676,10 +680,10 @@ const displayAddress = deliveryAddress
         )}
 
         <div className={isWeb ? 'flex-1 min-w-0' : ''}>
-        {/* Circular category rail (Uber Eats style) — native app only */}
-        {!isWeb && cfg.sections.show_categories !== false && (
-        <section id="browse-categories" className="pt-4 scroll-mt-36">
-          <div className="flex gap-4 overflow-x-auto no-scrollbar px-4 pb-1">
+        {/* Circular category rail (Uber Eats / efood style) */}
+        {cfg.sections.show_categories !== false && (
+        <section id="browse-categories" className={`${isWeb ? 'pt-5' : 'pt-4'} scroll-mt-36`}>
+          <div className={`flex gap-4 overflow-x-auto no-scrollbar pb-1 ${isWeb ? 'px-0' : 'px-4'}`}>
             {categoryOptions.map((cat) => {
               const active = selectedCategory === cat.value;
               return (
@@ -937,11 +941,17 @@ const displayAddress = deliveryAddress
             <div
               className={
                 isWeb
-                  ? 'flex gap-2 flex-wrap pb-3'
-                  : 'flex gap-2 overflow-x-auto no-scrollbar pb-3 -mx-4 px-4'
+                  ? 'sticky top-[72px] z-20 -mx-6 px-6 py-2.5 mb-1 flex gap-2 flex-wrap bg-[hsl(var(--c-bg)/0.92)] backdrop-blur-md border-b border-[hsl(var(--c-border)/0.6)]'
+                  : 'sticky top-[108px] z-20 flex gap-2 overflow-x-auto no-scrollbar py-2.5 -mx-4 px-4 mb-1 bg-[hsl(var(--c-bg)/0.92)] backdrop-blur-md border-b border-[hsl(var(--c-border)/0.6)]'
               }
             >
               {[
+                {
+                  key: 'open',
+                  label: 'Ανοιχτά',
+                  on: filterOpenOnly,
+                  toggle: () => setFilterOpenOnly((v) => !v),
+                },
                 {
                   key: 'offers',
                   label: t('customer.filter_offers'),
@@ -974,13 +984,14 @@ const displayAddress = deliveryAddress
                   {f.label}
                 </button>
               ))}
-              {(filterOffers || filterTopRated || filterFast) && (
+              {(filterOffers || filterTopRated || filterFast || filterOpenOnly) && (
                 <button
                   type="button"
                   onClick={() => {
                     setFilterOffers(false);
                     setFilterTopRated(false);
                     setFilterFast(false);
+                    setFilterOpenOnly(false);
                   }}
                   className="shrink-0 h-9 px-3 text-[13px] font-semibold c-soft"
                 >
@@ -1048,20 +1059,22 @@ const displayAddress = deliveryAddress
                           </div>
                         )}
                         {store.image_url && (
-                          <img
-                            src={store.image_url}
-                            alt=""
-                            className="absolute top-2.5 right-2.5 h-12 w-12 rounded-xl object-cover border-2 border-white shadow-md bg-white z-[2]"
-                            loading="lazy"
-                          />
+                          <div className="absolute bottom-2.5 left-2.5 z-[2] h-14 w-14 rounded-2xl overflow-hidden border-[3px] border-white shadow-[0_6px_16px_-4px_rgba(0,0,0,0.35)] bg-white ring-1 ring-black/5">
+                            <img
+                              src={store.image_url}
+                              alt=""
+                              className="h-full w-full object-cover"
+                              loading="lazy"
+                            />
+                          </div>
                         )}
                         {!open && (
-                          <span className="absolute bottom-2.5 left-2.5 text-white bg-neutral-700/95 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow z-[1]">
+                          <span className="absolute top-2.5 right-2.5 text-white bg-neutral-700/95 rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
                             Κλειστό{closedLabel ? ` · ${closedLabel}` : ''}
                           </span>
                         )}
                         {open && (
-                          <span className="absolute bottom-2.5 left-2.5 inline-flex items-center gap-1 bg-orange-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow z-[1]">
+                          <span className="absolute top-2.5 right-2.5 inline-flex items-center gap-1 bg-orange-600/95 text-white rounded-md px-2 py-1 text-[10px] font-extrabold uppercase tracking-wide shadow">
                             <span className="h-1.5 w-1.5 rounded-full bg-white animate-pulse" />
                             Ανοιχτό
                           </span>
