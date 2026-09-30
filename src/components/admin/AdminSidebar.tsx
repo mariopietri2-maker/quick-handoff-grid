@@ -146,6 +146,7 @@ export const NAV_SECTIONS = [
       { id: 'system_doctor', label: '🩺 System Doctor' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },
       { id: 'cloud_usage', label: '☁️ Cloud usage' },
+      { id: 'loyalty', label: 'Points / Loyalty' },
       { id: 'platform_cost', label: '💶 Κόστος πλατφόρμας' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
