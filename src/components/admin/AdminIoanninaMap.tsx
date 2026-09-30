@@ -104,6 +104,7 @@ export default function AdminIoanninaMap() {
   const [followId, setFollowId] = useState<string | null>(null);
   const [satellite, setSatellite] = useState(false);
   const connectedRef = useRef(true);
+  const eligibleDriversRef = useRef<Set<string>>(new Set());
 
   // Load drivers + stores, initial locations, then subscribe to live updates.
   useEffect(() => {
@@ -162,6 +163,7 @@ export default function AdminIoanninaMap() {
           .filter(([, info]) => info.is_active && info.on_shift)
           .map(([id]) => id),
       );
+      eligibleDriversRef.current = eligible;
 
       const locs = await supabase.from('driver_locations').select('*');
       if (mounted && locs.data) {
@@ -181,8 +183,10 @@ export default function AdminIoanninaMap() {
         connectedRef.current = true;
         const loc = payload.new as DriverLocation;
         if (!loc?.driver_id) return;
-        // Re-check eligibility from latest driverInfos is async; filter on presence +
-        // drop unknown/stale. Full eligibility is enforced on poll/load.
+        if (!eligibleDriversRef.current.has(loc.driver_id)) {
+          setLocations((prev) => prev.filter((l) => l.driver_id !== loc.driver_id));
+          return;
+        }
         if (!isDriverPresenceOnline(loc.updated_at, Date.now(), ONLINE_WINDOW_MS)) {
           setLocations((prev) => prev.filter((l) => l.driver_id !== loc.driver_id));
           return;
@@ -216,10 +220,13 @@ export default function AdminIoanninaMap() {
       const inactive = new Set(
         (dps ?? []).filter((p: any) => p.is_active === false).map((p: any) => p.user_id as string),
       );
+      const eligible = new Set(
+        [...onShift].filter((id) => !inactive.has(id)),
+      );
+      eligibleDriversRef.current = eligible;
       const filtered = (data as DriverLocation[]).filter(
         (l) =>
-          onShift.has(l.driver_id) &&
-          !inactive.has(l.driver_id) &&
+          eligible.has(l.driver_id) &&
           isDriverPresenceOnline(l.updated_at, Date.now(), ONLINE_WINDOW_MS),
       );
       setLocations(filtered);

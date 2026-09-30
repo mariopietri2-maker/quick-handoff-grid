@@ -13,7 +13,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { supabase } from '@/integrations/supabase/client';
-import { Building2, FileText, Pencil, Search, Store } from 'lucide-react';
+import { Building2, FileText, Pencil, Search, Store, Trash2} from 'lucide-react';
 
 type StoreRow = {
   id: string;
@@ -169,6 +169,42 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
     queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
   };
 
+  const [deleting, setDeleting] = useState(false);
+  const handleDelete = async () => {
+    if (!selected) return;
+    const name = selected.store.name;
+    const ok = window.confirm(
+      `Διαγραφή καταστήματος «${name}»;
+
+` +
+        '• Χωρίς παραγγελίες → οριστική διαγραφή
+' +
+        '• Με παραγγελίες → απενεργοποίηση (ιστορικό παραμένει)',
+    );
+    if (!ok) return;
+    const typed = window.prompt(`Πληκτρολόγησε το όνομα για επιβεβαίωση:
+${name}`);
+    if (typed?.trim() !== name.trim()) {
+      toast.error('Το όνομα δεν ταιριάζει — ακυρώθηκε');
+      return;
+    }
+    setDeleting(true);
+    const { data, error } = await (supabase.rpc as any)('admin_delete_store', { p_store_id: selected.store.id });
+    setDeleting(false);
+    if (error) {
+      toast.error(error.message || 'Αποτυχία διαγραφής');
+      return;
+    }
+    if (data?.ok === false) {
+      toast.error(data?.error || 'Αποτυχία');
+      return;
+    }
+    if (data?.mode === 'hard') toast.success(`Διαγράφηκε οριστικά: ${name}`);
+    else toast.success(`Απενεργοποιήθηκε (έχει ${data?.orders ?? '?'} παραγγελίες): ${name}`);
+    setSelectedId(null);
+    queryClient.invalidateQueries({ queryKey: ['admin-stores'] });
+  };
+
   const missingLegal = selected
     ? !(selected.store.legal_name && selected.store.afm && selected.store.doy && selected.store.kad)
     : false;
@@ -305,6 +341,9 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
                     <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={startEdit}>
                       <Pencil className="h-3.5 w-3.5" />
                       Επεξεργασία
+                    </Button>
+                    <Button size="sm" variant="outline" className="h-8 gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleDelete} disabled={deleting}>
+                      <Trash2 className="h-3.5 w-3.5" /> Διαγραφή
                     </Button>
                   ) : (
                     <div className="flex gap-1.5">

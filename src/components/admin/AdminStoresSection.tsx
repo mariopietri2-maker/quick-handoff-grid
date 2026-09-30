@@ -1,9 +1,10 @@
 import { Switch } from '@/components/ui/switch';
-import { Store } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Store, Trash2 } from 'lucide-react';
 import { format } from 'date-fns';
 import { SectionHeader } from './AdminSectionHeader';
 
-export function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle }: any) {
+export function StoresSection({ stores, allStores, storeWallets, filter, setFilter, onToggle, onDelete }: any) {
   const walletMap = new Map((storeWallets ?? []).map((w: any) => [w.store_id, w]));
   const totalLifetime = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.lifetime_earnings ?? 0), 0);
   const totalAvailable = (storeWallets ?? []).reduce((s: number, w: any) => s + Number(w.available_balance ?? 0), 0);
@@ -36,7 +37,7 @@ export function StoresSection({ stores, allStores, storeWallets, filter, setFilt
       <div className="admin-card overflow-hidden">
         <div className="overflow-x-auto">
           <table className="admin-table">
-            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th></tr></thead>
+            <thead><tr><th>Όνομα</th><th>Διεύθυνση</th><th className="text-right">Έσοδα</th><th className="text-right">Διαθέσιμα</th><th className="w-20">Ενεργό</th><th>Κατάσταση</th><th>Δημιουργία</th><th className="w-12"></th></tr></thead>
             <tbody>
               {stores.map((store: any) => {
                 const w: any = walletMap.get(store.id);
@@ -55,12 +56,26 @@ export function StoresSection({ stores, allStores, storeWallets, filter, setFilt
                       </span>
                     </td>
                     <td className="text-[11.5px] text-muted-foreground tabular-nums">{format(new Date(store.created_at), 'dd MMM yyyy')}</td>
+                    <td>
+                      {onDelete && (
+                        <Button
+                          type="button"
+                          size="icon"
+                          variant="ghost"
+                          className="h-7 w-7 text-muted-foreground hover:text-destructive"
+                          title="Διαγραφή καταστήματος"
+                          onClick={() => onDelete(store.id, store.name)}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      )}
+                    </td>
                   </tr>
                 );
               })}
               {!stores.length && (
                 <tr>
-                  <td colSpan={7} className="py-14 text-center">
+                  <td colSpan={8} className="py-14 text-center">
                     <div className="inline-flex flex-col items-center gap-2 text-muted-foreground">
                       <Store className="h-8 w-8 opacity-40" />
                       <p className="text-[12.5px] font-medium">Κανένα κατάστημα σε αυτό το φίλτρο</p>
