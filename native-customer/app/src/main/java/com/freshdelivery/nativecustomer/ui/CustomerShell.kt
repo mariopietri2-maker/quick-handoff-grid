@@ -108,11 +108,13 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
+import androidx.compose.ui.zIndex
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -1768,28 +1770,43 @@ private fun MenuScreen(
                     )
                 }
             }
-            // Fixed category chips — stay visible while menu scrolls
+            // Fixed category chips — elevated so they stay tappable above the list
             if (menuGroups.size > 1) {
-                Row(
+                Column(
                     Modifier
                         .fillMaxWidth()
+                        .zIndex(8f)
                         .background(FreshSurface)
-                        .horizontalScroll(rememberScrollState())
-                        .padding(horizontal = 12.dp, vertical = 8.dp),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        .shadow(2.dp),
                 ) {
-                    FreshFilterChip("Όλα", selected = selectedCategory == null) {
-                        selectedCategory = null
-                    }
-                    menuGroups.forEach { (cat, _) ->
-                        FreshFilterChip(cat, selected = selectedCategory == cat) {
-                            selectedCategory = cat
+                    Row(
+                        Modifier
+                            .fillMaxWidth()
+                            .horizontalScroll(rememberScrollState())
+                            .padding(horizontal = 12.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    ) {
+                        FreshFilterChip("Όλα", selected = selectedCategory == null) {
+                            selectedCategory = null
+                        }
+                        menuGroups.forEach { (cat, _) ->
+                            FreshFilterChip(cat, selected = selectedCategory == cat) {
+                                selectedCategory = cat
+                            }
                         }
                     }
+                    HorizontalDivider(color = FreshDivider)
                 }
+            } else {
+                HorizontalDivider(color = FreshDivider)
             }
-            HorizontalDivider(color = FreshDivider)
-            LazyColumn(Modifier.fillMaxSize().weight(1f)) {
+            // Clip list so scrolled cards never cover / steal taps from chips
+            LazyColumn(
+                Modifier
+                    .fillMaxSize()
+                    .weight(1f)
+                    .clipToBounds(),
+            ) {
             item {
                 Box {
                     StoreHeroImage(store?.image_url, height = 180)
@@ -1948,14 +1965,29 @@ private fun FreshMenuRow(item: MenuItemRow, highlightOffer: Boolean = false, onA
         Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(if (highlightOffer) 5.dp else 3.dp, RoundedCornerShape(20.dp))
+            .shadow(3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
-            .background(if (highlightOffer) FreshGreenSoft.copy(alpha = 0.35f) else Color.White)
+            .background(Color.White)
             .clickable(enabled = available, onClick = onAdd)
             .padding(12.dp),
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         Column(Modifier.weight(1f)) {
+            if (highlightOffer) {
+                Surface(
+                    color = FreshGreen.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(8.dp),
+                    modifier = Modifier.padding(bottom = 6.dp),
+                ) {
+                    Text(
+                        "Προσφορά",
+                        color = FreshGreenDark,
+                        fontWeight = FontWeight.Bold,
+                        style = MaterialTheme.typography.labelSmall,
+                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 3.dp),
+                    )
+                }
+            }
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
                     item.name,
