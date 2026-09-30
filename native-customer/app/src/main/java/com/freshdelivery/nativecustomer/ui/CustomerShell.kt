@@ -1740,10 +1740,59 @@ private fun MenuScreen(
         else menuGroups.filter { it.first == selectedCategory }
     }
     Box(Modifier.fillMaxSize().background(FreshBg)) {
-        LazyColumn(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize().statusBarsPadding()) {
+            // Fixed top bar: back + store name (always visible / tappable)
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .background(FreshSurface)
+                    .padding(horizontal = 4.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                IconButton(onClick = onBack) {
+                    Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = FreshInk)
+                }
+                Text(
+                    store?.name ?: "Μενού",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                IconButton(onClick = onToggleFavorite) {
+                    Icon(
+                        if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
+                        contentDescription = "Favorite",
+                        tint = if (isFavorite) FreshRose else FreshMuted,
+                    )
+                }
+            }
+            // Fixed category chips — stay visible while menu scrolls
+            if (menuGroups.size > 1) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .background(FreshSurface)
+                        .horizontalScroll(rememberScrollState())
+                        .padding(horizontal = 12.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                ) {
+                    FreshFilterChip("Όλα", selected = selectedCategory == null) {
+                        selectedCategory = null
+                    }
+                    menuGroups.forEach { (cat, _) ->
+                        FreshFilterChip(cat, selected = selectedCategory == cat) {
+                            selectedCategory = cat
+                        }
+                    }
+                }
+            }
+            HorizontalDivider(color = FreshDivider)
+            LazyColumn(Modifier.fillMaxSize().weight(1f)) {
             item {
                 Box {
-                    StoreHeroImage(store?.image_url, height = 250)
+                    StoreHeroImage(store?.image_url, height = 180)
                     Box(
                         Modifier
                             .fillMaxSize()
@@ -1757,20 +1806,9 @@ private fun MenuScreen(
                                 ),
                             ),
                     )
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .statusBarsPadding()
-                            .padding(8.dp)
-                            .shadow(6.dp, CircleShape)
-                            .background(Color.White, CircleShape),
-                    ) {
-                        Icon(Icons.AutoMirrored.Outlined.ArrowBack, contentDescription = "Back", tint = FreshInk)
-                    }
                     Column(
                         Modifier
                             .align(Alignment.BottomStart)
-                            .statusBarsPadding()
                             .padding(16.dp),
                     ) {
                         Text(
@@ -1860,27 +1898,6 @@ private fun MenuScreen(
                     }
                 }
             } else {
-                if (menuGroups.size > 1) {
-                    stickyHeader(key = "cat-chips") {
-                        Row(
-                            Modifier
-                                .fillMaxWidth()
-                                .background(FreshBg)
-                                .horizontalScroll(rememberScrollState())
-                                .padding(horizontal = 16.dp, vertical = 8.dp),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        ) {
-                            FreshFilterChip("Όλα", selected = selectedCategory == null) {
-                                selectedCategory = null
-                            }
-                            menuGroups.forEach { (cat, _) ->
-                                FreshFilterChip(cat, selected = selectedCategory == cat) {
-                                    selectedCategory = cat
-                                }
-                            }
-                        }
-                    }
-                }
                 visibleGroups.forEach { (category, itemsInCat) ->
                     item(key = "cat-$category") {
                         Text(
@@ -1904,7 +1921,8 @@ private fun MenuScreen(
                 }
                 item { Spacer(Modifier.height(if (state.cartCount > 0) 120.dp else 24.dp)) }
             }
-        }
+            } // end LazyColumn
+        } // end Column (fixed header + list)
         if (state.cartCount > 0) {
             Box(
                 Modifier
@@ -2037,7 +2055,8 @@ private fun CartCheckoutScreen(
         Modifier
             .fillMaxSize()
             .background(FreshBg)
-            .statusBarsPadding(),
+            .statusBarsPadding()
+            .navigationBarsPadding(),
     ) {
         SnackbarHost(snackbar)
         Row(
@@ -2408,56 +2427,67 @@ private fun CartCheckoutScreen(
                             }
                         }
                     }
-                    Spacer(Modifier.height(16.dp))
-                    val pinned = state.deliveryLat != null && state.deliveryLng != null
-                    val minOk = cartMin <= 0 || state.cartSubtotal >= cartMin
-                    val canPlace = !state.busy &&
-                        state.cart.isNotEmpty() &&
-                        address.isNotBlank() &&
-                        pinned &&
-                        minOk
-                    val placeLabel = when {
-                        state.cart.isEmpty() -> "Το καλάθι είναι άδειο"
-                        address.isBlank() -> "Πρόσθεσε διεύθυνση παράδοσης"
-                        !pinned -> "Επίλεξε σημείο στον χάρτη / εύρεση"
-                        !minOk -> "Ακόμα €" + "%.2f".format(cartMin - state.cartSubtotal) + " για ελάχιστη"
-                        else -> "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal)
-                    }
-                    if (!canPlace && !state.busy) {
-                        Text(
-                            placeLabel,
-                            color = FreshMuted,
-                            style = MaterialTheme.typography.bodySmall,
-                            modifier = Modifier.padding(bottom = 8.dp),
-                        )
-                    }
-                    Box(
-                        Modifier
-                            .fillMaxWidth()
-                            .height(56.dp)
-                            .shadow(if (canPlace) 10.dp else 2.dp, RoundedCornerShape(28.dp))
-                            .clip(RoundedCornerShape(28.dp))
-                            .then(if (canPlace) Modifier.background(FreshGradient) else Modifier.background(FreshChip))
-                            .clickable(
-                                enabled = canPlace,
-                                onClick = onPlaceOrder,
-                            ),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (state.busy) {
-                            CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
-                        } else {
-                            Text(
-                                if (canPlace) placeLabel else "Συμπλήρωσε τα στοιχεία πάνω",
-                                fontWeight = FontWeight.Bold,
-                                color = if (!canPlace) FreshMuted else Color.White,
-                            )
-                        }
-                    }
-                    Spacer(Modifier.height(32.dp))
+                    Spacer(Modifier.height(8.dp))
                 }
             }
             } // end else non-empty cart
+        }
+
+        // Sticky place-order bar — sits above system nav (gesture / 3-button)
+        if (state.cart.isNotEmpty()) {
+            val cartMinSticky = (state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore)?.min_order_amount ?: 0.0
+            val pinned = state.deliveryLat != null && state.deliveryLng != null
+            val minOk = cartMinSticky <= 0 || state.cartSubtotal >= cartMinSticky
+            val canPlace = !state.busy &&
+                state.cart.isNotEmpty() &&
+                address.isNotBlank() &&
+                pinned &&
+                minOk
+            val placeLabel = when {
+                state.cart.isEmpty() -> "Το καλάθι είναι άδειο"
+                address.isBlank() -> "Πρόσθεσε διεύθυνση παράδοσης"
+                !pinned -> "Επίλεξε σημείο στον χάρτη / εύρεση"
+                !minOk -> "Ακόμα €" + "%.2f".format(cartMinSticky - state.cartSubtotal) + " για ελάχιστη"
+                else -> "Τοποθέτηση παραγγελίας · €" + "%.2f".format(state.grandTotal)
+            }
+            Column(
+                Modifier
+                    .fillMaxWidth()
+                    .background(FreshSurface)
+                    .padding(horizontal = 16.dp, vertical = 10.dp),
+            ) {
+                if (!canPlace && !state.busy) {
+                    Text(
+                        placeLabel,
+                        color = FreshMuted,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 8.dp),
+                    )
+                }
+                Box(
+                    Modifier
+                        .fillMaxWidth()
+                        .height(56.dp)
+                        .shadow(if (canPlace) 10.dp else 2.dp, RoundedCornerShape(28.dp))
+                        .clip(RoundedCornerShape(28.dp))
+                        .then(if (canPlace) Modifier.background(FreshGradient) else Modifier.background(FreshChip))
+                        .clickable(
+                            enabled = canPlace,
+                            onClick = onPlaceOrder,
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    if (state.busy) {
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    } else {
+                        Text(
+                            if (canPlace) placeLabel else "Συμπλήρωσε τα στοιχεία πάνω",
+                            fontWeight = FontWeight.Bold,
+                            color = if (!canPlace) FreshMuted else Color.White,
+                        )
+                    }
+                }
+            }
         }
     }
 }
