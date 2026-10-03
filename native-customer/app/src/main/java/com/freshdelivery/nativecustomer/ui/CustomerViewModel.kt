@@ -1429,12 +1429,30 @@ autoOpenTrack(
 
     private fun selectLiveChatTopic(topic: String) {
         viewModelScope.launch {
+            // Cancel any closed-session subscription before opening a new one
+            liveChatJob?.cancel()
+            liveChatJob = null
+            liveChatSessionJob?.cancel()
+            liveChatSessionJob = null
+
             // ensure_my_live_chat_session creates a NEW open row when the last one is closed
             val sessionId = repo.ensureMyLiveChatSession(topic)
             if (sessionId.isNullOrBlank()) {
                 _state.value = _state.value.copy(
                     liveChatError = "Δεν άνοιξε νέα συνομιλία. Δοκίμασε ξανά.",
                     supportView = SupportView.Topics,
+                    liveChatClosed = false,
+                )
+                return@launch
+            }
+            // Confirm server prefers an open session
+            val session = runCatching { repo.getMyLiveChatSession() }.getOrNull()
+            val closed = session?.status == "closed"
+            if (closed) {
+                _state.value = _state.value.copy(
+                    liveChatError = "Η προηγούμενη συνομιλία είναι κλειστή. Δοκίμασε ξανά.",
+                    supportView = SupportView.Topics,
+                    liveChatClosed = true,
                 )
                 return@launch
             }
@@ -1444,6 +1462,7 @@ autoOpenTrack(
                 liveChatSessionId = sessionId,
                 liveChatClosed = false,
                 liveChatError = null,
+                liveChatMessages = emptyList(),
             )
             openLiveChat()
         }
@@ -1451,13 +1470,28 @@ autoOpenTrack(
 
     /** Back to the topic picker (closes the active chat/ticket, keeps the support screen open). */
     fun clearSupportTopic() {
-        closeLiveChat()
+        startNewLiveConversation()
+    }
+
+    /**
+     * Support closed the session — fully reset local state so the customer can
+     * pick a topic and open a brand-new open session (ensure_my_live_chat_session).
+     */
+    fun startNewLiveConversation() {
+        liveChatJob?.cancel()
+        liveChatJob = null
+        liveChatSessionJob?.cancel()
+        liveChatSessionJob = null
         cancelTicketSubscriptions()
         _state.value = _state.value.copy(
             supportView = SupportView.Topics,
             liveChatTopic = null,
             liveChatSessionId = null,
             liveChatClosed = false,
+            liveChatMessages = emptyList(),
+            liveChatLoading = false,
+            liveChatSubscribed = false,
+            liveChatError = null,
             ticketTopic = null,
             activeTicket = null,
             ticketMessages = emptyList(),
@@ -1650,9 +1684,14 @@ autoOpenTrack(
                 flow.collect { _ ->
                     val session = runCatching { repo.getMyLiveChatSession() }.getOrNull()
                     if (session != null) {
+                        // Prefer open; if server still reports closed while user is on Topics, ignore
+                        val isClosed = session.status == "closed"
+                        if (isClosed && _state.value.supportView == SupportView.Topics) {
+                            return@collect
+                        }
                         _state.value = _state.value.copy(
                             liveChatSessionId = session.id,
-                            liveChatClosed = session.status == "closed",
+                            liveChatClosed = isClosed,
                             liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: _state.value.liveChatTopic,
                         )
                     }
