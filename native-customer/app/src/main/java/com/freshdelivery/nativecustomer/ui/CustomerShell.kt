@@ -439,36 +439,36 @@ private fun FreshCartBar(
     Column(
         Modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp, vertical = 8.dp),
+            .padding(horizontal = 12.dp, vertical = 6.dp),
     ) {
         if (needMore) {
             Surface(
                 color = Color.White,
-                shape = RoundedCornerShape(14.dp),
+                shape = RoundedCornerShape(16.dp),
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(bottom = 8.dp)
-                    .shadow(4.dp, RoundedCornerShape(14.dp)),
+                    .shadow(6.dp, RoundedCornerShape(16.dp)),
             ) {
                 Column(Modifier.padding(horizontal = 14.dp, vertical = 10.dp)) {
                     Text(
-                        "Ακόμα €%.2f για ελάχιστη παραγγελία".format(minOrder - total),
+                        "Πρόσθεσε €%.2f για ελάχιστη παραγγελία".format(minOrder - total),
                         color = FreshInk,
                         fontWeight = FontWeight.SemiBold,
                         style = MaterialTheme.typography.labelLarge,
                     )
-                    Spacer(Modifier.height(6.dp))
+                    Spacer(Modifier.height(8.dp))
                     Box(
                         Modifier
                             .fillMaxWidth()
-                            .height(6.dp)
+                            .height(5.dp)
                             .clip(RoundedCornerShape(3.dp))
                             .background(FreshChip),
                     ) {
                         Box(
                             Modifier
                                 .fillMaxWidth(progress)
-                                .height(6.dp)
+                                .height(5.dp)
                                 .clip(RoundedCornerShape(3.dp))
                                 .background(FreshGreen),
                         )
@@ -479,49 +479,52 @@ private fun FreshCartBar(
         Box(
             Modifier
                 .fillMaxWidth()
-                .shadow(12.dp, RoundedCornerShape(16.dp))
-                .clip(RoundedCornerShape(16.dp))
-                .background(FreshInk)
+                .height(54.dp)
+                .shadow(10.dp, RoundedCornerShape(14.dp))
+                .clip(RoundedCornerShape(14.dp))
+                .background(FreshGreen)
                 .clickable(onClick = onClick),
         ) {
             Row(
                 Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 18.dp, vertical = 14.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
+                    .fillMaxSize()
+                    .padding(horizontal = 10.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
-                    Box(
-                        Modifier
-                            .size(26.dp)
-                            .clip(CircleShape)
-                            .background(Color.White),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        Text(
-                            "$count",
-                            color = FreshGreen,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 13.sp,
-                        )
-                    }
-                    Spacer(Modifier.width(12.dp))
+                Box(
+                    Modifier
+                        .size(34.dp)
+                        .clip(RoundedCornerShape(8.dp))
+                        .background(Color.White),
+                    contentAlignment = Alignment.Center,
+                ) {
                     Text(
-                        if (needMore) "Συνέχεια παραγγελίας" else "Προβολή καλαθιού",
-                        color = Color.White,
+                        "$count",
+                        color = FreshGreenDark,
                         fontWeight = FontWeight.Bold,
+                        fontSize = 15.sp,
                     )
                 }
                 Text(
-                    "€" + "%.2f".format(total),
+                    "Καλάθι",
                     color = Color.White,
                     fontWeight = FontWeight.Bold,
+                    fontSize = 17.sp,
+                    modifier = Modifier.weight(1f),
+                    textAlign = TextAlign.Center,
+                )
+                Text(
+                    "%.2f€".format(total),
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 16.sp,
+                    modifier = Modifier.padding(end = 6.dp),
                 )
             }
         }
     }
 }
+
 
 @Composable
 private fun StoreHeroImage(url: String?, height: Int = 160) {
