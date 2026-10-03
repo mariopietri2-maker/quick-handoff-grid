@@ -9,16 +9,16 @@ export default function AdminAuditTab() {
   return (
     <div className="space-y-3">
       <div className="flex items-baseline gap-2 min-w-0">
-        <h2 className="admin-section-title truncate">Activity & Audit</h2>
+        <h2 className="admin-section-title truncate">Δραστηριότητα & έλεγχος</h2>
         <span className="admin-section-sub truncate">· ενοποιημένη προβολή ενεργειών</span>
       </div>
       <Tabs value={tab} onValueChange={setTab}>
         <TabsList className="h-9">
           <TabsTrigger value="activity" className="text-xs gap-1.5 h-7">
-            <Activity className="h-3.5 w-3.5" /> Activity
+            <Activity className="h-3.5 w-3.5" /> Δραστηριότητα
           </TabsTrigger>
           <TabsTrigger value="audit" className="text-xs gap-1.5 h-7">
-            <ScrollText className="h-3.5 w-3.5" /> Audit
+            <ScrollText className="h-3.5 w-3.5" /> Έλεγχος
           </TabsTrigger>
         </TabsList>
         <TabsContent value="activity" className="mt-3">

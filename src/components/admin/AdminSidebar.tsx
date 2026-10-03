@@ -35,7 +35,7 @@ export const NAV_SECTIONS = [
     accentBg: 'bg-info/10',
     defaultTab: 'overview',
     tabs: [
-      { id: 'overview', label: 'Live Ops' },
+      { id: 'overview', label: 'Ζωντανή λειτουργία' },
       { id: 'analytics', label: 'Αναλυτικά' },
       { id: 'alerts', label: '🔔 Προβλήματα' },
     ],
@@ -48,11 +48,11 @@ export const NAV_SECTIONS = [
     accentBg: 'bg-primary/10',
     defaultTab: 'delivery_control',
     tabs: [
-      { id: 'delivery_control', label: '🎛️ Delivery Control' },
-      { id: 'orders', label: 'Pipeline (Kanban)' },
+      { id: 'delivery_control', label: '🎛️ Έλεγχος παραδόσεων' },
+      { id: 'orders', label: 'Ροή παραγγελιών' },
       { id: 'orders_table', label: 'Πίνακας' },
       { id: 'external_orders', label: 'eFood / Wolt' },
-      { id: 'dispatch_debug', label: '🔧 Dispatch debug' },
+      { id: 'dispatch_debug', label: '🔧 Debug αποστολής' },
     ],
   },
   {
@@ -65,7 +65,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'stores', label: 'Καταστήματα' },
       { id: 'store_registry', label: '📋 Μητρώο' },
-      { id: 'platform_mode', label: '🚚 Delivered by Fresh2GO.GR & ETA' },
+      { id: 'platform_mode', label: '🚚 Παράδοση Fresh2GO & ETA' },
       { id: 'store_photos', label: '📷 Φωτογραφίες' },
       { id: 'store_appearance', label: '🎨 Εμφάνιση' },
       { id: 'promotions', label: 'Προωθήσεις' },
@@ -108,17 +108,17 @@ export const NAV_SECTIONS = [
     accentBg: 'bg-success/10',
     defaultTab: 'buffer',
     tabs: [
-      { id: 'buffer', label: 'Buffer' },
-      { id: 'surge', label: 'Surge' },
+      { id: 'buffer', label: 'Buffer κινήτρων' },
+      { id: 'surge', label: 'Surge αιχμής' },
       { id: 'refunds', label: '↩️ Επιστροφές' },
       { id: 'store_payables', label: 'Πληρωμές καταστημάτων' },
       { id: 'driver_payables', label: 'Πληρωμές οδηγών' },
       { id: 'pricing', label: 'Τιμολόγηση' },
-      { id: 'ai_pricing', label: '✨ AI Dynamic Pricing' },
+      { id: 'ai_pricing', label: '✨ Δυναμική τιμολόγηση AI' },
       { id: 'stripe_payments', label: '💳 Stripe' },
       { id: 'epsilon_invoicing', label: '🧾 Epsilon Τιμολόγηση' },
       { id: 'store_billing', label: 'Χρέωση' },
-      { id: 'tickets', label: 'Support', badgeKey: 'pendingTickets' as const },
+      { id: 'tickets', label: 'Υποστήριξη', badgeKey: 'pendingTickets' as const },
     ],
   },
   {
@@ -131,28 +131,28 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'settings_home', label: 'Όλες οι ρυθμίσεις' },
       { id: 'users', label: 'Χρήστες' },
-      { id: 'call_roles', label: '📞 Call roles (N/K)' },
+      { id: 'call_roles', label: '📞 Ρόλοι κλήσεων (N/K)' },
       { id: 'store_calls', label: '📞 Κλήσεις καταστημάτων' },
       { id: 'admin_perms', label: 'Δικαιώματα' },
-      { id: 'support_roles', label: 'Support agents' },
-      { id: 'customer_app_config', label: '🎨 Customer app' },
-      { id: 'ai_hero_cards', label: '✨ AI Cards & Motion' },
+      { id: 'support_roles', label: 'Πράκτορες support' },
+      { id: 'customer_app_config', label: '🎨 Εφαρμογή πελάτη' },
+      { id: 'ai_hero_cards', label: '✨ Κάρτες AI & κίνηση' },
       { id: 'advertising', label: '📢 Διαφημίσεις' },
       { id: 'aade_compliance', label: '🇬🇷 ΑΑΔΕ / myDATA' },
       { id: 'api_connections', label: '🔗 API Συνδέσεις' },
-      { id: 'feature_flags', label: 'Feature flags' },
-      { id: 'overrides', label: 'Operational overrides' },
-      { id: 'mission_control', label: '🛡️ Mission Control' },
-      { id: 'system_doctor', label: '🩺 System Doctor' },
+      { id: 'feature_flags', label: 'Διακόπτες λειτουργιών' },
+      { id: 'overrides', label: 'Παρακάμψεις λειτουργίας' },
+      { id: 'mission_control', label: '🛡️ Κέντρο ελέγχου' },
+      { id: 'system_doctor', label: '🩺 Διαγνωστικό συστήματος' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },
-      { id: 'cloud_usage', label: '☁️ Cloud usage' },
-      { id: 'loyalty', label: 'Points / Loyalty' },
+      { id: 'cloud_usage', label: '☁️ Χρήση cloud' },
+      { id: 'loyalty', label: '🎁 Πόντοι / Loyalty' },
       { id: 'platform_cost', label: '💶 Κόστος πλατφόρμας' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις' },
-      { id: 'audit', label: 'Audit log' },
-      { id: 'remote_actions', label: 'Remote actions (χρήστες)' },
-      { id: 'system_reset', label: '⚠ System reset' },
+      { id: 'audit', label: 'Αρχείο ενεργειών' },
+      { id: 'remote_actions', label: 'Απομακρυσμένες ενέργειες' },
+      { id: 'system_reset', label: '⚠ Επαναφορά συστήματος' },
     ],
   },
 ] as const;
@@ -190,7 +190,7 @@ function SidebarBody({
 <Logo size={36} withWordmark />
         {!collapsed && (
           <div className="ml-1 overflow-hidden">
-            <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground truncate leading-tight font-semibold mt-0.5">Control Center</p>
+            <p className="text-[9.5px] uppercase tracking-[0.14em] text-muted-foreground truncate leading-tight font-semibold mt-0.5">Κέντρο ελέγχου</p>
           </div>
         )}
       </div>

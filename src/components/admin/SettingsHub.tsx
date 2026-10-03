@@ -23,17 +23,17 @@ const CATEGORIES: Category[] = [
   {
     id: 'people', label: 'Άνθρωποι & Πρόσβαση', accent: '#2563eb', iconBg: 'bg-blue-500/10', iconFg: 'text-blue-600',
     items: [
-      { id: 'users', label: 'Χρήστες', desc: 'Διαχείρηση λογαριασμών, ρόλων και κατάστασης χρηστών.', icon: Users, accent: '#2563eb' },
+      { id: 'users', label: 'Χρήστες', desc: 'Διαχείριση λογαριασμών, ρόλων και κατάστασης χρηστών.', icon: Users, accent: '#2563eb' },
       { id: 'admin_perms', label: 'Δικαιώματα', desc: 'Ρόλοι & επίπεδα πρόσβασης διαχειριστών.', icon: ShieldCheck, accent: '#2563eb' },
-      { id: 'support_roles', label: 'Support agents', desc: 'Ομάδα υποστήριξης & αναθέσεις ρόλων.', icon: Headphones, accent: '#2563eb' },
-      { id: 'remote_actions', label: 'Remote actions', desc: 'Απομακρυσμένες ενέργειες σε χρήστες.', icon: Zap, accent: '#2563eb' },
+      { id: 'support_roles', label: 'Πράκτορες support', desc: 'Ομάδα υποστήριξης & αναθέσεις ρόλων.', icon: Headphones, accent: '#2563eb' },
+      { id: 'remote_actions', label: 'Απομακρυσμένες ενέργειες', desc: 'Απομακρυσμένες ενέργειες σε χρήστες.', icon: Zap, accent: '#2563eb' },
     ],
   },
   {
     id: 'customer', label: 'Εφαρμογή πελάτη', accent: '#d97706', iconBg: 'bg-orange-500/10', iconFg: 'text-orange-600',
     items: [
-      { id: 'customer_app_config', label: 'Customer app', desc: 'Προσαρμογή εμφάνισης & περιεχομένου για πελάτες.', icon: Palette, accent: '#d97706' },
-      { id: 'ai_hero_cards', label: 'AI Cards & Motion', desc: 'Δυναμικές κάρτες & κινήσεις στην αρχική οθόνη.', icon: Sparkles, accent: '#d97706' },
+      { id: 'customer_app_config', label: 'Εφαρμογή πελάτη', desc: 'Προσαρμογή εμφάνισης & περιεχομένου για πελάτες.', icon: Palette, accent: '#d97706' },
+      { id: 'ai_hero_cards', label: 'Κάρτες AI & κίνηση', desc: 'Δυναμικές κάρτες & κινήσεις στην αρχική οθόνη.', icon: Sparkles, accent: '#d97706' },
       { id: 'announcements', label: 'Ανακοινώσεις', desc: 'Στιγμιαίες ανακοινώσεις σε όλα τα κανάλια.', icon: Megaphone, accent: '#d97706' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις', desc: 'Πρότυπα απαντήσεων για ταχύτερο support.', icon: MessageSquareText, accent: '#d97706' },
     ],
@@ -41,13 +41,13 @@ const CATEGORIES: Category[] = [
   {
     id: 'ops', label: 'Λειτουργία & Ανάπτυξη', accent: '#059669', iconBg: 'bg-emerald-500/10', iconFg: 'text-emerald-600',
     items: [
-      { id: 'feature_flags', label: 'Feature flags', desc: 'Ενεργοποίηση/απενεργοποίηση λειτουργιών.', icon: Flag, accent: '#059669' },
-      { id: 'platform_mode', label: 'Marketplace & Delivery', desc: 'Delivery on/off, χρόνοι παράδοσης & ποιος παραδίδει ανά κατάστημα.', icon: Truck, accent: '#059669' },
+      { id: 'feature_flags', label: 'Διακόπτες λειτουργιών', desc: 'Ενεργοποίηση/απενεργοποίηση λειτουργιών.', icon: Flag, accent: '#059669' },
+      { id: 'platform_mode', label: 'Marketplace & παράδοση', desc: 'Παράδοση on/off, χρόνοι & ποιος παραδίδει ανά κατάστημα.', icon: Truck, accent: '#059669' },
       { id: 'api_connections', label: 'API Συνδέσεις', desc: 'Σύνδεση με άλλη πλατφόρμα: λήψη παραγγελιών & αποστολή status.', icon: Link2, accent: '#059669' },
-      { id: 'overrides', label: 'Operational overrides', desc: 'Παρακάμψεις λειτουργίας σε πραγματικό χρόνο.', icon: SlidersHorizontal, accent: '#059669' },
-      { id: 'mission_control', label: 'Mission Control', desc: 'Κεντρικός έλεγχος κρίσιμων λειτουργιών.', icon: Shield, accent: '#059669' },
-      { id: 'system_doctor', label: 'System Doctor', desc: 'Αυτόματη διάγνωση & διόρθωση προβλημάτων.', icon: Stethoscope, accent: '#059669' },
-      { id: 'cloud_usage', label: 'Cloud usage', desc: 'Κατανάλωση πόρων & καθαρισμός δεδομένων.', icon: Cloud, accent: '#059669' },
+      { id: 'overrides', label: 'Παρακάμψεις λειτουργίας', desc: 'Παρακάμψεις λειτουργίας σε πραγματικό χρόνο.', icon: SlidersHorizontal, accent: '#059669' },
+      { id: 'mission_control', label: 'Κέντρο ελέγχου', desc: 'Κεντρικός έλεγχος κρίσιμων λειτουργιών.', icon: Shield, accent: '#059669' },
+      { id: 'system_doctor', label: 'Διαγνωστικό συστήματος', desc: 'Αυτόματη διάγνωση & διόρθωση προβλημάτων.', icon: Stethoscope, accent: '#059669' },
+      { id: 'cloud_usage', label: 'Χρήση cloud', desc: 'Κατανάλωση πόρων & καθαρισμός δεδομένων.', icon: Cloud, accent: '#059669' },
     ],
   },
   {
@@ -58,8 +58,8 @@ const CATEGORIES: Category[] = [
       { id: 'system_health', label: 'Κατάσταση συστήματος', desc: 'Υγεία υπηρεσιών & εξαρτήσεων.', icon: Activity, accent: '#7c3aed' },
       { id: 'loyalty', label: 'Πόντοι / Loyalty', desc: 'Κέρδος, εξαργύρωση, επίπεδα, streaks.', icon: Gift, accent: '#ea580c' },
       { id: 'platform_cost', label: 'Κόστος πλατφόρμας', desc: 'Έξοδα υποδομής & υπηρεσιών.', icon: Gauge, accent: '#7c3aed' },
-      { id: 'audit', label: 'Audit log', desc: 'Καταγραφή ενεργειών διαχειριστών.', icon: FileCheck, accent: '#7c3aed' },
-      { id: 'system_reset', label: 'System reset', desc: 'Πλήκρη επαναφορά δεδομένων συστήματος.', icon: TriangleAlert, accent: '#dc2626', danger: true },
+      { id: 'audit', label: 'Αρχείο ενεργειών', desc: 'Καταγραφή ενεργειών διαχειριστών.', icon: FileCheck, accent: '#7c3aed' },
+      { id: 'system_reset', label: 'Επαναφορά συστήματος', desc: 'Πλήρης επαναφορά δεδομένων συστήματος.', icon: TriangleAlert, accent: '#dc2626', danger: true },
     ],
   },
 ];

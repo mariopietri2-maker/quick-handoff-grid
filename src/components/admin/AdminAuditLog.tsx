@@ -70,7 +70,7 @@ export default function AdminAuditLog() {
     <div className="space-y-4">
       <div className="flex items-start justify-between flex-wrap gap-3">
         <div>
-          <h2 className="font-heading font-bold text-xl flex items-center gap-2"><Activity className="h-5 w-5" />Admin Audit Log</h2>
+          <h2 className="font-heading font-bold text-xl flex items-center gap-2"><Activity className="h-5 w-5" />Αρχείο ενεργειών διαχειριστή</h2>
           <p className="text-sm text-muted-foreground mt-1">Κάθε ενέργεια διαχειριστή — ποιος, πότε, τι.</p>
         </div>
         <Badge variant="outline" className="h-7">{filtered.length} εγγραφές</Badge>

@@ -70,7 +70,7 @@ export default function AdminActivityLog() {
   return (
     <div className="space-y-4">
       <div>
-        <h2 className="font-heading font-bold text-xl">Activity Log</h2>
+        <h2 className="font-heading font-bold text-xl">Αρχείο δραστηριότητας</h2>
         <p className="text-sm text-muted-foreground">Πρόσφατες ενέργειες στην πλατφόρμα</p>
       </div>
 
