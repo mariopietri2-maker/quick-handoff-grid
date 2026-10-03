@@ -5,7 +5,7 @@ import { Search, X, ChevronRight } from 'lucide-react';
 import {
   Users, ShieldCheck, Headphones, Zap, Palette, Sparkles, Megaphone, MessageSquareText,
   SlidersHorizontal, Shield, Stethoscope, Activity, Cloud, FileCheck, TriangleAlert, Flag, Gauge,
-  Link2, Truck, ReceiptText, Gift,
+  Link2, Truck, ReceiptText, Gift, Bot,
 } from 'lucide-react';
 
 type Entry = { id: string; label: string; desc: string; icon: any; accent: string; danger?: boolean };
@@ -33,6 +33,7 @@ const CATEGORIES: Category[] = [
     id: 'customer', label: 'Εφαρμογή πελάτη', accent: '#d97706', iconBg: 'bg-orange-500/10', iconFg: 'text-orange-600',
     items: [
       { id: 'customer_app_config', label: 'Εφαρμογή πελάτη', desc: 'Προσαρμογή εμφάνισης & περιεχομένου για πελάτες.', icon: Palette, accent: '#d97706' },
+      { id: 'ops_assistant', label: 'Ops Assistant', desc: 'Καθημερινά promos, marketing rotation και έλεγχος υγείας πλατφόρμας.', icon: Bot, accent: '#ea580c' },
       { id: 'ai_hero_cards', label: 'Κάρτες AI & κίνηση', desc: 'Δυναμικές κάρτες & κινήσεις στην αρχική οθόνη.', icon: Sparkles, accent: '#d97706' },
       { id: 'announcements', label: 'Ανακοινώσεις', desc: 'Στιγμιαίες ανακοινώσεις σε όλα τα κανάλια.', icon: Megaphone, accent: '#d97706' },
       { id: 'canned_replies', label: 'Έτοιμες απαντήσεις', desc: 'Πρότυπα απαντήσεων για ταχύτερο support.', icon: MessageSquareText, accent: '#d97706' },

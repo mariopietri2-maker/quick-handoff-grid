@@ -130,6 +130,7 @@ export const NAV_SECTIONS = [
     defaultTab: 'settings_home',
     tabs: [
       { id: 'settings_home', label: 'Όλες οι ρυθμίσεις' },
+      { id: 'ops_assistant', label: '🤖 Ops Assistant' },
       { id: 'users', label: 'Χρήστες' },
       { id: 'call_roles', label: '📞 Ρόλοι κλήσεων (N/K)' },
       { id: 'store_calls', label: '📞 Κλήσεις καταστημάτων' },
@@ -146,7 +147,6 @@ export const NAV_SECTIONS = [
       { id: 'system_doctor', label: '🩺 Διαγνωστικό συστήματος' },
       { id: 'system_health', label: 'Κατάσταση συστήματος' },
       { id: 'cloud_usage', label: '☁️ Χρήση cloud' },
-      { id: 'ops_assistant', label: '🤖 Ops Assistant' },
       { id: 'loyalty', label: '🎁 Πόντοι / Loyalty' },
       { id: 'platform_cost', label: '💶 Κόστος πλατφόρμας' },
       { id: 'announcements', label: 'Ανακοινώσεις' },
