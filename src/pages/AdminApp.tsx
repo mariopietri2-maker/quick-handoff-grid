@@ -71,6 +71,7 @@ const LedgerPanel            = lazy(() => import('@/components/admin/LedgerPanel
 const CloudUsagePanel        = lazy(() => import('@/components/admin/CloudUsagePanel'));
 const PlatformCostPanel      = lazy(() => import('@/components/admin/PlatformCostPanel'));
 const AdminLoyaltyPanel      = lazy(() => import('@/components/admin/AdminLoyaltyPanel'));
+const AdminOpsAssistant    = lazy(() => import('@/components/admin/AdminOpsAssistant'));
 const BufferDistributor      = lazy(() => import('@/components/admin/BufferDistributor'));
 const SystemHealthPanel = lazy(() => import('@/components/admin/SystemHealthPanel'));
 const SystemDoctorPanel      = lazy(() => import('@/components/admin/SystemDoctorPanel'));
@@ -513,6 +514,8 @@ export default function AdminApp() {
         return <RefundsPanel />;
       case 'platform_cost':
         return <PlatformCostPanel onNavigate={setActiveSection} />;
+      case 'ops_assistant':
+        return <AdminOpsAssistant />;
       case 'loyalty':
         return <AdminLoyaltyPanel />;
       case 'system_doctor':
