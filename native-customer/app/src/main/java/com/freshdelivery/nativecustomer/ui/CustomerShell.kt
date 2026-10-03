@@ -299,6 +299,17 @@ fun CustomerShell(
         )
         return
     }
+
+    // Modifier picker above store menu (was after early return → only showed after exit)
+    state.modifierPickerItem?.let { item ->
+        ModifierPickerDialog(
+            item = item,
+            modifiers = state.menuModifiers[item.id].orEmpty(),
+            onDismiss = onDismissModifiers,
+            onConfirm = { selected -> onConfirmModifiers(item, selected) },
+        )
+    }
+
     if (state.selectedStore != null) {
         MenuScreen(
             state = state,
@@ -328,15 +339,6 @@ fun CustomerShell(
         Triple(CustomerTab.Orders, "Παραγγελίες", Icons.Outlined.Receipt),
         Triple(CustomerTab.Profile, "Λογαριασμός", Icons.Outlined.AccountCircle),
     )
-
-    state.modifierPickerItem?.let { item ->
-        ModifierPickerDialog(
-            item = item,
-            modifiers = state.menuModifiers[item.id].orEmpty(),
-            onDismiss = onDismissModifiers,
-            onConfirm = { selected -> onConfirmModifiers(item, selected) },
-        )
-    }
 
     Scaffold(
         containerColor = FreshBg,

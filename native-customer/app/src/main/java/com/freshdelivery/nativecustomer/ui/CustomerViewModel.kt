@@ -670,7 +670,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun closeStore() {
-        _state.value = _state.value.copy(selectedStore = null, menu = emptyList())
+        _state.value = _state.value.copy(selectedStore = null, menu = emptyList(), menuModifiers = emptyMap(), modifierPickerItem = null)
     }
 
     fun addToCart(item: MenuItemRow) {
