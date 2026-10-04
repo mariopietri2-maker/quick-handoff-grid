@@ -1,24 +1,32 @@
 # Fresh2GO — S-tier scorecard
 
-Updated: 2026-10-04
+Updated: 2026-10-04 (ongoing push)
 
-## Target: S+
-Boring releases, no Sev-1 on money path, free-tier under control, structure maintainable.
+## Definition of S+
+- No Sev-1 on order → accept → driver → deliver for 14 days
+- `npm test` + P0 device smoke green every release
+- CustomerShell modular (no 4k-line god file)
+- Mapbox/Supabase under free tier with headroom
+- One clear download channel (native primary)
 
-## Score (engineering)
+## Engineering score (now)
 
-| Dimension | Grade | Evidence |
-|-----------|-------|----------|
-| Stability P0 | A− | Live chat prefer-open SQL, store role guards, P0 smoke doc |
-| Maintainability | A− | CustomerShell splits: cart, hero, promo, menu row; tests |
-| Cost | A− | Lazy Mapbox tracking, geocode cascade, route_cache |
-| Ops / release | A− | Phase docs, ordered apply, single APK channel policy |
-| Test coverage (unit) | B+ | flavor, role guards, cost, money, category |
-| Production proof | B | Needs device smoke every ship |
+| Dimension | Grade | Notes |
+|-----------|-------|--------|
+| Stability P0 | **A−** | Chat prefer-open, store guards, smoke + S+ gate |
+| Maintainability | **A−** | Extracts: FreshCartBar, StoreHeroImage, PromoCarousel, FreshMenuRow, StoreGeo |
+| Cost | **A−** | Lazy LiveTrackingMap, geocode cascade, route_cache |
+| Ops | **A−** | Phase docs, ordered apply, PAT push path |
+| Unit tests | **B+** | flavor, role-guards, cost, money, category |
+| Production proof | **B** | Device smoke still required for S+ |
 
-**Overall engineering: A− → path to S+ is device proof + keep splitting shell + zero Sev-1 for 2 weeks.**
+**Overall: A−** — not S+ until production proof holds.
 
-## Must stay green
-1. `npm test`
-2. `docs/P0_SMOKE_TEST.md` on real devices
-3. Mapbox + Supabase free-tier dashboards weekly
+## CustomerShell size
+Track after each extract (lines): started ~4200 → ~3700 after StoreGeo/FreshMenuRow.
+
+## Next automatic work
+1. Keep extracting TrackTab / MenuScreen when safe
+2. Native APK build on every meaningful main commit
+3. CI must run `npm test` (already in ci.yml)
+4. You: run P0 smoke on phone after APK ready
