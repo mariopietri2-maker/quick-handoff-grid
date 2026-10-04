@@ -1,56 +1,7 @@
 #!/usr/bin/env python3
-"""Phase 3: lazy tracking map + disable residual one-shot workflows."""
+"""Phase 3: disable residual one-shot workflows. Map lazy-load applied separately."""
 from pathlib import Path
 import re
-
-p = Path("src/pages/OrderTrackingPage.tsx")
-if p.exists():
-    t = p.read_text()
-    if "import LiveTrackingMap from" in t:
-        t = t.replace(
-            "import LiveTrackingMap from '@/components/customer/LiveTrackingMap';\n",
-            "",
-        )
-    if "const LiveTrackingMap = lazy" not in t:
-        marker = "import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';\n"
-        if marker in t:
-            t = t.replace(
-                marker,
-                marker
-                + "\nconst LiveTrackingMap = lazy(() => import('@/components/customer/LiveTrackingMap'));\n",
-                1,
-            )
-    if "showMap ?" in t and "bg-muted animate-pulse" not in t:
-        old = "      {showMap ? (\n        <LiveTrackingMap\n"
-        new = (
-            "      {showMap ? (\n"
-            '        <Suspense fallback={<div className="absolute inset-0 bg-muted animate-pulse" />}>
-'
-            "        <LiveTrackingMap\n"
-        )
-        if old in t:
-            t = t.replace(old, new, 1)
-            close_old = (
-                "        />\n"
-                "      ) : (\n"
-                '        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--c-accent-soft))] to-background flex items-center justify-center">\n'
-            )
-            close_new = (
-                "        />\n"
-                "        </Suspense>\n"
-                "      ) : (\n"
-                '        <div className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--c-accent-soft))] to-background flex items-center justify-center">\n'
-            )
-            t = t.replace(close_old, close_new, 1)
-    t = re.sub(
-        r"(import \{ ReviewForm \} from '@/components/ReviewForm';\n)"
-        r"const LiveTrackingMap = lazy\(\(\) => import\('@/components/customer/LiveTrackingMap'\)\);\n"
-        r"(import )",
-        r"\1\2",
-        t,
-    )
-    p.write_text(t)
-    print("OrderTrackingPage cost-hardened")
 
 for name in [
     "apply-fix-customer-compile-only.yml",
@@ -69,7 +20,7 @@ for name in [
     if not fp.exists():
         continue
     wt = fp.read_text()
-    if "if: false # phase2-disabled" in wt or "if: false # phase3-disabled" in wt:
+    if "phase2-disabled" in wt or "phase3-disabled" in wt:
         print("already", name)
         continue
     wt2 = re.sub(
