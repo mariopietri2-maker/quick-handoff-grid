@@ -953,6 +953,29 @@ private fun HomeTab(
 // FreshFilterChip extracted
 
 
+private data class DemoStoreCardData(
+    val name: String,
+    val cuisine: String,
+    val emoji: String,
+    val tagline: String,
+    val badge: String,
+    val eta: String,
+    val colors: List<Color>,
+)
+
+private val demoStoreCards = listOf(
+    DemoStoreCardData("Το Σουβλάκι του Πέτρου", "Σουβλάκι", "🥙", "Κλασικό με πίτα από τον φούρνο", "🔥 Νέο", "25–35'", listOf(Color(0xFFEA580C), Color(0xFFFB7185))),
+    DemoStoreCardData("Pizza Roma", "Πίτσα", "🍕", "Ζυμάρι 48 ωρών στο ξυλόφουρνο", "-20%", "20–30'", listOf(Color(0xFFF97316), Color(0xFFF43F5E))),
+    DemoStoreCardData("Burger Lab", "Burger", "🍔", "Double smash με τυρί τσένταρ", "ΣΧΕΔΟΝ", "25–35'", listOf(Color(0xFFC2410C), Color(0xFFFB923C))),
+    DemoStoreCardData("Η Γλυκιά Κρέπα", "Κρέπα", "🥞", "Γλυκές & αλμυρές κρέπες", "Νέο", "20–30'", listOf(Color(0xFFF59E0B), Color(0xFFF472B6))),
+    DemoStoreCardData("Coffee Corner", "Καφές", "☕", "Φίλτρου, freddo, εσπρέσο", "Δωρεάν delivery", "15–25'", listOf(Color(0xFFB45309), Color(0xFFEA580C))),
+    DemoStoreCardData("Sweet Tooth", "Γλυκό", "🍰", "Χειροποίητα γλυκά της ημέρας", "Λαχταριστό", "20–30'", listOf(Color(0xFFE11D48), Color(0xFFF9A8D4))),
+    DemoStoreCardData("Fresh Bowl", "Σαλάτα", "🥗", "Bowl πλούσιο σε πρωτεΐνη", "Νέο", "15–25'", listOf(Color(0xFF16A34A), Color(0xFF86EFAC))),
+    DemoStoreCardData("Trattoria Mia", "Ζυμαρικά", "🍝", "Φρέσκα ζυμαρικά al dente", "-15%", "25–40'", listOf(Color(0xFFEA580C), Color(0xFFFDE047))),
+    DemoStoreCardData("Sushi Time", "Σούσι", "🍣", "Φρέσκο ψάρι & ειδικά rolls", "Νέο", "30–45'", listOf(Color(0xFF0D9488), Color(0xFF99F6E4))),
+    DemoStoreCardData("Τα Παραδοσιακά", "Παραδοσιακά", "🍲", "Ντόπιες συνταγές στο σπίτι", "Οικογενειακό", "30–45'", listOf(Color(0xFF9A3412), Color(0xFFFFB23D))),
+)
+
 @Composable
 private fun AnimatedDemoStoreCard(store: DemoStoreCardData, onClick: () -> Unit) {
     val infinite = rememberInfiniteTransition(label = "demoMotion")

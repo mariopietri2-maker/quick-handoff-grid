@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Add
@@ -24,6 +25,8 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
@@ -32,16 +35,15 @@ import androidx.compose.ui.unit.dp
 import coil.compose.AsyncImage
 import com.freshdelivery.nativecustomer.data.MenuItemRow
 import com.freshdelivery.nativecustomer.ui.theme.FreshChip
-import androidx.compose.ui.graphics.Brush
-import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 import com.freshdelivery.nativecustomer.ui.theme.FreshGreen
 import com.freshdelivery.nativecustomer.ui.theme.FreshGreenDark
 import com.freshdelivery.nativecustomer.ui.theme.FreshInk
 import com.freshdelivery.nativecustomer.ui.theme.FreshMuted
+import com.freshdelivery.nativecustomer.ui.theme.FreshViolet
 
-@Composable
 private val MenuAddGradient = Brush.horizontalGradient(listOf(FreshGreen, FreshViolet))
 
+@Composable
 internal fun FreshMenuRow(item: MenuItemRow, highlightOffer: Boolean = false, onAdd: () -> Unit) {
     val available = item.is_available != false
     Row(
