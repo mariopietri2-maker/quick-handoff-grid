@@ -27,10 +27,10 @@ jobs:
               echo "SKIP missing $f"
             fi
           }
-          # Ordered, explicit list — do not glob every historical script
           run_one scripts/fix_patches/phase1_s_tier_stability.py
           run_one scripts/fix_patches/phase2_strip_shell_only.py
           run_one scripts/fix_patches/phase3_cost_hardening.py
+          run_one scripts/fix_patches/phase3b_lazy_tracking_map.py
           run_one scripts/fix_patches/phase4_ops_readiness.py
           git config user.email "ci@fresh2go.gr"
           git config user.name "fresh2go-ci"
