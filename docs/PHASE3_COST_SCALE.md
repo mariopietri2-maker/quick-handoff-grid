@@ -1,21 +1,27 @@
 # Phase 3 — Cost & scale
 
-## Goals
-- Predictable Mapbox + Supabase spend
-- Stay free-tier while Ioannina volume is low
-- Clear trigger points for MapLibre / Supabase Pro
+## Implemented
+- [x] Web order tracking: **lazy-load** LiveTrackingMap (mapbox-gl only when needed)
+- [x] Address autocomplete lazy on customer home
+- [x] Directions via route_cache / mapboxDrivingKmWithCache
+- [x] Geocode cascade: memory → local → DB → edge
+- [x] Residual one-shot CI workflows disabled (phase3-disabled)
 
-## Mapbox (current)
-- Customer tracking prefers **Static Images** (not full Maps SDK sessions)
-- Address picker lazy-loads mapbox-gl on web
-- Directions should go through `route_cache` / `mapboxDrivingKmWithCache`
+## Mapbox free tier (with billing card)
+| Product | Free / month |
+|---------|----------------|
+| Mobile Maps SDK | ~25,000 MAUs |
+| Web map loads | ~50,000 |
+| Geocoding (temp) | ~100,000 |
+| Directions | ~100,000 |
 
 ## Watch
-- Mapbox console MAUs (mobile free ~25k) and web map loads (~50k)
-- Supabase Edge invocations (cron already throttled)
+- Mapbox console → Account usage
+- Supabase → Edge Functions / DB size
+- Admin → Cloud usage panel
 
-## Do not start MapLibre until
-Free tier is nearly exhausted or invoice appears.
+## MapLibre
+Only when free tier is nearly exhausted or an invoice appears.
 
 ## Multi-city
-Only after Ioannina ops are stable (Phase 1 smoke always green).
+Only after Phase 1 smoke is always green in Ioannina.
