@@ -44,8 +44,8 @@ export const APK_DOWNLOADS = {
   },
   driver: {
     id: 'driver' as const,
-    title: 'Οδηγός',
-    subtitle: 'Capacitor · χάρτης, προσφορές & παραδόσεις',
+    title: 'Οδηγός (παλιό)',
+    subtitle: 'Capacitor · legacy — προτίμησε Native',
     filename: 'fresh2go-driver-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh2go-driver-debug.apk`,
     sizeLabel: '~8.5 MB',
@@ -54,13 +54,13 @@ export const APK_DOWNLOADS = {
   },
   customer: {
     id: 'customer' as const,
-    title: 'Πελάτης',
-    subtitle: 'Capacitor · παραγγελίες & παρακολούθηση',
+    title: 'Πελάτης (παλιό)',
+    subtitle: 'Capacitor · legacy — προτίμησε Native',
     filename: 'fresh2go-customer-debug.apk',
     fileUrl: `${RELEASE_BASE}/fresh2go-customer-debug.apk`,
     sizeLabel: '~8.5 MB',
     versionLabel: APK_BUILD_VERSION,
-    badge: null as string | null,
+    badge: 'Legacy',
   },
 } as const;
 

@@ -29,6 +29,11 @@ export default function RootEntry() {
   const { flavor, ready: flavorReady } = useMobileFlavor();
   const native = isCapacitorNative();
 
+  // Store role always wins over wrong flavor / deep links into /order.
+  if (!loading && user && (profile?.role === 'store' || isStore)) {
+    return <Navigate to="/store" replace />;
+  }
+
   // Dedicated app flavors always go to their home (customer/driver/store shells).
   if (flavorReady && (flavor === 'customer' || flavor === 'driver' || flavor === 'store')) {
     return <Navigate to={mobileHomePath(flavor)} replace />;
