@@ -6,6 +6,7 @@ on:
       - ".github/workflows/wire-offer-and-banner.yml"
 jobs:
   apply:
+    if: false # phase2-disabled
     runs-on: ubuntu-latest
     permissions:
       contents: write

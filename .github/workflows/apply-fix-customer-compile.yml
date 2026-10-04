@@ -7,6 +7,7 @@ on:
   workflow_dispatch:
 jobs:
   apply:
+    if: false # phase3-disabled
     runs-on: ubuntu-latest
     permissions:
       contents: write

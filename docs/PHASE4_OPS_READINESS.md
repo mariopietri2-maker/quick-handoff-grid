@@ -3,8 +3,8 @@
 Goal: every release is boring — same checks, same channels, no surprise UI.
 
 ## Release channel (single source)
-- **Customer native**: `APK_NATIVE_CUSTOMER_VERSION` + GitHub `mobile-apks-v1`
-- **Driver native**: `APK_NATIVE_DRIVER_VERSION` + same release tag
+- **Customer native**: version in `APK_NATIVE_CUSTOMER_VERSION` + GitHub `mobile-apks-v1`
+- **Driver native**: version in `APK_NATIVE_DRIVER_VERSION` + same release tag
 - Capacitor APKs: **Legacy** only
 - Website `/download` must match those labels
 
@@ -18,7 +18,8 @@ Goal: every release is boring — same checks, same channels, no surprise UI.
 ## Weekly ops
 - Mapbox console usage vs free tier
 - Supabase DB size + Edge invocations
+- Disable/delete dead workflows (already phase2/3 disabled)
 - Prefer normal git commits over new `fix_patches`
 
 ## CI policy
-`apply-critical-fixes` runs **only** ordered phase scripts (1→4), not every historical patch.
+`apply-critical-fixes` runs **only** ordered phase scripts, not every historical patch.

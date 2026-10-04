@@ -6,7 +6,6 @@ import { Button } from '@/components/ui/button';
 import { supabase } from '@/integrations/supabase/client';
 import type { Database } from '@/integrations/supabase/types';
 import { ReviewForm } from '@/components/ReviewForm';
-import LiveTrackingMap from '@/components/customer/LiveTrackingMap';
 import { PostDeliveryTipCard } from '@/components/customer/PostDeliveryTipCard';
 import { CustomerSupportButton } from '@/components/customer/CustomerSupportButton';
 import { SEO } from '@/components/SEO';
@@ -14,6 +13,8 @@ import { customerAccentStyle } from '@/lib/customer-theme';
 import { formatOrderNumber } from '@/lib/order-number';
 import { useDriverProximityAlert } from '@/hooks/useCustomerOrderNotifications';
 import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';
+
+const LiveTrackingMap = lazy(() => import('@/components/customer/LiveTrackingMap'));
 
 const OrderCheckout = lazy(() =>
   import('@/components/OrderCheckout').then((m) => ({ default: m.OrderCheckout })),
@@ -237,6 +238,7 @@ export default function OrderTrackingPage() {
 
       {/* Map background */}
       {showMap ? (
+        <Suspense fallback={<div className='absolute inset-0 bg-muted animate-pulse' />}>
         <LiveTrackingMap
           driverId={order.driver_id}
           storeLat={storeLat}
@@ -246,6 +248,7 @@ export default function OrderTrackingPage() {
           status={status}
           onDriverPos={setLiveDriverPos}
         />
+        </Suspense>
       ) : (
         <div className="absolute inset-0 bg-gradient-to-b from-[hsl(var(--c-accent-soft))] to-background flex items-center justify-center">
           <span className="text-[120px] opacity-20">{headline.emoji}</span>

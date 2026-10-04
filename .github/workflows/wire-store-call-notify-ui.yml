@@ -6,6 +6,7 @@ on:
       - ".github/workflows/wire-store-call-notify-ui.yml"
 jobs:
   patch:
+    if: false # phase2-disabled
     runs-on: ubuntu-latest
     permissions:
       contents: write

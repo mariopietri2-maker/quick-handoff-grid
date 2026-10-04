@@ -3,6 +3,7 @@ on:
   workflow_dispatch:
 jobs:
   wire:
+    if: false # phase2-disabled
     runs-on: ubuntu-latest
     permissions:
       contents: write

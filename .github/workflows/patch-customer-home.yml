@@ -8,6 +8,7 @@ permissions:
 
 jobs:
   patch:
+    if: false # phase2-disabled
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4

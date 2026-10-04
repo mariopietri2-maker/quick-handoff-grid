@@ -6,6 +6,7 @@ on:
       - ".github/workflows/sed-wire-finish.yml"
 jobs:
   wire:
+    if: false # phase2-disabled
     runs-on: ubuntu-latest
     permissions:
       contents: write
