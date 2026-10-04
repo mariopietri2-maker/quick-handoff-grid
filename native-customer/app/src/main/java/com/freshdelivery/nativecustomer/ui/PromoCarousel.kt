@@ -1,3 +1,4 @@
+@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
 package com.freshdelivery.nativecustomer.ui
 
 import androidx.compose.animation.core.LinearEasing
@@ -129,9 +130,9 @@ internal fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.Pr
                         }
                     }
                     Column(Modifier.weight(1f)) {
-                        if (promo.badge.isNotBlank()) {
+                        if (promo.tag.isNotBlank()) {
                             Text(
-                                promo.badge,
+                                promo.tag,
                                 color = Color.White.copy(alpha = 0.9f),
                                 fontWeight = FontWeight.Bold,
                                 style = MaterialTheme.typography.labelMedium,
