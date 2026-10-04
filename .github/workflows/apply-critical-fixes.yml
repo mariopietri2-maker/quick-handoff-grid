@@ -13,24 +13,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
-          fetch-depth: 50
-      - name: Apply patches
+          fetch-depth: 20
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Apply ordered phase patches
         run: |
           set -euo pipefail
-          if [ -f scripts/fix_patches/fix_customer_update_compile.py ]; then
-            python3 scripts/fix_patches/fix_customer_update_compile.py
-          fi
-          for f in scripts/fix_patches/*.py; do
-            [ -f "$f" ] || continue
-            case "$f" in
-              *fix_customer_update_compile.py) continue ;;
-            esac
-            echo "RUN $f"
-            python3 "$f" || true
-          done
+          run_one() {
+            local f="$1"
+            if [ -f "$f" ]; then
+              echo "RUN $f"
+              python3 "$f"
+            else
+              echo "SKIP missing $f"
+            fi
+          }
+          # Ordered, explicit list — do not glob every historical script
+          run_one scripts/fix_patches/phase1_s_tier_stability.py
+          run_one scripts/fix_patches/phase2_strip_shell_only.py
+          run_one scripts/fix_patches/phase3_cost_hardening.py
+          run_one scripts/fix_patches/phase4_ops_readiness.py
           git config user.email "ci@fresh2go.gr"
           git config user.name "fresh2go-ci"
           git add -A
-          git status
-          git commit -m "fix(customer): restore AppUpdateChecker + SupportScreen imports for 2.9.15 build" || exit 0
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+            exit 0
+          fi
+          git commit -m "chore(ci): apply phase patches (stability/maintainability/cost/ops)"
           git push origin HEAD:main
