@@ -17,3 +17,13 @@ Run after each native/web release.
 
 ## Admin
 - [ ] /admin?section=ops_assistant works
+
+## S+ gate (must all pass before calling release S+)
+
+- [ ] `npm test` green in CI
+- [ ] Store login never shows customer shell
+- [ ] Support close → open new live chat
+- [ ] Place order → store can accept → receipt readable
+- [ ] K-driver can see N-store offers when on shift
+- [ ] Customer tracking loads without full-map flash on every tab
+- [ ] Download page shows **native** versions only as primary
