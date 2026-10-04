@@ -1,40 +1,32 @@
 #!/usr/bin/env python3
-"""Lazy-load mapbox LiveTrackingMap on order tracking page."""
 from pathlib import Path
 
+nl = chr(10)
 p = Path("src/pages/OrderTrackingPage.tsx")
 if not p.exists():
-    print("skip no OrderTrackingPage")
+    print("skip")
     raise SystemExit(0)
 
 t = p.read_text()
-t = t.replace(
-    "import LiveTrackingMap from '@/components/customer/LiveTrackingMap';\n",
-    "",
-)
+t = t.replace("import LiveTrackingMap from '@/components/customer/LiveTrackingMap';" + nl, "")
 if "const LiveTrackingMap = lazy" not in t:
-    needle = "import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';\n"
-    insert = (
-        needle
-        + "\nconst LiveTrackingMap = lazy(() => import('@/components/customer/LiveTrackingMap'));\n"
-    )
+    needle = "import { useCustomerAppConfig } from '@/hooks/useCustomerAppConfig';" + nl
+    insert = needle + nl + "const LiveTrackingMap = lazy(() => import('@/components/customer/LiveTrackingMap'));" + nl
     if needle in t:
         t = t.replace(needle, insert, 1)
 
 if "bg-muted animate-pulse" not in t and "<LiveTrackingMap" in t:
-    t = t.replace(
-        "<LiveTrackingMap\n",
-        "<Suspense fallback={<div className='absolute inset-0 bg-muted animate-pulse' />}>
-        <LiveTrackingMap\n",
-        1,
+    open_tag = (
+        "<Suspense fallback={<div className='absolute inset-0 bg-muted animate-pulse' />}>"
+        + nl
+        + "        <LiveTrackingMap"
+        + nl
     )
-    marker = "onDriverPos={setLiveDriverPos}\n        />\n"
-    if marker in t and "</Suspense>" not in t[t.find("onDriverPos={setLiveDriverPos}") : t.find("onDriverPos={setLiveDriverPos}") + 120]:
-        t = t.replace(
-            marker,
-            "onDriverPos={setLiveDriverPos}\n        />\n        </Suspense>\n",
-            1,
-        )
+    t = t.replace("<LiveTrackingMap" + nl, open_tag, 1)
+    close_old = "onDriverPos={setLiveDriverPos}" + nl + "        />" + nl
+    close_new = "onDriverPos={setLiveDriverPos}" + nl + "        />" + nl + "        </Suspense>" + nl
+    if close_old in t:
+        t = t.replace(close_old, close_new, 1)
 
 p.write_text(t)
 print("OrderTrackingPage lazy map applied")
