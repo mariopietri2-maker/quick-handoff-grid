@@ -1505,22 +1505,15 @@ private fun MenuScreen(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                IconButton(onClick = onToggleFavorite) {
-                    Icon(
-                        if (isFavorite) Icons.Filled.Favorite else Icons.Outlined.FavoriteBorder,
-                        contentDescription = "Favorite",
-                        tint = if (isFavorite) FreshRose else FreshMuted,
-                    )
-                }
+                // Header favorite heart removed — cleaner store top bar
             }
-            // Fixed category chips — elevated so they stay tappable above the list
+            // Category chips: continuous white with title bar (no shadow / hairline)
             if (menuGroups.size > 1) {
                 Column(
                     Modifier
                         .fillMaxWidth()
                         .zIndex(8f)
-                        .background(FreshSurface)
-                        .shadow(2.dp),
+                        .background(FreshSurface),
                 ) {
                     Row(
                         Modifier
@@ -1538,10 +1531,7 @@ private fun MenuScreen(
                             }
                         }
                     }
-                    HorizontalDivider(color = FreshDivider)
                 }
-            } else {
-                HorizontalDivider(color = FreshDivider)
             }
             // Clip list so scrolled cards never cover / steal taps from chips
             LazyColumn(
