@@ -200,6 +200,9 @@ fun CustomerShell(
     onSetNotes: (String) -> Unit,
     onSetTip: (Double) -> Unit,
     onSetPayment: (String) -> Unit,
+    onPromoCodeInput: (String) -> Unit = {},
+    onApplyPromoCode: () -> Unit = {},
+    onClearPromoCode: () -> Unit = {},
     onPlaceOrder: () -> Unit,
     onTrack: (OrderUi?) -> Unit,
     onRefresh: () -> Unit,
@@ -296,6 +299,7 @@ fun CustomerShell(
         CartCheckoutScreen(
             state, snackbar, { onToggleCart(false) }, onUpdateQty, onSetDelivery,
             onSetNotes, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,
+            onPromoCodeInput, onApplyPromoCode, onClearPromoCode,
         )
         return
     }
@@ -1708,6 +1712,9 @@ private fun CartCheckoutScreen(
     onUseLocation: () -> Unit,
     onGeocode: (String) -> Unit,
     onPickSuggestion: (AddressSuggestion) -> Unit,
+    onPromoCodeInput: (String) -> Unit = {},
+    onApplyPromoCode: () -> Unit = {},
+    onClearPromoCode: () -> Unit = {},
 ) {
     var address by remember(state.deliveryAddress) { mutableStateOf(state.deliveryAddress) }
     var tipText by remember { mutableStateOf(state.tipAmount.toString()) }
@@ -1929,7 +1936,39 @@ private fun CartCheckoutScreen(
                     }
                 }
             }
+            
             item {
+                Text("Κωδικός κουπονιού", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically) {
+                    OutlinedTextField(
+                        value = state.promoCodeInput,
+                        onValueChange = onPromoCodeInput,
+                        modifier = Modifier.weight(1f),
+                        singleLine = true,
+                        placeholder = { Text("π.χ. WELCOME") },
+                        shape = RoundedCornerShape(14.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Button(
+                        onClick = onApplyPromoCode,
+                        colors = ButtonDefaults.buttonColors(containerColor = FreshGreen, contentColor = Color.White),
+                        shape = RoundedCornerShape(14.dp),
+                    ) {
+                        Text("OK")
+                    }
+                }
+                if (state.promoCodeApplied != null) {
+                    TextButton(onClick = onClearPromoCode) {
+                        Text("Αφαίρεση ${state.promoCodeApplied}", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                    }
+                }
+                state.promoCodeMessage?.let {
+                    Text(it, color = if (state.promoCodeApplied != null) FreshGreenDark else FreshMuted, style = MaterialTheme.typography.bodySmall)
+                }
+                Spacer(Modifier.height(12.dp))
+            }
+item {
                 Column(
                     Modifier
                         .fillMaxWidth()
@@ -2015,7 +2054,7 @@ private fun CartCheckoutScreen(
                     } else null
                     SummaryLine(
                         "Παράδοση" + (if (feeNote != null) " ($feeNote)" else ""),
-                        state.deliveryFee,
+                        state.effectiveDeliveryFee,
                     )
                     SummaryLine("Φιλοδώρημα", state.tipAmount)
                     state.appliedDeal?.let { deal ->

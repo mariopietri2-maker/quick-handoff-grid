@@ -153,6 +153,12 @@ data class CustomerUiState(
     val openedCards: Set<Int> = emptySet(),
     val cards: List<MysteryCardDef> = defaultMysteryCards(),
     val appliedDeal: GameDeal? = null,
+    /** Manual coupon typed in cart (validated against promo_codes). */
+    val promoCodeInput: String = "",
+    val promoCodeApplied: String? = null,
+    val promoCodeMessage: String? = null,
+    val promoPercentOff: Double = 0.0,
+    val promoFreeDelivery: Boolean = false,
     val adminOpen: Boolean = false,
     // Live support chat (live_chat_messages, customer channel)
     val supportOpen: Boolean = false,
@@ -177,13 +183,24 @@ data class CustomerUiState(
     val cartCount: Int get() = cart.sumOf { it.quantity }
     val gameDiscount: Double
         get() {
+            // Prefer explicit coupon; else game prize
+            if (promoPercentOff > 0) {
+                return Math.round(cartSubtotal * promoPercentOff / 100.0 * 100.0) / 100.0
+            }
             val deal = appliedDeal ?: return 0.0
-            if (deal.freeDelivery) return deliveryFee
+            if (deal.freeDelivery) return 0.0 // handled via effectiveDeliveryFee
             val pct = deal.pct ?: 0
             return Math.round(cartSubtotal * pct / 100.0 * 100.0) / 100.0
         }
+    val effectiveDeliveryFee: Double
+        get() {
+            if (promoFreeDelivery) return 0.0
+            val deal = appliedDeal
+            if (deal?.freeDelivery == true) return 0.0
+            return deliveryFee
+        }
     val grandTotal: Double
-        get() = (cartSubtotal + deliveryFee + tipAmount - gameDiscount).coerceAtLeast(0.0)
+        get() = (cartSubtotal + effectiveDeliveryFee + tipAmount - gameDiscount).coerceAtLeast(0.0)
     val visibleStores: List<StoreRow>
         get() = if (searchQuery.isBlank()) stores else stores
     val activeOrders: List<OrderUi>
@@ -877,6 +894,53 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         _state.value = _state.value.copy(paymentMethod = method)
     }
 
+    fun setPromoCodeInput(code: String) {
+        _state.value = _state.value.copy(promoCodeInput = code, promoCodeMessage = null)
+    }
+
+    fun clearPromoCode() {
+        _state.value = _state.value.copy(
+            promoCodeInput = "",
+            promoCodeApplied = null,
+            promoCodeMessage = null,
+            promoPercentOff = 0.0,
+            promoFreeDelivery = false,
+        )
+    }
+
+    fun applyPromoCode() {
+        val raw = _state.value.promoCodeInput.trim()
+        if (raw.isEmpty()) {
+            _state.value = _state.value.copy(promoCodeMessage = "Γράψε κωδικό κουπονιού")
+            return
+        }
+        viewModelScope.launch {
+            runCatching { repo.lookupPromoCode(raw) }
+                .onSuccess { promo ->
+                    if (promo == null) {
+                        _state.value = _state.value.copy(
+                            promoCodeApplied = null,
+                            promoPercentOff = 0.0,
+                            promoFreeDelivery = false,
+                            promoCodeMessage = "Μη έγκυρος ή ανενεργός κωδικός",
+                        )
+                    } else {
+                        _state.value = _state.value.copy(
+                            promoCodeApplied = promo.code,
+                            promoPercentOff = promo.percentOff,
+                            promoFreeDelivery = promo.freeDelivery,
+                            promoCodeMessage = promo.label,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _state.value = _state.value.copy(
+                        promoCodeMessage = e.message ?: "Αποτυχία ελέγχου κωδικού",
+                    )
+                }
+        }
+    }
+
     fun placeOrder() {
         val s = _state.value
         val storeId = s.cartStoreId ?: return
@@ -920,10 +984,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     deliveryLng = s.deliveryLng,
                     paymentMethod = payMethod,
                     tipAmount = s.tipAmount,
-                    deliveryFee = s.deliveryFee,
+                    deliveryFee = s.effectiveDeliveryFee,
                     notes = s.notes.ifBlank { null },
                     distanceKm = distanceKm,
-                    promoCode = s.appliedDeal?.code,
+                    promoCode = s.promoCodeApplied ?: s.appliedDeal?.code,
                 )
             }.onSuccess { placedId ->
                 persistLastAddress()

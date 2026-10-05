@@ -462,6 +462,39 @@ class CustomerRepository(
                 }.decodeList<SavedAddressRow>()
         }.getOrDefault(emptyList())
     }
+    data class PromoLookup(
+        val code: String,
+        val percentOff: Double,
+        val freeDelivery: Boolean,
+        val label: String,
+    )
+
+    suspend fun lookupPromoCode(code: String): PromoLookup? {
+        val rows = client.from("promo_codes")
+            .select(Columns.list("code", "discount_type", "discount_value", "free_delivery", "is_active")) {
+                filter {
+                    eq("is_active", true)
+                }
+            }
+            .decodeList<PromoLookupRow>()
+        val row = rows.firstOrNull { it.code.equals(code.trim(), ignoreCase = true) } ?: return null
+        val type = (row.discount_type ?: "").lowercase()
+        val value = row.discount_value ?: 0.0
+        val free = row.free_delivery == true || type.contains("free_delivery") || type == "free_delivery"
+        val pct = when {
+            type == "percentage" || type.contains("percent") || type == "pct" -> value
+            type == "fixed" -> 0.0
+            else -> if (!free && value > 0 && value <= 100) value else 0.0
+        }
+        val label = buildString {
+            append("Εφαρμόστηκε ")
+            append(row.code)
+            if (pct > 0) append(" · −${pct.toInt()}%")
+            if (free) append(" · δωρεάν παράδοση")
+        }
+        return PromoLookup(code = row.code, percentOff = pct, freeDelivery = free, label = label)
+    }
+
     suspend fun placeOrder(
         storeId: String,
         items: List<CartLine>,

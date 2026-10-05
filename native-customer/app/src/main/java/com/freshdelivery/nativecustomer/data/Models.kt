@@ -378,3 +378,13 @@ data class LoyaltyStatus(
         private fun JsonElement?.orNull(): JsonElement? = this?.takeIf { it !is kotlinx.serialization.json.JsonNull }
     }
 }
+
+
+@Serializable
+data class PromoLookupRow(
+    val code: String = "",
+    val discount_type: String? = null,
+    val discount_value: Double? = null,
+    val free_delivery: Boolean? = false,
+    val is_active: Boolean? = true,
+)
