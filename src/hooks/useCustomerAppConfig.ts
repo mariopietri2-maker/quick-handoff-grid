@@ -123,7 +123,16 @@ export const DEFAULT_CONFIG: CustomerAppConfig = {
     { label: 'Γλυκά', emoji: '🍰', category: 'Γλυκά' },
   ],
   promos: [
-    { tag: 'NEW', title: 'Δωρεάν παράδοση', subtitle: 'στην πρώτη σου παραγγελία', code: 'WELCOME', gradient: 'hero', enabled: true, image_url: null },
+    { tag: '1+1', title: 'Pizza Pan · 1+1', subtitle: 'Πίτσα — αγόρασε 1 πάρε 1', code: 'PIZZAPAN', gradient: 'hero', enabled: true, image_url: null },
+    { tag: 'HOT', title: 'Fresh Meals. Fast Delivery.', subtitle: 'Ιωάννινα · φρέσκο & γρήγορα', code: 'FRESH', gradient: 'hero', enabled: true, image_url: null },
+    { tag: '−20%', title: 'Έκπτωση 20% σε νέους', subtitle: 'στις 3 πρώτες παραγγελίες', code: 'NEW20', gradient: 'dark', enabled: true, image_url: null },
+    { tag: 'FREE', title: 'Δωρεάν παράδοση', subtitle: 'σε επιλεγμένα καταστήματα', code: 'FREESHIP', gradient: 'hero', enabled: true, image_url: null },
+    { tag: 'CREPE', title: 'Los Andreas · κρέπες', subtitle: 'Φτιάξε τη δική σου κρέπα', code: 'CREPE', gradient: 'dark', enabled: true, image_url: null },
+    { tag: 'LUNCH', title: 'Μεσημεριανό deal', subtitle: '12:00–16:00 · γρήγορα & οικονομικά', code: 'LUNCH', gradient: 'hero', enabled: true, image_url: null },
+    { tag: 'NIGHT', title: 'Βραδινή πείνα;', subtitle: 'Σουβλάκι, πίτσα, γλυκό — ανοιχτά τώρα', code: 'NIGHT', gradient: 'dark', enabled: true, image_url: null },
+    { tag: 'SWEET', title: 'Γλυκό στο τέλος', subtitle: 'σε παραγγελίες άνω των 15€', code: 'SWEET', gradient: 'hero', enabled: true, image_url: null },
+    { tag: 'WEEK', title: 'Προσφορά της εβδομάδας', subtitle: 'δες τα badge στα καταστήματα', code: 'WEEKLY', gradient: 'dark', enabled: true, image_url: null },
+    { tag: 'LOCAL', title: 'Τοπικά αγαπημένα', subtitle: 'Ψητοπωλείο Λίμνη & ακόμη', code: 'LOCAL', gradient: 'hero', enabled: true, image_url: null },
   ],
   hero_cards: [],
   games: {
