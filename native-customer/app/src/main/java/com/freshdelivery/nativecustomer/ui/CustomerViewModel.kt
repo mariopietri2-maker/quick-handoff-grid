@@ -1408,9 +1408,9 @@ autoOpenTrack(
                     liveChatTopic = session.topic?.takeIf { it.isNotBlank() } ?: "Γενικό",
                     liveChatLoading = true,
                 )
-                fetchLiveChatHistory()
-                startLiveChatSubscription(uid)
+                openLiveChat(loadHistory = true)
             }
+            // Closed session: stay on Topics so user can start a new request
         }
     }
 
@@ -1473,8 +1473,10 @@ autoOpenTrack(
                 liveChatClosed = false,
                 liveChatError = null,
                 liveChatMessages = emptyList(),
+                liveChatLoading = false,
             )
-            openLiveChat()
+            // New request: empty thread. Do NOT reload old closed-chat history.
+            openLiveChat(loadHistory = false)
         }
     }
 
@@ -1626,10 +1628,19 @@ autoOpenTrack(
         }
     }
 
-    private fun openLiveChat() {
+    private fun openLiveChat(loadHistory: Boolean = true) {
         val uid = _state.value.userId ?: return
-        _state.value = _state.value.copy(liveChatLoading = true, liveChatError = null, liveChatClosed = false)
-        fetchLiveChatHistory()
+        _state.value = _state.value.copy(
+            liveChatLoading = loadHistory,
+            liveChatError = null,
+            liveChatClosed = false,
+        )
+        if (loadHistory) {
+            fetchLiveChatHistory()
+        } else {
+            // Fresh session after support closed — only show new messages via realtime
+            _state.value = _state.value.copy(liveChatMessages = emptyList(), liveChatLoading = false)
+        }
         startLiveChatSubscription(uid)
     }
 
