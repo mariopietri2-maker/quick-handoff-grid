@@ -1414,10 +1414,11 @@ private fun StoreMiniCard(
                 overflow = TextOverflow.Ellipsis,
             )
             Text(
-                storeDeliveryEstimate(store, deliveryLat, deliveryLng),
+                storeDeliveryEstimate(store, deliveryLat, deliveryLng) + " · " + storeDeliveryFeeLabel(store),
                 color = FreshMuted,
                 fontSize = 11.sp,
                 maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.padding(top = 2.dp),
             )
             Text(

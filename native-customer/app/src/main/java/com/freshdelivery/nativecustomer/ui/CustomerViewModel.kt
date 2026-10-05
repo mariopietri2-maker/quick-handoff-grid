@@ -544,11 +544,21 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         val store = s.stores.find { it.id == s.cartStoreId } ?: s.selectedStore
         val dLat = s.deliveryLat
         val dLng = s.deliveryLng
-        val fee = if (store?.latitude != null && store.longitude != null && dLat != null && dLng != null) {
-            val km = haversineKm(store.latitude, store.longitude, dLat, dLng)
-            (s.feeBase + s.feePerKm * km).coerceAtLeast(s.feeBase)
-        } else {
-            s.feeBase
+        // Match home cards: free if store covers fee; prefer store.delivery_fee;
+        // only then fall back to platform base + per-km.
+        val fee = when {
+            store == null -> s.feeBase
+            store.covers_delivery_fee == true -> 0.0
+            store.delivery_fee != null -> {
+                val minFree = store.delivery_free_min
+                if (minFree != null && minFree > 0 && s.cartSubtotal >= minFree) 0.0
+                else store.delivery_fee.coerceAtLeast(0.0)
+            }
+            store.latitude != null && store.longitude != null && dLat != null && dLng != null -> {
+                val km = haversineKm(store.latitude!!, store.longitude!!, dLat, dLng)
+                (s.feeBase + s.feePerKm * km).coerceAtLeast(s.feeBase)
+            }
+            else -> s.feeBase
         }
         _state.value = s.copy(deliveryFee = fee)
     }
