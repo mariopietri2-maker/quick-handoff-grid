@@ -174,16 +174,12 @@ export default function StoreRegistryPanel({ stores, profiles }: Props) {
     if (!selected) return;
     const name = selected.store.name;
     const ok = window.confirm(
-      `Διαγραφή καταστήματος «${name}»;
-
-` +
-        '• Χωρίς παραγγελίες → οριστική διαγραφή
-' +
+      `Διαγραφή καταστήματος «${name}»;\n\n` +
+        '• Χωρίς παραγγελίες → οριστική διαγραφή\n' +
         '• Με παραγγελίες → απενεργοποίηση (ιστορικό παραμένει)',
     );
     if (!ok) return;
-    const typed = window.prompt(`Πληκτρολόγησε το όνομα για επιβεβαίωση:
-${name}`);
+    const typed = window.prompt(`Πληκτρολόγησε το όνομα για επιβεβαίωση:\n${name}`);
     if (typed?.trim() !== name.trim()) {
       toast.error('Το όνομα δεν ταιριάζει — ακυρώθηκε');
       return;
@@ -338,13 +334,15 @@ ${name}`);
                     )}
                   </div>
                   {!editing ? (
-                    <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={startEdit}>
-                      <Pencil className="h-3.5 w-3.5" />
-                      Επεξεργασία
-                    </Button>
-                    <Button size="sm" variant="outline" className="h-8 gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleDelete} disabled={deleting}>
-                      <Trash2 className="h-3.5 w-3.5" /> Διαγραφή
-                    </Button>
+                    <div className="flex gap-1.5 shrink-0">
+                      <Button size="sm" variant="outline" className="h-8 gap-1.5" onClick={startEdit}>
+                        <Pencil className="h-3.5 w-3.5" />
+                        Επεξεργασία
+                      </Button>
+                      <Button size="sm" variant="outline" className="h-8 gap-1.5 text-destructive border-destructive/30 hover:bg-destructive/10" onClick={handleDelete} disabled={deleting}>
+                        <Trash2 className="h-3.5 w-3.5" /> Διαγραφή
+                      </Button>
+                    </div>
                   ) : (
                     <div className="flex gap-1.5">
                       <Button size="sm" variant="ghost" className="h-8" onClick={() => setEditing(false)} disabled={saving}>
