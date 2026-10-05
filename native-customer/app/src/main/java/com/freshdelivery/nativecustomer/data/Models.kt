@@ -314,6 +314,7 @@ data class LiveChatSessionRow(
     val status: String? = "open",
     val topic: String? = null,
     val closed_at: String? = null,
+    val created_at: String? = null,
 )
 
 /** A customer support ticket (support_tickets) — the non-urgent async queue. */

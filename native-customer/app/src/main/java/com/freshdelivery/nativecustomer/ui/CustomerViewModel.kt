@@ -203,6 +203,8 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     private var gameTickerJob: Job? = null
     private var liveChatJob: Job? = null
     private var liveChatSessionJob: Job? = null
+    /** When set, only show messages at/after this ISO timestamp (new chat after close). */
+    private var liveChatSinceIso: String? = null
     private var ticketJob: Job? = null
     private var searchJob: Job? = null
     private var gameShowUntilMs = 0L
@@ -1494,10 +1496,12 @@ autoOpenTrack(
         liveChatJob = null
         liveChatSessionJob?.cancel()
         liveChatSessionJob = null
+        liveChatSinceIso = java.time.Instant.now().toString()
         cancelTicketSubscriptions()
         _state.value = _state.value.copy(
             supportView = SupportView.Topics,
             liveChatTopic = null,
+            liveChatMessages = emptyList(),
             liveChatSessionId = null,
             liveChatClosed = false,
             liveChatMessages = emptyList(),
@@ -1628,8 +1632,23 @@ autoOpenTrack(
         }
     }
 
+
+    private fun filterLiveChatMessages(msgs: List<LiveChatMessageRow>): List<LiveChatMessageRow> {
+        val since = liveChatSinceIso ?: return msgs
+        return msgs.filter { m ->
+            val created = m.created_at ?: return@filter true
+            created >= since
+        }
+    }
+
     private fun openLiveChat(loadHistory: Boolean = true) {
         val uid = _state.value.userId ?: return
+        if (loadHistory) {
+            liveChatSinceIso = null
+        } else {
+            // Cut off old messages from previous closed sessions
+            liveChatSinceIso = java.time.Instant.now().toString()
+        }
         _state.value = _state.value.copy(
             liveChatLoading = loadHistory,
             liveChatError = null,
@@ -1638,7 +1657,6 @@ autoOpenTrack(
         if (loadHistory) {
             fetchLiveChatHistory()
         } else {
-            // Fresh session after support closed — only show new messages via realtime
             _state.value = _state.value.copy(liveChatMessages = emptyList(), liveChatLoading = false)
         }
         startLiveChatSubscription(uid)
@@ -1651,7 +1669,7 @@ autoOpenTrack(
             runCatching { repo.fetchLiveChat(uid) }
                 .onSuccess { msgs ->
                     _state.value = _state.value.copy(
-                        liveChatMessages = msgs,
+                        liveChatMessages = filterLiveChatMessages(msgs),
                         liveChatLoading = false,
                         liveChatError = null,
                     )
