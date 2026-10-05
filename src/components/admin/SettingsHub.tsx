@@ -71,6 +71,24 @@ export default function AdminSettingsHub({ onNavigate }: { onNavigate: (id: stri
 
   return (
     <div className="space-y-6">
+      <button
+        type="button"
+        onClick={() => onNavigate('ops_assistant')}
+        className="w-full text-left rounded-2xl border-2 border-orange-500/40 bg-gradient-to-r from-orange-500/15 via-orange-500/5 to-transparent p-4 sm:p-5 hover:border-orange-500/70 transition-colors"
+      >
+        <div className="flex items-start gap-3">
+          <div className="h-11 w-11 rounded-xl bg-orange-500 text-white flex items-center justify-center shrink-0 shadow-sm">
+            <Bot className="h-5 w-5" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <div className="font-heading font-bold text-base text-foreground">Ops Assistant</div>
+            <p className="text-[12.5px] text-muted-foreground mt-0.5 leading-snug">
+              Καθημερινό marketing (promos), περιστροφή banners και έλεγχος υγείας πλατφόρμας. Πάτα εδώ →
+            </p>
+          </div>
+          <ChevronRight className="h-5 w-5 text-orange-600 shrink-0 mt-1" />
+        </div>
+      </button>
       <div className="flex flex-wrap items-end justify-between gap-3">
         <div>
           <h2 className="font-heading font-bold text-xl">Ρυθμίσεις</h2>
