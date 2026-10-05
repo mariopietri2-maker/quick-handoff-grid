@@ -441,6 +441,15 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     if (remote.isNotEmpty()) {
                         _state.value = _state.value.copy(stores = remote)
                     }
+                    runCatching {
+                        repo.logClientEvent(
+                            "search",
+                            mapOf(
+                                "q" to trimmed.take(40),
+                                "n" to (if (remote.isNotEmpty()) remote.size else local.size).toString(),
+                            ),
+                        )
+                    }
                 }
                 .onFailure {
                     // Keep local results — search must not hard-fail the UI.

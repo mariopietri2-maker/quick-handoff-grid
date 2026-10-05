@@ -131,6 +131,7 @@ export const NAV_SECTIONS = [
     tabs: [
       { id: 'settings_home', label: 'Όλες οι ρυθμίσεις' },
       { id: 'ops_assistant', label: '🤖 Ops Assistant' },
+      { id: 'client_events', label: '📊 Client events' },
       { id: 'users', label: 'Χρήστες' },
       { id: 'call_roles', label: '📞 Ρόλοι κλήσεων (N/K)' },
       { id: 'store_calls', label: '📞 Κλήσεις καταστημάτων' },

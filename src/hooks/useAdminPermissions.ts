@@ -113,6 +113,7 @@ export const ADMIN_SECTION_CAPABILITY: Record<string, AdminCapability> = {
   customer_app: 'settings',
   customer_app_config: 'settings',
   ops_assistant: 'settings',
+  client_events: 'settings',
   api_connections: 'settings',
   audit: 'audit',
 };
