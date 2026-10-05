@@ -1501,7 +1501,6 @@ autoOpenTrack(
         _state.value = _state.value.copy(
             supportView = SupportView.Topics,
             liveChatTopic = null,
-            liveChatMessages = emptyList(),
             liveChatSessionId = null,
             liveChatClosed = false,
             liveChatMessages = emptyList(),
