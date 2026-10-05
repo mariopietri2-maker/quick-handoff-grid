@@ -1,17 +1,16 @@
 # Fresh2GO completeness
 
-## Shipped
-- Promo banners + Ops Assistant
-- Cart coupons (`promo_codes`)
-- ETA 10–15′ baseline + cart line
-- Search synonyms + dish-capable backend search
-- Search empty states + clear query
-- Tracking: store + customer pins, then driver
-- Reviews after delivery
-- FCM channel: high importance, sound/vibration, Greek label
-- Reorder: «Ξαναπαράγγειλε» opens store from order history
+## Customer
+- Coupons, promos, ETA 10–15′, search, tracking pins, reviews, reorder, FCM
+
+## Driver (this wave)
+- pending_offers **realtime** + 3s poll backup
+- Longer wake lock on offer FCM (15s)
+- Offer notification channel **v7** (MAX + alarm sound)
+
+## Store
+- Auto-accept rules already in web (`store_auto_accept_rules`)
 
 ## Next
-- Driver background offer reliability (OEM)
-- Play / App Store production
-- Analytics funnel + fraud basics
+- Play / App Store production packaging
+- Analytics funnel

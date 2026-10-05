@@ -174,6 +174,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private var pollJob: Job? = null
+    private var offerRealtimeJob: Job? = null
     private var chatJob: Job? = null
     private var liveChatJob: Job? = null
     private var heartbeatJob: Job? = null
@@ -550,6 +551,23 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
                     } else _state.value.stackedOffers,
                 )
                 refreshWork()
+            }
+        }
+    }
+
+    private fun ensureOfferRealtime(enabled: Boolean, driverId: String?) {
+        if (!enabled || driverId.isNullOrBlank()) {
+            offerRealtimeJob?.cancel()
+            offerRealtimeJob = null
+            return
+        }
+        if (offerRealtimeJob?.isActive == true) return
+        offerRealtimeJob = viewModelScope.launch {
+            runCatching {
+                repo.subscribePendingOffers(driverId).collect {
+                    if (!_state.value.signedIn || !_state.value.online) return@collect
+                    refreshWork()
+                }
             }
         }
     }
@@ -1005,13 +1023,15 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun startPolling() {
+        ensureOfferRealtime(true, _state.value.userId)
         pollJob?.cancel()
         pollJob = viewModelScope.launch {
             var tick = 0
             while (true) {
                 val role = _state.value.driverProfile?.call_role
                 val isKPoll = role == "K" || role == "both"
-                delay(if (isKPoll) 2_000 else 4_000)
+                // Faster poll when online — backup if FCM delayed on OEM
+                delay(if (isKPoll) 2_000 else 3_000)
                 tick++
                 if (_state.value.signedIn) {
                     refreshWork()
@@ -1023,6 +1043,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     private fun stopPolling() {
+        ensureOfferRealtime(false, null)
         pollJob?.cancel()
         pollJob = null
         stopPresenceHeartbeat()

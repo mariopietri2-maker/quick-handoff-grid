@@ -556,6 +556,16 @@ class DriverRepository(
         )
     }
 
+    /** Realtime inserts/updates on pending_offers — faster than poll alone when backgrounded with process alive. */
+    suspend fun subscribePendingOffers(driverId: String): Flow<PostgresAction> {
+        val channel = client.channel("driver-offers-$driverId")
+        val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {
+            table = "pending_offers"
+        }
+        channel.subscribe()
+        return flow
+    }
+
     suspend fun subscribeLiveChat(driverId: String): Flow<PostgresAction> {
         val channel = client.channel("driver-live-chat-$driverId")
         val flow = channel.postgresChangeFlow<PostgresAction>(schema = "public") {

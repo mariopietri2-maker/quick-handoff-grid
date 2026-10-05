@@ -35,7 +35,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
 
     companion object {
         /** Bump when channel attributes change (Android freezes channel settings). */
-        const val CHANNEL_ID = "driver-offers-v6"
+        const val CHANNEL_ID = "driver-offers-v7"
         private const val STORE_CALL_NOTIF_ID = 71001
         private const val _MAX_FALLBACK_RING_MS = 15_000L
 
@@ -108,7 +108,7 @@ class DriverFirebaseMessagingService : FirebaseMessagingService() {
             "freshdriver:offer",
         )?.apply {
             setReferenceCounted(false)
-            acquire(if (isStoreCall) 20_000L else 8_000L)
+            acquire(if (isStoreCall) 25_000L else 15_000L)
         }
 
         try {
