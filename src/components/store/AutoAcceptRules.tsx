@@ -11,7 +11,7 @@ import { toast } from 'sonner';
 export default function AutoAcceptRules({ storeId }: { storeId: string }) {
   const [enabled, setEnabled] = useState(false);
   const [maxAmount, setMaxAmount] = useState('25');
-  const [prep, setPrep] = useState('20');
+  const [prep, setPrep] = useState('15');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -31,7 +31,7 @@ export default function AutoAcceptRules({ storeId }: { storeId: string }) {
       store_id: storeId,
       enabled,
       max_amount: Number(maxAmount) || 25,
-      default_prep_minutes: Number(prep) || 20,
+      default_prep_minutes: Number(prep) || 15,
     });
     if (error) toast.error('Αποτυχία αποθήκευσης');
     else toast.success('Αποθηκεύτηκε');
@@ -47,12 +47,15 @@ export default function AutoAcceptRules({ storeId }: { storeId: string }) {
             <Zap className="h-5 w-5 text-primary" />
             <div>
               <h3 className="font-heading font-bold text-foreground">Αυτόματη Αποδοχή</h3>
-              <p className="text-xs text-muted-foreground">Μετά από 10 κουδουνίσματα → αυτόματη αποδοχή με χρόνο ετοιμασίας</p>
+              <p className="text-xs text-muted-foreground">Μετά ~10 κουδουνίσματα χωρίς απάντηση → αυτόματη αποδοχή με τον χρόνο ετοιμασίας που ορίζεις</p>
             </div>
           </div>
           <Switch checked={enabled} onCheckedChange={setEnabled} />
         </div>
 
+        <p className="text-[11px] text-muted-foreground leading-snug">
+          Ενεργό για παραγγελίες έως το μέγιστο ποσό. Πάνω από αυτό μένει χειροκίνητη αποδοχή.
+        </p>
         <div className="space-y-2">
           <Label className="font-heading text-xs">Μέγιστο ποσό (€)</Label>
           <Input type="number" value={maxAmount} onChange={e => setMaxAmount(e.target.value)} disabled={!enabled} />

@@ -111,6 +111,21 @@ fun SettingsScreen(
             )
         }
 
+        Spacer(Modifier.height(12.dp))
+        SettingsCard(padded = true) {
+            Text(
+                "Xiaomi / Oppo / Vivo",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+            )
+            Spacer(Modifier.height(6.dp))
+            Text(
+                "Για ήχο όταν η εφαρμογή είναι στο παρασκήνιο: Ρυθμίσεις τηλεφώνου → Εφαρμογές → Fresh2GO Driver → Μπαταρία → Χωρίς περιορισμούς. Επίσης ενεργοποίησε αυτόματη εκκίνηση αν υπάρχει.",
+                style = MaterialTheme.typography.bodySmall,
+                color = cs.onSurfaceVariant,
+            )
+        }
+
         Spacer(Modifier.height(18.dp))
 
         // ── Sound picker ──
