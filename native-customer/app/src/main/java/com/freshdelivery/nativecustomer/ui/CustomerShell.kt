@@ -423,7 +423,13 @@ fun CustomerShell(
                     onOpenCart = { onToggleCart(true) },
                     onToggleFavorite = onToggleFavorite,
                 )
-                CustomerTab.Orders -> OrdersTab(state, onTrack, onRefresh, onSubmitReview, onBackToHome = { onTab(CustomerTab.Home) })
+                CustomerTab.Orders -> OrdersTab(
+                    state, onTrack, onRefresh, onSubmitReview,
+                    onBackToHome = { onTab(CustomerTab.Home) },
+                    onReorderStore = { storeId ->
+                        state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
+                    },
+                )
                 CustomerTab.Track -> TrackTab(state)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
@@ -927,16 +933,32 @@ private fun HomeTab(
                     Icon(Icons.Outlined.Restaurant, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(44.dp))
                     Spacer(Modifier.height(10.dp))
                     Text(
-                        if (filter == HomeFilter.Near && !hasLocation) {
-                            "Ορισμός διεύθυνσης για εγγύτητα"
-                        } else if (filter == HomeFilter.Fav) {
-                            "Δεν έχεις αγαπημένα ακόμα."
-                        } else {
-                            "Δεν βρέθηκαν καταστήματα."
+                        when {
+                            filter == HomeFilter.Near && !hasLocation ->
+                                "Όρισε διεύθυνση για κοντινά καταστήματα"
+                            filter == HomeFilter.Fav ->
+                                "Δεν έχεις αγαπημένα ακόμα."
+                            state.searchQuery.isNotBlank() ->
+                                "Κανένα αποτέλεσμα για «${state.searchQuery.trim()}»"
+                            else ->
+                                "Δεν βρέθηκαν καταστήματα."
                         },
                         color = FreshMuted,
                         style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.SemiBold,
                     )
+                    if (state.searchQuery.isNotBlank()) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Δοκίμασε άλλο όνομα καταστήματος ή πιάτου (π.χ. πίτσα, κρέπα).",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        TextButton(onClick = { onSearch("") }) {
+                            Text("Καθαρισμός αναζήτησης", color = FreshGreen, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -2787,7 +2809,18 @@ private fun BrowseTab(
                     ) {
                         Icon(Icons.Outlined.SearchOff, contentDescription = null, tint = FreshMuted, modifier = Modifier.size(40.dp))
                         Spacer(Modifier.height(10.dp))
-                        Text("Δεν βρέθηκαν καταστήματα.", color = FreshMuted)
+Text(
+                            if (query.isNotBlank()) "Κανένα αποτέλεσμα για «$query»" else "Δεν βρέθηκαν καταστήματα.",
+                            color = FreshMuted,
+                            fontWeight = FontWeight.SemiBold,
+                        )
+                        if (query.isNotBlank()) {
+                            Text(
+                                "Δοκίμασε κατάστημα ή πιάτο — π.χ. πίτσα, σουβλάκι.",
+                                color = FreshMuted,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                 }
             } else {
@@ -2817,6 +2850,7 @@ private fun OrdersTab(
     onRefresh: () -> Unit,
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
     onBackToHome: () -> Unit = {},
+    onReorderStore: (String) -> Unit = {},
 ) {
     LazyColumn(
         Modifier
@@ -2959,6 +2993,18 @@ private fun OrdersTab(
                             },
                         )
                     }
+
+                if (item.order.status == "delivered") {
+                    Spacer(Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedButton(
+                            onClick = { onReorderStore(item.order.store_id) },
+                            shape = RoundedCornerShape(14.dp),
+                        ) {
+                            Text("Ξαναπαράγγειλε", fontWeight = FontWeight.Bold, color = FreshGreenDark)
+                        }
+                    }
+                }
                     Spacer(Modifier.weight(1f))
                     item.order.total_amount?.let {
                         Text("€" + "%.2f".format(it), fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)

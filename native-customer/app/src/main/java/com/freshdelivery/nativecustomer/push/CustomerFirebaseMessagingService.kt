@@ -40,9 +40,13 @@ class CustomerFirebaseMessagingService : FirebaseMessagingService() {
         val manager = getSystemService(NotificationManager::class.java)
         val channel = NotificationChannel(
             channelId,
-            "Order updates",
+            "Ενημερώσεις παραγγελίας",
             NotificationManager.IMPORTANCE_HIGH,
-        )
+        ).apply {
+            description = "Κατάσταση παραγγελίας Fresh2GO"
+            enableVibration(true)
+            setShowBadge(true)
+        }
         manager.createNotificationChannel(channel)
         val contentIntent = PendingIntent.getActivity(
             this,
@@ -58,6 +62,9 @@ class CustomerFirebaseMessagingService : FirebaseMessagingService() {
             .setSmallIcon(android.R.drawable.ic_dialog_info)
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
             .setContentIntent(contentIntent)
             .build()
         getSystemService(NotificationManager::class.java)
