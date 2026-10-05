@@ -1742,7 +1742,7 @@ autoOpenTrack(
     private fun refreshLiveChat(customerId: String) {
         viewModelScope.launch {
             runCatching { repo.fetchLiveChat(customerId) }
-                .onSuccess { msgs -> _state.value = _state.value.copy(liveChatMessages = msgs) }
+                .onSuccess { msgs -> _state.value = _state.value.copy(liveChatMessages = filterLiveChatMessages(msgs)) }
         }
     }
 

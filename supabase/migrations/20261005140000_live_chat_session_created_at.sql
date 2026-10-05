@@ -1,4 +1,5 @@
--- Prefer open sessions and expose created_at for client message cutoff.
+DROP FUNCTION IF EXISTS public.get_my_live_chat_session();
+
 CREATE OR REPLACE FUNCTION public.get_my_live_chat_session()
 RETURNS TABLE (id uuid, status text, topic text, closed_at timestamptz, created_at timestamptz)
 LANGUAGE sql
@@ -13,7 +14,6 @@ AS $$
   LIMIT 1;
 $$;
 
--- Always open a NEW session when there is no open one (after support closes).
 CREATE OR REPLACE FUNCTION public.ensure_my_live_chat_session(p_topic text)
 RETURNS uuid
 LANGUAGE plpgsql
