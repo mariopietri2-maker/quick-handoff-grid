@@ -495,6 +495,21 @@ class CustomerRepository(
         return PromoLookup(code = row.code, percentOff = pct, freeDelivery = free, label = label)
     }
 
+    /** Best-effort product analytics — never throws to callers. */
+    suspend fun logClientEvent(name: String, props: Map<String, String> = emptyMap()) {
+        runCatching {
+            client.from("app_client_events").insert(
+                buildJsonObject {
+                    put("app", "customer_native")
+                    put("event", name)
+                    put("props", buildJsonObject {
+                        props.forEach { (k, v) -> put(k, v) }
+                    })
+                },
+            )
+        }
+    }
+
     suspend fun placeOrder(
         storeId: String,
         items: List<CartLine>,

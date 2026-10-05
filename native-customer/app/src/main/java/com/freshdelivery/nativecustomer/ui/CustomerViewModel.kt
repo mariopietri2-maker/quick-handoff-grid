@@ -1013,17 +1013,32 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         "Η παραγγελία καταχωρήθηκε! Παρακολούθησε την παράδοση."
                     },
                     appliedDeal = null,
+                    promoCodeInput = "",
+                    promoCodeApplied = null,
+                    promoCodeMessage = null,
+                    promoPercentOff = 0.0,
+                    promoFreeDelivery = false,
                     tab = CustomerTab.Track,
                 )
                 if (placed != null) {
-autoOpenTrack(
-            orderId = placed,
-            storeId = storeId,
-            storeName = storeName,
-            storeLat = store?.latitude,
-            storeLng = store?.longitude,
-            wasCard = wasCard,
-        )
+                    runCatching {
+                        repo.logClientEvent(
+                            "place_order",
+                            mapOf(
+                                "order_id" to placed,
+                                "store_id" to storeId,
+                                "payment" to if (wasCard) "card" else "cash",
+                            ),
+                        )
+                    }
+                    autoOpenTrack(
+                        orderId = placed,
+                        storeId = storeId,
+                        storeName = storeName,
+                        storeLat = store?.latitude,
+                        storeLng = store?.longitude,
+                        wasCard = wasCard,
+                    )
                     if (wasCard) {
                         launchNativePaymentSheet(placed)
                     }
@@ -1031,7 +1046,7 @@ autoOpenTrack(
                     _state.value = _state.value.copy(tab = CustomerTab.Orders)
                     refreshOrders()
                 }
-  }.onFailure { e ->
+            }.onFailure { e ->
                 _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
             }
         }
