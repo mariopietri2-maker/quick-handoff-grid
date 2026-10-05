@@ -1,16 +1,21 @@
-# Fresh2GO completeness
+# Fresh2GO completeness snapshot
 
-## Customer
-- Coupons, promos, ETA 10–15′, search, tracking pins, reviews, reorder, FCM
+## Customer native
+- Coupons, promos, ETA 10–15′, search, tracking pins, reviews, reorder
+- Open stores sorted first on home
+- Client events: place_order, search, open_store, favorite_*
+- Admin Client events panel
 
-## Driver (this wave)
-- pending_offers **realtime** + 3s poll backup
-- Longer wake lock on offer FCM (15s)
-- Offer notification channel **v7** (MAX + alarm sound)
+## Driver
+- pending_offers realtime, FCM channel v7, OEM battery tip (2.6.34)
 
 ## Store
-- Auto-accept rules already in web (`store_auto_accept_rules`)
+- Auto-accept UX under Αυτοματισμοί
+
+## Admin
+- Ops Assistant, Client events
 
 ## Next
-- Play / App Store production packaging
-- Analytics funnel
+- Play Console upload
+- iOS
+- Deeper fraud / multi-city

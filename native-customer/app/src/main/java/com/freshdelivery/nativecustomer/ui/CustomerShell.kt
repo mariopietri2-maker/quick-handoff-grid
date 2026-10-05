@@ -472,7 +472,8 @@ private fun HomeTab(
             base.sortedBy { storeDistanceKm(state.deliveryLat!!, state.deliveryLng!!, it) }
         } else base
         when (filter) {
-            HomeFilter.All -> base
+            // Open stores float to the top of the default feed
+            HomeFilter.All -> base.sortedBy { if (isStoreOpenNow(it)) 0 else 1 }
             HomeFilter.Open -> open
             HomeFilter.Near -> near
             HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }

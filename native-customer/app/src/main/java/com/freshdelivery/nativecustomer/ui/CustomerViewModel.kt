@@ -701,6 +701,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     menuModifiers = byItem,
                     busy = false,
                 )
+                runCatching {
+                    repo.logClientEvent(
+                        "open_store",
+                        mapOf("store_id" to store.id, "name" to (store.name ?: "").take(40)),
+                    )
+                }
             }.onFailure { e ->
                 _state.value = _state.value.copy(busy = false, error = e.message)
             }
@@ -1268,6 +1274,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun toggleFavorite(storeId: String) {
+        // analytics below after toggle decision
         val uid = _state.value.userId ?: return
         val cur = _state.value.favoriteStoreIds
         val adding = storeId !in cur
@@ -1277,6 +1284,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         viewModelScope.launch {
             runCatching {
                 if (adding) repo.addFavoriteStore(uid, storeId) else repo.removeFavoriteStore(uid, storeId)
+                runCatching {
+                    repo.logClientEvent(
+                        if (adding) "favorite_add" else "favorite_remove",
+                        mapOf("store_id" to storeId),
+                    )
+                }
             }.onFailure { e ->
                 _state.value = _state.value.copy(favoriteStoreIds = cur, error = e.message)
             }
