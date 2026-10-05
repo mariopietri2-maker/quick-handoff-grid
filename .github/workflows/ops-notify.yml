@@ -1,16 +1,21 @@
-name: Ops notify (optional Telegram/Discord)
+name: Ops notify (Telegram / Discord)
+
 on:
   workflow_run:
     workflows:
       - "Build Native APKs"
     types: [completed]
+  schedule:
+    # Every 2 hours — stuck-order pulse (needs SUPABASE secrets optional)
+    - cron: "0 */2 * * *"
   workflow_dispatch:
+
 jobs:
-  notify:
+  notify-build:
     runs-on: ubuntu-latest
-    if: always()
+    if: github.event_name == 'workflow_run' || github.event_name == 'workflow_dispatch'
     steps:
-      - name: Notify
+      - name: Notify build result
         env:
           TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
           TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
@@ -33,11 +38,53 @@ req = urllib.request.Request(
     os.environ["DISCORD_WEBHOOK_URL"],
     data=json.dumps({"content": msg}).encode(),
     headers={"Content-Type": "application/json"},
-    method="POST",
 )
-try:
-    urllib.request.urlopen(req, timeout=15)
-except Exception as e:
-    print("discord", e)
+urllib.request.urlopen(req)
 PY
           fi
+
+  health-pulse:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    steps:
+      - name: Stuck orders check (optional)
+        env:
+          TELEGRAM_BOT_TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          TELEGRAM_CHAT_ID: ${{ secrets.TELEGRAM_CHAT_ID }}
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "No Supabase secrets — skip health pulse"
+            exit 0
+          fi
+          python3 <<'PY'
+import json, os, urllib.request
+url = os.environ["SUPABASE_URL"].rstrip("/") + "/rest/v1/orders?select=id&status=in.(pending,accepted,preparing,ready,picked_up,on_the_way)&created_at=lt." + __import__("datetime").datetime.utcnow().isoformat() + "Z"
+# simpler: count via Prefer count
+req = urllib.request.Request(
+    os.environ["SUPABASE_URL"].rstrip("/") + "/rest/v1/orders?select=id&status=in.(pending,accepted,preparing,ready)&limit=1",
+    headers={
+        "apikey": os.environ["SUPABASE_SERVICE_ROLE_KEY"],
+        "Authorization": "Bearer " + os.environ["SUPABASE_SERVICE_ROLE_KEY"],
+        "Prefer": "count=exact",
+    },
+)
+try:
+    with urllib.request.urlopen(req) as r:
+        # Content-Range: 0-0/123
+        cr = r.headers.get("Content-Range", "")
+        total = cr.split("/")[-1] if "/" in cr else "?"
+        msg = f"Fresh2GO health: open-ish orders sample Content-Range={cr}"
+except Exception as e:
+    msg = f"Fresh2GO health pulse failed: {e}"
+print(msg)
+token = os.environ.get("TELEGRAM_BOT_TOKEN") or ""
+chat = os.environ.get("TELEGRAM_CHAT_ID") or ""
+if token and chat and "failed" not in msg.lower():
+    import urllib.parse
+    data = urllib.parse.urlencode({"chat_id": chat, "text": msg}).encode()
+    urllib.request.urlopen(
+        urllib.request.Request(f"https://api.telegram.org/bot{token}/sendMessage", data=data)
+    )
+PY

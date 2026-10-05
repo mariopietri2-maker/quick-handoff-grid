@@ -171,9 +171,11 @@ export default function AdminOpsAssistant() {
         <Card>
           <CardHeader className="pb-2">
             <CardTitle className="text-base flex items-center gap-2">
-              <Megaphone className="h-4 w-4" /> Σημερινά promos
+              <Megaphone className="h-4 w-4" /> Καθημερινό marketing
             </CardTitle>
-            <CardDescription>Ενεργά στην εφαρμογή πελάτη (remote config)</CardDescription>
+            <CardDescription>
+              Περιστρέφει ενεργά promo banners στο customer app (max από ρυθμίσεις). Τρέχει με «Εκτέλεση τώρα» ή αυτόματα στις 09:00.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {last?.promos_enabled && last.promos_enabled.length > 0 ? (
