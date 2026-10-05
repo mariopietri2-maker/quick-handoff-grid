@@ -99,10 +99,13 @@ internal fun storeDistanceLabel(store: StoreRow, deliveryLat: Double?, deliveryL
 }
 
 internal fun storeDeliveryEstimate(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String {
-    if (deliveryLat == null || deliveryLng == null) return "25–35'"
+    // Base 10–15' nearby (Ioannina launch), scales with road distance
+    if (deliveryLat == null || deliveryLng == null) return "10–15'"
     val km = storeDistanceKm(deliveryLat, deliveryLng, store)
-    if (km == Double.MAX_VALUE) return "25–35'"
-    val minutes = (18 + km * 4).toInt().coerceIn(20, 75)
-    return "${minutes - 5}–${minutes + 5}'"
+    if (km == Double.MAX_VALUE) return "10–15'"
+    val mid = (12 + km * 3.5).toInt().coerceIn(12, 55)
+    val lo = (mid - 3).coerceAtLeast(10)
+    val hi = mid + 3
+    return "$lo–$hi'"
 }
 

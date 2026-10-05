@@ -2056,7 +2056,18 @@ item {
                         "Παράδοση" + (if (feeNote != null) " ($feeNote)" else ""),
                         state.effectiveDeliveryFee,
                     )
-                    SummaryLine("Φιλοδώρημα", state.tipAmount)
+                    run {
+                    val cartStore = state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore
+                    val eta = if (cartStore != null) storeDeliveryEstimate(cartStore, state.deliveryLat, state.deliveryLng) else "10–15'"
+                    Row(
+                        Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                    ) {
+                        Text("Εκτ. παράδοση", color = FreshMuted)
+                        Text(eta, fontWeight = FontWeight.SemiBold, color = FreshGreenDark)
+                    }
+                }
+                SummaryLine("Φιλοδώρημα", state.tipAmount)
                     state.appliedDeal?.let { deal ->
                         Row(
                             Modifier
@@ -2977,30 +2988,26 @@ private fun TrackTab(state: CustomerUiState) {
 
     // Live driver pin + store + delivery pin. Order in the list also picks
     // the map center: store → delivery → driver.
+    val deliveryPinLat = order?.order?.delivery_latitude ?: state.deliveryLat
+    val deliveryPinLng = order?.order?.delivery_longitude ?: state.deliveryLng
+    val storePinLat = order?.storeLat
+        ?: state.stores.firstOrNull { it.id == order?.order?.store_id }?.latitude
+    val storePinLng = order?.storeLng
+        ?: state.stores.firstOrNull { it.id == order?.order?.store_id }?.longitude
     val markers = buildList {
-        order?.storeLat?.let { lat ->
-            order.storeLng?.let { lng ->
-                add(MapMarker(lat, lng, order.storeName ?: "Κατάστημα", "#F97316"))
-            }
+        // Always show store + customer while waiting for driver (efood-style)
+        if (storePinLat != null && storePinLng != null) {
+            add(MapMarker(storePinLat, storePinLng, order?.storeName ?: "Κατάστημα", "#F97316"))
         }
-        order?.order?.delivery_latitude?.let { lat ->
-            order.order.delivery_longitude?.let { lng ->
-                add(MapMarker(lat, lng, "Παράδοση", "#10B981"))
-            }
+        if (deliveryPinLat != null && deliveryPinLng != null) {
+            add(MapMarker(deliveryPinLat, deliveryPinLng, "Εσύ", "#10B981"))
         }
         state.driverLocation?.let { d ->
             add(MapMarker(d.latitude, d.longitude, "Οδηγός", "#7C6CFF"))
         }
     }
-    // Prefer delivery pin, then store, then any marker (Ioannina fallback)
-    val centerLat = order?.order?.delivery_latitude
-        ?: order?.storeLat
-        ?: markers.firstOrNull()?.lat
-        ?: 39.6650
-    val centerLng = order?.order?.delivery_longitude
-        ?: order?.storeLng
-        ?: markers.firstOrNull()?.lng
-        ?: 20.8537
+    val centerLat = deliveryPinLat ?: storePinLat ?: markers.firstOrNull()?.lat ?: 39.6650
+    val centerLng = deliveryPinLng ?: storePinLng ?: markers.firstOrNull()?.lng ?: 20.8537
     Column(Modifier.fillMaxSize().background(FreshBg)) {
         Box(
             Modifier
@@ -3179,10 +3186,10 @@ private fun estimateEtaMinutes(order: com.freshdelivery.nativecustomer.data.Orde
     if (order.status in listOf("delivered", "cancelled", "rejected", "refunded")) return null
     if (order.status == "pending") return null
     val created = order.created_at ?: return when (order.status) {
-        "picked_up", "on_the_way", "in_transit" -> 12
-        "ready" -> 18
-        "preparing", "accepted", "confirmed" -> 28
-        else -> 40
+        "picked_up", "on_the_way", "in_transit" -> 10
+        "ready" -> 14
+        "preparing", "accepted", "confirmed" -> 18
+        else -> 25
     }
     val startMs = runCatching {
         java.time.Instant.parse(created).toEpochMilli()
@@ -3191,7 +3198,7 @@ private fun estimateEtaMinutes(order: com.freshdelivery.nativecustomer.data.Orde
         runCatching { java.time.OffsetDateTime.parse(created).toInstant().toEpochMilli() }.getOrNull()
             ?: return 30
     }
-    val totalMin = 45 // 30 prep + 15 delivery buffer
+    val totalMin = 30 // ~15 prep + 15 delivery (Ioannina baseline)
     val endMs = startMs + totalMin * 60_000L
     val remaining = ((endMs - System.currentTimeMillis()) / 60_000.0).toInt()
     return remaining.coerceIn(0, totalMin + 15)

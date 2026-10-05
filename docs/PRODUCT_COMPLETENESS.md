@@ -1,23 +1,15 @@
-# Fresh2GO product completeness (vs eFood-class)
+# Fresh2GO completeness
 
-Cannot match national eFood in one sprint. Work is phased.
+## Done this wave
+- [x] Promo banners (10) + Ops Assistant
+- [x] Cart coupon codes (`promo_codes`)
+- [x] ETA baseline 10–15′ on store cards + cart summary
+- [x] Search: better local match + synonyms (pizza/crepe/…)
+- [x] Tracking map: store + customer pins before driver; driver when live
+- [x] Reviews UI + submit path (existing)
 
-## Phase A — conversion trust
-- [x] Promo banners (remote config)
-- [x] Manual coupon in native cart + promo_codes
-- [x] Seed codes (WELCOME, NEW20, FREESHIP, FRESH*, LUNCH, …)
-- [ ] ETA consistent on cards + cart
-- [ ] Search polish (stores + dishes)
-- [ ] Tracking pins before driver accept
-
-## Phase B — retention
-- [ ] Reviews after delivery
-- [ ] Reorder / favorites
-- [ ] Push reliability
-
-## Phase C — distribution
-- [ ] Play Store production
-- [ ] iOS App Store
-
-## Phase D — scale
-- [ ] Fraud, analytics, multi-city
+## Next
+- [ ] Dish-level search ranking in UI empty states
+- [ ] Push reliability matrix (OEM)
+- [ ] Play / App Store production
+- [ ] Fraud + analytics depth
