@@ -306,19 +306,25 @@ private fun BotFaqSection() {
 private fun ColumnScope.TopicsView(
     onSelectTopic: (String) -> Unit,
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+    // Scrollable so all topics are reachable (FAQ no longer blocks the list)
+    Column(
+        Modifier
+            .weight(1f)
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         Text("Τι πρόβλημα έχεις;", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Text(
             "Διάλεξε θέμα και άνοιξε ζωντανή συνομιλία με την υποστήριξη.",
             style = MaterialTheme.typography.bodySmall,
             color = FreshMuted,
         )
-        Spacer(Modifier.height(10.dp))
-        BotFaqSection()
-        Spacer(Modifier.height(10.dp))
-        SUPPORT_TOPICS.forEach { t ->
+        Spacer(Modifier.height(6.dp))
+        // Topics first — main action
+        SUPPORT_TOPICS.forEach { topic ->
             Surface(
-                onClick = { onSelectTopic(t.key) },
+                onClick = { onSelectTopic(topic.key) },
                 color = FreshGreenSoft.copy(alpha = 0.55f),
                 shape = RoundedCornerShape(16.dp),
                 modifier = Modifier.fillMaxWidth(),
@@ -327,20 +333,23 @@ private fun ColumnScope.TopicsView(
                     Box(
                         Modifier
                             .size(40.dp)
-                            .background(t.color, RoundedCornerShape(12.dp)),
+                            .background(topic.color, RoundedCornerShape(12.dp)),
                         contentAlignment = Alignment.Center,
                     ) {
-                        Icon(t.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
+                        Icon(topic.icon, contentDescription = null, tint = Color.White, modifier = Modifier.size(20.dp))
                     }
                     Spacer(Modifier.width(12.dp))
                     Column(Modifier.weight(1f)) {
-                        Text(t.label, fontWeight = FontWeight.Bold)
-                        Text(t.hint, style = MaterialTheme.typography.bodySmall, color = FreshMuted)
+                        Text(topic.label, fontWeight = FontWeight.Bold)
+                        Text(topic.hint, style = MaterialTheme.typography.bodySmall, color = FreshMuted)
                     }
                     Icon(Icons.AutoMirrored.Outlined.ArrowForward, contentDescription = null, tint = FreshGreen)
                 }
             }
         }
+        Spacer(Modifier.height(12.dp))
+        BotFaqSection()
+        Spacer(Modifier.height(24.dp))
     }
 }
 
