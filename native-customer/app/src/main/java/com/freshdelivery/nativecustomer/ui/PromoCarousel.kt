@@ -93,7 +93,8 @@ internal fun PromoCarousel(
                     .fillMaxSize()
                     .shadow(8.dp, RoundedCornerShape(24.dp))
                     .clip(RoundedCornerShape(24.dp))
-                    .background(gradient),
+                    .background(gradient)
+                    .clickable { onPromoClick() },
             ) {
                 val img = promo.imageUrl
                 if (!img.isNullOrBlank()) {
