@@ -981,6 +981,16 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             _state.value = s.copy(error = "Το κατάστημα είναι προσωρινά κλειστό — δοκίμασε αργότερα")
             return
         }
+        if (!isStoreOpenNow(store)) {
+            _state.value = s.copy(error = "Το κατάστημα φαίνεται κλειστό τώρα — δοκίμασε όταν ανοίξει")
+            return
+        }
+        val minOrder = store.min_order_amount ?: 0.0
+        if (minOrder > 0 && s.cartSubtotal < minOrder) {
+            val need = minOrder - s.cartSubtotal
+            _state.value = s.copy(error = "Ελάχιστη παραγγελία €%.2f — πρόσθεσε ακόμα €%.2f".format(minOrder, need))
+            return
+        }
         viewModelScope.launch {
             _state.value = _state.value.copy(busy = true, error = null)
             runCatching {
