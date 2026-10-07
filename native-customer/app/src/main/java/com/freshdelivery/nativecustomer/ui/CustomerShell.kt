@@ -86,6 +86,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material3.AlertDialog
@@ -405,6 +407,7 @@ fun CustomerShell(
             when (state.tab) {
                 CustomerTab.Home -> HomeTab(
                     state, onOpenStore, onSearch,
+                    onRefresh = onRefresh,
                     browseMode = false,
                     onSpinWheel = onSpinWheel,
                     onOpenCard = onOpenCard,
@@ -446,6 +449,7 @@ private fun HomeTab(
     state: CustomerUiState,
     onOpenStore: (StoreRow) -> Unit,
     onSearch: (String) -> Unit,
+    onRefresh: () -> Unit = {},
     browseMode: Boolean = false,
     onSpinWheel: () -> Unit = {},
     onOpenCard: (Int) -> Unit = {},
@@ -501,6 +505,20 @@ private fun HomeTab(
         }
     }
 
+    var refreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.busy, state.stores.size) {
+        if (refreshing && !state.busy) refreshing = false
+    }
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = {
+            refreshing = true
+            onRefresh()
+        },
+        state = pullState,
+        modifier = Modifier.fillMaxSize().background(FreshBg),
+    ) {
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -992,6 +1010,7 @@ private fun HomeTab(
                 onToggleFavorite = { onToggleFavorite(store.id) },
             )
         }
+    }
     }
 }
 
