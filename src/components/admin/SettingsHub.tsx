@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 import { Input } from '@/components/ui/input';
-import {Search, X, ChevronRight, Activity} from 'lucide-react';
+import {Search, X, ChevronRight, Activity, Smartphone} from 'lucide-react';
 // Activity used for client events
 import {
   Users, ShieldCheck, Headphones, Zap, Palette, Sparkles, Megaphone, MessageSquareText,
@@ -34,6 +34,7 @@ const CATEGORIES: Category[] = [
     id: 'customer', label: 'Εφαρμογή πελάτη', accent: '#d97706', iconBg: 'bg-orange-500/10', iconFg: 'text-orange-600',
     items: [
       { id: 'customer_app_config', label: 'Εφαρμογή πελάτη', desc: 'Προσαρμογή εμφάνισης & περιεχομένου για πελάτες.', icon: Palette, accent: '#d97706' },
+      { id: 'app_health', label: 'Υγεία apps', desc: 'Customer native, Driver native, Store — έκδοση, push, ζωντανή κίνηση.', icon: Smartphone, accent: '#ea580c' },
       { id: 'client_events', label: 'Client events', desc: 'place_order και άλλα native events.', icon: Activity, accent: '#f97316' },
       { id: 'ops_assistant', label: 'Ops Assistant', desc: 'Καθημερινά promos, marketing rotation και έλεγχος υγείας πλατφόρμας.', icon: Bot, accent: '#ea580c' },
       { id: 'ai_hero_cards', label: 'Κάρτες AI & κίνηση', desc: 'Δυναμικές κάρτες & κινήσεις στην αρχική οθόνη.', icon: Sparkles, accent: '#d97706' },
