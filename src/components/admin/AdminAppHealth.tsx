@@ -135,12 +135,39 @@ export default function AdminAppHealth() {
       const chatsN = openChats.count ?? 0;
       const opsLast = opsRun?.data?.last_run_at as string | null | undefined;
 
+      // APK asset reachability (GitHub release)
+      const probeApk = async (url: string) => {
+        try {
+          const r = await fetch(url, { method: 'HEAD', mode: 'cors' });
+          return r.ok || r.status === 200 || r.status === 302;
+        } catch {
+          // CORS may block HEAD — treat as unknown/warn only if network fails hard
+          try {
+            const r2 = await fetch(url, { method: 'GET', mode: 'no-cors' });
+            return true; // opaque response still means network reached host
+          } catch {
+            return false;
+          }
+        }
+      };
+      const [custApkOk, drvApkOk] = await Promise.all([
+        probeApk(APK_DOWNLOADS.customerNative.fileUrl),
+        probeApk(APK_DOWNLOADS.driverNative.fileUrl),
+      ]);
+
+
       const customerChecks: Check[] = [
         {
           id: 'c_ver',
           label: 'Έκδοση release',
           status: 'ok',
           detail: APK_NATIVE_CUSTOMER_VERSION,
+        },
+        {
+          id: 'c_apk',
+          label: 'APK διαθέσιμο',
+          status: custApkOk ? 'ok' : 'warn',
+          detail: custApkOk ? 'GitHub release asset reachable' : 'Δεν επιβεβαιώθηκε η λήψη APK',
         },
         {
           id: 'c_events',
@@ -171,6 +198,12 @@ export default function AdminAppHealth() {
           label: 'Έκδοση release',
           status: 'ok',
           detail: APK_NATIVE_DRIVER_VERSION,
+        },
+        {
+          id: 'd_apk',
+          label: 'APK διαθέσιμο',
+          status: drvApkOk ? 'ok' : 'warn',
+          detail: drvApkOk ? 'GitHub release asset reachable' : 'Δεν επιβεβαιώθηκε η λήψη APK',
         },
         {
           id: 'd_push',

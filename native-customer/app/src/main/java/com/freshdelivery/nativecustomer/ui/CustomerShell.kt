@@ -1169,6 +1169,7 @@ private fun FreshStoreCard(
             .shadow(3.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(Color.White)
+            .then(if (!active || !openNow) Modifier.graphicsLayer { alpha = 0.72f } else Modifier)
             .clickable(onClick = onClick),
     ) {
         Box(Modifier.fillMaxWidth().height(148.dp)) {
