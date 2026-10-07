@@ -756,19 +756,18 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     ) {
         val s = _state.value
         val storeId = s.selectedStore?.id ?: return
-        if (s.cartStoreId != null && s.cartStoreId != storeId) {
-            _state.value = s.copy(error = "Άδειασε το καλάθι για άλλο κατάστημα")
-            return
-        }
+        // Switching store starts a fresh cart (efood-style) instead of hard-blocking
+        val baseCart = if (s.cartStoreId != null && s.cartStoreId != storeId) emptyList() else s.cart
+        val switched = s.cartStoreId != null && s.cartStoreId != storeId
         val extra = selected.sumOf { it.price_delta }
         val label = selected.joinToString(", ") { it.option_name }
         val name = if (label.isBlank()) item.name else "${item.name} ($label)"
         val unit = item.price + extra
         val keyIds = selected.map { it.id }.sorted()
-        val existing = s.cart.indexOfFirst {
+        val existing = baseCart.indexOfFirst {
             it.menuItemId == item.id && it.selectedModifierIds.sorted() == keyIds
         }
-        val next = s.cart.toMutableList()
+        val next = baseCart.toMutableList()
         if (existing >= 0) {
             val line = next[existing]
             next[existing] = line.copy(quantity = line.quantity + 1)
@@ -789,8 +788,14 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             cartStoreId = storeId,
             cartStoreName = s.selectedStore?.name,
             error = null,
-            info = "Προστέθηκε στο καλάθι",
+            info = if (switched) {
+                "Νέο καλάθι · ${s.selectedStore?.name ?: "κατάστημα"}"
+            } else {
+                "Προστέθηκε στο καλάθι"
+            },
         )
+        tickHaptic()
+        scheduleBannerClear()
     }
 
     fun updateQty(menuItemId: String, qty: Int) {
@@ -807,6 +812,17 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             cartStoreName = if (next.isEmpty()) null else _state.value.cartStoreName,
             showCart = if (next.isEmpty()) false else _state.value.showCart,
         )
+    }
+
+    fun clearCart() {
+        _state.value = _state.value.copy(
+            cart = emptyList(),
+            cartStoreId = null,
+            cartStoreName = null,
+            showCart = false,
+            info = "Το καλάθι άδειασε",
+        )
+        scheduleBannerClear()
     }
 
     fun toggleCart(open: Boolean = true) {

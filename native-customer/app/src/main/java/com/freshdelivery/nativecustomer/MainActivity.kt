@@ -139,6 +139,7 @@ class MainActivity : ComponentActivity() {
                             onPromoCodeInput = vm::setPromoCodeInput,
                             onApplyPromoCode = vm::applyPromoCode,
                             onClearPromoCode = vm::clearPromoCode,
+                            onClearCart = vm::clearCart,
                             onPlaceOrder = vm::placeOrder,
                             onTrack = vm::trackOrder,
                             onRefresh = vm::refreshAll,

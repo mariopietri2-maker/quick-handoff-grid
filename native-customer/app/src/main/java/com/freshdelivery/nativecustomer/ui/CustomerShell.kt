@@ -76,6 +76,8 @@ import androidx.compose.material.icons.outlined.Store
 import androidx.compose.material.icons.outlined.Timer
 import androidx.compose.material.icons.outlined.Tune
 import androidx.compose.material.icons.outlined.Wallet
+import androidx.compose.material3.Badge
+import androidx.compose.material3.BadgedBox
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -205,6 +207,7 @@ fun CustomerShell(
     onPromoCodeInput: (String) -> Unit = {},
     onApplyPromoCode: () -> Unit = {},
     onClearPromoCode: () -> Unit = {},
+    onClearCart: () -> Unit = {},
     onPlaceOrder: () -> Unit,
     onTrack: (OrderUi?) -> Unit,
     onRefresh: () -> Unit,
@@ -264,6 +267,18 @@ fun CustomerShell(
             state.tab != CustomerTab.Home -> onTab(CustomerTab.Home)
         }
     }
+    // Double-back on Home root to exit app
+    val context = androidx.compose.ui.platform.LocalContext.current
+    var lastBackPress by remember { mutableStateOf(0L) }
+    BackHandler(enabled = !onNonRootScreen) {
+        val now = System.currentTimeMillis()
+        if (now - lastBackPress < 2000) {
+            (context as? android.app.Activity)?.finish()
+        } else {
+            lastBackPress = now
+            android.widget.Toast.makeText(context, "Πάτα ξανά για έξοδο", android.widget.Toast.LENGTH_SHORT).show()
+        }
+    }
     if (addressOpen) {
         AddressPickerScreen(
             state = state,
@@ -302,6 +317,7 @@ fun CustomerShell(
             state, snackbar, { onToggleCart(false) }, onUpdateQty, onSetDelivery,
             onSetNotes, onSetTip, onSetPayment, onPlaceOrder, onUseLocation, onGeocode, onPickSuggestion,
             onPromoCodeInput, onApplyPromoCode, onClearPromoCode,
+            onClearCart,
         )
         return
     }
@@ -373,15 +389,36 @@ fun CustomerShell(
                 ) {
                     tabs.forEach { (tab, label, icon) ->
                         val selected = state.tab == tab
+                        val activeOrders = state.activeOrders.size
                         NavigationBarItem(
                             selected = selected,
                             onClick = { onTab(tab) },
                             icon = {
-                                Icon(
-                                    icon as ImageVector,
-                                    contentDescription = label,
-                                    modifier = Modifier.size(24.dp),
-                                )
+                                if (tab == CustomerTab.Orders && activeOrders > 0) {
+                                    BadgedBox(
+                                        badge = {
+                                            Badge(containerColor = FreshGreen) {
+                                                Text(
+                                                    if (activeOrders > 9) "9+" else "$activeOrders",
+                                                    color = Color.White,
+                                                    fontSize = 10.sp,
+                                                )
+                                            }
+                                        },
+                                    ) {
+                                        Icon(
+                                            icon as ImageVector,
+                                            contentDescription = label,
+                                            modifier = Modifier.size(24.dp),
+                                        )
+                                    }
+                                } else {
+                                    Icon(
+                                        icon as ImageVector,
+                                        contentDescription = label,
+                                        modifier = Modifier.sizeSize(24.dp),
+                                    )
+                                }
                             },
                             label = {
                                 Text(
@@ -704,7 +741,10 @@ private fun HomeTab(
             ) {
                 FreshFilterChip("Όλα", selected = filter == HomeFilter.All) { applyFilter(HomeFilter.All) }
                 FreshFilterChip("Προσφορές", selected = filter == HomeFilter.Deals) { applyFilter(HomeFilter.Deals) }
-                FreshFilterChip("Ανοιχτά", selected = filter == HomeFilter.Open) { applyFilter(HomeFilter.Open) }
+                FreshFilterChip(
+                    "Ανοιχτά (${base.count { isStoreOpenNow(it) }})",
+                    selected = filter == HomeFilter.Open,
+                ) { applyFilter(HomeFilter.Open) }
                 FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { applyFilter(HomeFilter.Near) }
                 FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { applyFilter(HomeFilter.Fav) }
             }
@@ -980,6 +1020,8 @@ private fun HomeTab(
                                 "Δεν έχεις αγαπημένα ακόμα."
                             state.searchQuery.isNotBlank() ->
                                 "Κανένα αποτέλεσμα για «${state.searchQuery.trim()}»"
+                            state.busy ->
+                                "Φόρτωση καταστημάτων…"
                             else ->
                                 "Δεν βρέθηκαν καταστήματα."
                         },
@@ -1807,6 +1849,7 @@ private fun CartCheckoutScreen(
     onPromoCodeInput: (String) -> Unit = {},
     onApplyPromoCode: () -> Unit = {},
     onClearPromoCode: () -> Unit = {},
+    onClearCart: () -> Unit = {},
 ) {
     var address by remember(state.deliveryAddress) { mutableStateOf(state.deliveryAddress) }
     var tipText by remember { mutableStateOf(state.tipAmount.toString()) }
@@ -1905,7 +1948,16 @@ private fun CartCheckoutScreen(
                 }
             } else {
             item {
-                Text("Τα αντικείμενά σου", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium, modifier = Modifier.padding(top = 8.dp))
+                Row(
+                    Modifier.fillMaxWidth().padding(top = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text("Τα αντικείμενά σου", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+                    TextButton(onClick = onClearCart) {
+                        Text("Άδειασμα", color = FreshMuted, style = MaterialTheme.typography.labelLarge)
+                    }
+                }
             }
             items(state.cart, key = { it.menuItemId }) { line ->
                 Row(
