@@ -8,6 +8,7 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -40,7 +41,10 @@ import coil.compose.AsyncImage
 import kotlinx.coroutines.delay
 
 @Composable
-internal fun PromoCarousel(promos: List<com.freshdelivery.nativecustomer.data.PromoBanner>) {
+internal fun PromoCarousel(
+    promos: List<com.freshdelivery.nativecustomer.data.PromoBanner>,
+    onPromoClick: () -> Unit = {},
+) {
     val pagerState = rememberPagerState(pageCount = { promos.size })
     LaunchedEffect(promos.size) {
         if (promos.size <= 1) return@LaunchedEffect

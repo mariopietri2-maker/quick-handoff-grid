@@ -1,4 +1,7 @@
-@file:OptIn(androidx.compose.foundation.ExperimentalFoundationApi::class)
+@file:OptIn(
+    androidx.compose.foundation.ExperimentalFoundationApi::class,
+    androidx.compose.material3.ExperimentalMaterial3Api::class,
+)
 package com.freshdelivery.nativecustomer.ui
 
 import androidx.activity.compose.BackHandler
@@ -87,6 +90,8 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.mutableStateMapOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.material3.AlertDialog
@@ -437,6 +442,7 @@ fun CustomerShell(
             when (state.tab) {
                 CustomerTab.Home -> HomeTab(
                     state, onOpenStore, onSearch,
+                    onRefresh = onRefresh,
                     browseMode = false,
                     onSpinWheel = onSpinWheel,
                     onOpenCard = onOpenCard,
@@ -478,6 +484,7 @@ private fun HomeTab(
     state: CustomerUiState,
     onOpenStore: (StoreRow) -> Unit,
     onSearch: (String) -> Unit,
+    onRefresh: () -> Unit = {},
     browseMode: Boolean = false,
     onSpinWheel: () -> Unit = {},
     onOpenCard: (Int) -> Unit = {},
@@ -533,6 +540,20 @@ private fun HomeTab(
         }
     }
 
+    var refreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.busy) {
+        if (refreshing && !state.busy) refreshing = false
+    }
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = {
+            refreshing = true
+            onRefresh()
+        },
+        state = pullState,
+        modifier = Modifier.fillMaxSize().background(FreshBg),
+    ) {
     LazyColumn(
         state = listState,
         modifier = Modifier
@@ -735,7 +756,7 @@ private fun HomeTab(
         val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
         if (showDiscovery && enabledPromos.isNotEmpty()) {
             item(key = "promo-carousel") {
-                PromoCarousel(promos = enabledPromos)
+                PromoCarousel(promos = enabledPromos, onPromoClick = { applyFilter(HomeFilter.Deals); onSearch("") })
             }
         }
 
@@ -1006,7 +1027,18 @@ private fun HomeTab(
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.SemiBold,
                     )
-                    if (state.searchQuery.isNotBlank()) {
+                    if (filter == HomeFilter.Open) {
+                        Spacer(Modifier.height(6.dp))
+                        Text(
+                            "Δες «Όλα» για κλειστά καταστήματα ή δοκίμασε αργότερα.",
+                            color = FreshMuted,
+                            style = MaterialTheme.typography.bodySmall,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        TextButton(onClick = { applyFilter(HomeFilter.All) }) {
+                            Text("Δες όλα", color = FreshGreen, fontWeight = FontWeight.Bold)
+                        }
+                    } else if (state.searchQuery.isNotBlank()) {
                         Spacer(Modifier.height(6.dp))
                         Text(
                             "Δοκίμασε άλλο όνομα καταστήματος ή πιάτου (π.χ. πίτσα, κρέπα).",
@@ -1033,6 +1065,7 @@ private fun HomeTab(
             )
         }
     }
+    } // PullToRefreshBox
 }
 
 // FreshFilterChip extracted
@@ -1517,7 +1550,7 @@ private fun StoreMiniCard(
                 modifier = Modifier.padding(top = 2.dp),
             )
             Text(
-                storeFulfilmentLabel(store),
+                storeFulfilmentLabelShort(store),
                 color = if (isPlatformFulfilment(store)) FreshTealDark else FreshMuted,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.SemiBold,
@@ -2167,6 +2200,19 @@ item {
                     )
                     run {
                     val cartStore = state.stores.find { it.id == state.cartStoreId } ?: state.selectedStore
+                    if (cartStore != null) {
+                        Row(
+                            Modifier.fillMaxWidth().padding(vertical = 3.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
+                        ) {
+                            Text("Τρόπος παράδοσης", color = FreshMuted)
+                            Text(
+                                storeFulfilmentLabel(cartStore),
+                                fontWeight = FontWeight.SemiBold,
+                                color = if (isPlatformFulfilment(cartStore)) FreshTealDark else FreshInk,
+                            )
+                        }
+                    }
                     val eta = if (cartStore != null) storeDeliveryEstimate(cartStore, state.deliveryLat, state.deliveryLng) else "10–15'"
                     Row(
                         Modifier.fillMaxWidth().padding(vertical = 3.dp),
@@ -3552,6 +3598,13 @@ private fun ProfileTab(
             color = FreshMuted,
             style = MaterialTheme.typography.labelMedium,
             modifier = Modifier.fillMaxWidth(),
+            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
+        )
+        Text(
+            "Συμβουλή: πάτα δύο φορές πίσω στην Αρχική για έξοδο · άνοιξε/κλείσε Wi‑Fi για ανανέωση.",
+            color = FreshMuted,
+            style = MaterialTheme.typography.labelSmall,
+            modifier = Modifier.fillMaxWidth().padding(horizontal = 12.dp, vertical = 4.dp),
             textAlign = androidx.compose.ui.text.style.TextAlign.Center,
         )
         Spacer(Modifier.height(8.dp))

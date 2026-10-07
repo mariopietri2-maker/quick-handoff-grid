@@ -88,8 +88,12 @@ internal fun storeFulfilmentLabel(store: StoreRow): String {
 
 internal fun isPlatformFulfilment(store: StoreRow): Boolean {
     val mode = store.fulfilment_mode?.trim()?.lowercase().orEmpty()
-    return mode != "store"
+    return mode !in setOf("store", "merchant", "self")
 }
+
+/** Compact label for mini cards. */
+internal fun storeFulfilmentLabelShort(store: StoreRow): String =
+    if (isPlatformFulfilment(store)) "Fresh2GO" else "Κατάστημα"
 
 internal fun storeDistanceLabel(store: StoreRow, deliveryLat: Double?, deliveryLng: Double?): String? {
     if (deliveryLat == null || deliveryLng == null) return null

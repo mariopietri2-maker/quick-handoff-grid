@@ -299,6 +299,9 @@ export default function AdminStoreAppearance() {
                           <SelectItem value="store">Παράδοση καταστήματος</SelectItem>
                         </SelectContent>
                       </Select>
+                      <p className="text-[11px] text-muted-foreground leading-snug">
+                        Προεπιλογή: <b>Fresh2GO</b> (οδηγοί πλατφόρμας). Επίλεξε κατάστημα μόνο αν έχει δικούς του διανομείς.
+                      </p>
                     </div>
                     <div className="flex items-center justify-between gap-3 rounded-lg border bg-background px-3 py-2">
                       <div>
