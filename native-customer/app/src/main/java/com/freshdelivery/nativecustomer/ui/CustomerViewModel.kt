@@ -3,7 +3,10 @@ package com.freshdelivery.nativecustomer.ui
 import android.app.Application
 import android.content.Context
 import android.net.ConnectivityManager
+import android.net.Network
 import android.net.NetworkCapabilities
+import android.net.NetworkRequest
+import android.os.Build
 import android.content.Intent
 import android.net.Uri
 import android.content.Context
@@ -233,11 +236,12 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     /** Full store list for local search when the network query is empty/fails. */
     private var storesCacheAtMs: Long = 0L
     private var allStoresCache: List<StoreRow> = emptyList()
+    private var networkCallback: ConnectivityManager.NetworkCallback? = null
 
     init {
         _state.value = _state.value.copy(gameShow = rollDailyGameShow())
         loadAdminState()
-        refreshNetworkStatus()
+        startNetworkMonitor()
         PushTokenHolder.listener = { token ->
             val uid = _state.value.userId
             if (uid != null) {
@@ -974,7 +978,47 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     caps.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
                 )
         } ?: false
+        if (_state.value.isOffline == online) {
+            // isOffline true means offline; online true means not offline
+        }
         _state.value = _state.value.copy(isOffline = !online)
+    }
+
+    /** Live listener — banner updates as soon as Wi‑Fi/data drops or returns. */
+    private fun startNetworkMonitor() {
+        if (networkCallback != null) return
+        val cm = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+            ?: return
+        val cb = object : ConnectivityManager.NetworkCallback() {
+            override fun onAvailable(network: Network) {
+                _state.value = _state.value.copy(isOffline = false)
+            }
+            override fun onLost(network: Network) {
+                // Re-evaluate: may still have another network
+                refreshNetworkStatus()
+            }
+            override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
+                val online = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                _state.value = _state.value.copy(isOffline = !online)
+            }
+        }
+        networkCallback = cb
+        runCatching {
+            val req = NetworkRequest.Builder()
+                .addCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                .build()
+            cm.registerNetworkCallback(req, cb)
+        }.onFailure {
+            networkCallback = null
+        }
+        refreshNetworkStatus()
+    }
+
+    private fun stopNetworkMonitor() {
+        val cb = networkCallback ?: return
+        networkCallback = null
+        val cm = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
+        runCatching { cm?.unregisterNetworkCallback(cb) }
     }
 
     fun placeOrder() {
@@ -2064,6 +2108,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     override fun onCleared() {
+        stopNetworkMonitor()
         PushTokenHolder.listener = null
         gameTickerJob?.cancel()
         liveChatJob?.cancel()
