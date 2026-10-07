@@ -329,6 +329,11 @@ export function OrderQueue({
               {(order as any).order_code || order.id.slice(0, 8)} · {nItems}{' '}
               {nItems === 1 ? 'προϊόν' : 'προϊόντα'}
             </p>
+            {order.status === 'placed' && (
+              <p className="text-[11px] text-muted-foreground">
+                Αυτόματη αποδοχή μετά από ~10 κουδούνια αν δεν απαντήσεις · default χρόνος ετοιμασίας.
+              </p>
+            )}
             <p className="text-[13px] font-medium text-foreground flex items-center gap-1.5 min-w-0">
               <User className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
               <span className="truncate">

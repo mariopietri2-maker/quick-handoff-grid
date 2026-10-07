@@ -1368,8 +1368,8 @@ private fun StackedOfferCard(
                     )
                     Spacer(Modifier.height(6.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(6.dp), verticalAlignment = Alignment.CenterVertically) {
-                        formatDistance(offer.order.distance_km)?.let { Chip(it, TrackFill, TextMuted) }
-                        Chip("~$totalMin′", TrackFill, TextMuted)
+                        formatDistance(offer.order.distance_km)?.let { Chip("$it έως κατάστημα", TrackFill, TextMuted) }
+                        Chip("≈$totalMin′ ETA", TrackFill, TextMuted)
                         readyTag?.let { (label, isReady) ->
                             Chip(
                                 label,

@@ -2341,6 +2341,7 @@ item {
                 minOk
             val placeLabel = when {
                 state.cart.isEmpty() -> "Το καλάθι είναι άδειο"
+                state.isOffline -> "Χωρίς σύνδεση — δοκίμασε ξανά"
                 address.isBlank() -> "Πρόσθεσε διεύθυνση παράδοσης"
                 !pinned -> "Επίλεξε σημείο στον χάρτη / εύρεση"
                 !minOk -> "Ακόμα €" + "%.2f".format(cartMinSticky - state.cartSubtotal) + " για ελάχιστη"
@@ -3336,10 +3337,10 @@ private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
 
 private val TRACK_STEPS = listOf(
     "placed" to "Στάλθηκε",
-    "accepted" to "Αποδεκτή",
-    "preparing" to "Ετοιμάζεται",
+    "accepted" to "Αποδοχή",
+    "preparing" to "Ετοιμασία",
     "ready" to "Έτοιμη",
-    "picked_up" to "Στο δρόμο",
+    "picked_up" to "Καθ' οδόν",
     "delivered" to "Παραδόθηκε",
 )
 

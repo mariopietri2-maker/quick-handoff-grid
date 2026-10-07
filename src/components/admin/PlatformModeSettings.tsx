@@ -233,7 +233,40 @@ export default function PlatformModeSettings() {
             </div>
           ) : (
             <div className="divide-y divide-border rounded-lg border border-border overflow-hidden">
-              {stores.map((r) => (
+              <div className="flex flex-wrap gap-2 mb-3">
+          <Button
+            type="button"
+            size="sm"
+            variant="default"
+            className="bg-orange-600 hover:bg-orange-700"
+            onClick={async () => {
+              const { error } = await supabase.from('stores').update({ fulfilment_mode: 'platform' } as any).neq('id', '');
+              if (error) toast.error(error.message);
+              else {
+                setStores((prev) => prev.map((s) => ({ ...s, fulfilment_mode: 'platform' })));
+                toast.success('Όλα τα καταστήματα → Fresh2GO');
+              }
+            }}
+          >
+            Όλα Fresh2GO
+          </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            onClick={async () => {
+              const { error } = await supabase.from('stores').update({ fulfilment_mode: 'store' } as any).neq('id', '');
+              if (error) toast.error(error.message);
+              else {
+                setStores((prev) => prev.map((s) => ({ ...s, fulfilment_mode: 'store' })));
+                toast.success('Όλα τα καταστήματα → παράδοση καταστήματος');
+              }
+            }}
+          >
+            Όλα κατάστημα
+          </Button>
+        </div>
+        {stores.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-card">
                   <span className="text-sm font-semibold truncate">{r.name}</span>
                   <div className="flex items-center gap-2 shrink-0">

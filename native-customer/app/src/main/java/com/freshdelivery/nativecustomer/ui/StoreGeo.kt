@@ -4,6 +4,7 @@ import com.freshdelivery.nativecustomer.data.StoreRow
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalDateTime
+import java.time.ZoneId
 import kotlin.math.atan2
 import kotlin.math.cos
 import kotlin.math.sin
@@ -36,12 +37,13 @@ internal fun isStoreOpenNow(store: StoreRow): Boolean {
         "open" -> return true
         "closed" -> return false
     }
-    val today = LocalDate.now()
+    val zone = ZoneId.of("Europe/Athens")
+    val today = LocalDate.now(zone)
     val holidayDates = store.holiday_dates ?: emptyList()
     val dateKey = "%04d-%02d-%02d".format(today.year, today.monthValue, today.dayOfMonth)
     if (holidayDates.any { it.contains(dateKey) }) return false
     val hours = store.opening_hours ?: return true
-    val now = LocalDateTime.now()
+    val now = LocalDateTime.now(ZoneId.of("Europe/Athens"))
     val dayKey = when (now.dayOfWeek) {
         DayOfWeek.MONDAY -> "mon"
         DayOfWeek.TUESDAY -> "tue"
@@ -74,7 +76,7 @@ internal fun nextOpenHint(store: StoreRow): String? {
     if (isStoreOpenNow(store)) return null
     if (store.status_override == "closed") return "Κλειστό σήμερα"
     val hours = store.opening_hours ?: return null
-    val now = LocalDateTime.now()
+    val now = LocalDateTime.now(ZoneId.of("Europe/Athens"))
     val days = listOf(
         DayOfWeek.MONDAY to "mon",
         DayOfWeek.TUESDAY to "tue",
