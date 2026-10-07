@@ -1561,6 +1561,20 @@ private fun MenuScreen(
                     }
                 }
             }
+            if (store != null && !isStoreOpenNow(store)) {
+                Surface(
+                    color = Color(0xFFFFF3E0),
+                    modifier = Modifier.fillMaxWidth(),
+                ) {
+                    Text(
+                        "Το κατάστημα είναι κλειστό τώρα — μπορείς να δεις το μενού, αλλά η παραγγελία μπλοκάρεται μέχρι να ανοίξει.",
+                        color = Color(0xFFE65100),
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.SemiBold,
+                        modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+                    )
+                }
+            }
             // Clip list so scrolled cards never cover / steal taps from chips
             LazyColumn(
                 Modifier
