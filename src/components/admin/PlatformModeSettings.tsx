@@ -265,6 +265,26 @@ export default function PlatformModeSettings() {
           >
             Όλα κατάστημα
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="secondary"
+            onClick={async () => {
+              const hours: Record<string, { enabled: boolean; open: string; close: string }> = {};
+              for (const d of ['mon','tue','wed','thu','fri','sat','sun']) {
+                hours[d] = { enabled: true, open: '12:00', close: '24:00' };
+              }
+              const { error } = await supabase
+                .from('stores')
+                .update({ opening_hours: hours } as any)
+                .eq('is_active', true)
+                .is('opening_hours', null);
+              if (error) toast.error(error.message);
+              else toast.success('Πρότυπο 12:00–24:00 σε καταστήματα χωρίς ωράριο');
+            }}
+          >
+            Πρότυπο ωραρίου (κενά)
+          </Button>
         </div>
         {stores.map((r) => (
                 <div key={r.id} className="flex items-center justify-between gap-3 px-3 py-2.5 bg-card">

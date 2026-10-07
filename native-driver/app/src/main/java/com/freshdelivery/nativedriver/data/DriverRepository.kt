@@ -316,11 +316,14 @@ class DriverRepository(
         )
     }
 
-    suspend fun declineOffer(offerId: String) {
+    suspend fun declineOffer(offerId: String, reason: String? = null) {
         if (offerId.isBlank()) return
         client.functions.invoke(
             function = "decline-offer",
-            body = buildJsonObject { put("offer_id", offerId) },
+            body = buildJsonObject {
+                put("offer_id", offerId)
+                if (!reason.isNullOrBlank()) put("reason", reason)
+            },
         )
     }
 

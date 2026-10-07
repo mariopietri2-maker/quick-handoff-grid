@@ -508,6 +508,7 @@ private fun HomeTab(
     val base = state.visibleStores
     val hasLocation = state.deliveryLat != null && state.deliveryLng != null
     val closedStores = remember(base) { base.filter { !isStoreOpenNow(it) } }
+    val nightMode = base.isNotEmpty() && closedStores.size * 2 >= base.size
     val stores = remember(filter, base, hasLocation, state.favoriteStoreIds) {
         val open = base.filter { isStoreOpenNow(it) }
         val near = if (hasLocation) {
@@ -557,13 +558,13 @@ private fun HomeTab(
             onRefresh()
         },
         state = pullState,
-        modifier = Modifier.fillMaxSize().background(FreshBg),
+        modifier = Modifier.fillMaxSize().background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
     ) {
     LazyColumn(
         state = listState,
         modifier = Modifier
             .fillMaxSize()
-            .background(FreshBg),
+            .background(if (nightMode) Color(0xFFF3F0EB) else FreshBg),
         contentPadding = PaddingValues(bottom = 24.dp),
     ) {
         if (state.isOffline) {
@@ -3242,6 +3243,8 @@ private fun OrdersTab(
                     StatusPill(item.order.status)
                     if (item.order.status == "delivered" && item.order.id !in state.reviewedOrderIds) {
                         Spacer(Modifier.height(8.dp))
+                        Text("Βαθμολόγησε την παραγγελία", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleSmall)
+                        Spacer(Modifier.height(4.dp))
                         ReviewStarsRow(
                             onSubmit = { rating, comment ->
                                 onSubmitReview(item.order.id, item.order.store_id, rating, comment)

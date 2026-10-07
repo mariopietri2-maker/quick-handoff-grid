@@ -703,7 +703,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         )
         stopOfferSound()
         viewModelScope.launch {
-            runCatching { repo.declineOffer(offerId) }
+            runCatching { repo.declineOffer(offerId, reason) }
                 .onSuccess {
                     _state.value = _state.value.copy(busy = false)
                     refreshWork()

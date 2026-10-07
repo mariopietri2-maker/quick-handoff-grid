@@ -291,7 +291,9 @@ export function OrderQueue({
       !upcomingScheduled &&
       Date.now() - new Date(order.created_at).getTime() > 5 * 60_000;
 
-    const playTestSound = () => {
+    const [soundMuted, setSoundMuted] = useState(() => localStorage.getItem('store_sound_muted') === '1');
+  const playTestSound = () => {
+    if (soundMuted) return;
     try {
       const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const o = ctx.createOscillator();
@@ -565,13 +567,22 @@ export function OrderQueue({
           </div>
         </div>
       </div>
-    <button
-      type="button"
-      onClick={playTestSound}
-      className="fixed bottom-4 left-4 z-40 rounded-full border bg-card px-3 py-2 text-[12px] font-bold shadow-md"
-    >
-      Δοκιμή ήχου
-    </button>
+    <div className="fixed bottom-4 left-4 z-40 flex gap-2">
+      <button type="button" onClick={playTestSound} className="rounded-full border bg-card px-3 py-2 text-[12px] font-bold shadow-md">
+        Δοκιμή ήχου
+      </button>
+      <button
+        type="button"
+        onClick={() => {
+          const next = !soundMuted;
+          setSoundMuted(next);
+          localStorage.setItem('store_sound_muted', next ? '1' : '0');
+        }}
+        className="rounded-full border bg-card px-3 py-2 text-[12px] font-bold shadow-md"
+      >
+        {soundMuted ? 'Ήχος off' : 'Ήχος on'}
+      </button>
+    </div>
     </div>
   );
 }

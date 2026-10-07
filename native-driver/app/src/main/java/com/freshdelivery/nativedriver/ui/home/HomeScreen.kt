@@ -288,7 +288,7 @@ fun HomeScreen(
     onToggleOnline: (Boolean) -> Unit,
     onToggleBreak: () -> Unit,
     onAccept: (offerId: String, orderId: String?) -> Unit,
-    onDecline: (String) -> Unit,
+    onDecline: (String, String?) -> Unit,
     onAdvance: (orderId: String, status: String) -> Unit,
     onRefresh: () -> Unit,
     onClearMessages: () -> Unit,

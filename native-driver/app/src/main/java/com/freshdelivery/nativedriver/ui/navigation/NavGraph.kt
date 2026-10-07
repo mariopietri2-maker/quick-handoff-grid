@@ -39,7 +39,7 @@ fun DriverNavGraph(
                 onToggleOnline = viewModel::setOnline,
                 onToggleBreak = viewModel::toggleBreak,
                 onAccept = viewModel::acceptOffer,
-                onDecline = viewModel::declineOffer,
+                onDecline = { id, reason -> viewModel.declineOffer(id, reason) },
                 onAdvance = viewModel::advanceTrip,
                 onRefresh = viewModel::refreshAll,
                 onRefreshMoney = viewModel::refreshMoney,
