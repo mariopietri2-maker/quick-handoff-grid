@@ -462,7 +462,7 @@ fun CustomerShell(
                         state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
                     },
                 )
-                CustomerTab.Track -> TrackTab(state)
+                CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
@@ -718,6 +718,14 @@ private fun HomeTab(
                 FreshFilterChip("Ανοιχτά (${state.visibleStores.count { isStoreOpenNow(it) }})", selected = filter == HomeFilter.Open) { applyFilter(HomeFilter.Open) }
                 FreshFilterChip("Κοντά μου", selected = filter == HomeFilter.Near) { applyFilter(HomeFilter.Near) }
                 FreshFilterChip("Αγαπημένα", selected = filter == HomeFilter.Fav) { applyFilter(HomeFilter.Fav) }
+            }
+            if (state.searchQuery.isNotBlank()) {
+                Text(
+                    "Αποτελέσματα: ${stores.size} για «${state.searchQuery.trim()}»",
+                    color = FreshMuted,
+                    style = MaterialTheme.typography.bodySmall,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
             }
         }
 
@@ -1326,6 +1334,15 @@ private fun FreshStoreCard(
                     color = FreshMuted,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.padding(top = 2.dp),
+                )
+            }
+            val minOrd = store.min_order_amount ?: 0.0
+            if (minOrd > 0) {
+                Text(
+                    "Ελάχ. παραγγελία €" + "%.0f".format(minOrd),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = FreshMuted,
                     modifier = Modifier.padding(top = 2.dp),
                 )
             }
@@ -3099,7 +3116,7 @@ private fun OrdersTab(
 }
 
 @Composable
-private fun TrackTab(state: CustomerUiState) {
+private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
     val order = state.trackingOrder
 
     // Live driver pin + store + delivery pin. Order in the list also picks
@@ -3125,6 +3142,16 @@ private fun TrackTab(state: CustomerUiState) {
     val centerLat = deliveryPinLat ?: storePinLat ?: markers.firstOrNull()?.lat ?: 39.6650
     val centerLng = deliveryPinLng ?: storePinLng ?: markers.firstOrNull()?.lng ?: 20.8537
     Column(Modifier.fillMaxSize().background(FreshBg)) {
+        Row(
+            Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 12.dp, vertical = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Παρακολούθηση", fontWeight = FontWeight.Bold)
+            TextButton(onClick = onRefresh) {
+                Text("Ανανέωση", color = FreshGreen, fontWeight = FontWeight.Bold)
+            }
+        }
         Box(
             Modifier
                 .fillMaxWidth()

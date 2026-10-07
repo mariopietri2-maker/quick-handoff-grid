@@ -695,7 +695,13 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
 
     fun selectTab(tab: CustomerTab) {
         refreshNetworkStatus()
-        _state.value = _state.value.copy(tab = tab, showCart = false, selectedStore = null, menu = emptyList())
+        _state.value = _state.value.copy(
+            tab = tab,
+            showCart = false,
+            selectedStore = null,
+            menu = emptyList(),
+            error = null,
+        )
         when (tab) {
             CustomerTab.Orders, CustomerTab.Track -> refreshOrders()
             CustomerTab.Home, CustomerTab.Browse -> refreshStores()
@@ -1093,6 +1099,11 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         val s = _state.value
         val storeId = s.cartStoreId ?: return
         if (s.cart.isEmpty()) return
+        if (s.isOffline) {
+            _state.value = s.copy(error = "Χωρίς σύνδεση — δεν μπορεί να σταλεί η παραγγελία")
+            scheduleBannerClear()
+            return
+        }
         if (s.deliveryAddress.isBlank()) {
             _state.value = s.copy(error = "Βάλε διεύθυνση παράδοσης")
             return
@@ -1436,6 +1447,10 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                         mapOf("store_id" to storeId),
                     )
                 }
+                _state.value = _state.value.copy(
+                    info = if (adding) "Προστέθηκε στα αγαπημένα" else "Αφαιρέθηκε από τα αγαπημένα",
+                )
+                scheduleBannerClear()
             }.onFailure { e ->
                 _state.value = _state.value.copy(favoriteStoreIds = cur, error = e.message)
             }
