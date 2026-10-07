@@ -199,6 +199,7 @@ fun CustomerShell(
     onConfirmModifiers: (MenuItemRow, List<com.freshdelivery.nativecustomer.data.MenuModifierRow>) -> Unit = { _, _ -> },
     onDismissModifiers: () -> Unit = {},
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
+    onReorderOrder: (String, String) -> Unit = { _, _ -> },
     onUpdateQty: (String, Int) -> Unit,
     onToggleCart: (Boolean) -> Unit,
     onSetDelivery: (String, Double?, Double?) -> Unit,
@@ -467,6 +468,7 @@ fun CustomerShell(
                     onReorderStore = { storeId ->
                         state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
                     },
+                    onReorderOrder = onReorderOrder,
                 )
                 CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
@@ -3103,6 +3105,7 @@ private fun OrdersTab(
     onSubmitReview: (String, String, Int, String) -> Unit = { _, _, _, _ -> },
     onBackToHome: () -> Unit = {},
     onReorderStore: (String) -> Unit = {},
+    onReorderOrder: (String, String) -> Unit = { _, _ -> },
 ) {
     LazyColumn(
         Modifier
@@ -3250,7 +3253,7 @@ private fun OrdersTab(
                     Spacer(Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         OutlinedButton(
-                            onClick = { onReorderStore(item.order.store_id) },
+                            onClick = { onReorderOrder(item.order.id, item.order.store_id) },
                             shape = RoundedCornerShape(14.dp),
                         ) {
                             Text("Ξαναπαράγγειλε", fontWeight = FontWeight.Bold, color = FreshGreenDark)

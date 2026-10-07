@@ -44,6 +44,17 @@ data class DishSearchHit(
 )
 
 @Serializable
+data class OrderItemRow(
+    val id: String? = null,
+    val order_id: String? = null,
+    val menu_item_id: String? = null,
+    val name: String? = null,
+    val quantity: Int = 1,
+    val unit_price: Double? = null,
+    val price: Double? = null,
+)
+
+@Serializable
 data class MenuItemRow(
     val id: String,
     val store_id: String,

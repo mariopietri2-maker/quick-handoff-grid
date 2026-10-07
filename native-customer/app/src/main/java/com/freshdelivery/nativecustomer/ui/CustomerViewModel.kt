@@ -825,6 +825,64 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         )
     }
 
+    fun reorderOrder(orderId: String, storeId: String) {
+        viewModelScope.launch {
+            runCatching {
+                val store = _state.value.stores.firstOrNull { it.id == storeId }
+                    ?: allStoresCache.firstOrNull { it.id == storeId }
+                    ?: return@runCatching
+                val items = repo.fetchOrderItems(orderId)
+                val menu = repo.fetchMenu(storeId)
+                val byId = menu.associateBy { it.id }
+                val byName = menu.associateBy { it.name.lowercase() }
+                val lines = mutableListOf<CartLine>()
+                for (oi in items) {
+                    val mi = oi.menu_item_id?.let { byId[it] }
+                        ?: oi.name?.let { byName[it.lowercase()] }
+                        ?: continue
+                    if (mi.is_available == false) continue
+                    val qty = oi.quantity.coerceAtLeast(1)
+                    val existing = lines.indexOfFirst { it.menuItemId == mi.id }
+                    if (existing >= 0) {
+                        lines[existing] = lines[existing].copy(quantity = lines[existing].quantity + qty)
+                    } else {
+                        lines.add(
+                            CartLine(
+                                menuItemId = mi.id,
+                                name = mi.name,
+                                price = mi.price,
+                                quantity = qty,
+                            ),
+                        )
+                    }
+                }
+                if (lines.isEmpty()) {
+                    _state.value = _state.value.copy(
+                        selectedStore = store,
+                        menu = menu,
+                        info = "Άνοιξε το μενού — τα παλιά είδη δεν είναι διαθέσιμα",
+                        tab = com.freshdelivery.nativecustomer.data.CustomerTab.Home,
+                    )
+                    scheduleBannerClear()
+                    return@runCatching
+                }
+                _state.value = _state.value.copy(
+                    selectedStore = store,
+                    menu = menu,
+                    cart = lines,
+                    cartStoreId = storeId,
+                    cartStoreName = store.name,
+                    showCart = true,
+                    info = "Προστέθηκαν ${lines.sumOf { it.quantity }} είδη από την προηγούμενη παραγγελία",
+                )
+                scheduleBannerClear()
+            }.onFailure { e ->
+                _state.value = _state.value.copy(error = e.message ?: "Αποτυχία επαναπαραγγελίας")
+                scheduleBannerClear()
+            }
+        }
+    }
+
     fun clearCart() {
         _state.value = _state.value.copy(
             cart = emptyList(),

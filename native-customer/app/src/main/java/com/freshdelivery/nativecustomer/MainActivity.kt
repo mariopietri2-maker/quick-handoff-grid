@@ -127,6 +127,7 @@ class MainActivity : ComponentActivity() {
                             onAddToCart = vm::addToCart,
                             onConfirmModifiers = vm::confirmModifiers,
                             onDismissModifiers = vm::dismissModifierPicker,
+                            onReorderOrder = { oid, sid -> vm.reorderOrder(oid, sid) },
                             onSubmitReview = vm::submitReview,
                             onAddressQuery = vm::onAddressQuery,
                             onUpdateQty = vm::updateQty,

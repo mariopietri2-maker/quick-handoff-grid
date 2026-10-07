@@ -674,6 +674,16 @@ class CustomerRepository(
             }
         }
     }
+    suspend fun fetchOrderItems(orderId: String): List<OrderItemRow> {
+        return runCatching {
+            client.from("order_items")
+                .select(Columns.list("id", "order_id", "menu_item_id", "name", "quantity", "unit_price", "price")) {
+                    filter { eq("order_id", orderId) }
+                    limit(100L)
+                }.decodeList<OrderItemRow>()
+        }.getOrDefault(emptyList())
+    }
+
     suspend fun fetchOrders(userId: String): List<OrderUi> {
         val orders = client.from("orders")
             .select(Columns.list(
