@@ -425,6 +425,7 @@ fun CustomerShell(
                     onBackToHome = { onTab(CustomerTab.Home) },
                     onOpenCart = { onToggleCart(true) },
                     onToggleFavorite = onToggleFavorite,
+                    onRefresh = onRefresh,
                 )
                 CustomerTab.Orders -> OrdersTab(
                     state, onTrack, onRefresh, onSubmitReview,
@@ -433,7 +434,7 @@ fun CustomerShell(
                         state.stores.firstOrNull { it.id == storeId }?.let { onOpenStore(it) }
                     },
                 )
-                CustomerTab.Track -> TrackTab(state)
+                CustomerTab.Track -> TrackTab(state, onRefresh = onRefresh)
                 CustomerTab.Profile -> ProfileTab(state, onSaveProfile, onSignOut, onOpenSupport, onBackToHome = { onTab(CustomerTab.Home) })
             }
         }
@@ -510,6 +511,8 @@ private fun HomeTab(
         if (refreshing && !state.busy) refreshing = false
     }
     val pullState = rememberPullToRefreshState()
+    val showScrollTop = listState.firstVisibleItemIndex > 3
+    Box(Modifier.fillMaxSize()) {
     PullToRefreshBox(
         isRefreshing = refreshing,
         onRefresh = {
@@ -1010,8 +1013,22 @@ private fun HomeTab(
                 onToggleFavorite = { onToggleFavorite(store.id) },
             )
         }
-    }
-    }
+    } // LazyColumn
+    } // PullToRefreshBox
+        if (showScrollTop) {
+            FloatingActionButton(
+                onClick = { scope.launch { listState.animateScrollToItem(0) } },
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(16.dp)
+                    .navigationBarsPadding(),
+                containerColor = FreshGreen,
+                contentColor = Color.White,
+            ) {
+                Icon(Icons.Outlined.KeyboardArrowUp, contentDescription = "Επάνω")
+            }
+        }
+    } // Box
 }
 
 // FreshFilterChip extracted
@@ -2594,6 +2611,7 @@ private fun BrowseTab(
     onBackToHome: () -> Unit,
     onOpenCart: () -> Unit,
     onToggleFavorite: (String) -> Unit = {},
+    onRefresh: () -> Unit = {},
 ) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val prefs = remember {
@@ -2637,6 +2655,15 @@ private fun BrowseTab(
         }
     }
 
+    var refreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.busy) { if (refreshing && !state.busy) refreshing = false }
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = { refreshing = true; onRefresh() },
+        state = pullState,
+        modifier = Modifier.fillMaxSize().background(FreshBg),
+    ) {
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -2896,7 +2923,6 @@ Text(
     }
 }
 
-@Composable
 private fun OrdersTab(
     state: CustomerUiState,
     onTrack: (OrderUi?) -> Unit,
@@ -2905,6 +2931,15 @@ private fun OrdersTab(
     onBackToHome: () -> Unit = {},
     onReorderStore: (String) -> Unit = {},
 ) {
+    var refreshing by remember { mutableStateOf(false) }
+    LaunchedEffect(state.busy) { if (refreshing && !state.busy) refreshing = false }
+    val pullState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = refreshing,
+        onRefresh = { refreshing = true; onRefresh() },
+        state = pullState,
+        modifier = Modifier.fillMaxSize().background(FreshBg),
+    ) {
     LazyColumn(
         Modifier
             .fillMaxSize()
@@ -3079,10 +3114,10 @@ private fun OrdersTab(
             }
         }
     }
+    }
 }
 
-@Composable
-private fun TrackTab(state: CustomerUiState) {
+private fun TrackTab(state: CustomerUiState, onRefresh: () -> Unit = {}) {
     val order = state.trackingOrder
 
     // Live driver pin + store + delivery pin. Order in the list also picks
@@ -3108,6 +3143,19 @@ private fun TrackTab(state: CustomerUiState) {
     val centerLat = deliveryPinLat ?: storePinLat ?: markers.firstOrNull()?.lat ?: 39.6650
     val centerLng = deliveryPinLng ?: storePinLng ?: markers.firstOrNull()?.lng ?: 20.8537
     Column(Modifier.fillMaxSize().background(FreshBg)) {
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(horizontal = 12.dp, vertical = 6.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text("Παρακολούθηση", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
+            TextButton(onClick = onRefresh) {
+                Text("Ανανέωση", color = FreshGreen, fontWeight = FontWeight.Bold)
+            }
+        }
         Box(
             Modifier
                 .fillMaxWidth()

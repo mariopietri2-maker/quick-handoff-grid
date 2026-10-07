@@ -7,6 +7,9 @@ import android.net.Network
 import android.net.NetworkCapabilities
 import android.net.NetworkRequest
 import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.content.Intent
 import android.net.Uri
 import android.content.Context
@@ -968,6 +971,27 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
+    private fun tickHaptic() {
+        runCatching {
+            val app = getApplication<Application>()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                val vm = app.getSystemService(VibratorManager::class.java)
+                vm?.defaultVibrator?.vibrate(
+                    VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE),
+                )
+            } else {
+                @Suppress("DEPRECATION")
+                val v = app.getSystemService(Context.VIBRATOR_SERVICE) as? Vibrator
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    v?.vibrate(VibrationEffect.createOneShot(25, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    v?.vibrate(25)
+                }
+            }
+        }
+    }
+
     fun refreshNetworkStatus() {
         val cm = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         val online = cm?.activeNetwork?.let { net ->
@@ -1032,8 +1056,20 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 runCatching { refreshStores(force = true) }
                 runCatching { refreshOrders() }
                 _state.value = _state.value.copy(info = "Σύνδεση επανήλθε — ενημερώθηκαν τα δεδομένα")
+                scheduleBannerClear()
             } else {
                 runCatching { refreshStores(force = true) }
+            }
+        }
+    }
+
+    /** Auto-dismiss error/info so sticky banners do not linger. */
+    fun scheduleBannerClear() {
+        viewModelScope.launch {
+            delay(4500)
+            val s = _state.value
+            if (s.error != null || s.info != null) {
+                _state.value = s.copy(error = null, info = null)
             }
         }
     }
@@ -1127,6 +1163,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     promoFreeDelivery = false,
                     tab = CustomerTab.Track,
                 )
+                scheduleBannerClear()
                 if (placed != null) {
                     runCatching {
                         repo.logClientEvent(
@@ -1155,6 +1192,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 }
             }.onFailure { e ->
                 _state.value = _state.value.copy(busy = false, error = e.message ?: "Αποτυχία παραγγελίας")
+                scheduleBannerClear()
             }
         }
     }
@@ -1325,6 +1363,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
     }
 
     fun refreshAll() {
+        runCatching { viewModelScope.launch { repo.logClientEvent("pull_refresh", emptyMap()) } }
         refreshStores()
         refreshOrders()
         refreshLoyalty()
