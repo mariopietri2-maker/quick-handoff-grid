@@ -991,7 +991,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             ?: return
         val cb = object : ConnectivityManager.NetworkCallback() {
             override fun onAvailable(network: Network) {
+                val wasOffline = _state.value.isOffline
                 _state.value = _state.value.copy(isOffline = false)
+                if (wasOffline) onBackOnline()
             }
             override fun onLost(network: Network) {
                 // Re-evaluate: may still have another network
@@ -999,7 +1001,9 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
             }
             override fun onCapabilitiesChanged(network: Network, caps: NetworkCapabilities) {
                 val online = caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+                val wasOffline = _state.value.isOffline
                 _state.value = _state.value.copy(isOffline = !online)
+                if (wasOffline && online) onBackOnline()
             }
         }
         networkCallback = cb
@@ -1019,6 +1023,19 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         networkCallback = null
         val cm = getApplication<Application>().getSystemService(Context.CONNECTIVITY_SERVICE) as? ConnectivityManager
         runCatching { cm?.unregisterNetworkCallback(cb) }
+    }
+
+    /** After reconnect: refresh catalogue + active orders so UI is not stale. */
+    private fun onBackOnline() {
+        viewModelScope.launch {
+            if (_state.value.signedIn) {
+                runCatching { refreshStores(force = true) }
+                runCatching { refreshOrders() }
+                _state.value = _state.value.copy(info = "Σύνδεση επανήλθε — ενημερώθηκαν τα δεδομένα")
+            } else {
+                runCatching { refreshStores(force = true) }
+            }
+        }
     }
 
     fun placeOrder() {
