@@ -69,6 +69,60 @@ internal fun isStoreOpenNow(store: StoreRow): Boolean {
 }
 
 
+/** Next open window label for closed stores, e.g. "Ανοίγει 12:00" or null. */
+internal fun nextOpenHint(store: StoreRow): String? {
+    if (isStoreOpenNow(store)) return null
+    if (store.status_override == "closed") return "Κλειστό σήμερα"
+    val hours = store.opening_hours ?: return null
+    val now = LocalDateTime.now()
+    val days = listOf(
+        DayOfWeek.MONDAY to "mon",
+        DayOfWeek.TUESDAY to "tue",
+        DayOfWeek.WEDNESDAY to "wed",
+        DayOfWeek.THURSDAY to "thu",
+        DayOfWeek.FRIDAY to "fri",
+        DayOfWeek.SATURDAY to "sat",
+        DayOfWeek.SUNDAY to "sun",
+    )
+    fun toMin(v: String): Int? {
+        val hhmm = v.trim().split(":")
+        if (hhmm.size != 2) return null
+        return hhmm[0].toIntOrNull()?.times(60)?.plus(hhmm[1].toIntOrNull() ?: 0)
+    }
+    fun fmt(min: Int): String = "%02d:%02d".format(min / 60, min % 60)
+    // Search today then next 6 days
+    for (offset in 0..6) {
+        val day = now.toLocalDate().plusDays(offset.toLong()).dayOfWeek
+        val key = days.first { it.first == day }.second
+        val schedule = hours.jsonObject[key] ?: continue
+        val obj = schedule.jsonObject
+        val enabled = obj["enabled"]?.jsonPrimitive?.booleanOrNull ?: true
+        if (!enabled) continue
+        val open = obj["open"]?.jsonPrimitive?.contentOrNull ?: continue
+        val openMin = toMin(open) ?: continue
+        val minuteOfDay = now.hour * 60 + now.minute
+        if (offset == 0 && minuteOfDay < openMin) {
+            return "Ανοίγει ${fmt(openMin)}"
+        }
+        if (offset > 0) {
+            val label = when (offset) {
+                1 -> "Αύριο"
+                else -> when (day) {
+                    DayOfWeek.MONDAY -> "Δευ"
+                    DayOfWeek.TUESDAY -> "Τρί"
+                    DayOfWeek.WEDNESDAY -> "Τετ"
+                    DayOfWeek.THURSDAY -> "Πέμ"
+                    DayOfWeek.FRIDAY -> "Παρ"
+                    DayOfWeek.SATURDAY -> "Σάβ"
+                    DayOfWeek.SUNDAY -> "Κυρ"
+                }
+            }
+            return "$label ${fmt(openMin)}"
+        }
+    }
+    return null
+}
+
 internal fun storeDeliveryFeeLabel(store: StoreRow): String {
     if (store.covers_delivery_fee == true) return "Δωρεάν delivery"
     val fee = store.delivery_fee
@@ -83,7 +137,7 @@ internal fun storeDeliveryFeeLabel(store: StoreRow): String {
 /** Who delivers this store — shown so customers know Fresh2GO vs store courier. */
 internal fun storeFulfilmentLabel(store: StoreRow): String {
     val mode = store.fulfilment_mode?.trim()?.lowercase().orEmpty()
-    return if (mode == "store") "Παράδοση καταστήματος" else "Παράδοση Fresh2GO"
+    return if (mode in setOf("store", "merchant", "self")) "Παράδοση καταστήματος" else "Παράδοση Fresh2GO"
 }
 
 internal fun isPlatformFulfilment(store: StoreRow): Boolean {

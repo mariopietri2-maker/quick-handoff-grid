@@ -1121,6 +1121,15 @@ private fun OfferSheet(
                         maxLines = 1,
                         overflow = TextOverflow.Ellipsis,
                     )
+                    Text(
+                        if (offer.fulfilmentMode?.equals("store", true) == true)
+                            "Παράδοση καταστήματος"
+                        else
+                            "Παράδοση Fresh2GO",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = if (offer.fulfilmentMode?.equals("store", true) == true) TextMuted else FreshGreenBright,
+                    )
                 }
                 Column(horizontalAlignment = Alignment.End) {
                     Text("Κέρδος", fontSize = 11.sp, color = TextMuted, fontWeight = FontWeight.SemiBold)

@@ -138,7 +138,7 @@ class DriverRepository(
     private suspend fun storesByIds(ids: List<String>): Map<String, StoreRow> {
         if (ids.isEmpty()) return emptyMap()
         return client.from("stores")
-            .select(Columns.list("id", "name", "address", "phone", "latitude", "longitude")) {
+            .select(Columns.list("id", "name", "address", "phone", "latitude", "longitude", "fulfilment_mode")) {
                 filter { isIn("id", ids) }
             }.decodeList<StoreRow>().associateBy { it.id }
     }
@@ -214,6 +214,7 @@ class DriverRepository(
                 storeLng = store?.longitude,
                 expiresAt = po.expires_at,
                 itemsSummary = summaries[order.id],
+                fulfilmentMode = store?.fulfilment_mode,
             )
         }.sortedBy { it.expiresAt }
     }
@@ -268,6 +269,7 @@ class DriverRepository(
                 storeLng = store?.longitude,
                 expiresAt = null,
                 itemsSummary = summaries[it.id],
+                fulfilmentMode = store?.fulfilment_mode,
             )
         }
     }

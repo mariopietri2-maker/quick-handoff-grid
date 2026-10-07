@@ -142,7 +142,8 @@ export function OrderQueue({
   storeName = 'Κατάστημα',
   storeId = null,
   pendingIds,
-}: OrderQueueProps) {
+  fulfilmentMode = 'platform',
+}: OrderQueueProps & { fulfilmentMode?: string }) {
   const [expanded, setExpanded] = useState<Record<string, boolean>>({});
   const [prepTimes, setPrepTimes] = useState<Record<string, number>>({});
   const [busyLocal, setBusyLocal] = useState<Record<string, boolean>>({});
@@ -314,6 +315,15 @@ export function OrderQueue({
                   {order.source}
                 </span>
               )}
+              <span
+                className={`text-[10px] font-bold uppercase tracking-wide px-1.5 py-0.5 rounded ${
+                  fulfilmentMode === 'store'
+                    ? 'bg-muted text-foreground'
+                    : 'bg-orange-600 text-white'
+                }`}
+              >
+                {fulfilmentMode === 'store' ? 'Παράδοση καταστήματος' : 'Fresh2GO'}
+              </span>
             </div>
             <p className="text-[12px] text-muted-foreground tabular-nums">
               {(order as any).order_code || order.id.slice(0, 8)} · {nItems}{' '}

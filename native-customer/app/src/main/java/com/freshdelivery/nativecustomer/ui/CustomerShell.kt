@@ -1282,10 +1282,14 @@ private fun FreshStoreCard(
                         Spacer(Modifier.width(5.dp))
                     }
                     Text(
-                        if (!active || !openNow) "Κλειστό" else "Ανοιχτό",
+                        when {
+                            !active || !openNow -> nextOpenHint(store)?.let { "Κλειστό · $it" } ?: "Κλειστό"
+                            else -> "Ανοιχτό"
+                        },
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
                         style = MaterialTheme.typography.labelSmall,
+                        maxLines = 1,
                     )
                 }
             }
@@ -2005,6 +2009,22 @@ private fun CartCheckoutScreen(
                         .fillMaxWidth()
                         .padding(vertical = 6.dp),
                 ) {
+                    val pinnedAddr = state.deliveryLat != null && state.deliveryLng != null
+                    if (!pinnedAddr || state.deliveryAddress.isBlank()) {
+                        Surface(
+                            color = Color(0xFFFFF3E0),
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                        ) {
+                            Text(
+                                "Όρισε διεύθυνση και σημείο στον χάρτη για ολοκλήρωση παραγγελίας.",
+                                color = Color(0xFFE65100),
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.padding(12.dp),
+                            )
+                        }
+                    }
                     Text("Διεύθυνση παράδοσης", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
                     Spacer(Modifier.height(8.dp))
                     OutlinedTextField(
@@ -2165,7 +2185,10 @@ item {
                         ) {
                             Icon(Icons.Outlined.Wallet, contentDescription = null)
                             Spacer(Modifier.width(6.dp))
-                            Text(if (state.paymentMethod == "cash") "Μετρητά ✓" else "Μετρητά")
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (state.paymentMethod == "cash") "Μετρητά ✓" else "Μετρητά", fontWeight = FontWeight.Bold)
+                                Text("Στον διανομέα", style = MaterialTheme.typography.labelSmall, color = if (state.paymentMethod == "cash") Color.White.copy(alpha=0.9f) else FreshMuted)
+                            }
                         }
                         Button(
                             onClick = { onSetPayment("card") },
@@ -2179,7 +2202,10 @@ item {
                         ) {
                             Icon(Icons.Outlined.CreditCard, contentDescription = null)
                             Spacer(Modifier.width(6.dp))
-                            Text(if (state.paymentMethod == "card") "Κάρτα ✓" else "Κάρτα")
+                            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text(if (state.paymentMethod == "card") "Κάρτα ✓" else "Κάρτα", fontWeight = FontWeight.Bold)
+                                Text("Online πληρωμή", style = MaterialTheme.typography.labelSmall, color = if (state.paymentMethod == "card") Color.White.copy(alpha=0.9f) else FreshMuted)
+                            }
                         }
                     }
                 }
@@ -2807,12 +2833,23 @@ private fun BrowseTab(
         if (!showingResults) {
             if (recent.isNotEmpty()) {
                 item {
-                    Text(
-                        "Πρόσφατες",
-                        style = MaterialTheme.typography.titleSmall,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
+                    Row(
+                        Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            "Πρόσφατες",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                        TextButton(onClick = {
+                            recent = emptyList()
+                            prefs.edit().remove("recent_searches").apply()
+                        }) {
+                            Text("Καθαρισμός", color = FreshMuted, style = MaterialTheme.typography.labelMedium)
+                        }
+                    }
                 }
                 item {
                     Row(

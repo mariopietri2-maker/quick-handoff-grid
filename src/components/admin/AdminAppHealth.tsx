@@ -73,6 +73,8 @@ export default function AdminAppHealth() {
         driverTokens,
         driverLocs,
         activeStores,
+        platformStores,
+        storeCourierStores,
         openOrders,
         recentStoreOrders,
         stuckOrders,
@@ -100,6 +102,16 @@ export default function AdminAppHealth() {
           .from('stores')
           .select('id', { count: 'exact', head: true })
           .eq('is_active', true),
+        (supabase as any)
+          .from('stores')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true)
+          .eq('fulfilment_mode', 'platform'),
+        (supabase as any)
+          .from('stores')
+          .select('id', { count: 'exact', head: true })
+          .eq('is_active', true)
+          .eq('fulfilment_mode', 'store'),
         (supabase as any)
           .from('orders')
           .select('id', { count: 'exact', head: true })
@@ -129,6 +141,8 @@ export default function AdminAppHealth() {
       const dTok = driverTokens.count ?? 0;
       const liveDrivers = driverLocs.count ?? 0;
       const storesN = activeStores.count ?? 0;
+      const platformN = platformStores.count ?? 0;
+      const storeCourN = storeCourierStores.count ?? 0;
       const openN = openOrders.count ?? 0;
       const dayOrders = recentStoreOrders.count ?? 0;
       const stuckN = stuckOrders.count ?? 0;
@@ -228,6 +242,12 @@ export default function AdminAppHealth() {
           label: 'Ενεργά καταστήματα',
           status: storesN > 0 ? 'ok' : 'error',
           detail: storesN > 0 ? `${storesN} ενεργά` : 'Κανένα ενεργό κατάστημα',
+        },
+        {
+          id: 's_fulfil',
+          label: 'Παράδοση (mode)',
+          status: 'ok',
+          detail: `Fresh2GO: ${platformN} · Κατάστημα: ${storeCourN}`,
         },
         {
           id: 's_orders',

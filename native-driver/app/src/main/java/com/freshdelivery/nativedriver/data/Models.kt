@@ -98,6 +98,7 @@ data class StoreRow(
     val image_url: String? = null,
     val cover_image_url: String? = null,
     val is_active: Boolean? = true,
+    val fulfilment_mode: String? = null,
 )
 
 @Serializable
@@ -223,6 +224,7 @@ data class OfferUi(
     val storeLng: Double?,
     val expiresAt: String?,
     val itemsSummary: String?,
+    val fulfilmentMode: String? = null,
 )
 
 data class ActiveTripUi(
