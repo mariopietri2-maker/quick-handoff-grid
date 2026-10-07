@@ -76,20 +76,22 @@ export default function AdminAppHealth() {
         openOrders,
         recentStoreOrders,
         stuckOrders,
+        openChats,
+        opsRun,
       ] = await Promise.all([
         (supabase as any)
           .from('app_client_events')
           .select('id', { count: 'exact', head: true })
-          .eq('app', 'customer_native')
+          .in('app', ['customer_native', 'customer'])
           .gte('created_at', since24h),
         (supabase as any)
           .from('push_tokens')
           .select('id', { count: 'exact', head: true })
-          .ilike('app', '%customer%'),
+          .eq('app', 'customer'),
         (supabase as any)
           .from('push_tokens')
           .select('id', { count: 'exact', head: true })
-          .ilike('app', '%driver%'),
+          .eq('app', 'driver'),
         (supabase as any)
           .from('driver_locations')
           .select('driver_id', { count: 'exact', head: true })
@@ -111,6 +113,15 @@ export default function AdminAppHealth() {
           .select('id', { count: 'exact', head: true })
           .in('status', ['placed', 'accepted', 'preparing', 'ready', 'picked_up'])
           .lt('created_at', since15m),
+        (supabase as any)
+          .from('live_chat_sessions')
+          .select('id', { count: 'exact', head: true })
+          .eq('status', 'open'),
+        (supabase as any)
+          .from('ops_assistant_settings')
+          .select('last_run_at')
+          .eq('id', 1)
+          .maybeSingle(),
       ]);
 
       const evCount = customerEvents.count ?? 0;
@@ -121,6 +132,8 @@ export default function AdminAppHealth() {
       const openN = openOrders.count ?? 0;
       const dayOrders = recentStoreOrders.count ?? 0;
       const stuckN = stuckOrders.count ?? 0;
+      const chatsN = openChats.count ?? 0;
+      const opsLast = opsRun?.data?.last_run_at as string | null | undefined;
 
       const customerChecks: Check[] = [
         {
@@ -143,6 +156,12 @@ export default function AdminAppHealth() {
           label: 'Push tokens (customer)',
           status: cTok > 0 ? 'ok' : 'warn',
           detail: cTok > 0 ? `${cTok} συσκευές` : 'Κανένα token — ειδοποιήσεις μπορεί να μην φτάνουν',
+        },
+        {
+          id: 'c_support',
+          label: 'Ανοιχτά live chats',
+          status: chatsN > 10 ? 'warn' : 'ok',
+          detail: chatsN > 0 ? `${chatsN} ανοιχτά` : 'Κανένα ανοιχτό chat',
         },
       ];
 
@@ -197,6 +216,14 @@ export default function AdminAppHealth() {
             stuckN > 0
               ? `${stuckN} παραγγελίες ανοιχτές πάνω από 15 λεπτά`
               : 'Καμία κολλημένη παραγγελία',
+        },
+        {
+          id: 's_ops',
+          label: 'Ops Assistant',
+          status: opsLast ? 'ok' : 'warn',
+          detail: opsLast
+            ? `Τελευταία εκτέλεση ${new Date(opsLast).toLocaleString('el-GR')}`
+            : 'Δεν έχει τρέξει ακόμα',
         },
       ];
 

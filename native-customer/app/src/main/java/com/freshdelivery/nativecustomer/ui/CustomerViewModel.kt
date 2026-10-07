@@ -360,6 +360,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                 val token = PushTokenHolder.pendingToken
                     ?: FirebaseMessaging.getInstance().token.await()
                 if (!token.isNullOrBlank()) repo.upsertPushToken(userId, token)
+                runCatching { repo.logClientEvent("session", mapOf("uid" to userId.take(8))) }
             }
         }
     }
