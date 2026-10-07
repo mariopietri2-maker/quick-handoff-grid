@@ -690,7 +690,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
         }
     }
 
-    fun declineOffer(offerId: String) {
+    fun declineOffer(offerId: String, reason: String? = null) {
         val s = _state.value
         val removed = s.offers.firstOrNull { it.offerId == offerId }
             ?: s.stackedOffers.firstOrNull { it.offerId == offerId }
@@ -699,6 +699,7 @@ class DriverViewModel(app: Application) : AndroidViewModel(app) {
             stackedOffers = s.stackedOffers.filterNot { it.offerId == offerId },
             busy = true,
             error = null,
+            info = reason?.takeIf { it.isNotBlank() }?.let { "Απόρριψη: $it" },
         )
         stopOfferSound()
         viewModelScope.launch {

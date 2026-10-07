@@ -331,7 +331,7 @@ export function OrderQueue({
             </p>
             {order.status === 'placed' && (
               <p className="text-[11px] text-muted-foreground">
-                Αυτόματη αποδοχή μετά από ~10 κουδούνια αν δεν απαντήσεις · default χρόνος ετοιμασίας.
+                Αυτόματη αποδοχή μετά από ~10 κουδούνια · κράτα ήχο συσκευής ανοιχτό για ειδοποίηση.
               </p>
             )}
             <p className="text-[13px] font-medium text-foreground flex items-center gap-1.5 min-w-0">

@@ -250,6 +250,12 @@ export default function AdminAppHealth() {
           detail: `Fresh2GO: ${platformN} · Κατάστημα: ${storeCourN}`,
         },
         {
+          id: 's_hours',
+          label: 'Ωράρια καταστημάτων',
+          status: 'ok',
+          detail: 'Έλεγξε στο admin stores αν λείπουν opening_hours (επηρεάζει Ανοιχτά).',
+        },
+        {
           id: 's_orders',
           label: 'Παραγγελίες 24ώ',
           status: dayOrders > 0 ? 'ok' : 'warn',

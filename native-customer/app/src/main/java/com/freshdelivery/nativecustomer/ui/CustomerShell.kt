@@ -505,6 +505,7 @@ private fun HomeTab(
     }
     val base = state.visibleStores
     val hasLocation = state.deliveryLat != null && state.deliveryLng != null
+    val closedStores = remember(base) { base.filter { !isStoreOpenNow(it) } }
     val stores = remember(filter, base, hasLocation, state.favoriteStoreIds) {
         val open = base.filter { isStoreOpenNow(it) }
         val near = if (hasLocation) {
@@ -512,7 +513,9 @@ private fun HomeTab(
         } else base
         when (filter) {
             // Open stores float to the top of the default feed
-            HomeFilter.All -> base.sortedBy { if (isStoreOpenNow(it)) 0 else 1 }
+            HomeFilter.All -> base.filter { isStoreOpenNow(it) }.ifEmpty {
+                base.sortedBy { if (isStoreOpenNow(it)) 0 else 1 }
+            }
             HomeFilter.Open -> open
             HomeFilter.Near -> near
             HomeFilter.Fav -> base.filter { state.favoriteStoreIds.contains(it.id) }
@@ -1063,6 +1066,29 @@ private fun HomeTab(
                 onClick = { onOpenStore(store) },
                 onToggleFavorite = { onToggleFavorite(store.id) },
             )
+        }
+        if (filter == HomeFilter.All && state.searchQuery.isBlank() && closedStores.isNotEmpty()
+            && stores.any { isStoreOpenNow(it) }
+        ) {
+            item {
+                Text(
+                    "Κλειστά τώρα",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                )
+            }
+            items(closedStores, key = { "c-${it.id}" }) { store ->
+                FreshStoreCard(
+                    store = store,
+                    rating = state.storeRatings[store.id],
+                    isFavorite = state.favoriteStoreIds.contains(store.id),
+                    deliveryLat = state.deliveryLat,
+                    deliveryLng = state.deliveryLng,
+                    onClick = { onOpenStore(store) },
+                    onToggleFavorite = { onToggleFavorite(store.id) },
+                )
+            }
         }
     }
     } // PullToRefreshBox
@@ -2023,6 +2049,26 @@ private fun CartCheckoutScreen(
                                 fontWeight = FontWeight.SemiBold,
                                 modifier = Modifier.padding(12.dp),
                             )
+                        }
+                    }
+                    state.cartStoreName?.let { csn ->
+                        val cs = state.stores.find { it.id == state.cartStoreId }
+                        Surface(
+                            color = FreshChip,
+                            shape = RoundedCornerShape(14.dp),
+                            modifier = Modifier.fillMaxWidth().padding(bottom = 10.dp),
+                        ) {
+                            Column(Modifier.padding(12.dp)) {
+                                Text("Καλάθι · $csn", fontWeight = FontWeight.Bold)
+                                if (cs != null) {
+                                    Text(
+                                        storeFulfilmentLabel(cs) +
+                                            ((cs.min_order_amount ?: 0.0).takeIf { it > 0 }?.let { " · Ελάχ. €" + "%.0f".format(it) } ?: ""),
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = FreshMuted,
+                                    )
+                                }
+                            }
                         }
                     }
                     Text("Διεύθυνση παράδοσης", fontWeight = FontWeight.Bold, style = MaterialTheme.typography.titleMedium)
