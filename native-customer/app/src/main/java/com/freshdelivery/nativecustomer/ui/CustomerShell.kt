@@ -745,7 +745,7 @@ private fun HomeTab(
             }
             if (state.searchQuery.isNotBlank()) {
                 Text(
-                    "Αποτελέσματα: ${stores.size} για «${state.searchQuery.trim()}»",
+                    "Αποτελέσματα: ${stores.size} καταστήματα · ${state.dishHits.size} πιάτα για «${state.searchQuery.trim()}»",
                     color = FreshMuted,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
@@ -757,6 +757,41 @@ private fun HomeTab(
         // Admin-managed promo carousel (customer_app_config.promos) — auto-rotate
         // Hidden when a chip filter is active so the store list is right under the chips.
         val enabledPromos = state.appConfig.promos.filter { it.enabled && it.title.isNotBlank() }
+        if (state.dishHits.isNotEmpty() && state.searchQuery.isNotBlank()) {
+            item {
+                Text(
+                    "Πιάτα",
+                    fontWeight = FontWeight.Bold,
+                    style = MaterialTheme.typography.titleMedium,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                )
+            }
+            items(state.dishHits.take(12), key = { "d-${it.id}" }) { dish ->
+                Surface(
+                    onClick = {
+                        state.stores.firstOrNull { it.id == dish.store_id }?.let { onOpenStore(it) }
+                            ?: state.visibleStores.firstOrNull { it.id == dish.store_id }?.let { onOpenStore(it) }
+                    },
+                    color = Color.White,
+                    shape = RoundedCornerShape(14.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 4.dp),
+                ) {
+                    Row(
+                        Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(Modifier.weight(1f)) {
+                            Text(dish.name, fontWeight = FontWeight.Bold, maxLines = 1)
+                            Text(dish.store_name ?: "Κατάστημα", color = FreshMuted, style = MaterialTheme.typography.bodySmall)
+                        }
+                        Text("€" + "%.2f".format(dish.price), fontWeight = FontWeight.Bold, color = FreshGreenDark)
+                    }
+                }
+            }
+        }
         if (showDiscovery && enabledPromos.isNotEmpty()) {
             item(key = "promo-carousel") {
                 PromoCarousel(promos = enabledPromos, onPromoClick = { applyFilter(HomeFilter.Deals); onSearch("") })

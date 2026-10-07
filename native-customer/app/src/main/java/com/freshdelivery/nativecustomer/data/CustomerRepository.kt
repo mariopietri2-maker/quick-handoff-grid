@@ -291,6 +291,23 @@ class CustomerRepository(
         return merged
     }
 
+    suspend fun searchDishes(query: String): List<DishSearchHit> {
+        val q = query.trim()
+        if (q.length < 2) return emptyList()
+        return runCatching {
+            client.from("menu_items")
+                .select(Columns.list("id", "store_id", "name", "price")) {
+                    filter {
+                        eq("is_available", true)
+                        ilike("name", "%$q%")
+                    }
+                    order("name", Order.ASCENDING)
+                    limit(30L)
+                }.decodeList<MenuItemRow>()
+                .map { DishSearchHit(it.id, it.store_id, it.name, it.price, null) }
+        }.getOrDefault(emptyList())
+    }
+
     suspend fun fetchMenu(storeId: String): List<MenuItemRow> {
         return client.from("menu_items")
             .select(Columns.list(

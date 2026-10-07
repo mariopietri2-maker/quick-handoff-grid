@@ -673,7 +673,7 @@ fun HomeScreen(
                                         offer = so,
                                         busy = state.busy,
                                         onAccept = { onAccept(so.offerId, so.order.id) },
-                                        onDecline = { onDecline(so.offerId) },
+                                        onDecline = { declineOfferId = so.offerId },
                                     )
                                     Spacer(Modifier.height(10.dp))
                                 }
@@ -699,7 +699,7 @@ fun HomeScreen(
                             busy = state.busy,
                             timeoutSec = state.settings.dist_offer_timeout_seconds ?: 60,
                             onAccept = { onAccept(offer.offerId, null) },
-                            onDecline = { onDecline(offer.offerId) },
+                            onDecline = { declineOfferId = offer.offerId },
                         )
                     }
                 }

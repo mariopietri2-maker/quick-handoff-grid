@@ -35,6 +35,15 @@ data class StoreRow(
 )
 
 @Serializable
+data class DishSearchHit(
+    val id: String,
+    val store_id: String,
+    val name: String,
+    val price: Double = 0.0,
+    val store_name: String? = null,
+)
+
+@Serializable
 data class MenuItemRow(
     val id: String,
     val store_id: String,

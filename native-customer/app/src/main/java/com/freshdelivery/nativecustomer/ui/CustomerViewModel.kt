@@ -136,6 +136,7 @@ data class CustomerUiState(
     val locating: Boolean = false,
     val savingProfile: Boolean = false,
     val searchQuery: String = "",
+    val dishHits: List<com.freshdelivery.nativecustomer.data.DishSearchHit> = emptyList(),
     val signupMode: Boolean = false,
     val addressSuggestions: List<AddressSuggestion> = emptyList(),
     val cachedSuggestions: List<CachedSuggestionRow> = emptyList(),
@@ -435,7 +436,7 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
         if (trimmed.isBlank()) {
             // Restore full catalogue (from cache if available for instant UI).
             if (allStoresCache.isNotEmpty()) {
-                _state.value = _state.value.copy(stores = allStoresCache)
+                _state.value = _state.value.copy(stores = allStoresCache, dishHits = emptyList())
             }
             refreshStores()
             return
@@ -454,6 +455,11 @@ class CustomerViewModel(app: Application) : AndroidViewModel(app) {
                     if (remote.isNotEmpty()) {
                         _state.value = _state.value.copy(stores = remote)
                     }
+                    val dishes = runCatching { repo.searchDishes(trimmed) }.getOrDefault(emptyList())
+                    val names = _state.value.stores.associate { it.id to (it.name ?: "") }
+                    _state.value = _state.value.copy(
+                        dishHits = dishes.map { d -> d.copy(store_name = names[d.store_id] ?: d.store_name) },
+                    )
                     runCatching {
                         repo.logClientEvent(
                             "search",

@@ -291,7 +291,21 @@ export function OrderQueue({
       !upcomingScheduled &&
       Date.now() - new Date(order.created_at).getTime() > 5 * 60_000;
 
-    return (
+    const playTestSound = () => {
+    try {
+      const ctx = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const o = ctx.createOscillator();
+      const g = ctx.createGain();
+      o.connect(g);
+      g.connect(ctx.destination);
+      o.frequency.value = 880;
+      g.gain.value = 0.08;
+      o.start();
+      setTimeout(() => { o.stop(); ctx.close(); }, 400);
+    } catch { /* ignore */ }
+  };
+
+  return (
       <div
         key={order.id}
         className={cn(
@@ -551,6 +565,14 @@ export function OrderQueue({
           </div>
         </div>
       </div>
+    <button
+      type="button"
+      onClick={playTestSound}
+      className="fixed bottom-4 left-4 z-40 rounded-full border bg-card px-3 py-2 text-[12px] font-bold shadow-md"
+    >
+      Δοκιμή ήχου
+    </button>
     </div>
   );
 }
+
